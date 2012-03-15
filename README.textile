@@ -1,14 +1,12 @@
-Faunus: A Library of Graph-Based Hadoop Tools
+h2. Faunus: A Library of Graph-Based Hadoop Tools
 
-h2. REQUIREMENTS
+h3. REQUIREMENTS
   * Hadoop 0.20+
   * Java 1.6+
   * Maven3
 
-h2. USAGE
+h3. USAGE
 
-```text
-mvn clean package
-hadoop jar target/faunus-0.1-job.jar com.thinkaurelius.faunus.graph.DegreeDistribution /user/marko/graph.txt /user/marko/out.txt
-hadoop fs -getmerge /user/marko/out.txt ~/Desktop/out.txt
-```
+  * @mvn clean package@
+  * @hadoop jar target/faunus-0.1-job.jar com.thinkaurelius.faunus.graph.DegreeDistribution /user/marko/graph.txt /user/marko/out.txt@
+  * @hadoop fs -getmerge /user/marko/out.txt ~/Desktop/out.txt@
