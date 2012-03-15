@@ -5,7 +5,10 @@ h2. REQUIREMENTS
   * Java 1.6+
   * Maven3
 
-h2. USAGE:
-  * mvn clean package
-  * hadoop jar target/faunus-0.1-job.jar com.thinkaurelius.faunus.graph.DegreeDistribution /user/marko/graph.txt /user/marko/out.txt
-  * hadoop fs -getmerge /user/marko/out.txt ~/Desktop/out.txt
+h2. USAGE
+
+```bash
+mvn clean package
+hadoop jar target/faunus-0.1-job.jar com.thinkaurelius.faunus.graph.DegreeDistribution /user/marko/graph.txt /user/marko/out.txt
+hadoop fs -getmerge /user/marko/out.txt ~/Desktop/out.txt
+```
