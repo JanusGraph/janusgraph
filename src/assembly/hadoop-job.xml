@@ -1,0 +1,23 @@
+<assembly>
+    <id>job</id>
+    <formats>
+        <format>jar</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <dependencySets>
+        <dependencySet>
+            <unpack>false</unpack>
+            <scope>runtime</scope>
+            <outputDirectory>lib</outputDirectory>
+            <excludes>
+                <exclude>${groupId}:${artifactId}</exclude>
+            </excludes>
+        </dependencySet>
+        <dependencySet>
+            <unpack>true</unpack>
+            <includes>
+                <include>${groupId}:${artifactId}</include>
+            </includes>
+        </dependencySet>
+    </dependencySets>
+</assembly>
