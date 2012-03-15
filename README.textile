@@ -7,7 +7,7 @@ h2. REQUIREMENTS
 
 h2. USAGE
 
-```bash
+```text
 mvn clean package
 hadoop jar target/faunus-0.1-job.jar com.thinkaurelius.faunus.graph.DegreeDistribution /user/marko/graph.txt /user/marko/out.txt
 hadoop fs -getmerge /user/marko/out.txt ~/Desktop/out.txt
