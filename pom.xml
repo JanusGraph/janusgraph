@@ -83,7 +83,7 @@
                     <tarLongFileMode>warn</tarLongFileMode>
                     <!--<archive>
                         <manifest>
-                            <mainClass>com.thinkaurelius.faunus.graph.DegreeDistribution</mainClass>
+                            <mainClass>com.thinkaurelius.faunus.graph.VertexDegreesnClass>
                         </manifest>
                     </archive>-->
                 </configuration>
