@@ -11,12 +11,12 @@ public class TitanEdgeSequence<T extends Edge> implements CloseableSequence<Tita
 
     private final Iterator<? extends Relationship> relationships;
     
-    public TitanEdgeSequence(Iterator<? extends Relationship> rels) {
-        relationships=rels;
+    public TitanEdgeSequence(final Iterator<? extends Relationship> relationships) {
+        this.relationships =relationships;
     }
     
-    public TitanEdgeSequence(Iterable<? extends Relationship> rels) {
-        this(rels.iterator());
+    public TitanEdgeSequence(final Iterable<? extends Relationship> relationships) {
+        this(relationships.iterator());
     }
     
     @Override

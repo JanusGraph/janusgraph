@@ -22,8 +22,8 @@ public class TitanElement<T extends Node> implements Element {
     }
 
     @Override
-    public Object getProperty(String s) {
-        return element.getAttribute(s);
+    public Object getProperty(final String key) {
+        return element.getAttribute(key);
     }
 
     @Override
@@ -37,18 +37,18 @@ public class TitanElement<T extends Node> implements Element {
     }
 
     @Override
-    public void setProperty(String s, Object o) {
-        Iterator<Property> iter = element.getPropertyIterator(s);
+    public void setProperty(final String key, final Object value) {
+        Iterator<Property> iter = element.getPropertyIterator(key);
         while(iter.hasNext()) {
             iter.next();
             iter.remove();
         }
-        element.createProperty(s,o);
+        element.createProperty(key,value);
     }
 
     @Override
-    public Object removeProperty(String s) {
-        Iterator<Property> iter = element.getPropertyIterator(s);
+    public Object removeProperty(final String key) {
+        Iterator<Property> iter = element.getPropertyIterator(key);
         Object value = null;
         while(iter.hasNext()) {
             value = iter.next().getAttribute();
@@ -70,14 +70,9 @@ public class TitanElement<T extends Node> implements Element {
         return element.hashCode();
     }
     
-    public boolean equals(Object other) {
+    public boolean equals(final Object other) {
         if (this==other) return true;
         else if (!getClass().isInstance(other)) return false;
         else return element.equals(((TitanElement)other).element);
-    }
-    
-    public String toString() {
-        return element.toString();
-    }
-    
+    }   
 }

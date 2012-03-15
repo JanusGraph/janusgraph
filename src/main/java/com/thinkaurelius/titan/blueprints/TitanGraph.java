@@ -17,10 +17,8 @@ import java.util.*;
 public class TitanGraph implements TransactionalGraph, IndexableGraph {
 
     private static final String INTERNAL_PREFIX = "#!bp!#";
-    
     private static final String indexNameProperty = INTERNAL_PREFIX + "indexname";
     private static final String globalTagProperty = INTERNAL_PREFIX + "tag";
-    
     private static final String indexTag = "index";
 
     private final GraphDatabase db;
@@ -46,15 +44,15 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     private static final WeakHashMap<GraphTransaction,Boolean> openTx = new WeakHashMap<GraphTransaction, Boolean>(4);
 
     
-    public TitanGraph(String directory) {
+    public TitanGraph(final String directory) {
         this(new GraphDatabaseConfiguration(directory));
     }
     
-    public TitanGraph(GraphDatabaseConfiguration config) {
+    public TitanGraph(final GraphDatabaseConfiguration config) {
         this(config.openDatabase());
     }
     
-    public TitanGraph(GraphDatabase db) {
+    public TitanGraph(final GraphDatabase db) {
         this.db=db;
         //Verify that database has been setup correctly
         GraphTransaction tx = db.startTransaction();
@@ -74,12 +72,12 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
 
 
     @Override
-    public Vertex addVertex(Object id) {
+    public Vertex addVertex(final Object id) {
         return new TitanVertex(getAutoStartTx().createNode());
     }
 
     @Override
-    public Vertex getVertex(Object id) {
+    public Vertex getVertex(final Object id) {
         GraphTransaction tx = getAutoStartTx();
         if (null == id)
             throw new IllegalArgumentException("Element identifier cannot be null");
@@ -100,7 +98,7 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     }
 
     @Override
-    public void removeVertex(Vertex vertex) {
+    public void removeVertex(final Vertex vertex) {
         ((TitanVertex)vertex).getRawElement().delete();
     }
 
@@ -111,21 +109,21 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     }
 
     @Override
-    public Edge addEdge(Object id, Vertex start, Vertex end, String s) {
-        if (s.startsWith(INTERNAL_PREFIX)) throw new IllegalArgumentException("Edge labels cannot start with prefix " + INTERNAL_PREFIX);
-        Node startNode = ((TitanVertex)start).getRawElement();
-        Node endNode = ((TitanVertex)end).getRawElement();
-        Relationship r = getAutoStartTx().createRelationship(s,startNode,endNode);
+    public Edge addEdge(final Object id, final Vertex outVertex, final Vertex inVertex, final String label) {
+        if (label.startsWith(INTERNAL_PREFIX)) throw new IllegalArgumentException("Edge labels cannot start with prefix " + INTERNAL_PREFIX);
+        Node startNode = ((TitanVertex)outVertex).getRawElement();
+        Node endNode = ((TitanVertex)inVertex).getRawElement();
+        Relationship r = getAutoStartTx().createRelationship(label,startNode,endNode);
         return new TitanEdge(r);
     }
 
     @Override
-    public Edge getEdge(Object o) {
+    public Edge getEdge(final Object id) {
         throw new UnsupportedOperationException("Edges cannot be retrieved by ID.");
     }
 
     @Override
-    public void removeEdge(Edge edge) {
+    public void removeEdge(final Edge edge) {
         ((TitanEdge)edge).getRawElement().delete();
     }
 
@@ -155,12 +153,12 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     /** ==================== Indexable Graph ================= **/
 
     @Override
-    public <T extends Element> Index<T> createManualIndex(String s, Class<T> tClass, Parameter... parameters) {
+    public <T extends Element> Index<T> createManualIndex(final String indexName, final Class<T> indexClass, final Parameter... indexParameters) {
         throw new UnsupportedOperationException("Manual indexes are not supported by Titan");
     }
 
     @Override
-    public <T extends Element> AutomaticIndex<T> createAutomaticIndex(String indexName, Class<T> indexClass, Set<String> autoIndexKeys, Parameter... parameters) {
+    public <T extends Element> AutomaticIndex<T> createAutomaticIndex(final String indexName, final Class<T> indexClass, final Set<String> autoIndexKeys, final Parameter... parameters) {
         Preconditions.checkNotNull(indexName);
         Preconditions.checkArgument(autoIndexKeys!=null && !autoIndexKeys.isEmpty());
         Preconditions.checkArgument(indexClass.equals(TitanVertex.class),"Can only index vertices");
@@ -187,7 +185,7 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     }
 
     @Override
-    public <T extends Element> Index<T> getIndex(String indexName, Class<T> indexClass) {
+    public <T extends Element> Index<T> getIndex(final String indexName, final Class<T> indexClass) {
         Set<String> keys = new HashSet<String>();
         for (Node node : indexRetrieval(indexNameProperty,indexName)) {
             Preconditions.checkArgument(node instanceof PropertyType);
@@ -225,7 +223,7 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     /** ==================== Transactional Graph ================= **/
 
     @Override
-    public void setMaxBufferSize(int i) {
+    public void setMaxBufferSize(final int i) {
         if (i!=0) throw new UnsupportedOperationException("Does not support buffer size other than 0");
     }
 
@@ -241,7 +239,7 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
 
 
     @Override
-    public void stopTransaction(Conclusion conclusion) {
+    public void stopTransaction(final Conclusion conclusion) {
         GraphTransaction tx = txs.get();
         if (tx==null || tx.isClosed()) throw new IllegalStateException("A transaction has not yet been started.");
         switch(conclusion) {
