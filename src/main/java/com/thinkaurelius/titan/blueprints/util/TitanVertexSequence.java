@@ -50,6 +50,6 @@ public class TitanVertexSequence<T extends Vertex> implements CloseableSequence<
 
     @Override
     public void remove() {
-        throw new UnsupportedOperationException("Cannot remove vertex.");
+        throw new UnsupportedOperationException();
     }
 }

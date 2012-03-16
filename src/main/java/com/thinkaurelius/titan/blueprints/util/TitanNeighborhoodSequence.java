@@ -44,6 +44,6 @@ public class TitanNeighborhoodSequence<T extends Vertex> implements CloseableSeq
 
     @Override
     public void remove() {
-        throw new UnsupportedOperationException("Cannot remove vertex from Node List");
+        throw new UnsupportedOperationException();
     }
 }

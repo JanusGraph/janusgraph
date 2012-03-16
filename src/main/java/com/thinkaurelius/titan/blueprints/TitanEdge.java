@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.blueprints;
 import com.thinkaurelius.titan.core.Relationship;
 import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.Vertex;
+import com.tinkerpop.blueprints.pgm.impls.StringFactory;
 
 public class TitanEdge extends TitanElement<Relationship> implements Edge {
 
@@ -10,7 +11,7 @@ public class TitanEdge extends TitanElement<Relationship> implements Edge {
     private TitanVertex end = null;
     private TitanVertex start = null;
     
-    public TitanEdge(Relationship r, TitanGraph db) {
+    public TitanEdge(final Relationship r, final TitanGraph db) {
         super(r,db);
     }
     
@@ -29,5 +30,9 @@ public class TitanEdge extends TitanElement<Relationship> implements Edge {
     @Override
     public String getLabel() {
         return element.getRelationshipType().getName();
+    }
+
+    public String toString() {
+        return StringFactory.edgeString(this);
     }
 }

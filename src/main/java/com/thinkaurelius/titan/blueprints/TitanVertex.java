@@ -1,12 +1,12 @@
 package com.thinkaurelius.titan.blueprints;
 
 import com.thinkaurelius.titan.blueprints.util.TitanEdgeSequence;
-import com.thinkaurelius.titan.blueprints.util.TitanNeighborhoodSequence;
 import com.thinkaurelius.titan.core.Direction;
 import com.thinkaurelius.titan.core.Node;
 import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.MultiIterable;
+import com.tinkerpop.blueprints.pgm.impls.StringFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +18,7 @@ public class TitanVertex extends TitanElement<Node> implements Vertex {
         super(element,db);
     }
 
-    private Iterable<Edge> getEdges(Direction d, String... labels) {
+    private Iterable<Edge> getEdges(final Direction d, final String... labels) {
         if (labels.length==0) {
             return new TitanEdgeSequence(db,element.getRelationshipIterator(d));
         } else if (labels.length==1) {
@@ -33,12 +33,17 @@ public class TitanVertex extends TitanElement<Node> implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getOutEdges(String... labels) {
-        return getEdges(Direction.Out,labels);
+    public Iterable<Edge> getOutEdges(final String... labels) {
+        return getEdges(Direction.Out, labels);
     }
-    
+
     @Override
-    public Iterable<Edge> getInEdges(String... labels) {
-        return getEdges(Direction.In,labels);
+    public Iterable<Edge> getInEdges(final String... labels) {
+        return getEdges(Direction.In, labels);
     }
+
+    public String toString() {
+        return StringFactory.vertexString(this);
+    }
+
 }
