@@ -11,15 +11,15 @@ import java.util.Iterator;
 public class TitanEdgeSequence<T extends Edge> implements CloseableSequence<TitanEdge> {
 
     private final Iterator<? extends Relationship> relationships;
-    private final TitanGraph db;
+    private final TitanGraph graph;
     
-    public TitanEdgeSequence(final TitanGraph db, final Iterator<? extends Relationship> rels) {
+    public TitanEdgeSequence(final TitanGraph graph, final Iterator<? extends Relationship> rels) {
         relationships=rels;
-        this.db=db;
+        this.graph = graph;
     }
     
-    public TitanEdgeSequence(final TitanGraph db, final Iterable<? extends Relationship> rels) {
-        this(db,rels.iterator());
+    public TitanEdgeSequence(final TitanGraph graph, final Iterable<? extends Relationship> rels) {
+        this(graph,rels.iterator());
     }
     
     @Override
@@ -39,7 +39,7 @@ public class TitanEdgeSequence<T extends Edge> implements CloseableSequence<Tita
 
     @Override
     public TitanEdge next() {
-        return new TitanEdge(relationships.next(),db);
+        return new TitanEdge(relationships.next(), graph);
     }
 
     @Override

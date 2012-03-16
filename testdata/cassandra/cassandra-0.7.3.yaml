@@ -375,7 +375,7 @@ index_interval: 128
 #       AsciiType, UTF8Type, LexicalUUIDType, TimeUUIDType, LongType,
 #       and IntegerType (a generic variable-length integer type).
 #       You can also specify the fully-qualified class name to a class of
-#       your choice extending org.apache.cassandra.db.marshal.AbstractType.
+#       your choice extending org.apache.cassandra.graph.marshal.AbstractType.
 #    
 #     ColumnFamily optional parameters:
 #     - keys_cached: specifies the number of keys per sstable whose

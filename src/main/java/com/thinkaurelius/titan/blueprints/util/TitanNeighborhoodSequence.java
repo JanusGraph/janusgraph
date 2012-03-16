@@ -14,7 +14,7 @@ public class TitanNeighborhoodSequence<T extends Vertex> implements CloseableSeq
     private int position;
     private final TitanGraph db;
 
-    public TitanNeighborhoodSequence(TitanGraph db, final NodeList nodelist) {
+    public TitanNeighborhoodSequence(final TitanGraph db, final NodeList nodelist) {
         nodes=nodelist;
         position=0;
         this.db=db;

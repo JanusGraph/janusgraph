@@ -42,8 +42,8 @@ public class TitanIndex<T extends Element> implements AutomaticIndex<T> {
 
     @Override
     public CloseableSequence<T> get(String s, Object o) {
-        if (!keys.contains(s)) return new TitanVertexSequence(db);
-        return new TitanVertexSequence(db,db.indexRetrieval(s,o));
+        if (!keys.contains(s)) return new TitanVertexSequence(graph);
+        return new TitanVertexSequence(graph,graph.indexRetrieval(s,o));
     }
 
     @Override

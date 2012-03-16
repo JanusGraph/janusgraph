@@ -12,20 +12,20 @@ import java.util.Iterator;
 public class TitanVertexSequence<T extends Vertex> implements CloseableSequence<TitanVertex> {
 
     private final Iterator<? extends Node> nodes;
-    private final TitanGraph db;
+    private final TitanGraph graph;
 
-    public TitanVertexSequence(TitanGraph db) {
-        this.db=db;
+    public TitanVertexSequence(final TitanGraph graph) {
+        this.graph = graph;
         this.nodes= Iterators.emptyIterator();
     }
     
-    public TitanVertexSequence(TitanGraph db, final Iterator<? extends Node> nodes) {
+    public TitanVertexSequence(final TitanGraph graph, final Iterator<? extends Node> nodes) {
         this.nodes=nodes;
-        this.db=db;
+        this.graph = graph;
     }
     
-    public TitanVertexSequence(TitanGraph db, final Iterable<? extends Node> nodes) {
-        this(db,nodes.iterator());
+    public TitanVertexSequence(final TitanGraph graph, final Iterable<? extends Node> nodes) {
+        this(graph,nodes.iterator());
     }
 
     @Override
@@ -45,7 +45,7 @@ public class TitanVertexSequence<T extends Vertex> implements CloseableSequence<
 
     @Override
     public TitanVertex next() {
-        return new TitanVertex(nodes.next(),db);
+        return new TitanVertex(nodes.next(), graph);
     }
 
     @Override

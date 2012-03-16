@@ -13,7 +13,7 @@ public class TransactionWrapper {
     private final int rollingCommitThreshold;
     private int numOperations;
 
-    public TransactionWrapper(GraphTransaction tx, int bufferSize) {
+    public TransactionWrapper(final GraphTransaction tx, int bufferSize) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkArgument(bufferSize>=0);
         this.tx=tx;
