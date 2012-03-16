@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.AttributeInt;
 import com.thinkaurelius.titan.core.attribute.AttributeReal;
 import com.thinkaurelius.titan.core.attribute.Range;
+import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 import com.thinkaurelius.titan.util.test.RandomGenerator;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -172,13 +173,13 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 			AttributeReal startr = new AttributeReal(start.getIntValue());
 			AttributeReal endr = new AttributeReal(end.getIntValue());
 			real = tx.getPropertyType("real");
-			assertEquals(size*2,tx.getNodeIDsByAttribute(real, Range.of(startr, endr)).length);
+			assertEquals(size*2,((GraphTx)tx).getNodeIDsByAttributeFromDisk(real, Range.of(startr, endr)).length);
 			assertEquals(size==0?0:size+1,tx.getNodesByAttribute("real", Range.of(startr, endr)).size());
-			assertEquals(size*2,tx.getNodeIDsByAttribute(real, new Range<AttributeReal>(startr, endr,false,true)).length);
+			assertEquals(size*2,((GraphTx)tx).getNodeIDsByAttributeFromDisk(real, new Range<AttributeReal>(startr, endr,false,true)).length);
 			assertEquals(size==0?0:size+1,tx.getNodesByAttribute("real", new Range<AttributeReal>(startr, endr,false,true)).size());
-			assertEquals(size*2,tx.getNodeIDsByAttribute(real, new Range<AttributeReal>(startr, endr,true,true)).length);
+			assertEquals(size*2,((GraphTx)tx).getNodeIDsByAttributeFromDisk(real, new Range<AttributeReal>(startr, endr,true,true)).length);
 			assertEquals(size==0?0:size+1,tx.getNodesByAttribute("real", new Range<AttributeReal>(startr, endr,true,true)).size());
-			assertEquals(size*2,tx.getNodeIDsByAttribute(real, new Range<AttributeReal>(startr, endr,false,false)).length);
+			assertEquals(size*2,((GraphTx)tx).getNodeIDsByAttributeFromDisk(real, new Range<AttributeReal>(startr, endr,false,false)).length);
 			assertEquals(size==0?0:size+1,tx.getNodesByAttribute("real", new Range<AttributeReal>(startr, endr,false,false)).size());
 		}
 		

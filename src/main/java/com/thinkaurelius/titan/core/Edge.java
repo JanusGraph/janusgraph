@@ -63,6 +63,7 @@ public interface Edge extends Node {
 	 * @throws com.thinkaurelius.titan.exceptions.InvalidEdgeException if the edge is not binary
 	 */
 	public Node getStart();
+
 	
 	/**
 	 * Determines and returns the position of the specified node for this edge. 

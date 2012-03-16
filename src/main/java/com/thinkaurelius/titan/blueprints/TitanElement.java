@@ -3,7 +3,10 @@ package com.thinkaurelius.titan.blueprints;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Node;
 import com.thinkaurelius.titan.core.Property;
+import com.thinkaurelius.titan.core.PropertyType;
+import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.Element;
+import com.tinkerpop.blueprints.pgm.impls.StringFactory;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -15,10 +18,13 @@ import java.util.Set;
 public class TitanElement<T extends Node> implements Element {
 
     protected final T element;
+    protected final TitanGraph db;
 
-    public TitanElement(final T element) {
+    public TitanElement(final T element, final TitanGraph db) {
         Preconditions.checkNotNull(element);
+        Preconditions.checkNotNull(db);
         this.element=element;
+        this.db=db;
     }
 
     @Override
@@ -38,12 +44,17 @@ public class TitanElement<T extends Node> implements Element {
 
     @Override
     public void setProperty(String s, Object o) {
-        Iterator<Property> iter = element.getPropertyIterator(s);
+        if (s.equals(StringFactory.ID) || (s.equals(StringFactory.LABEL) && this instanceof Edge))
+            throw new IllegalArgumentException(s + StringFactory.PROPERTY_EXCEPTION_MESSAGE);
+
+        PropertyType pt = db.getPropertyType(s);
+        Iterator<Property> iter = element.getPropertyIterator(pt);
         while(iter.hasNext()) {
             iter.next();
             iter.remove();
         }
-        element.createProperty(s,o);
+        element.createProperty(pt,o);
+        db.operation();
     }
 
     @Override
@@ -54,6 +65,7 @@ public class TitanElement<T extends Node> implements Element {
             value = iter.next().getAttribute();
             iter.remove();
         }
+        db.operation();
         return value;
     }
 

@@ -399,6 +399,12 @@ public class CommunicationsFrameworkTest {
 			
 		}
 
+        @Override
+        public void rollingCommit() {
+            // TODO Auto-generated method stub
+
+        }
+
 		@Override
 		public void abort() {
 			// TODO Auto-generated method stub
@@ -486,16 +492,10 @@ public class CommunicationsFrameworkTest {
 		}
 
 		@Override
-		public long[] getNodeIDsByAttribute(PropertyType type, Object attribute) {
+		public long[] getNodeIDsByAttributeFromDisk(PropertyType type,
+                                                    Interval<?> interval) {
 			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public long[] getNodeIDsByAttribute(PropertyType type,
-				Interval<?> interval) {
-			// TODO Auto-generated method stub
-			return null;
+			return new long[0];
 		}
 
 		@Override

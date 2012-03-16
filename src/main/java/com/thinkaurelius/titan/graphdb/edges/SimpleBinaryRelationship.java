@@ -74,11 +74,15 @@ public class SimpleBinaryRelationship extends AbstractTypedEdge implements Relat
 	@Override
 	public Direction getDirection(Node n) {
 		if (isDirected()) {
-			if (start.equals(n) && end.equals(n)) return Direction.Both;
-			if (start.equals(n)) return Direction.Out;
+			if (start.equals(n)) {
+                if (end.equals(n)) return Direction.Both;
+                else return Direction.Out;
+            }
 			else if (end.equals(n)) return Direction.In;
-			else throw new InvalidNodeException("Edge is not incident on given node.");
-		} else return Direction.Undirected;
+
+		} else if (start.equals(n) || end.equals(n)) return Direction.Undirected;
+
+        throw new InvalidNodeException("Edge is not incident on given node.");
 	}
 
 	@Override

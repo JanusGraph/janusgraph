@@ -6,7 +6,7 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 public class IDManager implements IDInspector {
 	
 	//public static final long MaxEntityID = Long.MAX_VALUE>>2;
-	public enum IDPosition {
+	public enum IDType {
 		Edge {
 			@Override
 			public final long offset() { return 1l;}
@@ -103,10 +103,10 @@ public class IDManager implements IDInspector {
 		this.partitionBits=partitionBits;
 		this.groupBits=groupBits;
 		maxGroupID = (1l<<groupBits)-2; //Need extra number for bounding
-		maxEdgeID = (1l<<(totalNoBits-IDPosition.Edge.offset()))-1;
-		maxEdgeTypeID = (1l<<(totalNoBits-partitionBits-IDPosition.RelationshipType.offset()
+		maxEdgeID = (1l<<(totalNoBits- IDType.Edge.offset()))-1;
+		maxEdgeTypeID = (1l<<(totalNoBits-partitionBits- IDType.RelationshipType.offset()
 										 -groupBits-edgeTypeDirectionBits))-1;
-		maxNodeID = (1l<<(totalNoBits-partitionBits-IDPosition.Node.offset()))-1;
+		maxNodeID = (1l<<(totalNoBits-partitionBits- IDType.Node.offset()))-1;
 		
 		maxPartitionID= (1l<<(partitionBits))-1;
 		
@@ -157,25 +157,25 @@ public class IDManager implements IDInspector {
 	public long getEdgeID(long count) {
 		if (count<0 || count>maxEdgeID) 
 			throw new IllegalArgumentException("Invalid count for bound:" + maxEdgeID);
-		return IDPosition.Edge.addPadding(count);
+		return IDType.Edge.addPadding(count);
 	}
 	
 	public long getRelationshipTypeID(long count, long groupid, long partition) {
 		if (count<0 || count>maxEdgeTypeID) 
 			throw new IllegalArgumentException("Invalid count for bound:" + maxEdgeTypeID);
-		return addPartition(IDPosition.RelationshipType.addPadding(addGroup(count<<edgeTypeDirectionBits,groupid)),partition);
+        return addPartition(IDType.RelationshipType.addPadding(addGroup(count << edgeTypeDirectionBits, groupid)), partition);
 	}
 	
 	public long getPropertyTypeID(long count, long groupid, long partition) {
 		if (count<0 || count>maxEdgeTypeID) 
 			throw new IllegalArgumentException("Invalid count for bound:" + maxEdgeTypeID);
-		return addPartition(IDPosition.PropertyType.addPadding(addGroup(count<<edgeTypeDirectionBits,groupid)),partition);
+        return addPartition(IDType.PropertyType.addPadding(addGroup(count << edgeTypeDirectionBits, groupid)), partition);
 	}
 	
 	public long getNodeID(long count, long partition) {
 		if (count<0 || count>maxNodeID) 
 			throw new IllegalArgumentException("Invalid count for bound:" + maxNodeID);
-		return addPartition(IDPosition.Node.addPadding(count),partition);
+		return addPartition(IDType.Node.addPadding(count), partition);
 	}
 
 	
@@ -195,7 +195,7 @@ public class IDManager implements IDInspector {
 	public final long switchBackEdgeTypeID(long edgetypeid) {
 		//first, remove direction
 		long idpadding = (edgetypeid & edgeTypePaddingFrontMask)>>edgeTypePaddingFrontOffset;
-		assert idpadding==IDPosition.PropertyType.id() || idpadding==IDPosition.RelationshipType.id();
+		assert idpadding== IDType.PropertyType.id() || idpadding== IDType.RelationshipType.id();
 		long group = (edgetypeid & groupIDFrontMask) >> groupIDDeltaOffset;
 		assert (group>>edgeTypePaddingBits)>=0 && (group>>edgeTypePaddingBits)<=maxGroupID : 
 			(group>>edgeTypePaddingBits) + " < "  + maxGroupID;
@@ -217,11 +217,11 @@ public class IDManager implements IDInspector {
 	}
 	
 	public boolean isPropertyTypeFront(long edgetypeid) {
-		return IDPosition.PropertyType.is(getEdgeTypePaddingFront(edgetypeid));
+		return IDType.PropertyType.is(getEdgeTypePaddingFront(edgetypeid));
 	}
 	
 	public boolean isRelationshipTypeFront(long edgetypeid) {
-		return IDPosition.RelationshipType.is(getEdgeTypePaddingFront(edgetypeid));
+		return IDType.RelationshipType.is(getEdgeTypePaddingFront(edgetypeid));
 	}
 
     @Override
@@ -238,13 +238,13 @@ public class IDManager implements IDInspector {
 	}
 
     @Override
-	public long[] getQueryBoundsRelationship(long direction) {
-		return getQueryBoundsEdge(direction,IDPosition.RelationshipType.id());
-	}
+    public long[] getQueryBoundsRelationship(long direction) {
+		return getQueryBoundsEdge(direction, IDType.RelationshipType.id());
+    }
 
     @Override
 	public long[] getQueryBoundsProperty(long direction) {
-		return getQueryBoundsEdge(direction,IDPosition.PropertyType.id());
+		return getQueryBoundsEdge(direction, IDType.PropertyType.id());
 	}
 	
 	private long[] getQueryBoundsEdge(long direction, long edgeTypePadding, long group) {
@@ -257,12 +257,12 @@ public class IDManager implements IDInspector {
 
     @Override
 	public long[] getQueryBoundsRelationship(long direction, long group) {
-		return getQueryBoundsEdge(direction,IDPosition.RelationshipType.id(),group);
+		return getQueryBoundsEdge(direction, IDType.RelationshipType.id(), group);
 	}
 
     @Override
 	public long[] getQueryBoundsProperty(long direction, long group) {
-		return getQueryBoundsEdge(direction,IDPosition.PropertyType.id(),group);
+		return getQueryBoundsEdge(direction, IDType.PropertyType.id(), group);
 	}
 
     @Override
@@ -311,17 +311,17 @@ public class IDManager implements IDInspector {
 
 	@Override
 	public boolean isNodeID(long id) {
-		return IDPosition.Node.is(id);
+		return IDType.Node.is(id);
 	}
 
 	@Override
 	public boolean isEdgeTypeID(long id) {
-		return IDPosition.EdgeType.is(id);
+		return IDType.EdgeType.is(id);
 	}
 	
 	@Override
 	public boolean isPropertyTypeID(long id) {
-		return IDPosition.PropertyType.is(id);
+		return IDType.PropertyType.is(id);
 	}
 
 	@Override
@@ -331,12 +331,12 @@ public class IDManager implements IDInspector {
 
 	@Override
 	public boolean isRelationshipTypeID(long id) {
-		return IDPosition.RelationshipType.is(id);
+		return IDType.RelationshipType.is(id);
 	}
 
 	@Override
 	public boolean isEdgeID(long id) {
-		return IDPosition.Edge.is(id);
+		return IDType.Edge.is(id);
 	}
 
 	

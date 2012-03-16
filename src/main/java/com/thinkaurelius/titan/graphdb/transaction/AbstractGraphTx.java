@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Interval;
 import com.thinkaurelius.titan.core.attribute.PointInterval;
@@ -12,6 +13,7 @@ import com.thinkaurelius.titan.graphdb.edges.factory.EdgeFactory;
 import com.thinkaurelius.titan.graphdb.edgetypes.manager.EdgeTypeManager;
 import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemPropertyType;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
+import com.thinkaurelius.titan.graphdb.vertices.NewEmptyNode;
 import com.thinkaurelius.titan.graphdb.vertices.factory.NodeFactory;
 import com.thinkaurelius.titan.traversal.AllRelationshipsIterable;
 import com.thinkaurelius.titan.util.datastructures.Factory;
@@ -20,10 +22,7 @@ import com.thinkaurelius.titan.util.datastructures.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
@@ -40,6 +39,7 @@ public abstract class AbstractGraphTx implements GraphTx {
 	protected final EdgeFactory edgeFactory;
 	
 	private ConcurrentMap<PropertyType,ConcurrentMap<Object,Node>> keyIndex;
+    private ConcurrentMap<PropertyType,Multimap<Object,Node>> attributeIndex;
 	private Set<InternalNode> newNodes;
 	
 	private boolean isOpen;
@@ -61,7 +61,9 @@ public abstract class AbstractGraphTx implements GraphTx {
 
 		if (!config.isReadOnly() && trackNewNodes) newNodes = Collections.newSetFromMap(new ConcurrentHashMap<InternalNode,Boolean>(10,0.75f,2));
 		else newNodes=null;
+
 		keyIndex = new ConcurrentHashMap<PropertyType,ConcurrentMap<Object,Node>>(20,0.75f,2);
+        attributeIndex = new ConcurrentHashMap<PropertyType,Multimap<Object,Node>>(20,0.75f,2);
 	}
 
 
@@ -155,7 +157,7 @@ public abstract class AbstractGraphTx implements GraphTx {
             throw new IllegalArgumentException("RelationType with given name does not exist: " + name);
         } else if (et.isRelationshipType()) {
 			return (RelationshipType)et;
-		} else throw new IllegalArgumentException("The EdgeType of given name is not a RelationshipType!");
+		} else throw new IllegalArgumentException("The EdgeType of given name is not a RelationshipType! " + name);
 	}
 
 	
@@ -183,7 +185,7 @@ public abstract class AbstractGraphTx implements GraphTx {
 		verifyWriteAccess();
 		if (edge.isProperty() && !edge.isInline()) {
 			Property prop = (Property)edge;
-			if (prop.getPropertyType().isKeyed()) {
+			if (prop.getPropertyType().getIndexType().hasIndex()) {
 				removeKeyFromIndex(prop);
 			}
 		}
@@ -194,9 +196,9 @@ public abstract class AbstractGraphTx implements GraphTx {
 	public void loadedEdge(InternalEdge edge) {
 		if (edge.isProperty() && !edge.isInline()) {
 			Property prop = (Property)edge;
-			if (prop.getPropertyType().isKeyed()) {
-				addKey2Index(prop);
-			}
+            if (prop.getPropertyType().getIndexType().hasIndex()) {
+			    addProperty2Index(prop);
+            }
 		}
 	}
 	
@@ -224,55 +226,77 @@ public abstract class AbstractGraphTx implements GraphTx {
 		return AllRelationshipsIterable.of(getAllNodes());
 	}
 
-	protected Set<Node> getExistingNodeSet(long[] ids) {
-		Set<Node> nodes = new HashSet<Node>();
-		for (int i=0;i<ids.length;i++)
-			nodes.add(getExistingNode(ids[i]));
-		return nodes;
-	}
-	
-	protected Node[] getExistingNodes(long[] ids) {
-		Node[] nodes = new Node[ids.length];
-		for (int i=0;i<ids.length;i++)
-			nodes[i]=getExistingNode(ids[i]);
-		return nodes;
-	}
 	
 	/* ---------------------------------------------------------------
 	 * Index Handling
 	 * ---------------------------------------------------------------
 	 */	
 	
-	private void addKey2Index(Property property) {
-		addKey2Index(property.getPropertyType(),property.getAttribute(),property.getStart());
+	private void addProperty2Index(Property property) {
+	    addProperty2Index(property.getPropertyType(), property.getAttribute(), property.getStart());
 	}
 
-	private static Factory<ConcurrentMap<Object,Node>> indexFactory = new Factory<ConcurrentMap<Object,Node>>() {
+	private static Factory<ConcurrentMap<Object,Node>> keyIndexFactory = new Factory<ConcurrentMap<Object,Node>>() {
 		@Override
 		public ConcurrentMap<Object, Node> create() {
 			return new ConcurrentHashMap<Object,Node>(10,0.75f,4);
 		}
 	};
+
+    private static Factory<Multimap<Object,Node>> attributeIndexFactory = new Factory<Multimap<Object,Node>>() {
+        @Override
+        public Multimap<Object, Node> create() {
+            Multimap<Object,Node> map = ArrayListMultimap.create(10,20);
+            return map;
+            //return Multimaps.synchronizedSetMultimap(map);
+        }
+    };
 	
-	protected void addKey2Index(PropertyType type, Object att, Node node) {
-		Preconditions.checkArgument(type.isKeyed());
-		
-		ConcurrentMap<Object,Node> subindex = Maps.putIfAbsent(keyIndex, type, indexFactory);
-		Node oth = subindex.putIfAbsent(att, node);
-		if (oth!=null && !oth.equals(node)) {
-			throw new IllegalArgumentException("The key is already used by another node!");
-		}
+	protected void addProperty2Index(PropertyType type, Object att, Node node) {
+        Preconditions.checkArgument(type.getIndexType().hasIndex());
+		if (type.isKeyed()) {
+            //TODO ignore NO-ENTRTY
+            ConcurrentMap<Object,Node> subindex = Maps.putIfAbsent(keyIndex, type, keyIndexFactory);
+
+            Node oth = subindex.putIfAbsent(att, node);
+            if (oth!=null && !oth.equals(node)) {
+                throw new IllegalArgumentException("The key is already used by another node!");
+            }
+        } else {
+            Multimap<Object,Node> subindex = Maps.putIfAbsent(attributeIndex, type, attributeIndexFactory);
+            subindex.put(att,node);
+        }
 	}
 	
 	private void removeKeyFromIndex(Property property) {
-		Preconditions.checkArgument(property.getPropertyType().isKeyed());
+        Preconditions.checkArgument(property.getPropertyType().getIndexType().hasIndex());
+        
 		PropertyType type = property.getPropertyType();
-		Map<Object,Node> subindex = keyIndex.get(type);
-		Preconditions.checkNotNull(subindex);
-		Node n = subindex.remove(property.getAttribute());
-		Preconditions.checkArgument(n!=null && n.equals(property.getStart()));
+		if (type.isKeyed()) {
+            Map<Object,Node> subindex = keyIndex.get(type);
+            Preconditions.checkNotNull(subindex);
+            Node n = subindex.remove(property.getAttribute());
+            Preconditions.checkArgument(n!=null && n.equals(property.getStart()));
+            //TODO Set to NO-ENTRY node object
+        } else {
+            boolean hasIdenticalProperty = false;
+            for (Property p2 : property.getStart().getProperties(type)) {
+                if (!p2.equals(property) && p2.getAttribute().equals(property.getAttribute())) {
+                    hasIdenticalProperty=true;
+                    break;
+                }
+            }
+            if (!hasIdenticalProperty) {
+                Multimap<Object,Node> subindex = attributeIndex.get(type);
+                Preconditions.checkNotNull(subindex);
+                boolean removed = subindex.remove(property.getAttribute(),property.getStart());
+                assert removed;
+            }
+        }
+
 	}
 
+    // #### Keyed Properties #####
 
 	@Override
 	public Node getNodeByKey(PropertyType type, Object key) {
@@ -281,39 +305,58 @@ public abstract class AbstractGraphTx implements GraphTx {
 		if (subindex==null) {
 			return null;
 		} else {
+            //TODO: check for NO-ENTRY and return null
 			return subindex.get(key);
 		}
 	}
 	
 	@Override
 	public Node getNodeByKey(String type, Object key) {
+        if (!containsEdgeType(type)) return null;
 		return getNodeByKey(getPropertyType(type),key);
 	}
-	
+
+    // #### General Indexed Properties #####
+
 	@Override
 	public Set<Node> getNodesByAttribute(String type, Object attribute) {
-		return getNodesByAttribute(getPropertyType(type),attribute);
+        if (!containsEdgeType(type)) return ImmutableSet.of();
+		else return getNodesByAttribute(getPropertyType(type), attribute);
 	}
 	
 	@Override
 	public Set<Node> getNodesByAttribute(PropertyType type, Object attribute) {
-		return getExistingNodeSet(getNodeIDsByAttribute(type,attribute));
+		return getNodesByAttribute(type,new PointInterval<Object>(attribute));
 	}
 	
-	
-	@Override
-	public long[] getNodeIDsByAttribute(PropertyType type, Object attribute) {
-		return getNodeIDsByAttribute(type,new PointInterval<Object>(attribute));
-	}
-
 	@Override
 	public Set<Node> getNodesByAttribute(PropertyType type, Interval<?> interval) {
-		return getExistingNodeSet(getNodeIDsByAttribute(type,interval));
+        Preconditions.checkArgument(type.getIndexType().hasIndex());
+        //First, get stuff from disk
+        long[] nodeids = getNodeIDsByAttributeFromDisk(type, interval);
+        Set<Node> nodes = new HashSet<Node>(nodeids.length);
+        for (int i=0;i<nodeids.length;i++)
+            nodes.add(getExistingNode(nodeids[i]));
+        //Next, the in-memory stuff
+        Multimap<Object,Node> subindex = attributeIndex.get(type);
+        if (subindex!=null) {
+            if (interval.isPoint()) {
+                nodes.addAll(subindex.get(interval.getStartPoint()));
+            } else {
+                for (Object candidate : subindex.keySet()) {
+                    if (interval.inInterval(candidate)) {
+                        nodes.addAll(subindex.get(candidate));
+                    }
+                }
+            }
+        }
+		return nodes;
 	}
 
 
 	@Override
 	public Set<Node> getNodesByAttribute(String type, Interval<?> interval) {
+        if (!containsEdgeType(type)) return ImmutableSet.of();
 		return getNodesByAttribute(getPropertyType(type),interval);
 	}
 
@@ -332,6 +375,11 @@ public abstract class AbstractGraphTx implements GraphTx {
 	public synchronized void flush() {
 		
 	}
+
+    @Override
+    public synchronized void rollingCommit() {
+
+    }
 	
 	
 	@Override

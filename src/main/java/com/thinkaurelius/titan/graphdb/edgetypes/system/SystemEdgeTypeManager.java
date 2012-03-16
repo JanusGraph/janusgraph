@@ -35,10 +35,10 @@ public abstract class SystemEdgeTypeManager {
 	}
 	
 	public final static long getInternalRelationshipID(long id) {
-		return IDManager.IDPosition.RelationshipType.addPadding(id<< IDManager.maxGroupBits);
+		return IDManager.IDType.RelationshipType.addPadding(id<< IDManager.maxGroupBits);
 	}
 	
 	public final static long getInternalPropertyID(long id) {
-		return IDManager.IDPosition.PropertyType.addPadding(id<< IDManager.maxGroupBits);
+		return IDManager.IDType.PropertyType.addPadding(id<< IDManager.maxGroupBits);
 	}
 }

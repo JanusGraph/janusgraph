@@ -5,12 +5,14 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.blueprints.util.TitanEdgeSequence;
 import com.thinkaurelius.titan.blueprints.util.TitanVertexSequence;
+import com.thinkaurelius.titan.blueprints.util.TransactionWrapper;
 import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.exceptions.InvalidNodeException;
 import com.tinkerpop.blueprints.pgm.*;
 import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.impls.Parameter;
+import com.tinkerpop.blueprints.pgm.impls.StringFactory;
 
 import java.util.*;
 
@@ -20,20 +22,25 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     
     private static final String indexNameProperty = INTERNAL_PREFIX + "indexname";
     private static final String globalTagProperty = INTERNAL_PREFIX + "tag";
+    private static final String indexEverythingProperty = INTERNAL_PREFIX + "indexeverything";
     
     private static final String indexTag = "index";
 
     private final GraphDatabase db;
+    private int bufferSize = 0;
+    
+    private boolean indexEveryProperty;
 
-    private static final ThreadLocal<GraphTransaction> txs =  new ThreadLocal<GraphTransaction>() {
+    private final ThreadLocal<TransactionWrapper> txs =  new ThreadLocal<TransactionWrapper>() {
 
-        protected GraphTransaction initialValue() {
+        protected TransactionWrapper initialValue() {
             return null;
         }
 
         protected void finalize() throws Throwable {
-            GraphTransaction tx = get();
-            if (tx!=null && tx.isOpen()) {
+            TransactionWrapper txw = get();
+            if (txw!=null) {
+                GraphTransaction tx = txw.getTransaction();
                 tx.commit();
                 openTx.remove(tx);
             }
@@ -43,7 +50,7 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
 
     };
 
-    private static final WeakHashMap<GraphTransaction,Boolean> openTx = new WeakHashMap<GraphTransaction, Boolean>(4);
+    private final WeakHashMap<GraphTransaction,Boolean> openTx = new WeakHashMap<GraphTransaction, Boolean>(4);
 
     
     public TitanGraph(String directory) {
@@ -58,24 +65,37 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
         this.db=db;
         //Verify that database has been setup correctly
         GraphTransaction tx = db.startTransaction();
-        if (!tx.containsEdgeType(globalTagProperty)) {
+        if (!tx.containsEdgeType(indexNameProperty)) {
             //Create initial state
-            tx.createEdgeType().withName(indexNameProperty).
-                    category(EdgeCategory.Simple).functional(true).
-                    setIndex(PropertyIndex.Standard).makeKeyed().
+            PropertyType idx = tx.createEdgeType().withName(indexNameProperty).
+                    category(EdgeCategory.Simple).
+                    setIndex(PropertyIndex.Standard).
                     dataType(String.class).makePropertyType();
             tx.createEdgeType().withName(globalTagProperty).
                     category(EdgeCategory.Simple).
                     setIndex(PropertyIndex.Standard).
                     dataType(String.class).makePropertyType();
+            PropertyType idxevery = tx.createEdgeType().withName(indexEverythingProperty).
+                    category(EdgeCategory.Simple).
+                    setIndex(PropertyIndex.None).
+                    dataType(Boolean.class).makePropertyType();
+            indexEveryProperty = true;
+            idx.createProperty(idxevery,indexEveryProperty);
+        } else {
+            indexEveryProperty = tx.getPropertyType(indexNameProperty).getAttribute(indexEverythingProperty,Boolean.class).booleanValue();
         }
         tx.commit();
     }
 
+    @Override
+    public String toString() {
+        return StringFactory.graphString(this,"Titan");
+    }
 
     @Override
     public Vertex addVertex(Object id) {
-        return new TitanVertex(getAutoStartTx().createNode());
+        TitanVertex v = new TitanVertex(getAutoStartTx().createNode(),this);
+        return v;
     }
 
     @Override
@@ -91,7 +111,7 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
             else
                 longId = Double.valueOf(id.toString()).longValue();
             Node node = tx.getNode(longId);
-            return new TitanVertex(node);
+            return new TitanVertex(node,this);
         } catch (InvalidNodeException e) {
             return null;
         } catch (NumberFormatException e) {
@@ -101,22 +121,37 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
 
     @Override
     public void removeVertex(Vertex vertex) {
-        ((TitanVertex)vertex).getRawElement().delete();
+        Node n = ((TitanVertex)vertex).getRawElement();
+        //Delete all edges
+        Iterator<com.thinkaurelius.titan.core.Edge> iter = n.getEdgeIterator();
+        while (iter.hasNext()) {
+            iter.next();
+            iter.remove();
+        }
+        n.delete();
+        operation();
     }
 
     @Override
     public Iterable<Vertex> getVertices() {
         GraphTransaction tx = getAutoStartTx();
-        return new TitanVertexSequence(tx.getAllNodes());
+        return new TitanVertexSequence(this,tx.getAllNodes());
     }
 
     @Override
     public Edge addEdge(Object id, Vertex start, Vertex end, String s) {
         if (s.startsWith(INTERNAL_PREFIX)) throw new IllegalArgumentException("Edge labels cannot start with prefix " + INTERNAL_PREFIX);
+        GraphTransaction tx = getAutoStartTx();
+        if (!tx.containsEdgeType(s)) {
+            GraphTransaction tx2 = db.startTransaction();
+            tx2.createEdgeType().withName(s).withDirectionality(Directionality.Directed).category(EdgeCategory.Labeled).makeRelationshipType();
+            tx2.commit();
+        }
         Node startNode = ((TitanVertex)start).getRawElement();
         Node endNode = ((TitanVertex)end).getRawElement();
-        Relationship r = getAutoStartTx().createRelationship(s,startNode,endNode);
-        return new TitanEdge(r);
+        Relationship r = tx.createRelationship(s,startNode,endNode);
+        operation();
+        return new TitanEdge(r,this);
     }
 
     @Override
@@ -127,32 +162,69 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     @Override
     public void removeEdge(Edge edge) {
         ((TitanEdge)edge).getRawElement().delete();
+        operation();
     }
 
     @Override
     public Iterable<Edge> getEdges() {
         GraphTransaction tx = getAutoStartTx();
-        return new TitanEdgeSequence(tx.getAllRelationships());
+        return new TitanEdgeSequence(this,tx.getAllRelationships());
     }
 
     @Override
     public void clear() {
-        GraphTransaction tx = getAutoStartTx();
-        List<Node> nodes = new ArrayList<Node>();
-        for (Node node : tx.getAllNodes()) {
-            Iterator<com.thinkaurelius.titan.core.Edge> iter = node.getEdgeIterator();
-            while (iter.hasNext()) {
-                com.thinkaurelius.titan.core.Edge e = iter.next();
-                iter.remove();
-            }
-            nodes.add(node);
-        }
-        for (Node node : nodes) node.delete();
+        if (txs.get()!=null) stopTransaction(Conclusion.FAILURE);
+        
+        //TODO: remove everything from disk
+//        GraphTransaction tx = db.startTransaction();
+//        List<Node> nodes = new ArrayList<Node>();
+//        for (Node node : tx.getAllNodes()) {
+//            Iterator<com.thinkaurelius.titan.core.Edge> iter = node.getEdgeIterator();
+//            while (iter.hasNext()) {
+//                com.thinkaurelius.titan.core.Edge e = iter.next();
+//                iter.remove();
+//            }
+//            nodes.add(node);
+//        }
+//        for (Node node : nodes) node.delete();
+//        tx.commit();
     }
 
 
 
     /** ==================== Indexable Graph ================= **/
+
+    PropertyType getPropertyType(String name) {
+        GraphTransaction tx = getAutoStartTx();
+        if (!tx.containsEdgeType(name))  {
+            GraphTransaction tx2 = db.startTransaction();
+            getPropertyType(tx2,name,false,Object.class);
+            tx2.commit();
+        }
+        return tx.getPropertyType(name);
+    }
+
+    private PropertyType getPropertyType(GraphTransaction tx, String name, boolean index, Class<?> datatype) {
+        if (name.startsWith(INTERNAL_PREFIX)) throw new IllegalArgumentException("Keys cannot start with prefix " + INTERNAL_PREFIX);
+        if (tx.containsEdgeType(name)) {
+            PropertyType t = tx.getPropertyType(name);
+            if (index && t.getIndexType()==PropertyIndex.None) 
+                throw new UnsupportedOperationException("Need to define particular index key before it is being used!");
+            return t;
+        } else {
+            index = index || indexEveryProperty;
+            EdgeTypeMaker etm = tx.createEdgeType();
+            etm.withName(name).category(EdgeCategory.Simple).functional(true).dataType(datatype);
+
+            if (index) etm.setIndex(PropertyIndex.Standard);
+
+            PropertyType t= etm.makePropertyType();
+
+            if (indexEveryProperty) t.createProperty(indexNameProperty,Index.VERTICES);
+            t.createProperty(globalTagProperty,indexTag);
+            return t;
+        }
+    }
 
     @Override
     public <T extends Element> Index<T> createManualIndex(String s, Class<T> tClass, Parameter... parameters) {
@@ -162,21 +234,23 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     @Override
     public <T extends Element> AutomaticIndex<T> createAutomaticIndex(String indexName, Class<T> indexClass, Set<String> autoIndexKeys, Parameter... parameters) {
         Preconditions.checkNotNull(indexName);
-        Preconditions.checkArgument(autoIndexKeys!=null && !autoIndexKeys.isEmpty());
-        Preconditions.checkArgument(indexClass.equals(TitanVertex.class),"Can only index vertices");
-        Preconditions.checkArgument(parameters.length==1,"Expected class parameter");
-        Parameter<String,Class<?>> clazz = parameters[0];
-        
+        Preconditions.checkArgument(autoIndexKeys!=null,"Global indexes are not supported. Use " + Index.VERTICES + " instead.");
+        Preconditions.checkArgument(!autoIndexKeys.isEmpty(),"Need to specify index keys");
+        Preconditions.checkArgument(indexClass.isAssignableFrom(Vertex.class),"Can only index vertices");
+
+
+        Class<?> datatype = null;
+        if (parameters.length>0) {
+            Parameter<String,Class<?>> clazz = parameters[0];        
+            datatype = clazz.getValue();
+        } else datatype = Object.class;
+
         GraphTransaction tx = db.startTransaction();
         try {
-        
             for (String key : autoIndexKeys) {
-                PropertyType t= tx.createEdgeType().withName(indexName).
-                        category(EdgeCategory.Simple).functional(true).
-                        setIndex(PropertyIndex.Standard).
-                        dataType(clazz.getValue()).makePropertyType();
+                PropertyType t= getPropertyType(tx,key,true,datatype);
+                assert t.getIndexType()==PropertyIndex.Standard;
                 t.createProperty(indexNameProperty,indexName);
-                t.createProperty(globalTagProperty,indexTag);
             }
             tx.commit();
         } finally {
@@ -189,10 +263,12 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     @Override
     public <T extends Element> Index<T> getIndex(String indexName, Class<T> indexClass) {
         Set<String> keys = new HashSet<String>();
-        for (Node node : indexRetrieval(indexNameProperty,indexName)) {
+        GraphTransaction tx = db.startTransaction();
+        for (Node node : tx.getNodesByAttribute(indexNameProperty, indexName)) {
             Preconditions.checkArgument(node instanceof PropertyType);
             keys.add(((PropertyType)node).getName());
         }
+        tx.commit();
         if (keys.isEmpty()) throw new IllegalArgumentException("Unknown index: " + indexName);
         else return new TitanIndex(this,indexName,keys,TitanVertex.class);
     }
@@ -200,12 +276,16 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     @Override
     public Iterable<Index<? extends Element>> getIndices() {
         HashMultimap<String,String> properties = HashMultimap.create();
-        for (Node node : indexRetrieval(globalTagProperty,indexTag)) {
+        GraphTransaction tx = db.startTransaction();
+        for (Node node : tx.getNodesByAttribute(globalTagProperty, indexTag)) {
             Preconditions.checkArgument(node instanceof PropertyType);
             PropertyType pt = (PropertyType)node;
-            String indexName = pt.getString(indexNameProperty);
-            properties.put(indexName,pt.getName());
+
+            for (Property p : pt.getProperties(indexNameProperty)) {
+                properties.put(p.getString(),pt.getName());
+            }
         }
+        tx.commit();
         List<Index<? extends Element>> indexes = new ArrayList<Index<? extends Element>>();
         for (String indexName : properties.keySet()) {
             indexes.add(new TitanIndex(this,indexName,properties.get(indexName),TitanVertex.class));
@@ -215,7 +295,27 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
 
     @Override
     public void dropIndex(String s) {
-        throw new UnsupportedOperationException("Dropping indexes is not supported!");
+        GraphTransaction tx = db.startTransaction();
+        if (s.equals(Index.VERTICES)) {
+            indexEveryProperty=false;
+            PropertyType element = tx.getPropertyType(indexNameProperty);
+            Iterator<Property> iter = element.getPropertyIterator(indexEverythingProperty);
+            while(iter.hasNext()) {
+                iter.next();
+                iter.remove();
+            }
+            element.createProperty(indexEverythingProperty,false);
+        }
+        for (Node node : tx.getNodesByAttribute(indexNameProperty, Index.VERTICES)) {
+            Preconditions.checkArgument(node instanceof PropertyType);
+            Iterator<Property> iter = node.getPropertyIterator(indexNameProperty);
+            while(iter.hasNext()) {
+                if (iter.next().getString().equals(s)) {
+                    iter.remove();
+                }
+            }
+        }
+        tx.commit();
     }
 
     Set<Node> indexRetrieval(String type, Object attribute) {
@@ -226,24 +326,35 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
 
     @Override
     public void setMaxBufferSize(int i) {
-        if (i!=0) throw new UnsupportedOperationException("Does not support buffer size other than 0");
+        Preconditions.checkArgument(i>=0);
+        bufferSize=i;
     }
 
     @Override
     public int getMaxBufferSize() {
-        return 0;
+        return bufferSize;
     }
 
     @Override
     public int getCurrentBufferSize() {
-        return 0;
+        TransactionWrapper txw = txs.get();
+        if (txw==null) return 0;
+        else return txw.getCurrentBufferSize();
+    }
+
+    void operation() {
+        TransactionWrapper txw = txs.get();
+        if (txw==null) throw new IllegalStateException("A transaction has not yet been started.");
+        txw.operation();
     }
 
 
     @Override
     public void stopTransaction(Conclusion conclusion) {
-        GraphTransaction tx = txs.get();
-        if (tx==null || tx.isClosed()) throw new IllegalStateException("A transaction has not yet been started.");
+        if (txs.get()==null) return;
+        GraphTransaction tx = txs.get().getTransaction();
+        if (tx==null || tx.isClosed())
+            throw new IllegalStateException("Inconsistent transactional state.");
         switch(conclusion) {
             case SUCCESS: tx.commit(); break;
             case FAILURE: tx.abort(); break;
@@ -255,21 +366,22 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
 
     private GraphTransaction internalStartTransaction() {
         GraphTransaction tx = db.startTransaction();
-        txs.set(tx);
+        txs.set(new TransactionWrapper(tx,bufferSize));
         openTx.put(tx,Boolean.TRUE);
         return tx;
     }
 
     @Override
     public void startTransaction() {
+        //if (txs.get()!=null) throw new IllegalStateException("Nested transactions are not supported!");
         getAutoStartTx();
     }
     
     private GraphTransaction getAutoStartTx() {
-        GraphTransaction tx = txs.get();
-        if (tx==null || tx.isClosed()) {
-            internalStartTransaction();
-        }
+        GraphTransaction tx = null;
+        if (txs.get()==null) {
+            tx=internalStartTransaction();
+        } else tx=txs.get().getTransaction();
         return tx;
     }
 

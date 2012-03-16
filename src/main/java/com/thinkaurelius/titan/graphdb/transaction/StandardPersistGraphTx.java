@@ -48,7 +48,6 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 	private List<InternalEdge> addedEdges;
 	
 	private NodeCache nodeCache;
-
 	
 	public StandardPersistGraphTx(GraphDB g, LockManager locks, 
 						EdgeTypeManager etManage, GraphTransactionConfig config,
@@ -69,7 +68,7 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 			deletedEdges = Collections.newSetFromMap(new ConcurrentHashMap<InternalEdge,Boolean>(10,0.75f,1));
 			addedEdges = Collections.synchronizedList(new ArrayList<InternalEdge>());
 		}
-
+        Preconditions.checkNotNull(addedEdges);
 	}
 
 
@@ -219,18 +218,20 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 		if (node==null && !type.isNew()) { 
 			//Look up
 			long[] ids = graphdb.indexRetrieval(new PointInterval<Object>(key), type, this);
-			if (ids.length==0) return null;
-			else {
+			if (ids.length==0) {
+                //TODO Set NO-ENTRY
+                return null;
+            } else {
 				assert ids.length==1;
 				InternalNode n = getExistingNode(ids[0]);
-				addKey2Index(type,key,n);
+				addProperty2Index(type, key, n);
 				return n;
 			}
 		} else return node;
 	}
 	
 	@Override
-	public long[] getNodeIDsByAttribute(PropertyType type, Interval<?> interval) {
+	public long[] getNodeIDsByAttributeFromDisk(PropertyType type, Interval<?> interval) {
 		Preconditions.checkArgument(type.getIndexType().hasIndex(),"Can only retrieve nodes for indexed property types.");
 		if (!type.isNew()) {
 			long[] ids = graphdb.indexRetrieval(interval, type, this);
@@ -262,25 +263,43 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 
 	@Override
 	public synchronized void flush() {
-		graphdb.flush(addedEdges, deletedEdges, this);
-		//Update NodeCache
-		for (InternalEdge edge : addedEdges) {
-			for (int a=0;a<edge.getArity();a++) {
-				InternalNode n = edge.getNodeAt(a);
-				if (!nodeCache.contains(n.getID())) nodeCache.add(n, n.getID());
-			}
-		}
+        if (!getTxConfiguration().isReadOnly()) {
+            graphdb.flush(addedEdges, deletedEdges, this);
+            //Update NodeCache
+            addNodes2Cache();
+        }
 	}
+
+    private void addNodes2Cache() {
+        for (InternalEdge edge : addedEdges) {
+            for (int a=0;a<edge.getArity();a++) {
+                InternalNode n = edge.getNodeAt(a);
+                if (!nodeCache.contains(n.getID())) nodeCache.add(n, n.getID());
+            }
+        }
+    }
+
+    @Override
+    public synchronized void rollingCommit() {
+        if (!getTxConfiguration().isReadOnly()) {
+            flush();
+            graphdb.save(addedEdges, deletedEdges, this);
+            deletedEdges = Collections.newSetFromMap(new ConcurrentHashMap<InternalEdge,Boolean>(10,0.75f,1));
+            addedEdges = Collections.synchronizedList(new ArrayList<InternalEdge>());
+        }
+    }
 	
 	@Override
 	public synchronized void commit() {
-		List<InternalEdge> added=addedEdges;
-		Set<InternalEdge> deleted=deletedEdges;
-		addedEdges=null;
-		deletedEdges=null;
-		graphdb.save(added, deleted, this);
-		txHandle.commit();
+        if (!getTxConfiguration().isReadOnly()) {
+            List<InternalEdge> added=addedEdges;
+            Set<InternalEdge> deleted=deletedEdges;
+            addedEdges=null;
+            deletedEdges=null;
+            graphdb.save(added, deleted, this);
+        }
 
+        txHandle.commit();
 		clear();
 		querySender.commit();
 		super.commit();

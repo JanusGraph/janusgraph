@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.edges;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.exceptions.QueryException;
@@ -12,6 +13,7 @@ import com.thinkaurelius.titan.graphdb.edgequery.StandardEdgeQuery;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 import com.thinkaurelius.titan.graphdb.vertices.NodeUtil;
+import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 
 import java.util.Iterator;
 
@@ -143,6 +145,7 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 	
 	@Override
 	public Object getAttribute(String type) {
+        if (!tx.containsEdgeType(type)) return null;
 		return getAttribute(tx.getPropertyType(type));
 	}
 
@@ -160,6 +163,7 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 	
 	@Override
 	public<O> O getAttribute(String type, Class<O> clazz) {
+        if (!tx.containsEdgeType(type)) return null;
 		return getAttribute(tx.getPropertyType(type),clazz);
 	}
 
@@ -202,7 +206,8 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 
 	@Override
 	public Iterable<Property> getProperties(String type) {
-		return getProperties(tx.getPropertyType(type));
+        if (!tx.containsEdgeType(type)) return IterablesUtil.emptyIterable();
+		else return getProperties(tx.getPropertyType(type));
 	}
 
 	@Override
@@ -212,7 +217,8 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 	
 	@Override
 	public Iterator<Property> getPropertyIterator(String type) {
-		return getPropertyIterator(tx.getPropertyType(type));
+        if (!tx.containsEdgeType(type)) return Iterators.emptyIterator();
+		else return getPropertyIterator(tx.getPropertyType(type));
 	}
 	
 	@Override
@@ -245,7 +251,8 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 
 	@Override
 	public Iterator<Relationship> getRelationshipIterator(String edgeType, Direction d) {
-		return getRelationshipIterator(tx.getRelationshipType(edgeType),d);
+        if (!tx.containsEdgeType(edgeType)) return Iterators.emptyIterator();
+        else return getRelationshipIterator(tx.getRelationshipType(edgeType),d);
 	}
 
 	@Override
@@ -255,7 +262,8 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 
 	@Override
 	public Iterable<Relationship> getRelationships(String edgeType,Direction d) {
-		return getRelationships(tx.getRelationshipType(edgeType),d);
+        if (!tx.containsEdgeType(edgeType)) return IterablesUtil.emptyIterable();
+        else return getRelationships(tx.getRelationshipType(edgeType),d);
 	}
 	
 	@Override
@@ -265,7 +273,8 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 
 	@Override
 	public Iterator<Relationship> getRelationshipIterator(String edgeType) {
-		return getRelationshipIterator(tx.getRelationshipType(edgeType));
+        if (!tx.containsEdgeType(edgeType)) return Iterators.emptyIterator();
+        else return getRelationshipIterator(tx.getRelationshipType(edgeType));
 	}
 
 	@Override
@@ -275,7 +284,8 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 	
 	@Override
 	public Iterable<Relationship> getRelationships(String edgeType) {
-		return getRelationships(tx.getRelationshipType(edgeType));
+        if (!tx.containsEdgeType(edgeType)) return IterablesUtil.emptyIterable();
+        else return getRelationships(tx.getRelationshipType(edgeType));
 	}
 	
 	@Override

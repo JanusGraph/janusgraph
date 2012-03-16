@@ -72,7 +72,7 @@ public class IDManagementTest {
 						groupID,
 						RandomGenerator.randomLong(1, eid.getMaxPartitionID()));
 				assertTrue(eid.isRelationshipTypeID(id));
-				padding = IDManager.IDPosition.RelationshipType.id();
+				padding = IDManager.IDType.RelationshipType.id();
 				
 				assertEquals(((dir<<3)+padding)<<58,eid.getQueryBoundsRelationship(dir)[0]);
 				assertEquals(((dir<<3)+padding+1)<<58,eid.getQueryBoundsRelationship(dir)[1]);
@@ -82,7 +82,7 @@ public class IDManagementTest {
 						groupID,
 						RandomGenerator.randomLong(1, eid.getMaxPartitionID()));
 				assertTrue(eid.isPropertyTypeID(id));
-				padding = IDManager.IDPosition.PropertyType.id();
+				padding = IDManager.IDType.PropertyType.id();
 				
 				assertEquals(((dir<<3)+padding)<<58,eid.getQueryBoundsProperty(dir)[0]);
 				assertEquals(((dir<<3)+padding+1)<<58,eid.getQueryBoundsProperty(dir)[1]);

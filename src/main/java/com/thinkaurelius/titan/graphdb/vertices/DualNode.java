@@ -28,7 +28,7 @@ public class DualNode extends UndirectedNode {
 	
 	@Override
 	public boolean addEdge(InternalEdge e, boolean isNew) {
-		assert isAvailable();
+        assert isAvailable();
 		Preconditions.checkArgument(e.isIncidentOn(this), "Edge is not incident on this node!");
 		if (e.isUndirected()) {
 			return super.addEdge(e,isNew);
@@ -70,9 +70,12 @@ public class DualNode extends UndirectedNode {
 			if (!query.isAllowedDirection(dir)) continue;
 			Iterable<InternalEdge> siter;
 			switch(dir) {
-			case Out: siter = NodeUtil.getQuerySpecificIterable(outEdges, query);
+			case Out: 
+                siter = NodeUtil.getQuerySpecificIterable(outEdges, query);
 				break;
-			case In: siter = NodeUtil.filterLoopEdges(NodeUtil.getQuerySpecificIterable(inEdges, query),this);
+			case In: 
+                siter = NodeUtil.getQuerySpecificIterable(inEdges, query);
+                if (query.isAllowedDirection(EdgeDirection.Out)) siter = NodeUtil.filterLoopEdges(siter,this);
 				break;
 			case Undirected: siter = super.getEdges(query, false);
 				break;
@@ -89,7 +92,7 @@ public class DualNode extends UndirectedNode {
 	
 	@Override
 	public void deleteEdge(InternalEdge e) {
-		assert isAvailable() && e.isIncidentOn(this);
+		Preconditions.checkArgument(isAvailable() && e.isIncidentOn(this));
 		Direction dir = e.getDirection(this);
 		if (dir.implies(EdgeDirection.In)) inEdges.removeEdge(e,ModificationStatus.none); 
 		if (dir.implies(EdgeDirection.Out)) outEdges.removeEdge(e,ModificationStatus.none);

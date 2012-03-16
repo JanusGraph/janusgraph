@@ -112,11 +112,13 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
     @Override
     public StandardEdgeQuery withProperty(String ptype,Object value) {
         Preconditions.checkNotNull(tx);
+        if (!tx.containsEdgeType(ptype)) throw new IllegalArgumentException("Unknown property type: " + ptype);
         return withProperty(tx.getPropertyType(ptype),value);
     }
 
     @Override
     public StandardEdgeQuery withEdgeType(String... types) {
+        //TODO: Filter out non-existent edge types. Handle special case where resulting set is empty
         Preconditions.checkNotNull(tx);
         EdgeType[] etypes = new EdgeType[types.length];
         for (int i=0;i<types.length;i++) {

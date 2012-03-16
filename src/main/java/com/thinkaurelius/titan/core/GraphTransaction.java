@@ -186,19 +186,6 @@ public interface GraphTransaction {
 	public Set<Node> getNodesByAttribute(String type, Object attribute);
 	
 	/**
-	 * Retrieves all ids for nodes which have an incident property of the given type with the specified attribute.
-	 * 
-	 * The given property type must have an index defined for this retrieval to succeed.
-	 * 
-	 * @param type Property type for which to retrieve node ids
-	 * @param attribute Attribute value
-	 * @return	All ids for nodes which have an incident property of the given type with the specified attribute.
-	 * @throws	IllegalArgumentException if the property type is not indexed.
-	 * @see PropertyIndex
-	 */
-	public long[] getNodeIDsByAttribute(PropertyType type, Object attribute);
-
-	/**
 	 * Retrieves all nodes which have an incident property of the given type whose attribute lies in the specified interval.
 	 * 
 	 * The given property type must have an index defined for this retrieval to succeed.
@@ -228,21 +215,6 @@ public interface GraphTransaction {
 	 * @see com.thinkaurelius.titan.core.attribute.Interval
 	 */
 	public Set<Node> getNodesByAttribute(String type, Interval<?> interval);
-	
-	/**
-	 * Retrieves all ids for nodes which have an incident property of the given type whose attribute lies in the specified interval.
-	 * 
-	 * The given property type must have an index defined for this retrieval to succeed.
-	 * If the specified interval is a {@link com.thinkaurelius.titan.core.attribute.Range}, then the property type must have a range index defined.
-	 * 
-	 * @param type Property type for which to retrieve nodes
-	 * @param interval Interval over attribute values
-	 * @return	All ids for nodes which have an incident property of the given type  whose attribute lies in the specified interval.
-	 * @throws	IllegalArgumentException if the property type is not indexed or does not have a range index where one is needed.
-	 * @see PropertyIndex
-	 * @see com.thinkaurelius.titan.core.attribute.Interval
-	 */
-	public long[] getNodeIDsByAttribute(PropertyType type, Interval<?> interval);
 	
 	/**
 	 * Returns an iterable over all nodes in the graph database (optional operation).
@@ -371,6 +343,20 @@ public interface GraphTransaction {
 	 * @throws com.thinkaurelius.titan.exceptions.GraphStorageException if an error arises during flushing.
 	 */
 	public void flush();
+
+
+    /**
+     * Commits the current state of the transaction, but continues to keep the transaction
+     * open for further modifications or read operations.
+     * 
+     * In contrast to {@link #commit()}, which immediately closes the transaction after persisting the changes
+     * and releases any locks it may hold, rolling commit keeps the transaction open so further processing can happen.
+     * This has the advantage that the in-memory state is not lost and the disadvantage that the transaction will
+     * continue and locks will be held.
+     *
+     * @throws com.thinkaurelius.titan.exceptions.GraphStorageException if an error arises during persistence
+     */
+    public void rollingCommit();
 	
 	/**
 	 * Commits and closes the transaction.

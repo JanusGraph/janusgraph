@@ -75,7 +75,7 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 		Long id = edgetype.getID();
 		mapWriteLock.lock();
 		if (nameIndex.containsKey(edgetype.getName()))
-			throw new InvalidEntityException("Edge Type with name does already exist: " + edgetype.getName());
+			throw new InvalidEntityException("Edge Type with name does already exist: " + edgetype.getName() + " | " + edgetype.isRelationshipType());
 		nameIndex.put(edgetype.getName(),id);
 		//Determine system edge ids
 		long nameEdgeID = EdgeQueryUtil.queryHiddenFunctionalProperty(edgetype, SystemPropertyType.EdgeTypeName).getID();
@@ -141,7 +141,10 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 			} else if (idspec.isRelationshipTypeID(id)) {
 				et = factory.createExistingRelationshipType(id, tx);
 			} else throw new AssertionError("Unexpected type id: " + id);
-			committed(et);			
+			mapWriteLock.lock();
+            if (idIndex.containsKey(Long.valueOf(id))) et = getEdgeType(id,tx);
+            else committed(et);
+            mapWriteLock.unlock();
 			return et;
 		} else {
 			return factory.createExistingEdgeType(id, info, tx);
@@ -161,7 +164,6 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 			else {
 				assert ids.length==1;
 				id = ids[0];
-				assert !idIndex.containsKey(id);
 			}
 		} 
 		return getEdgeType(id,tx);

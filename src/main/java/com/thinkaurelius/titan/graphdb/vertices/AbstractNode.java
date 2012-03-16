@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edgequery.StandardEdgeQuery;
 import com.thinkaurelius.titan.graphdb.entitystatus.InMemoryEntity;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
+import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 
 import java.util.Iterator;
 
@@ -110,7 +111,8 @@ public abstract class AbstractNode implements InternalNode {
 	
 	@Override
 	public Object getAttribute(String type) {
-		return getAttribute(tx.getPropertyType(type));
+        if (!tx.containsEdgeType(type)) return null;
+		else return getAttribute(tx.getPropertyType(type));
 	}
 
 	@Override
@@ -126,7 +128,8 @@ public abstract class AbstractNode implements InternalNode {
 	
 	@Override
 	public<O> O getAttribute(String type, Class<O> clazz) {
-		return getAttribute(tx.getPropertyType(type),clazz);
+        if (!tx.containsEdgeType(type)) return null;
+		else return getAttribute(tx.getPropertyType(type),clazz);
 	}
 
 	@Override
@@ -168,7 +171,8 @@ public abstract class AbstractNode implements InternalNode {
 
 	@Override
 	public Iterable<Property> getProperties(String type) {
-		return getProperties(tx.getPropertyType(type));
+        if (!tx.containsEdgeType(type)) return IterablesUtil.emptyIterable();
+		else return getProperties(tx.getPropertyType(type));
 	}
 
 	@Override
@@ -178,7 +182,8 @@ public abstract class AbstractNode implements InternalNode {
 	
 	@Override
 	public Iterator<Property> getPropertyIterator(String type) {
-		return getPropertyIterator(tx.getPropertyType(type));
+        if (!tx.containsEdgeType(type)) return Iterators.emptyIterator();
+        else return getPropertyIterator(tx.getPropertyType(type));
 	}
 	
 	@Override
@@ -211,7 +216,8 @@ public abstract class AbstractNode implements InternalNode {
 
 	@Override
 	public Iterator<Relationship> getRelationshipIterator(String edgeType, Direction d) {
-		return getRelationshipIterator(tx.getRelationshipType(edgeType),d);
+        if (!tx.containsEdgeType(edgeType)) return Iterators.emptyIterator();
+        else return getRelationshipIterator(tx.getRelationshipType(edgeType),d);
 	}
 
 	@Override
@@ -221,7 +227,8 @@ public abstract class AbstractNode implements InternalNode {
 
 	@Override
 	public Iterable<Relationship> getRelationships(String edgeType,Direction d) {
-		return getRelationships(tx.getRelationshipType(edgeType),d);
+        if (!tx.containsEdgeType(edgeType)) return IterablesUtil.emptyIterable();
+        else return getRelationships(tx.getRelationshipType(edgeType),d);
 	}
 	
 	@Override
@@ -231,7 +238,8 @@ public abstract class AbstractNode implements InternalNode {
 
 	@Override
 	public Iterator<Relationship> getRelationshipIterator(String edgeType) {
-		return getRelationshipIterator(tx.getRelationshipType(edgeType));
+        if (!tx.containsEdgeType(edgeType)) return Iterators.emptyIterator();
+        else return getRelationshipIterator(tx.getRelationshipType(edgeType));
 	}
 
 	@Override
@@ -241,7 +249,8 @@ public abstract class AbstractNode implements InternalNode {
 	
 	@Override
 	public Iterable<Relationship> getRelationships(String edgeType) {
-		return getRelationships(tx.getRelationshipType(edgeType));
+        if (!tx.containsEdgeType(edgeType)) return IterablesUtil.emptyIterable();
+        else return getRelationships(tx.getRelationshipType(edgeType));
 	}
 	
 	@Override

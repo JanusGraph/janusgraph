@@ -10,19 +10,19 @@ public class TitanEdge extends TitanElement<Relationship> implements Edge {
     private TitanVertex end = null;
     private TitanVertex start = null;
     
-    public TitanEdge(Relationship r) {
-        super(r);
+    public TitanEdge(Relationship r, TitanGraph db) {
+        super(r,db);
     }
     
     @Override
-    public Vertex getOutVertex() {
-        if (end==null) end = new TitanVertex(element.getEnd());
+    public Vertex getInVertex() {
+        if (end==null) end = new TitanVertex(element.getEnd(),db);
         return end;
     }
 
     @Override
-    public Vertex getInVertex() {
-        if (start==null) start = new TitanVertex(element.getStart());
+    public Vertex getOutVertex() {
+        if (start==null) start = new TitanVertex(element.getStart(),db);
         return start;
     }
 

@@ -82,8 +82,8 @@ public class InMemoryGraphDB extends AbstractGraphTx implements GraphDB {
 	}
 	
 	@Override
-	public long[] getNodeIDsByAttribute(PropertyType type, Interval<?> interval) {
-		throw new UnsupportedOperationException("In Memory transactions only support index retrieval for keyed properties via getNodeByKey().");
+	public long[] getNodeIDsByAttributeFromDisk(PropertyType type, Interval<?> interval) {
+		return new long[0];
 	}
 
 
@@ -119,6 +119,11 @@ public class InMemoryGraphDB extends AbstractGraphTx implements GraphDB {
 	public synchronized void flush() {
 		super.flush();
 	}
+
+    @Override
+    public synchronized void rollingCommit() {
+        super.rollingCommit();
+    }
 	
 	@Override
 	public synchronized void commit() {

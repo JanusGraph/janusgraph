@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.blueprints.util;
 
+import com.thinkaurelius.titan.blueprints.TitanGraph;
 import com.thinkaurelius.titan.blueprints.TitanVertex;
 import com.thinkaurelius.titan.core.NodeList;
 import com.tinkerpop.blueprints.pgm.CloseableSequence;
@@ -11,10 +12,12 @@ public class TitanNeighborhoodSequence<T extends Vertex> implements CloseableSeq
 
     private final NodeList nodes;
     private int position;
+    private final TitanGraph db;
 
-    public TitanNeighborhoodSequence(final NodeList nodelist) {
+    public TitanNeighborhoodSequence(TitanGraph db, final NodeList nodelist) {
         nodes=nodelist;
         position=0;
+        this.db=db;
     }
     
     @Override
@@ -34,7 +37,7 @@ public class TitanNeighborhoodSequence<T extends Vertex> implements CloseableSeq
 
     @Override
     public TitanVertex next() {
-        TitanVertex v = new TitanVertex(nodes.get(position));
+        TitanVertex v = new TitanVertex(nodes.get(position),db);
         position++;
         return v;
     }

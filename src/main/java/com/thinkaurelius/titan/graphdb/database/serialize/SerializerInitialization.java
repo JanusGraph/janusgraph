@@ -14,6 +14,10 @@ import com.thinkaurelius.titan.graphdb.edgetypes.StandardPropertyType;
 import com.thinkaurelius.titan.graphdb.edgetypes.StandardRelationshipType;
 import com.thinkaurelius.titan.graphdb.edgetypes.group.StandardEdgeTypeGroup;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+
 public class SerializerInitialization {
 
 	public static final void initialize(Serializer serializer) {
@@ -24,6 +28,14 @@ public class SerializerInitialization {
 		serializer.registerClass(Directionality.class);
 		serializer.registerClass(EdgeCategory.class);
 		serializer.registerClass(StandardEdgeTypeGroup.class);
+        serializer.registerClass(Object.class);
+        serializer.registerClass(Date.class);
+        serializer.registerClass(ArrayList.class);
+        serializer.registerClass(HashMap.class);
+        serializer.registerClass(int[].class);
+        serializer.registerClass(double[].class);
+        serializer.registerClass(long[].class);
+        serializer.registerClass(byte[].class);
 		serializer.registerClass(AttributeInt.class,new AttributeIntSerializer());
 		serializer.registerClass(AttributeReal.class,new AttributeRealSerializer());
 		serializer.registerClass(AttributeLong.class,new AttributeLongSerializer());

@@ -14,19 +14,19 @@ import java.util.List;
 public class TitanVertex extends TitanElement<Node> implements Vertex {
 
 
-    public TitanVertex(final Node element) {
-        super(element);
+    public TitanVertex(final Node element, final TitanGraph db) {
+        super(element,db);
     }
 
     private Iterable<Edge> getEdges(Direction d, String... labels) {
         if (labels.length==0) {
-            return new TitanEdgeSequence(element.getRelationshipIterator(d));
+            return new TitanEdgeSequence(db,element.getRelationshipIterator(d));
         } else if (labels.length==1) {
-            return new TitanEdgeSequence(element.getRelationshipIterator(labels[0],d));
+            return new TitanEdgeSequence(db,element.getRelationshipIterator(labels[0],d));
         } else {
             final List<Iterable<Edge>> edges = new ArrayList<Iterable<Edge>>();
             for (final String label : labels) {
-                edges.add(new TitanEdgeSequence(element.getRelationshipIterator(label,d)));
+                edges.add(new TitanEdgeSequence(db,element.getRelationshipIterator(label,d)));
             }
             return new MultiIterable<Edge>(edges);
         }

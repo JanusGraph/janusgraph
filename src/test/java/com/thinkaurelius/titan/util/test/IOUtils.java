@@ -4,23 +4,25 @@ import java.io.File;
 
 public class IOUtils {
 
-	static public void deleteFromDirectory(File path) {
-		deleteDirectory(path,false);
+	static public boolean deleteFromDirectory(File path) {
+		return deleteDirectory(path,false);
 	}
 
-	static public void deleteDirectory(File path, boolean includeDir) {
-		if( path.exists() ) {
+	static public boolean deleteDirectory(File path, boolean includeDir) {
+		boolean success = true;
+        if( path.exists() ) {
 			File[] files = path.listFiles();
 			for(int i=0; i<files.length; i++) {
 				if(files[i].isDirectory()) {
-					deleteDirectory(files[i],true);
+					success = deleteDirectory(files[i],true) && success;
 				}
 				else {
-					files[i].delete();
+					success = files[i].delete() && success;
 				}
 			}
 		}
-		if (includeDir)	path.delete();
+		if (includeDir)	success = path.delete()  && success;;
+        return success;
 	}
 
 }

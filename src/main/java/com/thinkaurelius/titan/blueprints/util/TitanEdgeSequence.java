@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.blueprints.util;
 
 import com.thinkaurelius.titan.blueprints.TitanEdge;
+import com.thinkaurelius.titan.blueprints.TitanGraph;
 import com.thinkaurelius.titan.core.Relationship;
 import com.tinkerpop.blueprints.pgm.CloseableSequence;
 import com.tinkerpop.blueprints.pgm.Edge;
@@ -10,13 +11,15 @@ import java.util.Iterator;
 public class TitanEdgeSequence<T extends Edge> implements CloseableSequence<TitanEdge> {
 
     private final Iterator<? extends Relationship> relationships;
+    private final TitanGraph db;
     
-    public TitanEdgeSequence(Iterator<? extends Relationship> rels) {
+    public TitanEdgeSequence(TitanGraph db, Iterator<? extends Relationship> rels) {
         relationships=rels;
+        this.db=db;
     }
     
-    public TitanEdgeSequence(Iterable<? extends Relationship> rels) {
-        this(rels.iterator());
+    public TitanEdgeSequence(TitanGraph db, Iterable<? extends Relationship> rels) {
+        this(db,rels.iterator());
     }
     
     @Override
@@ -36,7 +39,7 @@ public class TitanEdgeSequence<T extends Edge> implements CloseableSequence<Tita
 
     @Override
     public TitanEdge next() {
-        return new TitanEdge(relationships.next());
+        return new TitanEdge(relationships.next(),db);
     }
 
     @Override

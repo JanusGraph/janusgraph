@@ -32,9 +32,8 @@ implements Iterator<O> {
 	@Override
 	public void remove() {
 		assert current!=null;
+        //iterator.remove();
 		current.delete();
-		iterator.remove();
-		throw new UnsupportedOperationException();
 	}
 
 	

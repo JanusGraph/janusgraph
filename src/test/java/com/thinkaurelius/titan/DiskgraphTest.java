@@ -24,7 +24,8 @@ public class DiskgraphTest {
 		// Make directory if it doesn't exist
 		if (!homeDirFile.exists())
 			homeDirFile.mkdirs();
-		IOUtils.deleteFromDirectory(homeDirFile);
+		boolean success = IOUtils.deleteFromDirectory(homeDirFile);
+        if (!success) System.err.println("Could not delete " + homeDir);
 	}
 
 	

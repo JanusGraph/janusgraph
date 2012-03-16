@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.blueprints;
 
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.blueprints.TitanVertex;
 import com.thinkaurelius.titan.blueprints.util.TitanVertexSequence;
@@ -41,7 +42,8 @@ public class TitanIndex<T extends Element> implements AutomaticIndex<T> {
 
     @Override
     public CloseableSequence<T> get(String s, Object o) {
-        return new TitanVertexSequence(db.indexRetrieval(s,o));
+        if (!keys.contains(s)) return new TitanVertexSequence(db);
+        return new TitanVertexSequence(db,db.indexRetrieval(s,o));
     }
 
     @Override
