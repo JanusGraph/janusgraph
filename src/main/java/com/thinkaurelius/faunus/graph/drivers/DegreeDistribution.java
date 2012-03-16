@@ -1,7 +1,7 @@
-package com.thinkaurelius.faunus.graph.runners;
+package com.thinkaurelius.faunus.graph.drivers;
 
-import com.thinkaurelius.faunus.graph.GraphDegreeDistribution;
-import com.thinkaurelius.faunus.graph.VertexDegrees;
+import com.thinkaurelius.faunus.graph.mapreduce.GraphDegreeDistribution;
+import com.thinkaurelius.faunus.graph.mapreduce.VertexDegrees;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
@@ -16,8 +16,6 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-import java.util.UUID;
-
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -28,8 +26,10 @@ public class DegreeDistribution extends Configured implements Tool {
         //////// FIRST STEP ////////
 
         Configuration config1 = this.getConf();
+        FileSystem fs = FileSystem.get(config1);
         Job job1 = new Job(config1, "Faunus: Vertex Degrees");
         job1.setJarByClass(VertexDegrees.class);
+
 
         Path in1 = new Path(args[0]);
         Path out1 = new Path("/user/marko/tmp.txt");
@@ -60,7 +60,11 @@ public class DegreeDistribution extends Configured implements Tool {
         job2.setOutputKeyClass(LongWritable.class);
         job2.setOutputValueClass(IntWritable.class);
 
-        System.exit(job2.waitForCompletion(true) ? 0 : 1);
+        job2.waitForCompletion(true);
+
+        if (fs.exists(out1))
+            fs.delete(out1, true);
+
         return 0;
     }
 

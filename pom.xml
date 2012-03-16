@@ -24,15 +24,31 @@
     <inceptionYear>2011</inceptionYear>
     <dependencies>
         <dependency>
+            <groupId>com.tinkerpop.blueprints</groupId>
+            <artifactId>blueprints-core</artifactId>
+            <version>1.2</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-core</artifactId>
             <version>0.20.2</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>edu.umd</groupId>
+            <artifactId>cloud9</artifactId>
+            <version>1.2.11</version>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.5</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-test</artifactId>
+            <version>0.20.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
