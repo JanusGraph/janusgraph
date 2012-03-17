@@ -9,6 +9,10 @@ public interface NodeCache {
 	public InternalNode get(long id);		
 	
 	public void add(InternalNode node, long id);
+    
+    public Iterable<InternalNode> getAll();
+
+    public boolean remove(long nodeid);
 	
 	public void close();
 	

@@ -18,7 +18,9 @@ public enum StandardNodeFactories implements NodeFactory {
 
 		@Override
 		public InternalNode createNew(GraphTx tx) {
-			return new PersistDualNode(tx,InitialAdjListFactory.BasicFactory);
+			InternalNode n = new PersistDualNode(tx,InitialAdjListFactory.BasicFactory);
+            tx.registerNewEntity(n);
+            return n;
 		}
 	
 		
@@ -34,7 +36,9 @@ public enum StandardNodeFactories implements NodeFactory {
 
 		@Override
 		public InternalNode createNew(GraphTx tx) {
-			return new DualNode(tx,InitialAdjListFactory.BasicFactory);
+			InternalNode n = new DualNode(tx,InitialAdjListFactory.BasicFactory);
+            tx.registerNewEntity(n);
+            return n;
 		}
 		
 	};

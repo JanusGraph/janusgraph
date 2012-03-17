@@ -480,12 +480,11 @@ public class StandardGraphDB implements GraphDB {
 		return new DirectKeyColumnValueStoreMutator(txh, propertyIndex);		
 	}
 
-	@Override
-	public void flush(Collection<InternalEdge> addedEdges,
-			Collection<InternalEdge> deletedEdges, GraphTx tx) throws GraphStorageException {
-		assignIDs(addedEdges,tx);
-	}
-	
+    @Override
+    public long getNewID(IDManager.IDType type, long groupid) {
+        return idAssigner.getNewID(type,groupid);
+    }
+
 	private void assignIDs(Collection<InternalEdge> addedEdges,GraphTx tx) {
 		for (InternalEdge edge : addedEdges) {
 			if (edge.isDeleted()) continue;
@@ -495,11 +494,11 @@ public class StandardGraphDB implements GraphDB {
 				InternalNode node = edge.getNodeAt(i);
 				if (!node.hasID()) {
 					assert node.isNew();
-                    node.setID(idAssigner.getNewNodeID(node));
+                    node.setID(idAssigner.getNewID(node));
 				}
 			}
 			assert !edge.hasID();
-			edge.setID(idAssigner.getNewEdgeID(edge));
+			edge.setID(idAssigner.getNewID(edge));
 		}
 	}
 	

@@ -402,7 +402,6 @@
                     <excludes>
                         <!-- FIX IT: Currently excluded because there is something wrong with the test. -->
                         <exclude>**/*ConcurrentGraphDBTest.java</exclude>
-                        <exclude>**/TitanGraphTest.java</exclude>
 
                         <!-- Excluded because they have not yet been migrated to the new API for Cassandra native -->
                         <exclude>**/CassandraTokenRingTest.java</exclude>

@@ -26,8 +26,6 @@ public class TransactionWrapper {
         if (rollingCommitThreshold>0 && numOperations%rollingCommitThreshold==0) {
             tx.rollingCommit();
             numOperations=0;
-        } else {
-            tx.flush();
         }
     }
     

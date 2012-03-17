@@ -45,6 +45,7 @@ public class InMemoryEdgeFactory implements EdgeFactory {
 			break;
 		default: throw new ToBeImplementedException("HyperEdges are not supported");
 		}
+        if (!rel.isInline()) getTx().registerNewEntity(rel);
 		EdgeFactoryUtil.connectEdge(rel, true, getTx());
 		return rel;
 	}
@@ -60,6 +61,7 @@ public class InMemoryEdgeFactory implements EdgeFactory {
 		} else if (type.getCategory()==EdgeCategory.Simple){
 			rel = new SimpleProperty(type,node,attribute);
 		} else throw new ToBeImplementedException();
+        if (!rel.isInline()) getTx().registerNewEntity(rel);
 		EdgeFactoryUtil.connectEdge(rel, true, getTx());
 		return rel;
 	}

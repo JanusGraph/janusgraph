@@ -243,6 +243,7 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
             Parameter<String,Class<?>> clazz = parameters[0];        
             datatype = clazz.getValue();
         } else datatype = Object.class;
+        ;
 
         GraphTransaction tx = db.startTransaction();
         try {
@@ -364,7 +365,7 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     }
 
     private GraphTransaction internalStartTransaction() {
-        GraphTransaction tx = db.startTransaction();
+        GraphTransaction tx = db.startTransaction(GraphTransactionConfig.ImmediateIDAssignment);
         txs.set(new TransactionWrapper(tx,bufferSize));
         openTx.put(tx,Boolean.TRUE);
         return tx;

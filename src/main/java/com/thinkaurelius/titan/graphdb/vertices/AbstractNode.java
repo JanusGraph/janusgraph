@@ -85,6 +85,7 @@ public abstract class AbstractNode implements InternalNode {
 		NodeUtil.checkAvailability(this);
 		if (Iterables.size(getEdges(StandardEdgeQuery.queryAll(this),true))>0)
 			throw new IllegalStateException("Cannot delete node since it is still connected!");
+        tx.deleteNode(this);
 	}
 
 	/* ---------------------------------------------------------------

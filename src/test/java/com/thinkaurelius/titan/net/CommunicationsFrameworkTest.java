@@ -491,7 +491,17 @@ public class CommunicationsFrameworkTest {
 			return null;
 		}
 
-		@Override
+        @Override
+        public void registerNewEntity(InternalNode n) {
+
+        }
+
+        @Override
+        public void deleteNode(InternalNode n) {
+
+        }
+
+        @Override
 		public long[] getNodeIDsByAttributeFromDisk(PropertyType type,
                                                     Interval<?> interval) {
 			// TODO Auto-generated method stub
@@ -529,11 +539,6 @@ public class CommunicationsFrameworkTest {
 			return null;
 		}
 
-		@Override
-		public void flush() {
-			// TODO Auto-generated method stub
-			
-		}
 		
 	}
 	

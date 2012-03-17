@@ -12,7 +12,7 @@ public class InMemoryGraphDBTest extends AbstractGraphDBTest {
 	
 	@Override
 	public void open() {
-		tx=new InMemoryGraphDB(true);	
+		tx=new InMemoryGraphDB();
 	}
 
 	@Override

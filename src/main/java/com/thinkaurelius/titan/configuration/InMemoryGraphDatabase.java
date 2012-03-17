@@ -32,7 +32,7 @@ public final class InMemoryGraphDatabase {
 	  * @see GraphDatabase
 	  */
 	 public static GraphDatabase open() {
-		 return new InMemoryGraphDB(true);
+		 return new InMemoryGraphDB();
 	 }
 	 
 	 /**
@@ -44,7 +44,7 @@ public final class InMemoryGraphDatabase {
 	  * @see GraphTransaction
 	  */
 	 public static GraphTransaction startTransaction() {
-		 return new InMemoryGraphDB(true);
+		 return new InMemoryGraphDB();
 	 }
 	
 }

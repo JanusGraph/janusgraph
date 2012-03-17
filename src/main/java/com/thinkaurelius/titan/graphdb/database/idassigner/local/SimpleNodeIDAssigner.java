@@ -45,21 +45,28 @@ public class SimpleNodeIDAssigner implements NodeIDAssigner {
 	}
 
     @Override
-    public long getNewNodeID(InternalNode node) {
+    public long getNewID(InternalNode node) {
         assert !node.hasID();
-        if (node instanceof PropertyType) {
+        if (node instanceof InternalEdge) {
+            return nextEdgeID();
+        } else if (node instanceof PropertyType) {
             return nextPropertyTypeID(((EdgeType)node).getGroup().getID());
         } else if (node instanceof RelationshipType) {
             return nextRelationshipTypeID(((EdgeType)node).getGroup().getID());
         } else {
             return nextNodeID();
         }
-
     }
-
+    
     @Override
-    public long getNewEdgeID(InternalEdge edge) {
-        return nextEdgeID();
+    public long getNewID(IDManager.IDType type, long groupid) {
+        switch (type) {
+            case Edge : return nextEdgeID();
+            case PropertyType: return nextPropertyTypeID(groupid);
+            case RelationshipType: return nextRelationshipTypeID(groupid);
+            case Node: return nextNodeID();
+            default: throw new IllegalArgumentException("ID type not supported: " + type);
+        }
     }
 
     @Override

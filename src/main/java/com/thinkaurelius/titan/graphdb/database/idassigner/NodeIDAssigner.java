@@ -6,10 +6,10 @@ import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 
 public interface NodeIDAssigner {
 
-	public long getNewNodeID(InternalNode node);
+	public long getNewID(InternalNode node);
 
-    public long getNewEdgeID(InternalEdge edge);
-
+    public long getNewID(IDManager.IDType type, long groupid);
+    
     public IDManager getIDManager();
 
     public void close();

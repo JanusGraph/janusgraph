@@ -15,21 +15,24 @@ import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.edges.factory.InMemoryEdgeFactory;
 import com.thinkaurelius.titan.graphdb.edgetypes.manager.InMemoryEdgeTypeManager;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.sendquery.QuerySender;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 import com.thinkaurelius.titan.graphdb.vertices.factory.StandardNodeFactories;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class InMemoryGraphDB extends AbstractGraphTx implements GraphDB {
 
-
+    private AtomicInteger idCounter;
+    private final IDManager idManager;
+    
     public InMemoryGraphDB() {
-        this(true);
-    }
-
-    public InMemoryGraphDB(boolean trackNewNodes) {
-		super(StandardNodeFactories.DefaultInMemory, new InMemoryEdgeFactory(), new InMemoryEdgeTypeManager(), GraphTransactionConfig.AutoEdgeTypes, trackNewNodes);
+		super(null,StandardNodeFactories.DefaultInMemory, new InMemoryEdgeFactory(), new InMemoryEdgeTypeManager(), GraphTransactionConfig.AutoEdgeTypes);
+        idCounter=new AtomicInteger(0);
+        idManager = new IDManager(1,1);
+        graphdb=this;
 	}
 
 
@@ -115,11 +118,6 @@ public class InMemoryGraphDB extends AbstractGraphTx implements GraphDB {
 		throw new UnsupportedOperationException("InMemory Transactions do not have transaction handles!");
 	}
 
-	@Override
-	public synchronized void flush() {
-		super.flush();
-	}
-
     @Override
     public synchronized void rollingCommit() {
         super.rollingCommit();
@@ -173,7 +171,19 @@ public class InMemoryGraphDB extends AbstractGraphTx implements GraphDB {
 		return false;
 	}
 
-	@Override
+    @Override
+    public long getNewID(IDManager.IDType type, long groupid) {
+        int id = idCounter.incrementAndGet();
+        switch (type) {
+            case Edge : return idManager.getEdgeID(id);
+            case PropertyType: return idManager.getPropertyTypeID(id,0,0);
+            case RelationshipType: return idManager.getRelationshipTypeID(id,0,0);
+            case Node: return idManager.getNodeID(id,0);
+            default: throw new IllegalArgumentException("ID type not supported: " + type);
+        }
+    }
+
+    @Override
 	public GraphDatabaseConfiguration getConfiguration() {
 		return null;
 	}
@@ -207,13 +217,6 @@ public class InMemoryGraphDB extends AbstractGraphTx implements GraphDB {
 		throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
 	}
 
-	@Override
-	public void flush(Collection<InternalEdge> addedEdges,
-			Collection<InternalEdge> deletedEdges, GraphTx tx)
-			throws GraphStorageException {
-		throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
-	}
-	
 	@Override
 	public boolean save(Collection<InternalEdge> addedEdges,
 			Collection<InternalEdge> deletedEdges, GraphTx tx)

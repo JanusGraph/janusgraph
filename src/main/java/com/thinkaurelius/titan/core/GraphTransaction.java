@@ -217,30 +217,29 @@ public interface GraphTransaction {
 	public Set<Node> getNodesByAttribute(String type, Interval<?> interval);
 	
 	/**
-	 * Returns an iterable over all nodes in the graph database (optional operation).
+	 * Returns an iterable over all nodes loaded in the current transaction.
 	 * 
-	 * The order in which the nodes are returned is arbitrary. Note, that all nodes may be loaded
-	 * into memory when this method is invoked. Due to this performance issue, a GraphTransaction implementation
-	 * may not support this method.
+	 * The order in which the nodes are returned is arbitrary. Note, that this method only returns those
+     * nodes that have been previously loaded to avoid excessive memory loads.
 	 * 
-	 * This method should only be used for in-memory graph transactions ({@link com.thinkaurelius.titan.configuration.InMemoryGraphDatabase}).
+	 * For in-memory graph transactions ({@link com.thinkaurelius.titan.configuration.InMemoryGraphDatabase})
+     * this method returns the entire node set of the database.
 	 * 
-	 * @return An iterable over all nodes in the database
-	 * @throws UnsupportedOperationException if the graph transaction implementation does not support this method
+	 * @return An iterable over all nodes in the transaction
 	 */
 	public Iterable<? extends Node> getAllNodes();
 	
 	/**
-	 * Returns an iterable over all relationships in the graph database (optional operation).
+	 * Returns an iterable over all relationships for all nodes loaded in the current transaction.
 	 * 
-	 * The order in which the relationships are returned is arbitrary. Note, that all relationships may be loaded
-	 * into memory when this method is invoked. Due to this performance issue, a GraphTransaction implementation
-	 * may not support this method.
+	 * The order in which the relationships are returned is arbitrary. Note, that this method only returns those
+     * relationships for which at least one node that have been previously loaded to avoid excessive memory loads.
+     * This method might still require significant disk access to retrieve all of those.
 	 * 
-	 * This method should only be used for in-memory graph transactions ({@link com.thinkaurelius.titan.configuration.InMemoryGraphDatabase}).
-	 * 
-	 * @return An iterable over all relationships in the database
-	 * @throws UnsupportedOperationException if the graph transaction implementation does not support this method
+	 * For in-memory graph transactions ({@link com.thinkaurelius.titan.configuration.InMemoryGraphDatabase})
+     * this method returns the entire relationship set of the database.
+     *
+	 * @return An iterable over all relationships in the transaction
 	 */
 	public Iterable<? extends Relationship> getAllRelationships();
 	
@@ -331,19 +330,6 @@ public interface GraphTransaction {
 	 * @see com.thinkaurelius.titan.core.EdgeType
 	 */
 	public EdgeTypeMaker createEdgeType();
-	
-	
-	/**
-	 * Flushes the transaction.
-	 * 
-	 * Flushing the transaction means that the transaction state is synchronized with the storage backend
-	 * and ids are assigned to new elements in the transaction. However, the state of the transaction is
-	 * not persisted.
-	 * 
-	 * @throws com.thinkaurelius.titan.exceptions.GraphStorageException if an error arises during flushing.
-	 */
-	public void flush();
-
 
     /**
      * Commits the current state of the transaction, but continues to keep the transaction

@@ -38,9 +38,17 @@ public class GraphTransactionConfig {
      * This configuration cannot be changed.
      */
     public static final GraphTransactionConfig AutoEdgeTypes = new GraphTransactionConfig().setAutoCreateEdgeTypes(true).close();
-	
+
+    /**
+     * Constant denoting a GraphTransactionConfig that immediately assigns ids to database objects upon creation with otherwise default configuration parameters.
+     * This configuration cannot be changed.
+     */
+    public static final GraphTransactionConfig ImmediateIDAssignment = new GraphTransactionConfig().setAssignIDsImmediately(true).close();
+
 	
 	private boolean isReadOnly = false;
+    
+    private boolean assignIDsImmediately = false;
 
     private boolean autoCreateEdgeTypes = false;
 	
@@ -84,6 +92,29 @@ public class GraphTransactionConfig {
 		isReadOnly=readOnly;
 		return this;
 	}
+
+    /**
+     *
+     * @return Whether this transaction is configured to assign ids immediately.
+     */
+    public boolean assignIDsImmediately() {
+        return assignIDsImmediately;
+    }
+
+    /**
+     * Sets the graph transaction to assign ids to all database objects immediately upon creation.
+     * If set to true, any object returned by this transaction will have an id (i.e. getID() won't throw an exception).
+     * However, the downside is that the transaction cannot assign "efficient" ids, i.e. ids that optimize for storage
+     * and retrieval efficiency.
+     *
+     * @param immediate Whether ids should be assigned immediately upon creation
+     * @return This GraphTransaction configuration
+     */
+    public GraphTransactionConfig setAssignIDsImmediately(boolean immediate) {
+        verifySetting();
+        this.assignIDsImmediately = immediate;
+        return this;
+    }
 	
 	/**
 	 * Whether the graph transaction is configured to verify that a node of a given id actually exists

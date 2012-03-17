@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
+import cern.colt.list.ObjectArrayList;
 import cern.colt.map.OpenLongObjectHashMap;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 
+import java.util.ArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -44,8 +46,26 @@ public class StandardNodeCache extends OpenLongObjectHashMap implements NodeCach
 		writeLock.unlock();
 	}
 
-	
-	@Override
+    @Override
+    public Iterable<InternalNode> getAll() {
+        ArrayList<InternalNode> nodes = new ArrayList<InternalNode>(super.size()+2);
+        readLock.lock();
+        ObjectArrayList all = super.values();
+        for (int i=0;i<all.size();i++) nodes.add((InternalNode)all.get(i));
+        readLock.unlock();
+        return nodes;
+    }
+    
+    @Override
+    public boolean remove(long nodeid) {
+        writeLock.lock();
+        boolean removed = super.removeKey(nodeid);
+        writeLock.unlock();
+        return removed;
+    }
+
+
+    @Override
 	public synchronized void close() {
 		clear();
 	}

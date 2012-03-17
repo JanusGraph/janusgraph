@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.sendquery.QuerySender;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 
@@ -22,7 +23,8 @@ public interface GraphDB extends GraphDatabase {
 	// ######## Node / Edge Loading  ############
 	
 	boolean containsNodeID(long id, GraphTx tx);
-	
+
+    public long getNewID(IDManager.IDType type, long groupid);
 
 	void loadEdges(InternalEdgeQuery query, GraphTx tx);
 	
@@ -37,8 +39,6 @@ public interface GraphDB extends GraphDatabase {
 	public GraphTx startTransaction(GraphTransactionConfig configuration, QuerySender sender);
 	
 	// ######## Node Operations  ############
-	
-	void flush(Collection<InternalEdge> addedEdges, Collection<InternalEdge> deletedEdges, GraphTx tx) throws GraphStorageException ;
 	
 	boolean save(Collection<InternalEdge> addedEdges, Collection<InternalEdge> deletedEdges, GraphTx tx) throws GraphStorageException ;
 

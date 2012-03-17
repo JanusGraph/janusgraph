@@ -64,6 +64,7 @@ public class StandardPersistedEdgeFactory implements EdgeFactory {
 		} else if (type.getCategory()==EdgeCategory.Simple){
 			rel = new PersistSimpleProperty(type,node,attribute);
 		} else throw new ToBeImplementedException();
+        if (!rel.isInline()) getTx().registerNewEntity(rel);
 		EdgeFactoryUtil.connectEdge(rel, true, getTx());
 		return rel;
 	}
@@ -124,6 +125,7 @@ public class StandardPersistedEdgeFactory implements EdgeFactory {
 			break;
         default: throw new AssertionError("Unsupported Edge type: " + type.getCategory());
 		}
+        if (!rel.isInline()) getTx().registerNewEntity(rel);
 		EdgeFactoryUtil.connectEdge(rel, true, getTx());
 		return rel;
 	}

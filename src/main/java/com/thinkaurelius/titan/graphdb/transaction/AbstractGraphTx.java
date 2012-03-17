@@ -1,19 +1,26 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Interval;
 import com.thinkaurelius.titan.core.attribute.PointInterval;
 import com.thinkaurelius.titan.exceptions.InvalidEntityException;
+import com.thinkaurelius.titan.exceptions.InvalidNodeException;
+import com.thinkaurelius.titan.graphdb.database.GraphDB;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edgequery.StandardEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.edges.factory.EdgeFactory;
+import com.thinkaurelius.titan.graphdb.edgetypes.InternalEdgeType;
 import com.thinkaurelius.titan.graphdb.edgetypes.manager.EdgeTypeManager;
 import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemPropertyType;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 import com.thinkaurelius.titan.graphdb.vertices.NewEmptyNode;
+import com.thinkaurelius.titan.graphdb.vertices.StandardReferenceNode;
 import com.thinkaurelius.titan.graphdb.vertices.factory.NodeFactory;
 import com.thinkaurelius.titan.traversal.AllRelationshipsIterable;
 import com.thinkaurelius.titan.util.datastructures.Factory;
@@ -31,26 +38,28 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class AbstractGraphTx implements GraphTx {
 
 	private static final Logger log = LoggerFactory.getLogger(AbstractGraphTx.class);
-	
-	protected final EdgeTypeManager etManager;
 
-	
+    protected GraphDB graphdb;
+
+	protected final EdgeTypeManager etManager;
 	protected final NodeFactory nodeFactory;
 	protected final EdgeFactory edgeFactory;
 	
 	private ConcurrentMap<PropertyType,ConcurrentMap<Object,Node>> keyIndex;
+    private final Lock keyedPropertyCreateLock;
     private ConcurrentMap<PropertyType,Multimap<Object,Node>> attributeIndex;
-	private Set<InternalNode> newNodes;
-	
-	private boolean isOpen;
-	private final GraphTransactionConfig config;
-	
-	private final Lock keyedPropertyCreateLock = new ReentrantLock();
 
-	
-	public AbstractGraphTx(NodeFactory nodeFac, EdgeFactory edgeFac,
-			EdgeTypeManager etManage, GraphTransactionConfig config, boolean trackNewNodes) {
-		etManager = etManage;
+
+    private Set<InternalNode> newNodes;
+    private NodeCache nodeCache;
+
+    private boolean isOpen;
+	private final GraphTransactionConfig config;
+
+	public AbstractGraphTx(GraphDB g, NodeFactory nodeFac, EdgeFactory edgeFac,
+			EdgeTypeManager etManage, GraphTransactionConfig config) {
+		graphdb = g;
+        etManager = etManage;
 		nodeFactory = nodeFac;
 		edgeFactory = edgeFac;
 		edgeFactory.setTransaction(this);
@@ -59,11 +68,16 @@ public abstract class AbstractGraphTx implements GraphTx {
 		this.config=config;
 		isOpen = true;
 
-		if (!config.isReadOnly() && trackNewNodes) newNodes = Collections.newSetFromMap(new ConcurrentHashMap<InternalNode,Boolean>(10,0.75f,2));
-		else newNodes=null;
+		if (!config.isReadOnly()) { //TODO: don't maintain newNodes for batch loading transactions
+            newNodes = Collections.newSetFromMap(new ConcurrentHashMap<InternalNode,Boolean>(10,0.75f,2));
+        } else {
+            newNodes=null;
+        }
+        nodeCache = new StandardNodeCache();
 
 		keyIndex = new ConcurrentHashMap<PropertyType,ConcurrentMap<Object,Node>>(20,0.75f,2);
         attributeIndex = new ConcurrentHashMap<PropertyType,Multimap<Object,Node>>(20,0.75f,2);
+        keyedPropertyCreateLock = new ReentrantLock();
 	}
 
 
@@ -76,16 +90,94 @@ public abstract class AbstractGraphTx implements GraphTx {
 	 * ---------------------------------------------------------------
 	 */
 	
+    @Override
+    public void registerNewEntity(InternalNode n) {
+        assert (!(n instanceof InternalEdge) || !((InternalEdge)n).isInline());
+        assert n.isNew();
+        assert !n.hasID();
+        
+        boolean isNode = !(n instanceof InternalEdge);
+        if (config.assignIDsImmediately()) {
+            long id = -1;
+            if (n instanceof InternalEdge) {
+                id = graphdb.getNewID(IDManager.IDType.Edge,-1);
+            } else if (n instanceof PropertyType) {
+                id = graphdb.getNewID(IDManager.IDType.PropertyType,((InternalEdgeType)n).getGroup().getID());
+            } else if (n instanceof RelationshipType) {
+                id = graphdb.getNewID(IDManager.IDType.RelationshipType,((InternalEdgeType)n).getGroup().getID());
+            } else {
+                id = graphdb.getNewID(IDManager.IDType.Node,-1);
+            }
+            n.setID(id);
+            if (isNode) nodeCache.add(n,id);
+        } else if (newNodes!=null) {
+            if (isNode) {
+                newNodes.add(n);
+            }
+        }
+    }
+
 
 	@Override
 	public Node createNode() {
 		verifyWriteAccess();
 		InternalNode n = nodeFactory.createNew(this);
-		if (newNodes!=null) newNodes.add(n);
 		return n;
 	}
-	
-	
+    
+
+    @Override
+    public boolean containsNode(long id) {
+        if (nodeCache.contains(id)) return true;
+        else return false;
+    }
+
+    @Override
+    public Node getNode(long id) {
+        if (getTxConfiguration().doVerifyNodeExistence() &&
+                !containsNode(id)) throw new InvalidNodeException("Node does not exist!");
+        return getExistingNode(id);
+    }
+
+
+    @Override
+    public InternalNode getExistingNode(long id) {
+        return getExisting(id);
+    }
+
+    private InternalNode getExisting(long id) {
+        synchronized(nodeCache) {
+            InternalNode node = nodeCache.get(id);
+            if (node==null) {
+                IDInspector idspec = graphdb.getIDInspector();
+
+                if (idspec.isEdgeTypeID(id)) {
+                    node = etManager.getEdgeType(id, this);
+                } else if (idspec.isReferenceNodeID(id)) {
+                    return new StandardReferenceNode(this, id);
+                } else if (idspec.isNodeID(id)) {
+                    node = nodeFactory.createExisting(this,id);
+                } else throw new IllegalArgumentException("ID could not be recognized!");
+                nodeCache.add(node, id);
+            }
+            return node;
+        }
+
+    }
+    
+    @Override
+    public void deleteNode(InternalNode n) {
+        boolean removed;
+        if (n.hasID()) {
+            removed = nodeCache.remove(n.getID());
+        } else {
+            if (newNodes!=null) removed = newNodes.remove(n);
+            else removed=true;
+        }
+        assert removed;
+    }
+
+
 	@Override
 	public Property createProperty(PropertyType relType, Node node,	Object attribute) {
 		//Check that attribute of keyed propertyType is unique
@@ -128,13 +220,30 @@ public abstract class AbstractGraphTx implements GraphTx {
 		return etManager.getEdgeTypeMaker(this);
 	}
 
-
 	@Override
 	public boolean containsEdgeType(String name) {
 		Map<Object,Node> subindex = keyIndex.get(SystemPropertyType.EdgeTypeName);
-		if (subindex==null || !subindex.containsKey(name)) return false;
-		else return true;
+		if (subindex==null || !subindex.containsKey(name)) {
+            return etManager.containsEdgeType(name, this);
+        } else return true;
 	}
+
+    @Override
+    public EdgeType getEdgeType(String name) {
+        Map<Object,Node> subindex = keyIndex.get(SystemPropertyType.EdgeTypeName);
+        EdgeType et = null;
+        if (subindex!=null) {
+            et = (EdgeType)subindex.get(name);
+        }
+        if (et==null) {
+            //Second, check EdgeTypeManager
+            InternalEdgeType eti = etManager.getEdgeType(name, this);
+            if (eti!=null)
+                nodeCache.add(eti, eti.getID());
+            et=eti;
+        }
+        return et;
+    }
 
 	@Override
 	public PropertyType getPropertyType(String name) {
@@ -159,19 +268,6 @@ public abstract class AbstractGraphTx implements GraphTx {
 			return (RelationshipType)et;
 		} else throw new IllegalArgumentException("The EdgeType of given name is not a RelationshipType! " + name);
 	}
-
-	
-	@Override
-	public EdgeType getEdgeType(String name) {
-		Map<Object,Node> subindex = keyIndex.get(SystemPropertyType.EdgeTypeName);
-		if (subindex==null) {
-			return null;
-		} else {
-			return (EdgeType)subindex.get(name);
-		}
-		
-	}
-
 	
 
 	@Override
@@ -214,10 +310,20 @@ public abstract class AbstractGraphTx implements GraphTx {
 
 	@Override
 	public Iterable<? extends Node> getAllNodes() {
-		if (config.isReadOnly()) return IterablesUtil.emptyIterable();
-		else if (newNodes==null) 
-			throw new UnsupportedOperationException("Iterating over all nodes is not supported in this transaction.");
-		else return newNodes;
+        Iterable<InternalNode> iter = null;
+        if (newNodes!=null) 
+            iter = Iterables.concat(nodeCache.getAll(),newNodes);
+        else iter = nodeCache.getAll();
+        
+        iter = Iterables.filter(iter,new Predicate<InternalNode>() {
+            @Override
+            public boolean apply( InternalNode input) {
+                assert !(input instanceof Edge);
+                if (input instanceof EdgeType) return false;
+                else return true;
+            }
+        });
+        return iter;
 	}
 
 
@@ -367,18 +473,14 @@ public abstract class AbstractGraphTx implements GraphTx {
 	 */	
 	
 	private void close() {
+        nodeCache.close(); nodeCache=null;
 		keyIndex.clear(); keyIndex=null;
 		isOpen=false;
 	}
 
-	@Override
-	public synchronized void flush() {
-		
-	}
-
     @Override
     public synchronized void rollingCommit() {
-
+        if (!config.assignIDsImmediately()) throw new UnsupportedOperationException("Rolling commits are only supported for immediate ID assignment.");
     }
 	
 	

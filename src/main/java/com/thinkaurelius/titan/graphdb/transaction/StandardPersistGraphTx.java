@@ -38,7 +38,7 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 
 	private static final Logger log = LoggerFactory.getLogger(StandardPersistGraphTx.class);
 	
-	private final GraphDB graphdb;
+
 	private final TransactionHandle txHandle;
 	private final LockManager lockManager;
 	
@@ -47,20 +47,18 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 	private Set<InternalEdge> deletedEdges;
 	private List<InternalEdge> addedEdges;
 	
-	private NodeCache nodeCache;
+
 	
 	public StandardPersistGraphTx(GraphDB g, LockManager locks, 
 						EdgeTypeManager etManage, GraphTransactionConfig config,
 						QuerySender sender, TransactionHandle tx) {
-		super(StandardNodeFactories.DefaultPersisted,new StandardPersistedEdgeFactory(),
-				etManage,config,false);
+		super(g,StandardNodeFactories.DefaultPersisted,new StandardPersistedEdgeFactory(),
+				etManage,config);
 		Preconditions.checkNotNull(g);
-		graphdb = g;
 		lockManager = locks;
 		querySender = sender;
 		txHandle = tx;
-		
-		nodeCache = new StandardNodeCache();
+
 		if (config.isReadOnly()) {
 			deletedEdges = null;
 			addedEdges = null;
@@ -68,7 +66,6 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 			deletedEdges = Collections.newSetFromMap(new ConcurrentHashMap<InternalEdge,Boolean>(10,0.75f,1));
 			addedEdges = Collections.synchronizedList(new ArrayList<InternalEdge>());
 		}
-        Preconditions.checkNotNull(addedEdges);
 	}
 
 
@@ -82,83 +79,17 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 		if (e.isDeleted()) return true;
 		else return deletedEdges.contains(e);
 	}
-	
 
-	public boolean isReferenceNode(long nodeID) {
-		return graphdb.getIDInspector().isReferenceNodeID(nodeID);
-	}
-		
 	@Override
 	public boolean containsNode(long id) {
-		if (nodeCache.contains(id)) return true;
+		if (super.containsNode(id)) return true;
 		else return graphdb.containsNodeID(id, this);
-	}
-
-
-	@Override
-	public Node getNode(long id) {
-		if (getTxConfiguration().doVerifyNodeExistence() && 
-				!containsNode(id)) throw new InvalidNodeException("Node does not exist!");
-		return getExistingNode(id);
-	}
-
-
-	@Override
-	public InternalNode getExistingNode(long id) {
-		return getExisting(id);
-	}
-
-	private InternalNode getExisting(long id) {
-		synchronized(nodeCache) {
-		InternalNode node = nodeCache.get(id);
-		if (node==null) {
-			IDInspector idspec = graphdb.getIDInspector();
-	
-			if (idspec.isEdgeTypeID(id)) {
-				node = etManager.getEdgeType(id, this);
-			} else if (idspec.isReferenceNodeID(id)) {
-				return new StandardReferenceNode(this, id);
-			} else if (idspec.isNodeID(id)) {
-				node = nodeFactory.createExisting(this,id);
-			} else throw new IllegalArgumentException("ID could not be recognized!");
-			nodeCache.add(node, id);
-		}
-		return node;
-		}
-
-	}
-
-	@Override
-	public boolean containsEdgeType(String name) {
-		boolean contains = super.containsEdgeType(name);
-		if (!contains) {
-			contains = etManager.containsEdgeType(name, this);
-		}
-		return contains;
-	}
-	
-	@Override
-	public EdgeType getEdgeType(String name) {
-		//First, check local index
-		EdgeType et = super.getEdgeType(name);
-		if (et==null) {
- 			//Second, check EdgeTypeManager
-			InternalEdgeType eti = etManager.getEdgeType(name, this);
-			if (eti!=null)
-				nodeCache.add(eti, eti.getID());
-			et=eti;
-		}
-		return et;
-	}
-	
-
-	private Iterable<? extends Node> getAllExistingNodes() {
-		throw new UnsupportedOperationException("Retrieving all nodes is not supported for this transaction. Use the traversal framework instead.");
 	}
 
 	@Override
 	public Iterable<? extends Node> getAllNodes() {
-		return Iterables.concat(super.getAllNodes(),this.getAllExistingNodes());
+		//return Iterables.concat(super.getAllNodes(),this.getAllExistingNodes());
+        return super.getAllNodes();
 	}
 
 
@@ -190,7 +121,11 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 	public void loadedEdge(InternalEdge edge) {
 		super.loadedEdge(edge);
 	}
-	
+
+    public boolean isReferenceNode(long nodeID) {
+        return graphdb.getIDInspector().isReferenceNodeID(nodeID);
+    }
+
 	@Override
 	public<T,U> void sendQuery(long nodeid, T queryLoad, 
 			Class<? extends QueryType<T,U>> queryType, 
@@ -256,33 +191,15 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 	}
 	
 	private void clear() {
-		nodeCache.close(); nodeCache=null;
 		addedEdges=null;
 		deletedEdges=null;
 	}
 
-	@Override
-	public synchronized void flush() {
-        if (!getTxConfiguration().isReadOnly()) {
-            graphdb.flush(addedEdges, deletedEdges, this);
-            //Update NodeCache
-            addNodes2Cache();
-        }
-	}
-
-    private void addNodes2Cache() {
-        for (InternalEdge edge : addedEdges) {
-            for (int a=0;a<edge.getArity();a++) {
-                InternalNode n = edge.getNodeAt(a);
-                if (!nodeCache.contains(n.getID())) nodeCache.add(n, n.getID());
-            }
-        }
-    }
 
     @Override
     public synchronized void rollingCommit() {
+        super.rollingCommit();
         if (!getTxConfiguration().isReadOnly()) {
-            flush();
             graphdb.save(addedEdges, deletedEdges, this);
             deletedEdges = Collections.newSetFromMap(new ConcurrentHashMap<InternalEdge,Boolean>(10,0.75f,1));
             addedEdges = Collections.synchronizedList(new ArrayList<InternalEdge>());
@@ -299,8 +216,8 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
             graphdb.save(added, deleted, this);
         }
 
+        clear();
         txHandle.commit();
-		clear();
 		querySender.commit();
 		super.commit();
 	}

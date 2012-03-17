@@ -63,6 +63,7 @@ public class StandardEdgeTypeFactory implements EdgeTypeFactory {
 	public PropertyType createNewPropertyType(PropertyTypeDefinition def, GraphTx tx) {
 		PersistNodePropertyType prop = new PersistNodePropertyType(tx,InitialAdjListFactory.BasicFactory);
 		prop.createProperty(SystemPropertyType.PropertyTypeDefinition, def);
+        tx.registerNewEntity(prop);
 		prop.createProperty(SystemPropertyType.EdgeTypeName, def.getName());
 		return prop;
 	}
@@ -72,6 +73,7 @@ public class StandardEdgeTypeFactory implements EdgeTypeFactory {
 			RelationshipTypeDefinition def, GraphTx tx) {
 		PersistNodeRelationshipType rel = new PersistNodeRelationshipType(tx,InitialAdjListFactory.BasicFactory);
 		rel.createProperty(SystemPropertyType.RelationshipTypeDefinition, def);
+        tx.registerNewEntity(rel);
 		rel.createProperty(SystemPropertyType.EdgeTypeName, def.getName());
 		return rel;
 	}

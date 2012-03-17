@@ -96,6 +96,22 @@ public interface GraphTx extends GraphTransaction {
 	InternalNode getExistingNode(long id);
 
     /**
+     * Whenever a new entity gets created within the current transaction,
+     * it has to be registered with the transaction using this method.
+     *
+     * @param n Newly created entity
+     */
+    void registerNewEntity(InternalNode n);
+
+
+    /**
+     * Deletes nodes from transaction.
+     *
+     * @param n Deleted node
+     */
+    public void deleteNode(InternalNode n);
+
+    /**
      * Retrieves all ids for nodes which have an incident property of the given type whose attribute lies in the specified interval.
      *
      * The given property type must have an index defined for this retrieval to succeed.
