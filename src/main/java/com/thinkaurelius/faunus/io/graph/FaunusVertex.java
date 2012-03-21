@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.graph.io;
+package com.thinkaurelius.faunus.io.graph;
 
 import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.Vertex;
@@ -28,17 +28,16 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
     }
 
     public Iterable<Edge> getOutEdges(final String... labels) {
-        return outEdges;
+        return this.outEdges;
     }
 
     public Iterable<Edge> getInEdges(final String... labels) {
-        return inEdges;
+        return this.inEdges;
     }
 
 
-    public void write(DataOutput out) throws IOException {
-        out.writeByte(Type.VERTEX.val);
-        out.writeLong(this.id);
+    public void write(final DataOutput out) throws IOException {
+        super.write(out);
         final ArrayListOfLongsWritable outIds = new ArrayListOfLongsWritable();
         for (final Edge edge : this.getOutEdges()) {
             outIds.add((Long) edge.getId());
@@ -51,9 +50,8 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
         inIds.write(out);
     }
 
-    public void readFields(DataInput in) throws IOException {
-        byte type = in.readByte();
-        this.id = in.readLong();
+    public void readFields(final DataInput in) throws IOException {
+        super.readFields(in);
         final ArrayListOfLongsWritable outIds = new ArrayListOfLongsWritable();
         final ArrayListOfLongsWritable inIds = new ArrayListOfLongsWritable();
         outIds.readFields(in);

@@ -1,7 +1,7 @@
-package com.thinkaurelius.faunus.graph.drivers;
+package com.thinkaurelius.faunus.drivers;
 
-import com.thinkaurelius.faunus.graph.mapreduce.GraphDegreeDistribution;
-import com.thinkaurelius.faunus.graph.mapreduce.VertexDegrees;
+import com.thinkaurelius.faunus.mapreduce.GraphDegreeDistribution;
+import com.thinkaurelius.faunus.mapreduce.VertexDegrees;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;

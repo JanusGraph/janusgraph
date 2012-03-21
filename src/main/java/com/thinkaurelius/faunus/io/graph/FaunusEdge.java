@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.graph.io;
+package com.thinkaurelius.faunus.io.graph;
 
 import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.Vertex;
@@ -26,6 +26,13 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
         super(id);
     }
 
+    public FaunusEdge(final long id, final FaunusVertex outVertex, final FaunusVertex inVertex, final String label) {
+        super(id);
+        this.outVertex = outVertex;
+        this.inVertex = inVertex;
+        this.label = label;
+    }
+
     public Vertex getOutVertex() {
         return outVertex;
     }
@@ -39,16 +46,14 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
     }
 
     public void write(DataOutput out) throws IOException {
-        out.writeByte(Type.EDGE.val);
-        out.writeLong(this.id);
+        super.write(out);
         out.writeLong((Long) this.getInVertex().getId());
         out.writeLong((Long) this.getOutVertex().getId());
         out.writeUTF(this.getLabel());
     }
 
     public void readFields(DataInput in) throws IOException {
-        byte type = in.readByte();
-        this.id = in.readLong();
+        super.readFields(in);
         this.inVertex = new FaunusVertex(in.readLong());
         this.outVertex = new FaunusVertex(in.readLong());
         this.label = in.readUTF();

@@ -8,5 +8,5 @@ h3. REQUIREMENTS
 h3. USAGE
 
   * @mvn clean package@
-  * @hadoop jar target/faunus-0.1-job.jar com.thinkaurelius.faunus.graph.drivers.DegreeDistribution /user/marko/graph.txt /user/marko/out.txt@
+  * @hadoop jar target/faunus-0.1-job.jar com.thinkaurelius.faunus.drivers.DegreeDistribution /user/marko/graph.txt /user/marko/out.txt@
   * @hadoop fs -getmerge /user/marko/out.txt ~/Desktop/out.txt@
