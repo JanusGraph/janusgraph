@@ -18,7 +18,7 @@ public abstract class ElementProperties implements Writable {
         LONG((byte) 1),
         FLOAT((byte) 2),
         DOUBLE((byte) 3),
-        STRING((byte) 0);
+        STRING((byte) 4);
         public byte val;
 
         private PropertyType(byte v) {
@@ -38,7 +38,7 @@ public abstract class ElementProperties implements Writable {
 
     public void write(final DataOutput out) throws IOException {
         out.writeInt(this.properties.size());
-        for (Map.Entry<String, Object> entry : this.properties.entrySet()) {
+        for (final Map.Entry<String, Object> entry : this.properties.entrySet()) {
             out.writeUTF(entry.getKey());
             final Class valueClass = entry.getValue().getClass();
             final Object valueObject = entry.getValue();

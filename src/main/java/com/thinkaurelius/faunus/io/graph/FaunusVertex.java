@@ -1,15 +1,18 @@
 package com.thinkaurelius.faunus.io.graph;
 
+import com.thinkaurelius.faunus.io.graph.util.FaunusEdgeArray;
 import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.StringFactory;
-import edu.umd.cloud9.io.array.ArrayListOfLongsWritable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -17,7 +20,6 @@ import java.util.List;
 public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
 
     private List<Edge> outEdges = new LinkedList<Edge>();
-    private List<Edge> inEdges = new LinkedList<Edge>();
 
     public FaunusVertex() {
         super(-1l);
@@ -27,43 +29,47 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
         super(id);
     }
 
+    public FaunusVertex(final DataInput in) throws IOException {
+        super(-1l);
+        this.readFields(in);
+    }
+
     public Iterable<Edge> getOutEdges(final String... labels) {
-        return this.outEdges;
+        if (null != labels && labels.length > 0) {
+            final Set<String> legalLabels = new HashSet<String>(Arrays.asList(labels));
+            final LinkedList<Edge> filteredEdges = new LinkedList<Edge>();
+            for (final Edge edge : this.outEdges) {
+                if (legalLabels.contains(edge.getLabel())) {
+                    filteredEdges.add(edge);
+                }
+            }
+            return filteredEdges;
+        } else {
+            return this.outEdges;
+        }
     }
 
     public Iterable<Edge> getInEdges(final String... labels) {
-        return this.inEdges;
+        throw new UnsupportedOperationException("To reduce data redundancy, this operation is not supported");
+    }
+
+    public void addOutEdge(final FaunusEdge edge) {
+        this.outEdges.add(edge);
+    }
+
+    public void setOutEdges(final List<Edge> outEdges) {
+        this.outEdges = outEdges;
     }
 
 
     public void write(final DataOutput out) throws IOException {
         super.write(out);
-        final ArrayListOfLongsWritable outIds = new ArrayListOfLongsWritable();
-        for (final Edge edge : this.getOutEdges()) {
-            outIds.add((Long) edge.getId());
-        }
-        final ArrayListOfLongsWritable inIds = new ArrayListOfLongsWritable();
-        for (final Edge edge : this.getInEdges()) {
-            inIds.add((Long) edge.getId());
-        }
-        outIds.write(out);
-        inIds.write(out);
+        new FaunusEdgeArray((List) this.outEdges).write(out);
     }
 
     public void readFields(final DataInput in) throws IOException {
         super.readFields(in);
-        final ArrayListOfLongsWritable outIds = new ArrayListOfLongsWritable();
-        final ArrayListOfLongsWritable inIds = new ArrayListOfLongsWritable();
-        outIds.readFields(in);
-        inIds.readFields(in);
-
-        for (long edgeId : outIds) {
-            this.outEdges.add(new FaunusEdge(edgeId));
-        }
-
-        for (long edgeId : inIds) {
-            this.inEdges.add(new FaunusEdge(edgeId));
-        }
+        this.outEdges = (List) new FaunusEdgeArray(in).getEdges();
     }
 
     public String toString() {

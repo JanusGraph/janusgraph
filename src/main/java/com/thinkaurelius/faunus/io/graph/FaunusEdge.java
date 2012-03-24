@@ -8,6 +8,7 @@ import org.apache.hadoop.io.Writable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -22,8 +23,20 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
         super(-1l);
     }
 
-    public FaunusEdge(final long id) {
-        super(id);
+    public FaunusEdge(final DataInput in) throws IOException {
+        super(-1l);
+        this.readFields(in);
+    }
+
+    public FaunusEdge(final FaunusEdge edge) throws IOException {
+        super((Long) edge.getId());
+        this.outVertex = (FaunusVertex) edge.getOutVertex();
+        this.inVertex = (FaunusVertex) edge.getInVertex();
+        this.label = edge.getLabel();
+        this.properties = new HashMap<String, Object>();
+        for (String key : edge.getPropertyKeys()) {
+            this.properties.put(key, edge.getProperty(key));
+        }
     }
 
     public FaunusEdge(final long id, final FaunusVertex outVertex, final FaunusVertex inVertex, final String label) {
@@ -45,14 +58,14 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
         return label;
     }
 
-    public void write(DataOutput out) throws IOException {
+    public void write(final DataOutput out) throws IOException {
         super.write(out);
         out.writeLong((Long) this.getInVertex().getId());
         out.writeLong((Long) this.getOutVertex().getId());
         out.writeUTF(this.getLabel());
     }
 
-    public void readFields(DataInput in) throws IOException {
+    public void readFields(final DataInput in) throws IOException {
         super.readFields(in);
         this.inVertex = new FaunusVertex(in.readLong());
         this.outVertex = new FaunusVertex(in.readLong());

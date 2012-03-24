@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.io.formats;
+package com.thinkaurelius.faunus.io.formats.json;
 
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import org.apache.hadoop.fs.Path;
@@ -10,7 +10,9 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
-
+/**
+ * @author Marko A. Rodriguez (http://markorodriguez.com)
+ */
 public class FaunusTextInputFormat extends FileInputFormat<LongWritable, FaunusVertex> {
 
     @Override

@@ -1,7 +1,8 @@
 package com.thinkaurelius.faunus.mapreduce;
 
-import com.thinkaurelius.faunus.io.formats.FaunusTextInputFormat;
+import com.thinkaurelius.faunus.io.formats.json.FaunusTextInputFormat;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
+import com.tinkerpop.blueprints.pgm.Edge;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -24,24 +25,26 @@ import java.io.IOException;
  */
 public class VertexPlay extends Configured implements Tool {
 
-    public static class Map extends Mapper<LongWritable, FaunusVertex, FaunusVertex, FaunusVertex> {
+    public static class Map extends Mapper<LongWritable, FaunusVertex, Text, IntWritable> {
         private final static IntWritable ONE = new IntWritable(1);
 
         @Override
-        public void map(final LongWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<LongWritable, FaunusVertex, FaunusVertex, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            context.write(value, value);
+        public void map(final LongWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<LongWritable, FaunusVertex, Text, IntWritable>.Context context) throws IOException, InterruptedException {
+            for (Edge edge : value.getOutEdges()) {
+                context.write(new Text(edge.getLabel()), ONE);
+            }
         }
     }
 
-    public static class Reduce extends Reducer<FaunusVertex, FaunusVertex, Text, LongWritable> {
+    public static class Reduce extends Reducer<Text, IntWritable, Text, IntWritable> {
 
         @Override
-        public void reduce(final FaunusVertex key, final Iterable<FaunusVertex> values, final org.apache.hadoop.mapreduce.Reducer<FaunusVertex, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
-            long counter = 0;
-            for (final FaunusVertex i : values) {
+        public void reduce(final Text key, final Iterable<IntWritable> values, final org.apache.hadoop.mapreduce.Reducer<Text, IntWritable, Text, IntWritable>.Context context) throws IOException, InterruptedException {
+            int counter = 0;
+            for (IntWritable i : values) {
                 counter++;
             }
-            context.write(new Text(key.getId() + ":" + key.getProperty("blop").toString()), new LongWritable(counter));
+            context.write(key, new IntWritable(counter));
         }
     }
 
@@ -61,8 +64,8 @@ public class VertexPlay extends Configured implements Tool {
         job.setOutputFormatClass(TextOutputFormat.class);
 
         // mapper output
-        job.setOutputKeyClass(FaunusVertex.class);
-        job.setOutputValueClass(FaunusVertex.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
 
         return job.waitForCompletion(true) ? 0 : 1;
     }

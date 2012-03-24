@@ -1,6 +1,7 @@
-package com.thinkaurelius.faunus.io.formats;
+package com.thinkaurelius.faunus.io.formats.json;
 
 
+import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -17,12 +18,16 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.util.LineReader;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.List;
 
+/**
+ * @author Marko A. Rodriguez (http://markorodriguez.com)
+ */
 public class FaunusLineRecordReader extends RecordReader<LongWritable, FaunusVertex> {
 
     private static final Log LOG = LogFactory.getLog(FaunusLineRecordReader.class);
@@ -41,7 +46,7 @@ public class FaunusLineRecordReader extends RecordReader<LongWritable, FaunusVer
         final Configuration job = context.getConfiguration();
         this.maxLineLength = job.getInt("mapred.linerecordreader.maxlength", Integer.MAX_VALUE);
         this.start = split.getStart();
-        this.end = start + split.getLength();
+        this.end = this.start + split.getLength();
         final Path file = split.getPath();
         final CompressionCodec codec = new CompressionCodecFactory(job).getCodec(file);
 
@@ -58,7 +63,7 @@ public class FaunusLineRecordReader extends RecordReader<LongWritable, FaunusVer
                 --this.start;
                 fileIn.seek(this.start);
             }
-            in = new LineReader(fileIn, job);
+            this.in = new LineReader(fileIn, job);
         }
         if (skipFirstLine) {  // skip first line and re-establish "start".
             this.start += this.in.readLine(new Text(), 0, (int) Math.min((long) Integer.MAX_VALUE, this.end - this.start));
@@ -92,8 +97,8 @@ public class FaunusLineRecordReader extends RecordReader<LongWritable, FaunusVer
             LOG.info("Skipped line of size " + newSize + " at pos " + (pos - newSize));
         }
         if (newSize == 0) {
-            key = null;
-            value = null;
+            this.key = null;
+            this.value = null;
             return false;
         } else {
             return true;
@@ -127,12 +132,28 @@ public class FaunusLineRecordReader extends RecordReader<LongWritable, FaunusVer
 
     private FaunusVertex parseVertex(final String line) throws IOException {
         try {
-            final JSONObject json = (JSONObject) parser.parse(line);
-            final FaunusVertex vertex = new FaunusVertex((Long) json.get("id"));
-            final JSONObject properties = (JSONObject) json.get("properties");
+
+            final JSONObject json = (JSONObject) this.parser.parse(line);
+            final FaunusVertex vertex = new FaunusVertex((Long) json.get(JSONTokens.ID));
+            final JSONObject properties = (JSONObject) json.get(JSONTokens.PROPERTIES);
             if (null != properties) {
-                for (final String key : (Set<String>) properties.keySet()) {
-                    vertex.setProperty(key, properties.get(key));
+                for (final Object key : properties.keySet()) {
+                    vertex.setProperty((String) key, properties.get(key));
+                }
+            }
+            final JSONArray outEdges = (JSONArray) json.get(JSONTokens.OUT_E);
+            if (null != outEdges) {
+                for (final JSONObject outEdge : (List<JSONObject>) outEdges) {
+                    final long inVertexId = (Long) outEdge.get(JSONTokens.IN_ID);
+                    final String label = (String) outEdge.get(JSONTokens.LABEL);
+                    final FaunusEdge edge = new FaunusEdge(-1l, vertex, new FaunusVertex(inVertexId), label);
+                    final JSONObject edgeProperties = (JSONObject) outEdge.get(JSONTokens.PROPERTIES);
+                    if (null != edgeProperties) {
+                        for (final Object key : properties.keySet()) {
+                            edge.setProperty((String) key, properties.get(key));
+                        }
+                    }
+                    vertex.addOutEdge(edge);
                 }
             }
             return vertex;

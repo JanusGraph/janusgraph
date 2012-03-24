@@ -34,7 +34,7 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
         LONG((byte) 1),
         FLOAT((byte) 2),
         DOUBLE((byte) 3),
-        STRING((byte) 0);
+        STRING((byte) 4);
         public byte val;
 
         private PropertyType(byte v) {
@@ -42,20 +42,19 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
         }
     }
 
-
     public FaunusElement(final Long id) {
         this.id = id;
     }
 
-    public void setProperty(String key, Object value) {
+    public void setProperty(final String key, final Object value) {
         this.properties.put(key, value);
     }
 
-    public Object removeProperty(String key) {
+    public Object removeProperty(final String key) {
         return this.properties.remove(key);
     }
 
-    public Object getProperty(String key) {
+    public Object getProperty(final String key) {
         return this.properties.get(key);
     }
 
@@ -64,7 +63,7 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
     }
 
     public Object getId() {
-        return id;
+        return this.id;
     }
 
     public void write(final DataOutput out) throws IOException {
@@ -76,7 +75,7 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
         out.writeLong(this.id);
 
         out.writeInt(this.properties.size());
-        for (Map.Entry<String, Object> entry : this.properties.entrySet()) {
+        for (final Map.Entry<String, Object> entry : this.properties.entrySet()) {
             out.writeUTF(entry.getKey());
             final Class valueClass = entry.getValue().getClass();
             final Object valueObject = entry.getValue();
@@ -102,6 +101,8 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
     }
 
     public void readFields(final DataInput in) throws IOException {
+        this.properties = new HashMap<String, Object>();
+
         in.readByte();
         this.id = in.readLong();
 
