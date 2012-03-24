@@ -1,21 +1,26 @@
 package com.thinkaurelius.faunus.io.formats;
 
-import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-
-/**
- * 1{}[2{},3{}]
- * 1{k1=v1}[2{},3{k1=v2}]
- *
- * EASY: 1\t2,3,4,5
- *
- * @author Marko A. Rodriguez (http://markorodriguez.com)
- */
-public class FaunusTextInputFormat extends TextInputFormat {
+import com.thinkaurelius.faunus.io.graph.FaunusVertex;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 
-    private class FaunusLineReader extends LineRecordReader {
+public class FaunusTextInputFormat extends FileInputFormat<LongWritable, FaunusVertex> {
 
+    @Override
+    public RecordReader<LongWritable, FaunusVertex> createRecordReader(final InputSplit split, final TaskAttemptContext context) {
+        return new FaunusLineRecordReader();
+    }
+
+    @Override
+    protected boolean isSplitable(final JobContext context, final Path file) {
+        return null == new CompressionCodecFactory(context.getConfiguration()).getCodec(file);
     }
 
 }
