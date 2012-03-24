@@ -76,7 +76,7 @@ public class FaunusLineRecordReader extends RecordReader<LongWritable, FaunusVer
         }
         int newSize = 0;
         while (this.pos < this.end) {
-            Text text = new Text();
+            final Text text = new Text();
             newSize = this.in.readLine(text, this.maxLineLength, Math.max((int) Math.min(Integer.MAX_VALUE, end - pos), this.maxLineLength));
             this.value = this.parseVertex(text.toString());
 

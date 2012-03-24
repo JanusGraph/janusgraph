@@ -28,7 +28,7 @@ public class VertexPlay extends Configured implements Tool {
         private final static IntWritable ONE = new IntWritable(1);
 
         @Override
-        public void map(LongWritable key, FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<LongWritable, FaunusVertex, FaunusVertex, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final LongWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<LongWritable, FaunusVertex, FaunusVertex, FaunusVertex>.Context context) throws IOException, InterruptedException {
             context.write(value, value);
         }
     }
@@ -41,7 +41,7 @@ public class VertexPlay extends Configured implements Tool {
             for (final FaunusVertex i : values) {
                 counter++;
             }
-            context.write(new Text(key.getId() + ":" + key.getPropertyKeys().toString()), new LongWritable(counter));
+            context.write(new Text(key.getId() + ":" + key.getProperty("blop").toString()), new LongWritable(counter));
         }
     }
 
