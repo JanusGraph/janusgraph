@@ -29,12 +29,6 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
         super(id);
     }
 
-    public FaunusVertex(final FaunusVertex vertex) {
-        super((Long) vertex.getId());
-        this.outEdges = (List<Edge>) vertex.getOutEdges();
-        this.setProperties(vertex.getProperties());
-    }
-
     public FaunusVertex(final DataInput in) throws IOException {
         super(-1l);
         this.readFields(in);

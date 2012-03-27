@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.tinkerpop.blueprints.pgm.Edge;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
@@ -37,7 +38,7 @@ public class Traverse {
         public void reduce(final LongWritable key, final Iterable<FaunusEdge> values, final org.apache.hadoop.mapreduce.Reducer<LongWritable, FaunusEdge, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             final List<FaunusEdge> edges = new LinkedList<FaunusEdge>();
             for (final FaunusEdge edge : values) {
-                edges.add(new FaunusEdge(edge));
+                edges.add(WritableUtils.clone(edge, context.getConfiguration()));
             }
 
             for (int i = 0; i < edges.size(); i++) {

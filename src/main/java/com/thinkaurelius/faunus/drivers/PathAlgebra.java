@@ -2,14 +2,13 @@ package com.thinkaurelius.faunus.drivers;
 
 import com.thinkaurelius.faunus.io.formats.json.FaunusJSONInputFormat;
 import com.thinkaurelius.faunus.io.formats.json.FaunusJSONOutputFormat;
-import com.thinkaurelius.faunus.io.graph.FaunusEdge;
+import com.thinkaurelius.faunus.io.graph.util.ElementHolder;
 import com.thinkaurelius.faunus.mapreduce.algebra.LabelFilter;
-import com.thinkaurelius.faunus.mapreduce.algebra.Traverse;
+import com.thinkaurelius.faunus.mapreduce.algebra.Transpose;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -33,15 +32,15 @@ public class PathAlgebra extends Configured implements Tool {
         FileInputFormat.setInputPaths(job, in);
         FileOutputFormat.setOutputPath(job, out);
 
-        job.setMapperClass(Traverse.Map.class);
-        job.setReducerClass(Traverse.Reduce.class);
+        job.setMapperClass(Transpose.Map.class);
+        job.setReducerClass(Transpose.Reduce.class);
         //job.setNumReduceTasks(0);
         job.setInputFormatClass(FaunusJSONInputFormat.class);
         job.setOutputFormatClass(FaunusJSONOutputFormat.class);
 
         // mapper output
         job.setOutputKeyClass(LongWritable.class);
-        job.setOutputValueClass(FaunusEdge.class);
+        job.setOutputValueClass(ElementHolder.class);
 
         return job.waitForCompletion(true) ? 0 : 1;
     }

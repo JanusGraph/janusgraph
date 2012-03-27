@@ -7,6 +7,7 @@ import com.thinkaurelius.faunus.io.graph.util.ElementHolder;
 import com.tinkerpop.blueprints.pgm.Edge;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
@@ -41,7 +42,7 @@ public class Transpose {
             for (final ElementHolder generic : values) {
                 final FaunusElement element = (FaunusElement) generic.get();
                 if (element instanceof FaunusEdge) {
-                    vertex.addOutEdge(new FaunusEdge((FaunusEdge) element));
+                    vertex.addOutEdge(WritableUtils.clone((FaunusEdge) element, context.getConfiguration()));
                 } else if (element instanceof FaunusVertex) {
                     vertex.setProperties(element.getProperties());
                 } else {

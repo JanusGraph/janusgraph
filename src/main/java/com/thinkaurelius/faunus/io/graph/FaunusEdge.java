@@ -27,14 +27,6 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
         this.readFields(in);
     }
 
-    public FaunusEdge(final FaunusEdge edge) throws IOException {
-        super(-1l);
-        this.outVertex = (FaunusVertex) edge.getOutVertex();
-        this.inVertex = (FaunusVertex) edge.getInVertex();
-        this.label = edge.getLabel();
-        this.setProperties(edge.getProperties());
-    }
-
     public FaunusEdge(final FaunusVertex outVertex, final FaunusVertex inVertex, final String label) {
         super(-1l);
         this.outVertex = outVertex;
