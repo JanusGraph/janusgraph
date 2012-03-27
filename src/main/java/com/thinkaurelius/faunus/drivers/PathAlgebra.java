@@ -1,12 +1,14 @@
 package com.thinkaurelius.faunus.drivers;
 
-import com.thinkaurelius.faunus.io.formats.json.FaunusTextInputFormat;
-import com.thinkaurelius.faunus.io.formats.json.FaunusTextOutputFormat;
+import com.thinkaurelius.faunus.io.formats.json.FaunusJSONInputFormat;
+import com.thinkaurelius.faunus.io.formats.json.FaunusJSONOutputFormat;
 import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.mapreduce.algebra.LabelFilter;
+import com.thinkaurelius.faunus.mapreduce.algebra.Traverse;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -21,23 +23,24 @@ public class PathAlgebra extends Configured implements Tool {
 
     public int run(String[] args) throws Exception {
         Configuration config = this.getConf();
+        config.setStrings(LabelFilter.LABELS_PROPERTY, "knows");
         Job job = new Job(config, "Faunus: Path Algebra");
         job.setJarByClass(PathAlgebra.class);
+
 
         Path in = new Path(args[0]);
         Path out = new Path(args[1]);
         FileInputFormat.setInputPaths(job, in);
         FileOutputFormat.setOutputPath(job, out);
 
-        LabelFilter.edgeLabels = new String[]{"created"};
-        job.setMapperClass(LabelFilter.Map.class);
-        //job.setReducerClass(Transpose.Reduce.class);
-        job.setNumReduceTasks(0);
-        job.setInputFormatClass(FaunusTextInputFormat.class);
-        job.setOutputFormatClass(FaunusTextOutputFormat.class);
+        job.setMapperClass(Traverse.Map.class);
+        job.setReducerClass(Traverse.Reduce.class);
+        //job.setNumReduceTasks(0);
+        job.setInputFormatClass(FaunusJSONInputFormat.class);
+        job.setOutputFormatClass(FaunusJSONOutputFormat.class);
 
         // mapper output
-        job.setOutputKeyClass(NullWritable.class);
+        job.setOutputKeyClass(LongWritable.class);
         job.setOutputValueClass(FaunusEdge.class);
 
         return job.waitForCompletion(true) ? 0 : 1;

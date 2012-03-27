@@ -1,13 +1,13 @@
 package com.thinkaurelius.faunus.mapreduce;
 
-import com.thinkaurelius.faunus.io.formats.json.FaunusTextInputFormat;
+import com.thinkaurelius.faunus.io.formats.json.FaunusJSONInputFormat;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.tinkerpop.blueprints.pgm.Edge;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -25,11 +25,11 @@ import java.io.IOException;
  */
 public class VertexPlay extends Configured implements Tool {
 
-    public static class Map extends Mapper<LongWritable, FaunusVertex, Text, IntWritable> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, Text, IntWritable> {
         private final static IntWritable ONE = new IntWritable(1);
 
         @Override
-        public void map(final LongWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<LongWritable, FaunusVertex, Text, IntWritable>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, Text, IntWritable>.Context context) throws IOException, InterruptedException {
             for (Edge edge : value.getOutEdges()) {
                 context.write(new Text(edge.getLabel()), ONE);
             }
@@ -60,7 +60,7 @@ public class VertexPlay extends Configured implements Tool {
 
         job.setMapperClass(Map.class);
         job.setReducerClass(Reduce.class);
-        job.setInputFormatClass(FaunusTextInputFormat.class);
+        job.setInputFormatClass(FaunusJSONInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
 
         // mapper output

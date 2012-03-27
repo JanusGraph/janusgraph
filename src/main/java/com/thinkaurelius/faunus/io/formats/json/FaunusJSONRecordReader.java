@@ -9,7 +9,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
@@ -23,21 +23,21 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Iterator;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusLineRecordReader extends RecordReader<LongWritable, FaunusVertex> {
+public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
-    private static final Log LOG = LogFactory.getLog(FaunusLineRecordReader.class);
+    private static final Log LOG = LogFactory.getLog(FaunusJSONRecordReader.class);
 
     private long start;
     private long pos;
     private long end;
     private LineReader in;
     private int maxLineLength;
-    private LongWritable key = null;
+    private NullWritable key = NullWritable.get();
     private FaunusVertex value = null;
     private JSONParser parser = new JSONParser();
 
@@ -72,10 +72,6 @@ public class FaunusLineRecordReader extends RecordReader<LongWritable, FaunusVer
     }
 
     public boolean nextKeyValue() throws IOException {
-        if (this.key == null) {
-            this.key = new LongWritable();
-        }
-        this.key.set(this.pos);
         if (this.value == null) {
             this.value = new FaunusVertex(-1l);
         }
@@ -106,7 +102,7 @@ public class FaunusLineRecordReader extends RecordReader<LongWritable, FaunusVer
     }
 
     @Override
-    public LongWritable getCurrentKey() {
+    public NullWritable getCurrentKey() {
         return this.key;
     }
 
@@ -143,14 +139,16 @@ public class FaunusLineRecordReader extends RecordReader<LongWritable, FaunusVer
             }
             final JSONArray outEdges = (JSONArray) json.get(JSONTokens.OUT_E);
             if (null != outEdges) {
-                for (final JSONObject outEdge : (List<JSONObject>) outEdges) {
+                final Iterator itty = outEdges.iterator();
+                while (itty.hasNext()) {
+                    final JSONObject outEdge = (JSONObject) itty.next();
                     final long inVertexId = (Long) outEdge.get(JSONTokens.IN_ID);
                     final String label = (String) outEdge.get(JSONTokens.LABEL);
-                    final FaunusEdge edge = new FaunusEdge(-1l, vertex, new FaunusVertex(inVertexId), label);
+                    final FaunusEdge edge = new FaunusEdge(vertex, new FaunusVertex(inVertexId), label);
                     final JSONObject edgeProperties = (JSONObject) outEdge.get(JSONTokens.PROPERTIES);
                     if (null != edgeProperties) {
-                        for (final Object key : properties.keySet()) {
-                            edge.setProperty((String) key, properties.get(key));
+                        for (final Object key : edgeProperties.keySet()) {
+                            edge.setProperty((String) key, edgeProperties.get(key));
                         }
                     }
                     vertex.addOutEdge(edge);

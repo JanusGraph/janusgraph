@@ -62,6 +62,17 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
         return this.properties.keySet();
     }
 
+    public Map<String, Object> getProperties() {
+        return this.properties;
+    }
+
+    public void setProperties(final Map<String, Object> properties) {
+        this.properties.clear();
+        for (final Map.Entry<String, Object> entry : properties.entrySet()) {
+            this.properties.put(entry.getKey(), entry.getValue());
+        }
+    }
+
     public Object getId() {
         return this.id;
     }
