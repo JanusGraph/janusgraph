@@ -4,7 +4,7 @@ import com.thinkaurelius.faunus.io.formats.json.FaunusJSONInputFormat;
 import com.thinkaurelius.faunus.io.formats.json.FaunusJSONOutputFormat;
 import com.thinkaurelius.faunus.io.graph.util.ElementHolder;
 import com.thinkaurelius.faunus.mapreduce.algebra.LabelFilter;
-import com.thinkaurelius.faunus.mapreduce.algebra.Transpose;
+import com.thinkaurelius.faunus.mapreduce.algebra.Traverse;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -23,6 +23,7 @@ public class PathAlgebra extends Configured implements Tool {
     public int run(String[] args) throws Exception {
         Configuration config = this.getConf();
         config.setStrings(LabelFilter.LABELS_PROPERTY, "knows");
+        config.setStrings(Traverse.LABELS_PROPERTY, "knows", "created");
         Job job = new Job(config, "Faunus: Path Algebra");
         job.setJarByClass(PathAlgebra.class);
 
@@ -32,8 +33,8 @@ public class PathAlgebra extends Configured implements Tool {
         FileInputFormat.setInputPaths(job, in);
         FileOutputFormat.setOutputPath(job, out);
 
-        job.setMapperClass(Transpose.Map.class);
-        job.setReducerClass(Transpose.Reduce.class);
+        job.setMapperClass(Traverse.Map.class);
+        job.setReducerClass(Traverse.Reduce.class);
         //job.setNumReduceTasks(0);
         job.setInputFormatClass(FaunusJSONInputFormat.class);
         job.setOutputFormatClass(FaunusJSONOutputFormat.class);

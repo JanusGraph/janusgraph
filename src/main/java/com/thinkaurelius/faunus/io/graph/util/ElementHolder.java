@@ -27,4 +27,8 @@ public class ElementHolder<T extends FaunusElement> extends GenericWritable {
     public ElementHolder(final T element) {
         this.set(element);
     }
+
+    public T get() {
+        return (T) super.get();
+    }
 }
