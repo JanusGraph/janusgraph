@@ -16,7 +16,7 @@ public class RemoveProperties {
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
-        private String[] keys;
+        protected String[] keys;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
@@ -25,7 +25,7 @@ public class RemoveProperties {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            if (this.keys.length == 0) {
+            if (null == this.keys || this.keys.length == 0) {
                 for (final String k : value.getPropertyKeys()) {
                     value.removeProperty(k);
                 }

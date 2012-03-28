@@ -16,7 +16,7 @@ public class FaunusEdgeArray implements Writable {
 
     private List<FaunusEdge> edges;
 
-    public FaunusEdgeArray(List<FaunusEdge> edges) {
+    public FaunusEdgeArray(final List<FaunusEdge> edges) {
         this.edges = edges;
     }
 

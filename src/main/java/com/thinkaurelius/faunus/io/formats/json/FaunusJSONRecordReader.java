@@ -3,8 +3,6 @@ package com.thinkaurelius.faunus.io.formats.json;
 
 import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -30,7 +28,7 @@ import java.util.Iterator;
  */
 public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
-    private static final Log LOG = LogFactory.getLog(FaunusJSONRecordReader.class);
+    //private static final Log LOG = LogFactory.getLog(FaunusJSONRecordReader.class);
 
     private long start;
     private long pos;
@@ -90,7 +88,7 @@ public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVer
             }
 
             // line too long. try again
-            LOG.info("Skipped line of size " + newSize + " at pos " + (pos - newSize));
+            //LOG.info("Skipped line of size " + newSize + " at pos " + (pos - newSize));
         }
         if (newSize == 0) {
             this.key = null;
@@ -126,7 +124,7 @@ public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVer
     }
 
 
-    private FaunusVertex parseVertex(final String line) throws IOException {
+    protected FaunusVertex parseVertex(final String line) throws IOException {
         try {
 
             final JSONObject json = (JSONObject) this.parser.parse(line);
