@@ -11,7 +11,7 @@ import java.io.IOException;
  */
 public class RemoveProperties {
 
-    public static final String KEYS_PROPERTY = "faunus.algebra.removeproperties.keys";
+    public static final String KEYS = "faunus.algebra.removeproperties.keys";
 
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
@@ -20,12 +20,12 @@ public class RemoveProperties {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.keys = context.getConfiguration().getStrings(KEYS_PROPERTY);
+            this.keys = context.getConfiguration().getStrings(KEYS);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            if (keys.length == 0) {
+            if (this.keys.length == 0) {
                 for (final String k : value.getPropertyKeys()) {
                     value.removeProperty(k);
                 }

@@ -12,7 +12,7 @@ import java.util.List;
  */
 public class LabelFilter {
 
-    public static final String LABELS_PROPERTY = "faunus.algebra.labelfilter.labels";
+    public static final String LABELS = "faunus.algebra.labelfilter.labels";
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
@@ -20,7 +20,7 @@ public class LabelFilter {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.labels = context.getConfiguration().getStrings(LABELS_PROPERTY);
+            this.labels = context.getConfiguration().getStrings(LABELS);
         }
 
         @Override

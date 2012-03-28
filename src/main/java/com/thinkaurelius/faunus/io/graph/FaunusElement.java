@@ -142,4 +142,14 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
     public int compareTo(final T other) {
         return new Long(this.id).compareTo((Long) other.getId());
     }
+
+    @Override
+    public boolean equals(final Object other) {
+        return this.getClass().equals(other.getClass()) && this.id == (Long) ((FaunusElement) other).getId();
+    }
+
+    @Override
+    public int hashCode() {
+        return ((Long) this.id).hashCode();
+    }
 }

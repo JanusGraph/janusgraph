@@ -22,7 +22,7 @@ import java.util.List;
  */
 public class Traverse {
 
-    public static final String LABELS_PROPERTY = "faunus.algebra.traverse.labels";
+    public static final String LABELS = "faunus.algebra.traverse.labels";
 
     public static class Map1 extends Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder> {
 
@@ -30,7 +30,7 @@ public class Traverse {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.labels = context.getConfiguration().getStrings(LABELS_PROPERTY);
+            this.labels = context.getConfiguration().getStrings(LABELS);
             if (this.labels.length != 2) {
                 throw new IOException("Two labels must be provided for traversing");
             }
@@ -61,7 +61,7 @@ public class Traverse {
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.labels = context.getConfiguration().getStrings(LABELS_PROPERTY);
+            this.labels = context.getConfiguration().getStrings(LABELS);
             if (this.labels.length != 2) {
                 throw new IOException("Two labels must be provided for traversing");
             }

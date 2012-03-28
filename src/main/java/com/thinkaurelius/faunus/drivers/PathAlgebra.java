@@ -27,8 +27,8 @@ public class PathAlgebra extends Configured implements Tool {
 
     public int run(String[] args) throws Exception {
         Configuration config = this.getConf();
-        config.setStrings(LabelFilter.LABELS_PROPERTY, "knows");
-        config.setStrings(Traverse.LABELS_PROPERTY, "knows", "created");
+        config.setStrings(LabelFilter.LABELS, "knows");
+        config.setStrings(Traverse.LABELS, "knows", "created");
         Job job = new Job(config, "Faunus: Path Algebra");
         job.setJarByClass(PathAlgebra.class);
 
