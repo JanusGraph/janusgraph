@@ -8,7 +8,7 @@ import org.apache.hadoop.io.GenericWritable;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class ElementHolder<T extends FaunusElement> extends GenericWritable {
+public class Holder<T extends FaunusElement> extends GenericWritable {
 
     private static Class[] CLASSES = {
             FaunusVertex.class,
@@ -20,11 +20,11 @@ public class ElementHolder<T extends FaunusElement> extends GenericWritable {
 
     }
 
-    public ElementHolder() {
+    public Holder() {
         super();
     }
 
-    public ElementHolder(final T element) {
+    public Holder(final T element) {
         this.set(element);
     }
 

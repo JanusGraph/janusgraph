@@ -5,29 +5,36 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class LabelFilter {
+public class RemoveProperties {
 
-    public static final String LABELS_PROPERTY = "faunus.algebra.labelfilter.labels";
+    public static final String KEYS_PROPERTY = "faunus.algebra.removeproperties.keys";
+
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
-        private String[] labels;
+        private String[] keys;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.labels = context.getConfiguration().getStrings(LABELS_PROPERTY);
+            this.keys = context.getConfiguration().getStrings(KEYS_PROPERTY);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            value.setOutEdges((List) value.getOutEdges(this.labels));
+            if (keys.length == 0) {
+                for (final String k : value.getPropertyKeys()) {
+                    value.removeProperty(k);
+                }
+            } else {
+                for (final String k : this.keys) {
+                    value.removeProperty(k);
+                }
+            }
             context.write(NullWritable.get(), value);
         }
     }
-
 }
