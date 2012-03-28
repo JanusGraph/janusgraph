@@ -14,7 +14,21 @@ import java.util.Iterator;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class FaunusVertexTest extends TestCase {
+    
+    public void testComparison() throws IOException {
+        FaunusVertex vertex1 = new FaunusVertex(10);
+        FaunusVertex vertex2 = new FaunusVertex(11);
 
+        ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
+        vertex1.write(new DataOutputStream(bytes1));
+        ByteArrayOutputStream bytes2 = new ByteArrayOutputStream();
+        vertex2.write(new DataOutputStream(bytes2));
+
+        assertEquals(-1, vertex1.compare(bytes1.toByteArray(), 0, bytes1.size(), bytes2.toByteArray(), 0, bytes2.size()));
+        assertEquals(1, vertex1.compare(bytes2.toByteArray(), 0, bytes2.size(), bytes1.toByteArray(), 0, bytes1.size()));
+        assertEquals(0, vertex1.compare(bytes1.toByteArray(), 0, bytes1.size(), bytes1.toByteArray(), 0, bytes1.size()));
+    }
+    
     public void testSerialization1() throws IOException {
 
         FaunusVertex vertex1 = new FaunusVertex(10);

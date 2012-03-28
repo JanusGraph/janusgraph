@@ -2,11 +2,13 @@ package com.thinkaurelius.faunus.io.graph;
 
 import com.tinkerpop.blueprints.pgm.Element;
 import com.tinkerpop.blueprints.pgm.Vertex;
+import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.WritableComparable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -14,7 +16,7 @@ import java.util.Set;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public abstract class FaunusElement<T extends Element> implements Element, WritableComparable<T> {
+public abstract class FaunusElement<T extends Element> implements Element, WritableComparable<T>, RawComparator<T> {
 
     protected Map<String, Object> properties = new HashMap<String, Object>();
     protected long id;
@@ -141,6 +143,22 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
 
     public int compareTo(final T other) {
         return new Long(this.id).compareTo((Long) other.getId());
+    }
+
+    @Override
+    public int compare(byte[] element1, int start1, int length1, byte[] element2, int start2, int length2) {
+        if (element1[0] != element2[0])
+            return -1;
+
+        final Long id1 = ByteBuffer.wrap(element1, 1, 9).getLong();
+        final Long id2 = ByteBuffer.wrap(element2, 1, 9).getLong();
+
+        return id1.compareTo(id2);
+    }
+
+    @Override
+    public int compare(final T t1, final T t2) {
+        return ((Long) t1.getId()).compareTo((Long) t2.getId());
     }
 
     @Override

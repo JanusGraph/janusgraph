@@ -35,7 +35,7 @@ public class FaunusJSONRecordWriter extends RecordWriter<NullWritable, FaunusVer
         this.out = out;
     }
 
-    public synchronized void write(final NullWritable nullKey, final FaunusVertex vertex) throws IOException {
+    public void write(final NullWritable nullKey, final FaunusVertex vertex) throws IOException {
         if (null != vertex) {
             final JSONObject object = new JSONObject();
             object.put(JSONTokens.ID, vertex.getId());

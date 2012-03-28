@@ -1,7 +1,7 @@
 package com.thinkaurelius.faunus.io.formats.json;
 
 
-import com.thinkaurelius.faunus.io.graph.FaunusEdge;
+import com.thinkaurelius.faunus.io.formats.json.util.FaunusJSONParser;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -16,12 +16,8 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.util.LineReader;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -37,7 +33,7 @@ public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVer
     private int maxLineLength;
     private NullWritable key = NullWritable.get();
     private FaunusVertex value = null;
-    private JSONParser parser = new JSONParser();
+    private FaunusJSONParser parser = new FaunusJSONParser();
 
     public void initialize(final InputSplit genericSplit, final TaskAttemptContext context) throws IOException {
         final FileSplit split = (FileSplit) genericSplit;
@@ -77,7 +73,7 @@ public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVer
         while (this.pos < this.end) {
             final Text text = new Text();
             newSize = this.in.readLine(text, this.maxLineLength, Math.max((int) Math.min(Integer.MAX_VALUE, end - pos), this.maxLineLength));
-            this.value = this.parseVertex(text.toString());
+            this.value = this.parser.parse(text.toString());
 
             if (newSize == 0) {
                 break;
@@ -120,41 +116,6 @@ public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVer
     public synchronized void close() throws IOException {
         if (this.in != null) {
             this.in.close();
-        }
-    }
-
-
-    protected FaunusVertex parseVertex(final String line) throws IOException {
-        try {
-
-            final JSONObject json = (JSONObject) this.parser.parse(line);
-            final FaunusVertex vertex = new FaunusVertex((Long) json.get(JSONTokens.ID));
-            final JSONObject properties = (JSONObject) json.get(JSONTokens.PROPERTIES);
-            if (null != properties) {
-                for (final Object key : properties.keySet()) {
-                    vertex.setProperty((String) key, properties.get(key));
-                }
-            }
-            final JSONArray outEdges = (JSONArray) json.get(JSONTokens.OUT_E);
-            if (null != outEdges) {
-                final Iterator itty = outEdges.iterator();
-                while (itty.hasNext()) {
-                    final JSONObject outEdge = (JSONObject) itty.next();
-                    final long inVertexId = (Long) outEdge.get(JSONTokens.IN_ID);
-                    final String label = (String) outEdge.get(JSONTokens.LABEL);
-                    final FaunusEdge edge = new FaunusEdge(vertex, new FaunusVertex(inVertexId), label);
-                    final JSONObject edgeProperties = (JSONObject) outEdge.get(JSONTokens.PROPERTIES);
-                    if (null != edgeProperties) {
-                        for (final Object key : edgeProperties.keySet()) {
-                            edge.setProperty((String) key, edgeProperties.get(key));
-                        }
-                    }
-                    vertex.addOutEdge(edge);
-                }
-            }
-            return vertex;
-        } catch (Exception e) {
-            throw new IOException(e.getMessage(), e);
         }
     }
 }
