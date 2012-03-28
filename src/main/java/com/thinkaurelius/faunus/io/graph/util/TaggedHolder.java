@@ -7,6 +7,7 @@ import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -57,5 +58,21 @@ public class TaggedHolder<T extends FaunusElement> extends Holder<T> {
     @Override
     public boolean equals(final Object object) {
         return object.getClass().equals(TaggedHolder.class) && ((TaggedHolder) object).getTag() == this.tag && ((TaggedHolder) object).get().equals(this.get());
+    }
+
+    @Override
+    public int compare(byte[] holder1, int start1, int length1, byte[] holder2, int start2, int length2) {
+        // first byte is the class type
+        // second and third byte are the character
+        // forth byte is the element type
+        // the next 8 bytes are the long id
+        if (holder1[3] != holder2[3]) {
+            return new Byte(holder1[3]).compareTo(holder2[3]);
+        }
+
+        final Long id1 = ByteBuffer.wrap(holder1, 4, 12).getLong();
+        final Long id2 = ByteBuffer.wrap(holder2, 4, 12).getLong();
+
+        return id1.compareTo(id2);
     }
 }

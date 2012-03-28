@@ -15,7 +15,7 @@ import java.util.Iterator;
  */
 public class FaunusVertexTest extends TestCase {
     
-    public void testComparison() throws IOException {
+    public void testRawComparison() throws IOException {
         FaunusVertex vertex1 = new FaunusVertex(10);
         FaunusVertex vertex2 = new FaunusVertex(11);
 

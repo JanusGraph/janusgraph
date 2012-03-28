@@ -147,8 +147,12 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
 
     @Override
     public int compare(byte[] element1, int start1, int length1, byte[] element2, int start2, int length2) {
-        if (element1[0] != element2[0])
-            return -1;
+        // first byte is the element type
+        // the next 8 bytes are the long id
+
+        if (element1[0] != element2[0]) {
+            return new Byte(element1[0]).compareTo(element2[0]);
+        }
 
         final Long id1 = ByteBuffer.wrap(element1, 1, 9).getLong();
         final Long id2 = ByteBuffer.wrap(element2, 1, 9).getLong();
