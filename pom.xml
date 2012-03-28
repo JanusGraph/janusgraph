@@ -22,12 +22,6 @@
         </developer>
     </developers>
     <inceptionYear>2011</inceptionYear>
-    <!--<repositories>
-        <repository>
-            <id>conjars.org</id>
-            <url>http://conjars.org/repo</url>
-        </repository>
-    </repositories>-->
     <dependencies>
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
@@ -40,11 +34,6 @@
             <version>0.20.2</version>
             <scope>provided</scope>
         </dependency>
-        <!--<dependency>
-            <groupId>cascading</groupId>
-            <artifactId>cascading-core</artifactId>
-            <version>2.0.0-wip-248</version>
-        </dependency>-->
         <dependency>
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
@@ -61,12 +50,6 @@
             <artifactId>mrunit</artifactId>
             <version>0.8.1-incubating</version>
             <classifier>hadoop020</classifier>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-test</artifactId>
-            <version>0.20.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
