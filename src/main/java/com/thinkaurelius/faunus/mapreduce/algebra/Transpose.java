@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusElement;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.thinkaurelius.faunus.io.graph.util.Holder;
+import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
 import com.tinkerpop.blueprints.pgm.Edge;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -22,6 +23,7 @@ public class Transpose {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+            long counter = 0;
             final Long vertexId = (Long) value.getId();
             final FaunusVertex vertex = new FaunusVertex(vertexId);
             vertex.setProperties(value.getProperties());
@@ -29,8 +31,11 @@ public class Transpose {
             for (final Edge edge : value.getOutEdges()) {
                 final FaunusEdge inverseEdge = new FaunusEdge((FaunusVertex) edge.getInVertex(), (FaunusVertex) edge.getOutVertex(), edge.getLabel() + "_inv");
                 inverseEdge.setProperties(((FaunusEdge) edge).getProperties());
+                counter++;
                 context.write(new LongWritable((Long) inverseEdge.getOutVertex().getId()), new Holder<FaunusEdge>(inverseEdge));
             }
+            if (counter > 0)
+                context.getCounter(Counters.EDGES_TRANSPOSED).increment(counter);
         }
     }
 

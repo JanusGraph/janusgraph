@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.mapreduce.algebra;
 
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
 import junit.framework.TestCase;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -33,6 +34,7 @@ public class RemovePropertiesTest extends TestCase {
         assertEquals(list.size(), 1);
         FaunusVertex vertex2 = list.get(0).getSecond();
         assertEquals(vertex2.getPropertyKeys().size(), 0);
+        assertEquals(mapDriver.getCounters().findCounter(Counters.PROPERTIES_REMOVED).getValue(), 1);
     }
 
     public void testMap2() throws IOException {
@@ -53,5 +55,7 @@ public class RemovePropertiesTest extends TestCase {
         FaunusVertex vertex2 = list.get(0).getSecond();
         assertEquals(vertex2.getPropertyKeys().size(), 1);
         assertEquals(vertex2.getProperty("age"), 32);
+        assertEquals(mapDriver.getCounters().findCounter(Counters.PROPERTIES_REMOVED).getValue(), 1);
+
     }
 }

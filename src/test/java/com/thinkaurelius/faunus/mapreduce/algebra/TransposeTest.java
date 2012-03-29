@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.algebra;
 import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.thinkaurelius.faunus.io.graph.util.Holder;
+import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
 import com.tinkerpop.blueprints.pgm.Edge;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.LongWritable;
@@ -52,6 +53,8 @@ public class TransposeTest extends TestCase {
                 assertEquals(temp.getProperty("name"), "gremlin");
             }
         }
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(Counters.EDGES_TRANSPOSED).getValue(), 1);
     }
 
 }

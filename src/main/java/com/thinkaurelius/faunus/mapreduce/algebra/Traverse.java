@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.io.graph.FaunusElement;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.thinkaurelius.faunus.io.graph.util.Holder;
 import com.thinkaurelius.faunus.io.graph.util.TaggedHolder;
+import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
 import com.tinkerpop.blueprints.pgm.Edge;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -71,6 +72,8 @@ public class Traverse {
 
         @Override
         public void reduce(final LongWritable key, final Iterable<TaggedHolder> values, final org.apache.hadoop.mapreduce.Reducer<LongWritable, TaggedHolder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+            long counter = 0;
+
             final Configuration configuration = context.getConfiguration();
             final List<FaunusEdge> edgesA = new LinkedList<FaunusEdge>();
             final List<FaunusEdge> edgesB = new LinkedList<FaunusEdge>();
@@ -92,8 +95,12 @@ public class Traverse {
             for (final FaunusEdge edgeA : edgesA) {
                 for (final FaunusEdge edgeB : edgesB) {
                     context.write(new LongWritable((Long) edgeA.getOutVertex().getId()), new Holder<FaunusEdge>(new FaunusEdge((FaunusVertex) edgeA.getOutVertex(), (FaunusVertex) edgeB.getInVertex(), this.newLabel)));
+                    counter++;
                 }
             }
+
+            if (counter > 0)
+                context.getCounter(Counters.EDGES_TRAVERSED).increment(counter);
         }
     }
 
