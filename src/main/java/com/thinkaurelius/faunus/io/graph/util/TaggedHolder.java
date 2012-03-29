@@ -72,19 +72,27 @@ public class TaggedHolder<T extends FaunusElement> extends Holder<T> {
         }
 
         @Override
-        public int compare(byte[] holder1, int start1, int length1, byte[] holder2, int start2, int length2) {
-            // first byte is the class type
-            // second and third byte are the character
-            // forth byte is the element type
+        public int compare(final byte[] holder1, final int start1, final int length1, final byte[] holder2, final int start2, final int length2) {
+            // 0 byte is the class type
+            // 1 & 2 and third byte are the character
+            // 3 byte is the element type
             // the next 8 bytes are the long id
-            if (holder1[3] != holder2[3]) {
-                return new Byte(holder1[3]).compareTo(holder2[3]);
+
+            final ByteBuffer buffer1 = ByteBuffer.wrap(holder1);
+            final ByteBuffer buffer2 = ByteBuffer.wrap(holder2);
+
+            buffer1.get();
+            buffer2.get();
+
+            buffer1.getChar();
+            buffer2.getChar();
+
+            final Byte type1 = buffer1.get();
+            final Byte type2 = buffer2.get();
+            if (!type1.equals(type2)) {
+                return type1.compareTo(type2);
             }
-
-            final Long id1 = ByteBuffer.wrap(holder1, 4, 12).getLong();
-            final Long id2 = ByteBuffer.wrap(holder2, 4, 12).getLong();
-
-            return id1.compareTo(id2);
+            return (((Long) buffer1.getLong()).compareTo(buffer2.getLong()));
         }
 
         @Override

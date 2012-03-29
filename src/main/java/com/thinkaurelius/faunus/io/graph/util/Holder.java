@@ -20,7 +20,6 @@ public class Holder<T extends FaunusElement> extends GenericWritable implements 
         WritableComparator.define(Holder.class, new Comparator());
     }
 
-
     private static Class[] CLASSES = {
             FaunusVertex.class,
             FaunusEdge.class
@@ -58,23 +57,28 @@ public class Holder<T extends FaunusElement> extends GenericWritable implements 
     }
 
     public static class Comparator extends WritableComparator {
+
         public Comparator() {
             super(Holder.class);
         }
 
         @Override
-        public int compare(byte[] holder1, int start1, int length1, byte[] holder2, int start2, int length2) {
-            // first byte is the class type
-            // second byte is the element type
+        public int compare(final byte[] holder1, final int start1, final int length1, final byte[] holder2, final int start2, final int length2) {
+            // 0 byte is the class type
+            // 1 byte is the element type
             // the next 8 bytes are the long id
-            if (holder1[1] != holder2[1]) {
-                return new Byte(holder1[1]).compareTo(holder2[1]);
+            final ByteBuffer buffer1 = ByteBuffer.wrap(holder1);
+            final ByteBuffer buffer2 = ByteBuffer.wrap(holder2);
+
+            buffer1.get();
+            buffer2.get();
+
+            final Byte type1 = buffer1.get();
+            final Byte type2 = buffer2.get();
+            if (!type1.equals(type2)) {
+                return type1.compareTo(type2);
             }
-
-            final Long id1 = ByteBuffer.wrap(holder1, 2, 10).getLong();
-            final Long id2 = ByteBuffer.wrap(holder2, 2, 10).getLong();
-
-            return id1.compareTo(id2);
+            return (((Long) buffer1.getLong()).compareTo(buffer2.getLong()));
         }
 
         @Override

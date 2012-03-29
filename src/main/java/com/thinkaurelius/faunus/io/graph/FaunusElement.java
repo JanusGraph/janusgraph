@@ -1,14 +1,8 @@
 package com.thinkaurelius.faunus.io.graph;
 
 import com.tinkerpop.blueprints.pgm.Element;
-import com.tinkerpop.blueprints.pgm.Vertex;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableComparator;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -21,29 +15,12 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
     protected Map<String, Object> properties = new HashMap<String, Object>();
     protected long id;
 
-    static {
-        WritableComparator.define(FaunusElement.class, new Comparator());
-    }
-
     public enum ElementType {
         VERTEX((byte) 0),
         EDGE((byte) 1);
         public byte val;
 
         private ElementType(byte v) {
-            this.val = v;
-        }
-    }
-
-    public enum PropertyType {
-        INT((byte) 0),
-        LONG((byte) 1),
-        FLOAT((byte) 2),
-        DOUBLE((byte) 3),
-        STRING((byte) 4);
-        public byte val;
-
-        private PropertyType(byte v) {
             this.val = v;
         }
     }
@@ -83,68 +60,6 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
         return this.id;
     }
 
-    public void write(final DataOutput out) throws IOException {
-        if (this instanceof Vertex)
-            out.writeByte(ElementType.VERTEX.val);
-        else
-            out.writeByte(ElementType.EDGE.val);
-
-        out.writeLong(this.id);
-
-        out.writeInt(this.properties.size());
-        for (final Map.Entry<String, Object> entry : this.properties.entrySet()) {
-            out.writeUTF(entry.getKey());
-            final Class valueClass = entry.getValue().getClass();
-            final Object valueObject = entry.getValue();
-            if (valueClass.equals(Integer.class)) {
-                out.writeByte(PropertyType.INT.val);
-                out.writeInt((Integer) valueObject);
-            } else if (valueClass.equals(Long.class)) {
-                out.writeByte(PropertyType.LONG.val);
-                out.writeLong((Long) valueObject);
-            } else if (valueClass.equals(Float.class)) {
-                out.writeByte(PropertyType.FLOAT.val);
-                out.writeFloat((Float) valueObject);
-            } else if (valueClass.equals(Double.class)) {
-                out.writeByte(PropertyType.DOUBLE.val);
-                out.writeDouble((Double) valueObject);
-            } else if (valueClass.equals(String.class)) {
-                out.writeByte(PropertyType.STRING.val);
-                out.writeUTF((String) valueObject);
-            } else {
-                throw new IOException("Property value type of " + valueClass + " is not supported");
-            }
-        }
-    }
-
-    public void readFields(final DataInput in) throws IOException {
-        this.properties = new HashMap<String, Object>();
-
-        in.readByte();
-        this.id = in.readLong();
-
-        final int numberOfProperties = in.readInt();
-        for (int i = 0; i < numberOfProperties; i++) {
-            final String key = in.readUTF();
-            final byte valueClass = in.readByte();
-            final Object valueObject;
-            if (valueClass == PropertyType.INT.val) {
-                valueObject = in.readInt();
-            } else if (valueClass == PropertyType.LONG.val) {
-                valueObject = in.readLong();
-            } else if (valueClass == PropertyType.FLOAT.val) {
-                valueObject = in.readFloat();
-            } else if (valueClass == PropertyType.DOUBLE.val) {
-                valueObject = in.readDouble();
-            } else if (valueClass == PropertyType.STRING.val) {
-                valueObject = in.readUTF();
-            } else {
-                throw new IOException("Property value type of " + valueClass + " is not supported");
-            }
-            this.properties.put(key, valueObject);
-        }
-    }
-
     public int compareTo(final T other) {
         return new Long(this.id).compareTo((Long) other.getId());
     }
@@ -157,34 +72,5 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
     @Override
     public int hashCode() {
         return ((Long) this.id).hashCode();
-    }
-
-    public static class Comparator extends WritableComparator {
-        public Comparator() {
-            super(FaunusElement.class);
-        }
-
-        @Override
-        public int compare(byte[] element1, int start1, int length1, byte[] element2, int start2, int length2) {
-            // first byte is the element type
-            // the next 8 bytes are the long id
-
-            if (element1[0] != element2[0]) {
-                return new Byte(element1[0]).compareTo(element2[0]);
-            }
-
-            final Long id1 = ByteBuffer.wrap(element1, 1, 9).getLong();
-            final Long id2 = ByteBuffer.wrap(element2, 1, 9).getLong();
-
-            return id1.compareTo(id2);
-        }
-
-        @Override
-        public int compare(final WritableComparable a, final WritableComparable b) {
-            if (a instanceof FaunusElement && b instanceof FaunusElement)
-                return ((Long) ((FaunusElement) a).getId()).compareTo((Long) ((FaunusElement) b).getId());
-            else
-                return super.compare(a, b);
-        }
     }
 }

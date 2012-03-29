@@ -20,7 +20,7 @@ import java.util.List;
  */
 public class FaunusJSONParser {
 
-    private JSONParser parser = new JSONParser();
+    private final JSONParser parser = new JSONParser();
 
     public List<FaunusVertex> parse(final InputStream in) throws IOException {
         List<FaunusVertex> vertices = new LinkedList<FaunusVertex>();
