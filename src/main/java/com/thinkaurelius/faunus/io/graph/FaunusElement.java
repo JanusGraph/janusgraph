@@ -2,8 +2,8 @@ package com.thinkaurelius.faunus.io.graph;
 
 import com.tinkerpop.blueprints.pgm.Element;
 import com.tinkerpop.blueprints.pgm.Vertex;
-import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -16,10 +16,14 @@ import java.util.Set;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public abstract class FaunusElement<T extends Element> implements Element, WritableComparable<T>, RawComparator<T> {
+public abstract class FaunusElement<T extends Element> implements Element, WritableComparable<T> {
 
     protected Map<String, Object> properties = new HashMap<String, Object>();
     protected long id;
+
+    static {
+        WritableComparator.define(FaunusElement.class, new Comparator());
+    }
 
     public enum ElementType {
         VERTEX((byte) 0),
@@ -146,26 +150,6 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
     }
 
     @Override
-    public int compare(byte[] element1, int start1, int length1, byte[] element2, int start2, int length2) {
-        // first byte is the element type
-        // the next 8 bytes are the long id
-
-        if (element1[0] != element2[0]) {
-            return new Byte(element1[0]).compareTo(element2[0]);
-        }
-
-        final Long id1 = ByteBuffer.wrap(element1, 1, 9).getLong();
-        final Long id2 = ByteBuffer.wrap(element2, 1, 9).getLong();
-
-        return id1.compareTo(id2);
-    }
-
-    @Override
-    public int compare(final T t1, final T t2) {
-        return ((Long) t1.getId()).compareTo((Long) t2.getId());
-    }
-
-    @Override
     public boolean equals(final Object other) {
         return this.getClass().equals(other.getClass()) && this.id == (Long) ((FaunusElement) other).getId();
     }
@@ -173,5 +157,34 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
     @Override
     public int hashCode() {
         return ((Long) this.id).hashCode();
+    }
+
+    public static class Comparator extends WritableComparator {
+        public Comparator() {
+            super(FaunusElement.class);
+        }
+
+        @Override
+        public int compare(byte[] element1, int start1, int length1, byte[] element2, int start2, int length2) {
+            // first byte is the element type
+            // the next 8 bytes are the long id
+
+            if (element1[0] != element2[0]) {
+                return new Byte(element1[0]).compareTo(element2[0]);
+            }
+
+            final Long id1 = ByteBuffer.wrap(element1, 1, 9).getLong();
+            final Long id2 = ByteBuffer.wrap(element2, 1, 9).getLong();
+
+            return id1.compareTo(id2);
+        }
+
+        @Override
+        public int compare(final WritableComparable a, final WritableComparable b) {
+            if (a instanceof FaunusElement && b instanceof FaunusElement)
+                return ((Long) ((FaunusElement) a).getId()).compareTo((Long) ((FaunusElement) b).getId());
+            else
+                return super.compare(a, b);
+        }
     }
 }

@@ -2,6 +2,8 @@ package com.thinkaurelius.faunus.io.graph.util;
 
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import junit.framework.TestCase;
+import org.apache.hadoop.io.RawComparator;
+import org.apache.hadoop.io.WritableComparator;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -23,9 +25,11 @@ public class HolderTest extends TestCase {
         ByteArrayOutputStream bytes2 = new ByteArrayOutputStream();
         holder2.write(new DataOutputStream(bytes2));
 
-        assertEquals(-1, holder1.compare(bytes1.toByteArray(), 0, bytes1.size(), bytes2.toByteArray(), 0, bytes2.size()));
-        assertEquals(1, holder1.compare(bytes2.toByteArray(), 0, bytes2.size(), bytes1.toByteArray(), 0, bytes1.size()));
-        assertEquals(0, holder1.compare(bytes1.toByteArray(), 0, bytes1.size(), bytes1.toByteArray(), 0, bytes1.size()));
+        RawComparator comparator = WritableComparator.get(Holder.class);
+        
+        assertEquals(-1, comparator.compare(bytes1.toByteArray(), 0, bytes1.size(), bytes2.toByteArray(), 0, bytes2.size()));
+        assertEquals(1, comparator.compare(bytes2.toByteArray(), 0, bytes2.size(), bytes1.toByteArray(), 0, bytes1.size()));
+        assertEquals(0, comparator.compare(bytes1.toByteArray(), 0, bytes1.size(), bytes1.toByteArray(), 0, bytes1.size()));
     }
 
     public void testSerialization1() throws IOException {

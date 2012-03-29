@@ -3,6 +3,8 @@ package com.thinkaurelius.faunus.io.graph.util;
 import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusElement;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -15,6 +17,10 @@ import java.nio.ByteBuffer;
 public class TaggedHolder<T extends FaunusElement> extends Holder<T> {
 
     protected char tag;
+
+    static {
+        WritableComparator.define(TaggedHolder.class, new Comparator());
+    }
 
     private static Class[] CLASSES = {
             FaunusVertex.class,
@@ -60,19 +66,33 @@ public class TaggedHolder<T extends FaunusElement> extends Holder<T> {
         return object.getClass().equals(TaggedHolder.class) && ((TaggedHolder) object).getTag() == this.tag && ((TaggedHolder) object).get().equals(this.get());
     }
 
-    @Override
-    public int compare(byte[] holder1, int start1, int length1, byte[] holder2, int start2, int length2) {
-        // first byte is the class type
-        // second and third byte are the character
-        // forth byte is the element type
-        // the next 8 bytes are the long id
-        if (holder1[3] != holder2[3]) {
-            return new Byte(holder1[3]).compareTo(holder2[3]);
+    public static class Comparator extends WritableComparator {
+        public Comparator() {
+            super(TaggedHolder.class);
         }
 
-        final Long id1 = ByteBuffer.wrap(holder1, 4, 12).getLong();
-        final Long id2 = ByteBuffer.wrap(holder2, 4, 12).getLong();
+        @Override
+        public int compare(byte[] holder1, int start1, int length1, byte[] holder2, int start2, int length2) {
+            // first byte is the class type
+            // second and third byte are the character
+            // forth byte is the element type
+            // the next 8 bytes are the long id
+            if (holder1[3] != holder2[3]) {
+                return new Byte(holder1[3]).compareTo(holder2[3]);
+            }
 
-        return id1.compareTo(id2);
+            final Long id1 = ByteBuffer.wrap(holder1, 4, 12).getLong();
+            final Long id2 = ByteBuffer.wrap(holder2, 4, 12).getLong();
+
+            return id1.compareTo(id2);
+        }
+
+        @Override
+        public int compare(final WritableComparable a, final WritableComparable b) {
+            if (a instanceof TaggedHolder && b instanceof TaggedHolder)
+                return ((Long) ((TaggedHolder) a).get().getId()).compareTo((Long) ((TaggedHolder) b).get().getId());
+            else
+                return super.compare(a, b);
+        }
     }
 }

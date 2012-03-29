@@ -14,7 +14,7 @@ import java.util.Iterator;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class FaunusVertexTest extends TestCase {
-    
+
     public void testRawComparison() throws IOException {
         FaunusVertex vertex1 = new FaunusVertex(10);
         FaunusVertex vertex2 = new FaunusVertex(11);
@@ -24,11 +24,11 @@ public class FaunusVertexTest extends TestCase {
         ByteArrayOutputStream bytes2 = new ByteArrayOutputStream();
         vertex2.write(new DataOutputStream(bytes2));
 
-        assertEquals(-1, vertex1.compare(bytes1.toByteArray(), 0, bytes1.size(), bytes2.toByteArray(), 0, bytes2.size()));
-        assertEquals(1, vertex1.compare(bytes2.toByteArray(), 0, bytes2.size(), bytes1.toByteArray(), 0, bytes1.size()));
-        assertEquals(0, vertex1.compare(bytes1.toByteArray(), 0, bytes1.size(), bytes1.toByteArray(), 0, bytes1.size()));
+        assertEquals(-1, new FaunusVertex.Comparator().compare(bytes1.toByteArray(), 0, bytes1.size(), bytes2.toByteArray(), 0, bytes2.size()));
+        assertEquals(1, new FaunusVertex.Comparator().compare(bytes2.toByteArray(), 0, bytes2.size(), bytes1.toByteArray(), 0, bytes1.size()));
+        assertEquals(0, new FaunusVertex.Comparator().compare(bytes1.toByteArray(), 0, bytes1.size(), bytes1.toByteArray(), 0, bytes1.size()));
     }
-    
+
     public void testSerialization1() throws IOException {
 
         FaunusVertex vertex1 = new FaunusVertex(10);
