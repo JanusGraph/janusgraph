@@ -34,8 +34,8 @@ public class RemoveProperties {
                 }
             } else {
                 for (final String k : this.keys) {
-                    counter++;
-                    value.removeProperty(k);
+                    if (null != value.removeProperty(k))
+                        counter++;
                 }
             }
             if (counter > 0)
