@@ -26,7 +26,7 @@ public class VertexFunctionFilter {
                 c = context.getConfiguration().getClass(FUNCTION, null);
                 this.function = (Function<FaunusVertex, Boolean>) c.getConstructor().newInstance();
             } catch (Exception e) {
-                throw new IOException("Inability to construct function: " + c);
+                throw new IOException("Unable to construct function: " + c);
             }
         }
 
