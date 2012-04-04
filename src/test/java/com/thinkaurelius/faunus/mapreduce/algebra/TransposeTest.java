@@ -36,7 +36,7 @@ public class TransposeTest extends TestCase {
 
         mapReduceDriver.withInput(NullWritable.get(), vertex1).withInput(NullWritable.get(), vertex2);
         List<Pair<NullWritable, FaunusVertex>> list = mapReduceDriver.run();
-
+        assertEquals(list.size(), 2);
         for (Pair<NullWritable, FaunusVertex> pair : list) {
             assertEquals(pair.getFirst(), NullWritable.get());
             FaunusVertex temp = pair.getSecond();
