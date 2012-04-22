@@ -6,26 +6,16 @@ import java.util.List;
 public interface WriteKeyColumnValueStore {
 	
 	/** 
-	 * Inserts the entries (i.e. column-value pairs) for the specified key into the store
-	 * under the given transaction.
-	 * 
-	 * TODO: We should ensure that insertions do not overwrite existing data/values.
-	 * 
+	 * Applies the specified insertion and deletion mutations to the provided key.
+	 * Both, the list of additions or deletions, may be empty or NULL if there is nothing to be added and/or deleted.
+	 *
 	 * @param key Key
-	 * @param entries List of entries
+	 * @param additions List of entries (column + value) to be added
+     * @param deletions List of columns to be removed
 	 * @param txh Transaction under which to execute the operation
 	 */
-	public void insert(ByteBuffer key, List<Entry> entries, TransactionHandle txh);
+	public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh);
 	
-	/**
-	 * Deletes the list of columns for the specified key in the store under the given transaction
-	 * 
-	 * @param key Key
-	 * @param columns List of columns
-	 * @param txh Transaction
-	 */
-	public void delete(ByteBuffer key, List<ByteBuffer> columns, TransactionHandle txh);
-
 	/**
 	 * Acquires a lock for the key-column pair which ensures that nobody else can take a lock on that 
 	 * respective entry for the duration of this lock (but somebody could potentially still overwrite

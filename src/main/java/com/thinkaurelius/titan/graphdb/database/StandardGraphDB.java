@@ -13,6 +13,7 @@ import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.BatchKeyColumnValueStoreMutator;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.DirectKeyColumnValueStoreMutator;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.KeyColumnValueStoreMutator;
+import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.NodeIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
@@ -426,7 +427,7 @@ public class StandardGraphDB implements GraphDB {
 		TransactionStatistics stats = new TransactionStatistics();
 		
 		KeyColumnValueStoreMutator edgeMutator = getEdgeStoreMutator(edgeStore,txh);
-		KeyColumnValueStoreMutator propMutator = getEdgeStoreMutator(propertyIndex,txh);
+		KeyColumnValueStoreMutator propMutator = getEdgeStoreMutator(propertyIndex, txh);
 		
 		//1. Delete edges
 		if (deletedEdges!=null && !deletedEdges.isEmpty()) {

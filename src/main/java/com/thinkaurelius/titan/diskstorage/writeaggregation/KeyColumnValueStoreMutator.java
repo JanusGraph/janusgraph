@@ -7,12 +7,20 @@ import java.util.List;
 
 public interface KeyColumnValueStoreMutator {
 
-	public void insert(ByteBuffer key, List<Entry> entries);
-	public void delete(ByteBuffer key, List<ByteBuffer> columns);
-	
-	public void flushInserts();
-	public void flushDeletes();
-	
+    /**
+     * Applies the specified insertion and deletion mutations to the provided key.
+     * Both, the list of additions or deletions, may be empty or NULL if there is nothing to be added and/or deleted.
+     *
+     * @param key Key
+     * @param additions List of entries (column + value) to be added
+     * @param deletions List of columns to be removed
+     */
+	public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions);
+
+    /**
+     * Persists any mutation that is currently buffered.
+     *
+     */
 	public void flush();
 	
 }

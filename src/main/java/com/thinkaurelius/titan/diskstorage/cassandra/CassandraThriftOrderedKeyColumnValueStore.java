@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import org.apache.cassandra.thrift.*;
 import org.apache.thrift.TException;
