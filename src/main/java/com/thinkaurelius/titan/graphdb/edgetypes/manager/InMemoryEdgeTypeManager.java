@@ -19,10 +19,10 @@ public class InMemoryEdgeTypeManager implements EdgeTypeManager  {
 	public PropertyType createPropertyType(GraphTx tx, String name,
 			EdgeCategory category, Directionality directionality,
 			EdgeTypeVisibility visibility, boolean isfunctional, EdgeType[] keysig, EdgeType[] compactsig,
-			EdgeTypeGroup group, boolean isKey, PropertyIndex index,
+			EdgeTypeGroup group, boolean isKey, boolean hasIndex,
 			Class<?> objectType) {
 		StandardPropertyType pt = new StandardPropertyType(name,category,directionality,visibility,
-				isfunctional,convertSignature(keysig),convertSignature(compactsig),group,isKey,index,objectType);
+				isfunctional,convertSignature(keysig),convertSignature(compactsig),group,isKey,hasIndex,objectType);
 		return factory.createNewPropertyType(pt, tx);
 	}
 

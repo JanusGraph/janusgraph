@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.configuration;
 
-import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 
 import java.io.Serializable;

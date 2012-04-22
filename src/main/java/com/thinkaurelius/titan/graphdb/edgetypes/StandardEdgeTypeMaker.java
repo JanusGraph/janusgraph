@@ -1,12 +1,12 @@
 package com.thinkaurelius.titan.graphdb.edgetypes;
 
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.RangeAttribute;
 import com.thinkaurelius.titan.graphdb.edgetypes.manager.EdgeTypeManager;
 import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemEdgeTypeManager;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class StandardEdgeTypeMaker implements EdgeTypeMaker {
@@ -23,7 +23,7 @@ public class StandardEdgeTypeMaker implements EdgeTypeMaker {
 	private List<EdgeType> keysig;
 	private List<EdgeType> compactsig;
 	
-	private PropertyIndex index;
+	private boolean hasIndex;
 	private boolean isKey;
 	private Class<?> objectType;
 	
@@ -34,7 +34,7 @@ public class StandardEdgeTypeMaker implements EdgeTypeMaker {
 		//Default assignments
 		objectType = null;
 		name = null;
-		index = PropertyIndex.None;
+		hasIndex = false;
 		isKey = false;
 		keysig = new ArrayList<EdgeType>();
 		compactsig = new ArrayList<EdgeType>();
@@ -50,7 +50,7 @@ public class StandardEdgeTypeMaker implements EdgeTypeMaker {
 			throw new IllegalArgumentException("Need to specify name.");
 		if (name.startsWith(SystemEdgeTypeManager.systemETprefix))
 			throw new IllegalArgumentException("Name starts with a reserved keyword!");
-		if ((!keysig.isEmpty() || !compactsig.isEmpty()) && category!=EdgeCategory.Labeled && category!=EdgeCategory.LabeledRestricted)
+		if ((!keysig.isEmpty() || !compactsig.isEmpty()) && category!=EdgeCategory.Labeled)
 			throw new IllegalArgumentException("Can only specify signatures for labeled edge types.");
 	}
 	
@@ -78,34 +78,32 @@ public class StandardEdgeTypeMaker implements EdgeTypeMaker {
 			throw new IllegalArgumentException("Only simple properties are supported!");
 		if (objectType==null)
 			throw new IllegalArgumentException("Need to specify data type.");
-		if (isKey && !index.hasIndex())
-			throw new IllegalArgumentException("Need to define an index for keyed PropertyType");
-		if (index==PropertyIndex.Range && !RangeAttribute.class.isAssignableFrom(objectType))
-			throw new IllegalArgumentException("Range indexes can only be defined for data types which are a subclass of RangeAttribute.");
-		return etManager.createPropertyType(tx, name, category, directionality, 
+		if (isKey && !hasIndex)
+			throw new IllegalArgumentException("Need to define an hasIndex for keyed PropertyType");
+		return etManager.createPropertyType(tx, name, category, directionality,
 				visibility, isFunctional, checkSignature(keysig), checkSignature(compactsig),
-				group, isKey, index, objectType);
+				group, isKey, hasIndex, objectType);
 	}
 
 	@Override
 	public RelationshipType makeRelationshipType() {
 		checkGeneralArguments();
-		if (index!=PropertyIndex.None) 
-			throw new IllegalArgumentException("Cannot specify index for relationship type.");
+		if (hasIndex)
+			throw new IllegalArgumentException("Cannot specify hasIndex for relationship type.");
 		return etManager.createRelationshipType(tx, name, category, directionality, 
 				visibility, isFunctional, checkSignature(keysig), checkSignature(compactsig), group);
 
 	}
 
 	@Override
-	public StandardEdgeTypeMaker addCompactSignature(EdgeType et) {
-		keysig.add(et);
+	public StandardEdgeTypeMaker compactSignature(EdgeType... et) {
+		compactsig = Arrays.asList(et);
 		return this;
 	}
 
 	@Override
-	public StandardEdgeTypeMaker addKeySignature(EdgeType et) {
-		keysig.add(et);
+	public StandardEdgeTypeMaker keySignature(EdgeType... et) {
+		keysig = Arrays.asList(et);
 		return this;
 	}
 
@@ -152,8 +150,8 @@ public class StandardEdgeTypeMaker implements EdgeTypeMaker {
 	}
 
 	@Override
-	public EdgeTypeMaker setIndex(PropertyIndex type) {
-		index = type;
+	public EdgeTypeMaker withIndex(boolean hasIndex) {
+		this.hasIndex = hasIndex;
 		return this;
 	}
 	

@@ -4,14 +4,12 @@ import cern.colt.list.AbstractLongList;
 import com.thinkaurelius.titan.core.GraphDatabase;
 import com.thinkaurelius.titan.core.GraphTransactionConfig;
 import com.thinkaurelius.titan.core.PropertyType;
-import com.thinkaurelius.titan.core.attribute.Interval;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.sendquery.QuerySender;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
+import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 
 import java.util.Collection;
 
@@ -24,19 +22,15 @@ public interface GraphDB extends GraphDatabase {
 	
 	boolean containsNodeID(long id, GraphTx tx);
 
-    public long getNewID(IDManager.IDType type, long groupid);
+    public void assignID(InternalNode node);
 
 	void loadEdges(InternalEdgeQuery query, GraphTx tx);
 	
 	public AbstractLongList getRawNeighborhood(InternalEdgeQuery query, GraphTx tx);
 	
-//	public Multimap<Long,Object[]> getQualifiedNeighborhood(InternalNeighborhoodQuery query, GraphTx tx);
-	
-	public long[] indexRetrieval(Interval<?> interval, PropertyType pt, GraphTx tx);
-	
-	public AbstractLongList getAllNodeIDs(long startRange, long endRange);
-	
-	public GraphTx startTransaction(GraphTransactionConfig configuration, QuerySender sender);
+	public long[] indexRetrieval(Object value, PropertyType pt, GraphTx tx);
+
+	public GraphTx startTransaction(GraphTransactionConfig configuration);
 	
 	// ######## Node Operations  ############
 	

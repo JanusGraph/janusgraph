@@ -42,46 +42,6 @@ public class OrderedKeyValueStoreAdapter extends KeyValueStoreAdapter implements
 			boolean startInclusive, boolean endInclusive, TransactionHandle txh) {
 		return convert(store.getSlice(concatenate(key,columnStart), concatenate(key,columnEnd), startInclusive, endInclusive, txh));
 	}
-	
-	@Override
-	public List<Entry> getLimitedSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, 
-			boolean startInclusive, boolean endInclusive, int limit, TransactionHandle txh) {
-		List<KeyValueEntry> entries = store.getSlice(concatenate(key,columnStart), concatenate(key,columnEnd), startInclusive, endInclusive, limit+1, txh);
-		if (entries.size()>limit) return null;
-		else return convert(entries);
-	}
-	
-	
-
-	@Override
-	public Map<ByteBuffer, List<Entry>> getKeySlice(ByteBuffer keyStart, ByteBuffer keyEnd, boolean startKeyInc, boolean endKeyInc,
-			ByteBuffer columnStart, ByteBuffer columnEnd, boolean startColumnIncl, boolean endColumnIncl, int keyLimit,
-			int columnLimit, TransactionHandle txh) {
-		KeySelector selector = new KeyColumnSliceSelector(keyStart,keyEnd,startKeyInc,endKeyInc,columnStart,
-				columnEnd,startColumnIncl,endColumnIncl,keyLimit,columnLimit,false);
-		return convertKey(store.getSlice(concatenate(keyStart,columnStart), concatenate(keyEnd,columnEnd), 
-				startKeyInc && startColumnIncl, endKeyInc && endColumnIncl, selector, txh));
-	}
-
-	@Override
-	public Map<ByteBuffer, List<Entry>> getKeySlice(ByteBuffer keyStart, ByteBuffer keyEnd, boolean startKeyInc, boolean endKeyInc,
-			ByteBuffer columnStart, ByteBuffer columnEnd, boolean startColumnIncl, boolean endColumnIncl,
-			TransactionHandle txh) {
-		return this.getKeySlice(keyStart, keyEnd, startKeyInc, endKeyInc, columnStart, columnEnd, 
-				startColumnIncl, endColumnIncl, Integer.MAX_VALUE, Integer.MAX_VALUE, txh);
-	}
-
-	@Override
-	public Map<ByteBuffer, List<Entry>> getLimitedKeySlice(ByteBuffer keyStart, ByteBuffer keyEnd, boolean startKeyInc, boolean endKeyInc,
-			ByteBuffer columnStart, ByteBuffer columnEnd, boolean startColumnIncl, boolean endColumnIncl, 
-			int keyLimit, int columnLimit, TransactionHandle txh) {
-		KeyColumnSliceSelector selector = new KeyColumnSliceSelector(keyStart,keyEnd,startKeyInc,endKeyInc,columnStart,
-				columnEnd,startColumnIncl,endColumnIncl,keyLimit,columnLimit+1,true);
-		List<KeyValueEntry> entries = store.getSlice(concatenate(keyStart,columnStart), concatenate(keyEnd,columnEnd), 
-				startKeyInc && startColumnIncl, endKeyInc && endColumnIncl, selector, txh);
-		if (selector.reachedCountLimit()) return null;
-		else return convertKey(entries);
-	}
 		
 	
 	public List<Entry> convert(List<KeyValueEntry> entries) {

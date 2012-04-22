@@ -1,12 +1,10 @@
 package com.thinkaurelius.titan.blueprints;
 
-import com.tinkerpop.blueprints.BaseTest;
 import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.TestSuite;
 import com.tinkerpop.blueprints.pgm.TransactionalGraph;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.GraphTest;
-import org.junit.Assert;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;

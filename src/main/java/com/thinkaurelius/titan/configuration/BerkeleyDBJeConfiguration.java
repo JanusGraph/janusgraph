@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyDBStorageManager;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.KeyValueStorageManagerAdapter;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration.Configuration;
 
 import java.io.File;
 
@@ -49,7 +49,7 @@ public class BerkeleyDBJeConfiguration extends BaseBerkeleyDBConfiguration {
 	}
 	
 	@Override
-	public void save(PropertiesConfiguration config) {
+	public void save(Configuration config) {
 		config.setProperty("cache", cachePercent);
 		super.save(config);
 	}

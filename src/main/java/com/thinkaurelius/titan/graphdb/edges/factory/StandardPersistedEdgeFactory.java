@@ -80,7 +80,6 @@ public class StandardPersistedEdgeFactory implements EdgeFactory {
 			rel = new PersistSimpleBinaryRelationship(type,start,end,id);
 			break;
 		case Labeled:
-		case LabeledRestricted:
 			rel = new PersistLabeledBinaryRelationship(type,start,end,getTx(),InitialAdjListFactory.BasicFactory,id);
 			break;
 		default: throw new AssertionError("Unsupported Edge type: " + type.getCategory());

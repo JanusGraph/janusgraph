@@ -2,8 +2,6 @@ package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.query.QueryType;
-import com.thinkaurelius.titan.core.query.ResultCollector;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
@@ -287,22 +285,7 @@ public abstract class LoadedEmptyNode implements InternalNode {
 	public Relationship createRelationship(String relType, Node node) {
 		throw new UnsupportedOperationException(errorName + " do not support incident relationships!");
 	}
-	
-	/* ---------------------------------------------------------------
-	 * Unsupported
-	 * ---------------------------------------------------------------
-	 */
 
-
-	@Override
-	public<T,U> void sendQuery(T queryLoad, Class<? extends QueryType<T,U>> queryType, ResultCollector<U> resultCollector) {
-		throw new UnsupportedOperationException("Query Sending is not supported on "+ errorName);
-	}
-	
-	@Override
-	public void forwardQuery(Object queryLoad) {
-		throw new UnsupportedOperationException("Query Sending is not supported on "+ errorName);
-	}
 	
 	/* ---------------------------------------------------------------
 	 * In Memory Entity

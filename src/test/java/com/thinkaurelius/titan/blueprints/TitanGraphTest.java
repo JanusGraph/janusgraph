@@ -1,12 +1,10 @@
 package com.thinkaurelius.titan.blueprints;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.DiskgraphTest;
 import com.tinkerpop.blueprints.pgm.*;
 import com.tinkerpop.blueprints.pgm.impls.GraphTest;
 import com.tinkerpop.blueprints.pgm.util.io.graphml.GraphMLReaderTestSuite;
-import org.junit.Test;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;

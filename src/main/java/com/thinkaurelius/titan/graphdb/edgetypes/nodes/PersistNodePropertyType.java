@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.edgetypes.nodes;
 
-import com.thinkaurelius.titan.core.PropertyIndex;
 import com.thinkaurelius.titan.core.PropertyType;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.edgequery.EdgeQueryUtil;
@@ -30,8 +29,8 @@ public class PersistNodePropertyType extends PersistNodeEdgeType implements Prop
 	}
 
 	@Override
-	public PropertyIndex getIndexType() {
-		return getDefinition().getIndexType();
+	public boolean hasIndex() {
+		return getDefinition().hasIndex();
 	}
 
 	@Override

@@ -29,19 +29,14 @@ public interface WriteKeyColumnValueStore {
 	/**
 	 * Acquires a lock for the key-column pair which ensures that nobody else can take a lock on that 
 	 * respective entry for the duration of this lock (but somebody could potentially still overwrite
-	 * the key-value entry without taking a lock). If the LockType is Create than it is ensured that
-	 * no such entry currently exists.
-	 * 
-	 * If a lock of type "Create" is requested after a lock of type "Overwrite" had already been
-	 * acquired for the same pair of key-column, then it is ignored.
-	 * 
+	 * the key-value entry without taking a lock).
+	 *
 	 * The lock has to be released when the transaction closes (commits or aborts).
 	 * 
 	 * @param key Key
 	 * @param column Column
-	 * @param type LockType
 	 * @param txh Transaction
 	 */
-	public void acquireLock(ByteBuffer key, ByteBuffer column, LockType type, TransactionHandle txh);
+	public void acquireLock(ByteBuffer key, ByteBuffer column, TransactionHandle txh);
 	
 }

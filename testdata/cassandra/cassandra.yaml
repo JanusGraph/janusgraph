@@ -261,7 +261,7 @@ snapshot_before_compaction: false
 # number of columns.  The competing causes are, Cassandra has to
 # deserialize this much of the row to read a single column, so you want
 # it to be small - at least if you do many partial-row reads - but all
-# the index data is read for each access, so you don't want to generate
+# the hasIndex data is read for each access, so you don't want to generate
 # that wastefully either.
 column_index_size_in_kb: 64
 
@@ -391,9 +391,9 @@ request_scheduler: org.apache.cassandra.scheduler.NoScheduler
 # request_scheduler_id: keyspace
 
 # index_interval controls the sampling of entries from the primrary
-# row index in terms of space versus time.  The larger the interval,
+# row hasIndex in terms of space versus time.  The larger the interval,
 # the smaller and less effective the sampling will be.  In technicial
-# terms, the interval coresponds to the number of index entries that
+# terms, the interval coresponds to the number of hasIndex entries that
 # are skipped between taking each sample.  All the sampled entries
 # must fit in memory.  Generally, a value between 128 and 512 here
 # coupled with a large key cache size on CFs results in the best trade

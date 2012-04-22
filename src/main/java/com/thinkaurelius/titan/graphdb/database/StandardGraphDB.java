@@ -8,14 +8,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Interval;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.BatchKeyColumnValueStoreMutator;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.DirectKeyColumnValueStoreMutator;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.KeyColumnValueStoreMutator;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
-import com.thinkaurelius.titan.exceptions.ToBeImplementedException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.NodeIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
@@ -35,7 +33,6 @@ import com.thinkaurelius.titan.graphdb.edgetypes.manager.SimpleEdgeTypeManager;
 import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemPropertyType;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.sendquery.QuerySender;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 import com.thinkaurelius.titan.graphdb.transaction.StandardPersistGraphTx;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
@@ -60,7 +57,6 @@ public class StandardGraphDB implements GraphDB {
 	private final OrderedKeyColumnValueStore edgeStore;
 	private final OrderedKeyColumnValueStore propertyIndex;
 	
-	private final LockManager lockManager;
 	private final Serializer serializer;
 	
 	private final NodeIDAssigner idAssigner;
@@ -69,8 +65,7 @@ public class StandardGraphDB implements GraphDB {
 	
 	public StandardGraphDB(GraphDatabaseConfiguration configuration,
 			StorageManager storage, OrderedKeyColumnValueStore edgeStore, OrderedKeyColumnValueStore propertyIndex,
-			LockManager lockManager, Serializer serializer, NodeIDAssigner idAssigner,
-			InternalGraphStatistics statistics) {
+			Serializer serializer, NodeIDAssigner idAssigner, InternalGraphStatistics statistics) {
 		this.config=configuration;
 		this.idManager = idAssigner.getIDManager();
 		this.etManager = new SimpleEdgeTypeManager(this);
@@ -79,7 +74,6 @@ public class StandardGraphDB implements GraphDB {
 		this.edgeStore = edgeStore;
 		this.propertyIndex = propertyIndex;
 		
-		this.lockManager = lockManager;
 		this.serializer = serializer;
 		this.idAssigner = idAssigner;
 		this.statistics=statistics;
@@ -106,32 +100,15 @@ public class StandardGraphDB implements GraphDB {
 	public GraphDatabaseConfiguration getConfiguration() {
 		return config;
 	}
-	
-	@Override
-	 public GraphStatistics getStatistics() {
-		return statistics;
-	}
 
 	@Override
 	public GraphTransaction startTransaction() {
-		return startTransaction(false);
+        return startTransaction(GraphTransactionConfig.Standard);
 	}
-	
+
 	@Override
-	public GraphTransaction startTransaction(boolean readOnly) {
-		if (readOnly) return startTransaction(GraphTransactionConfig.ReadOnly);
-		else return startTransaction(GraphTransactionConfig.Standard);
-	}
-	
-	@Override
-	public GraphTransaction startTransaction(GraphTransactionConfig configuration) {
-		return startTransaction(configuration, config.createQuerySender());
-	}
-	
-	@Override
-	public GraphTx startTransaction(GraphTransactionConfig configuration, QuerySender sender) {
-		return new StandardPersistGraphTx(this,lockManager,etManager,
-				configuration,sender,storage.beginTransaction());
+	public GraphTx startTransaction(GraphTransactionConfig configuration) {
+		return new StandardPersistGraphTx(this,etManager, configuration,storage.beginTransaction());
 	}
 	
 	
@@ -142,73 +119,37 @@ public class StandardGraphDB implements GraphDB {
 	}
 	
 	@Override
-	public long[] indexRetrieval(Interval<?> interval, PropertyType pt, GraphTx tx) {
+	public long[] indexRetrieval(Object key, PropertyType pt, GraphTx tx) {
 		Preconditions.checkArgument(pt.getCategory()==EdgeCategory.Simple,
-					"Currently, only simple properties are supported for index retrieval!");
-		Preconditions.checkArgument(pt.getIndexType().hasIndex(),
-					"Cannot retrieve for given property type - it does not have an index.");
-		Preconditions.checkArgument(!interval.isRange() || (pt.getIndexType()==PropertyIndex.Range),
-					"Cannot execute range queries for given property type - it does not have a range index.");
+					"Currently, only simple properties are supported for hasIndex retrieval!");
+		Preconditions.checkArgument(pt.hasIndex(),
+					"Cannot retrieve for given property type - it does not have an hasIndex.");
+
 		long[] nodes = null;
 			
-		if (interval.isPoint()) {
-			assert pt.getIndexType().hasIndex();
-			Object key = interval.getStartPoint();
-			Preconditions.checkArgument(pt.getDataType().isInstance(key),"Interval start point object is incompatible with property data type ["+pt.getName()+"].");
+        Preconditions.checkArgument(pt.getDataType().isInstance(key),"Interval start point object is incompatible with property data type ["+pt.getName()+"].");
 
-			if (pt.isKeyed()) {
-				ByteBuffer value = propertyIndex.get(getIndexKey(key), getKeyedIndexColumn(pt), tx.getTxHandle());
-				if (value!=null) {
-					nodes = new long[1];
-					nodes[0]=value.getLong();
-				}
-			} else {
-				List<Entry> entries = propertyIndex.getSlice(getIndexKey(key), getIndexColumn(pt,0), 
-															getIndexColumn(pt,-1), true, false, tx.getTxHandle());
-				nodes = new long[entries.size()];
-				int i = 0;
-				for (Entry ent : entries) {
-					nodes[i++] = ent.getValue().getLong();
-				}
-			}
-		} else {
-			assert interval.isRange() && pt.getIndexType()==PropertyIndex.Range;
-			Preconditions.checkArgument(pt.getDataType().isInstance(interval.getStartPoint()),"Interval start point  object is incompatible with property data type.");
-			Preconditions.checkArgument(pt.getDataType().isInstance(interval.getEndPoint()),"Interval end point  object is incompatible with property data type.");
-			Map<ByteBuffer,List<Entry>> keyEntries = null;
-			if (pt.isKeyed()) {
-				keyEntries = propertyIndex.getKeySlice(getIndexKey(interval.getStartPoint()), 
-						getIndexKey(interval.getEndPoint()), interval.startInclusive(), interval.endInclusive(), 
-						getKeyedIndexColumn(pt), getKeyedIndexColumn(pt), true, true,
-						tx.getTxHandle());
-			} else {
-				keyEntries = propertyIndex.getKeySlice(getIndexKey(interval.getStartPoint()), 
-						getIndexKey(interval.getEndPoint()), interval.startInclusive(), interval.endInclusive(), 
-						getIndexColumn(pt,0), getIndexColumn(pt,-1), true, false,
-						tx.getTxHandle());	
-			}
-			int size = 0;
-			for (List<Entry> entries : keyEntries.values()) size +=entries.size();
-			nodes = new long[size];
-			int i = 0;
-			for (List<Entry> entries : keyEntries.values()) {
-				for (Entry entry : entries) {
-					nodes[i]=entry.getValue().getLong();
-					i++;
-				}
-			}
-			assert i==size;
-		}
+        if (pt.isKeyed()) {
+            ByteBuffer value = propertyIndex.get(getIndexKey(key), getKeyedIndexColumn(pt), tx.getTxHandle());
+            if (value!=null) {
+                nodes = new long[1];
+                nodes[0]=value.getLong();
+            }
+        } else {
+            List<Entry> entries = propertyIndex.getSlice(getIndexKey(key), getIndexColumn(pt,0),
+                                                        getIndexColumn(pt,-1), true, false, tx.getTxHandle());
+            nodes = new long[entries.size()];
+            int i = 0;
+            for (Entry ent : entries) {
+                nodes[i++] = ent.getValue().getLong();
+            }
+        }
+
 
 		if (nodes==null) return new long[0];
 		else return nodes;
 	}
-	
 
-	@Override
-	public AbstractLongList getAllNodeIDs(long startRange, long endRange) {
-		throw new ToBeImplementedException();
-	}
 
 	@Override
 	public AbstractLongList getRawNeighborhood(InternalEdgeQuery query,
@@ -417,29 +358,20 @@ public class StandardGraphDB implements GraphDB {
 					entries=appendResults(key,idManager.getQueryBoundsProperty(EdgeDirection.Out.getID()),null,limit,txh);
 			}
 		}
-		
-		if (!limit.partialResult() && limit.limitExhausted()) return null;
-		else if (entries==null) return ImmutableList.of();
+
+		if (entries==null) return ImmutableList.of();
 		else return entries;
 	}
 	
 	private List<Entry> appendResults(ByteBuffer key, long[] bounds, List<Entry> entries, LimitTracker limit, TransactionHandle txh) {
 		if (limit.limitExhausted()) return null;
 		List<Entry> results = null;
-		if (limit.partialResult()) {
-			results = edgeStore.getSlice(key, 
-				ByteBufferUtil.getLongByteBuffer(bounds[0]), 
-				ByteBufferUtil.getLongByteBuffer(bounds[1]), 
-				true, false, limit.getLimit(), txh);
-			limit.retrieved(results.size());
-		} else {
-			results = edgeStore.getLimitedSlice(key, 
-					ByteBufferUtil.getLongByteBuffer(bounds[0]), 
-					ByteBufferUtil.getLongByteBuffer(bounds[1]), 
-					true, false, limit.getLimit(), txh);
-			if (results==null) limit.retrieved(limit.getLimit());
-			else limit.retrieved(results.size());
-		}
+        results = edgeStore.getSlice(key,
+            ByteBufferUtil.getLongByteBuffer(bounds[0]),
+            ByteBufferUtil.getLongByteBuffer(bounds[1]),
+            true, false, limit.getLimit(), txh);
+        limit.retrieved(results.size());
+
 		if (results==null) return null;
 		else if (entries==null) return results;
 		else {
@@ -448,41 +380,24 @@ public class StandardGraphDB implements GraphDB {
 		}
 	}
 	
-	private KeyColumnValueStoreMutator getEdgeStoreMutator(TransactionHandle txh) {
+	private final KeyColumnValueStoreMutator getEdgeStoreMutator(KeyColumnValueStore store, TransactionHandle txh) {
 		if (config.isEdgeBatchWritingEnabled()) {
-			try {
-				MultiWriteKeyColumnValueStore mwstore;
-				mwstore = (MultiWriteKeyColumnValueStore)edgeStore;
-				return new BatchKeyColumnValueStoreMutator(txh, mwstore, config.getEdgeBatchWriteSize());
-			} catch (ClassCastException e) {
-				config.setEdgeBatchWritingEnabled(false);
+            if (store instanceof MultiWriteKeyColumnValueStore) {
+                return new BatchKeyColumnValueStoreMutator(txh, (MultiWriteKeyColumnValueStore)store,config.getEdgeBatchWriteSize());
+            } else {
+				//config.setEdgeBatchWritingEnabled(false);
 				log.error("Batching writing disabled on edge store");
-				log.error("Edge store {} does not support batching", edgeStore, e);
+				log.error("Edge store {} does not support batching", store);
 			}
-		} 
-		
-		return new DirectKeyColumnValueStoreMutator(txh, edgeStore);
-	}
-	
-	private KeyColumnValueStoreMutator getPropertyIndexMutator(TransactionHandle txh) {
-		if (config.isPropertyBatchWritingEnabled()) {
-			try {
-				MultiWriteKeyColumnValueStore mwstore;
-				mwstore = (MultiWriteKeyColumnValueStore)propertyIndex;
-				return new BatchKeyColumnValueStoreMutator(txh, mwstore, config.getPropertyBatchWriteSize());
-			} catch (ClassCastException e) {
-				config.setPropertyBatchWritingEnabled(false);
-				log.error("Batching writing disabled on property store");
-				log.error("Property index {} does not support batching", propertyIndex, e);
-			}
-		} 
-		
-		return new DirectKeyColumnValueStoreMutator(txh, propertyIndex);		
+		}
+		return new DirectKeyColumnValueStoreMutator(txh, store);
 	}
 
+
     @Override
-    public long getNewID(IDManager.IDType type, long groupid) {
-        return idAssigner.getNewID(type,groupid);
+    public void assignID(InternalNode node) {
+        assert !node.hasID();
+        node.setID(idAssigner.getNewID(node));
     }
 
 	private void assignIDs(Collection<InternalEdge> addedEdges,GraphTx tx) {
@@ -494,11 +409,11 @@ public class StandardGraphDB implements GraphDB {
 				InternalNode node = edge.getNodeAt(i);
 				if (!node.hasID()) {
 					assert node.isNew();
-                    node.setID(idAssigner.getNewID(node));
+                    assignID(node);
 				}
 			}
 			assert !edge.hasID();
-			edge.setID(idAssigner.getNewID(edge));
+			assignID(edge);
 		}
 	}
 	
@@ -510,8 +425,8 @@ public class StandardGraphDB implements GraphDB {
 		TransactionHandle txh = tx.getTxHandle();
 		TransactionStatistics stats = new TransactionStatistics();
 		
-		KeyColumnValueStoreMutator edgeMutator = getEdgeStoreMutator(txh);
-		KeyColumnValueStoreMutator propMutator = getPropertyIndexMutator(txh);
+		KeyColumnValueStoreMutator edgeMutator = getEdgeStoreMutator(edgeStore,txh);
+		KeyColumnValueStoreMutator propMutator = getEdgeStoreMutator(propertyIndex,txh);
 		
 		//1. Delete edges
 		if (deletedEdges!=null && !deletedEdges.isEmpty()) {
@@ -520,7 +435,7 @@ public class StandardGraphDB implements GraphDB {
 				if (del.isProperty()) {
 					deletions.put(del.getNodeAt(0), getEntry(tx,del,del.getNodeAt(0),signatures,true).getColumn());
 					Property prop = (Property)del;
-					if (prop.getPropertyType().getIndexType().hasIndex())
+					if (prop.getPropertyType().hasIndex())
 						deleteIndexEntry(prop, propMutator);
 				} else {
 					assert del.isRelationship();
@@ -588,7 +503,7 @@ public class StandardGraphDB implements GraphDB {
 		if (simpleEdgeTypes!=null) persist(simpleEdgeTypes,signatures,tx,edgeMutator,propMutator);
 		if (otherEdgeTypes!=null) persist(otherEdgeTypes,signatures,tx,edgeMutator,propMutator);
 		if (!edges.isEmpty()) persist(edges,signatures,true,tx,edgeMutator,propMutator);
-		//Add properties to index
+		//Add properties to hasIndex
 		
 		//Commit saved EdgeTypes to EdgeTypeManager
 		if (simpleEdgeTypes!=null) commitEdgeTypes(simpleEdgeTypes.keySet());
@@ -741,8 +656,6 @@ public class StandardGraphDB implements GraphDB {
 			value = out.getByteBuffer();
 			
 			break;
-		case LabeledRestricted:
-			throw new UnsupportedOperationException("Not yet supported!");
 		default: throw new AssertionError("Unexpected edge category: " + et.getCategory());
 		}
 		return new Entry(column,value);
@@ -809,47 +722,39 @@ public class StandardGraphDB implements GraphDB {
 	private void deleteIndexEntry(Property prop, KeyColumnValueStoreMutator propMutator) {
 		PropertyType pt = prop.getPropertyType();
 		assert pt.getCategory()==EdgeCategory.Simple;
-		if (pt.getIndexType().hasIndex()) {
-			switch(pt.getIndexType()) {
-			case Standard:
-				if (pt.isKeyed()) {
+		if (pt.hasIndex()) {
+            if (pt.isKeyed()) {
 //					propertyIndex.delete(getIndexKey(prop.getAttribute()), 
 //							ImmutableList.of(getKeyedIndexColumn(prop.getPropertyType())), txh);
-					propMutator.delete(getIndexKey(prop.getAttribute()),
-							ImmutableList.of(getKeyedIndexColumn(prop.getPropertyType())));
-				} else {
+                propMutator.delete(getIndexKey(prop.getAttribute()),
+                        ImmutableList.of(getKeyedIndexColumn(prop.getPropertyType())));
+            } else {
 //					propertyIndex.delete(getIndexKey(prop.getAttribute()), 
 //							ImmutableList.of(getIndexColumn(prop.getPropertyType(),prop.getID())), txh);
-					propMutator.delete(getIndexKey(prop.getAttribute()),
-							ImmutableList.of(getIndexColumn(prop.getPropertyType(),prop.getID())));
-				}
-				break;
-			default: 
-				throw new UnsupportedOperationException("Only standard property index structures are supported for now.");
-			}
+                propMutator.delete(getIndexKey(prop.getAttribute()),
+                        ImmutableList.of(getIndexColumn(prop.getPropertyType(),prop.getID())));
+            }
+
 		}
 	}
 	
 	private void addIndexEntry(Property prop, KeyColumnValueStoreMutator propMutator) {
 		PropertyType pt = prop.getPropertyType();
 		assert pt.getCategory()==EdgeCategory.Simple;
-		if (pt.getIndexType().hasIndex()) {
-			PropertyIndex index = pt.getIndexType();
-			if (index==PropertyIndex.Standard || index==PropertyIndex.Range) {
-				if (pt.isKeyed()) {
+		if (pt.hasIndex()) {
+            if (pt.isKeyed()) {
 //					propertyIndex.insert(getIndexKey(prop.getAttribute()), 
 //							ImmutableList.of(new Entry(getKeyedIndexColumn(pt),getIndexValue(prop))), 
 //							txh);
-					propMutator.insert(getIndexKey(prop.getAttribute()),
-							ImmutableList.of(new Entry(getKeyedIndexColumn(pt),getIndexValue(prop))));
-				} else {
+                propMutator.insert(getIndexKey(prop.getAttribute()),
+                        ImmutableList.of(new Entry(getKeyedIndexColumn(pt),getIndexValue(prop))));
+            } else {
 //					propertyIndex.insert(getIndexKey(prop.getAttribute()), 
 //							ImmutableList.of(new Entry(getIndexColumn(pt,prop.getID()),getIndexValue(prop))), 
 //							txh);
-					propMutator.insert(getIndexKey(prop.getAttribute()),
-							ImmutableList.of(new Entry(getIndexColumn(pt,prop.getID()),getIndexValue(prop))));
-				}	
-			} else throw new UnsupportedOperationException("Only standard and range property index structures are supported for now.");
+                propMutator.insert(getIndexKey(prop.getAttribute()),
+                        ImmutableList.of(new Entry(getIndexColumn(pt,prop.getID()),getIndexValue(prop))));
+            }
 		}
 	}
 	

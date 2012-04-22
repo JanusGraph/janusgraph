@@ -1,9 +1,7 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.core.attribute.Interval;
-import com.thinkaurelius.titan.core.query.QueryType;
-import com.thinkaurelius.titan.core.query.ResultCollector;
+import com.thinkaurelius.titan.graphdb.edgequery.Interval;
 
 import java.util.Set;
 
@@ -161,61 +159,28 @@ public interface GraphTransaction {
 	/**
 	 * Retrieves all nodes which have an incident property of the given type with the specified attribute.
 	 * 
-	 * The given property type must have an index defined for this retrieval to succeed.
+	 * The given property type must have an hasIndex defined for this retrieval to succeed.
 	 * 
 	 * @param type Property type for which to retrieve nodes
 	 * @param attribute Attribute value
 	 * @return	All nodes which have an incident property of the given type with the specified attribute.
 	 * @throws	IllegalArgumentException if the property type is not indexed.
-	 * @see PropertyIndex
 	 */
 	public Set<Node> getNodesByAttribute(PropertyType type, Object attribute);
 	
 	/**
 	 * Retrieves all nodes which have an incident property of the given type with the specified attribute.
 	 * 
-	 * The given property type must have an index defined for this retrieval to succeed.
+	 * The given property type must have an hasIndex defined for this retrieval to succeed.
 	 * 
 	 * @param type Property type name for which to retrieve nodes
 	 * @param attribute Attribute value
 	 * @return	All nodes which have an incident property of the given type with the specified attribute.
 	 * @throws	IllegalArgumentException if name of the property type is unknown, i.e. a property type with said name has not yet been created.
 	 * @throws	IllegalArgumentException if the property type is not indexed.
-	 * @see PropertyIndex
 	 */
 	public Set<Node> getNodesByAttribute(String type, Object attribute);
-	
-	/**
-	 * Retrieves all nodes which have an incident property of the given type whose attribute lies in the specified interval.
-	 * 
-	 * The given property type must have an index defined for this retrieval to succeed.
-	 * If the specified interval is a {@link com.thinkaurelius.titan.core.attribute.Range}, then the property type must have a range index defined.
-	 * 
-	 * @param type Property type for which to retrieve nodes
-	 * @param interval Interval over attribute values
-	 * @return	All nodes which have an incident property of the given type  whose attribute lies in the specified interval.
-	 * @throws	IllegalArgumentException if the property type is not indexed or does not have a range index where one is needed.
-	 * @see PropertyIndex
-	 * @see com.thinkaurelius.titan.core.attribute.Interval
-	 */
-	public Set<Node> getNodesByAttribute(PropertyType type, Interval<?> interval);
-	
-	/**
-	 * Retrieves all nodes which have an incident property of the given type whose attribute lies in the specified interval.
-	 * 
-	 * The given property type must have an index defined for this retrieval to succeed.
-	 * If the specified interval is a {@link com.thinkaurelius.titan.core.attribute.Range}, then the property type must have a range index defined.
-	 * 
-	 * @param type Property type name for which to retrieve nodes
-	 * @param interval Interval over attribute values
-	 * @return	All nodes which have an incident property of the given type  whose attribute lies in the specified interval.
-	 * @throws	IllegalArgumentException if the property type is not indexed or does not have a range index where one is needed.
-	 * @throws	IllegalArgumentException if name of the property type is unknown, i.e. a property type with said name has not yet been created.
-	 * @see PropertyIndex
-	 * @see com.thinkaurelius.titan.core.attribute.Interval
-	 */
-	public Set<Node> getNodesByAttribute(String type, Interval<?> interval);
-	
+
 	/**
 	 * Returns an iterable over all nodes loaded in the current transaction.
 	 * 
@@ -242,46 +207,7 @@ public interface GraphTransaction {
 	 * @return An iterable over all relationships in the transaction
 	 */
 	public Iterable<? extends Relationship> getAllRelationships();
-	
-	/**
-	 * Sends the specified query to the node with the given id.
-	 * 
-	 * The specified id must identify a remotely stored node. Sending queries to such nodes is a means of interacting
-	 * with them. A query is defined by the query type which needs to be registered with the graph database prior to
-	 * calling this method.
-	 * To answer the query, the remotely stored node invokes the {@link QueryType#answer(com.thinkaurelius.titan.core.GraphTransaction, Node, Object, com.thinkaurelius.titan.core.query.QueryResult)}
-	 * method with the specified query load. Results added to {@link com.thinkaurelius.titan.core.query.QueryResult}
-	 * are returned and added to the provided {@link ResultCollector}.
-	 * 
-	 * @param <T> Class of the query load
-	 * @param <U> Class of the individual result object
-	 * @param nodeid ID of the node to which the query is send
-	 * @param queryLoad Defines the actual query to be send
-	 * @param queryType Specifies the type of query to be send.
-	 * @param resultCollector The result collector object which collects results as they are returned
-	 * @throws com.thinkaurelius.titan.exceptions.QueryException if the query type is unknown or if sending the query did not succeed
-	 * @throws com.thinkaurelius.titan.exceptions.InvalidNodeException if the node with the given id is not stored remotely
-	 */
-	public<T,U> void sendQuery(long nodeid, T queryLoad, Class<? extends QueryType<T, U>> queryType, ResultCollector<U> resultCollector);
-	
-	/**
-	 * Forwards the specified query to the node with the given id.
-	 * 
-	 * This method may only be called in the context of answering an incoming query, in which case the query type
-	 * is known from the context. The specified query load must match this query type. Results for this query
-	 * are returned to the originator of the query.
-	 * 
-	 * @param queryLoad Defines the query to forward
-	 * @param nodeid ID of the node to which the query is send
-	 * @throws IllegalStateException if this method is not called in the context of answering an incoming query
-	 * @throws com.thinkaurelius.titan.exceptions.QueryException if the query type is unknown or if sending the query did not succeed
-	 * @throws IllegalArgumentException if the query load is not an instance of the query class defined by the query type
-	 * @throws com.thinkaurelius.titan.exceptions.InvalidNodeException if the node with the given id is not stored remotely
-	 */
-	public void forwardQuery(long nodeid, Object queryLoad);
-	
-		
-	
+
 	/**
 	 * Checks whether an edge type with the specified name exists.
 	 * 
@@ -289,7 +215,6 @@ public interface GraphTransaction {
 	 * @return true, if an edge type with the given name exists, else false
 	 */
 	public boolean containsEdgeType(String name);
-	
 	
 	/**
 	 * Returns the edge type with the given name.

@@ -8,7 +8,6 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.NodeIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.ObjectDiskStorage;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.idmanagement.ReferenceNodeIdentifier;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 
 import java.util.Random;

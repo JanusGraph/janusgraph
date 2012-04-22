@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.blueprints;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.blueprints.util.TitanEdgeSequence;
 import com.thinkaurelius.titan.blueprints.util.TitanVertexSequence;
 import com.thinkaurelius.titan.blueprints.util.TransactionWrapper;
@@ -23,7 +22,7 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     private static final String globalTagProperty = INTERNAL_PREFIX + "tag";
     private static final String indexEverythingProperty = INTERNAL_PREFIX + "indexeverything";
     
-    private static final String indexTag = "index";
+    private static final String indexTag = "hasIndex";
 
     private final GraphDatabase db;
     private int bufferSize = 0;
@@ -68,15 +67,15 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
             //Create initial state
             PropertyType idx = tx.createEdgeType().withName(indexNameProperty).
                     category(EdgeCategory.Simple).
-                    setIndex(PropertyIndex.Standard).
+                    withIndex(true).
                     dataType(String.class).makePropertyType();
             tx.createEdgeType().withName(globalTagProperty).
                     category(EdgeCategory.Simple).
-                    setIndex(PropertyIndex.Standard).
+                    withIndex(true).
                     dataType(String.class).makePropertyType();
             PropertyType idxevery = tx.createEdgeType().withName(indexEverythingProperty).
                     category(EdgeCategory.Simple).
-                    setIndex(PropertyIndex.None).
+                    withIndex(true).
                     dataType(Boolean.class).makePropertyType();
             indexEveryProperty = true;
             idx.createProperty(idxevery,indexEveryProperty);
@@ -207,15 +206,15 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
         if (name.startsWith(INTERNAL_PREFIX)) throw new IllegalArgumentException("Keys cannot start with prefix " + INTERNAL_PREFIX);
         if (tx.containsEdgeType(name)) {
             PropertyType t = tx.getPropertyType(name);
-            if (index && t.getIndexType()==PropertyIndex.None) 
-                throw new UnsupportedOperationException("Need to define particular index key before it is being used!");
+            if (index && !t.hasIndex())
+                throw new UnsupportedOperationException("Need to define particular hasIndex key before it is being used!");
             return t;
         } else {
             index = index || indexEveryProperty;
             EdgeTypeMaker etm = tx.createEdgeType();
             etm.withName(name).category(EdgeCategory.Simple).functional(true).dataType(datatype);
 
-            if (index) etm.setIndex(PropertyIndex.Standard);
+            if (index) etm.withIndex(true);
 
             PropertyType t= etm.makePropertyType();
 
@@ -234,8 +233,8 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     public <T extends Element> AutomaticIndex<T> createAutomaticIndex(final String indexName, final Class<T> indexClass, final Set<String> autoIndexKeys, final Parameter... parameters) {
         Preconditions.checkNotNull(indexName);
         Preconditions.checkArgument(autoIndexKeys!=null,"Global indexes are not supported. Use " + Index.VERTICES + " instead.");
-        Preconditions.checkArgument(!autoIndexKeys.isEmpty(),"Need to specify index keys");
-        Preconditions.checkArgument(indexClass.isAssignableFrom(Vertex.class),"Can only index vertices");
+        Preconditions.checkArgument(!autoIndexKeys.isEmpty(),"Need to specify hasIndex keys");
+        Preconditions.checkArgument(indexClass.isAssignableFrom(Vertex.class),"Can only hasIndex vertices");
 
 
         Class<?> datatype = null;
@@ -249,7 +248,7 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
         try {
             for (String key : autoIndexKeys) {
                 PropertyType t= getPropertyType(tx,key,true,datatype);
-                assert t.getIndexType()==PropertyIndex.Standard;
+                assert t.hasIndex();
                 t.createProperty(indexNameProperty,indexName);
             }
             tx.commit();
@@ -269,7 +268,7 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
             keys.add(((PropertyType)node).getName());
         }
         tx.commit();
-        if (keys.isEmpty()) throw new IllegalArgumentException("Unknown index: " + indexName);
+        if (keys.isEmpty()) throw new IllegalArgumentException("Unknown hasIndex: " + indexName);
         else return new TitanIndex(this,indexName,keys,TitanVertex.class);
     }
 

@@ -9,6 +9,9 @@ import java.util.Iterator;
  * 
  * Basic interface for a list of nodes which supports retrieving individuals nodes or iterating over all of them, but
  * does not support modification.
+ *
+ * Depending on how the query was executed that returned this NodeList, getting node ids might be significantly faster
+ * than retrieving node objects.
  * 
  * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
  * @since	0.2.4
@@ -16,45 +19,7 @@ import java.util.Iterator;
  */
 public interface NodeList extends Iterable<Node> {
 
-	/**
-	 * This NodeIDList is returned by {@link com.thinkaurelius.titan.core.NeighborhoodQuery#getNeighborhoodIDs()} when the
-	 * limit set via {@link com.thinkaurelius.titan.core.NeighborhoodQuery#setRetrievalLimit(long, boolean)} has been
-	 * exceeded while retrieving the neighborhood.
-	 */
-	public static final NodeIDList LimitExceeded = new NodeIDList() {
 
-		@Override
-		public long getID(int pos) {
-			throw new IllegalStateException("Not supported on LimitExceeded placehold list.");
-		}
-
-		@Override
-		public AbstractLongList getIDs() {
-			throw new IllegalStateException("Not supported on LimitExceeded placehold list.");
-		}
-
-		@Override
-		public Node get(int pos) {
-			throw new IllegalStateException("Not supported on LimitExceeded placehold list.");
-		}
-
-		@Override
-		public boolean isSorted() {
-			throw new IllegalStateException("Not supported on LimitExceeded placehold list.");
-		}
-
-		@Override
-		public int size() {
-			throw new IllegalStateException("Not supported on LimitExceeded placehold list.");
-		}
-
-		@Override
-		public Iterator<Node> iterator() {
-			throw new IllegalStateException("Not supported on LimitExceeded placehold list.");
-		}
-		
-	};
-	
 	/**
 	 * Returns the number of nodes in this list.
 	 * 
@@ -77,5 +42,20 @@ public interface NodeList extends Iterable<Node> {
 	 * @return True, if this list is sorted in increasing order of node ids, else false.
 	 */
 	public boolean isSorted();
+
+    /**
+     * Returns a list of ids of all nodes in this list of nodes in the same order of the original node list.
+     *
+     * @return A list of ids of all nodes in this list of nodes in the same order of the original node list.
+     */
+    public AbstractLongList getIDs();
+
+    /**
+     * Returns the id of the node at the specified position
+     *
+     * @param pos The position of the node in the list
+     * @return The id of that node
+     */
+    public long getID(int pos);
 	
 }

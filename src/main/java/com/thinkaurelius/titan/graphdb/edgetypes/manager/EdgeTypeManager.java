@@ -19,7 +19,7 @@ public interface EdgeTypeManager {
                                            Directionality directionality, EdgeTypeVisibility visibility,
                                            boolean isfunctional, EdgeType[] keysig,
                                            EdgeType[] compactsig, EdgeTypeGroup group,
-                                           boolean isKey, PropertyIndex index, Class<?> objectType);
+                                           boolean isKey, boolean hasIndex, Class<?> objectType);
 	
 	
 	

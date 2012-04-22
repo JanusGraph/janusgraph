@@ -14,8 +14,8 @@ package com.thinkaurelius.titan.core;
  * <li>Loaded: The entity has been loaded from disk into the current transaction and has not been modified</li>
  * <li>Modified: The entity has been loaded from disk into the current transaction and has been modified</li>
  * <li>Deleted: The entity has been deleted in the current transaction</li>
- * <li>ReferenceNode: The entity is a {@link ReferenceNode}. It cannot be loaded into the current transaction but
- * only references the actual entity
+ * <li>ReferenceNode: The entity is a reference to a remotely hosted node. It cannot be loaded into the current transaction but
+ * only references the actual entity. This only applies when running Titan embedded in a distributed environment.
  * 
  * Depending on the concrete type of the entity, an entity may be identifiable, 
  * i.e. it has a unique ID which can be retrieved via {@link #getID()} 
@@ -88,10 +88,9 @@ public interface Entity {
 	public boolean isDeleted();
 	
 	/**
-	 * Checks whether this entity denotes a {@link ReferenceNode} which cannot be loaded into the current transaction.
+	 * Checks whether this entity denotes a reference node which cannot be loaded into the current transaction.
 	 * 
-	 * @return True, if this entity denotes a ReferenceNode, else false.
-	 * @see ReferenceNode
+	 * @return True, if this entity denotes a reference node, else false.
 	 */
 	public boolean isReferenceNode();
 	

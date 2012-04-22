@@ -69,7 +69,7 @@ public interface EdgeQuery {
      * @param value Value for the property of the given type to match
      * @return This edge query
      */
-    public EdgeQuery withProperty(PropertyType ptype, Object value);
+    public<T> EdgeQuery withProperty(PropertyType ptype, T value);
 
     /**
      * Defines this edge query to query only for edges that have an attached (i.e. incident)
@@ -79,7 +79,29 @@ public interface EdgeQuery {
      * @param value Value for the property of the given type to match
      * @return This edge query
      */
-    public EdgeQuery withProperty(String ptype, Object value);
+    public<T> EdgeQuery withProperty(String ptype, T value);
+
+    /**
+     * Defines this edge query to query only for edges that have an attached (i.e. incident)
+     * property of the given type with value in the specified interval.
+     *
+     * @param ptype Property type
+     * @param start Property value defining the start of the interval (inclusive)
+     * @param end Property value defining the end of the interval (exclusive)
+     * @return This edge query
+     */
+    public<T> EdgeQuery withPropertyIn(PropertyType ptype, Comparable<T> start, Comparable<T> end);
+
+    /**
+     * Defines this edge query to query only for edges that have an attached (i.e. incident)
+     * property of the given type with value in the specified interval.
+     *
+     * @param ptype Property type
+     * @param start Property value defining the start of the interval (inclusive)
+     * @param end Property value defining the end of the interval (exclusive)
+     * @return This edge query
+     */
+    public<T> EdgeQuery withPropertyIn(String ptype, Comparable<T> start, Comparable<T> end);
 	
 	/**
 	 * Defines this edge query to query only for modifiable edges.
@@ -94,7 +116,7 @@ public interface EdgeQuery {
      * into memory.
      *
      * By default, an implementation of EdgeQuery chooses the most efficient way to retrieve a node's edge.
-     * For the case of a neighborhood query, the most efficient way is retrieving the neighborhood directly from the index
+     * For the case of a neighborhood query, the most efficient way is retrieving the neighborhood directly from the hasIndex
      * without loading any edges into memory. However, when repeatedly querying the same or similar node neighborhoods,
      * first loading the edges into memory and using them to answer subsequent queries can be more efficient.
      * Calling this method signals such cases to the EdgeQuery implementation.
@@ -105,32 +127,16 @@ public interface EdgeQuery {
      */
     public EdgeQuery inMemoryRetrieval();
 
-    /**
-     * Restricts the retrieved relationships to those which have an id and that id does not exceed the specified id.
-     *
-     * Otherwise, it behaves exactly like inMemoryRetrieval().
-     *
-     * @param maxRelationshipID maximum id of relationships to be retrieved.
-     * @return This edge query
-     *
-     * @see #inMemoryRetrieval()
-     */
-    public EdgeQuery inMemoryRetrieval(long maxRelationshipID);
 
     /**
      * Sets the retrieval limit for this query.
      *
-     * When setting a limit, executing this query will only retrieve the specified number of edges from memory.
-     * The boolean flag defines the behavior when the limit is exceeded: Either nothing is returned to indicate
-     * that retrieving the full neighborhood has failed or just the limited number of edges/neighbors is returned.
+     * When setting a limit, executing this query will only retrieve the specified number of edges from (external) memory.
      *
      * @param limit Maximum number of edges to retrieve for this edge query
-     * @param partialResult If true, invoking {@link #getNeighborhood()} or {@link #getNeighborhoodIDs()} will
-     * only retrieve at most <i>limit</i> elements. If false, {@link NodeList#LimitExceeded} is returned
-     * when the limit is exceeded.
      * @return This edge query
      */
-    public EdgeQuery setRetrievalLimit(long limit, boolean partialResult);
+    public EdgeQuery setRetrievalLimit(long limit);
 
 
 	/**
@@ -189,24 +195,16 @@ public interface EdgeQuery {
 	 */
 	public int noProperties();
 
-    /**
-     * Retrieves the ids of all nodes connected to this query's fixed node by edges
-     * matching the conditions defined in this query.
-     *
-     * Depending on the implementation, this method can be considerably faster than calling
-     * {@link #getNeighborhood()}. Also, in some cases the retrieved list of node ids will be
-     * ordered (use {@link NodeList#isSorted()} to check whether the list is sorted).
-     *
-     * @return A list of all node ids connected to this query's fixed node by matching edges
-     * @throws com.thinkaurelius.titan.exceptions.InvalidNodeException if the center node or any of the neighboring nodes does not have an id.
-     */
-    public NodeIDList getNeighborhoodIDs();
 
     /**
      * Retrieves all nodes connected to this query's fixed node by edges
      * matching the conditions defined in this query.
      *
-     * No guarantee is made as to the order in which the nodes are listed.
+     * No guarantee is made as to the order in which the nodes are listed. However, in some cases the retrieved list of node ids will be
+     * ordered (use {@link NodeList#isSorted()} to check whether the list is sorted).
+     *
+     * The query engine will determine the most efficient way to retrieve the nodes that match this query. For instance,
+     * it might only retrieve the node ids and instantiate the node objects only as needed.
      *
      * @return A list of all nodes connected to this query's fixed node by matching edges
      */

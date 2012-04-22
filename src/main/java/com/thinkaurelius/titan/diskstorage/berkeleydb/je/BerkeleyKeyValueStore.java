@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.berkeleydb.je;
 
 import com.sleepycat.je.*;
-import com.thinkaurelius.titan.diskstorage.LockType;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.util.*;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
@@ -94,7 +93,7 @@ public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
 	}
 	
 	@Override
-	public void acquireLock(ByteBuffer key, LockType type, TransactionHandle txh) {
+	public void acquireLock(ByteBuffer key, TransactionHandle txh) {
 		if (getTransaction(txh)==null) {
 			throw new GraphStorageException("Enable transaction for locking in BerkeleyDB!");
 		} //else we need no locking

@@ -12,7 +12,7 @@ package com.thinkaurelius.titan.core;
  * <li>Group of the edge type. Default value: {@link com.thinkaurelius.titan.core.EdgeTypeGroup#DefaultGroup}</li>
  * <li>Whether or not the property type is keyed. Default value: false</li>
  * <li>The data type of the property type. No default value</li>
- * <li>The index type of the property type. Default value: {@link PropertyIndex#None}</li>
+ * <li>Whether properties of the type should be indexed. Default is: no hasIndex</li>
  * <li>The key and compact signature of the edge type. Default value: no signature</li>
  * </ul>
  * 
@@ -79,8 +79,6 @@ public interface EdgeTypeMaker {
 	 * 
 	 * Specifying the signature of a labeled or label-restricted edge type facilitates a more compact
 	 * representation of edges and has a positive impact on the database performance.
-	 * Label-restricted ({@link com.thinkaurelius.titan.core.EdgeCategory#LabeledRestricted}) edge types must have a defined signature
-	 * since only signature edge types are allowed in labels.
 	 * A signature edge type must be functional and a property type or a unidirected relationship type.
 	 * 
 	 * In contrast to the compact signature, the key-signature can be used to select a subset of incident
@@ -89,22 +87,20 @@ public interface EdgeTypeMaker {
 	 * @param et Edge type to add to the key signature
 	 * @return This edge type maker
 	 */
-	public EdgeTypeMaker addKeySignature(EdgeType et);
+	public EdgeTypeMaker keySignature(EdgeType... et);
 	
 	/**
 	 * Adds the specified edge type to the compact-signature of the edge type to be created.
 	 * 
 	 * Specifying the signature of a labeled or label-restricted edge type facilitates a more compact
 	 * representation of edges and has a positive impact on the database performance.
-	 * Label-restricted ({@link com.thinkaurelius.titan.core.EdgeCategory#LabeledRestricted}) edge types must have a defined signature
-	 * since only signature edge types are allowed in labels.
 	 * A signature edge type must be functional and a property type or a unidirected relationship type.
 	 * 
 	 * 
 	 * @param et Edge type to add to the key signature
 	 * @return This edge type maker
 	 */
-	public EdgeTypeMaker addCompactSignature(EdgeType et);
+	public EdgeTypeMaker compactSignature(EdgeType... et);
 	
 	/**
 	 * Sets the edge type to be created as keyed
@@ -118,20 +114,19 @@ public interface EdgeTypeMaker {
 	public EdgeTypeMaker makeKeyed();
 	
 	/**
-	 * Sets the index type of the property type to be created
+	 * Sets whther the property type to be created is indexed.
 	 * 
 	 * Note that this is only relevant when creating property types and will
 	 * be ignored for relationship types.
 	 * 
-	 * @param type Index type to be set
+	 * @param index true if hasIndex should be created, else false
 	 * @return  This edge type maker
-	 * @see PropertyIndex
 	 */
-	public EdgeTypeMaker setIndex(PropertyIndex type);
+	public EdgeTypeMaker withIndex(boolean index);
 	
 //	public EdgeTypeMaker textIndex();
 	
-//	public EdgeTypeMaker addDedicatedIndex(DedicatedIndex index);
+//	public EdgeTypeMaker addDedicatedIndex(DedicatedIndex hasIndex);
 	
 	/**
 	 * Sets the data type of the property type to be created

@@ -2,10 +2,11 @@ package com.thinkaurelius.titan.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.collect.*;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Interval;
-import com.thinkaurelius.titan.core.attribute.PointInterval;
 import com.thinkaurelius.titan.exceptions.InvalidEntityException;
 import com.thinkaurelius.titan.exceptions.InvalidNodeException;
 import com.thinkaurelius.titan.graphdb.database.GraphDB;
@@ -17,19 +18,19 @@ import com.thinkaurelius.titan.graphdb.edgetypes.InternalEdgeType;
 import com.thinkaurelius.titan.graphdb.edgetypes.manager.EdgeTypeManager;
 import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemPropertyType;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
-import com.thinkaurelius.titan.graphdb.vertices.NewEmptyNode;
 import com.thinkaurelius.titan.graphdb.vertices.StandardReferenceNode;
 import com.thinkaurelius.titan.graphdb.vertices.factory.NodeFactory;
 import com.thinkaurelius.titan.traversal.AllRelationshipsIterable;
 import com.thinkaurelius.titan.util.datastructures.Factory;
-import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.datastructures.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
@@ -98,18 +99,8 @@ public abstract class AbstractGraphTx implements GraphTx {
         
         boolean isNode = !(n instanceof InternalEdge);
         if (config.assignIDsImmediately()) {
-            long id = -1;
-            if (n instanceof InternalEdge) {
-                id = graphdb.getNewID(IDManager.IDType.Edge,-1);
-            } else if (n instanceof PropertyType) {
-                id = graphdb.getNewID(IDManager.IDType.PropertyType,((InternalEdgeType)n).getGroup().getID());
-            } else if (n instanceof RelationshipType) {
-                id = graphdb.getNewID(IDManager.IDType.RelationshipType,((InternalEdgeType)n).getGroup().getID());
-            } else {
-                id = graphdb.getNewID(IDManager.IDType.Node,-1);
-            }
-            n.setID(id);
-            if (isNode) nodeCache.add(n,id);
+            graphdb.assignID(n);           
+            if (isNode) nodeCache.add(n,n.getID());
         } else if (newNodes!=null) {
             if (isNode) {
                 newNodes.add(n);
@@ -281,7 +272,7 @@ public abstract class AbstractGraphTx implements GraphTx {
 		verifyWriteAccess();
 		if (edge.isProperty() && !edge.isInline()) {
 			Property prop = (Property)edge;
-			if (prop.getPropertyType().getIndexType().hasIndex()) {
+			if (prop.getPropertyType().hasIndex()) {
 				removeKeyFromIndex(prop);
 			}
 		}
@@ -292,7 +283,7 @@ public abstract class AbstractGraphTx implements GraphTx {
 	public void loadedEdge(InternalEdge edge) {
 		if (edge.isProperty() && !edge.isInline()) {
 			Property prop = (Property)edge;
-            if (prop.getPropertyType().getIndexType().hasIndex()) {
+            if (prop.getPropertyType().hasIndex()) {
 			    addProperty2Index(prop);
             }
 		}
@@ -359,7 +350,7 @@ public abstract class AbstractGraphTx implements GraphTx {
     };
 	
 	protected void addProperty2Index(PropertyType type, Object att, Node node) {
-        Preconditions.checkArgument(type.getIndexType().hasIndex());
+        Preconditions.checkArgument(type.hasIndex());
 		if (type.isKeyed()) {
             //TODO ignore NO-ENTRTY
             ConcurrentMap<Object,Node> subindex = Maps.putIfAbsent(keyIndex, type, keyIndexFactory);
@@ -375,7 +366,7 @@ public abstract class AbstractGraphTx implements GraphTx {
 	}
 	
 	private void removeKeyFromIndex(Property property) {
-        Preconditions.checkArgument(property.getPropertyType().getIndexType().hasIndex());
+        Preconditions.checkArgument(property.getPropertyType().hasIndex());
         
 		PropertyType type = property.getPropertyType();
 		if (type.isKeyed()) {
@@ -430,40 +421,22 @@ public abstract class AbstractGraphTx implements GraphTx {
 		else return getNodesByAttribute(getPropertyType(type), attribute);
 	}
 	
-	@Override
-	public Set<Node> getNodesByAttribute(PropertyType type, Object attribute) {
-		return getNodesByAttribute(type,new PointInterval<Object>(attribute));
-	}
+
 	
 	@Override
-	public Set<Node> getNodesByAttribute(PropertyType type, Interval<?> interval) {
-        Preconditions.checkArgument(type.getIndexType().hasIndex());
+	public Set<Node> getNodesByAttribute(PropertyType type, Object attribute) {
+        Preconditions.checkArgument(type.hasIndex());
         //First, get stuff from disk
-        long[] nodeids = getNodeIDsByAttributeFromDisk(type, interval);
+        long[] nodeids = getNodeIDsByAttributeFromDisk(type, attribute);
         Set<Node> nodes = new HashSet<Node>(nodeids.length);
         for (int i=0;i<nodeids.length;i++)
             nodes.add(getExistingNode(nodeids[i]));
         //Next, the in-memory stuff
         Multimap<Object,Node> subindex = attributeIndex.get(type);
         if (subindex!=null) {
-            if (interval.isPoint()) {
-                nodes.addAll(subindex.get(interval.getStartPoint()));
-            } else {
-                for (Object candidate : subindex.keySet()) {
-                    if (interval.inInterval(candidate)) {
-                        nodes.addAll(subindex.get(candidate));
-                    }
-                }
-            }
+            nodes.addAll(subindex.get(attribute));
         }
 		return nodes;
-	}
-
-
-	@Override
-	public Set<Node> getNodesByAttribute(String type, Interval<?> interval) {
-        if (!containsEdgeType(type)) return ImmutableSet.of();
-		return getNodesByAttribute(getPropertyType(type),interval);
 	}
 
 	

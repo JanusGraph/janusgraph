@@ -3,8 +3,7 @@ package com.thinkaurelius.titan.configuration;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
-import com.thinkaurelius.titan.net.NodeID2InetMapper;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration.Configuration;
 
 import java.io.File;
 
@@ -53,22 +52,10 @@ public interface StorageConfiguration {
 	/**
 	 * Opens an {@link OrderedKeyColumnValueStore} for property indexing in the provided storage manager
 	 * 
-	 * @param manager Storage Manager to create property index in
+	 * @param manager Storage Manager to create property hasIndex in
 	 * @return Index for properties
 	 */
 	public OrderedKeyColumnValueStore getPropertyIndex(StorageManager manager);
-	
-	/**
-	 * Returns the a node id to Inet address mapper for this storage backend.
-	 * 
-	 * For distributed storage backends, node ids are stored on many different systems each of
-	 * which is uniquely identifiable by an Inet socket address. The {@link NodeID2InetMapper}
-	 * returns all storage hosts for a particular node id.
-	 * 
-	 * @return NodeID2InetMapper for this distributed storage backend, or null if the storage backend
-	 * is not distributed.
-	 */
-	public NodeID2InetMapper getNodeIDMapper();
 
 	/**
 	 * Load configuration parameters from the provided configuration if an existing
@@ -79,13 +66,13 @@ public interface StorageConfiguration {
 	 * 
 	 * @param config Configuration to read configuration parameters from. This configuration may be empty.
 	 */
-	public void open(PropertiesConfiguration config);
+	public void open(Configuration config);
 	
 	/**
 	 * Save current configuration parameters for this storage configuration in the provided configuration.
 	 * 
 	 * @param config Configuration to write configuration parameters to.
 	 */
-	public void save(PropertiesConfiguration config);
+	public void save(Configuration config);
 	
 }

@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.edges;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.exceptions.QueryException;
@@ -25,7 +24,7 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 	public LabeledBinaryRelationship(RelationshipType type, InternalNode start,
 			InternalNode end, GraphTx tx, AdjacencyListFactory adjList) {
 		super(type, start, end);
-		assert type.getCategory()==EdgeCategory.Labeled || type.getCategory()==EdgeCategory.LabeledRestricted;
+		assert type.getCategory()==EdgeCategory.Labeled;
 		assert tx!=null;
 		this.tx=tx;
 		outEdges = adjList.emptyList();

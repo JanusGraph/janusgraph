@@ -4,8 +4,6 @@ package com.thinkaurelius.titan.graphdb.test;
 import com.thinkaurelius.titan.DiskgraphTest;
 import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.AttributeInt;
-import com.thinkaurelius.titan.core.attribute.AttributeReal;
 import org.junit.After;
 import org.junit.Before;
 
@@ -89,7 +87,7 @@ public abstract class AbstractGraphDBTestCommon {
 	public RelationshipType makeLabeledRelationshipType(String name, PropertyType key, PropertyType compact) {
 		EdgeTypeMaker etmaker = tx.createEdgeType();
 		RelationshipType relType = etmaker.withName(name).
-										addKeySignature(key).addCompactSignature(compact).
+                keySignature(key).compactSignature(compact).
 										withDirectionality(Directionality.Directed).
 										category(EdgeCategory.Labeled).
 										makeRelationshipType();
@@ -99,7 +97,7 @@ public abstract class AbstractGraphDBTestCommon {
 	public PropertyType makeStringPropertyType(String name) {
 		return tx.createEdgeType().withName(name).
 			category(EdgeCategory.Simple).
-			makeKeyed().setIndex(PropertyIndex.Standard).
+			makeKeyed().withIndex(true).
 			dataType(String.class).										
 			makePropertyType();
 	}
@@ -111,14 +109,14 @@ public abstract class AbstractGraphDBTestCommon {
 	public PropertyType makeStringIDPropertyType(String name, EdgeTypeGroup group) {
 		return tx.createEdgeType().withName(name).
 			category(EdgeCategory.Simple).functional(true).
-			makeKeyed().setIndex(PropertyIndex.Standard).
+			makeKeyed().withIndex(true).
 			dataType(String.class).group(group).								
 			makePropertyType();
 	}
 	
 	public PropertyType makeUnkeyedStringPropertyType(String name) {
 		return tx.createEdgeType().withName(name).
-			category(EdgeCategory.Simple).setIndex(PropertyIndex.Standard).
+			category(EdgeCategory.Simple).withIndex(true).
 			dataType(String.class).									
 			makePropertyType();
 	}
@@ -137,27 +135,11 @@ public abstract class AbstractGraphDBTestCommon {
 	public PropertyType makeIDPropertyType(String name, EdgeTypeGroup group) {
 		return tx.createEdgeType().withName(name).
 			category(EdgeCategory.Simple).functional(true).
-			makeKeyed().setIndex(PropertyIndex.Standard).
+			makeKeyed().withIndex(true).
 			dataType(Integer.class).group(group).					
 			makePropertyType();
 	}
-	
-	public PropertyType makeIDRangePropertyType(String name) {
-		return tx.createEdgeType().withName(name).
-			category(EdgeCategory.Simple).functional(true).
-			makeKeyed().setIndex(PropertyIndex.Range).
-			dataType(AttributeInt.class).										
-			makePropertyType();
-	}
-	
-	public PropertyType makeRealRangePropertyType(String name) {
-		return tx.createEdgeType().withName(name).
-			category(EdgeCategory.Simple).
-			setIndex(PropertyIndex.Range).
-			dataType(AttributeReal.class).										
-			makePropertyType();
-	}
-	
+
 	public PropertyType makeWeightPropertyType(String name) {
 		return tx.createEdgeType().withName(name).
 			category(EdgeCategory.Simple).functional(true).

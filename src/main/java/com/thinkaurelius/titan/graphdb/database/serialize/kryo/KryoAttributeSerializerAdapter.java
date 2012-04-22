@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.database.serialize.kryo;
 
 import com.esotericsoftware.kryo.Serializer;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
+import com.thinkaurelius.titan.configuration.AttributeSerializer;
 
 import java.nio.ByteBuffer;
 

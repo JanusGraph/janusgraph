@@ -3,9 +3,9 @@ package com.thinkaurelius.titan.graphdb.transaction;
 import cern.colt.list.AbstractLongList;
 import com.thinkaurelius.titan.core.GraphTransaction;
 import com.thinkaurelius.titan.core.PropertyType;
-import com.thinkaurelius.titan.core.attribute.Interval;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
+import com.thinkaurelius.titan.graphdb.edgequery.Interval;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.edges.factory.EdgeLoader;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
@@ -112,19 +112,17 @@ public interface GraphTx extends GraphTransaction {
     public void deleteNode(InternalNode n);
 
     /**
-     * Retrieves all ids for nodes which have an incident property of the given type whose attribute lies in the specified interval.
+     * Retrieves all ids for nodes which have an incident property of the given type with the specified attribute value
      *
-     * The given property type must have an index defined for this retrieval to succeed.
-     * If the specified interval is a {@link com.thinkaurelius.titan.core.attribute.Range}, then the property type must have a range index defined.
+     * The given property type must have an hasIndex defined for this retrieval to succeed.
      *
      * @param type Property type for which to retrieve nodes
-     * @param interval Interval over attribute values
-     * @return	All ids for nodes which have an incident property of the given type  whose attribute lies in the specified interval.
-     * @throws	IllegalArgumentException if the property type is not indexed or does not have a range index where one is needed.
-     * @see com.thinkaurelius.titan.core.PropertyIndex
-     * @see com.thinkaurelius.titan.core.attribute.Interval
+     * @param attribute Attribute value for which to retrieve nodes
+     * @return	All ids for nodes which have an incident property of the given type with the specified attribute value
+     * @throws	IllegalArgumentException if the property type is not indexed.
+     * @see com.thinkaurelius.titan.graphdb.edgequery.Interval
      */
-    public long[] getNodeIDsByAttributeFromDisk(PropertyType type, Interval<?> interval);
+    public long[] getNodeIDsByAttributeFromDisk(PropertyType type, Object attribute);
 
 	
 

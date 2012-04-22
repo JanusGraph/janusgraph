@@ -5,7 +5,7 @@ package com.thinkaurelius.titan.core;
 /**
  * Property type defines the schema for properties. 
  * In addition to {@link com.thinkaurelius.titan.core.EdgeType}, a property type defines the data type (i.e. class) of the attributes and specifies
- * index structures to use for efficient retrieval of properties by their attributes (if any).
+ * hasIndex structures to use for efficient retrieval of properties by their attributes (if any).
  * 
  * @see	com.thinkaurelius.titan.core.EdgeType
  * 
@@ -26,12 +26,11 @@ public interface PropertyType extends EdgeType {
 	public Class<?> getDataType();
 	
 	/**
-	 * Returns the index type for this property type.
+	 * Returns true if properties of this type are indexed.
 	 * 
-	 * @return Index type for this property type.
-	 * @see com.thinkaurelius.titan.core.PropertyIndex
+	 * @return true if properties of this type are indexed, else false
 	 */
-	public PropertyIndex getIndexType();
+	public boolean hasIndex();
 	
 	/**
 	 * Checks whether this property type is keyed.

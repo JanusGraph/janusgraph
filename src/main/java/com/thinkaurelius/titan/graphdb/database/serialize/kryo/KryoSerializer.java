@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.database.serialize.kryo;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.serialize.ClassSerializer;
-import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
+import com.thinkaurelius.titan.configuration.AttributeSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization;

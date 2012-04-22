@@ -6,7 +6,6 @@ package com.thinkaurelius.titan.core;
  * its {@link EdgeType}:
  * <ul>
  * <li>{@link #Simple}: unlabeled and most memory efficient</li>
- * <li>{@link #LabeledRestricted}: only allows certain properties as labels, memory efficient</li>
  * <li>{@link #Labeled}: allows arbitrary properties as labels</li>
  * </ul>
  * 
@@ -29,15 +28,6 @@ public enum EdgeCategory {
 	Simple,
 	
 	/**
-	 * A label-restricted edge can be labeled with properties but only allows properties
-	 * for a set of functional property types which is defined at the time this property type is created.
-	 * In other words, a label-restricted edge can only be assigned properties from a restricted set of 
-	 * property types which must be known at the time the edge type is created. 
-	 * Label-restricted edges are more memory efficient than labeled edges.
-	 */
-	LabeledRestricted,
-	
-	/**
 	 * A labeled edge can be labeled with arbitrary properties.
 	 */
 	Labeled;
@@ -51,8 +41,7 @@ public enum EdgeCategory {
 	public boolean isLabeled() {
 		switch(this) {
 		case Simple: return false;
-		case Labeled: 
-		case LabeledRestricted: return true;
+		case Labeled: return true;
 		default: throw new AssertionError("Unexpected enum constant: " + this);
 		}
 	}

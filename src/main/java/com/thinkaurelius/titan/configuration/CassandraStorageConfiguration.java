@@ -3,10 +3,8 @@ package com.thinkaurelius.titan.configuration;
 import com.thinkaurelius.titan.core.GraphDatabase;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftNodeIDMapper;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
-import com.thinkaurelius.titan.net.NodeID2InetMapper;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -326,7 +324,7 @@ public class CassandraStorageConfiguration extends AbstractStorageConfiguration 
 	
 	/**
 	 * This is a convenience method equivalent to calling
-	 * {@link #getStorageManager(null, readOnly)}.
+	 * {@link #getStorageManager(File, boolean)} with NULL directory.
 	 * 
 	 * @param readOnly whether the storage manager is read-only
 	 * @return the storage manager
@@ -351,7 +349,7 @@ public class CassandraStorageConfiguration extends AbstractStorageConfiguration 
 	}
 
 	@Override
-	public void save(PropertiesConfiguration config) {
+	public void save(Configuration config) {
 		config.setProperty(PROP_KEYSPACE, keyspace);
 		config.setProperty(PROP_HOSTNAME, hostname);
 		config.setProperty(PROP_PORT, port);
@@ -359,22 +357,11 @@ public class CassandraStorageConfiguration extends AbstractStorageConfiguration 
 	}
 	
 	@Override
-	public void open(PropertiesConfiguration config) {
+	public void open(Configuration config) {
 		this.keyspace = config.getString(PROP_KEYSPACE, keyspace);
 		this.hostname = config.getString(PROP_HOSTNAME, hostname);
 		this.port = config.getInteger(PROP_PORT, port);
 		this.selfHostname = config.getString(PROP_SELF_HOSTNAME, selfHostname);
-	}
-
-	/**
-	 * The {@code keyspace} field must be set properly before calling
-	 * this method.  This method returns a mapper which functions only
-	 * on node IDs within the {@code keyspace} set when this method
-	 * was called.
-	 */
-	@Override
-	public NodeID2InetMapper getNodeIDMapper() {
-		return new CassandraThriftNodeIDMapper(keyspace, interpretHostname(), port, interpretSelfHostname(), getThriftTimeoutMS());
 	}
 
 	/**

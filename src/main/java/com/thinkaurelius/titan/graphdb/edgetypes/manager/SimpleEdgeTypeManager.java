@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.edgetypes.manager;
 
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.PointInterval;
 import com.thinkaurelius.titan.exceptions.InvalidEntityException;
 import com.thinkaurelius.titan.graphdb.database.GraphDB;
 import com.thinkaurelius.titan.graphdb.edgequery.EdgeQueryUtil;
@@ -67,7 +66,7 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 		boolean contains = nameIndex.containsKey(name);
 		mapReadLock.unlock();
 		if (contains) return true;
-		else return graphdb.indexRetrieval(new PointInterval<String>(name), SystemPropertyType.EdgeTypeName, tx).length>0;
+		else return graphdb.indexRetrieval(name, SystemPropertyType.EdgeTypeName, tx).length>0;
 	}
 
 	@Override
@@ -104,10 +103,10 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 			EdgeTypeVisibility visibility,
 			boolean isfunctional, EdgeType[] keysig, EdgeType[] compactsig,
 			EdgeTypeGroup group, 
-			boolean isKey, PropertyIndex index, Class<?> objectType) {
+			boolean isKey, boolean hasIndex, Class<?> objectType) {
 		checkUniqueName(name);
 		StandardPropertyType pt = new StandardPropertyType(name,category,directionality,visibility,
-				isfunctional,convertSignature(keysig),convertSignature(compactsig),group,isKey,index,objectType);
+				isfunctional,convertSignature(keysig),convertSignature(compactsig),group,isKey,hasIndex,objectType);
 		return factory.createNewPropertyType(pt, tx);
 	}
 
@@ -159,7 +158,7 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 		Long id = nameIndex.get(name);
 		mapReadLock.unlock();
 		if (id==null) {
-			long[] ids = graphdb.indexRetrieval(new PointInterval<String>(name), SystemPropertyType.EdgeTypeName, tx);
+			long[] ids = graphdb.indexRetrieval(name, SystemPropertyType.EdgeTypeName, tx);
 			if (ids.length==0) return null;
 			else {
 				assert ids.length==1;

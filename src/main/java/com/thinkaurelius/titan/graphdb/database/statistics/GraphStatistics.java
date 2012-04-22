@@ -1,11 +1,12 @@
-package com.thinkaurelius.titan.core;
+package com.thinkaurelius.titan.graphdb.database.statistics;
+
+import com.thinkaurelius.titan.core.EdgeTypeGroup;
 
 /**
  * Holds statistical information about the stored graph.
  * 
  * This interface provides functionality to retrieve statistical information about the graph stored in
- * a graph database. Use {@link com.thinkaurelius.titan.core.GraphDatabase#getStatistics()} to get statistical information for a particular
- * graph database instance.
+ * a graph database.
  * 
  * 
  * @author	Matthias Br&ouml;cheler (me@matthiasb.com);

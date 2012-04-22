@@ -3,15 +3,15 @@ package com.thinkaurelius.titan.graphdb.edgequery;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.exceptions.InvalidNodeException;
-import com.thinkaurelius.titan.exceptions.ToBeImplementedException;
 import com.thinkaurelius.titan.graphdb.edges.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableEdgeIterable;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableEdgeIterator;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 public class StandardEdgeQuery implements InternalEdgeQuery {
 
@@ -20,7 +20,6 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
     private long nodeid;
     
     private boolean inMemoryRetrieval=false;
-    private long maxRelationshipID = Long.MAX_VALUE;
     
     private Direction dir;
     private EdgeType type;
@@ -32,7 +31,8 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
     private boolean queryUnmodifiable;
 
     private long limit = Long.MAX_VALUE;
-    private boolean partialResult = true;
+    
+    private Map<PropertyType,Interval<?>> propertyConstraints;
 
     public StandardEdgeQuery(GraphTx tx) {
         this.tx=tx;
@@ -44,6 +44,7 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
         queryRelships=true;
         queryHidden=false;
         queryUnmodifiable=true;
+        propertyConstraints = null;
     }
     
     public StandardEdgeQuery(InternalNode n) {
@@ -79,9 +80,9 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
         tx = q.tx;
         
         inMemoryRetrieval=q.inMemoryRetrieval;
-        maxRelationshipID=q.maxRelationshipID;
         limit = q.limit;
-        partialResult = q.partialResult;
+        if (q.propertyConstraints ==null) propertyConstraints =null;
+        else propertyConstraints = new HashMap<PropertyType,Interval<?>>(q.propertyConstraints);
     }
 
 	StandardEdgeQuery(InternalNode node, StandardEdgeQuery q) {
@@ -103,17 +104,35 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
 	 * Query Construction
 	 * ---------------------------------------------------------------
 	 */
+    
+    private<T> StandardEdgeQuery withPropertyConstraint(PropertyType ptype,Interval<T> interval) {
+        Preconditions.checkNotNull(ptype);
+        Preconditions.checkNotNull(interval);
+        if (propertyConstraints == null) propertyConstraints = new HashMap<PropertyType,Interval<?>>(5);
+        propertyConstraints.put(ptype, interval);
+        return this;
+    }
 	
     @Override
-    public StandardEdgeQuery withProperty(PropertyType ptype,Object value) {
-        throw new ToBeImplementedException();
+    public<T> StandardEdgeQuery withProperty(PropertyType ptype,T value) {
+        return withPropertyConstraint(ptype,new PointInterval<T>(value));
     }
 
     @Override
-    public StandardEdgeQuery withProperty(String ptype,Object value) {
-        Preconditions.checkNotNull(tx);
+    public<T> StandardEdgeQuery withProperty(String ptype,T value) {
         if (!tx.containsEdgeType(ptype)) throw new IllegalArgumentException("Unknown property type: " + ptype);
         return withProperty(tx.getPropertyType(ptype),value);
+    }
+
+    @Override
+    public<T> EdgeQuery withPropertyIn(PropertyType ptype, Comparable<T> start, Comparable<T> end) {
+        return withPropertyConstraint(ptype, new Range(start, end));
+    }
+
+    @Override
+    public<T> EdgeQuery withPropertyIn(String ptype, Comparable<T> start, Comparable<T> end) {
+        if (!tx.containsEdgeType(ptype)) throw new IllegalArgumentException("Unknown property type: " + ptype);
+        return withPropertyIn(tx.getPropertyType(ptype), start, end);
     }
 
     @Override
@@ -179,29 +198,19 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
         queryHidden=true;
 		return this;
 	}
-	
-	public StandardEdgeQuery setLimit(long limit) {
-		return setRetrievalLimit(limit, true);
-	}
 
     @Override
-    public StandardEdgeQuery setRetrievalLimit(long limit, boolean partialResult) {
+    public StandardEdgeQuery setRetrievalLimit(long limit) {
         this.limit=limit;
-        this.partialResult=partialResult;
         return this;
     }
 
     @Override
     public StandardEdgeQuery inMemoryRetrieval() {
-        return inMemoryRetrieval(Long.MAX_VALUE);
-    }
-
-    @Override
-    public StandardEdgeQuery inMemoryRetrieval(long maxRelationshipID) {
-        this.maxRelationshipID=maxRelationshipID;
-        inMemoryRetrieval=true;
+        this.inMemoryRetrieval=true;
         return this;
     }
+
 
 
     void propertiesOnly() {
@@ -304,8 +313,14 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
     }
 
     @Override
-    public boolean returnPartialResult() {
-        return partialResult;
+    public boolean hasPropertyConstraints() {
+        return propertyConstraints!=null && !propertyConstraints.isEmpty();
+    }
+
+    @Override
+    public Map<PropertyType,Interval<?>> getPropertyConstraints() {
+        if (propertyConstraints==null) return new HashMap<PropertyType, Interval<?>>();
+        else return propertyConstraints;
     }
 
 	/* ---------------------------------------------------------------
@@ -398,15 +413,12 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
         Iterator<Relationship> iter = q.getRelationshipIterator();
         while (iter.hasNext()) {
             Relationship next = iter.next();
-            if (maxRelationshipID<Long.MAX_VALUE &&
-                    (!next.hasID() || next.getID()>maxRelationshipID)) continue;
             nodes.add(next.getOtherNode(node));
         }
         return nodes;
     }
 
-    @Override
-    public NodeIDList getNeighborhoodIDs() {
+    public NodeList getNeighborhoodIDs() {
         Preconditions.checkNotNull(tx);
         Preconditions.checkArgument(node==null || (!node.isNew() && !node.isModified()),
                 "Cannot query for raw neighborhood on new or modified node.");

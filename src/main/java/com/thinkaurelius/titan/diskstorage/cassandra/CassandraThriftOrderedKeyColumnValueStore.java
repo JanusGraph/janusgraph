@@ -20,17 +20,16 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	
 	private final String keyspace;
 	private final String columnFamily;
-	private final CassandraThriftNodeIDMapper mapper;
 	private final UncheckedGenericKeyedObjectPool<String, CTConnection> pool;
 	
 	private static final Logger logger =
 		LoggerFactory.getLogger(CassandraThriftOrderedKeyColumnValueStore.class);
 	
-	public CassandraThriftOrderedKeyColumnValueStore(String keyspace, String columnFamily, UncheckedGenericKeyedObjectPool<String, CTConnection> pool, CassandraThriftNodeIDMapper mapper) throws RuntimeException {
+	public CassandraThriftOrderedKeyColumnValueStore(String keyspace, String columnFamily,
+                                UncheckedGenericKeyedObjectPool<String, CTConnection> pool) throws RuntimeException {
 		this.keyspace = keyspace;
 		this.columnFamily = columnFamily;
 		this.pool = pool;
-		this.mapper = mapper;
 	}
 
 	/**
@@ -283,8 +282,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
 	@Override
 	public boolean isLocalKey(ByteBuffer key) {
-		long l = key.duplicate().getLong(); // redundancy inside isNodeLocal()
-		return mapper.isNodeLocal(l);
+        return true;
 	}
 	
 	private static ConsistencyLevel getConsistencyLevel() {
@@ -323,215 +321,12 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	}
 
 	@Override
-	public void acquireLock(ByteBuffer key, ByteBuffer column, LockType type,
+	public void acquireLock(ByteBuffer key, ByteBuffer column,
 			TransactionHandle txh) {
 		// TODO Auto-generated method stub
 		
 	}
 
-	@Override
-	public List<Entry> getLimitedSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, boolean startInclusive, boolean endInclusive,
-			int limit, TransactionHandle txh) {
-		List<Entry> tentativeResults = 
-			getSlice(key, columnStart, columnEnd,
-					 startInclusive, endInclusive, limit + 1, txh);
-		if (limit < tentativeResults.size()) {
-			return null;
-		}
-		return tentativeResults;
-	}
-	
-	/**
-	 * Call Cassandra's get_range_slices() method.
-	 * 
-	 * When keyStart equals keyEnd, and both startKeyInc and endKeyInc
-	 * are true, then this method calls {@link #getKeySlice(java.nio.ByteBuffer,
-	 * java.nio.ByteBuffer, boolean, boolean, java.nio.ByteBuffer, java.nio.ByteBuffer, boolean,
-	 * boolean, int, int, TransactionHandle)} and returns a one-element
-	 * map containing an entry from keyStart/keyEnd to the result of
-	 * {@code getKeySlice(...)}.
-	 * 
-	 * When keyStart equals keyEnd, and either startKeyInc or endKeyInc
-	 * are false (or both are false), then this method returns an empty
-	 * map.
-	 * 
-	 * When keyEnd equals keyStart + 1, and both startKeyInc and endKeyInc
-	 * are false, then, as in the previous case, an empty map is returned.
-	 * However, this case might not be handled efficiently.  This method
-	 * might still make Thrift calls before returning the empty map.
-	 * 
-	 * The {@link #getSlice(java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer, boolean,
-	 * boolean, int, TransactionHandle)} method describes how the 
-	 * startColumnIncl and endColumnIncl arguments are interpreted with
-	 * respect to the columnStart and columnEnd methods.  However,
-	 * in any case where {@code getSlice(...)} would return an empty list,
-	 * this method instead omits the affected key from the mapping.
-	 * Equivalently, the values of the map returned by this method are
-	 * always lists with one or more elements.
-	 * 
-	 * @throws GraphStorageException when keyEnd < keyStart or
-	 *         columnEnd < columnStart
-	 */
-	@Override
-	public Map<ByteBuffer, List<Entry>> getKeySlice(ByteBuffer keyStart,
-			ByteBuffer keyEnd, boolean startKeyInc, boolean endKeyInc,
-			ByteBuffer columnStart, ByteBuffer columnEnd,
-			boolean startColumnIncl, boolean endColumnIncl, int keyLimit,
-			int columnLimit, TransactionHandle txh)
-			throws GraphStorageException {
-		Map<ByteBuffer, List<Entry>> result =
-			new HashMap<ByteBuffer, List<Entry>>();
-		// Check column/key start/end
-		if (ByteBufferUtil.isSmallerThan(keyEnd, keyStart)) {
-			throw new GraphStorageException("keyStart=" + keyStart + 
-					" is greater than keyEnd=" + keyEnd + ". " +
-					"keyStart must be less than or equal to keyEnd");
-		}
-		if (ByteBufferUtil.isSmallerThan(columnEnd, columnStart)) {
-			throw new GraphStorageException("columnStart=" + columnStart + 
-					" is greater than columnEnd=" + columnEnd + ". " +
-					"columnStart must be less than or equal to columnEnd");
-		}
-		
-		// Sanity-check keyLimit and columnLimit
-		if (0 > keyLimit) {
-			logger.warn("Setting negative keyLimit ({}) to 0", keyLimit);
-			keyLimit = 0;
-		}
-		if (0 > columnLimit) {
-			logger.warn("Setting negative columnLimit ({}) to 0", columnLimit);
-			columnLimit = 0;
-		}
-		
-		// keyLimit=0 or columnLimit=0 is a trivial but acceptable case
-		if (0 == keyLimit || 0 == columnLimit)
-			return result;
-		
-		// Check for special case: keyStart = keyEnd
-		if (ByteBufferUtil.isSmallerOrEqualThan(keyEnd, keyStart)) {
-			if (startKeyInc && endKeyInc) {
-				ByteBuffer key = keyStart.duplicate();
-				List<Entry> entries = getSlice(key, columnStart, columnEnd, 
-						startColumnIncl, endColumnIncl, columnLimit, txh);
-				if (0 < entries.size())
-					result.put(key, entries);
-				return result;
-			} else {
-//				logger.debug(
-//						"Parameters keyStart=keyEnd={}, " +
-//						"startKeyInc={}, endKeyInc={} " + 
-//						"collectively form an empty interval; " +
-//						"returning an empty result map.", 
-//						new Object[]{keyStart.duplicate(), startKeyInc,
-//								endKeyInc});
-				return ImmutableMap.<ByteBuffer, List<Entry>>of();
-			}
-		}
-		
-		
-		CTConnection conn = null;
-		try {
-			conn = pool.genericBorrowObject(keyspace);
-			Cassandra.Client client = conn.getClient();
-			
-			ConsistencyLevel consistency = getConsistencyLevel();
-			ColumnParent columnParent = new ColumnParent(columnFamily);
-			SliceRange sliceRange = new SliceRange( // slice range affects columns
-					columnStart.duplicate(),
-					columnEnd.duplicate(),
-					false, // reversed=false
-					columnLimit);
-			SlicePredicate slicePredicate = new SlicePredicate();
-			slicePredicate.setSlice_range(sliceRange);
-			KeyRange keyRange = new KeyRange();// key range affects keys
-			keyRange.start_key = keyStart.duplicate();  // inclusive
-			keyRange.end_key = keyEnd.duplicate();  // inclusive
-			keyRange.count = keyLimit;
-			
-			// Thrift call
-			List<KeySlice> slices = client.get_range_slices(columnParent, slicePredicate, keyRange, consistency);
-			
-			// Transfer Thrift.KeySlice list into result map
-			for (KeySlice s : slices) {
-				byte[] rawKey = s.getKey();
-				ByteBuffer key = ByteBuffer.wrap(rawKey);
-				// Check key against inclusive/exclusive constraint
-				if (!startKeyInc && ByteBufferUtil.isSmallerOrEqualThan(key, keyStart))
-					continue;
-				if (!endKeyInc && !ByteBufferUtil.isSmallerThan(key, keyEnd))
-					continue;
-				
-				assert !result.containsKey(key);
-				List<Entry> l = new ArrayList<Entry>(s.getColumnsSize());
-				for (ColumnOrSuperColumn csc : s.getColumns()) {
-					Column c = csc.getColumn();
-					// Check column against inclusive/exclusive constraint
-					if (!startColumnIncl && ByteBufferUtil.isSmallerOrEqualThan(c.bufferForName(), columnStart))
-						continue;
-					if (!endColumnIncl && !ByteBufferUtil.isSmallerThan(c.bufferForName(), columnEnd))
-						continue;
-					
-					l.add(new Entry(c.bufferForName(), c.bufferForValue()));
-				}
-				if (0 < l.size())
-					result.put(key, l);
-			}
-			
-			return result;
-		} catch (TException e) {
-			throw new GraphStorageException(e);
-		} catch (TimedOutException e) {
-			throw new GraphStorageException(e);
-		} catch (UnavailableException e) {
-			throw new GraphStorageException(e);
-		} catch (InvalidRequestException e) {
-			throw new GraphStorageException(e);
-		} finally {
-			if (null != conn)
-				pool.genericReturnObject(keyspace, conn);
-		}
-	}
-
-	@Override
-	public Map<ByteBuffer, List<Entry>> getLimitedKeySlice(ByteBuffer keyStart,
-			ByteBuffer keyEnd, boolean startKeyInc, boolean endKeyInc,
-			ByteBuffer columnStart, ByteBuffer columnEnd,
-			boolean startColumnIncl, boolean endColumnIncl, int keyLimit,
-			int columnLimit, TransactionHandle txh) {
-		Map<ByteBuffer, List<Entry>> tentativeResult = getKeySlice(keyStart,
-				keyEnd, startKeyInc, endKeyInc, columnStart, columnEnd,
-				startColumnIncl, endColumnIncl, keyLimit + 1, columnLimit + 1,
-				txh);
-		// check whether keyLimit was exceeded
-		if (keyLimit < tentativeResult.size())
-			return null;
-		// check whether columnLimit was exceeded
-		for (List<Entry> l : tentativeResult.values())
-			if (columnLimit < l.size())
-				return null;
-		return tentativeResult;
-	}
-
-	@Override
-	public Map<ByteBuffer, List<Entry>> getKeySlice(ByteBuffer keyStart,
-			ByteBuffer keyEnd, boolean startKeyInc, boolean endKeyInc,
-			ByteBuffer columnStart, ByteBuffer columnEnd,
-			boolean startColumnIncl, boolean endColumnIncl, TransactionHandle txh) {
-		/*
-		 * Setting keyLimit and columnLimit both to Integer.MAX_VALUE
-		 * caused my testing Cassandra instance to run out of memory
-		 * when answering the resulting get_range_slices query, even if
-		 * the actual results returned by the query are tiny.  Cassandra
-		 * is probably allocating some or all of the result storage space
-		 * eagerly.  We should either eliminate this unlimited getKeySlice
-		 * method or make the hard-coded Integer.MAX_VALUE-derived constants
-		 * into configurable values.
-		 */
-		return getKeySlice(keyStart, keyEnd, startKeyInc, endKeyInc,
-				columnStart, columnEnd, startColumnIncl, endColumnIncl, 
-				Integer.MAX_VALUE / 1024, Integer.MAX_VALUE / 1024, txh);
-	}
 
 	@Override
 	public void insertMany(Map<ByteBuffer, List<Entry>> insertions,

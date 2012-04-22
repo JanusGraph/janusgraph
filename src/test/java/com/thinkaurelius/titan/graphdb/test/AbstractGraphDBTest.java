@@ -5,10 +5,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.AttributeInt;
-import com.thinkaurelius.titan.core.attribute.AttributeReal;
-import com.thinkaurelius.titan.core.attribute.Range;
-import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 import com.thinkaurelius.titan.util.test.RandomGenerator;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -145,56 +141,6 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 	
 	
 	@Test
-	public void rangeRetrieval() {
-		PropertyType id = makeIDRangePropertyType("id");
-		PropertyType real = makeRealRangePropertyType("real");
-		int noNodes = 100; 
-		double off1 = 0.5, off2 = -0.5;
-		for (int i=1;i<=noNodes;i++) {
-			Node n = tx.createNode();
-			n.createProperty(id, new AttributeInt(i));
-			n.createProperty(real, new AttributeReal(i + off1));
-			n.createProperty(real, new AttributeReal(i + off2));
-		}
-		clopen();
-		
-		
-		int trails = 100;
-		for (int i=0;i<trails;i++) {
-			AttributeInt start = new AttributeInt(RandomGenerator.randomInt(1, noNodes+1));
-			AttributeInt end = new AttributeInt(RandomGenerator.randomInt(start.getIntValue(), noNodes+1));
-			//log.debug(start.getIntValue() + " - " + end.getIntValue());
-			int size = end.getIntValue()-start.getIntValue();
-			assertEquals(size,tx.getNodesByAttribute("id", Range.of(start, end)).size());
-			assertEquals(size,tx.getNodesByAttribute("id", new Range<AttributeInt>(start,end,false,true)).size());			
-			assertEquals(size+1,tx.getNodesByAttribute("id", new Range<AttributeInt>(start,end,true,true)).size());		
-			assertEquals(Math.max(0, size-1),tx.getNodesByAttribute("id", new Range<AttributeInt>(start,end,false,false)).size());
-			
-			AttributeReal startr = new AttributeReal(start.getIntValue());
-			AttributeReal endr = new AttributeReal(end.getIntValue());
-			real = tx.getPropertyType("real");
-			assertEquals(size*2,((GraphTx)tx).getNodeIDsByAttributeFromDisk(real, Range.of(startr, endr)).length);
-			assertEquals(size==0?0:size+1,tx.getNodesByAttribute("real", Range.of(startr, endr)).size());
-			assertEquals(size*2,((GraphTx)tx).getNodeIDsByAttributeFromDisk(real, new Range<AttributeReal>(startr, endr,false,true)).length);
-			assertEquals(size==0?0:size+1,tx.getNodesByAttribute("real", new Range<AttributeReal>(startr, endr,false,true)).size());
-			assertEquals(size*2,((GraphTx)tx).getNodeIDsByAttributeFromDisk(real, new Range<AttributeReal>(startr, endr,true,true)).length);
-			assertEquals(size==0?0:size+1,tx.getNodesByAttribute("real", new Range<AttributeReal>(startr, endr,true,true)).size());
-			assertEquals(size*2,((GraphTx)tx).getNodeIDsByAttributeFromDisk(real, new Range<AttributeReal>(startr, endr,false,false)).length);
-			assertEquals(size==0?0:size+1,tx.getNodesByAttribute("real", new Range<AttributeReal>(startr, endr,false,false)).size());
-		}
-		
-		for (int i=1;i<noNodes;i++) {
-			Node n = tx.getNodeByKey("id", new AttributeInt(i));
-			double val = 0;
-			for (Property p : n.getProperties("real")) {
-				val += p.getAttribute(AttributeReal.class).getValue();
-			}
-			assertEquals(2*i,val,0.0000001);
-		}
-
-	}
-	
-	@Test
 	public void createAndRetrieveSimple() {
 		String[] etNames = {"connect","name","weight","knows"};
 		RelationshipType connect = makeRelationshipType(etNames[0]);
@@ -233,7 +179,7 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 		assertEquals(connect.getDirectionality(),Directionality.Directed);
 		name = tx.getPropertyType(etNames[1]);
 		assertTrue(name.isKeyed());
-		assertEquals(name.getIndexType(),PropertyIndex.Standard);
+		assertTrue(name.hasIndex());
 		log.debug("Loaded edge types");
 		n2 = tx.getNodeByKey(name, "Node2");
 		assertEquals("Node2",n2.getAttribute(name, String.class));
@@ -299,7 +245,7 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 		log.debug("Neighborhood:");
 		Node n1 = tx.getNodeByKey("name", "Node1");
 		EdgeQuery q = tx.makeEdgeQuery(n1.getID()).inDirection(Direction.Out).withEdgeType(tx.getRelationshipType("connect"));
-		NodeIDList res = q.getNeighborhoodIDs();
+		NodeList res = q.getNeighborhood();
 		assertEquals(1,res.size());
 		Node n2 = tx.getNodeByKey("name", "Node2");
 		assertEquals(n2.getID(),res.getID(0));

@@ -14,9 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CassandraThriftStorageManager implements StorageManager {
-	
-	private final CassandraThriftNodeIDMapper mapper;
-	
+
 	private final String keyspace; // convenience copy of sc.getKeyspace()
 	
 	private final UncheckedGenericKeyedObjectPool
@@ -31,13 +29,6 @@ public class CassandraThriftStorageManager implements StorageManager {
 		this.pool = CTConnectionPool.getPool(
 				sc.getRuntimeHostname(),
 				sc.getPort(),
-				sc.getThriftTimeoutMS());
-		
-		this.mapper = new CassandraThriftNodeIDMapper(
-				keyspace,
-				sc.getRuntimeHostname(),
-				sc.getPort(),
-				sc.getRuntimeSelfHostname(),
 				sc.getThriftTimeoutMS());
 	}
 
@@ -104,7 +95,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 				pool.genericReturnObject(keyspace, conn);
 		}
 		
-		return new CassandraThriftOrderedKeyColumnValueStore(keyspace, name, pool, mapper);
+		return new CassandraThriftOrderedKeyColumnValueStore(keyspace, name, pool);
 	}
 	
 	/**

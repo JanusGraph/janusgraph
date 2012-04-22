@@ -4,9 +4,6 @@ import cern.colt.list.AbstractLongList;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Interval;
-import com.thinkaurelius.titan.core.query.QueryType;
-import com.thinkaurelius.titan.core.query.ResultCollector;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.database.GraphDB;
@@ -16,7 +13,6 @@ import com.thinkaurelius.titan.graphdb.edges.factory.InMemoryEdgeFactory;
 import com.thinkaurelius.titan.graphdb.edgetypes.manager.InMemoryEdgeTypeManager;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.sendquery.QuerySender;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 import com.thinkaurelius.titan.graphdb.vertices.factory.StandardNodeFactories;
 
@@ -85,23 +81,10 @@ public class InMemoryGraphDB extends AbstractGraphTx implements GraphDB {
 	}
 	
 	@Override
-	public long[] getNodeIDsByAttributeFromDisk(PropertyType type, Interval<?> interval) {
+	public long[] getNodeIDsByAttributeFromDisk(PropertyType type, Object attribute) {
 		return new long[0];
 	}
 
-
-	@Override
-	public<T,U> void sendQuery(long nodeid, T queryLoad, 
-			Class<? extends QueryType<T,U>> queryType, 
-					ResultCollector<U> resultCollector) {
-		throw new UnsupportedOperationException("Query sending is not supported for InMemory transactions!");	
-	}
-	
-	@Override
-	public void forwardQuery(long nodeid, Object queryLoad) {
-		assert isReferenceNode(nodeid);
-		throw new UnsupportedOperationException("Query sending is not supported for InMemory transactions!");	
-	}
 	
 	@Override
 	public void loadEdges(InternalEdgeQuery query) {
@@ -144,14 +127,9 @@ public class InMemoryGraphDB extends AbstractGraphTx implements GraphDB {
 		//Nothing to do;
 	}
 	
-	@Override
-	public GraphTransaction startTransaction(boolean readOnly) {
-		Preconditions.checkArgument(!readOnly,"Cannot open read-only in-memory transactions.");
-		return this;
-	}
 	
 	@Override
-	public GraphTransaction startTransaction(GraphTransactionConfig config) {
+	public GraphTx startTransaction(GraphTransactionConfig config) {
 		Preconditions.checkArgument(!getTxConfiguration().equals(config),"Cannot open in-memory transactions with non-default configuration.");
 		return this;
 	}
@@ -162,25 +140,25 @@ public class InMemoryGraphDB extends AbstractGraphTx implements GraphDB {
 	}
 	
 	@Override
-	public GraphTx startTransaction(GraphTransactionConfig config, QuerySender sender) {
-		throw new UnsupportedOperationException("Cannot open an in-memory transaction with query sending enabled.");
-	}
-	
-	@Override
 	public boolean containsNodeID(long id, GraphTx tx) {
 		return false;
 	}
 
     @Override
-    public long getNewID(IDManager.IDType type, long groupid) {
+    public void assignID(InternalNode node) {
         int id = idCounter.incrementAndGet();
-        switch (type) {
-            case Edge : return idManager.getEdgeID(id);
-            case PropertyType: return idManager.getPropertyTypeID(id,0,0);
-            case RelationshipType: return idManager.getRelationshipTypeID(id,0,0);
-            case Node: return idManager.getNodeID(id,0);
-            default: throw new IllegalArgumentException("ID type not supported: " + type);
+        long newid = -1;
+        if (node instanceof InternalEdge) {
+            newid = idManager.getEdgeID(id);
+        } else if (node instanceof PropertyType) {
+            newid = idManager.getPropertyTypeID(id,0,0);
+        } else if (node instanceof RelationshipType) {
+            newid = idManager.getRelationshipTypeID(id,0,0);
+        } else {
+            newid = idManager.getNodeID(id,0);
         }
+        assert newid>0;
+        node.setID(newid);
     }
 
     @Override
@@ -207,7 +185,7 @@ public class InMemoryGraphDB extends AbstractGraphTx implements GraphDB {
 
 
 	@Override
-	public long[] indexRetrieval(Interval<?> interval, PropertyType pt, GraphTx tx) {
+	public long[] indexRetrieval(Object attribute, PropertyType pt, GraphTx tx) {
 		throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
 	}
 
@@ -221,18 +199,6 @@ public class InMemoryGraphDB extends AbstractGraphTx implements GraphDB {
 	public boolean save(Collection<InternalEdge> addedEdges,
 			Collection<InternalEdge> deletedEdges, GraphTx tx)
 			throws GraphStorageException {
-		throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
-	}
-
-
-	@Override
-	public AbstractLongList getAllNodeIDs(long startRange, long endRange) {
-		throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
-	}
-
-
-	@Override
-	public GraphStatistics getStatistics() {
 		throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
 	}
 

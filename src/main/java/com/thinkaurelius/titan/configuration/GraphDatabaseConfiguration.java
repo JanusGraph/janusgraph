@@ -4,19 +4,14 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.GraphDatabase;
-import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
-import com.thinkaurelius.titan.core.attribute.RangeAttribute;
-import com.thinkaurelius.titan.core.query.QueryType;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
-import com.thinkaurelius.titan.exceptions.ToBeImplementedException;
 import com.thinkaurelius.titan.graphdb.database.GraphDB;
-import com.thinkaurelius.titan.graphdb.database.LockManager;
-import com.thinkaurelius.titan.graphdb.database.NoLockManager;
 import com.thinkaurelius.titan.graphdb.database.StandardGraphDB;
 import com.thinkaurelius.titan.graphdb.database.idassigner.NodeIDAssigner;
+import com.thinkaurelius.titan.graphdb.database.idassigner.local.SimpleNodeIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.ObjectDiskStorage;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
@@ -24,10 +19,6 @@ import com.thinkaurelius.titan.graphdb.database.statistics.InternalGraphStatisti
 import com.thinkaurelius.titan.graphdb.database.statistics.LocalGraphStatistics;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.idmanagement.ReferenceNodeIdentifier;
-import com.thinkaurelius.titan.graphdb.idmanagement.StandardReferenceNodeIdentifier;
-import com.thinkaurelius.titan.graphdb.database.idassigner.local.SimpleNodeIDAssigner;
-import com.thinkaurelius.titan.graphdb.sendquery.NoQuerySending;
-import com.thinkaurelius.titan.graphdb.sendquery.QuerySender;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
@@ -87,21 +78,7 @@ public class GraphDatabaseConfiguration {
 	 * Default value = {@value}
 	 */
 	public static final boolean defaultTakeLocks = false;
-	
-	/**
-	 * Whether the graph database is, by default, permitted to return reference nodes.
-	 * Default value = {@value}
-	 */
-	public static final boolean defaultReferenceNodeEnabled = false;
-	
-	/**
-	 * Whether the graph database is, by default, allowed to attempt
-	 * distributed query answering by communication with remote peers.
-	 * 
-	 * Default value = {@value}
-	 */
-	private static final boolean defaultQuerySendingEnabled = false;
-	
+
 	/**
 	 * Whether to perform edge insertions and deletions in batches.
 	 * Not all edge stores backends support the notion of batched writes.
@@ -141,17 +118,13 @@ public class GraphDatabaseConfiguration {
 	 */
 	public static final int defaultPropertyBatchWriteSize = 4096;
 	
-	private static final double version = 0.1;
+	private static final double version = 0.2;
 	
 	private int inserterID=0;
 	private int maxNoInserter=1;
 	
 	private boolean takeLocks=defaultTakeLocks;
-	
-	private boolean referenceNodeEnabled=defaultReferenceNodeEnabled;
-	
-	private boolean querySendingEnabled=defaultQuerySendingEnabled;
-	
+
 	private boolean edgeBatchWritingEnabled=defaultEdgeBatchWritingEnabled;
 	
 	private boolean propertyBatchWritingEnabled=defaultPropertyBatchWritingEnabled;
@@ -250,49 +223,14 @@ public class GraphDatabaseConfiguration {
 	public boolean takeLocks() {
 		return takeLocks;
 	}
-	/**
-	 * Configures the database's use of reference nodes.  When set to false,
-	 * the database will never return a reference node.  When set to true, the
-	 * database may return a reference node or a non-reference node for any
-	 * particular node-id, depending on whether the node is stored locally or
-	 * remotely.
-	 * 
-	 * All StorageManagers respect this contract in a strict technical sense,
-	 * although some StorageManagers unconditionally return non-reference nodes
-	 * no matter this setting because of their backend details.
-	 * 
-	 * @param enabled whether reference nodes are allowed
-	 * @see #setReferenceNodeEnabled(boolean)
-	 */
-	public void setReferenceNodeEnabled(boolean enabled) {
-		verifySetting();
-		this.referenceNodeEnabled = enabled;
-	}
-	
-	/**
-	 * Checks whether the database is configured to return reference nodes.
-	 * 
-	 * @return false if the database will never return reference nodes,
-	 *         true if it is allowed to return reference nodes
-	 * @see #setReferenceNodeEnabled(boolean)
-	 */
-	public boolean isReferenceNodeEnabled() {
-		return referenceNodeEnabled;
-	}
-	
+
 	/**
 	 * Enable or disable batched insertion and deletion of edges on
 	 * the database's underlying storage.
 	 * 
 	 * <p>
 	 * 
-	 * When true, the graph database uses
-	 * 
-	 * <ul>
-	 * <li>{@link KeyColumnValueStore#insertBulk(java.util.Map, com.thinkaurelius.titan.diskstorage.TransactionHandle)}
-	 * <li>{@link KeyColumnValueStore#deleteBulk(java.util.Map, com.thinkaurelius.titan.diskstorage.TransactionHandle)}
-	 * </ul>
-	 * 
+	 * When true, the graph database uses special methods
 	 * to insert and delete edges.  The graph database waits until it
 	 * has accumulated up to {@link #getEdgeBatchWriteSize()} edge deletions
 	 * or insertions before calling either {@code insertBatch()} or
@@ -429,13 +367,10 @@ public class GraphDatabaseConfiguration {
 	 * to facilitate higher serialization performance.
 	 * 
 	 * @param clazz Class to register with the serializer.
-	 * @throws IllegalArgumentException if the given class is a subclass of {@link RangeAttribute} which must be registered
-	 * with a custom serializer
 	 * @see #registerClass(Class, AttributeSerializer)
 	 */
 	public<T> void registerClass(Class<T> clazz) {
-		Preconditions.checkNotNull(clazz,"Registered class cannot be null.");
-		Preconditions.checkArgument(!RangeAttribute.class.isAssignableFrom(clazz),"Need to specify custom serializer for RangeAttribute types.");
+		Preconditions.checkNotNull(clazz, "Registered class cannot be null.");
 		verifySetting();
 		RegisteredAttributeClass<T> reg = new RegisteredAttributeClass<T>(clazz);
 		Preconditions.checkArgument(!registeredAttributes.contains(reg),"Class has already been registered!");
@@ -482,31 +417,6 @@ public class GraphDatabaseConfiguration {
 	public void setStorage(StorageConfiguration storage) {
 		verifySetting();
 		this.storage=storage;
-	}
-	
-	/**
-	 * Configures the database to be able to answer the given query type.
-	 * 
-	 * @param name Name of the query type
-	 * @param queryType Query type definition
-	 */
-	public void registerQueryType(String name, QueryType<?,?> queryType) {
-		verifySetting();
-		throw new UnsupportedOperationException("Not yet implemented!");
-	}
-	
-	/**
-	 * Creates a new {@link QuerySender} instance for remote node communication.
-	 * This method is only used internally by a graph database and need not be invoked by a user.
-	 * 
-	 * @return New QuerySender instance of the underlying communication framework
-	 */
-	public QuerySender createQuerySender() {
-		if (!querySendingEnabled) {
-			return NoQuerySending.instance;
-		} else {
-			throw new ToBeImplementedException("Call upon the communication framework to get a query sender instance.");
-		}
 	}
 	
 	/**
@@ -580,17 +490,13 @@ public class GraphDatabaseConfiguration {
 		
 		GraphDB db = new StandardGraphDB(this,
 				 storageManager,edgeStore,propertyIndex,
-				 getLockManager(),getSerializer(),idAssigner,getStatistics());
+				 getSerializer(),idAssigner,getStatistics());
 		return db;
 	}
 	
 	private NodeIDAssigner createIDAssigner() {
 		ReferenceNodeIdentifier refNodeIdent;
-		if (referenceNodeEnabled) {
-			refNodeIdent = new StandardReferenceNodeIdentifier(storage.getNodeIDMapper());
-		} else {
-			refNodeIdent = ReferenceNodeIdentifier.noReferenceNodes;
-		}
+		refNodeIdent = ReferenceNodeIdentifier.noReferenceNodes;
         IDManager idmanager = new IDManager(refNodeIdent);
 		return new SimpleNodeIDAssigner(idmanager, inserterID, maxNoInserter, objectStore);
 	}
@@ -598,17 +504,12 @@ public class GraphDatabaseConfiguration {
 	private StorageManager getStorageManager() {
 		return storage.getStorageManager(getHomeDirectory(),false);
 	}
-	
-	private LockManager getLockManager() {
-		if (takeLocks()) throw new UnsupportedOperationException("Not yet supported!");			
-		else return new NoLockManager();
-	}
-	
+
 	private InternalGraphStatistics getStatistics() {
 		return new LocalGraphStatistics(getPropertiesConfig(getFileName(defaultLocalStatisticsFileName)));
 	}
 	
-	public Serializer getSerializer() {
+	private Serializer getSerializer() {
 		if (serializer==null) {
 			serializer = new KryoSerializer();
 			for (RegisteredAttributeClass<?> clazz : registeredAttributes) {

@@ -1,11 +1,10 @@
 package com.thinkaurelius.titan.graphdb.edgequery;
 
-import com.thinkaurelius.titan.core.Direction;
-import com.thinkaurelius.titan.core.EdgeQuery;
-import com.thinkaurelius.titan.core.EdgeType;
-import com.thinkaurelius.titan.core.EdgeTypeGroup;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.edges.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
+
+import java.util.Map;
 
 public interface InternalEdgeQuery extends EdgeQuery {
 	
@@ -40,9 +39,11 @@ public interface InternalEdgeQuery extends EdgeQuery {
     boolean queryHidden();
 
     boolean queryUnmodifiable();
+    
+    boolean hasPropertyConstraints();
+    
+    Map<PropertyType,Interval<?>> getPropertyConstraints();
 
     long getLimit();
-
-    boolean returnPartialResult();
 	
 }

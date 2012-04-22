@@ -2,15 +2,10 @@ package com.thinkaurelius.titan.blueprints;
 
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.blueprints.TitanVertex;
 import com.thinkaurelius.titan.blueprints.util.TitanVertexSequence;
-import com.thinkaurelius.titan.core.PropertyType;
 import com.tinkerpop.blueprints.pgm.AutomaticIndex;
 import com.tinkerpop.blueprints.pgm.CloseableSequence;
 import com.tinkerpop.blueprints.pgm.Element;
-import com.tinkerpop.blueprints.pgm.Index;
 
 import java.util.Set;
 
@@ -63,11 +58,11 @@ public class TitanIndex<T extends Element> implements AutomaticIndex<T> {
 
     @Override
     public void put(final String key, final Object value, final T element) {
-        throw new UnsupportedOperationException("Cannot manually update an automatic index");
+        throw new UnsupportedOperationException("Cannot manually update an automatic hasIndex");
     }
 
     @Override
     public void remove(final String key, final Object value, final T element) {
-        throw new UnsupportedOperationException("Cannot manually update an automatic index");
+        throw new UnsupportedOperationException("Cannot manually update an automatic hasIndex");
     }
 }

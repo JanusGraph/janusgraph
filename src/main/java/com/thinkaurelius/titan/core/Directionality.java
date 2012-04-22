@@ -44,12 +44,5 @@ public enum Directionality {
 		}
 	}
 	
-	//######## Static Methods ###################
-	
-//	public static final Directionality getDirectionality(int code) {
-//		assert code>=0 && code<=2;
-//		if (code==1) return Directed;
-//		//else if (code==2) return Property;
-//		else return Undirected;
-//	}
+
 }

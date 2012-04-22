@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.util;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.LockType;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 
@@ -148,9 +147,9 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 	}
 	
 	@Override
-	public void acquireLock(ByteBuffer key, ByteBuffer column, LockType type,
+	public void acquireLock(ByteBuffer key, ByteBuffer column,
 			TransactionHandle txh) {
-		store.acquireLock(concatenate(key,column), type, txh);
+		store.acquireLock(concatenate(key,column), txh);
 	}
 
 

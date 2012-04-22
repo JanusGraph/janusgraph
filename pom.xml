@@ -388,10 +388,7 @@
                     <source>1.6</source>
                     <target>1.6</target>
                     <excludes>
-                        <exclude>com/thinkaurelius/titan/diskstorage/berkeleydb/api/**</exclude>
-                        <exclude>com/thinkaurelius/titan/diskstorage/cassandra/direct/**</exclude>
-                        <exclude>com/thinkaurelius/titan/configuration/BerkeleyDBApiConfiguration.java
-                        </exclude>
+                        <!-- Here go compile excluded src directories or files -->
                     </excludes>
                 </configuration>
             </plugin>
@@ -402,11 +399,6 @@
                     <excludes>
                         <!-- FIX IT: Currently excluded because there is something wrong with the test. -->
                         <exclude>**/*ConcurrentGraphDBTest.java</exclude>
-
-                        <!-- Excluded because they have not yet been migrated to the new API for Cassandra native -->
-                        <exclude>**/CassandraTokenRingTest.java</exclude>
-                        <exclude>**/*CommunicationsFrameworkTest.java</exclude>
-                        <exclude>**/*CassandraNative*</exclude>
 
                         <!-- Excluded because these take too long to run and require a lot of memory -->
                         <exclude>**/*Performance.java</exclude>

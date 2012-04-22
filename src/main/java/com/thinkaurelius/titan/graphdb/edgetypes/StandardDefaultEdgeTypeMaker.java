@@ -22,8 +22,7 @@ public class StandardDefaultEdgeTypeMaker implements DefaultEdgeTypeMaker {
 
     @Override
     public PropertyType makePropertyType(String name, EdgeTypeMaker factory) {
-        return factory.withName(name).category(EdgeCategory.Simple).functional(true).
-                setIndex(PropertyIndex.None).
+        return factory.withName(name).category(EdgeCategory.Simple).functional(true).withIndex(false).
                 dataType(Object.class).makePropertyType();
     }
 }

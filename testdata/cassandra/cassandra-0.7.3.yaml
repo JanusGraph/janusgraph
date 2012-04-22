@@ -129,7 +129,7 @@ seeds:
 # or relatively small datasets.  "auto", the safe choice, will enable
 # mmapping on a 64bit JVM.  Other values are "mmap", "mmap_index_only"
 # (which may allow you to get part of the benefits of mmap on a 32bit
-# machine by mmapping only index files) and "standard".
+# machine by mmapping only hasIndex files) and "standard".
 # (The buffer size settings that follow only apply to standard,
 # non-mmapped i/o.)
 disk_access_mode: auto
@@ -217,7 +217,7 @@ binary_memtable_throughput_in_mb: 256
 # number of columns.  The competing causes are, Cassandra has to
 # deserialize this much of the row to read a single column, so you want
 # it to be small - at least if you do many partial-row reads - but all
-# the index data is read for each access, so you don't want to generate
+# the hasIndex data is read for each access, so you don't want to generate
 # that wastefully either.
 column_index_size_in_kb: 64
 
@@ -316,7 +316,7 @@ request_scheduler: org.apache.cassandra.scheduler.NoScheduler
 
 # The Index Interval determines how large the sampling of row keys
 #  is for a given SSTable. The larger the sampling, the more effective
-#  the index is at the cost of space.
+#  the hasIndex is at the cost of space.
 index_interval: 128
 
 # Keyspaces have ColumnFamilies.        (Usually 1 KS per application.)
@@ -432,8 +432,8 @@ index_interval: 128
 #         Column optional parameters:
 #         NOTE:
 #         index_name cannot be set if index_type is not also set!
-#         - index_name: User-friendly name for the index.
-#         - index_type: The type of index to be created. Currently only
+#         - index_name: User-friendly name for the hasIndex.
+#         - index_type: The type of hasIndex to be created. Currently only
 #            KEYS is supported.
 #         /NOTE
 # 

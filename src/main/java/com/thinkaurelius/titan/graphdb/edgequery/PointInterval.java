@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.core.attribute;
+package com.thinkaurelius.titan.graphdb.edgequery;
 
 /**
- * A PointInterval is a {@link com.thinkaurelius.titan.core.attribute.Interval} with identical start and end points.
+ * A PointInterval is a {@link Interval} with identical start and end points.
  * 
  * In other words, the attribute values defining the end points of the interval are identical and both are inclusive.
  * 
@@ -10,7 +10,7 @@ package com.thinkaurelius.titan.core.attribute;
  * 
  * @param <V> Type of attribute for which the point-interval is defined.
  */
-public class PointInterval<V> implements Interval<V> {
+class PointInterval<V> implements Interval<V> {
 
 	private final V value;
 	

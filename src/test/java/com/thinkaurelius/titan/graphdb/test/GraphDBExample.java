@@ -87,7 +87,7 @@ public class GraphDBExample {
 	public PropertyType makeIDPropertyType(String name, EdgeTypeGroup group) {
 		return tx.createEdgeType().withName(name).
 			category(EdgeCategory.Simple).functional(true).
-			makeKeyed().setIndex(PropertyIndex.Standard).
+			makeKeyed().withIndex(true).
 			dataType(Integer.class).group(group).					
 			makePropertyType();
 	}
@@ -95,7 +95,7 @@ public class GraphDBExample {
 	public RelationshipType makeLabeledRelationshipType(String name, PropertyType key, PropertyType compact) {
 		EdgeTypeMaker etmaker = tx.createEdgeType();
 		RelationshipType relType = etmaker.withName(name).
-                addKeySignature(key).addCompactSignature(compact).
+                keySignature(key).compactSignature(compact).
 										withDirectionality(Directionality.Directed).
 										category(EdgeCategory.Labeled).
 										makeRelationshipType();

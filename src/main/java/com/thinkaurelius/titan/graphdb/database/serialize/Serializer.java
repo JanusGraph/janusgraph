@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
-import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
+import com.thinkaurelius.titan.configuration.AttributeSerializer;
 
 import java.nio.ByteBuffer;
 

@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.test;
 
 import com.thinkaurelius.titan.configuration.CassandraStorageConfiguration;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftNodeIDMapper;
-import org.apache.cassandra.utils.FBUtilities;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -11,7 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertEquals;
 
@@ -40,28 +37,7 @@ public class CassandraTokenRingTest {
 		ch2.stopCassandra();
 	}
 	
-	@Test
-	public void twoNodeTokenRingCheck() throws Exception {
-		// Create test mapper
-		CassandraThriftNodeIDMapper mapper =
-			new CassandraThriftNodeIDMapper(keyspace, testAddr, port);
-		
-		// Check expected mappings
-		InetAddress one = InetAddress.getByName("127.0.0.1");
-		InetAddress two = InetAddress.getByName("127.0.0.2");
-		
-		check(two, mapper.getInetAddress(unhex("0000000000000000")));
-		check(two, mapper.getInetAddress(unhex("00000400000024ff")));
-		check(two, mapper.getInetAddress(unhex("0000040000002500"))); // two's token value
-		check(one, mapper.getInetAddress(unhex("0000040000002501")));
-		
-		check(one, mapper.getInetAddress(unhex("f355fbac0c7fa96e")));
-		check(one, mapper.getInetAddress(unhex("f355fbac0c7fa96f"))); // one's token value
-		check(two, mapper.getInetAddress(unhex("f355fbac0c7fa970")));
-		check(two, mapper.getInetAddress(unhex("ffffffffffffffff")));
-	}
-	
-	private static void check(InetAddress expected, InetAddress actual[]) {
+    private static void check(InetAddress expected, InetAddress actual[]) {
 		assertEquals(1, actual.length);
 		assertEquals(expected, actual[0]);
 	}

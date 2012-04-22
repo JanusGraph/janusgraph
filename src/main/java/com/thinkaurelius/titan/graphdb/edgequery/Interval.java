@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core.attribute;
+package com.thinkaurelius.titan.graphdb.edgequery;
 
 
 /**

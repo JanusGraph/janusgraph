@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.graphdb.database.statistics;
 
-import com.thinkaurelius.titan.core.GraphStatistics;
-
 public interface InternalGraphStatistics extends GraphStatistics {
 
 	/**

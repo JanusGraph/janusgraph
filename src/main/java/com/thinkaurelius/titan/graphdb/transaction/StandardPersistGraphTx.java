@@ -2,28 +2,16 @@ package com.thinkaurelius.titan.graphdb.transaction;
 
 import cern.colt.list.AbstractLongList;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.EdgeType;
 import com.thinkaurelius.titan.core.GraphTransactionConfig;
 import com.thinkaurelius.titan.core.Node;
 import com.thinkaurelius.titan.core.PropertyType;
-import com.thinkaurelius.titan.core.attribute.Interval;
-import com.thinkaurelius.titan.core.attribute.PointInterval;
-import com.thinkaurelius.titan.core.query.QueryType;
-import com.thinkaurelius.titan.core.query.ResultCollector;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.exceptions.InvalidNodeException;
 import com.thinkaurelius.titan.graphdb.database.GraphDB;
-import com.thinkaurelius.titan.graphdb.database.LockManager;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.edges.factory.StandardPersistedEdgeFactory;
-import com.thinkaurelius.titan.graphdb.edgetypes.InternalEdgeType;
 import com.thinkaurelius.titan.graphdb.edgetypes.manager.EdgeTypeManager;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
-import com.thinkaurelius.titan.graphdb.sendquery.QuerySender;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
-import com.thinkaurelius.titan.graphdb.vertices.StandardReferenceNode;
 import com.thinkaurelius.titan.graphdb.vertices.factory.StandardNodeFactories;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,23 +28,17 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 	
 
 	private final TransactionHandle txHandle;
-	private final LockManager lockManager;
-	
-	private final QuerySender querySender;
 		
 	private Set<InternalEdge> deletedEdges;
 	private List<InternalEdge> addedEdges;
 	
 
 	
-	public StandardPersistGraphTx(GraphDB g, LockManager locks, 
-						EdgeTypeManager etManage, GraphTransactionConfig config,
-						QuerySender sender, TransactionHandle tx) {
+	public StandardPersistGraphTx(GraphDB g, EdgeTypeManager etManage, GraphTransactionConfig config,
+						TransactionHandle tx) {
 		super(g,StandardNodeFactories.DefaultPersisted,new StandardPersistedEdgeFactory(),
 				etManage,config);
 		Preconditions.checkNotNull(g);
-		lockManager = locks;
-		querySender = sender;
 		txHandle = tx;
 
 		if (config.isReadOnly()) {
@@ -98,8 +80,7 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 		super.deletedEdge(edge);
 		if (edge.isNew()) return;
 		if (!edge.isInline()) {
-			//Only store those deleted edges that matter, i.e. those that we need to erase from memory on their own
-			lockManager.deleteEdge(edge);		
+			//Only store those deleted edges that matter, i.e. those that we need to erase from memory on their own		
 			boolean success = deletedEdges.add(edge);
 			assert success;
 		}
@@ -111,7 +92,6 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 		super.addedEdge(edge);
 		if (!edge.isInline()) {
 			//Only store those added edges that matter, i.e. those that we need to erase from memory on their own
-			lockManager.createEdge(edge);
 			addedEdges.add(edge);
 		}
 		
@@ -126,19 +106,6 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
         return graphdb.getIDInspector().isReferenceNodeID(nodeID);
     }
 
-	@Override
-	public<T,U> void sendQuery(long nodeid, T queryLoad, 
-			Class<? extends QueryType<T,U>> queryType, 
-					ResultCollector<U> resultCollector) {
-		assert isReferenceNode(nodeid);
-		querySender.sendQuery(nodeid, queryLoad, queryType, resultCollector);		
-	}
-	
-	@Override
-	public void forwardQuery(long nodeid, Object queryLoad) {
-		assert isReferenceNode(nodeid);
-		querySender.forwardQuery(nodeid, queryLoad);
-	}
 
 	
 	/* ---------------------------------------------------------------
@@ -152,7 +119,7 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 		Node node = super.getNodeByKey(type, key);
 		if (node==null && !type.isNew()) { 
 			//Look up
-			long[] ids = graphdb.indexRetrieval(new PointInterval<Object>(key), type, this);
+			long[] ids = graphdb.indexRetrieval(key, type, this);
 			if (ids.length==0) {
                 //TODO Set NO-ENTRY
                 return null;
@@ -166,10 +133,10 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 	}
 	
 	@Override
-	public long[] getNodeIDsByAttributeFromDisk(PropertyType type, Interval<?> interval) {
-		Preconditions.checkArgument(type.getIndexType().hasIndex(),"Can only retrieve nodes for indexed property types.");
+	public long[] getNodeIDsByAttributeFromDisk(PropertyType type, Object attribute) {
+		Preconditions.checkArgument(type.hasIndex(),"Can only retrieve nodes for indexed property types.");
 		if (!type.isNew()) {
-			long[] ids = graphdb.indexRetrieval(interval, type, this);
+			long[] ids = graphdb.indexRetrieval(attribute, type, this);
 			return ids;
 		} else return new long[0];
 	}
@@ -218,7 +185,6 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 
         clear();
         txHandle.commit();
-		querySender.commit();
 		super.commit();
 	}
 
@@ -226,7 +192,6 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 	public synchronized void abort() {
 		clear();
 		txHandle.abort();
-		querySender.abort();
 		super.abort();
 	}
 	

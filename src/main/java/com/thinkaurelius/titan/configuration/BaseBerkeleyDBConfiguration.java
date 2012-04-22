@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.configuration;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.net.NodeID2InetMapper;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration.Configuration;
 
 import java.io.File;
 
@@ -23,14 +22,10 @@ public abstract class BaseBerkeleyDBConfiguration extends AbstractStorageConfigu
 	
 	File dbDirectory = null;
 	
+
 	
 	@Override
-	public NodeID2InetMapper getNodeIDMapper() {
-		return null; //since this storage backend is not distributed
-	}
-	
-	@Override
-	public void open(PropertiesConfiguration config) {
+	public void open(Configuration config) {
 		super.open(config);
 		String dir = config.getString("directory", null);
 		if (dir!=null) {
@@ -40,7 +35,7 @@ public abstract class BaseBerkeleyDBConfiguration extends AbstractStorageConfigu
 	}
 	
 	@Override
-	public void save(PropertiesConfiguration config) {
+	public void save(Configuration config) {
 		config.setProperty("transactional", isTransactional);
 		config.setProperty("private", isPrivate);	
 		if (dbDirectory!=null) {

@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.edgetypes.system;
 
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.Directionality;
-import com.thinkaurelius.titan.core.PropertyIndex;
 import com.thinkaurelius.titan.core.PropertyType;
 import com.thinkaurelius.titan.graphdb.edgetypes.PropertyTypeDefinition;
 import com.thinkaurelius.titan.graphdb.edgetypes.StandardPropertyType;
@@ -56,9 +55,8 @@ public class SystemPropertyType extends SystemEdgeType implements PropertyTypeDe
 	}
 
 	@Override
-	public PropertyIndex getIndexType() {
-		if (index) return PropertyIndex.Standard;
-		else return PropertyIndex.None;
+	public boolean hasIndex() {
+		return index;
 	}
 	
 	@Override

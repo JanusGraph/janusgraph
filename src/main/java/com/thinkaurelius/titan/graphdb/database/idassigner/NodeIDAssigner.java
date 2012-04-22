@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner;
 
-import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 

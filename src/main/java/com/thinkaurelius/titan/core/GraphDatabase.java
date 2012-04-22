@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
+import com.thinkaurelius.titan.graphdb.database.statistics.GraphStatistics;
 
 /***
  * A graph database is the persistence framework for a graph consisting of {@link Node}s and {@link com.thinkaurelius.titan.core.Edge}s.
@@ -38,19 +39,6 @@ public interface GraphDatabase {
 	/**
 	 * Opens a new transaction against this graph database.
 	 * 
-	 * Starts a new transaction on this graph database. The parameter specifies whether the transaction
-	 * is read-only. A read-only transaction does not allow the creation of new nodes or edges but only their
-	 * retrieval. Depending on the implementation, read-only transactions allow faster operations and consume less
-	 * memory.
-	 * 
-	 * @param readOnly Whether the transaction is read-only
-	 * @return A new transaction on this graph database.
-	 */
-	public GraphTransaction startTransaction(boolean readOnly);
-	 
-	/**
-	 * Opens a new transaction against this graph database.
-	 * 
 	 * Starts a new transaction on this graph database. Using the default configuration for the transaction
 	 * which means that the returned transaction is read-and-write.
 	 * 
@@ -71,17 +59,6 @@ public interface GraphDatabase {
 	 * @see com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration
 	 */
 	 public GraphDatabaseConfiguration getConfiguration();
-	 
-	 /**
-	  * Returns statistical information about the graph stored in this graph database.
-	  * 
-	  * The returned {@link GraphStatistics} object can be used to query statistical information about the graph stored
-	  * in this database instance, such as the number of edges contained in it.
-	  * 
-	  * @return GraphStatistics containing statistical information about this database
-	  * @see GraphStatistics
-	  */
-	 public GraphStatistics getStatistics();
 	 
 	 /**
 	  * Closes the graph database.

@@ -1,17 +1,19 @@
-package com.thinkaurelius.titan.core.attribute;
+package com.thinkaurelius.titan.graphdb.edgequery;
+
+import com.google.common.base.Preconditions;
 
 /**
- * A Range is a proper {@link com.thinkaurelius.titan.core.attribute.Interval} with different start and end points.
+ * A Range is a proper {@link Interval} with different start and end points.
  * 
  * Note that a range could also be defined with identical bounds. However, in that case it is preferable to use
- * {@link com.thinkaurelius.titan.core.attribute.PointInterval} for efficiency.
+ * {@link PointInterval} for efficiency.
  * 
  * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
  * 
  * 
  * @param <V> Type of attribute for which the range is defined.
  */
-public class Range<V extends RangeAttribute<V>> implements Interval<V> {
+class Range<V extends Comparable<V>> implements Interval<V> {
 
 	private final V start;
 	private final V end;
@@ -36,7 +38,7 @@ public class Range<V extends RangeAttribute<V>> implements Interval<V> {
 	 * @param end Ending attribute of range
 	 * @return Range for given end points
 	 */
-	public static final<V extends RangeAttribute<V>> Range<V> of(V start, V end) {
+	public static final<V extends Comparable<V>> Range<V> of(V start, V end) {
 		return new Range<V>(start,end);
 	}
 	
@@ -60,6 +62,8 @@ public class Range<V extends RangeAttribute<V>> implements Interval<V> {
 	 * @param endInclusive Whether the end point is inclusive or not
 	 */
 	public Range(V start, V end, boolean startInclusive, boolean endInclusive) {
+        Preconditions.checkNotNull(start);
+        Preconditions.checkNotNull(end);
 		this.start=start;
 		this.end=end;
 		this.startInclusive=startInclusive;

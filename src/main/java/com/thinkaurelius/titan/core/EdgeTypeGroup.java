@@ -20,11 +20,14 @@ import com.thinkaurelius.titan.graphdb.edgetypes.group.StandardEdgeTypeGroup;
  */
 public abstract class EdgeTypeGroup {
 	
+    private static final int MAX_GROUP_ID = (2<<6)-1;
+    
 	/**
 	 * The default edge type group when no group is specified during edge type construction.
+     * Note: system edge types have group with id 0
 	 * @see EdgeTypeMaker
 	 */
-	public final static EdgeTypeGroup DefaultGroup = of((short)1,"Default Group");	
+	public final static EdgeTypeGroup DefaultGroup = of((short)1,"Default Group");
 	
 	protected EdgeTypeGroup() {};
 	
@@ -37,9 +40,13 @@ public abstract class EdgeTypeGroup {
 	 */
 	public static final EdgeTypeGroup of(int id, String name) {
 		Preconditions.checkArgument(id>0,"Id must be bigger than 0");
-		Preconditions.checkArgument(id<=Short.MAX_VALUE,"Group id must be smaller than " + Short.MAX_VALUE);
+		Preconditions.checkArgument(id<=MAX_GROUP_ID,"Group id must be smaller than or equal to " + MAX_GROUP_ID);
 		return new StandardEdgeTypeGroup((short)id,name);
 	}
+
+    public static final EdgeTypeGroup getDefaultGroup() {
+        return DefaultGroup;
+    }
 
 	/**
 	 * Returns the name of the edge type group

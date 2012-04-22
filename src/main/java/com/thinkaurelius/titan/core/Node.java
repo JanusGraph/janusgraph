@@ -25,7 +25,7 @@ import java.util.Iterator;
  * 
  *
  */
-public interface Node extends ReferenceNode {
+public interface Node extends Entity {
 
 	
 	/* ---------------------------------------------------------------

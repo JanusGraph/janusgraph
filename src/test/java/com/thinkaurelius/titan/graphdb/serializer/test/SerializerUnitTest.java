@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb.serializer.test;
 
 import com.thinkaurelius.titan.core.Directionality;
 import com.thinkaurelius.titan.core.EdgeCategory;
-import com.thinkaurelius.titan.core.PropertyIndex;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
@@ -43,7 +42,6 @@ public class SerializerUnitTest {
 		serialize.registerClass(EdgeCategory.class);
 		serialize.registerClass(EdgeTypeVisibility.class);
 		serialize.registerClass(StandardEdgeTypeGroup.class);
-		serialize.registerClass(PropertyIndex.class);
 		serialize.registerClass(StandardPropertyType.class);
 		
 		printStats = true;
@@ -123,7 +121,7 @@ public class SerializerUnitTest {
 				new String[]{},new String[]{}, SystemEdgeTypeManager.systemETgroup);
 		StandardPropertyType propType = new StandardPropertyType("testName",EdgeCategory.Simple,
 				Directionality.Directed,EdgeTypeVisibility.Modifiable,false,
-				new String[]{},new String[]{}, SystemEdgeTypeManager.systemETgroup,true,PropertyIndex.Standard,String.class);
+				new String[]{},new String[]{}, SystemEdgeTypeManager.systemETgroup,true,true,String.class);
 		DataOutput out = serialize.getDataOutput(128, true);
 		out.writeObjectNotNull(relType);
 		out.writeObjectNotNull(propType);

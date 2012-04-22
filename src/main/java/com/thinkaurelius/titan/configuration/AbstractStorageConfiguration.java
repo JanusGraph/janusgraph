@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.configuration;
 
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration.Configuration;
 
 /**
  * Provides a barebone implementation of a {@link StorageConfiguration} to be used
@@ -34,7 +34,7 @@ public abstract class AbstractStorageConfiguration implements StorageConfigurati
 	}
 	
 	@Override
-	public void open(PropertiesConfiguration config) {
+	public void open(Configuration config) {
 		lock();
 	}
 	

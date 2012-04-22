@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.query.QueryType;
-import com.thinkaurelius.titan.core.query.ResultCollector;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
@@ -17,17 +15,6 @@ public class StandardReferenceNode implements InternalNode {
 	public StandardReferenceNode(GraphTx tx, long nodeid) {
 		this.tx=tx;
 		this.nodeid=nodeid;
-	}
-	
-	
-	@Override
-	public<T,U> void sendQuery(T queryLoad, Class<? extends QueryType<T,U>> queryType, ResultCollector<U> resultCollector) {
-		tx.sendQuery(nodeid, queryLoad, queryType, resultCollector);
-	}
-	
-	@Override
-	public void forwardQuery(Object queryLoad) {
-		tx.forwardQuery(nodeid, queryLoad);
 	}
 
 	@Override

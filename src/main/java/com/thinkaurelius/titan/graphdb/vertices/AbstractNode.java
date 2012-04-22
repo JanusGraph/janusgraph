@@ -4,8 +4,6 @@ package com.thinkaurelius.titan.graphdb.vertices;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.query.QueryType;
-import com.thinkaurelius.titan.core.query.ResultCollector;
 import com.thinkaurelius.titan.exceptions.QueryException;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edgequery.StandardEdgeQuery;
@@ -351,21 +349,6 @@ public abstract class AbstractNode implements InternalNode {
 	@Override
 	public Relationship createRelationship(String relType, Node node) {
 		return tx.createRelationship(relType, this, node);
-	}
-	
-	/* ---------------------------------------------------------------
-	 * Unsupported
-	 * ---------------------------------------------------------------
-	 */
-	
-	@Override
-	public<T,U> void sendQuery(T queryLoad, Class<? extends QueryType<T,U>> queryType, ResultCollector<U> resultCollector) {
-		throw new UnsupportedOperationException("Query-sending is only supported for ReferenceNodes.");
-	}
-	
-	@Override
-	public void forwardQuery(Object queryLoad) {
-		throw new UnsupportedOperationException("Query-sending is only supported for ReferenceNodes.");
 	}
 
 	

@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
-import com.thinkaurelius.titan.diskstorage.LockType;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 
@@ -24,7 +23,7 @@ public interface KeyValueStore {
 	public boolean isLocalKey(ByteBuffer key);
 	
 
-	public void acquireLock(ByteBuffer key, LockType type, TransactionHandle txh);
+	public void acquireLock(ByteBuffer key, TransactionHandle txh);
 
 	/**
 	 * Closes the store.
