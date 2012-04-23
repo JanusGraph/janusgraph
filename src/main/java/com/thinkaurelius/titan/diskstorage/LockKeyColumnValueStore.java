@@ -1,22 +1,12 @@
-package com.thinkaurelius.titan.diskstorage.writeaggregation;
-
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStore;
+package com.thinkaurelius.titan.diskstorage;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 
-public interface KeyColumnValueStoreMutator {
+/**
+ * (c) Matthias Broecheler (me@matthiasb.com)
+ */
 
-    /**
-     * Applies the specified insertion and deletion mutations to the provided key.
-     * Both, the list of additions or deletions, may be empty or NULL if there is nothing to be added and/or deleted.
-     *
-     * @param key Key
-     * @param additions List of entries (column + value) to be added
-     * @param deletions List of columns to be removed
-     */
-	public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions);
+public interface LockKeyColumnValueStore {
 
     /**
      * Acquires a lock for the key-column pair which ensures that nobody else can take a lock on that
@@ -32,14 +22,8 @@ public interface KeyColumnValueStoreMutator {
      * @param key Key on which to lock
      * @param column Column the column on which to lock
      * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
+     * @param txh Transaction
      */
-    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue);
+    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, TransactionHandle txh);
 
-
-    /**
-     * Persists any mutation that is currently buffered.
-     *
-     */
-	public void flush();
-	
 }

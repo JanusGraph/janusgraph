@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.GraphTransactionConfig;
 import com.thinkaurelius.titan.core.Node;
 import com.thinkaurelius.titan.core.PropertyType;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.database.GraphDB;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
@@ -162,7 +163,12 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
     public synchronized void rollingCommit() {
         super.rollingCommit();
         if (!getTxConfiguration().isReadOnly()) {
-            graphdb.save(addedEdges, deletedEdges, this);
+            try {
+                graphdb.save(addedEdges, deletedEdges, this);
+            } catch (GraphStorageException e) {
+                abort();
+                throw e;
+            }
             deletedEdges = Collections.newSetFromMap(new ConcurrentHashMap<InternalEdge,Boolean>(10,0.75f,1));
             addedEdges = Collections.synchronizedList(new ArrayList<InternalEdge>());
         }
@@ -175,7 +181,12 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
             Set<InternalEdge> deleted=deletedEdges;
             addedEdges=null;
             deletedEdges=null;
-            graphdb.save(added, deleted, this);
+            try {
+                graphdb.save(added, deleted, this);
+            } catch (GraphStorageException e) {
+                abort();
+                throw e;
+            }
         }
 
         clear();

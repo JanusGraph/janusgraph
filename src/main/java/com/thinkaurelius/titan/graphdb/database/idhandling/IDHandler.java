@@ -10,12 +10,12 @@ import java.nio.ByteBuffer;
 
 public class IDHandler {
     
-    public ByteBuffer getKey(long id) {
+    public final static ByteBuffer getKey(long id) {
         assert id>=0;
         return ByteBufferUtil.getLongByteBuffer(id<<1);
     }
     
-    public long getKeyID(ByteBuffer b) {
+    public final static long getKeyID(ByteBuffer b) {
         long value = b.getLong();
         return value>>>1;
     }

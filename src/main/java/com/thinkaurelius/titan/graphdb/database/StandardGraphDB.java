@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.diskstorage.writeaggregation.KeyColumnValueStoreM
 import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.NodeIDAssigner;
+import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.statistics.InternalGraphStatistics;
@@ -121,7 +122,7 @@ public class StandardGraphDB implements GraphDB {
 	@Override
 	public boolean containsNodeID(long id, GraphTx tx) {
 		log.debug("Checking node existence for {}",id);
-		return edgeStore.containsKey(ByteBufferUtil.getLongByteBuffer(id), tx.getTxHandle());
+		return edgeStore.containsKey(IDHandler.getKey(id), tx.getTxHandle());
 	}
 	
 	@Override
@@ -303,7 +304,7 @@ public class StandardGraphDB implements GraphDB {
 	}
 	
 	private List<Entry> queryForEntries(InternalEdgeQuery query, TransactionHandle txh) {
-		ByteBuffer key = ByteBufferUtil.getLongByteBuffer(query.getNodeID());
+		ByteBuffer key = IDHandler.getKey(query.getNodeID());
 		List<Entry> entries = null;
 		LimitTracker limit = new LimitTracker(query);
 		
@@ -434,48 +435,48 @@ public class StandardGraphDB implements GraphDB {
 		KeyColumnValueStoreMutator edgeMutator = getEdgeStoreMutator(edgeStore,txh);
 		KeyColumnValueStoreMutator propMutator = getEdgeStoreMutator(propertyIndex, txh);
 		
-		//1. Delete edges
-		if (deletedEdges!=null && !deletedEdges.isEmpty()) {
-			ListMultimap<InternalNode,ByteBuffer> deletions = ArrayListMultimap.create();
-			for (InternalEdge del : deletedEdges) {
-				if (del.isProperty()) {
-					deletions.put(del.getNodeAt(0), getEntry(tx,del,del.getNodeAt(0),signatures,true).getColumn());
-					Property prop = (Property)del;
-					if (prop.getPropertyType().hasIndex())
-						deleteIndexEntry(prop, propMutator);
-				} else {
-					assert del.isRelationship();
-					deletions.put(del.getNodeAt(0), getEntry(tx,del,del.getNodeAt(0),signatures,true).getColumn());
-					if (!del.isUnidirected())
-						deletions.put(del.getNodeAt(1), getEntry(tx,del,del.getNodeAt(1),signatures,true).getColumn());
-				}
-				stats.removedEdge(del);
-			}
-			
-			for (InternalNode node : deletions.keySet()) {
-				List<ByteBuffer> dels = deletions.get(node);
-				edgeMutator.delete(ByteBufferUtil.getLongByteBuffer(node.getID()), dels);
-//				edgeStore.delete(ByteBufferUtil.getLongByteBuffer(node.getID()), dels, txh);
-				if (node.isDeleted()) stats.removedNode(node);
-			}
-			deletedEdges.clear();
-		}
-		deletedEdges=null;
+
 		
 		
-		//2. Assign Node IDs
+		//1. Assign Node IDs
 		assignIDs(addedEdges,tx);
-		
+
+        //2. Collect deleted edges
+        ListMultimap<InternalNode,InternalEdge> mutations = ArrayListMultimap.create();
+        if (deletedEdges!=null && !deletedEdges.isEmpty()) {
+            for (InternalEdge del : deletedEdges) {
+                assert del.isDeleted();
+                for (int pos=0;pos<del.getArity();pos++) {
+                    InternalNode node = del.getNodeAt(pos);
+                    if (pos==0 || !del.isUnidirected() ) {
+                        mutations.put(node,del);
+                        if (node.isDeleted()) stats.removedNode(node);
+                    }
+                    if (pos==0 && del.getEdgeType().isFunctional()) {
+                        Entry entry = getEntry(tx,del,node,signatures);
+                        edgeMutator.acquireLock(IDHandler.getKey(node.getID()),entry.getColumn(),entry.getValue());
+                    }
+                }
+                if (del.isProperty()) {
+                    lockKeyedProperty((Property)del,propMutator);
+                }
+
+                stats.removedEdge(del);
+            }
+        }
+        deletedEdges=null;
+
+
 		ListMultimap<InternalEdgeType,InternalEdge> simpleEdgeTypes = null;
 		ListMultimap<InternalEdgeType,InternalEdge> otherEdgeTypes = null;
-		ListMultimap<InternalNode,InternalEdge> edges = ArrayListMultimap.create();
 		
 		//3. Sort Added Edges
 		for (InternalEdge edge : addedEdges) {
 			if (edge.isDeleted()) continue;
-
+            assert edge.isNew();
+            
 			EdgeType et = edge.getEdgeType();
-			if (edge.isNew()) stats.addedEdge(edge);
+			stats.addedEdge(edge);
 			
 			//Give special treatment to edge type definitions
 			if (et==SystemPropertyType.EdgeTypeName || et==SystemPropertyType.PropertyTypeDefinition 
@@ -483,7 +484,7 @@ public class StandardGraphDB implements GraphDB {
 				assert edge.getNodeAt(0) instanceof InternalEdgeType;
 				InternalEdgeType node = (InternalEdgeType)edge.getNodeAt(0);
 				assert node.hasID();
-				if (et.getCategory()==EdgeCategory.Simple) {
+				if (node.getCategory()==EdgeCategory.Simple) {
 					if (simpleEdgeTypes==null) simpleEdgeTypes=ArrayListMultimap.create();
 					if (node.isNew() && !simpleEdgeTypes.containsKey(node)) stats.addedNode(node);
 					simpleEdgeTypes.put(node,edge);
@@ -493,34 +494,42 @@ public class StandardGraphDB implements GraphDB {
 				}
 			} else { //Standard Edge
 				assert (edge.getArity()==1 && edge.isProperty()) || (edge.getArity()==2 && edge.isRelationship());
-				for (int i=0;i<edge.getArity();i++) {
-					InternalNode node = edge.getNodeAt(i);
+				for (int pos=0;pos<edge.getArity();pos++) {
+					InternalNode node = edge.getNodeAt(pos);
 					assert node.hasID();
-					if (i==0 || !edge.isUnidirected()) {
-						if (node.isNew() && !edges.containsKey(node)) stats.addedNode(node);
-						edges.put(node, edge);
+					if (pos==0 || !edge.isUnidirected()) {
+						if (node.isNew() && !mutations.containsKey(node)) stats.addedNode(node);
+						mutations.put(node, edge);
 					}
+                    if (pos==0 && edge.getEdgeType().isFunctional() && !node.isNew()) {
+                        Entry entry = getEntry(tx,edge,node,signatures,true);
+                        edgeMutator.acquireLock(IDHandler.getKey(node.getID()),entry.getColumn(),null);
+                    }
 				}
 			}
+            if (edge.isProperty()) {
+                lockKeyedProperty((Property)edge,propMutator);
+            }
 		}
 		addedEdges.clear(); addedEdges=null;
 		
 		//3. Persist
 		if (simpleEdgeTypes!=null) persist(simpleEdgeTypes,signatures,tx,edgeMutator,propMutator);
 		if (otherEdgeTypes!=null) persist(otherEdgeTypes,signatures,tx,edgeMutator,propMutator);
-		if (!edges.isEmpty()) persist(edges,signatures,true,tx,edgeMutator,propMutator);
-		//Add properties to hasIndex
-		
-		//Commit saved EdgeTypes to EdgeTypeManager
-		if (simpleEdgeTypes!=null) commitEdgeTypes(simpleEdgeTypes.keySet());
-		if (otherEdgeTypes!=null) commitEdgeTypes(otherEdgeTypes.keySet());
-	
+        edgeMutator.flush();
+        propMutator.flush();
+
+        //Commit saved EdgeTypes to EdgeTypeManager
+        if (simpleEdgeTypes!=null) commitEdgeTypes(simpleEdgeTypes.keySet());
+        if (otherEdgeTypes!=null) commitEdgeTypes(otherEdgeTypes.keySet());
+
+		if (!mutations.isEmpty()) persist(mutations,signatures,tx,edgeMutator,propMutator);
+        propMutator.flush();
+        edgeMutator.flush();
+
 		//Update statistics
 		statistics.update(stats);
 
-		propMutator.flush();
-		edgeMutator.flush();
-		
 		return true;
 	}
 	
@@ -528,43 +537,52 @@ public class StandardGraphDB implements GraphDB {
 		for (InternalEdgeType et : edgeTypes) etManager.committed(et);
 	}
 	
-	private<N extends InternalNode> void persist(ListMultimap<N,InternalEdge> sortedEdges, Map<EdgeType,EdgeTypeSignature> signatures,
-			GraphTx tx, KeyColumnValueStoreMutator edgeMutator, KeyColumnValueStoreMutator propMutator) {
-		persist(sortedEdges,signatures,false,tx,edgeMutator,propMutator);
-	}
-	
-	private<N extends InternalNode> void persist(ListMultimap<N,InternalEdge> sortedEdges, Map<EdgeType,EdgeTypeSignature> signatures,
-			boolean sortNodes, GraphTx tx, KeyColumnValueStoreMutator edgeMutator, KeyColumnValueStoreMutator propMutator) {
-		assert sortedEdges!=null && !sortedEdges.isEmpty();
-		List<Property> properties = new ArrayList<Property>();
-		Collection<N> nodes = sortedEdges.keySet();
-		if (sortNodes) {
-			List<N> sortednodes = new ArrayList<N>(nodes);
-			Collections.sort(sortednodes, new Comparator<N>(){
 
-				@Override
-				public int compare(N o1, N o2) {
-					assert o1.getID()!=o2.getID();
-					if (o1.getID()<o2.getID()) return -1;
-					else return 1;
-				}
-				
-			});
-			nodes=sortednodes;
-		}
-		
+	private<N extends InternalNode> void persist(ListMultimap<N,InternalEdge> mutatedEdges, Map<EdgeType,EdgeTypeSignature> signatures,
+			GraphTx tx, KeyColumnValueStoreMutator edgeMutator, KeyColumnValueStoreMutator propMutator) {
+		assert mutatedEdges!=null && !mutatedEdges.isEmpty();
+
+		Collection<N> nodes = mutatedEdges.keySet();
+//		if (sortNodes) {
+//			List<N> sortednodes = new ArrayList<N>(nodes);
+//			Collections.sort(sortednodes, new Comparator<N>(){
+//
+//				@Override
+//				public int compare(N o1, N o2) {
+//					assert o1.getID()!=o2.getID();
+//					if (o1.getID()<o2.getID()) return -1;
+//					else return 1;
+//				}
+//
+//			});
+//			nodes=sortednodes;
+//		}
+
 		for (N node : nodes) {
-			List<InternalEdge> edges = sortedEdges.get(node);
-			List<Entry> batch = new ArrayList<Entry>(edges.size());
+			List<InternalEdge> edges = mutatedEdges.get(node);
+			List<Entry> additions = new ArrayList<Entry>(edges.size());
+            List<ByteBuffer> deletions = new ArrayList<ByteBuffer>(Math.max(10,edges.size()/10));
+            List<Property> properties = new ArrayList<Property>();
 			for (InternalEdge edge : edges) {
-				if (edge.isProperty()) properties.add((Property)edge);
-				batch.add(getEntry(tx,edge,node,signatures));
+                if (edge.isDeleted()) {
+                    if (edge.isProperty()) {
+                        deleteIndexEntry((Property)edge, propMutator);
+                    }
+                    deletions.add(getEntry(tx,edge,node,signatures,true).getColumn());
+                } else {
+                    assert edge.isNew();
+                    if (edge.isProperty()) properties.add((Property)edge);
+                    additions.add(getEntry(tx,edge,node,signatures));
+                }
+
 			}
-			edgeMutator.insert(ByteBufferUtil.getLongByteBuffer(node.getID()), batch);
-		}
-		for (Property prop : properties) {
-			addIndexEntry(prop, propMutator);
-		}		
+			edgeMutator.mutate(IDHandler.getKey(node.getID()), additions, deletions);
+            //Persist property index for retrieval
+            for (Property prop : properties) {
+                addIndexEntry(prop, propMutator);
+            }
+        }
+
 	}
 
 	private Entry getEntry(GraphTx tx,InternalEdge edge, InternalNode perspective, Map<EdgeType,EdgeTypeSignature> signatures) {
@@ -725,6 +743,20 @@ public class StandardGraphDB implements GraphDB {
 
 	// Property Index Handling
 	
+    private void lockKeyedProperty(Property prop, KeyColumnValueStoreMutator propMutator) {
+        PropertyType pt = prop.getPropertyType();
+        assert pt.getCategory()==EdgeCategory.Simple;
+        if (pt.hasIndex() && pt.isKeyed()) {
+            if (prop.isNew()) {
+                propMutator.acquireLock(getIndexKey(prop.getAttribute()),getKeyedIndexColumn(pt),null);
+            } else {
+                assert prop.isDeleted();
+                propMutator.acquireLock(getIndexKey(prop.getAttribute()),getKeyedIndexColumn(pt),getIndexValue(prop));
+            }
+        }
+    }
+    
+    
 	private void deleteIndexEntry(Property prop, KeyColumnValueStoreMutator propMutator) {
 		PropertyType pt = prop.getPropertyType();
 		assert pt.getCategory()==EdgeCategory.Simple;
@@ -732,13 +764,13 @@ public class StandardGraphDB implements GraphDB {
             if (pt.isKeyed()) {
 //					propertyIndex.delete(getIndexKey(prop.getAttribute()), 
 //							ImmutableList.of(getKeyedIndexColumn(prop.getPropertyType())), txh);
-                propMutator.delete(getIndexKey(prop.getAttribute()),
+                propMutator.mutate(getIndexKey(prop.getAttribute()), null,
                         ImmutableList.of(getKeyedIndexColumn(prop.getPropertyType())));
             } else {
 //					propertyIndex.delete(getIndexKey(prop.getAttribute()), 
 //							ImmutableList.of(getIndexColumn(prop.getPropertyType(),prop.getID())), txh);
-                propMutator.delete(getIndexKey(prop.getAttribute()),
-                        ImmutableList.of(getIndexColumn(prop.getPropertyType(),prop.getID())));
+                propMutator.mutate(getIndexKey(prop.getAttribute()), null,
+                        ImmutableList.of(getIndexColumn(prop.getPropertyType(), prop.getID())));
             }
 
 		}
@@ -752,14 +784,14 @@ public class StandardGraphDB implements GraphDB {
 //					propertyIndex.insert(getIndexKey(prop.getAttribute()), 
 //							ImmutableList.of(new Entry(getKeyedIndexColumn(pt),getIndexValue(prop))), 
 //							txh);
-                propMutator.insert(getIndexKey(prop.getAttribute()),
-                        ImmutableList.of(new Entry(getKeyedIndexColumn(pt),getIndexValue(prop))));
+                propMutator.mutate(getIndexKey(prop.getAttribute()),
+                        ImmutableList.of(new Entry(getKeyedIndexColumn(pt), getIndexValue(prop))), null);
             } else {
 //					propertyIndex.insert(getIndexKey(prop.getAttribute()), 
 //							ImmutableList.of(new Entry(getIndexColumn(pt,prop.getID()),getIndexValue(prop))), 
 //							txh);
-                propMutator.insert(getIndexKey(prop.getAttribute()),
-                        ImmutableList.of(new Entry(getIndexColumn(pt,prop.getID()),getIndexValue(prop))));
+                propMutator.mutate(getIndexKey(prop.getAttribute()),
+                        ImmutableList.of(new Entry(getIndexColumn(pt, prop.getID()), getIndexValue(prop))), null);
             }
 		}
 	}

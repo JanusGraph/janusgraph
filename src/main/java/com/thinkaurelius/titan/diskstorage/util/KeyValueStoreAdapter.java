@@ -152,9 +152,9 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 	}
 	
 	@Override
-	public void acquireLock(ByteBuffer key, ByteBuffer column,
+	public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue,
 			TransactionHandle txh) {
-		store.acquireLock(concatenate(key,column), txh);
+		store.acquireLock(concatenate(key,column), expectedValue, txh);
 	}
 
 

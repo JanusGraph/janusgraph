@@ -93,9 +93,9 @@ public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
 	}
 	
 	@Override
-	public void acquireLock(ByteBuffer key, TransactionHandle txh) {
+	public void acquireLock(ByteBuffer key, ByteBuffer expectedValue, TransactionHandle txh) {
 		if (getTransaction(txh)==null) {
-			throw new GraphStorageException("Enable transaction for locking in BerkeleyDB!");
+            log.warn("Enable transaction for locking in BerkeleyDB!");
 		} //else we need no locking
 	}
 

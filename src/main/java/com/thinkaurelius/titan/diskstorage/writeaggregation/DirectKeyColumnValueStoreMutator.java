@@ -21,7 +21,12 @@ public class DirectKeyColumnValueStoreMutator implements KeyColumnValueStoreMuta
         store.mutate(key,additions,deletions,txh);
     }
 
-	@Override
+    @Override
+    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) {
+        store.acquireLock(key,column,expectedValue,txh);
+    }
+
+    @Override
 	public void flush() {
 		// Do nothing
 	}

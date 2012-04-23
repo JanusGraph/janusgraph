@@ -327,7 +327,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	}
 
 	@Override
-	public void acquireLock(ByteBuffer key, ByteBuffer column,
+	public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue,
 			TransactionHandle txh) {
 		// TODO Auto-generated method stub
 		

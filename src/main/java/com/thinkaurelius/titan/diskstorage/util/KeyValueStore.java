@@ -23,7 +23,7 @@ public interface KeyValueStore {
 	public boolean isLocalKey(ByteBuffer key);
 	
 
-	public void acquireLock(ByteBuffer key, TransactionHandle txh);
+	public void acquireLock(ByteBuffer key, ByteBuffer expectedValue, TransactionHandle txh);
 
 	/**
 	 * Closes the store.

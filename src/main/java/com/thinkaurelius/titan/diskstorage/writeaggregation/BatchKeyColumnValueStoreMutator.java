@@ -9,8 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class BatchKeyColumnValueStoreMutator
-	implements KeyColumnValueStoreMutator {
+public class BatchKeyColumnValueStoreMutator implements KeyColumnValueStoreMutator {
 
 	private final TransactionHandle txh;
 	private final int maxBatch;
@@ -50,8 +49,15 @@ public class BatchKeyColumnValueStoreMutator
 
 	@Override
 	public void flush() {
-        store.mutateMany(mutations,txh);
-        mutations.clear();
-        numMutations = 0;
+        if (numMutations>0) {
+            store.mutateMany(mutations,txh);
+            mutations.clear();
+            numMutations = 0;
+        }
 	}
+
+    @Override
+    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) {
+        store.acquireLock(key,column,expectedValue,txh);
+    }
 }
