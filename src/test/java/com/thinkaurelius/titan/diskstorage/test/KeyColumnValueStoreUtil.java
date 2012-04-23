@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.cassandra;
+package com.thinkaurelius.titan.diskstorage.test;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStore;
@@ -8,11 +8,11 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public class Util {
+public class KeyColumnValueStoreUtil {
 	public static void delete(KeyColumnValueStore store, TransactionHandle txn, long key, String col) {
 		ByteBuffer k = longToByteBuffer(key);
 		ByteBuffer c = stringToByteBuffer(col);
-		store.delete(k, Arrays.asList(c), txn);
+		store.mutate(k, null, Arrays.asList(c), txn);
 	}
 	
 	public static String get(KeyColumnValueStore store, TransactionHandle txn, long key, String col) {
@@ -28,7 +28,7 @@ public class Util {
 		ByteBuffer k = longToByteBuffer(key);
 		ByteBuffer c = stringToByteBuffer(col);
 		ByteBuffer v = stringToByteBuffer(val);
-		store.insert(k, Arrays.asList(new Entry(c, v)), txn);
+		store.mutate(k, Arrays.asList(new Entry(c, v)), null, txn);
 	}
 	
     public static String byteBufferToString(ByteBuffer b) {

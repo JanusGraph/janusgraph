@@ -38,7 +38,7 @@ public class InMemoryGraphDB extends AbstractGraphTx implements GraphDB {
 	}
 	
 
-	public boolean isReferenceNode(long nodeID) {
+	public boolean isReferenceNodeID(long nodeID) {
 		return false;
 	}
 		

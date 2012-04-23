@@ -6,9 +6,10 @@ import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.writeaggregation.*;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import org.apache.cassandra.thrift.*;
+import org.apache.cassandra.thrift.Mutation;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -193,7 +194,12 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		}
 	}
 
-	@Override
+    @Override
+    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh) {
+        if (deletions!=null && !deletions.isEmpty()) delete(key,deletions,txh);
+        if (additions!=null && !additions.isEmpty()) insert(key,additions,txh);
+    }
+    
 	public void delete(ByteBuffer key, List<ByteBuffer> columns,
 			TransactionHandle txh) {
 		ColumnPath path = new ColumnPath(columnFamily);
@@ -250,7 +256,6 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		}
 	}
 
-	@Override
 	public void insert(ByteBuffer key, List<Entry> entries,
 			TransactionHandle txh) {
 		ColumnParent parent = new ColumnParent(columnFamily);
@@ -328,8 +333,20 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		
 	}
 
+    @Override
+    public void mutateMany(Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations, TransactionHandle txh) {
+        Map<ByteBuffer, List<Entry>> insertions = new HashMap<ByteBuffer, List<Entry>>(mutations.size());
+        Map<ByteBuffer, List<ByteBuffer>> deletions = new HashMap<ByteBuffer, List<ByteBuffer>>(mutations.size());
+        for (Map.Entry<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> entry : mutations.entrySet()) {
+            com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation m = entry.getValue();
+            ByteBuffer key = entry.getKey();
+            if (m.hasAdditions()) insertions.put(key,m.getAdditions());
+            if (m.hasDeletions()) deletions.put(key,m.getDeletions());
+        }
+        deleteMany(deletions,txh);
+        insertMany(insertions,txh);
+    }
 
-	@Override
 	public void insertMany(Map<ByteBuffer, List<Entry>> insertions,
 			TransactionHandle txh) {
 		long timestamp = getNewTimestamp();
@@ -363,7 +380,6 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		batchMutate(batch);
 	}
 
-	@Override
 	public void deleteMany(Map<ByteBuffer, List<ByteBuffer>> deletions,
 			TransactionHandle txh) {
 		long timestamp = getNewTimestamp();

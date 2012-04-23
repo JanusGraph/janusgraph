@@ -24,6 +24,8 @@ public interface GraphDB extends GraphDatabase {
 
     public void assignID(InternalNode node);
 
+    public boolean isReferenceNodeID(long nodeID);
+
 	void loadEdges(InternalEdgeQuery query, GraphTx tx);
 	
 	public AbstractLongList getRawNeighborhood(InternalEdgeQuery query, GraphTx tx);

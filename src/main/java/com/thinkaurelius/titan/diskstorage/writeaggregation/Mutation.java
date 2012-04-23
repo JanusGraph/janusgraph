@@ -19,7 +19,15 @@ public class Mutation {
         this.additions=additions;
         this.deletions=deletions;
     }
-    
+
+    public boolean hasAdditions() {
+        return additions!=null && !additions.isEmpty();
+    }
+
+    public boolean hasDeletions() {
+        return deletions!=null && !deletions.isEmpty();
+    }
+
     public List<Entry> getAdditions() {
         return additions;
     }

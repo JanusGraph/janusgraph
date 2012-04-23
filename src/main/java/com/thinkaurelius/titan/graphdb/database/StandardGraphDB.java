@@ -84,7 +84,12 @@ public class StandardGraphDB implements GraphDB {
 	public IDInspector getIDInspector() {
 		return idManager;
 	}
-	
+
+    @Override
+    public boolean isReferenceNodeID(long nodeID) {
+        return false;
+    }
+
 
 	@Override
 	public void close() throws GraphStorageException {

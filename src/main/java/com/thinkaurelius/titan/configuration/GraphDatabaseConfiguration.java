@@ -231,7 +231,8 @@ public class GraphDatabaseConfiguration {
 	 * <p>
 	 * 
 	 * When true, the graph database uses special methods
-	 * to insert and delete edges.  The graph database waits until it
+	 * to insert and delete edges, see {@link com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore}.  
+     * The graph database waits until it
 	 * has accumulated up to {@link #getEdgeBatchWriteSize()} edge deletions
 	 * or insertions before calling either {@code insertBatch()} or
 	 * {@code deleteBatch()}.
@@ -239,13 +240,8 @@ public class GraphDatabaseConfiguration {
 	 * <p>
 	 * 
 	 * When false, the graph database immediately and individually writes
-	 * each edge insertion and deletion via the methods
-	 * 
-	 * <ul>
-	 * <li>{@link KeyColumnValueStore#insert(java.nio.ByteBuffer, java.util.List, com.thinkaurelius.titan.diskstorage.TransactionHandle)}
-	 * <li>{@link KeyColumnValueStore#delete(java.nio.ByteBuffer, java.util.List, com.thinkaurelius.titan.diskstorage.TransactionHandle)}
-	 * </ul>
-	 * 
+	 * each edge insertion and deletion via the method {@link KeyColumnValueStore#mutate(java.nio.ByteBuffer, java.util.List, java.util.List, com.thinkaurelius.titan.diskstorage.TransactionHandle)}
+	 *
 	 * @param enabled whether to batch edge insertions and deletions
 	 */
 	public void setEdgeBatchWritingEnabled(boolean enabled) {
@@ -495,9 +491,7 @@ public class GraphDatabaseConfiguration {
 	}
 	
 	private NodeIDAssigner createIDAssigner() {
-		ReferenceNodeIdentifier refNodeIdent;
-		refNodeIdent = ReferenceNodeIdentifier.noReferenceNodes;
-        IDManager idmanager = new IDManager(refNodeIdent);
+        IDManager idmanager = new IDManager();
 		return new SimpleNodeIDAssigner(idmanager, inserterID, maxNoInserter, objectStore);
 	}
 

@@ -106,7 +106,13 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 	}
 
 
-	@Override
+    @Override
+    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh) {
+        if (deletions!=null) delete(key,deletions,txh);
+        if (additions!=null) insert(key,additions,txh);
+    }
+    
+    
 	public void delete(ByteBuffer key, List<ByteBuffer> columns,
 			TransactionHandle txh) {
 		List<ByteBuffer> deleted = new ArrayList<ByteBuffer>(columns.size());
@@ -117,7 +123,6 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 		store.delete(deleted, txh);
 	}
 	
-	@Override
 	public void insert(ByteBuffer key, List<Entry> entries,
 			TransactionHandle txh) {
 		List<KeyValueEntry> newentries = new ArrayList<KeyValueEntry>(entries.size());

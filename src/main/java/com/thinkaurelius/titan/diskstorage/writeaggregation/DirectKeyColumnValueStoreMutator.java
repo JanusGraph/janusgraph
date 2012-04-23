@@ -17,25 +17,9 @@ public class DirectKeyColumnValueStoreMutator implements KeyColumnValueStoreMuta
 		this.store = store;
 	}
 
-	@Override
-	public void insert(ByteBuffer key, List<Entry> entries) {
-		store.insert(key, entries, txh);
-	}
-
-	@Override
-	public void delete(ByteBuffer key, List<ByteBuffer> columns) {
-		store.delete(key, columns, txh);
-	}
-
-	@Override
-	public void flushInserts() {
-		// Do nothing
-	}
-
-	@Override
-	public void flushDeletes() {
-		// Do nothing
-	}
+    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) {
+        store.mutate(key,additions,deletions,txh);
+    }
 
 	@Override
 	public void flush() {

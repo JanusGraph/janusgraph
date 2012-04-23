@@ -144,7 +144,7 @@ public abstract class AbstractGraphTx implements GraphTx {
 
                 if (idspec.isEdgeTypeID(id)) {
                     node = etManager.getEdgeType(id, this);
-                } else if (idspec.isReferenceNodeID(id)) {
+                } else if (graphdb.isReferenceNodeID(id)) {
                     return new StandardReferenceNode(this, id);
                 } else if (idspec.isNodeID(id)) {
                     node = nodeFactory.createExisting(this,id);

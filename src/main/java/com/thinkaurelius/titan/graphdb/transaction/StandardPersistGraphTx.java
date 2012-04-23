@@ -102,11 +102,6 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 		super.loadedEdge(edge);
 	}
 
-    public boolean isReferenceNode(long nodeID) {
-        return graphdb.getIDInspector().isReferenceNodeID(nodeID);
-    }
-
-
 	
 	/* ---------------------------------------------------------------
 	 * Index Handling

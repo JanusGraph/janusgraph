@@ -38,19 +38,13 @@ public class ReadOnlyKeyValueStore implements KeyColumnValueStore {
 			TransactionHandle txh) {
 		return store.get(key, column, txh);
 	}
-	
 
-	@Override
-	public void delete(ByteBuffer key, List<ByteBuffer> columns,
-			TransactionHandle txh) {
-		throw new UnsupportedOperationException("Cannot delete from a read-only store!");
+
+    @Override
+    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh) {
+		throw new UnsupportedOperationException("Cannot mutate a read-only store!");
 	}
 
-	@Override
-	public void insert(ByteBuffer key, List<Entry> entries,
-			TransactionHandle txh) {
-		throw new UnsupportedOperationException("Cannot insert into a read-only store!");
-	}
 
 //	@Override
 	public boolean isReadOnly() {
