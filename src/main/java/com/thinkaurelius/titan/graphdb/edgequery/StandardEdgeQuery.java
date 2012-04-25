@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.edges.EdgeDirection;
+import com.thinkaurelius.titan.graphdb.edgetypes.InternalEdgeType;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableEdgeIterable;
@@ -24,6 +25,7 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
     private Direction dir;
     private EdgeType type;
     private EdgeTypeGroup group;
+    private Map<String,Object> constraints;
 
     private boolean queryProps;
     private boolean queryRelships;
@@ -32,7 +34,6 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
 
     private long limit = Long.MAX_VALUE;
     
-    private Map<PropertyType,Interval<?>> propertyConstraints;
 
     public StandardEdgeQuery(GraphTx tx) {
         this.tx=tx;
@@ -44,7 +45,7 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
         queryRelships=true;
         queryHidden=false;
         queryUnmodifiable=true;
-        propertyConstraints = null;
+        constraints = null;
     }
     
     public StandardEdgeQuery(InternalNode n) {
@@ -81,8 +82,8 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
         
         inMemoryRetrieval=q.inMemoryRetrieval;
         limit = q.limit;
-        if (q.propertyConstraints ==null) propertyConstraints =null;
-        else propertyConstraints = new HashMap<PropertyType,Interval<?>>(q.propertyConstraints);
+        if (q.constraints ==null) constraints =null;
+        else constraints = new HashMap<String,Object>(q.constraints);
     }
 
 	StandardEdgeQuery(InternalNode node, StandardEdgeQuery q) {
@@ -105,27 +106,36 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
 	 * ---------------------------------------------------------------
 	 */
     
-    private<T> StandardEdgeQuery withPropertyConstraint(PropertyType ptype,Interval<T> interval) {
+    private<T> StandardEdgeQuery withPropertyConstraint(EdgeType ptype,Object value) {
         Preconditions.checkNotNull(ptype);
-        Preconditions.checkNotNull(interval);
-        if (propertyConstraints == null) propertyConstraints = new HashMap<PropertyType,Interval<?>>(5);
-        propertyConstraints.put(ptype, interval);
+        if (constraints == null) constraints = new HashMap<String,Object>(5);
+        constraints.put(ptype.getName(), value);
         return this;
     }
 	
     @Override
-    public<T> StandardEdgeQuery withProperty(PropertyType ptype,T value) {
-        return withPropertyConstraint(ptype,new PointInterval<T>(value));
+    public<T> StandardEdgeQuery withConstraint(EdgeType etype,T value) {
+        if (etype.isRelationshipType()) {
+            Preconditions.checkArgument(etype.getDirectionality()==Directionality.Unidirected,"Only unidirectional edges supported inline.");
+            Preconditions.checkArgument(value instanceof Node,"Value needs to be a node.");
+            return withPropertyConstraint(etype,value);
+        } else {
+            assert etype.isPropertyType();
+            Preconditions.checkArgument(((PropertyType) etype).getDataType().isInstance(value), "Value is not an instance of the property type's data type.");
+            return withPropertyConstraint(etype,new PointInterval<T>(value));
+        }
     }
 
     @Override
-    public<T> StandardEdgeQuery withProperty(String ptype,T value) {
+    public<T> StandardEdgeQuery withConstraint(String ptype, T value) {
         if (!tx.containsEdgeType(ptype)) throw new IllegalArgumentException("Unknown property type: " + ptype);
-        return withProperty(tx.getPropertyType(ptype),value);
+        return withConstraint(tx.getPropertyType(ptype),value);
     }
 
     @Override
     public<T> EdgeQuery withPropertyIn(PropertyType ptype, Comparable<T> start, Comparable<T> end) {
+        Preconditions.checkNotNull(start);
+        Preconditions.checkNotNull(end);
         return withPropertyConstraint(ptype, new Range(start, end));
     }
 
@@ -136,20 +146,14 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
     }
 
     @Override
-    public StandardEdgeQuery withEdgeType(String... types) {
+    public StandardEdgeQuery withEdgeType(String type) {
         //TODO: Filter out non-existent edge types. Handle special case where resulting set is empty
         Preconditions.checkNotNull(tx);
-        EdgeType[] etypes = new EdgeType[types.length];
-        for (int i=0;i<types.length;i++) {
-            etypes[i]=tx.getEdgeType(types[i]);
-        }
-        return withEdgeType(etypes);
+        return withEdgeType(tx.getEdgeType(type));
     }
     
 	@Override
-    public StandardEdgeQuery withEdgeType(EdgeType... types) {
-        Preconditions.checkArgument(types.length==1,"Currently, only single edge types are supported!");
-        EdgeType type = types[0];
+    public StandardEdgeQuery withEdgeType(EdgeType type) {
         Preconditions.checkNotNull(type);
         this.type = type;
         group = null;
@@ -313,15 +317,16 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
     }
 
     @Override
-    public boolean hasPropertyConstraints() {
-        return propertyConstraints!=null && !propertyConstraints.isEmpty();
+    public boolean hasConstraints() {
+        return constraints !=null && !constraints.isEmpty();
     }
 
     @Override
-    public Map<PropertyType,Interval<?>> getPropertyConstraints() {
-        if (propertyConstraints==null) return new HashMap<PropertyType, Interval<?>>();
-        else return propertyConstraints;
+    public Map<String,Object> getConstraints() {
+        if (constraints ==null) return new HashMap<String, Object>();
+        else return constraints;
     }
+
 
 	/* ---------------------------------------------------------------
 	 * Query Execution
@@ -424,7 +429,7 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
                 "Cannot query for raw neighborhood on new or modified node.");
         if (!retrieveInMemory()) {
             Preconditions.checkArgument(nodeid>0,"The node id could not be determined!");
-            return new NodeLongList(tx,tx.getRawNeighborhood(this),true);
+            return new NodeLongList(tx,tx.getRawNeighborhood(this));
         } else {
             return retrieveFromMemory(new NodeLongList(tx));
         }

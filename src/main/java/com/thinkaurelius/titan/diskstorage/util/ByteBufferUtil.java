@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
+import com.google.common.base.Preconditions;
+
 import java.nio.ByteBuffer;
 
 public class ByteBufferUtil {
@@ -20,6 +22,25 @@ public class ByteBufferUtil {
 		buffer.flip();
 		return buffer;
 	}
+    
+    public static final ByteBuffer nextBiggerBuffer(ByteBuffer buffer) {
+        assert buffer.position()==0;
+        int len = buffer.remaining();
+        ByteBuffer next = ByteBuffer.allocate(len);
+        boolean carry = true;
+        for (int i=len-1;i>=0;i--) {
+            byte b = buffer.get(i);
+            if (carry) {
+                b++;
+                if (b!=0) carry = false;
+            }
+            next.put(i,b);
+        }
+        Preconditions.checkArgument(!carry,"Buffer overflow");
+        next.position(0);
+        next.limit(len);
+        return next;
+    }
 	
 	/**
 	 * Compares two {@link java.nio.ByteBuffer}s and checks whether the first ByteBuffer is smaller than the second.

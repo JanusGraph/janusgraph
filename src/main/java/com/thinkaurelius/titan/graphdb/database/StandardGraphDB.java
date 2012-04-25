@@ -17,13 +17,16 @@ import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnV
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.NodeIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
+import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.statistics.InternalGraphStatistics;
 import com.thinkaurelius.titan.graphdb.database.statistics.TransactionStatistics;
 import com.thinkaurelius.titan.graphdb.database.util.EdgeTypeSignature;
 import com.thinkaurelius.titan.graphdb.database.util.LimitTracker;
+import com.thinkaurelius.titan.graphdb.edgequery.EdgeQueryUtil;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
+import com.thinkaurelius.titan.graphdb.edgequery.Interval;
 import com.thinkaurelius.titan.graphdb.edgequery.StandardEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edges.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
@@ -117,15 +120,16 @@ public class StandardGraphDB implements GraphDB {
 	public GraphTx startTransaction(GraphTransactionConfig configuration) {
 		return new StandardPersistGraphTx(this,etManager, configuration,storage.beginTransaction());
 	}
-	
-	
+
+    // ################### READ #########################
+
 	@Override
 	public boolean containsNodeID(long id, GraphTx tx) {
 		log.debug("Checking node existence for {}",id);
 		return edgeStore.containsKey(IDHandler.getKey(id), tx.getTxHandle());
 	}
-	
-	@Override
+
+    @Override
 	public long[] indexRetrieval(Object key, PropertyType pt, GraphTx tx) {
 		Preconditions.checkArgument(pt.getCategory()==EdgeCategory.Simple,
 					"Currently, only simple properties are supported for hasIndex retrieval!");
@@ -134,21 +138,22 @@ public class StandardGraphDB implements GraphDB {
 
 		long[] nodes = null;
 			
-        Preconditions.checkArgument(pt.getDataType().isInstance(key),"Interval start point object is incompatible with property data type ["+pt.getName()+"].");
+        Preconditions.checkArgument(pt.getDataType().isInstance(key),"Specified object is incompatible with property data type ["+pt.getName()+"].");
 
         if (pt.isKeyed()) {
             ByteBuffer value = propertyIndex.get(getIndexKey(key), getKeyedIndexColumn(pt), tx.getTxHandle());
             if (value!=null) {
                 nodes = new long[1];
-                nodes[0]=value.getLong();
+                nodes[0]=VariableLong.readPositive(value);
             }
         } else {
-            List<Entry> entries = propertyIndex.getSlice(getIndexKey(key), getIndexColumn(pt,0),
-                                                        getIndexColumn(pt,-1), true, false, tx.getTxHandle());
+            ByteBuffer startColumn = VariableLong.positiveByteBuffer(pt.getID());
+            List<Entry> entries = propertyIndex.getSlice(getIndexKey(key), startColumn,
+                                                        ByteBufferUtil.nextBiggerBuffer(startColumn), true, false, tx.getTxHandle());
             nodes = new long[entries.size()];
             int i = 0;
             for (Entry ent : entries) {
-                nodes[i++] = ent.getValue().getLong();
+                nodes[i++] = VariableLong.readPositive(ent.getValue());
             }
         }
 
@@ -159,36 +164,33 @@ public class StandardGraphDB implements GraphDB {
 
 
 	@Override
-	public AbstractLongList getRawNeighborhood(InternalEdgeQuery query,
-			GraphTx tx) {
+	public AbstractLongList getRawNeighborhood(InternalEdgeQuery query, GraphTx tx) {
+        Preconditions.checkArgument(EdgeQueryUtil.allConstraintsKeyed(query),
+                "Raw retrieval is currently does not support in-memory filtering. To be implemented!");
 		List<Entry> entries = queryForEntries(query,tx.getTxHandle());
 		
-		EdgeType constantET = null;
-		if (query.hasEdgeTypeCondition()) constantET = query.getEdgeTypeCondition();
+        InternalNode node = query.getNode();
+		EdgeType edgeType = null;
+		if (query.hasEdgeTypeCondition()) edgeType = query.getEdgeTypeCondition();
 		
 		AbstractLongList result = new LongArrayList();
 		
 		for (Entry entry : entries) {
-			EdgeType et = constantET;
-			if (et==null) {
-				//Determine Edgetype
-				long etid = entry.getColumn().getLong();
-				etid = idManager.switchBackEdgeTypeID(etid);
-				et=(EdgeType)tx.getNode(etid);
-			}
-			if (et.isPropertyType() || (!et.isModifiable() && !query.queryUnmodifiable())) {
+            if (!query.hasEdgeTypeCondition()) {
+                long etid = IDHandler.readEdgeType(entry.getColumn(), idManager);
+                if (edgeType==null || edgeType.getID()!=etid) {
+                    edgeType=(EdgeType)tx.getNode(etid);
+                }
+            }
+			if (edgeType.isPropertyType() || (!edgeType.isModifiable() && !query.queryUnmodifiable())) {
 				continue; //Skip since it does not match query
 			}
 			//Get neighboring node id
-			long nghid;
-			if (et.isFunctional()) {
-				ByteBuffer val = entry.getValue();
-				nghid = val.getLong();
-			} else {
-				ByteBuffer col = entry.getColumn();
-				nghid = col.getLong(col.limit()- 2*ByteBufferUtil.longSize);
-			}
+            long iddiff = VariableLong.read(entry.getValue());
+			long nghid = iddiff + node.getID();
 			result.add(nghid);
+
+            if (result.size()>=query.getLimit()) break;
 		}
 		return result;
 	}
@@ -202,180 +204,248 @@ public class StandardGraphDB implements GraphDB {
 		InternalNode node = query.getNode();
 		
 		EdgeLoader factory = tx.getEdgeFactory();
-		
+        Map<String,EdgeType> etCache = new HashMap<String,EdgeType>();
+
 		for (Entry entry : entries) {
 			ByteBuffer column = entry.getColumn();
-			long etDir = column.getLong();
-			column.mark();
-			long etid = idManager.switchBackEdgeTypeID(etDir);
+            int dirID = IDHandler.getDirectionID(column.get(column.position()));
+			long etid = IDHandler.readEdgeType(column, idManager);
+            column.mark(); //TODO: remove?
 			if (edgeType==null || edgeType.getID()!=etid) {
 				edgeType = (EdgeType)tx.getNode(etid);
 			}
-			InternalEdge edge;
-			ByteBuffer readValues;
-			if (edgeType.isRelationshipType()) {
-				ByteBuffer read;
-				if (edgeType.isFunctional()) {
-					read = entry.getValue();
-					readValues = read;
-				} else {
-					read = entry.getColumn();
-					read.position(read.limit()- 2*ByteBufferUtil.longSize);
-					readValues = entry.getValue();
-				}
-				long otherid = read.getLong();
-				long edgeid = read.getLong();
-				InternalNode othernode = tx.getExistingNode(otherid);
-				InternalNode[] nodes;
-				EdgeDirection dir = EdgeDirection.fromID(idManager.getDirectionFront(etDir));
-				if (dir==EdgeDirection.In) {
-					assert (edgeType.getDirectionality()==Directionality.Directed);
-					nodes = new InternalNode[]{othernode, node};
-				} else {
-					nodes = new InternalNode[]{node, othernode};
-				}
-				
-				tx.getExistingNode(otherid);
-				edge = factory.createExistingRelationship(edgeid, (RelationshipType) edgeType, nodes[0],nodes[1]);
-			} else {
-				assert edgeType.isPropertyType();
-				assert EdgeDirection.fromID(idManager.getDirectionFront(etDir))==EdgeDirection.Out;
-				PropertyType propType = (PropertyType)edgeType;
-				long edgeid;
-				ByteBuffer readObj=entry.getValue();
-				readValues = readObj;
-				if (edgeType.isFunctional()) {
-					edgeid = readObj.getLong();
-				} else {
-					ByteBuffer col = entry.getColumn();
-					edgeid = col.getLong(col.limit()- 1*ByteBufferUtil.longSize);
-				}
-				Object attribute = serializer.readObjectNotNull(readObj, propType.getDataType());
-				edge = factory.createExistingProperty(edgeid, propType, node, attribute);
-			}
-			//Read labels if any
 
+            Object[] keys = null;
+            if (edgeType.getCategory()==EdgeCategory.Labeled) { 
+                EdgeTypeDefinition def = ((InternalEdgeType)edgeType).getDefinition();
+                String[] keysig = def.getKeySignature();
+                keys = new Object[keysig.length];
+                for (int i=0;i<keysig.length;i++) 
+                    keys[i] = readInline(column,getEdgeType(keysig[i],etCache,tx),tx);
+            }
+
+            InternalEdge edge;
+            long edgeid=0;
+            if (!edgeType.isFunctional()) {
+                edgeid = VariableLong.readPositive(column);
+            }
+            
+            ByteBuffer value = entry.getValue();
+            if (edgeType.isRelationshipType()) {
+                long nodeIDDiff = VariableLong.read(value);
+                if (edgeType.isFunctional()) edgeid = VariableLong.readPositive(value);
+                assert edgeid>0;
+                long otherid = node.getID() + nodeIDDiff;
+                InternalNode othernode = tx.getExistingNode(otherid);
+                if (dirID==3) {
+                    assert (edgeType.getDirectionality()==Directionality.Directed);
+                    edge = factory.createExistingRelationship(edgeid, (RelationshipType) edgeType, othernode,node);
+                } else {
+                    edge = factory.createExistingRelationship(edgeid, (RelationshipType) edgeType, node,othernode);
+                }
+
+            } else {
+                assert edgeType.isPropertyType();
+                assert dirID == 0;
+                PropertyType propType = ((PropertyType)edgeType);
+                Object attribute = serializer.readObjectNotNull(value, propType.getDataType());
+                if (edgeType.isFunctional()) edgeid = VariableLong.readPositive(value);
+                assert edgeid>0;
+                edge = factory.createExistingProperty(edgeid, propType, node, attribute);
+            }
+            
+			//Read value inline edges if any
 			if (edgeType.getCategory()==EdgeCategory.Labeled) { // || EdgeCategory.LabeledRestricted
-				Map<String,EdgeType> etCache = new HashMap<String,EdgeType>();
 				EdgeTypeDefinition def = ((InternalEdgeType)edgeType).getDefinition();
-				//First: key signature
-				ByteBuffer read = entry.getColumn();
-				read.reset();
-				for (String str : def.getKeySignature()) readLabel(edge,read,getEdgeType(str,etCache,tx),factory,tx);
-				//Second: value signature
-				readValues = entry.getValue();
-				for (String str : def.getCompactSignature()) readLabel(edge,readValues,getEdgeType(str,etCache,tx),factory,tx);
+                //value signature
+				for (String str : def.getCompactSignature())
+                    readLabel(edge,value,getEdgeType(str,etCache,tx),factory,tx);
 				
 				//Third: read rest
-				while (readValues.hasRemaining()) {
-					EdgeType type = (EdgeType)tx.getExistingNode(readValues.getLong());
-					readLabel(edge,readValues,type,factory,tx);
+				while (value.hasRemaining()) {
+					EdgeType type = (EdgeType)tx.getExistingNode(IDHandler.readInlineEdgeType(value,idManager));
+					readLabel(edge,value,type,factory,tx);
 				}
 			}
 		}
 		query.getNode().loadedEdges(query);
 	}
-	
-	private EdgeType getEdgeType(String name, Map<String,EdgeType> etCache, GraphTx tx) {
-		EdgeType et = etCache.get(name);
-		if (et==null) {
-			et = tx.getEdgeType(name);
-			etCache.put(name, et);
-		}
-		return et;
-	}
-	
-	private void readLabel(InternalNode start, ByteBuffer read, EdgeType type, EdgeLoader loader, GraphTx tx) {
-		if (type.isPropertyType()) {
-			PropertyType proptype = ((PropertyType) type);
-			Object att = serializer.readObject(read, proptype.getDataType());
-			if (att!=null) {
-				loader.createExistingProperty(proptype, start, att);
-			}
-		} else {
-			assert type.isRelationshipType();
-			long nodeid = read.getLong();
-			if (nodeid!=0) {
-				loader.createExistingRelationship((RelationshipType)type, start, tx.getExistingNode(nodeid));
-			}
-		}
-		
 
+    private Object readInline(ByteBuffer read, EdgeType type, GraphTx tx) {
+        if (type.isPropertyType()) {
+            PropertyType proptype = ((PropertyType) type);
+            return serializer.readObject(read,proptype.getDataType());
+        } else {
+            assert type.isRelationshipType();
+            long id = VariableLong.readPositive(read);
+            if (id==0) return null;
+            else return tx.getExistingNode(id);
+        }
+    }
+    
+    private void createInlineEdge(InternalEdge edge, EdgeType type, Object entity, EdgeLoader loader) {
+        if (entity!=null) {
+            if (type.isRelationshipType()) {
+                assert entity instanceof InternalNode;
+                loader.createExistingRelationship((RelationshipType)type, edge, (InternalNode)entity);
+            } else {
+                assert type.isPropertyType();
+                loader.createExistingProperty((PropertyType)type, edge, entity);
+            }
+        }
+    }
+    
+	private void readLabel(InternalEdge edge, ByteBuffer read, EdgeType type, EdgeLoader loader, GraphTx tx) {
+		createInlineEdge(edge,type,readInline(read,type,tx),loader);
 	}
+
+    private EdgeType getEdgeType(String name, Map<String,EdgeType> etCache, GraphTx tx) {
+        EdgeType et = etCache.get(name);
+        if (et==null) {
+            et = tx.getEdgeType(name);
+            etCache.put(name, et);
+        }
+        return et;
+    }
 	
+    private static boolean[] getAllowedDirections(InternalEdgeQuery query) {
+        boolean[] dirs = new boolean[4];
+        if (query.queryProperties()) {
+            assert query.isAllowedDirection(EdgeDirection.Out);
+            dirs[0]=true;
+        }
+        if (query.queryRelationships()) {
+            if (query.hasDirectionCondition()) {
+                Direction d = query.getDirectionCondition();
+                switch (d) {
+                    case In: dirs[3]=true; break;
+                    case Out: dirs[2]=true; break;
+                    case Both: dirs[2]=true; dirs[3]=true; break;
+                    case Undirected: dirs[1]=true; break;
+                }
+            } else {
+                dirs[0]=true; dirs[1]=true; dirs[2]=true;
+            }
+        }
+        return dirs;
+    }
+    
 	private List<Entry> queryForEntries(InternalEdgeQuery query, TransactionHandle txh) {
 		ByteBuffer key = IDHandler.getKey(query.getNodeID());
 		List<Entry> entries = null;
 		LimitTracker limit = new LimitTracker(query);
 		
+        boolean dirs[] = getAllowedDirections(query);
+        
 		if (query.hasEdgeTypeCondition()) {
 			EdgeType et = query.getEdgeTypeCondition();
 			if (!et.isNew()) { //Result set must be empty if EdgeType is new
-				if (et.isPropertyType()) {
-					if (query.isAllowedDirection(EdgeDirection.Out))
-						entries=appendResults(key,idManager.getQueryBounds(et.getID(), EdgeDirection.Out.getID()),entries,limit,txh);
-				} else {
-					assert et.isRelationshipType();
-					for (EdgeDirection dir : EdgeDirection.values()) {
-						if (query.isAllowedDirection(dir)) {
-							entries = appendResults(key,idManager.getQueryBounds(et.getID(), dir.getID()),entries,limit,txh);
-						}
-					}
-				}
+                ArrayList<Object> applicableConstraints = null;
+                boolean isInterval = false;
+                if (query.hasConstraints()) {
+                    assert et.getCategory()==EdgeCategory.Labeled;
+                    EdgeTypeDefinition def = ((InternalEdgeType)et).getDefinition();
+                    String[] keysig = def.getKeySignature();
+                    applicableConstraints = new ArrayList<Object>(keysig.length);
+                    Map<String,Object> constraints = query.getConstraints();
+                    for (int i=0;i<keysig.length;i++) {
+                        if (constraints.containsKey(keysig[i])) {
+                            Object iv = constraints.get(keysig[i]);
+                            if (iv!=null && (iv instanceof Interval) && ((Interval)iv).isRange()) {
+                                isInterval=true;
+                                break;
+                            }
+                            applicableConstraints.add(iv);
+                        } else break;
+                    }
+                    if (applicableConstraints.isEmpty()) applicableConstraints=null;
+                }
+                
+                for (int dirID=0;dirID<4;dirID++) {
+                    if (dirs[dirID]) {
+                        if (applicableConstraints!=null) {
+                            assert !applicableConstraints.isEmpty();
+
+                            DataOutput start = serializer.getDataOutput(defaultOutputCapacity, true);
+                            DataOutput end = null;
+                            if (isInterval) end = serializer.getDataOutput(defaultOutputCapacity, true);
+                            
+                            IDHandler.writeEdgeType(start,et.getID(),dirID,idManager);
+                            if (isInterval) IDHandler.writeEdgeType(end,et.getID(),dirID,idManager);
+                            
+                            //Write all applicable key constraints
+                            for (Object iv : applicableConstraints) {
+                                if (iv instanceof Interval) {
+                                    Interval interval = (Interval)iv;
+                                    if (interval.isPoint()) {
+                                        start.writeObject(interval.getStartPoint());
+                                        if (isInterval) end.writeObject(interval.getStartPoint());
+                                    } else {
+                                        assert interval.isRange();
+                                        assert interval.getStartPoint()!=null;
+                                        assert interval.getEndPoint()!=null;
+                                        assert interval.startInclusive();
+                                        assert !interval.endInclusive();
+                                        start.writeObject(interval.getStartPoint());
+                                        end.writeObject(interval.getEndPoint());
+                                    }
+                                } else {
+                                    assert iv instanceof Node;
+                                    long id = 0;
+                                    if (iv!=null) id = ((Node)iv).getID();
+                                    VariableLong.writePositive(start,id);
+                                    if (isInterval) VariableLong.writePositive(end,id);
+                                }
+                            }
+                            
+                            if (isInterval) entries = appendResults(key,start.getByteBuffer(),end.getByteBuffer(),entries,limit,txh);
+                            else entries = appendResults(key,start.getByteBuffer(),entries,limit,txh);
+
+                        } else {
+                            ByteBuffer columnStart = IDHandler.getEdgeType(et.getID(),dirID,idManager);
+                            entries = appendResults(key,columnStart,entries,limit,txh);
+                        }
+                        
+                    }
+                }
 			}
 		} else if (query.hasEdgeTypeGroupCondition()) {
-			short groupid = query.getEdgeTypeGroupCondition().getID();
-			if (query.queryRelationships()) {
-				for (EdgeDirection dir : EdgeDirection.values()) {
-					if (query.isAllowedDirection(dir)) {
-						entries = appendResults(key,idManager.getQueryBoundsRelationship(dir.getID(),groupid),entries,limit,txh);
-					}
-				}
-			}
-			if (query.queryProperties()) {
-				if (query.isAllowedDirection(EdgeDirection.Out))
-					entries=appendResults(key,idManager.getQueryBoundsProperty(EdgeDirection.Out.getID(),groupid),entries,limit,txh);
-			}
+			int groupid = query.getEdgeTypeGroupCondition().getID();
+            for (int dirID=0;dirID<4;dirID++) {
+                if (dirs[dirID]) {
+                    ByteBuffer columnStart = IDHandler.getEdgeTypeGroup(groupid,dirID,idManager);
+                    entries = appendResults(key,columnStart,entries,limit,txh);
+                }
+            }
 		} else {
-			if (query.queryProperties() && query.queryRelationships()) {
-				if (!query.hasDirectionCondition()) {
-					entries = appendResults(key,new long[]{0,Long.MAX_VALUE},entries,limit,txh);
-				} else {
-					for (EdgeDirection dir : EdgeDirection.values()) {
-						if (query.isAllowedDirection(dir)) {
-							entries = appendResults(key,idManager.getQueryBounds(dir.getID()),entries,limit,txh);
-						}
-					}
-				}
-			} else if (query.queryRelationships()) { //Relationships only
-				if (query.isAllowedDirection(EdgeDirection.Undirected)) {
-					entries = appendResults(key,idManager.getQueryBoundsRelationship(EdgeDirection.Undirected.getID()),entries,limit,txh);
-				}
-				if (query.isAllowedDirection(EdgeDirection.In) && query.isAllowedDirection(EdgeDirection.Out)) {
-					long[] bounds = idManager.getQueryBoundsRelationship(EdgeDirection.Out.getID());
-					bounds[1] = idManager.getQueryBoundsRelationship(EdgeDirection.In.getID())[1];
-					entries = appendResults(key,bounds,entries,limit,txh);
-				} else if (query.isAllowedDirection(EdgeDirection.In)) {
-					entries = appendResults(key,idManager.getQueryBoundsRelationship(EdgeDirection.In.getID()),entries,limit,txh);
-				} else if (query.isAllowedDirection(EdgeDirection.Out)) {
-					entries = appendResults(key,idManager.getQueryBoundsRelationship(EdgeDirection.Out.getID()),entries,limit,txh);
-				}
-			} else if (query.queryProperties()) { //Properties only
-				if (query.isAllowedDirection(EdgeDirection.Out))
-					entries=appendResults(key,idManager.getQueryBoundsProperty(EdgeDirection.Out.getID()),null,limit,txh);
-			}
+            int lastDirID = -1;
+            for (int dirID=0;dirID<=4;dirID++) {
+                if ( (dirID>=4 || !dirs[dirID]) && lastDirID>=0) {
+                    ByteBuffer columnStart = IDHandler.getEdgeTypeGroup(0,lastDirID,idManager);
+                    ByteBuffer columnEnd = IDHandler.getEdgeTypeGroup(idManager.getMaxGroupID()+1,dirID-1,idManager);
+                    entries = appendResults(key,columnStart,columnEnd,entries,limit,txh);
+                }
+                if (dirID<4) {
+                    if (!dirs[dirID]) lastDirID=-1;
+                    else lastDirID = dirID;
+                }
+            }
 		}
 
 		if (entries==null) return ImmutableList.of();
 		else return entries;
 	}
-	
-	private List<Entry> appendResults(ByteBuffer key, long[] bounds, List<Entry> entries, LimitTracker limit, TransactionHandle txh) {
+
+    private List<Entry> appendResults(ByteBuffer key, ByteBuffer columnPrefix,
+                                      List<Entry> entries, LimitTracker limit, TransactionHandle txh) {
+        return appendResults(key,columnPrefix,ByteBufferUtil.nextBiggerBuffer(columnPrefix),entries,limit,txh);
+    }
+    
+	private List<Entry> appendResults(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd,
+                                      List<Entry> entries, LimitTracker limit, TransactionHandle txh) {
 		if (limit.limitExhausted()) return null;
 		List<Entry> results = null;
-        results = edgeStore.getSlice(key,
-            ByteBufferUtil.getLongByteBuffer(bounds[0]),
-            ByteBufferUtil.getLongByteBuffer(bounds[1]),
+        results = edgeStore.getSlice(key, columnStart, columnEnd,
             true, false, limit.getLimit(), txh);
         limit.retrieved(results.size());
 
@@ -386,6 +456,8 @@ public class StandardGraphDB implements GraphDB {
 			return entries;
 		}
 	}
+
+    // ################### WRITE #########################
 	
 	private final KeyColumnValueStoreMutator getEdgeStoreMutator(KeyColumnValueStore store, TransactionHandle txh) {
 		if (config.isEdgeBatchWritingEnabled()) {
@@ -452,12 +524,12 @@ public class StandardGraphDB implements GraphDB {
                         mutations.put(node,del);
                         if (node.isDeleted()) stats.removedNode(node);
                     }
-                    if (pos==0 && del.getEdgeType().isFunctional()) {
+                    if (config.takeLocks() && pos==0 && del.getEdgeType().isFunctional()) {
                         Entry entry = getEntry(tx,del,node,signatures);
                         edgeMutator.acquireLock(IDHandler.getKey(node.getID()),entry.getColumn(),entry.getValue());
                     }
                 }
-                if (del.isProperty()) {
+                if (config.takeLocks() && del.isProperty()) {
                     lockKeyedProperty((Property)del,propMutator);
                 }
 
@@ -501,13 +573,13 @@ public class StandardGraphDB implements GraphDB {
 						if (node.isNew() && !mutations.containsKey(node)) stats.addedNode(node);
 						mutations.put(node, edge);
 					}
-                    if (pos==0 && edge.getEdgeType().isFunctional() && !node.isNew()) {
+                    if (config.takeLocks() && pos==0 && edge.getEdgeType().isFunctional() && !node.isNew()) {
                         Entry entry = getEntry(tx,edge,node,signatures,true);
                         edgeMutator.acquireLock(IDHandler.getKey(node.getID()),entry.getColumn(),null);
                     }
 				}
 			}
-            if (edge.isProperty()) {
+            if (config.takeLocks() && edge.isProperty()) {
                 lockKeyedProperty((Property)edge,propMutator);
             }
 		}
@@ -588,64 +660,63 @@ public class StandardGraphDB implements GraphDB {
 	private Entry getEntry(GraphTx tx,InternalEdge edge, InternalNode perspective, Map<EdgeType,EdgeTypeSignature> signatures) {
 		return getEntry(tx,edge,perspective,signatures,false);
 	}
-	
+
 	private Entry getEntry(GraphTx tx,InternalEdge edge, InternalNode perspective, Map<EdgeType,EdgeTypeSignature> signatures, boolean columnOnly) {
 		EdgeType et = edge.getEdgeType();
+        long etid = et.getID();
+
+        int dirID;
+        if (edge.isProperty()) {
+            dirID = 0;
+        } else if (et.getDirectionality()==Directionality.Undirected) {
+            assert edge.isUndirected();
+            dirID = 1;
+        } else if (edge.getNodeAt(0).equals(perspective)) {
+            //Out Edge
+            assert edge.isDirected() || edge.isUnidirected();
+            dirID = 2;
+        } else {
+            //In Edge
+            assert edge.isDirected() && edge.getNodeAt(1).equals(perspective);
+            dirID = 3;
+        }
 		
-		EdgeDirection dir;
-		if (et.getDirectionality()==Directionality.Undirected) {
-			assert edge.isUndirected();
-			dir = EdgeDirection.Undirected;
-		} else if (edge.getNodeAt(0).equals(perspective)) {
-			//Out Edge
-			assert edge.isDirected() || edge.isUnidirected();
-			dir = EdgeDirection.Out;
-		} else {
-			//In Edge
-			assert edge.isDirected() && edge.getNodeAt(1).equals(perspective);
-			dir = EdgeDirection.In;
-		}
-		long etValue = idManager.switchEdgeTypeID(et.getID(), dir.getID());
-		
+        int etIDLength = IDHandler.edgeTypeLength(etid,idManager);
+        
 		ByteBuffer column=null,value=null;
 		switch(et.getCategory()) {
 		case Simple:
 			if (et.isFunctional()) {
-				column = ByteBufferUtil.getLongByteBuffer(etValue);
+                column = ByteBuffer.allocate(etIDLength);
+                IDHandler.writeEdgeType(column,etid,dirID,idManager);
 			} else {
-				if (edge.isRelationship()) {
-					column = ByteBuffer.allocate(3*ByteBufferUtil.longSize);
-					column.putLong(etValue);
-					column.putLong(((Relationship) edge).getOtherNode(perspective).getID());
-					column.putLong(edge.getID());
-				} else {
-					assert edge.isProperty();
-					column = ByteBuffer.allocate(2*ByteBufferUtil.longSize);
-					column.putLong(etValue);
-					column.putLong(edge.getID());
-				}
-				column.flip();
+                column = ByteBuffer.allocate(etIDLength + VariableLong.positiveLength(edge.getID()));
+                IDHandler.writeEdgeType(column,etid,dirID,idManager);
+                VariableLong.writePositive(column,edge.getID());
 			}
-			
+            column.flip();
 			if (columnOnly) break;
 			
 			if (edge.isRelationship()) {
+                long nodeIDDiff = ((Relationship) edge).getOtherNode(perspective).getID() - perspective.getID();
+                int nodeIDDiffLength = VariableLong.length(nodeIDDiff);
 				if (et.isFunctional()) {
-					value = ByteBuffer.allocate(2 * ByteBufferUtil.longSize);
-					value.putLong(((Relationship) edge).getOtherNode(perspective).getID());
-					value.putLong(edge.getID());
+					value = ByteBuffer.allocate(nodeIDDiffLength + VariableLong.positiveLength(edge.getID()));
+                    VariableLong.write(value,nodeIDDiff);
+                    VariableLong.writePositive(value, edge.getID());
 				} else {
-					value = ByteBuffer.allocate(0);
+					value = ByteBuffer.allocate(nodeIDDiffLength);
+                    VariableLong.write(value,nodeIDDiff);
 				}
 				value.flip();
 			} else {
 				assert edge.isProperty();
 				DataOutput out = serializer.getDataOutput(defaultOutputCapacity, true);
-				if (et.isFunctional()) {
-					out.putLong(edge.getID());
-				}
 				//Write object
 				out.writeObjectNotNull(((Property)edge).getAttribute());
+                if (et.isFunctional()) {
+                    VariableLong.writePositive(out,edge.getID());
+                }
 				value = out.getByteBuffer();
 			}
 			break;
@@ -658,25 +729,32 @@ public class StandardGraphDB implements GraphDB {
 			ets.sort(edge.getEdges(StandardEdgeQuery.queryAll(edge), false),keys,values,rest);
 			
 			DataOutput out = serializer.getDataOutput(defaultOutputCapacity, true);
-			out.putLong(etValue);
-			for (int i=0;i<keys.length;i++) writeVirtualEdge(out,keys[i],ets.getKeyEdgeType(i));
+            IDHandler.writeEdgeType(out,etid,dirID,idManager);
+
+			for (int i=0;i<keys.length;i++) writeInlineEdge(out, keys[i], ets.getKeyEdgeType(i));
 			
 			if (!et.isFunctional()) {
-				assert edge.isRelationship();
-				out.putLong(((Relationship) edge).getOtherNode(perspective).getID());
-				out.putLong(edge.getID());
+				VariableLong.writePositive(out,edge.getID());
 			}
 			column = out.getByteBuffer();
 			
 			if (columnOnly) break;
 			out = serializer.getDataOutput(defaultOutputCapacity, true);
+            
+            if (edge.isRelationship()) {
+                long nodeIDDiff = ((Relationship) edge).getOtherNode(perspective).getID() - perspective.getID();
+                VariableLong.write(out,nodeIDDiff);
+            } else {
+                assert edge.isProperty();
+                out.writeObjectNotNull(((Property)edge).getAttribute());
+            }
+
 			if (et.isFunctional()) {
 				assert edge.isRelationship();
-				out.putLong(((Relationship) edge).getOtherNode(perspective).getID());
-				out.putLong(edge.getID());
+                VariableLong.writePositive(out, edge.getID());
 			}
-			for (int i=0;i<values.length;i++) writeVirtualEdge(out,values[i],ets.getValueEdgeType(i));
-			for (InternalEdge v: rest) writeVirtualEdge(out,v);
+			for (int i=0;i<values.length;i++) writeInlineEdge(out, values[i], ets.getValueEdgeType(i));
+			for (InternalEdge v: rest) writeInlineEdge(out, v);
 			value = out.getByteBuffer();
 			
 			break;
@@ -685,25 +763,12 @@ public class StandardGraphDB implements GraphDB {
 		return new Entry(column,value);
 	}
 	
-//	private void writeRest(DataOutput out, InternalEdge[] edges) {
-//		for (int i=0;i<edges.length;i++) {
-//			InternalEdge edge = edges[i];
-//			assert edge.getEdgeType().getCategory()==EdgeCategory.Simple;
-//			if (edge.isProperty()) {
-//				out.writeObject(((Property)edge).getAttribute());
-//			} else {
-//				assert edge.isUnidirected() && edge.isRelationship();
-//				out.putLong(edge.getNodeAt(1).getID());
-//			}
-//		}
-//	}
-	
-	private void writeVirtualEdge(DataOutput out, InternalEdge edge) {
+	private void writeInlineEdge(DataOutput out, InternalEdge edge) {
 		assert edge!=null;
 		writeVirtualEdge(out,edge,edge.getEdgeType(),true);
 	}
 	
-	private void writeVirtualEdge(DataOutput out, InternalEdge edge, EdgeType edgeType) {
+	private void writeInlineEdge(DataOutput out, InternalEdge edge, EdgeType edgeType) {
 		writeVirtualEdge(out,edge,edgeType,false);
 	}
 	
@@ -716,18 +781,17 @@ public class StandardGraphDB implements GraphDB {
 				out.writeObject(null);
 			} else {
 				assert edgeType.isRelationshipType();
-				out.putLong(0);
+                VariableLong.writePositive(out, 0);
 			}
 		} else {
 			if (writeEdgeType) {
-				long etValue = edgeType.getID();
-				out.putLong(etValue);
+                IDHandler.writeInlineEdgeType(out, edgeType.getID(), idManager);
 			}
 			if (edge.isProperty()) {
 				out.writeObject(((Property)edge).getAttribute());
 			} else {
 				assert edge.isUnidirected() && edge.isRelationship();
-				out.putLong(edge.getNodeAt(1).getID());
+                VariableLong.writePositive(out, edge.getNodeAt(1).getID());
 			}
 		}
 	}
@@ -741,7 +805,8 @@ public class StandardGraphDB implements GraphDB {
 		return ets;
 	}
 
-	// Property Index Handling
+    // ################### PROPERTY INDEX HANDLING #########################
+
 	
     private void lockKeyedProperty(Property prop, KeyColumnValueStoreMutator propMutator) {
         PropertyType pt = prop.getPropertyType();
@@ -762,13 +827,9 @@ public class StandardGraphDB implements GraphDB {
 		assert pt.getCategory()==EdgeCategory.Simple;
 		if (pt.hasIndex()) {
             if (pt.isKeyed()) {
-//					propertyIndex.delete(getIndexKey(prop.getAttribute()), 
-//							ImmutableList.of(getKeyedIndexColumn(prop.getPropertyType())), txh);
                 propMutator.mutate(getIndexKey(prop.getAttribute()), null,
                         ImmutableList.of(getKeyedIndexColumn(prop.getPropertyType())));
             } else {
-//					propertyIndex.delete(getIndexKey(prop.getAttribute()), 
-//							ImmutableList.of(getIndexColumn(prop.getPropertyType(),prop.getID())), txh);
                 propMutator.mutate(getIndexKey(prop.getAttribute()), null,
                         ImmutableList.of(getIndexColumn(prop.getPropertyType(), prop.getID())));
             }
@@ -781,15 +842,9 @@ public class StandardGraphDB implements GraphDB {
 		assert pt.getCategory()==EdgeCategory.Simple;
 		if (pt.hasIndex()) {
             if (pt.isKeyed()) {
-//					propertyIndex.insert(getIndexKey(prop.getAttribute()), 
-//							ImmutableList.of(new Entry(getKeyedIndexColumn(pt),getIndexValue(prop))), 
-//							txh);
                 propMutator.mutate(getIndexKey(prop.getAttribute()),
                         ImmutableList.of(new Entry(getKeyedIndexColumn(pt), getIndexValue(prop))), null);
             } else {
-//					propertyIndex.insert(getIndexKey(prop.getAttribute()), 
-//							ImmutableList.of(new Entry(getIndexColumn(pt,prop.getID()),getIndexValue(prop))), 
-//							txh);
                 propMutator.mutate(getIndexKey(prop.getAttribute()),
                         ImmutableList.of(new Entry(getIndexColumn(pt, prop.getID()), getIndexValue(prop))), null);
             }
@@ -804,20 +859,17 @@ public class StandardGraphDB implements GraphDB {
 	
 	private ByteBuffer getIndexValue(Property prop) {
 		assert prop.getEdgeType().getCategory()==EdgeCategory.Simple;
-		return ByteBufferUtil.getLongByteBuffer(prop.getStart().getID());
+        return VariableLong.positiveByteBuffer(prop.getStart().getID());
 	}
 	
 	private ByteBuffer getKeyedIndexColumn(PropertyType type) {
 		assert type.isKeyed();
-		return ByteBufferUtil.getLongByteBuffer(
-				idManager.switchEdgeTypeID(type.getID(), EdgeDirection.In.getID()));
+        return VariableLong.positiveByteBuffer(type.getID());
 	}
 
 	private ByteBuffer getIndexColumn(PropertyType type, long propertyID) {
 		assert !type.isKeyed();
-		return ByteBufferUtil.getLongByteBuffer(new long[]{
-				idManager.switchEdgeTypeID(type.getID(), EdgeDirection.In.getID()),
-				propertyID	});
+		return VariableLong.positiveByteBuffer(new long[]{ type.getID(),propertyID });
 	}
 	
 }

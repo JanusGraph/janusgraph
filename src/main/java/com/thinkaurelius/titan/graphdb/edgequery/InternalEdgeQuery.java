@@ -40,9 +40,9 @@ public interface InternalEdgeQuery extends EdgeQuery {
 
     boolean queryUnmodifiable();
     
-    boolean hasPropertyConstraints();
+    boolean hasConstraints();
     
-    Map<PropertyType,Interval<?>> getPropertyConstraints();
+    Map<String,Object> getConstraints();
 
     long getLimit();
 	

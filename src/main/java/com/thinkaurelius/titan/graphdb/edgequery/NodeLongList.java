@@ -13,15 +13,17 @@ public class NodeLongList implements NodeListInternal {
 
 	private final GraphTx tx;
 	private final AbstractLongList nodes;
-	private final boolean sorted;
+	private boolean sorted;
 	
 	public NodeLongList(GraphTx tx) {
-		this.tx=tx;
-		nodes = new LongArrayList();
-		sorted=false;
+		this(tx,new LongArrayList(),false);
 	}
-	
-	public NodeLongList(GraphTx tx, AbstractLongList nodes, boolean sorted) {
+
+    public NodeLongList(GraphTx tx, AbstractLongList nodes) {
+        this(tx,nodes,false);
+    }
+
+	private NodeLongList(GraphTx tx, AbstractLongList nodes, boolean sorted) {
 		this.tx = tx;
 		this.nodes = nodes;
 		this.sorted = sorted;
@@ -50,8 +52,10 @@ public class NodeLongList implements NodeListInternal {
 	}
 
 	@Override
-	public boolean isSorted() {
-		return sorted;
+	public void sort() {
+		if (sorted) return;
+        nodes.sort();
+        sorted = true;
 	}
 
 	@Override

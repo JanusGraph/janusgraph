@@ -5,22 +5,22 @@ import java.util.Iterator;
 
 /**
  * EdgeQuery constructs and executes a query over incident edges for a fixed node.
- * 
+ *
  * Using EdgeQuery consists of two parts:
  * <ol>
  * <li>Defining the query by specifying conditions on the edges to retrieve via the methods {@link #withEdgeType(EdgeType...)},
  * {@link #inDirection(com.thinkaurelius.titan.core.Direction)}, {@link #onlyModifiable()}.</li>
  * <li>Executing the query by asking for an {@link Iterable}, {@link java.util.Iterator}, or getting the number of edges that match the query</li>
  * </ol>
- * 
+ *
  * It is important to note, that EdgeQuery only queries the edges incident on a fixed node that was specified when the EdgeQuery was
  * instantiated (e.g. through the transaction's {@link GraphTransaction#makeEdgeQuery(long)} method).
- * 
- * 
+ *
+ *
  * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
- * 
- * 
- * 
+ *
+ *
+ *
  *
  */
 public interface EdgeQuery {
@@ -28,11 +28,11 @@ public interface EdgeQuery {
 	/**
 	 * Defines this edge query to query only for edges of the specified type.
 	 * By default, an edge query includes all edges in the result set.
-	 * 
+	 *
 	 * @param type Edge type to query for
 	 * @return This edge query
 	 */
-	public EdgeQuery withEdgeType(EdgeType... type);
+	public EdgeQuery withEdgeType(EdgeType type);
 
     /**
      * Defines this edge query to query only for edges of the specified type.
@@ -41,21 +41,21 @@ public interface EdgeQuery {
      * @param type Edge type to query for
      * @return This edge query
      */
-    public EdgeQuery withEdgeType(String... type);
-	
+    public EdgeQuery withEdgeType(String type);
+
 	/**
 	 * Defines this edge query to query only for edges which type belongs to the specified group.
 	 * Note that an EdgeTypeGroup is uniquely defined by its id. By default, all groups are considered.
-	 * 
+	 *
 	 * @param group EdgeTypeGroup to query edges for
 	 * @return This edge query
 	 * @see EdgeTypeGroup
 	 */
 	public EdgeQuery withEdgeTypeGroup(EdgeTypeGroup group);
-	
+
 	/**
 	 * Defines this edge query to query only for edges in the given direction
-	 * 
+	 *
 	 * @param d Direction to query for
 	 * @return This edge query
 	 */
@@ -63,23 +63,23 @@ public interface EdgeQuery {
 
     /**
      * Defines this edge query to query only for edges that have an attached (i.e. incident)
-     * property of the given type with the specified value.
+     * property or edge of the given type with the specified value or node.
      *
-     * @param ptype Property type
+     * @param etype Edge type
      * @param value Value for the property of the given type to match
      * @return This edge query
      */
-    public<T> EdgeQuery withProperty(PropertyType ptype, T value);
+    public<T> EdgeQuery withConstraint(EdgeType etype, T value);
 
     /**
      * Defines this edge query to query only for edges that have an attached (i.e. incident)
-     * property of the given type with the specified value.
+     * property or edge of the given type with the specified value or node.
      *
-     * @param ptype Property type
+     * @param etype Edge type
      * @param value Value for the property of the given type to match
      * @return This edge query
      */
-    public<T> EdgeQuery withProperty(String ptype, T value);
+    public<T> EdgeQuery withConstraint(String etype, T value);
 
     /**
      * Defines this edge query to query only for edges that have an attached (i.e. incident)
@@ -102,11 +102,11 @@ public interface EdgeQuery {
      * @return This edge query
      */
     public<T> EdgeQuery withPropertyIn(String ptype, Comparable<T> start, Comparable<T> end);
-	
+
 	/**
 	 * Defines this edge query to query only for modifiable edges.
      * By default, an edge query considers all edges
-	 * 
+	 *
 	 * @return This edge query
 	 */
 	public EdgeQuery onlyModifiable();
@@ -141,56 +141,56 @@ public interface EdgeQuery {
 
 	/**
 	 * Returns an iterable over all incident relationships that match this query
-	 * 
+	 *
 	 * @return Iterable over all incident relationships that match this query
 	 */
 	public Iterable<Relationship> getRelationships();
-	
+
 	/**
 	 * Returns an iterator over all incident relationships that match this query
-	 * 
+	 *
 	 * @return Iterator over all incident relationships that match this query
 	 */
 	public Iterator<Relationship> getRelationshipIterator();
-	
+
 	/**
 	 * Returns an iterable over all incident properties that match this query
-	 * 
+	 *
 	 * @return Iterable over all incident properties that match this query
 	 */
 	public Iterable<Property> getProperties();
-	
+
 	/**
 	 * Returns an iterator over all incident properties that match this query
-	 * 
+	 *
 	 * @return Iterator over all incident properties that match this query
 	 */
 	public Iterator<Property> getPropertyIterator();
-	
+
 	/**
 	 * Returns an iterable over all incident edges that match this query
-	 * 
+	 *
 	 * @return Iterable over all incident edges that match this query
 	 */
 	public Iterable<Edge> getEdges();
-	
+
 	/**
 	 * Returns an iterator over all incident edges that match this query
-	 * 
+	 *
 	 * @return Iterator over all incident edges that match this query
 	 */
 	public Iterator<Edge> getEdgeIterator();
-	
-	/** 
+
+	/**
 	 * Returns the number of relationships that match this query
-	 * 
+	 *
 	 * @return Number of relationships that match this query
 	 */
 	public int noRelationships();
-	
-	/** 
+
+	/**
 	 * Returns the number of properties that match this query
-	 * 
+	 *
 	 * @return Number of properties that match this query
 	 */
 	public int noProperties();
@@ -209,5 +209,5 @@ public interface EdgeQuery {
      * @return A list of all nodes connected to this query's fixed node by matching edges
      */
     public NodeList getNeighborhood();
-	
+
 }

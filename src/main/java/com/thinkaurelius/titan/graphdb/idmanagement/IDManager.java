@@ -295,8 +295,9 @@ public class IDManager implements IDInspector {
 //		return new long[]{sw,sw+1};
 //	}
 
-	
-	
+	public long getGroupBits() {
+        return groupBits;
+    }
 	
 	public long getMaxGroupID() {
 		return maxGroupID;

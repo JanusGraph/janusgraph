@@ -11,7 +11,8 @@ public class TestBed {
 	 * @throws java.io.IOException
 	 */
 	public static void main(String[] args) throws IOException {
-		DbCacheSize.main(args);
+		byte b = (byte)(15 | (1<<7));
+        System.out.println(b);
 	}
 
 	public static String toBinary(int b) {

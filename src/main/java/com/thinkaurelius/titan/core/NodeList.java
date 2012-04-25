@@ -36,12 +36,14 @@ public interface NodeList extends Iterable<Node> {
 	public Node get(int pos);
 	
 	/**
-	 * Checks whether this list of nodes is sorted according to node ids in increasing order.
-	 * Note that this is necessarily false if not all nodes in this list have ids.
+	 * Sorts this list according to node ids in increasing order.
+     * If the list is already sorted, invoking this method incurs no cost.
+	 *
 	 * 
 	 * @return True, if this list is sorted in increasing order of node ids, else false.
+     * @throws UnsupportedOperationException If not all nodes in this list have an id
 	 */
-	public boolean isSorted();
+	public void sort();
 
     /**
      * Returns a list of ids of all nodes in this list of nodes in the same order of the original node list.

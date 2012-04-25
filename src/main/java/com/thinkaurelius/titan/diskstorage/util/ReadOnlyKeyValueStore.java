@@ -22,7 +22,7 @@ public class ReadOnlyKeyValueStore implements KeyColumnValueStore {
 	}
 
 	@Override
-	public void acquireLock(ByteBuffer key, ByteBuffer column,
+	public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue,
 			TransactionHandle txh) {
 		throw new UnsupportedOperationException("Cannot lock on a read-only store!");
 	}

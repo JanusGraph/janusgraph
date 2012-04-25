@@ -3,10 +3,16 @@ package com.thinkaurelius.titan.graphdb.vertices;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.Edge;
+import com.thinkaurelius.titan.core.Property;
+import com.thinkaurelius.titan.core.Relationship;
 import com.thinkaurelius.titan.exceptions.QueryException;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
+import com.thinkaurelius.titan.graphdb.edgequery.Interval;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
+
+import java.util.Map;
 
 public class NodeUtil {
 
@@ -22,7 +28,7 @@ public class NodeUtil {
 		if (iter==AdjacencyList.Empty) return iter;
 		
 		if (query.queryHidden() && query.queryUnmodifiable() && query.queryProperties()
-				&& query.queryRelationships()) return iter;
+				&& query.queryRelationships() && !query.hasConstraints()) return iter;
 		if (!query.queryProperties() && !query.queryRelationships()) 
 			throw new QueryException("Query excludes both: properties and relationships");
 		
@@ -35,6 +41,35 @@ public class NodeUtil {
 					if (!query.queryRelationships() && e.isRelationship()) return false;
 					if (!query.queryHidden() && e.isHidden()) return false;
 					if (!query.queryUnmodifiable() && !e.isModifiable()) return false;
+                    if (query.hasConstraints()) {
+
+                        int count = 0;
+                        Map<String,Object> constraints = query.getConstraints();
+                        for (Edge ie : e.getEdges()) {
+                            if (constraints.containsKey(ie.getEdgeType().getName())) {
+                                Object o = constraints.get(ie.getEdgeType().getName());
+                                if (o==null) return false;
+                                if (ie.isRelationship()) {
+                                    if (o.equals(((Relationship) ie).getEnd())) count++;
+                                } else {
+                                    assert ie.isProperty();
+                                    Object attribute = ((Property)ie).getAttribute();
+                                    assert attribute!=null;
+                                    assert o instanceof Interval;
+                                    Interval iv = (Interval)o;
+                                    if (iv.isPoint() && iv.getStartPoint().equals(attribute))
+                                        count++;
+                                    else {
+                                        assert iv.isRange();
+                                        if (((Comparable)iv.getStartPoint()).compareTo(attribute)<=0 &&
+                                                ((Comparable)iv.getEndPoint()).compareTo(attribute)==1) count++;
+                                    }
+                                }
+                            }
+                        }
+                        //TODO: There is a potential issue with double counting. Is this realistic for labeled edges (i.e. do we need to consider this)?
+                        if (count<constraints.size()) return false;
+                    }
 					return true;
 				}
 				

@@ -3,17 +3,16 @@ package com.thinkaurelius.titan.graphdb.edgequery;
 import cern.colt.list.AbstractLongList;
 import cern.colt.list.LongArrayList;
 import com.google.common.collect.Iterators;
+import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.Node;
 import com.thinkaurelius.titan.exceptions.InvalidNodeException;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class NodeArrayList implements NodeListInternal {
 
 	private final List<Node> nodes;
-	private final boolean sorted = false;
+	private boolean sorted = false;
 	
 	public NodeArrayList() {
 		nodes = new ArrayList<Node>();
@@ -40,8 +39,15 @@ public class NodeArrayList implements NodeListInternal {
 	}
 
 	@Override
-	public boolean isSorted() {
-		return sorted;
+	public void sort() {
+        if (sorted) return;
+        Collections.sort(nodes,new Comparator<Node>() {
+            @Override
+            public int compare(Node node, Node node1) {
+                return Longs.compare(node.getID(),node1.getID());
+            }
+        });
+		sorted = true;
 	}
 
 	@Override
