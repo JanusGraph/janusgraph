@@ -30,9 +30,8 @@ public class VariableLong {
         int offset = 63;
         while (offset>0) {
             offset -= 7;
-            byte x = mask | stopMask; 
             long cut = value>>offset;
-            if (cut>0) {
+            if (cut>0 || offset==0) {
                 byte b= (byte)(cut%128);
                 if (offset==0) {
                     b = (byte) (b | stopMask);
@@ -71,11 +70,11 @@ public class VariableLong {
     }
 
     public static int length(long value) {
-        return positiveLength(value*2 + value<0?1:0);
+        return positiveLength(Math.abs(value)*2 + (value<0?1:0));
     }
     
     public static void write(ByteBuffer out, final long value) {
-        writePositive(out,value*2 + value<0?1:0);
+        writePositive(out,Math.abs(value)*2 + (value<0?1:0));
     }
 
     public static long read(ByteBuffer in) {
@@ -110,9 +109,8 @@ public class VariableLong {
         int offset = 63;
         while (offset>0) {
             offset -= 7;
-            byte x = mask | stopMask;
             long cut = value>>offset;
-            if (cut>0) {
+            if (cut>0 || offset==0) {
                 byte b= (byte)(cut%128);
                 if (offset==0) {
                     b = (byte) (b | stopMask);
@@ -123,6 +121,6 @@ public class VariableLong {
     }
 
     public static void write(DataOutput out, final long value) {
-        writePositive(out,value*2 + value<0?1:0);
+        writePositive(out,Math.abs(value)*2 + (value<0?1:0));
     }
 }

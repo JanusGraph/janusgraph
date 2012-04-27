@@ -137,6 +137,7 @@ public class IDManager implements IDInspector {
         assert maxPrefixID>=0 && prefixOffset<64;
         if (id<0) throw new IllegalArgumentException("ID cannot be negative: " + id);
         if (prefixid<0) throw new IllegalArgumentException("Prefix ID cannot be negative: " + prefixid);
+        if (prefixid==0) return id;
         if (prefixid>maxPrefixID)
             throw new IllegalArgumentException("Prefix ID exceeds limit of: " + maxPrefixID);
         assert id<(1l<<prefixOffset) : "ID is too large for prefix offset: " + id + " ( " + prefixOffset + " )";

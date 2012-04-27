@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.idmanagement.test;
 
 
+import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.util.test.RandomGenerator;
 import org.junit.After;
@@ -8,6 +9,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -30,7 +34,20 @@ public class IDManagementTest {
 		testEntityID(25,10,582919	,9921239,233);
 		testEntityID(4 ,3 ,1		,14		,6);
 		testEntityID(10,10,903392	,1		,1);
+        testEntityID(0,6,242342     ,0      ,12);
+        testEntityID(0,6,242342     ,0      ,1);
+        try {
+            testEntityID(0,6,242342     ,1      ,12);
+            assertTrue(false);
+        } catch (IllegalArgumentException e) {};
+        try {
+            testEntityID(0,6,242342     ,0      ,63);
+            assertTrue(false);
+        } catch (IllegalArgumentException e) {};
+
 	}
+    
+    
 	
 	public void testEntityID(int partitionBits, int groupBits, long count, int partition, int group) {
 		IDManager eid = new IDManager(partitionBits,groupBits);
@@ -46,16 +63,18 @@ public class IDManagementTest {
 		assertTrue(eid.isPropertyTypeID(id));
 		assertTrue(eid.isEdgeTypeID(id));
 		assertEquals(eid.getPartitionID(id),partition);
+        assertEquals(group,eid.getGroupID(id));
 		
 		id = eid.getRelationshipTypeID(count, group, partition);
 		assertTrue(eid.isRelationshipTypeID(id));
 		assertTrue(eid.isEdgeTypeID(id));
+        assertEquals(group, eid.getGroupID(id));
 		assertEquals(eid.getPartitionID(id),partition);
 	}
 	
 	@Test
 	public void edgeTypeIDTest() {
-		int partitionBits = 21, groupBits = 5;
+		int partitionBits = 21, groupBits = 6;
 		IDManager eid = new IDManager(partitionBits,groupBits);
 		int trails = 1000000;
 		assertEquals(eid.getMaxGroupID(),(1<<groupBits)-2);
@@ -64,46 +83,61 @@ public class IDManagementTest {
 		for (int t=0;t<trails;t++) {
 			long id;
 			long groupID = RandomGenerator.randomLong(1, eid.getMaxGroupID());
+            long partitionID = RandomGenerator.randomLong(1, eid.getMaxPartitionID());
 			boolean isProperty=false;
-			long padding;
-			long dir = RandomGenerator.randomInt(0, 2);
 			if (Math.random()<0.5) {
 				id = eid.getRelationshipTypeID(RandomGenerator.randomLong(1, eid.getMaxEdgeTypeID()),
-						groupID,
-						RandomGenerator.randomLong(1, eid.getMaxPartitionID()));
+						groupID, partitionID);
 				assertTrue(eid.isRelationshipTypeID(id));
-				padding = IDManager.IDType.RelationshipType.id();
-				
-				assertEquals(((dir<<3)+padding)<<58,eid.getQueryBoundsRelationship(dir)[0]);
-				assertEquals(((dir<<3)+padding+1)<<58,eid.getQueryBoundsRelationship(dir)[1]);
+                
 			} else {
 				isProperty=true;
 				id = eid.getPropertyTypeID(RandomGenerator.randomLong(1, eid.getMaxEdgeTypeID()),
-						groupID,
-						RandomGenerator.randomLong(1, eid.getMaxPartitionID()));
+						groupID, partitionID);
 				assertTrue(eid.isPropertyTypeID(id));
-				padding = IDManager.IDType.PropertyType.id();
-				
-				assertEquals(((dir<<3)+padding)<<58,eid.getQueryBoundsProperty(dir)[0]);
-				assertEquals(((dir<<3)+padding+1)<<58,eid.getQueryBoundsProperty(dir)[1]);
 
 			}
-			assertTrue(eid.isEdgeTypeID(id));
-			
-			long moved = eid.switchEdgeTypeID(id, dir);
-			assertTrue(isProperty ^ eid.isRelationshipTypeFront(moved));
-			assertTrue(!(isProperty ^ eid.isPropertyTypeFront(moved)));
-			assertEquals(groupID,eid.getGroupIDFront(moved));
-			assertEquals(dir,eid.getDirectionFront(moved));
-			assertEquals(id,eid.switchBackEdgeTypeID(moved));
-			
-			assertEquals(dir<<61,eid.getQueryBounds(dir)[0]);
-			assertEquals((dir+1)<<61,eid.getQueryBounds(dir)[1]);
-			
-			
+            assertEquals(groupID,eid.getGroupID(id));
+            assertEquals(partitionID,eid.getPartitionID(id));
+   			assertTrue(eid.isEdgeTypeID(id));
+
+            long nogroup = eid.removeGroupID(id);
+            assertTrue(nogroup>=0);
+            assertEquals(0,eid.getGroupID(nogroup));
+            assertEquals(id,eid.addGroupID(nogroup,groupID));
+
+            int dir = RandomGenerator.randomInt(0,4);
+            ByteBuffer b = IDHandler.getEdgeType(id,dir,eid);
+            assertEquals(dir,IDHandler.getDirectionID(b.get(0)));
+            assertEquals(id,IDHandler.readEdgeType(b,eid));
+
+            ByteBuffer g = IDHandler.getEdgeTypeGroup(groupID,dir,eid);
+            assertEquals(dir,IDHandler.getDirectionID(g.get(0)));
+            assertEquals(1,g.limit());
+            int group = g.get(0);
+            if (group<0) group+=256;
+            assertEquals(groupID,group%64);
+
 		}
-		
 	}
+
+    @Test
+    public void keyTest() {
+        Random random = new Random();
+        for (int t=0;t<1000000;t++) {
+            long i = Math.abs(random.nextLong());
+            assertEquals(i, IDHandler.getKeyID(IDHandler.getKey(i)));
+        }
+        assertEquals(Long.MAX_VALUE,IDHandler.getKeyID(IDHandler.getKey(Long.MAX_VALUE)));
+    }
+
+    //@Test
+    public void testBinaryFormat() {
+        IDManager eid = new IDManager(0,6);
+        long id = eid.getRelationshipTypeID(15,13,0);
+        printBinary(id);
+        printBinary(eid.removeGroupID(id));
+    }
 	
 	public void printBinary(long id) {
 		String s = Long.toBinaryString(id);

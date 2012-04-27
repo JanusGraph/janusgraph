@@ -26,6 +26,21 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 	@Test
 	public void testOpenClose() { }
 	
+    @Test
+    public void basicTest() {
+        PropertyType weight = makeWeightPropertyType("weight");
+        Node n1 = tx.createNode();
+        n1.createProperty(weight,10.5);
+        clopen();
+        long nid = n1.getID();
+        assertTrue(tx.containsNode(nid));
+        n1 = tx.getNode(nid);
+        n1.edgeQuery().getEdges();
+        System.out.println();
+        assertEquals(10.5,n1.getNumber(weight));
+
+    }
+    
 	@Test
 	public void primitiveCreateAndRetrieve() {
 		PropertyType weight = makeWeightPropertyType("weight");

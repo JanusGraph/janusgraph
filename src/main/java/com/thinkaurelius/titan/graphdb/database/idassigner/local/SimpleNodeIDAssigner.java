@@ -81,7 +81,8 @@ public class SimpleNodeIDAssigner implements NodeIDAssigner {
 	}
 
     private final long getPartitionID() {
-        return randomSource.nextInt((int)maxPartitionID)+1;
+        if (maxPartitionID==0) return 0;
+        else return randomSource.nextInt((int)maxPartitionID)+1;
     }
 
 	private long nextEdgeID() {

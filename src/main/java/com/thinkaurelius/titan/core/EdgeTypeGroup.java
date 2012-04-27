@@ -20,7 +20,7 @@ import com.thinkaurelius.titan.graphdb.edgetypes.group.StandardEdgeTypeGroup;
  */
 public abstract class EdgeTypeGroup {
 	
-    private static final int MAX_GROUP_ID = (2<<6)-1;
+    private static final int MAX_GROUP_ID = (2<<6)-2;
     
 	/**
 	 * The default edge type group when no group is specified during edge type construction.

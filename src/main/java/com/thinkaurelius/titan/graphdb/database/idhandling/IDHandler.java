@@ -44,7 +44,7 @@ public class IDHandler {
         } else {
             result = 4;
         }
-        return result + VariableLong.length(idManager.removeGroupID(etid));
+        return result + VariableLong.positiveLength(idManager.removeGroupID(etid));
     }
 
     private final static void writeEdgeTypeGroup(ByteBuffer out, long group, int dirID, IDManager idManager) {
