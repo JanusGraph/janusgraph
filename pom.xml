@@ -105,6 +105,22 @@
             <artifactId>commons-pool</artifactId>
             <version>1.5.5</version>
         </dependency>
+
+        <!-- HBase -->
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+	        <artifactId>hbase</artifactId>
+	        <!-- Update the hadoop-core artifact version when you update this -->
+	        <version>0.92.1</version>
+        </dependency>
+        <dependency>
+        	<groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-core</artifactId>
+            <!-- Update the hbase artifact version when you update this -->
+            <version>1.0.0</version>
+        </dependency>
+ 
+
         <!-- Use latest released colt; used to have mysterious "colt.jar"... -->
         <dependency>
             <groupId>colt</groupId>

@@ -1,4 +1,8 @@
 # Cassandra storage config YAML 
+#
+# This file runs under 1.1.0.  However, it was originally
+# created in the 0.7.x series and could probably use an audit to
+# ensure a sane configuration under 1.1.0.
 
 # NOTE:
 #   See http://wiki.apache.org/cassandra/StorageConfiguration for
@@ -159,7 +163,19 @@ memtable_flush_queue_size: 4
 
 # Buffer size to use when performing contiguous column slices. 
 # Increase this to the size of the column slices you typically perform
-sliced_buffer_size_in_kb: 64
+#
+# This option was removed around Mar 30 2012:
+#
+#   https://issues.apache.org/jira/browse/CASSANDRA-4076
+#   http://git-wip-us.apache.org/repos/asf/cassandra/commit/d69d304c
+#
+# Cassandra 1.1.0 definitely does not have this option. 1.1.0 throws a
+# fatal error on startup if this line is present.  I commented it 
+# without investigating to see if some other option needs to be set
+# in its place.
+#  - dalaro Apr 27 2012 
+#
+#sliced_buffer_size_in_kb: 64
 
 # TCP port, for commands and data
 storage_port: 7000

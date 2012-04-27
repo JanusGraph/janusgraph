@@ -35,6 +35,17 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
         long nid = n1.getID();
         assertTrue(tx.containsNode(nid));
         n1 = tx.getNode(nid);
+        // When this is commented, our HBase subclass fails this test.
+        // When this is uncommented, our HBase subclass passes this test!
+        // I suspect this is not supposed to have correctness side effects.
+        // Furthermore, when it is commented (HBase fails), only one get()
+        // is issued to the HBaseOrderedKeyColumnValueStore.
+        //
+        // Cassandra fails this test regardless of whether the following
+        // lines are commented.  It fails on the same assertion as does HBase.
+//        for (Property prop : n1.getProperties()) {
+//        	Object o = prop.getAttribute();
+//        }
         n1.edgeQuery().getEdges();
         System.out.println();
         assertEquals(10.5,n1.getNumber(weight));
