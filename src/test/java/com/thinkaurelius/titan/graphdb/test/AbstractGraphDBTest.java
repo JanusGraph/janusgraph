@@ -33,17 +33,25 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
         n1.createProperty(weight,10.5);
         clopen();
         long nid = n1.getID();
-        System.out.println(nid);
         assertTrue(tx.containsNode(nid));
         assertTrue(tx.containsEdgeType("weight"));
         weight = tx.getPropertyType("weight");
         assertEquals(weight.getDataType(),Double.class);
         assertEquals(weight.getName(),"weight");
         n1 = tx.getNode(nid);
-//        for (Edge e : n1.edgeQuery().getEdges()) {
-//            System.out.println(e);
+        // When this is commented, our HBase subclass fails this test.
+        // When this is uncommented, our HBase subclass passes this test!
+        // I suspect this is not supposed to have correctness side effects.
+        // Furthermore, when it is commented (HBase fails), only one get()
+        // is issued to the HBaseOrderedKeyColumnValueStore.
+        //
+        // Cassandra fails this test regardless of whether the following
+        // lines are commented.  It fails on the same assertion as does HBase.
+//        for (Property prop : n1.getProperties()) {
+//        	Object o = prop.getAttribute();
 //        }
-//        System.out.println("---");
+        n1.edgeQuery().getEdges();
+        System.out.println();
         assertEquals(10.5,n1.getNumber(weight));
 
     }
@@ -65,7 +73,7 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 		n3 = tx.getNode(nid);
 		
 		e=Iterators.getOnlyElement(n3.getRelationshipIterator(tx.getRelationshipType("knows"), Direction.Out));
-		assertEquals(111,e.getNumber("id"));
+		assertEquals(111,e.getNumber(id));
 
 	}
 	

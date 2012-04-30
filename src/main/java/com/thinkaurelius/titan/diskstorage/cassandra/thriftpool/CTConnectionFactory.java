@@ -1,7 +1,12 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thriftpool;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.Iterators;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.apache.cassandra.db.marshal.TimeUUIDType;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.thrift.Cassandra;
@@ -19,11 +24,8 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Iterators;
 
 
 public class CTConnectionFactory implements KeyedPoolableObjectFactory { 
@@ -70,7 +72,9 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory {
 			KsDef ksdef = new KsDef();
 			ksdef.setName(keyspace);
 			ksdef.setStrategy_class("org.apache.cassandra.locator.SimpleStrategy");
-			ksdef.setReplication_factor(1);
+			Map<String, String> stratops = new HashMap<String, String>();
+			stratops.put("replication_factor", "1");
+			ksdef.setStrategy_options(stratops);
 			ksdef.setCf_defs(new LinkedList<CfDef>()); // cannot be null but can be empty
 
 			String schemaVer = client.system_add_keyspace(ksdef);
