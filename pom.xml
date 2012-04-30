@@ -168,14 +168,9 @@
             <version>0.0.2</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.thrift</groupId>
-            <artifactId>libthrift</artifactId>
-            <version>0.6.1</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
-            <version>1.0.7</version>
+            <version>1.1.0</version>
         </dependency>
         <dependency>
             <groupId>com.sleepycat</groupId>
@@ -216,105 +211,6 @@
             <groupId>net.sf.jung</groupId>
             <artifactId>jung-visualization</artifactId>
             <version>2.0.1</version>
-        </dependency>
-
-        <!-- Cassandra dependencies -->
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr</artifactId>
-            <version>3.1.3</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.cassandra.deps</groupId>
-            <artifactId>avro</artifactId>
-            <version>1.4.0-cassandra-1</version>
-        </dependency>
-        <!--<dependency>
-            <groupId>org.apache.avro</groupId>
-            <artifactId>avro-cassandra-sources-fixes</artifactId>
-            <version>1.4.0</version>
-            <scope>test</scope>
-        </dependency>-->
-        <dependency>
-            <groupId>commons-cli</groupId>
-            <artifactId>commons-cli</artifactId>
-            <version>1.1</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- commons-codec 1.2 -->
-        <!-- commons-collections 3.2.1 -->
-        <!-- commons-lang 2.4 -->
-        <dependency>
-            <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-            <artifactId>concurrentlinkedhashmap-lru</artifactId>
-            <version>1.1</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- guava-r05 -->
-        <dependency>
-            <groupId>com.github.stephenc.high-scale-lib</groupId>
-            <artifactId>high-scale-lib</artifactId>
-            <version>1.1.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-core-asl</artifactId>
-            <version>1.4.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-mapper-asl</artifactId>
-            <version>1.4.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mortbay.jetty</groupId>
-            <artifactId>jetty</artifactId>
-            <version>6.1.21</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mortbay.jetty</groupId>
-            <artifactId>jetty-util</artifactId>
-            <version>6.1.21</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>jline</groupId>
-            <artifactId>jline</artifactId>
-            <version>0.9.94</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.googlecode.json-simple</groupId>
-            <artifactId>json-simple</artifactId>
-            <version>1.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.safehaus.jug</groupId>
-            <artifactId>jug</artifactId>
-            <version>2.0.0</version>
-            <classifier>asl</classifier>
-            <scope>test</scope>
-        </dependency>
-        <!-- log4j 1.2.16 -->
-        <dependency>
-            <groupId>org.mortbay.jetty</groupId>
-            <artifactId>servlet-api</artifactId>
-            <version>2.5-20081211</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- slf4j-api-1.6.1 -->
-        <!-- slf4j-log4j12-1.6.1 -->
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>1.6</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- TODO: json.jar (looks like json.org) -->

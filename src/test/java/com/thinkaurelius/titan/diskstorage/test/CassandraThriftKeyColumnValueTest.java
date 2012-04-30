@@ -14,16 +14,6 @@ public class CassandraThriftKeyColumnValueTest extends KeyColumnValueStoreTest {
 
 	public static CassandraLocalhostHelper ch = new CassandraLocalhostHelper("127.0.0.1");
 	
-	@BeforeClass
-	public static void beforeClass() {
-		ch.startCassandra();
-	}
-	
-	@AfterClass
-	public static void afterClass() throws InterruptedException {
-		ch.stopCassandra();
-	}
-	
 	@Override
 	public void open() {
 	}
@@ -34,9 +24,11 @@ public class CassandraThriftKeyColumnValueTest extends KeyColumnValueStoreTest {
 	
 	@Before
 	public void cassandraSetUp() {
+		ch.startCassandra();
 		CassandraStorageConfiguration sc = new CassandraStorageConfiguration();
 		sc.setHostname("127.0.0.1");
 		sc.getStorageManager(false).dropKeyspace(keyspace);
+		sc.setThriftTimeoutMS(10 * 1000);
 		manager = sc.getStorageManager(false);
 		store = manager.openOrderedDatabase(columnFamily);
 		tx = manager.beginTransaction();
@@ -46,6 +38,7 @@ public class CassandraThriftKeyColumnValueTest extends KeyColumnValueStoreTest {
 	public void cassandraTearDown() {
 		store.close();
 		manager.close();
+		ch.stopCassandra();
 	}
 	
 
