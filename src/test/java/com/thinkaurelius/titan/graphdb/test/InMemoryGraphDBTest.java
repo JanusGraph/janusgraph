@@ -24,8 +24,11 @@ public class InMemoryGraphDBTest extends AbstractGraphDBTest {
 	public void close() {
 		//Do nothing
 	}
-	
-	
+
+    //Overwrite non-applicable test
+    @Test
+    public void basicTest() {}
+
 	//Overwrite non-applicable test
 	@Test
 	public void neighborhoodTest() {}

@@ -33,10 +33,17 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
         n1.createProperty(weight,10.5);
         clopen();
         long nid = n1.getID();
+        System.out.println(nid);
         assertTrue(tx.containsNode(nid));
+        assertTrue(tx.containsEdgeType("weight"));
+        weight = tx.getPropertyType("weight");
+        assertEquals(weight.getDataType(),Double.class);
+        assertEquals(weight.getName(),"weight");
         n1 = tx.getNode(nid);
-        n1.edgeQuery().getEdges();
-        System.out.println();
+//        for (Edge e : n1.edgeQuery().getEdges()) {
+//            System.out.println(e);
+//        }
+//        System.out.println("---");
         assertEquals(10.5,n1.getNumber(weight));
 
     }
@@ -58,7 +65,7 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 		n3 = tx.getNode(nid);
 		
 		e=Iterators.getOnlyElement(n3.getRelationshipIterator(tx.getRelationshipType("knows"), Direction.Out));
-		assertEquals(111,e.getNumber(id));
+		assertEquals(111,e.getNumber("id"));
 
 	}
 	

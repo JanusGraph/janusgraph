@@ -33,7 +33,10 @@ public abstract class SystemEdgeTypeManager {
 		if (et==null) throw new IllegalArgumentException("System edge type is unknown with ID:" + id);
 		else return et;
 	}
-	
+
+    //TODO: This needs to be adjusted to the changes in IDManager
+
+
 	public final static long getInternalRelationshipID(long id) {
 		return IDManager.IDType.RelationshipType.addPadding(id<< IDManager.maxGroupBits);
 	}

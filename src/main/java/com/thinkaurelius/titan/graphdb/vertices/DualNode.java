@@ -13,6 +13,8 @@ import com.thinkaurelius.titan.graphdb.edges.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 
+import java.util.HashMap;
+
 public class DualNode extends UndirectedNode {
 
 	private AdjacencyList inEdges;
@@ -23,8 +25,6 @@ public class DualNode extends UndirectedNode {
 		inEdges = adjList.emptyList();
 		outEdges = adjList.emptyList();
 	}
-	
-	
 	
 	@Override
 	public boolean addEdge(InternalEdge e, boolean isNew) {

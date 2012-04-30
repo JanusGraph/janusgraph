@@ -10,9 +10,9 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.exceptions.InvalidNodeException;
 import com.tinkerpop.blueprints.pgm.*;
 import com.tinkerpop.blueprints.pgm.Edge;
-import com.tinkerpop.blueprints.pgm.impls.Parameter;
 import com.tinkerpop.blueprints.pgm.impls.StringFactory;
 
+import java.io.File;
 import java.util.*;
 
 public class TitanGraph implements TransactionalGraph, IndexableGraph {
@@ -50,6 +50,9 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
 
     private final WeakHashMap<GraphTransaction,Boolean> openTx = new WeakHashMap<GraphTransaction, Boolean>(4);
 
+    public TitanGraph() {
+        this(System.getProperty("java.io.tmpdir") + File.separator +  "titan");
+    }
     
     public TitanGraph(final String directory) {
         this(new GraphDatabaseConfiguration(directory));

@@ -34,10 +34,11 @@ public class TitanGraphTest extends GraphTest {
         this.allowFloatProperty = true;
         this.allowIntegerProperty = true;
         this.allowPrimitiveArrayProperty = true;
-        this.allowListProperty = true;
         this.allowLongProperty = true;
         this.allowMapProperty = true;
         this.allowStringProperty = true;
+        this.allowUniformListProperty = true;
+        this.allowMixedListProperty = true;
         
 
     }
@@ -56,7 +57,7 @@ public class TitanGraphTest extends GraphTest {
 
     public void testGraphTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new GraphTestSuite(this));
+        doTestSuite(new GraphTestSuite(this),ImmutableSet.of("testVertexQuery"));
         printTestPerformance("GraphTestSuite", this.stopWatch());
     }
 

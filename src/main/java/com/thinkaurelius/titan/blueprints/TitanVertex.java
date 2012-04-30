@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.blueprints.util.TitanEdgeSequence;
 import com.thinkaurelius.titan.core.Direction;
 import com.thinkaurelius.titan.core.Node;
 import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.pgm.Query;
 import com.tinkerpop.blueprints.pgm.Vertex;
 import com.tinkerpop.blueprints.pgm.impls.MultiIterable;
 import com.tinkerpop.blueprints.pgm.impls.StringFactory;
@@ -40,6 +41,12 @@ public class TitanVertex extends TitanElement<Node> implements Vertex {
     @Override
     public Iterable<Edge> getInEdges(final String... labels) {
         return getEdges(Direction.In, labels);
+    }
+
+    @Override
+    public Query query() {
+        //TODO: wrap EdgeQuery
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     public String toString() {

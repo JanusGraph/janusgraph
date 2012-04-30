@@ -27,7 +27,7 @@ public class OrderedKeyValueStoreAdapter extends KeyValueStoreAdapter implements
 	@Override
 	public boolean containsKey(ByteBuffer key, TransactionHandle txh) {
 		ContainsSelector select = new ContainsSelector(key);
-		store.getSlice(key, getMaxKey(key), true, false, select, txh);
+		store.getSlice(key, ByteBufferUtil.nextBiggerBuffer(key), true, false, select, txh);
 		return select.contains();
 	}
 
@@ -77,15 +77,15 @@ public class OrderedKeyValueStoreAdapter extends KeyValueStoreAdapter implements
 		return keyentries;
 	}
 	
-	protected final ByteBuffer getMaxKey(ByteBuffer key) {
-		int len = key.remaining();
-		ByteBuffer max = ByteBuffer.allocate(len);
-		for (int i=0;i<len;i++) {
-			max.put(Byte.MIN_VALUE);
-		}
-		max.flip();
-		return max;
-	}
+//	protected final ByteBuffer getMaxKey(ByteBuffer key) {
+//		int len = key.remaining();
+//		ByteBuffer max = ByteBuffer.allocate(len);
+//		for (int i=0;i<len;i++) {
+//			max.put(Byte.MIN_VALUE);
+//		}
+//		max.flip();
+//		return max;
+//	}
 
 	private class ContainsSelector implements KeySelector {
 

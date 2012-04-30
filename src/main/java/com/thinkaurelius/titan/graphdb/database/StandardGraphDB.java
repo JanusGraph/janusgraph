@@ -210,7 +210,7 @@ public class StandardGraphDB implements GraphDB {
 			ByteBuffer column = entry.getColumn();
             int dirID = IDHandler.getDirectionID(column.get(column.position()));
 			long etid = IDHandler.readEdgeType(column, idManager);
-            column.mark(); //TODO: remove?
+
 			if (edgeType==null || edgeType.getID()!=etid) {
 				edgeType = (EdgeType)tx.getNode(etid);
 			}
@@ -256,7 +256,13 @@ public class StandardGraphDB implements GraphDB {
             
 			//Read value inline edges if any
 			if (edgeType.getCategory()==EdgeCategory.Labeled) { // || EdgeCategory.LabeledRestricted
-				EdgeTypeDefinition def = ((InternalEdgeType)edgeType).getDefinition();
+                EdgeTypeDefinition def = ((InternalEdgeType)edgeType).getDefinition();
+                //First create all keys buffered above
+                String[] keysig = def.getKeySignature();
+                for (int i=0;i<keysig.length;i++) {
+                    createInlineEdge(edge,getEdgeType(keysig[i],etCache,tx),keys[i],factory);
+                }
+                
                 //value signature
 				for (String str : def.getCompactSignature())
                     readLabel(edge,value,getEdgeType(str,etCache,tx),factory,tx);
@@ -324,7 +330,7 @@ public class StandardGraphDB implements GraphDB {
                     case Undirected: dirs[1]=true; break;
                 }
             } else {
-                dirs[0]=true; dirs[1]=true; dirs[2]=true;
+                dirs[1]=true; dirs[2]=true; dirs[3]=true;
             }
         }
         return dirs;
@@ -424,10 +430,10 @@ public class StandardGraphDB implements GraphDB {
                     ByteBuffer columnStart = IDHandler.getEdgeTypeGroup(0,lastDirID,idManager);
                     ByteBuffer columnEnd = IDHandler.getEdgeTypeGroup(idManager.getMaxGroupID()+1,dirID-1,idManager);
                     entries = appendResults(key,columnStart,columnEnd,entries,limit,txh);
+                    lastDirID = -1;
                 }
                 if (dirID<4) {
-                    if (!dirs[dirID]) lastDirID=-1;
-                    else lastDirID = dirID;
+                    if (dirs[dirID] && lastDirID==-1) lastDirID = dirID;
                 }
             }
 		}

@@ -24,6 +24,7 @@ public class PersistNodePropertyType extends PersistNodeEdgeType implements Prop
 		if (definition==null) {
 			definition = EdgeQueryUtil.queryHiddenFunctionalProperty(this, SystemPropertyType.PropertyTypeDefinition)
 					.getAttribute(PropertyTypeDefinition.class);
+            assert definition!=null;
 		}
 		return definition;
 	}

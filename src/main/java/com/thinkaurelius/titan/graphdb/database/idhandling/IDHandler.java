@@ -107,6 +107,7 @@ public class IDHandler {
         else if (groupbits<=14) len =2;
         ByteBuffer result = ByteBuffer.allocate(len);
         writeEdgeTypeGroup(result, groupid,dirID,idManager);
+        result.flip();
         return result;
     }
     
