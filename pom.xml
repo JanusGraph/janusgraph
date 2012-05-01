@@ -313,6 +313,8 @@
                 <version>2.8.1</version>
                 <configuration>
                     <excludes>
+                        <exclude>**/HBase*</exclude>
+
                         <!-- FIX IT: Currently excluded because there is something wrong with the test. -->
                         <exclude>**/*ConcurrentGraphDBTest.java</exclude>
 
@@ -329,8 +331,9 @@
                 <configuration>
                     <attach>false</attach>
                     <descriptors>
-                        <descriptor>assemblies/archive-with-deps.xml</descriptor>
-                        <descriptor>assemblies/storage-unit-tests.xml</descriptor>
+                        <descriptor>src/assembly/standalone.xml</descriptor>
+                        <descriptor>src/assembly/archive-with-deps.xml</descriptor>
+                        <descriptor>src/assembly/storage-unit-tests.xml</descriptor>
                     </descriptors>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
