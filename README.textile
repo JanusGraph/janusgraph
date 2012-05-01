@@ -1,1 +1,12 @@
-Titan is a highly scalable graph database.
+!https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-logo.png!
+
+Titan is a distributed "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for processing massive-scale graphs represented over a machine cluster. The primary features of Titan are itemized below.
+
+* Support for various distributed storage layers
+** "Cassandra":http://cassandra.apache.org/ 1.1.0
+** "HBase":http://hbase.apache.org/ 0.92.1
+* Natively implements the "Blueprints":http://blueprints.tinkerpop.com graph API
+** "Gremlin":http://gremlin.tinkerpop.com graph traversal language
+** "Frames":http://frames.tinkerpop.com graph-to-object mapper
+** "Rexster":http://rexster.tinkerpop.com graph server
+* Open source with the liberal "Apache 2":http://www.apache.org/licenses/LICENSE-2.0.html license
