@@ -27,7 +27,7 @@ import com.thinkaurelius.titan.graphdb.database.util.LimitTracker;
 import com.thinkaurelius.titan.graphdb.edgequery.EdgeQueryUtil;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edgequery.Interval;
-import com.thinkaurelius.titan.graphdb.edgequery.StandardEdgeQuery;
+import com.thinkaurelius.titan.graphdb.edgequery.AtomicEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edges.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.edges.factory.EdgeLoader;
@@ -732,7 +732,7 @@ public class StandardGraphDB implements GraphDB {
 			InternalEdge[] keys = new InternalEdge[ets.keyLength()], 
 						   values = new InternalEdge[ets.valueLength()];
 			List<InternalEdge> rest = new ArrayList<InternalEdge>();
-			ets.sort(edge.getEdges(StandardEdgeQuery.queryAll(edge), false),keys,values,rest);
+			ets.sort(edge.getEdges(AtomicEdgeQuery.queryAll(edge), false),keys,values,rest);
 			
 			DataOutput out = serializer.getDataOutput(defaultOutputCapacity, true);
             IDHandler.writeEdgeType(out,etid,dirID,idManager);

@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.adjacencylist.ModificationStatus;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
-import com.thinkaurelius.titan.graphdb.edgequery.StandardEdgeQuery;
+import com.thinkaurelius.titan.graphdb.edgequery.AtomicEdgeQuery;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 import com.thinkaurelius.titan.graphdb.vertices.NodeUtil;
@@ -134,7 +134,7 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 	@Override
 	public Object getAttribute(PropertyType type) {
 		try {
-			Property p = Iterators.getOnlyElement(new StandardEdgeQuery(this).withEdgeType(type).getPropertyIterator(), null);
+			Property p = Iterators.getOnlyElement(new AtomicEdgeQuery(this).withEdgeType(type).getPropertyIterator(), null);
 			if (p==null) return null;
 			else return p.getAttribute();
 		} catch (IllegalArgumentException e) {
@@ -151,7 +151,7 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 	@Override
 	public<O> O getAttribute(PropertyType type, Class<O> clazz) {
 		try {
-			Property p = Iterators.getOnlyElement(new StandardEdgeQuery(this).withEdgeType(type).getPropertyIterator(), null);
+			Property p = Iterators.getOnlyElement(new AtomicEdgeQuery(this).withEdgeType(type).getPropertyIterator(), null);
 			if (p==null) return null;
 			else return p.getAttribute(clazz);
 		} catch (IllegalArgumentException e) {
@@ -188,19 +188,19 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 	
 	@Override
 	public Iterable<Property> getProperties() {
-		return new StandardEdgeQuery(this).getProperties();
+		return new AtomicEdgeQuery(this).getProperties();
 	}
 
 
 	@Override
 	public Iterator<Property> getPropertyIterator() {
-		return new StandardEdgeQuery(this).getPropertyIterator();
+		return new AtomicEdgeQuery(this).getPropertyIterator();
 	}
 	
 	
 	@Override
 	public Iterable<Property> getProperties(PropertyType type) {
-		return new StandardEdgeQuery(this).withEdgeType(type).getProperties();
+		return new AtomicEdgeQuery(this).withEdgeType(type).getProperties();
 	}
 
 	@Override
@@ -211,7 +211,7 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 
 	@Override
 	public Iterator<Property> getPropertyIterator(PropertyType type) {
-		return new StandardEdgeQuery(this).withEdgeType(type).getPropertyIterator();
+		return new AtomicEdgeQuery(this).withEdgeType(type).getPropertyIterator();
 	}
 	
 	@Override
@@ -222,30 +222,30 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 	
 	@Override
 	public Iterable<Relationship> getRelationships() {
-		return new StandardEdgeQuery(this).getRelationships();
+		return new AtomicEdgeQuery(this).getRelationships();
 	}
 
 
 	@Override
 	public Iterable<Relationship> getRelationships(Direction dir) {
-		return new StandardEdgeQuery(this).inDirection(dir).getRelationships();
+		return new AtomicEdgeQuery(this).inDirection(dir).getRelationships();
 	}
 
 
 	@Override
 	public Iterator<Relationship> getRelationshipIterator() {
-		return new StandardEdgeQuery(this).getRelationshipIterator();
+		return new AtomicEdgeQuery(this).getRelationshipIterator();
 	}
 
 
 	@Override
 	public Iterator<Relationship> getRelationshipIterator(Direction dir) {
-		return new StandardEdgeQuery(this).inDirection(dir).getRelationshipIterator();
+		return new AtomicEdgeQuery(this).inDirection(dir).getRelationshipIterator();
 	}
 
 	@Override
 	public Iterator<Relationship> getRelationshipIterator(RelationshipType edgeType, Direction d) {
-		return new StandardEdgeQuery(this).inDirection(d).withEdgeType(edgeType).getRelationshipIterator();
+		return new AtomicEdgeQuery(this).inDirection(d).withEdgeType(edgeType).getRelationshipIterator();
 	}
 
 	@Override
@@ -256,7 +256,7 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 
 	@Override
 	public Iterable<Relationship> getRelationships(RelationshipType edgeType,Direction d) {
-		return new StandardEdgeQuery(this).inDirection(d).withEdgeType(edgeType).getRelationships();
+		return new AtomicEdgeQuery(this).inDirection(d).withEdgeType(edgeType).getRelationships();
 	}
 
 	@Override
@@ -267,7 +267,7 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 	
 	@Override
 	public Iterator<Relationship> getRelationshipIterator(RelationshipType edgeType) {
-		return new StandardEdgeQuery(this).withEdgeType(edgeType).getRelationshipIterator();
+		return new AtomicEdgeQuery(this).withEdgeType(edgeType).getRelationshipIterator();
 	}
 
 	@Override
@@ -278,7 +278,7 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 
 	@Override
 	public Iterable<Relationship> getRelationships(RelationshipType edgeType) {
-		return new StandardEdgeQuery(this).withEdgeType(edgeType).getRelationships();
+		return new AtomicEdgeQuery(this).withEdgeType(edgeType).getRelationships();
 	}
 	
 	@Override
@@ -289,25 +289,25 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 	
 	@Override
 	public Iterator<Edge> getEdgeIterator() {
-		return new StandardEdgeQuery(this).getEdgeIterator();
+		return new AtomicEdgeQuery(this).getEdgeIterator();
 	}
 
 
 	@Override
 	public Iterator<Edge> getEdgeIterator(Direction dir) {
-		return new StandardEdgeQuery(this).inDirection(dir).getEdgeIterator();
+		return new AtomicEdgeQuery(this).inDirection(dir).getEdgeIterator();
 	}
 
 
 	@Override
 	public Iterable<Edge> getEdges() {
-		return new StandardEdgeQuery(this).getEdges();
+		return new AtomicEdgeQuery(this).getEdges();
 	}
 
 
 	@Override
 	public Iterable<Edge> getEdges(Direction dir) {
-		return new StandardEdgeQuery(this).inDirection(dir).getEdges();
+		return new AtomicEdgeQuery(this).inDirection(dir).getEdges();
 	}
 	
 	/* ---------------------------------------------------------------
@@ -318,7 +318,7 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 
 	@Override
 	public int getNoProperties() {
-		return new StandardEdgeQuery(this).noProperties();
+		return new AtomicEdgeQuery(this).noProperties();
 	}
 
 	@Override
@@ -329,7 +329,7 @@ public class LabeledBinaryRelationship extends SimpleBinaryRelationship {
 
 	@Override
 	public int getNoRelationships() {
-		return new StandardEdgeQuery(this).noRelationships();
+		return new AtomicEdgeQuery(this).noRelationships();
 	}
 	
 	@Override

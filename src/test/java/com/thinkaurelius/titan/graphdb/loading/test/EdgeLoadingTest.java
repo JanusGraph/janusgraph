@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.loading.test;
 
 import com.thinkaurelius.titan.core.Direction;
-import com.thinkaurelius.titan.graphdb.edgequery.StandardEdgeQuery;
+import com.thinkaurelius.titan.graphdb.edgequery.AtomicEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemRelationshipType;
 import com.thinkaurelius.titan.graphdb.loadingstatus.DefaultLoadingStatus;
 import com.thinkaurelius.titan.graphdb.loadingstatus.LoadingStatus;
@@ -16,7 +16,7 @@ public class EdgeLoadingTest {
 	public void edgeLoadingTest() {
 		LoadingStatus status1 = DefaultLoadingStatus.AllLoaded;
 		LoadingStatus status2 = DefaultLoadingStatus.NothingLoaded;
-		StandardEdgeQuery q = new StandardEdgeQuery(null,1);
+		AtomicEdgeQuery q = new AtomicEdgeQuery(null,1);
 		assertTrue(status1.hasLoadedEdges(q));
 		assertFalse(status2.hasLoadedEdges(q));
 		assertTrue(status1==status1.loadedEdges(q));

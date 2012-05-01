@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.edgequery;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.Property;
 import com.thinkaurelius.titan.core.PropertyType;
@@ -15,7 +14,7 @@ public class EdgeQueryUtil {
 		assert propType.isHidden() : "Expected hidden property type";
 		assert propType.isFunctional() : "Expected functional property  type";
 		return Iterators.getOnlyElement(
-				new StandardEdgeQuery(node).
+				new AtomicEdgeQuery(node).
 					includeHidden().
 					withEdgeType(propType).
 					getPropertyIterator(),null);

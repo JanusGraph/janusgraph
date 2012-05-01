@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.edges.factory;
 import com.thinkaurelius.titan.core.Direction;
 import com.thinkaurelius.titan.core.EdgeType;
 import com.thinkaurelius.titan.exceptions.InvalidEdgeException;
-import com.thinkaurelius.titan.graphdb.edgequery.StandardEdgeQuery;
+import com.thinkaurelius.titan.graphdb.edgequery.AtomicEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
@@ -49,7 +49,7 @@ public class EdgeFactoryUtil {
 
 	
 	public static final boolean hasEdgeOfType(InternalNode start, EdgeType type, Direction dir) {
-		StandardEdgeQuery q = new StandardEdgeQuery(start);
+		AtomicEdgeQuery q = new AtomicEdgeQuery(start);
 		q.includeHidden().withEdgeType(type).inDirection(dir);
 		if (start.getEdges(q, true).iterator().hasNext()) {
 			return true;

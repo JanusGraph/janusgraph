@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.edges.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.edgetypes.InternalEdgeType;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableEdgeIterable;
@@ -14,9 +13,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class StandardEdgeQuery implements InternalEdgeQuery {
+public class AtomicEdgeQuery implements InternalEdgeQuery {
 
-    private final GraphTx tx;
+    protected final GraphTx tx;
 	private InternalNode node;
     private long nodeid;
     
@@ -35,7 +34,7 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
     private long limit = Long.MAX_VALUE;
     
 
-    public StandardEdgeQuery(GraphTx tx) {
+    public AtomicEdgeQuery(GraphTx tx) {
         this.tx=tx;
         
         dir = null;
@@ -48,7 +47,7 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
         constraints = null;
     }
     
-    public StandardEdgeQuery(InternalNode n) {
+    public AtomicEdgeQuery(InternalNode n) {
         this(n.getTransaction());
         Preconditions.checkNotNull(n);
 
@@ -58,7 +57,7 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
         else nodeid = -1;   
     }
     
-    public StandardEdgeQuery(GraphTx tx, long nodeid) {
+    public AtomicEdgeQuery(GraphTx tx, long nodeid) {
         this(tx);
 
         Preconditions.checkArgument(nodeid>0);
@@ -67,7 +66,7 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
         this.nodeid = nodeid;
     }
 
-    StandardEdgeQuery(StandardEdgeQuery q) {
+    AtomicEdgeQuery(AtomicEdgeQuery q) {
         dir = q.dir;
         type = q.type;
         group = q.group;
@@ -86,19 +85,19 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
         else constraints = new HashMap<String,Object>(q.constraints);
     }
 
-	StandardEdgeQuery(InternalNode node, StandardEdgeQuery q) {
+	AtomicEdgeQuery(InternalNode node, AtomicEdgeQuery q) {
 		this(q);
 		this.node=node;
 	}
 	
 	@Override
-	public StandardEdgeQuery copy() {
-		StandardEdgeQuery q = new StandardEdgeQuery(this);
+	public AtomicEdgeQuery copy() {
+		AtomicEdgeQuery q = new AtomicEdgeQuery(this);
 		return q;
 	}
 
-	public static final StandardEdgeQuery queryAll(InternalNode node) {
-		return new StandardEdgeQuery(node).includeHidden();
+	public static final AtomicEdgeQuery queryAll(InternalNode node) {
+		return new AtomicEdgeQuery(node).includeHidden();
 	}
 
 	/* ---------------------------------------------------------------
@@ -106,7 +105,7 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
 	 * ---------------------------------------------------------------
 	 */
     
-    private<T> StandardEdgeQuery withPropertyConstraint(EdgeType ptype,Object value) {
+    private<T> AtomicEdgeQuery withPropertyConstraint(EdgeType ptype,Object value) {
         Preconditions.checkNotNull(ptype);
         if (constraints == null) constraints = new HashMap<String,Object>(5);
         constraints.put(ptype.getName(), value);
@@ -114,7 +113,7 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
     }
 	
     @Override
-    public<T> StandardEdgeQuery withConstraint(EdgeType etype,T value) {
+    public<T> AtomicEdgeQuery withConstraint(EdgeType etype,T value) {
         if (etype.isRelationshipType()) {
             Preconditions.checkArgument(etype.getDirectionality()==Directionality.Unidirected,"Only unidirectional edges supported inline.");
             Preconditions.checkArgument(value instanceof Node,"Value needs to be a node.");
@@ -127,7 +126,7 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
     }
 
     @Override
-    public<T> StandardEdgeQuery withConstraint(String ptype, T value) {
+    public<T> AtomicEdgeQuery withConstraint(String ptype, T value) {
         if (!tx.containsEdgeType(ptype)) throw new IllegalArgumentException("Unknown property type: " + ptype);
         return withConstraint(tx.getPropertyType(ptype),value);
     }
@@ -146,14 +145,33 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
     }
 
     @Override
-    public StandardEdgeQuery withEdgeType(String type) {
-        //TODO: Filter out non-existent edge types. Handle special case where resulting set is empty
+    public AtomicEdgeQuery withEdgeType(String... type) {
+        if (type.length==0) {
+            this.type=null;
+        } else {
+            Preconditions.checkArgument(type.length==1);
+            withEdgeType(type[0]);
+        }
+        return this;
+    }
+    
+    @Override
+    public AtomicEdgeQuery withEdgeType(EdgeType... type) {
+        if (type.length==0) {
+            this.type=null;
+        } else {
+            Preconditions.checkArgument(type.length==1);
+            withEdgeType(type[0]);
+        }
+        return this;
+    }
+    
+    public AtomicEdgeQuery withEdgeType(String type) {
         Preconditions.checkNotNull(tx);
         return withEdgeType(tx.getEdgeType(type));
     }
     
-	@Override
-    public StandardEdgeQuery withEdgeType(EdgeType type) {
+    public AtomicEdgeQuery withEdgeType(EdgeType type) {
         Preconditions.checkNotNull(type);
         this.type = type;
         group = null;
@@ -174,43 +192,47 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
         }
         return this;
     }
+
+    protected void removeEdgeType() {
+        type = null;
+    }
 	
 	@Override
-	public StandardEdgeQuery withEdgeTypeGroup(EdgeTypeGroup group) {
+	public AtomicEdgeQuery withEdgeTypeGroup(EdgeTypeGroup group) {
         Preconditions.checkNotNull(group);
         this.group=group;
-        type = null;
+        removeEdgeType();
         allEdges();
 		return this;
 	}
 	
 
 	@Override
-	public StandardEdgeQuery inDirection(Direction d) {
+	public AtomicEdgeQuery inDirection(Direction d) {
         dir = d;
 		return this;
 	}
 
 	@Override
-	public StandardEdgeQuery onlyModifiable() {
+	public AtomicEdgeQuery onlyModifiable() {
         queryUnmodifiable=false;
 		return this;
 	}
 
 	@Override
-	public StandardEdgeQuery includeHidden() {
+	public AtomicEdgeQuery includeHidden() {
         queryHidden=true;
 		return this;
 	}
 
     @Override
-    public StandardEdgeQuery setRetrievalLimit(long limit) {
+    public AtomicEdgeQuery setRetrievalLimit(long limit) {
         this.limit=limit;
         return this;
     }
 
     @Override
-    public StandardEdgeQuery inMemoryRetrieval() {
+    public AtomicEdgeQuery inMemoryRetrieval() {
         this.inMemoryRetrieval=true;
         return this;
     }
@@ -414,7 +436,7 @@ public class StandardEdgeQuery implements InternalEdgeQuery {
 
     private NodeListInternal retrieveFromMemory(NodeListInternal nodes) {
         if (node==null) node = tx.getExistingNode(nodeid);
-        StandardEdgeQuery q = new StandardEdgeQuery(node,this);
+        AtomicEdgeQuery q = new AtomicEdgeQuery(node,this);
         Iterator<Relationship> iter = q.getRelationshipIterator();
         while (iter.hasNext()) {
             Relationship next = iter.next();

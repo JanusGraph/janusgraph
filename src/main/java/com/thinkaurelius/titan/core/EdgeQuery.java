@@ -32,7 +32,7 @@ public interface EdgeQuery {
 	 * @param type Edge type to query for
 	 * @return This edge query
 	 */
-	public EdgeQuery withEdgeType(EdgeType type);
+	public EdgeQuery withEdgeType(EdgeType... type);
 
     /**
      * Defines this edge query to query only for edges of the specified type.
@@ -41,7 +41,7 @@ public interface EdgeQuery {
      * @param type Edge type to query for
      * @return This edge query
      */
-    public EdgeQuery withEdgeType(String type);
+    public EdgeQuery withEdgeType(String... type);
 
 	/**
 	 * Defines this edge query to query only for edges which type belongs to the specified group.
@@ -201,7 +201,7 @@ public interface EdgeQuery {
      * matching the conditions defined in this query.
      *
      * No guarantee is made as to the order in which the nodes are listed. However, in some cases the retrieved list of node ids will be
-     * ordered (use {@link NodeList#isSorted()} to check whether the list is sorted).
+     * ordered (use {@link NodeList#sort()} to check whether the list is sorted).
      *
      * The query engine will determine the most efficient way to retrieve the nodes that match this query. For instance,
      * it might only retrieve the node ids and instantiate the node objects only as needed.
