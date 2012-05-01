@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class CassandraThriftOrderedKeyColumnValueStore
 	implements OrderedKeyColumnValueStore, MultiWriteKeyColumnValueStore {
@@ -23,6 +24,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	private final String keyspace;
 	private final String columnFamily;
 	private final UncheckedGenericKeyedObjectPool<String, CTConnection> pool;
+	private final AtomicLong lastMutationTimestamp;
 	
 	private static final Logger logger =
 		LoggerFactory.getLogger(CassandraThriftOrderedKeyColumnValueStore.class);
@@ -32,6 +34,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		this.keyspace = keyspace;
 		this.columnFamily = columnFamily;
 		this.pool = pool;
+		this.lastMutationTimestamp = new AtomicLong(System.currentTimeMillis());
 	}
 
 	/**
@@ -295,8 +298,98 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		return ConsistencyLevel.ALL;
 	}
 	
-	private static long getNewTimestamp() {
-		return System.currentTimeMillis();
+	/**
+	 * Data-mutating methods call me to obtain a timestamp suitable
+	 * for issuing Cassandra writes over Thrift.
+	 * <p>
+	 * Cassandra resolves write collisions (multiple writes
+	 * with identical timestamps) by lexical comparison on value.
+	 * Titan sometimes issues a pair of mutations on a given
+	 * key-column coordinate in series; if both are issued within
+	 * a millisecond, then Cassandra's write collision resolution
+	 * can't guarantee that the latter takes precedence (assuming
+	 * that the "timestamp" field is just Java currentTimeMillis).
+	 * <p>
+	 * The return values of this method are guaranteed to strictly
+	 * increase.  That is, each value returned by this method will
+	 * be greater than the last.  This implementation also returns
+	 * values at a rate no faster than one per millisecond, so that
+	 * Cassandra timestamps can be kept to actual UNIX Epoch millis.
+	 * This method uses an AtomicLong's compare-and-set primitive
+	 * for thread safety.
+	 * <p>
+	 * Note that this method can only ensure strictly increasing
+	 * values for method calls on the owning object.  It has no
+	 * information about other instances of this class, let alone
+	 * other Cassandra clients on remote hosts that could be
+	 * issuing colliding writes.  Handling those collisions is out
+	 * of scope of this method.
+	 * <p>
+	 * This method is deliberately heavy-handed with its
+	 * backend-wide 1 mutation per ms limit.  There are at least
+	 * two ways to relax this limit, either by tracking timers
+	 * at the key-column level or by moving from milliseconds in
+	 * Cassandra timestamps to something with higher precision.
+	 * This implementation shoots for simplicity instead. 
+	 * 
+	 * @return a timestamp appropriate for use in a Thrift insert,
+	 *         delete, etc.
+	 */
+	private long getNewTimestamp() {
+		
+		long last, next;
+		
+		boolean firstTry = true;
+		
+		do {
+			// Insert a random backoff period if we just collided with another writer
+			if (!firstTry) {
+				try {
+					Thread.sleep((long)(Math.random() * 10));
+				} catch (InterruptedException e) {
+					throw new GraphStorageException("Unexpected interrupt", e);
+				}
+			}
+			
+			// Get the current state
+			last = lastMutationTimestamp.get();
+
+			// Sleep until the current time is greater than last
+			// This is in a loop to guard against spurious Thread.sleep() wakeups
+			for (next = System.currentTimeMillis(); next <= last; next = System.currentTimeMillis()) {
+				long delta = last - next;
+				assert 0 <= delta;
+				
+				// delta should ideally never exceed 0
+				// warn the user if it gets over, say, 50 ms 
+				if (50L < delta) {
+					logger.warn("Timestamp of last Cassandra mutation " +
+							"exceeds current time by {} ms.  This could " +
+							"be due to a sudden change to system time.  " +
+							"System.currentTimeMillis()={}; " +
+							"lastMutationTimestamp={}",
+							new Object[] {delta, next, last});
+					logger.warn("About to sleep for at least {} ms", delta);
+				}
+				
+				try {
+					Thread.sleep(delta + 1L);
+				} catch (InterruptedException e) {
+					throw new GraphStorageException("Unexpected interrupt", e);
+				}
+			}
+		
+			/* This condition is necessary both to fulfill our method
+			 * contract and for our CAS protocol to work.
+			 */
+			assert next > last;
+			
+			firstTry = false;
+		
+		// CAS and retry on failure
+		} while (! lastMutationTimestamp.compareAndSet(last, next));
+		
+		return next;
 	}
 
 	@Override
