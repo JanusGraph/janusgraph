@@ -1,22 +1,39 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
-import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.*;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
-import org.apache.cassandra.thrift.*;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.cassandra.thrift.Cassandra;
+import org.apache.cassandra.thrift.Column;
+import org.apache.cassandra.thrift.ColumnOrSuperColumn;
+import org.apache.cassandra.thrift.ColumnParent;
+import org.apache.cassandra.thrift.ColumnPath;
+import org.apache.cassandra.thrift.ConsistencyLevel;
+import org.apache.cassandra.thrift.Deletion;
+import org.apache.cassandra.thrift.InvalidRequestException;
 import org.apache.cassandra.thrift.Mutation;
+import org.apache.cassandra.thrift.NotFoundException;
+import org.apache.cassandra.thrift.SlicePredicate;
+import org.apache.cassandra.thrift.SliceRange;
+import org.apache.cassandra.thrift.TimedOutException;
+import org.apache.cassandra.thrift.UnavailableException;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
+import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
+import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
+import com.thinkaurelius.titan.exceptions.GraphStorageException;
 
 public class CassandraThriftOrderedKeyColumnValueStore
 	implements OrderedKeyColumnValueStore, MultiWriteKeyColumnValueStore {
@@ -24,7 +41,14 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	private final String keyspace;
 	private final String columnFamily;
 	private final UncheckedGenericKeyedObjectPool<String, CTConnection> pool;
-	private final AtomicLong lastMutationTimestamp;
+
+	// This is the value of System.nanoTime() at startup
+	private static final long t0NanoTime;
+	
+	/* This is the value of System.currentTimeMillis() at
+	 * startup times a million (i.e. CTM in ns)
+	 */
+	private static final long t0NanosSinceEpoch;
 	
 	private static final Logger logger =
 		LoggerFactory.getLogger(CassandraThriftOrderedKeyColumnValueStore.class);
@@ -34,8 +58,35 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		this.keyspace = keyspace;
 		this.columnFamily = columnFamily;
 		this.pool = pool;
-		this.lastMutationTimestamp = new AtomicLong(System.currentTimeMillis());
 	}
+	
+	// Initialize the t0 variables
+	static {
+		
+		/*
+		 * This is a crude attempt to establish a correspondence
+		 * between System.currentTimeMillis() and System.nanoTime().
+		 * 
+		 * It's susceptible to errors up to -999 us due to the
+		 * limited accuracy of System.currentTimeMillis()
+		 * versus that of System.nanoTime(), with an average
+		 * error of about -0.5 ms.
+		 * 
+		 * In addition, it's susceptible to arbitrarily large
+		 * error if the scheduler decides to sleep this thread
+		 * in between the following time calls.
+		 * 
+		 * One mitigation for both errors could be to wrap
+		 * this logic in a loop and combine the timing information
+		 * from multiple passes into the final t0 values.
+		 */
+		final long t0ms = System.currentTimeMillis();
+		final long t0ns = System.nanoTime();
+		
+		t0NanosSinceEpoch = t0ms * 1000L * 1000L;
+		t0NanoTime = t0ns;
+	}
+	
 
 	/**
 	 * Call Cassandra's Thrift get_slice() method.
@@ -199,37 +250,17 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
     @Override
     public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh) {
-        if (deletions!=null && !deletions.isEmpty()) delete(key,deletions,txh);
-        if (additions!=null && !additions.isEmpty()) insert(key,additions,txh);
+
+    	Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations =
+    			new HashMap<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation>(1);
+    	
+    	com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation m = new
+    			com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation(additions, deletions);
+    	
+    	mutations.put(key, m);
+    	
+    	mutateMany(mutations, txh);
     }
-    
-	public void delete(ByteBuffer key, List<ByteBuffer> columns,
-			TransactionHandle txh) {
-		ColumnPath path = new ColumnPath(columnFamily);
-		long timestamp = getNewTimestamp();
-		ConsistencyLevel consistency = getConsistencyLevel();
-		
-		CTConnection conn = null;
-		try {
-			conn = pool.genericBorrowObject(keyspace);
-			Cassandra.Client client = conn.getClient();
-			for (ByteBuffer col : columns) {
-				path.setColumn(col);
-				client.remove(key, path, timestamp, consistency);
-			}
-		} catch (TException e) {
-			throw new GraphStorageException(e);
-		} catch (TimedOutException e) {
-			throw new GraphStorageException(e);
-		} catch (UnavailableException e) {
-			throw new GraphStorageException(e);
-		} catch (InvalidRequestException e) {
-			throw new GraphStorageException(e);
-		} finally {
-			if (null != conn)
-				pool.genericReturnObject(keyspace, conn);
-		}
-	}
 
 	@Override
 	public ByteBuffer get(ByteBuffer key, ByteBuffer column,
@@ -258,37 +289,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 				pool.genericReturnObject(keyspace, conn);
 		}
 	}
-
-	public void insert(ByteBuffer key, List<Entry> entries,
-			TransactionHandle txh) {
-		ColumnParent parent = new ColumnParent(columnFamily);
-		long timestamp = getNewTimestamp();
-		ConsistencyLevel consistency = getConsistencyLevel();
-		CTConnection conn = null;
-		try {
-			conn = pool.genericBorrowObject(keyspace);
-			Cassandra.Client client = conn.getClient();
-			for (Entry e : entries) {
-				Column column = new Column();
-				column.setName(e.getColumn().duplicate());
-				column.setValue(e.getValue().duplicate());
-				column.setTimestamp(timestamp);
-				client.insert(key.duplicate(), parent, column, consistency);
-			}
-		} catch (TException e) {
-			throw new GraphStorageException(e);
-		} catch (TimedOutException e) {
-			throw new GraphStorageException(e);
-		} catch (UnavailableException e) {
-			throw new GraphStorageException(e);
-		} catch (InvalidRequestException e) {
-			throw new GraphStorageException(e);
-		} finally {
-			if (null != conn)
-				pool.genericReturnObject(keyspace, conn);
-		}
-	}
-
+	
 	@Override
 	public boolean isLocalKey(ByteBuffer key) {
         return true;
@@ -297,99 +298,25 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	private static ConsistencyLevel getConsistencyLevel() {
 		return ConsistencyLevel.ALL;
 	}
-	
-	/**
-	 * Data-mutating methods call me to obtain a timestamp suitable
-	 * for issuing Cassandra writes over Thrift.
-	 * <p>
-	 * Cassandra resolves write collisions (multiple writes
-	 * with identical timestamps) by lexical comparison on value.
-	 * Titan sometimes issues a pair of mutations on a given
-	 * key-column coordinate in series; if both are issued within
-	 * a millisecond, then Cassandra's write collision resolution
-	 * can't guarantee that the latter takes precedence (assuming
-	 * that the "timestamp" field is just Java currentTimeMillis).
-	 * <p>
-	 * The return values of this method are guaranteed to strictly
-	 * increase.  That is, each value returned by this method will
-	 * be greater than the last.  This implementation also returns
-	 * values at a rate no faster than one per millisecond, so that
-	 * Cassandra timestamps can be kept to actual UNIX Epoch millis.
-	 * This method uses an AtomicLong's compare-and-set primitive
-	 * for thread safety.
-	 * <p>
-	 * Note that this method can only ensure strictly increasing
-	 * values for method calls on the owning object.  It has no
-	 * information about other instances of this class, let alone
-	 * other Cassandra clients on remote hosts that could be
-	 * issuing colliding writes.  Handling those collisions is out
-	 * of scope of this method.
-	 * <p>
-	 * This method is deliberately heavy-handed with its
-	 * backend-wide 1 mutation per ms limit.  There are at least
-	 * two ways to relax this limit, either by tracking timers
-	 * at the key-column level or by moving from milliseconds in
-	 * Cassandra timestamps to something with higher precision.
-	 * This implementation shoots for simplicity instead. 
-	 * 
-	 * @return a timestamp appropriate for use in a Thrift insert,
-	 *         delete, etc.
-	 */
-	private long getNewTimestamp() {
-		
-		long last, next;
-		
-		boolean firstTry = true;
-		
-		do {
-			// Insert a random backoff period if we just collided with another writer
-			if (!firstTry) {
-				try {
-					Thread.sleep((long)(Math.random() * 10));
-				} catch (InterruptedException e) {
-					throw new GraphStorageException("Unexpected interrupt", e);
-				}
-			}
-			
-			// Get the current state
-			last = lastMutationTimestamp.get();
 
-			// Sleep until the current time is greater than last
-			// This is in a loop to guard against spurious Thread.sleep() wakeups
-			for (next = System.currentTimeMillis(); next <= last; next = System.currentTimeMillis()) {
-				long delta = last - next;
-				assert 0 <= delta;
-				
-				// delta should ideally never exceed 0
-				// warn the user if it gets over, say, 50 ms 
-				if (50L < delta) {
-					logger.warn("Timestamp of last Cassandra mutation " +
-							"exceeds current time by {} ms.  This could " +
-							"be due to a sudden change to system time.  " +
-							"System.currentTimeMillis()={}; " +
-							"lastMutationTimestamp={}",
-							new Object[] {delta, next, last});
-					logger.warn("About to sleep for at least {} ms", delta);
-				}
-				
-				try {
-					Thread.sleep(delta + 1L);
-				} catch (InterruptedException e) {
-					throw new GraphStorageException("Unexpected interrupt", e);
-				}
-			}
-		
-			/* This condition is necessary both to fulfill our method
-			 * contract and for our CAS protocol to work.
-			 */
-			assert next > last;
-			
-			firstTry = false;
-		
-		// CAS and retry on failure
-		} while (! lastMutationTimestamp.compareAndSet(last, next));
-		
-		return next;
+	/**
+	 * This returns the approximate number of nanoseconds
+	 * elapsed since the UNIX Epoch.  The least significant
+	 * bit is overridden to 1 or 0 depending on whether
+	 * setLSB is true or false (respectively).
+	 * <p>
+	 * This timestamp rolls over about every 2^63 ns, or
+	 * just over 292 years.  The first rollover starting
+	 * from the UNIX Epoch would be sometime in 2262.
+	 * 
+	 * @param setLSB should the smallest bit in the
+	 * 	             returned value be one?
+	 * @return a timestamp as described above
+	 */
+	private long getNewTimestamp(final boolean setLSB) {
+		final long nanosSinceEpoch = System.nanoTime() - t0NanoTime + t0NanosSinceEpoch;
+		final long ts = ((nanosSinceEpoch) & 0xFFFFFFFFFFFFFFFEL) + (setLSB ? 1L : 0L);
+		return ts;
 	}
 
 	@Override
@@ -428,104 +355,77 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
     @Override
     public void mutateMany(Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations, TransactionHandle txh) {
-        Map<ByteBuffer, List<Entry>> insertions = new HashMap<ByteBuffer, List<Entry>>(mutations.size());
-        Map<ByteBuffer, List<ByteBuffer>> deletions = new HashMap<ByteBuffer, List<ByteBuffer>>(mutations.size());
-        for (Map.Entry<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> entry : mutations.entrySet()) {
-            com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation m = entry.getValue();
-            ByteBuffer key = entry.getKey();
-            if (m.hasAdditions()) insertions.put(key,m.getAdditions());
-            if (m.hasDeletions()) deletions.put(key,m.getDeletions());
-        }
-        deleteMany(deletions,txh);
-        insertMany(insertions,txh);
-    }
-
-	public void insertMany(Map<ByteBuffer, List<Entry>> insertions,
-			TransactionHandle txh) {
-		long timestamp = getNewTimestamp();
 		
-		// Generate Thrift-compatible batch_mutate() datastructure
-		Map<ByteBuffer, Map<String, List<Mutation>>> batch =
-			new HashMap<ByteBuffer, Map<String, List<Mutation>>>(insertions.size());
+    	if (null == mutations)
+    		return;
 		
-		for (Map.Entry<ByteBuffer, List<Entry>> ins : insertions.entrySet()) {
-			ByteBuffer key = ins.getKey();
-			
-			List<Mutation> mutationsForCurrentKeyAndCF =
-				new ArrayList<Mutation>(ins.getValue().size());
-			for (Entry ent : ins.getValue()) {
-				Mutation m = new Mutation();
-				
-				Column thriftCol = new Column();
-				thriftCol.setName(ent.getColumn());
-				thriftCol.setValue(ent.getValue());
-				thriftCol.setTimestamp(timestamp);
-				ColumnOrSuperColumn cosc = new ColumnOrSuperColumn();
-				cosc.setColumn(thriftCol);
-				m.setColumn_or_supercolumn(cosc);
-
-				mutationsForCurrentKeyAndCF.add(m);
-			}
-			
-			batch.put(key, ImmutableMap.of(columnFamily, mutationsForCurrentKeyAndCF));
-		}
-
-		batchMutate(batch);
-	}
-
-	public void deleteMany(Map<ByteBuffer, List<ByteBuffer>> deletions,
-			TransactionHandle txh) {
-		long timestamp = getNewTimestamp();
+		long deletionTimestamp = getNewTimestamp(false);
+		long additionTimestamp = getNewTimestamp(true);
 		
-		// Generate Thrift-compatible batch_mutate() datastructure
-		Map<ByteBuffer, Map<String, List<Mutation>>> batch =
-			new HashMap<ByteBuffer, Map<String, List<Mutation>>>(deletions.size());
-		
-		for (Map.Entry<ByteBuffer, List<ByteBuffer>> ins : deletions.entrySet()) {
-			ByteBuffer key = ins.getKey();
-			
-			List<Mutation> mutationsForCurrentKeyAndCF =
-				new ArrayList<Mutation>(ins.getValue().size());
-			for (ByteBuffer column : ins.getValue()) {
-				Mutation m = new Mutation();
-				
-				SlicePredicate p = new SlicePredicate();
-				p.setColumn_names(ImmutableList.of(column));
-				Deletion d = new Deletion();
-				d.setTimestamp(timestamp);
-				d.setPredicate(p);
-				m.setDeletion(d);
-
-				mutationsForCurrentKeyAndCF.add(m);
-			}
-			
-			batch.put(key, ImmutableMap.of(columnFamily, mutationsForCurrentKeyAndCF));
-		}
-
-		batchMutate(batch);
-	}
-	
-	private void batchMutate(Map<ByteBuffer, Map<String, List<Mutation>>> batch) {
-
 		ConsistencyLevel consistency = getConsistencyLevel();
+		
+		// Generate Thrift-compatible batch_mutate() datastructure
+		// key -> cf -> cassmutation
+		Map<ByteBuffer, Map<String, List<Mutation>>> batch =
+			new HashMap<ByteBuffer, Map<String, List<Mutation>>>(mutations.size());
+
+		for (Map.Entry<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> e : mutations.entrySet()) {
+
+			Map<String, List<Mutation>> cfs = new HashMap<String, List<Mutation>>(1);
+			List<Mutation> muts = new ArrayList<Mutation>(mutations.size());
+			
+			ByteBuffer key = e.getKey();
+
+			if (null != e.getValue().getDeletions()) {
+				for (ByteBuffer buf : e.getValue().getDeletions()) {
+					Deletion d = new Deletion();
+					SlicePredicate sp = new SlicePredicate();
+					sp.addToColumn_names(buf);
+					d.setPredicate(sp);
+					d.setTimestamp(deletionTimestamp);
+					Mutation m = new Mutation();
+					m.setDeletion(d);
+					muts.add(m);
+				}
+			}
+			
+			if (null != e.getValue().getAdditions()) {
+				for (Entry ent : e.getValue().getAdditions()) {
+					ColumnOrSuperColumn cosc = new ColumnOrSuperColumn();
+					Column column = new Column(ent.getColumn());
+					column.setValue(ent.getValue());
+					column.setTimestamp(additionTimestamp);
+					cosc.setColumn(column);
+					Mutation m = new Mutation();
+					m.setColumn_or_supercolumn(cosc);
+					muts.add(m);
+				}
+			}
+			
+			cfs.put(columnFamily, muts);
+			batch.put(key, cfs);
+			
+		}
+		
+
 		CTConnection conn = null;
 		try {
 			conn = pool.genericBorrowObject(keyspace);
 			Cassandra.Client client = conn.getClient();
 
 			client.batch_mutate(batch, consistency);
-		} catch (TException e) {
-			throw new GraphStorageException(e);
-		} catch (TimedOutException e) {
-			throw new GraphStorageException(e);
-		} catch (UnavailableException e) {
-			throw new GraphStorageException(e);
-		} catch (InvalidRequestException e) {
-			throw new GraphStorageException(e);
+		} catch (TException ex) {
+			throw new GraphStorageException(ex);
+		} catch (TimedOutException ex) {
+			throw new GraphStorageException(ex);
+		} catch (UnavailableException ex) {
+			throw new GraphStorageException(ex);
+		} catch (InvalidRequestException ex) {
+			throw new GraphStorageException(ex);
 		} finally {
 			if (null != conn)
 				pool.genericReturnObject(keyspace, conn);
 		}
-	}
-
+		
+    }
 }
