@@ -154,6 +154,7 @@ public class GraphDatabaseConfiguration {
 	 */
 	public GraphDatabaseConfiguration(File home) {
 		Preconditions.checkNotNull(home,"Need to specify a directory");
+        if (!home.isDirectory()) home.mkdirs();
 		Preconditions.checkArgument(home.isDirectory(),home + " is not a directory!");
 		homeDir = home;
 		objectStore = new ObjectDiskStorage(this);

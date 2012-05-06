@@ -4,6 +4,7 @@ import cern.colt.list.AbstractLongList;
 import cern.colt.list.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Node;
+import com.thinkaurelius.titan.core.NodeList;
 import com.thinkaurelius.titan.exceptions.InvalidNodeException;
 import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 
@@ -62,6 +63,14 @@ public class NodeLongList implements NodeListInternal {
 	public int size() {
 		return nodes.size();
 	}
+    
+    @Override
+    public void addAll(NodeList nodelist) {
+        Preconditions.checkArgument(nodelist instanceof NodeLongList,"Only supporting union of identical lists.");
+        NodeLongList other = (NodeLongList)nodelist;
+        sorted=false;
+        nodes.addAllOfFromTo(other.nodes,0,other.nodes.size());
+    }
 
 	@Override
 	public Iterator<Node> iterator() {

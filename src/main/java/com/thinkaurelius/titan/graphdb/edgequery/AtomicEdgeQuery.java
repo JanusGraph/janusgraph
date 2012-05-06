@@ -230,6 +230,11 @@ public class AtomicEdgeQuery implements InternalEdgeQuery {
         this.limit=limit;
         return this;
     }
+    
+    public AtomicEdgeQuery resetRetrievalLimit() {
+        this.limit = Long.MAX_VALUE;
+        return this;
+    }
 
     @Override
     public AtomicEdgeQuery inMemoryRetrieval() {
@@ -398,12 +403,14 @@ public class AtomicEdgeQuery implements InternalEdgeQuery {
 	@Override
 	public int noRelationships() {
 		relationshipsOnly();
+        resetRetrievalLimit();
 		return Iterators.size(getRelationshipIterator());
 	}
 	
 	@Override	
 	public int noProperties() {
 		propertiesOnly();
+        resetRetrievalLimit();
 		return Iterators.size(getPropertyIterator());
 	}
 
@@ -425,7 +432,7 @@ public class AtomicEdgeQuery implements InternalEdgeQuery {
     }
 
     @Override
-    public NodeList getNeighborhood() {
+    public NodeListInternal getNeighborhood() {
         Preconditions.checkNotNull(tx);
         if (retrieveInMemory()) {
             return retrieveFromMemory(new NodeArrayList());
@@ -445,7 +452,7 @@ public class AtomicEdgeQuery implements InternalEdgeQuery {
         return nodes;
     }
 
-    public NodeList getNeighborhoodIDs() {
+    public NodeListInternal getNeighborhoodIDs() {
         Preconditions.checkNotNull(tx);
         Preconditions.checkArgument(node==null || (!node.isNew() && !node.isModified()),
                 "Cannot query for raw neighborhood on new or modified node.");

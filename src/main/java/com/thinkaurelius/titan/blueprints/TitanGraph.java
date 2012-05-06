@@ -90,7 +90,7 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this,"Titan");
+        return StringFactory.graphString(this,"?");
     }
 
     @Override
@@ -351,6 +351,8 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     }
 
 
+
+
     @Override
     public void stopTransaction(final Conclusion conclusion) {
         if (txs.get()==null) return;
@@ -385,6 +387,10 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
             tx=internalStartTransaction();
         } else tx=txs.get().getTransaction();
         return tx;
+    }
+
+    public GraphTransaction getNativeTransaction() {
+        return getAutoStartTx();
     }
 
 

@@ -6,5 +6,7 @@ import com.thinkaurelius.titan.core.NodeList;
 public interface NodeListInternal extends NodeList {
 
 	public void add(Node n);
+    
+    public void addAll(NodeList nodes);
 	
 }

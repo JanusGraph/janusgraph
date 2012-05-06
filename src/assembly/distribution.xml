@@ -1,0 +1,37 @@
+<assembly>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <fileSets>
+        <fileSet>
+            <includes>
+                <include>pom.xml</include>
+            </includes>
+        </fileSet>
+        <!--<fileSet>
+            <fileMode>0775</fileMode>
+            <includes>
+                <include>gremlin-groovy.sh</include>
+                <include>gremlin-groovy.bat</include>
+            </includes>
+        </fileSet>-->
+        <fileSet>
+            <directory>src</directory>
+        </fileSet>
+        <fileSet>
+            <directory>target/apidocs</directory>
+        </fileSet>
+        <fileSet>
+            <directory>target/site</directory>
+        </fileSet>
+        <fileSet>
+            <directory>target/${project.artifactId}-${project.version}-standalone</directory>
+        </fileSet>
+    </fileSets>
+    <files>
+        <file>
+            <source>LICENSE.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+    </files>
+</assembly>

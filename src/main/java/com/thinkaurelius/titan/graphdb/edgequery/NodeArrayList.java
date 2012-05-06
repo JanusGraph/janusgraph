@@ -2,16 +2,18 @@ package com.thinkaurelius.titan.graphdb.edgequery;
 
 import cern.colt.list.AbstractLongList;
 import cern.colt.list.LongArrayList;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.Node;
+import com.thinkaurelius.titan.core.NodeList;
 import com.thinkaurelius.titan.exceptions.InvalidNodeException;
 
 import java.util.*;
 
 public class NodeArrayList implements NodeListInternal {
 
-	private final List<Node> nodes;
+	private final ArrayList<Node> nodes;
 	private boolean sorted = false;
 	
 	public NodeArrayList() {
@@ -54,6 +56,14 @@ public class NodeArrayList implements NodeListInternal {
 	public int size() {
 		return nodes.size();
 	}
+
+    @Override
+    public void addAll(NodeList nodelist) {
+        Preconditions.checkArgument(nodelist instanceof NodeArrayList, "Only supporting union of identical lists.");
+        NodeArrayList other = (NodeArrayList)nodelist;
+        sorted=false;
+        nodes.addAll(other.nodes);
+    }
 
 	@Override
 	public Iterator<Node> iterator() {

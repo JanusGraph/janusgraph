@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.exceptions.InvalidEntityException;
 import com.thinkaurelius.titan.exceptions.InvalidNodeException;
 import com.thinkaurelius.titan.graphdb.database.GraphDB;
+import com.thinkaurelius.titan.graphdb.edgequery.ComplexEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edgequery.AtomicEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
@@ -291,12 +292,12 @@ public abstract class AbstractGraphTx implements GraphTx {
 	
 	@Override
 	public InternalEdgeQuery makeEdgeQuery(InternalNode n) {
-		return new AtomicEdgeQuery(n);
+		return new ComplexEdgeQuery(n);
 	}
 
 	@Override
 	public EdgeQuery makeEdgeQuery(long nodeid) {
-		return new AtomicEdgeQuery((InternalNode)getNode(nodeid));
+		return new ComplexEdgeQuery((InternalNode)getNode(nodeid));
 	}
 
 	@Override

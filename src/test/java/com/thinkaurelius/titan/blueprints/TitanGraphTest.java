@@ -43,6 +43,12 @@ public class TitanGraphTest extends GraphTest {
 
     }
 
+    public void testTitanBenchmarkTestSuite() throws Exception {
+        this.stopWatch();
+        doTestSuite(new TitanBenchmarkSuite(this));
+        printTestPerformance("TitanBenchmarkTestSuite", this.stopWatch());
+    }
+
     public void testVertexTestSuite() throws Exception {
         this.stopWatch();
         doTestSuite(new VertexTestSuite(this));
