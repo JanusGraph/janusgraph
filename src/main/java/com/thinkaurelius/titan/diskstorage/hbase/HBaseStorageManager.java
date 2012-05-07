@@ -8,7 +8,6 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableExistsException;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.client.HTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,14 +84,14 @@ public class HBaseStorageManager implements StorageManager {
 		assert null != desc;
 		
 		// Retrieve an object to interact with our now-initialized table
-		HTable table;
-		try {
-			table = new HTable(conf, HBASE_TABLE_NAME);
-		} catch (IOException e) {
-			throw new GraphStorageException(e);
-		}
+//		HTable table;
+//		try {
+//			table = new HTable(conf, HBASE_TABLE_NAME);
+//		} catch (IOException e) {
+//			throw new GraphStorageException(e);
+//		}
 		
-		return new HBaseOrderedKeyColumnValueStore(table, name);
+		return new HBaseOrderedKeyColumnValueStore(conf, HBASE_TABLE_NAME, name);
 	}
 
 	@Override
