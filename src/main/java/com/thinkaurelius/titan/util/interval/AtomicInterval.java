@@ -1,5 +1,7 @@
-package com.thinkaurelius.titan.graphdb.edgequery;
+package com.thinkaurelius.titan.util.interval;
 
+
+import java.util.Set;
 
 /**
  * Defines and interval of attribute values.
@@ -13,7 +15,7 @@ package com.thinkaurelius.titan.graphdb.edgequery;
  * 
  * @param <V> Type of attribute for which the interval is defined.
  */
-public interface Interval<V> {
+public interface AtomicInterval<V> {
 
 	/**
 	 * Returns the start point of the interval
@@ -64,7 +66,20 @@ public interface Interval<V> {
 	 * @return True, if the start point of the interval is inclusive, else false.
 	 */
 	public boolean startInclusive();
-	
+
+    /**
+     * Checks whether this interval has any holes, i.e. point values that are excluded from the interval.
+     *
+     * @return True, if the interval has holes, else false.
+     */
+    public boolean hasHoles();
+
+    /**
+     * Returns the set of holes, i.e. excluded points, for this interval or an empty-set if non exist.
+     *
+     * @return The set of holes, i.e. excluded points, for this interval or an empty-set if non exist.
+     */
+    public Set<V> getHoles();
 	
 	/**
 	 * Checks whether the given object is in the interval.
@@ -76,5 +91,12 @@ public interface Interval<V> {
 	 * @return True, if object is in interval, else false.
 	 */
 	public boolean inInterval(Object obj);
+
+    /**
+     * Intersects the current interval with the given interval in the mathematical sense and returns the result.
+     * @param other Other interval
+     * @return Intersection between intervals or null if the intersection is empty
+     */
+    public AtomicInterval<V> intersect(AtomicInterval<V> other);
 	
 }

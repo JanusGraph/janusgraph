@@ -8,6 +8,12 @@ import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableEdgeIterable;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableEdgeIterator;
+import com.thinkaurelius.titan.util.interval.AtomicInterval;
+import com.thinkaurelius.titan.util.interval.IntervalUtil;
+import com.thinkaurelius.titan.util.interval.PointInterval;
+import com.thinkaurelius.titan.util.interval.Range;
+import com.tinkerpop.blueprints.pgm.Query;
+import com.tinkerpop.blueprints.pgm.Vertex;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -100,17 +106,32 @@ public class AtomicEdgeQuery implements InternalEdgeQuery {
 		return new AtomicEdgeQuery(node).includeHidden();
 	}
 
+    public boolean isAtomic() {
+        return true;
+    }
+
 	/* ---------------------------------------------------------------
 	 * Query Construction
 	 * ---------------------------------------------------------------
 	 */
-    
+
+    public void removeConstraint(EdgeType ptype) {
+        if (constraints==null) return;
+        constraints.remove(ptype.getName());
+    }
+
+    public void removeConstraint(String ptype) {
+        removeConstraint(tx.getEdgeType(ptype));
+    }
+
     private<T> AtomicEdgeQuery withPropertyConstraint(EdgeType ptype,Object value) {
         Preconditions.checkNotNull(ptype);
         if (constraints == null) constraints = new HashMap<String,Object>(5);
+        Preconditions.checkArgument(!constraints.containsKey(ptype.getName()),"Conflicting constraint already exists for property.");
         constraints.put(ptype.getName(), value);
         return this;
     }
+
 	
     @Override
     public<T> AtomicEdgeQuery withConstraint(EdgeType etype,T value) {
@@ -125,23 +146,47 @@ public class AtomicEdgeQuery implements InternalEdgeQuery {
         }
     }
 
+
     @Override
     public<T> AtomicEdgeQuery withConstraint(String ptype, T value) {
         if (!tx.containsEdgeType(ptype)) throw new IllegalArgumentException("Unknown property type: " + ptype);
-        return withConstraint(tx.getPropertyType(ptype),value);
+        return withConstraint(tx.getEdgeType(ptype),value);
     }
 
     @Override
-    public<T> EdgeQuery withPropertyIn(PropertyType ptype, Comparable<T> start, Comparable<T> end) {
+    public<T extends Comparable<T>> EdgeQuery withPropertyIn(PropertyType ptype, T start, T end) {
         Preconditions.checkNotNull(start);
         Preconditions.checkNotNull(end);
+        Preconditions.checkNotNull(ptype);
         return withPropertyConstraint(ptype, new Range(start, end));
     }
 
     @Override
-    public<T> EdgeQuery withPropertyIn(String ptype, Comparable<T> start, Comparable<T> end) {
+    public<T extends Comparable<T>> EdgeQuery withPropertyIn(String ptype, T start, T end) {
         if (!tx.containsEdgeType(ptype)) throw new IllegalArgumentException("Unknown property type: " + ptype);
         return withPropertyIn(tx.getPropertyType(ptype), start, end);
+    }
+    
+    public<T extends Comparable<T>> EdgeQuery withConstraint(String ptype, T value, Query.Compare compare) {
+        if (!tx.containsEdgeType(ptype)) throw new IllegalArgumentException("Unknown property type: " + ptype);
+        return withConstraint(tx.getPropertyType(ptype),value,compare);
+    }
+
+    public<T extends Comparable<T>> EdgeQuery withConstraint(PropertyType ptype, T value, Query.Compare compare) {
+        Preconditions.checkNotNull(value);
+        Preconditions.checkNotNull(compare);
+        Preconditions.checkNotNull(ptype);
+        AtomicInterval<T> interval = IntervalUtil.getInterval(value,compare);
+
+        if (constraints == null) constraints = new HashMap<String,Object>(5);
+        if (constraints.containsKey(ptype.getName())) {
+            Object o = constraints.get(ptype.getName());
+            assert (o instanceof AtomicInterval);
+            interval = ((AtomicInterval<T>)o).intersect(interval);
+            Preconditions.checkNotNull(interval,"Additional constraint leads to empty intersection and is therefore infeasible!");
+        }
+        constraints.put(ptype.getName(), interval);
+        return this;
     }
 
     @Override
@@ -420,6 +465,7 @@ public class AtomicEdgeQuery implements InternalEdgeQuery {
 
     private boolean retrieveInMemory() {
         if (inMemoryRetrieval) return true;
+        else if (!EdgeQueryUtil.queryCoveredByDiskIndexes(this)) return true;
         else {
             if (node!=null) {
                 if (node.isLoaded() && node.hasID()) return false;

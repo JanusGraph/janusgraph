@@ -14,6 +14,8 @@ public interface InternalEdgeQuery extends EdgeQuery {
 	
 	InternalEdgeQuery copy();
 
+    public boolean isAtomic();
+
 
 
     public long getNodeID();

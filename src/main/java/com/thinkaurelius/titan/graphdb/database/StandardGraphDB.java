@@ -26,7 +26,7 @@ import com.thinkaurelius.titan.graphdb.database.util.EdgeTypeSignature;
 import com.thinkaurelius.titan.graphdb.database.util.LimitTracker;
 import com.thinkaurelius.titan.graphdb.edgequery.EdgeQueryUtil;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
-import com.thinkaurelius.titan.graphdb.edgequery.Interval;
+import com.thinkaurelius.titan.util.interval.AtomicInterval;
 import com.thinkaurelius.titan.graphdb.edgequery.AtomicEdgeQuery;
 import com.thinkaurelius.titan.graphdb.edges.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
@@ -165,7 +165,7 @@ public class StandardGraphDB implements GraphDB {
 
 	@Override
 	public AbstractLongList getRawNeighborhood(InternalEdgeQuery query, GraphTx tx) {
-        Preconditions.checkArgument(EdgeQueryUtil.allConstraintsKeyed(query),
+        Preconditions.checkArgument(EdgeQueryUtil.queryCoveredByDiskIndexes(query),
                 "Raw retrieval is currently does not support in-memory filtering. To be implemented!");
 		List<Entry> entries = queryForEntries(query,tx.getTxHandle());
 		
@@ -337,6 +337,7 @@ public class StandardGraphDB implements GraphDB {
     }
     
 	private List<Entry> queryForEntries(InternalEdgeQuery query, TransactionHandle txh) {
+        Preconditions.checkArgument(query.isAtomic());
 		ByteBuffer key = IDHandler.getKey(query.getNodeID());
 		List<Entry> entries = null;
 		LimitTracker limit = new LimitTracker(query);
@@ -347,7 +348,7 @@ public class StandardGraphDB implements GraphDB {
 			EdgeType et = query.getEdgeTypeCondition();
 			if (!et.isNew()) { //Result set must be empty if EdgeType is new
                 ArrayList<Object> applicableConstraints = null;
-                boolean isInterval = false;
+                boolean isRange = false;
                 if (query.hasConstraints()) {
                     assert et.getCategory()==EdgeCategory.Labeled;
                     EdgeTypeDefinition def = ((InternalEdgeType)et).getDefinition();
@@ -357,11 +358,11 @@ public class StandardGraphDB implements GraphDB {
                     for (int i=0;i<keysig.length;i++) {
                         if (constraints.containsKey(keysig[i])) {
                             Object iv = constraints.get(keysig[i]);
-                            if (iv!=null && (iv instanceof Interval) && ((Interval)iv).isRange()) {
-                                isInterval=true;
+                            applicableConstraints.add(iv);
+                            if (iv!=null && (iv instanceof AtomicInterval) && ((AtomicInterval)iv).isRange()) {
+                                isRange=true;
                                 break;
                             }
-                            applicableConstraints.add(iv);
                         } else break;
                     }
                     if (applicableConstraints.isEmpty()) applicableConstraints=null;
@@ -374,39 +375,55 @@ public class StandardGraphDB implements GraphDB {
 
                             DataOutput start = serializer.getDataOutput(defaultOutputCapacity, true);
                             DataOutput end = null;
-                            if (isInterval) end = serializer.getDataOutput(defaultOutputCapacity, true);
+                            if (isRange) end = serializer.getDataOutput(defaultOutputCapacity, true);
                             
                             IDHandler.writeEdgeType(start,et.getID(),dirID,idManager);
-                            if (isInterval) IDHandler.writeEdgeType(end,et.getID(),dirID,idManager);
+                            if (isRange) IDHandler.writeEdgeType(end,et.getID(),dirID,idManager);
                             
                             //Write all applicable key constraints
                             for (Object iv : applicableConstraints) {
-                                if (iv instanceof Interval) {
-                                    Interval interval = (Interval)iv;
+                                if (iv instanceof AtomicInterval) {
+                                    AtomicInterval interval = (AtomicInterval)iv;
                                     if (interval.isPoint()) {
                                         start.writeObject(interval.getStartPoint());
-                                        if (isInterval) end.writeObject(interval.getStartPoint());
+                                        if (isRange) end.writeObject(interval.getStartPoint());
                                     } else {
+                                        assert isRange;
                                         assert interval.isRange();
-                                        assert interval.getStartPoint()!=null;
-                                        assert interval.getEndPoint()!=null;
-                                        assert interval.startInclusive();
-                                        assert !interval.endInclusive();
-                                        start.writeObject(interval.getStartPoint());
-                                        end.writeObject(interval.getEndPoint());
+
+                                        ByteBuffer startColumn, endColumn;
+                                        
+                                        if (interval.getStartPoint()!=null) {
+                                            start.writeObject(interval.getStartPoint());
+                                            startColumn = start.getByteBuffer();
+                                            if (!interval.startInclusive())
+                                                startColumn = ByteBufferUtil.nextBiggerBuffer(startColumn);
+                                        } else {
+                                            assert interval.startInclusive();
+                                            startColumn = start.getByteBuffer();
+                                        }
+                                        
+                                        if (interval.getEndPoint()!=null) {
+                                            end.writeObject(interval.getEndPoint());
+                                        } else {
+                                            assert interval.endInclusive();
+                                        }
+                                        endColumn = end.getByteBuffer();
+                                        if (interval.endInclusive())
+                                            endColumn = ByteBufferUtil.nextBiggerBuffer(endColumn);
+
+                                        entries = appendResults(key,start.getByteBuffer(),end.getByteBuffer(),entries,limit,txh);
+                                        break; //redundant, this must be the last iteration because its a range
                                     }
                                 } else {
                                     assert iv instanceof Node;
                                     long id = 0;
                                     if (iv!=null) id = ((Node)iv).getID();
                                     VariableLong.writePositive(start,id);
-                                    if (isInterval) VariableLong.writePositive(end,id);
+                                    if (isRange) VariableLong.writePositive(end,id);
                                 }
                             }
-                            
-                            if (isInterval) entries = appendResults(key,start.getByteBuffer(),end.getByteBuffer(),entries,limit,txh);
-                            else entries = appendResults(key,start.getByteBuffer(),entries,limit,txh);
-
+                            if (!isRange) entries = appendResults(key,start.getByteBuffer(),entries,limit,txh);
                         } else {
                             ByteBuffer columnStart = IDHandler.getEdgeType(et.getID(),dirID,idManager);
                             entries = appendResults(key,columnStart,entries,limit,txh);
@@ -446,8 +463,8 @@ public class StandardGraphDB implements GraphDB {
                                       List<Entry> entries, LimitTracker limit, TransactionHandle txh) {
         return appendResults(key,columnPrefix,ByteBufferUtil.nextBiggerBuffer(columnPrefix),entries,limit,txh);
     }
-    
-	private List<Entry> appendResults(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd,
+
+    private List<Entry> appendResults(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd,
                                       List<Entry> entries, LimitTracker limit, TransactionHandle txh) {
 		if (limit.limitExhausted()) return null;
 		List<Entry> results = null;

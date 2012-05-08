@@ -1,7 +1,12 @@
-package com.thinkaurelius.titan.graphdb.edgequery;
+package com.thinkaurelius.titan.util.interval;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 /**
- * A PointInterval is a {@link Interval} with identical start and end points.
+ * A PointInterval is a {@link AtomicInterval} with identical start and end points.
  * 
  * In other words, the attribute values defining the end points of the interval are identical and both are inclusive.
  * 
@@ -10,7 +15,7 @@ package com.thinkaurelius.titan.graphdb.edgequery;
  * 
  * @param <V> Type of attribute for which the point-interval is defined.
  */
-class PointInterval<V> implements Interval<V> {
+public class PointInterval<V> implements AtomicInterval<V> {
 
 	private final V value;
 	
@@ -20,6 +25,7 @@ class PointInterval<V> implements Interval<V> {
 	 * @param value Attribute defining the point-interval
 	 */
 	public PointInterval(V value) {
+        Preconditions.checkNotNull(value);
 		this.value=value;
 	}
 	
@@ -52,8 +58,18 @@ class PointInterval<V> implements Interval<V> {
 	public boolean startInclusive() {
 		return true;
 	}
-	
-	/**
+
+    @Override
+    public boolean hasHoles() {
+        return false;
+    }
+
+    @Override
+    public Set<V> getHoles() {
+        return ImmutableSet.of();
+    }
+
+    /**
 	 * Constructs a new PointInterval for the given value
 	 * 
 	 * @param <V> Type of PointInterval
@@ -68,5 +84,12 @@ class PointInterval<V> implements Interval<V> {
 	public boolean inInterval(Object obj) {
 		return value.equals(obj);
 	}
+
+    @Override
+    public AtomicInterval<V> intersect(AtomicInterval<V> other) {
+        if (other.inInterval(value)) return this;
+        else return null;
+    }
+
 
 }

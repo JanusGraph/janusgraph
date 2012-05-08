@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.Property;
 import com.thinkaurelius.titan.core.PropertyType;
 import com.thinkaurelius.titan.graphdb.edgetypes.InternalEdgeType;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
+import com.thinkaurelius.titan.util.interval.AtomicInterval;
 
 import java.util.Map;
 
@@ -20,8 +21,14 @@ public class EdgeQueryUtil {
 					getPropertyIterator(),null);
 	}
 
-
-    public static boolean allConstraintsKeyed(InternalEdgeQuery query) {
+    /**
+     * Checks whether the query can be answered by disk indexes alone or whether further processing in memory is necessary
+     * to determine the exact result set.
+     *
+     * @param query Query to check
+     * @return
+     */
+    public static boolean queryCoveredByDiskIndexes(InternalEdgeQuery query) {
         if (!query.hasConstraints()) return true;
         if (!query.hasEdgeTypeGroupCondition()) return false;
         String[] keysig = ((InternalEdgeType)query.getEdgeTypeCondition()).getDefinition().getKeySignature();
@@ -31,7 +38,10 @@ public class EdgeQueryUtil {
             if (!constraints.containsKey(key)) break;
             Object o = constraints.get(key);
             num++;
-            if (o!=null && (o instanceof Interval) && ((Interval) o).isRange()) break;
+            if (o!=null && (o instanceof AtomicInterval) && ((AtomicInterval) o).isRange()) {
+                if (((AtomicInterval)o).hasHoles()) num--; //Intervals with holes have to be filtered in memory
+                break;
+            }
         }
         assert num<=constraints.size();
         return num==constraints.size();

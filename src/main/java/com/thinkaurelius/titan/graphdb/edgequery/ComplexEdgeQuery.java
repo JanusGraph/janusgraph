@@ -75,7 +75,7 @@ public class ComplexEdgeQuery extends AtomicEdgeQuery {
       * ---------------------------------------------------------------
       */
 
-    boolean isAtomic() {
+    public boolean isAtomic() {
         return types == null;
     }
 

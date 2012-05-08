@@ -5,7 +5,6 @@ import com.thinkaurelius.titan.core.GraphTransaction;
 import com.thinkaurelius.titan.core.PropertyType;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
-import com.thinkaurelius.titan.graphdb.edgequery.Interval;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.edges.factory.EdgeLoader;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
@@ -120,7 +119,7 @@ public interface GraphTx extends GraphTransaction {
      * @param attribute Attribute value for which to retrieve nodes
      * @return	All ids for nodes which have an incident property of the given type with the specified attribute value
      * @throws	IllegalArgumentException if the property type is not indexed.
-     * @see com.thinkaurelius.titan.graphdb.edgequery.Interval
+     * @see com.thinkaurelius.titan.util.interval.AtomicInterval
      */
     public long[] getNodeIDsByAttributeFromDisk(PropertyType type, Object attribute);
 

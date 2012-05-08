@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.core.Relationship;
 import com.thinkaurelius.titan.exceptions.QueryException;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
-import com.thinkaurelius.titan.graphdb.edgequery.Interval;
+import com.thinkaurelius.titan.util.interval.AtomicInterval;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 
 import java.util.Map;
@@ -55,8 +55,8 @@ public class NodeUtil {
                                     assert ie.isProperty();
                                     Object attribute = ((Property)ie).getAttribute();
                                     assert attribute!=null;
-                                    assert o instanceof Interval;
-                                    Interval iv = (Interval)o;
+                                    assert o instanceof AtomicInterval;
+                                    AtomicInterval iv = (AtomicInterval)o;
                                     if (iv.isPoint() && iv.getStartPoint().equals(attribute))
                                         count++;
                                     else {

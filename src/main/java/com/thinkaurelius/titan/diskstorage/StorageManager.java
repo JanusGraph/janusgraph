@@ -32,7 +32,9 @@ public interface StorageManager {
 	 * @throws GraphStorageException
 	 */
 	public OrderedKeyColumnValueStore openOrderedDatabase(String name) throws GraphStorageException;
-		
+
+
+
 	/**
 	 * Returns a transaction handle for a new transaction.
 	 * 

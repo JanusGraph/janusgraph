@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 
 import java.nio.ByteBuffer;
 
-public class ByteBufferUtil {
+public class  ByteBufferUtil {
 	
 	public static final int longSize = 8;
 
@@ -40,6 +40,20 @@ public class ByteBufferUtil {
         next.position(0);
         next.limit(len);
         return next;
+    }
+    
+    public static final ByteBuffer zeroByteBuffer(int len) {
+        ByteBuffer res = ByteBuffer.allocate(len);
+        for (int i=0;i<len;i++) res.put((byte)0);
+        res.flip();
+        return res;
+    }
+
+    public static final ByteBuffer oneByteBuffer(int len) {
+        ByteBuffer res = ByteBuffer.allocate(len);
+        for (int i=0;i<len;i++) res.put((byte)-1);
+        res.flip();
+        return res;
     }
 	
 	/**

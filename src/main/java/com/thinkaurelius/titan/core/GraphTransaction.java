@@ -1,8 +1,6 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.graphdb.edgequery.Interval;
-
 import java.util.Set;
 
 /***

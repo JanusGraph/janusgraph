@@ -1,9 +1,11 @@
-package com.thinkaurelius.titan.graphdb.edgequery;
+package com.thinkaurelius.titan.util.interval;
 
-import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 /**
- * A Range is a proper {@link Interval} with different start and end points.
+ * A Range is a proper {@link AtomicInterval} with different start and end points.
  * 
  * Note that a range could also be defined with identical bounds. However, in that case it is preferable to use
  * {@link PointInterval} for efficiency.
@@ -13,7 +15,7 @@ import com.google.common.base.Preconditions;
  * 
  * @param <V> Type of attribute for which the range is defined.
  */
-class Range<V extends Comparable<V>> implements Interval<V> {
+public class Range<V extends Comparable<V>> implements AtomicInterval<V> {
 
 	private final V start;
 	private final V end;
@@ -62,12 +64,10 @@ class Range<V extends Comparable<V>> implements Interval<V> {
 	 * @param endInclusive Whether the end point is inclusive or not
 	 */
 	public Range(V start, V end, boolean startInclusive, boolean endInclusive) {
-        Preconditions.checkNotNull(start);
-        Preconditions.checkNotNull(end);
 		this.start=start;
 		this.end=end;
-		this.startInclusive=startInclusive;
-		this.endInclusive = endInclusive;
+		this.startInclusive= start==null?true:startInclusive;
+		this.endInclusive = end==null?true:endInclusive;
 	}
 	
 	@Override
@@ -100,6 +100,16 @@ class Range<V extends Comparable<V>> implements Interval<V> {
 		return startInclusive;
 	}
 
+    @Override
+    public boolean hasHoles() {
+        return false;
+    }
+
+    @Override
+    public Set<V> getHoles() {
+        return ImmutableSet.of();
+    }
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean inInterval(Object obj) {
@@ -113,4 +123,53 @@ class Range<V extends Comparable<V>> implements Interval<V> {
 		else return true;
 	}
 
+    @Override
+    public AtomicInterval<V> intersect(AtomicInterval<V> other) {
+        if (other.isPoint()) {
+            return other.intersect(this);
+        } else {
+            assert other.isRange();
+            Range<V> o = (Range<V>)other;
+            V nstart, nend;
+            boolean sInc, eInc;
+            if (start==null) {
+                nstart = o.start; sInc = o.startInclusive;
+            } else if (o.start==null) {
+                nstart = start; sInc = startInclusive;
+            } else {
+                int comp = start.compareTo(o.start);
+                if (comp<0) {
+                    nstart = o.start;
+                    sInc = o.startInclusive;
+                } else if (comp==0) {
+                    nstart = start;
+                    sInc = startInclusive && o.startInclusive;
+                } else { //comp>0
+                    nstart = start;
+                    sInc = startInclusive;
+                }
+            }
+
+            if (end==null) {
+                nend = o.end; eInc = o.endInclusive;
+            } else if (o.end==null) {
+                nend = end; eInc = endInclusive;
+            } else {
+                int comp = end.compareTo(o.end);
+                if (comp<0) {
+                    nend = end;
+                    eInc = endInclusive;
+                } else if (comp==0) {
+                    nend = end;
+                    eInc = endInclusive && o.endInclusive;
+                } else { //comp>0
+                    nend = o.end;
+                    eInc = o.endInclusive;
+                }
+            }
+            return new Range(nstart,nend,sInc,eInc);
+        }
+    }
+
+    
 }

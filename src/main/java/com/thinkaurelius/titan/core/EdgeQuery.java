@@ -90,7 +90,7 @@ public interface EdgeQuery {
      * @param end Property value defining the end of the interval (exclusive)
      * @return This edge query
      */
-    public<T> EdgeQuery withPropertyIn(PropertyType ptype, Comparable<T> start, Comparable<T> end);
+    public<T extends Comparable<T>> EdgeQuery withPropertyIn(String ptype, T start, T end);
 
     /**
      * Defines this edge query to query only for edges that have an attached (i.e. incident)
@@ -101,7 +101,7 @@ public interface EdgeQuery {
      * @param end Property value defining the end of the interval (exclusive)
      * @return This edge query
      */
-    public<T> EdgeQuery withPropertyIn(String ptype, Comparable<T> start, Comparable<T> end);
+    public<T extends Comparable<T>> EdgeQuery withPropertyIn(PropertyType ptype, T start, T end);
 
 	/**
 	 * Defines this edge query to query only for modifiable edges.

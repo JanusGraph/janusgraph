@@ -190,7 +190,7 @@ public abstract class KeyValueStoreTest {
 		close();
 		open();
 //		for (int i : deleted) {
-//			log.debug("Interval for : {}",i);
+//			log.debug("AtomicInterval for : {}",i);
 //			assertFalse(store.containsInInterval(getBuffer(i), getBuffer(i+1), tx));
 //			if (i+1<numKeys) {
 //				assertTrue(store.containsInInterval(getBuffer(i), getBuffer(i+2), tx));
