@@ -282,7 +282,7 @@ public abstract class KeyColumnValueStoreTest {
 //	public void getSliceNoLimit() throws Exception {
 //		CassandraThriftStorageManager manager = new CassandraThriftStorageManager(keyspace);
 //		CassandraThriftOrderedKeyColumnValueStore store =
-//			manager.openOrderedDatabase(columnFamily);
+//			manager.openDatabase(columnFamily);
 //		
 //		TransactionHandle txn = manager.beginTransaction();
 //		KeyColumnValueStoreUtil.insert(store, txn, "key0", "col0", "val0");

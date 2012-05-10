@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.database.idassigner.local;
+package com.thinkaurelius.titan.graphdb.database.idassigner;
 
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.EdgeType;
 import com.thinkaurelius.titan.core.PropertyType;
 import com.thinkaurelius.titan.core.RelationshipType;
-import com.thinkaurelius.titan.graphdb.database.idassigner.NodeIDAssigner;
-import com.thinkaurelius.titan.graphdb.database.serialize.ObjectDiskStorage;
+import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
@@ -15,32 +15,36 @@ import java.util.Random;
 
 public class SimpleNodeIDAssigner implements NodeIDAssigner {
 	
-	private static final String nodeCounterFile = "nodeIDcounter";
-	private static final String edgeCounterFile = "edgeIDcounter";
-	private static final String edgetypeCounterFile = "edgetypeIDcounter";
-
-	
-	private final LocalID node;
-	private final LocalID edge;
-	private final LocalID edgeType;
+    private static final int EDGETYPE_BLOCK_SIZE = 20;
+    
+	private final IDPool node;
+	private final IDPool edge;
+	private final IDPool edgeType;
 
 	private final IDManager idManager;
 	private final long maxPartitionID;
+    private final int offsetBits;
+    private final int offset;
 	
 	private final Random randomSource;
 	
 	
-	public SimpleNodeIDAssigner(IDManager idManager, int inserterID, int maxNoInserter,
-                                ObjectDiskStorage objectStore) {
+	public SimpleNodeIDAssigner(IDManager idManager, StorageManager storage, int randomBits, int blockSize) {
+        Preconditions.checkNotNull(idManager);
+        Preconditions.checkNotNull(storage);
+        Preconditions.checkArgument(randomBits>=0 && randomBits<=8,"RandomBits must be in [0,8]");
+        
 		this.idManager = idManager;
-		int max = maxNoInserter;
-		int inserter = inserterID;
-		maxPartitionID = idManager.getMaxPartitionID();
+		this.maxPartitionID = idManager.getMaxPartitionID();
+        this.offsetBits = randomBits;
+        this.randomSource = new Random();
+        this.offset = randomSource.nextInt((1<<randomBits));
 
-		node = new LocalID(idManager.getMaxNodeID(),max,inserter,objectStore,nodeCounterFile);
-		edge = new LocalID(idManager.getMaxNodeID(),max,inserter,objectStore,edgeCounterFile);
-		edgeType = new LocalID(idManager.getMaxNodeID(),max,inserter,objectStore,edgetypeCounterFile);
-		randomSource = new Random();
+        
+		node = new StandardIDPool(storage,IDManager.IDType.Node.addPadding(offset),blockSize);
+		edge = new StandardIDPool(storage,IDManager.IDType.Edge.addPadding(offset),blockSize*5);
+		edgeType = new StandardIDPool(storage,IDManager.IDType.EdgeType.addPadding(offset),EDGETYPE_BLOCK_SIZE);
+
 	}
 
     @Override
@@ -86,22 +90,24 @@ public class SimpleNodeIDAssigner implements NodeIDAssigner {
     }
 
 	private long nextEdgeID() {
-		return idManager.getEdgeID(edge.nextID());
+		return idManager.getEdgeID(padID(edge.nextID()));
 	}
 
 	private long nextNodeID() {
-		return idManager.getNodeID(node.nextID(), getPartitionID());
+		return idManager.getNodeID(padID(node.nextID()), getPartitionID());
 	}
 
 	public long nextPropertyTypeID(long groupid) {
-		return idManager.getPropertyTypeID(edgeType.nextID(), groupid, getPartitionID());
+		return idManager.getPropertyTypeID(padID(edgeType.nextID()), groupid, getPartitionID());
 	}
 
 	private long nextRelationshipTypeID(long groupid) {
-		return idManager.getRelationshipTypeID(edgeType.nextID(), groupid, getPartitionID());
+		return idManager.getRelationshipTypeID(padID(edgeType.nextID()), groupid, getPartitionID());
 	}
 
-
+    private long padID(long id) {
+        return (id<<offsetBits) + offset;
+    }
 	
 	
 	

@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.test;
 
-import com.thinkaurelius.titan.configuration.CassandraStorageConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

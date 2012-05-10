@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
-import com.thinkaurelius.titan.diskstorage.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
@@ -37,29 +36,23 @@ public class KeyValueStorageManagerAdapter implements StorageManager {
 			}
 		} else keyLengths.put(name, Integer.valueOf(length));
 	}
-	
-	public KeyColumnValueStore openDatabase(String name, int keyLength) throws GraphStorageException {
-		verifyKeyLength(name,keyLength);
-		return new KeyValueStoreAdapter(manager.openDatabase(name),keyLength);
-	}
-	
-	@Override
-	public KeyColumnValueStore openDatabase(String name) throws GraphStorageException {
-		return openDatabase(name,KeyValueStoreAdapter.variableKeyLength);
-	}
-	
-	public OrderedKeyColumnValueStore openOrderedDatabase(String name, int keyLength)
+
+	public OrderedKeyColumnValueStore openDatabase(String name, int keyLength)
 			throws GraphStorageException {
 		verifyKeyLength(name,keyLength);
-		return new OrderedKeyValueStoreAdapter(manager.openOrderedDatabase(name),keyLength);
+		return new OrderedKeyValueStoreAdapter(manager.openDatabase(name),keyLength);
 	}
 
 	@Override
-	public OrderedKeyColumnValueStore openOrderedDatabase(String name)
+	public OrderedKeyColumnValueStore openDatabase(String name)
 			throws GraphStorageException {
-		return openOrderedDatabase(name,KeyValueStoreAdapter.variableKeyLength);
+		return openDatabase(name, KeyValueStoreAdapter.variableKeyLength);
 	}
 
-	
-	
+    @Override
+    public long[] getIDBlock(int partition, int blockSize) {
+        return manager.getIDBlock(partition,blockSize);
+    }
+
+
 }

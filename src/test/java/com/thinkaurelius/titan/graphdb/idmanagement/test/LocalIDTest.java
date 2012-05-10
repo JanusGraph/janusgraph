@@ -1,10 +1,8 @@
 package com.thinkaurelius.titan.graphdb.idmanagement.test;
 
 import com.thinkaurelius.titan.DiskgraphTest;
-import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.idassigner.local.IndividualIDCounter;
-import com.thinkaurelius.titan.graphdb.database.idassigner.local.LocalID;
-import com.thinkaurelius.titan.graphdb.database.serialize.ObjectDiskStorage;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDPool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +41,7 @@ public class LocalIDTest {
 	public void constructLocalID(int inserterOff, int inserterMinus, int inserter) {
 		setUp();
 		long maxNoInserter = (1<<inserterOff)-inserterMinus;
-		IndividualIDCounter id = new LocalID(maxID,maxNoInserter,inserter,objStore,configFile);
+		IDPool id = new LocalID(maxID,maxNoInserter,inserter,objStore,configFile);
 		int max = 1<<(bitoffset-inserterOff);
 		for (int i=1;i<max;i++) {
 			assertTrue(id.hasNext());
@@ -54,7 +52,7 @@ public class LocalIDTest {
 	
 	@Test
 	public void testLocalIDRecall() {
-		IndividualIDCounter id = new LocalID(maxID,1,0,objStore,configFile);
+		IDPool id = new LocalID(maxID,1,0,objStore,configFile);
 		
 		for (int i=1;i<1000;i++) {
 			assertEquals(i,id.nextID());

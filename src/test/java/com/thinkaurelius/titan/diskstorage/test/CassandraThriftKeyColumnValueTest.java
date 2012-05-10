@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.test;
 
-import com.thinkaurelius.titan.configuration.CassandraStorageConfiguration;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
 
 public class CassandraThriftKeyColumnValueTest extends KeyColumnValueStoreTest {
@@ -30,7 +27,7 @@ public class CassandraThriftKeyColumnValueTest extends KeyColumnValueStoreTest {
 		sc.getStorageManager(false).dropKeyspace(keyspace);
 		sc.setThriftTimeoutMS(10 * 1000);
 		manager = sc.getStorageManager(false);
-		store = manager.openOrderedDatabase(columnFamily);
+		store = manager.openDatabase(columnFamily);
 		tx = manager.beginTransaction();
 	}
 	

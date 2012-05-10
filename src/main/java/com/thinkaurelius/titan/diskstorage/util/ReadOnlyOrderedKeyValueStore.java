@@ -24,16 +24,14 @@ public class ReadOnlyOrderedKeyValueStore extends ReadOnlyKeyValueStore implemen
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, boolean startInclusive, boolean endInclusive,
-			int limit, TransactionHandle txh) {
-		return store.getSlice(key, columnStart, columnEnd, startInclusive, endInclusive, limit, txh);
+			ByteBuffer columnEnd, int limit, TransactionHandle txh) {
+		return store.getSlice(key, columnStart, columnEnd, limit, txh);
 	}
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, boolean startInclusive, boolean endInclusive,
-			TransactionHandle txh) {
-		return store.getSlice(key, columnStart, columnEnd, startInclusive, endInclusive, txh);
+			ByteBuffer columnEnd, TransactionHandle txh) {
+		return store.getSlice(key, columnStart, columnEnd, txh);
 	}
 	
 	

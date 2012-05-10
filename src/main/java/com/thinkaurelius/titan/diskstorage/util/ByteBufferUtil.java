@@ -7,7 +7,15 @@ import java.nio.ByteBuffer;
 public class  ByteBufferUtil {
 	
 	public static final int longSize = 8;
+    public static final int intSize = 4;
 
+    public static final ByteBuffer getIntByteBuffer(int id) {
+        ByteBuffer buffer = ByteBuffer.allocate(intSize);
+        buffer.putInt(id);
+        buffer.flip();
+        return buffer;
+    }
+    
 	public static final ByteBuffer getLongByteBuffer(long id) {
 		ByteBuffer buffer = ByteBuffer.allocate(longSize);
 		buffer.putLong(id);

@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.test;
 
-import com.thinkaurelius.titan.configuration.CassandraStorageConfiguration;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.diskstorage.test.CassandraLocalhostHelper;
 import org.junit.AfterClass;

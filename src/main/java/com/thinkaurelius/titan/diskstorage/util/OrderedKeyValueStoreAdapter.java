@@ -27,20 +27,20 @@ public class OrderedKeyValueStoreAdapter extends KeyValueStoreAdapter implements
 	@Override
 	public boolean containsKey(ByteBuffer key, TransactionHandle txh) {
 		ContainsSelector select = new ContainsSelector(key);
-		store.getSlice(key, ByteBufferUtil.nextBiggerBuffer(key), true, false, select, txh);
+		store.getSlice(key, ByteBufferUtil.nextBiggerBuffer(key), select, txh);
 		return select.contains();
 	}
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, 
-			boolean startInclusive, boolean endInclusive, int limit, TransactionHandle txh) {
-		return convert(store.getSlice(concatenate(key,columnStart), concatenate(key,columnEnd), startInclusive, endInclusive, limit, txh));
+			int limit, TransactionHandle txh) {
+		return convert(store.getSlice(concatenate(key,columnStart), concatenate(key,columnEnd), limit, txh));
 	}
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, 
-			boolean startInclusive, boolean endInclusive, TransactionHandle txh) {
-		return convert(store.getSlice(concatenate(key,columnStart), concatenate(key,columnEnd), startInclusive, endInclusive, txh));
+			TransactionHandle txh) {
+		return convert(store.getSlice(concatenate(key,columnStart), concatenate(key,columnEnd), txh));
 	}
 		
 	

@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.traversal;
 
-import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.Node;
 import com.thinkaurelius.titan.core.Relationship;
 import edu.uci.ics.jung.algorithms.scoring.BetweennessCentrality;

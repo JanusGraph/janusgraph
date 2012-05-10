@@ -152,8 +152,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, boolean startInclusive, boolean endInclusive,
-			int limit, TransactionHandle txh) {
+			ByteBuffer columnEnd, int limit, TransactionHandle txh) {
 
 		byte[] colStartBytes = toArray(columnStart);
 		byte[] colEndBytes = toArray(columnEnd);
@@ -176,7 +175,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 		// not going to scale.  The long-term solution is probably to
 		// reimplement ColumnCountGetFilter in such a way that it won't
 		// drop the final row.
-		Filter colRangeFilter = new ColumnRangeFilter(colStartBytes, startInclusive, colEndBytes, endInclusive);
+		Filter colRangeFilter = new ColumnRangeFilter(colStartBytes, true, colEndBytes, false);
 		List<Entry> ents = getHelper(key, colRangeFilter);
 		
 		if (ents.size() <= limit)
@@ -192,13 +191,12 @@ public class HBaseOrderedKeyColumnValueStore implements
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, boolean startInclusive, boolean endInclusive,
-			TransactionHandle txh) {
+			ByteBuffer columnEnd, TransactionHandle txh) {
 
 		byte[] colStartBytes = toArray(columnStart);
 		byte[] colEndBytes = toArray(columnEnd);
 		
-		Filter colRangeFilter = new ColumnRangeFilter(colStartBytes, startInclusive, colEndBytes, endInclusive);
+		Filter colRangeFilter = new ColumnRangeFilter(colStartBytes, true, colEndBytes, false);
 
 		return getHelper(key, colRangeFilter);
 	}

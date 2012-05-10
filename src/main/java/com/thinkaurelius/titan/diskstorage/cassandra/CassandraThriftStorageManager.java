@@ -1,36 +1,95 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
-import com.thinkaurelius.titan.configuration.CassandraStorageConfiguration;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
+import com.thinkaurelius.titan.diskstorage.util.LocalIDManager;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import org.apache.cassandra.thrift.*;
+import org.apache.commons.configuration.Configuration;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY;
+
 public class CassandraThriftStorageManager implements StorageManager {
 
-	private final String keyspace; // convenience copy of sc.getKeyspace()
+    private static final Logger logger =
+            LoggerFactory.getLogger(CassandraThriftStorageManager.class);
+    
+    private static final String PROP_KEYSPACE = "keyspace";
+    private static final String PROP_HOSTNAME = "hostname";
+    private static final String PROP_PORT = "port";
+    private static final String PROP_SELF_HOSTNAME = "selfHostname";
+    private static final String PROP_TIMEOUT = "thrift_timeout";
+
+    /**
+     * Default name for the Cassandra keyspace
+     * <p>
+     * Value = {@value}
+     */
+    public static final String DEFAULT_KEYSPACE = "titantest00";
+
+    /**
+     * Default hostname at which to attempt Cassandra Thrift connection.
+     * <p>
+     * Value = {@value}
+     */
+    public static final String DEFAULT_HOSTNAME = null;
+
+    /**
+     * Default canonical hostname of the local machine.
+     * <p>
+     * Value = {@value}
+     */
+    public static final String DEFAULT_SELF_HOSTNAME = null;
+
+    /**
+     * Default timeout for Thrift TSocket objects used to
+     * connect to the Cassandra cluster.
+     * <p>
+     * Value = {@value}
+     */
+    public static final int DEFAULT_THRIFT_TIMEOUT_MS = 10000;
+
+    /**
+     * Default port at which to attempt Cassandra Thrift connection.
+     * <p>
+     * Value = {@value}
+     */
+    public static final int DEFAULT_PORT = 9160;
+
+	private final String keyspace;
 	
 	private final UncheckedGenericKeyedObjectPool
 			<String, CTConnection> pool;
+
+    private final LocalIDManager idmanager;
+
 	
-	private static final Logger logger =
-		LoggerFactory.getLogger(CassandraThriftStorageManager.class);
-	
-	public CassandraThriftStorageManager(CassandraStorageConfiguration sc) {
-		this.keyspace = sc.getKeyspace();
+	public CassandraThriftStorageManager(Configuration config) {
+		this.keyspace = config.getString(PROP_KEYSPACE,DEFAULT_KEYSPACE);
 		
 		this.pool = CTConnectionPool.getPool(
-				sc.getRuntimeHostname(),
-				sc.getPort(),
-				sc.getThriftTimeoutMS());
+				interpretHostname(config.getString(PROP_HOSTNAME,DEFAULT_HOSTNAME)),
+				config.getInt(PROP_PORT,DEFAULT_PORT),
+				config.getInt(PROP_TIMEOUT,DEFAULT_THRIFT_TIMEOUT_MS));
+        idmanager = new LocalIDManager(config.getString(STORAGE_DIRECTORY_KEY) + File.separator + LocalIDManager.DEFAULT_NAME);
 	}
+
+    @Override
+    public long[] getIDBlock(int partition, int blockSize) {
+        return idmanager.getIDBlock(partition,blockSize);
+    }
+
 
 	@Override
 	public TransactionHandle beginTransaction() {
@@ -39,16 +98,16 @@ public class CassandraThriftStorageManager implements StorageManager {
 
 	@Override
 	public void close() {
-		// Do nothing
+		try {
+            pool.close();
+        } catch (Exception e) {
+            throw new GraphStorageException(e);
+        }
 	}
 
-	@Override
-	public CassandraThriftOrderedKeyColumnValueStore openDatabase(String name) throws GraphStorageException {
-		return openOrderedDatabase(name);
-	}
 
 	@Override
-	public CassandraThriftOrderedKeyColumnValueStore openOrderedDatabase(String name)
+	public CassandraThriftOrderedKeyColumnValueStore openDatabase(String name)
 			throws GraphStorageException {
 		
 		CTConnection conn = null;
@@ -152,7 +211,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 		throws GraphStorageException {
 		CTConnection conn = null;
 		try {
-			conn = CTConnectionPool.getFactory(hostname, port, CassandraStorageConfiguration.DEFAULT_THRIFT_TIMEOUT_MS).makeRawConnection();
+			conn = CTConnectionPool.getFactory(hostname, port, DEFAULT_THRIFT_TIMEOUT_MS).makeRawConnection();
 
 			Cassandra.Client client = conn.getClient();
 			
@@ -176,4 +235,27 @@ public class CassandraThriftStorageManager implements StorageManager {
 				conn.getTransport().close();
 		}
 	}
+
+    /**
+     * If hostname is non-null, returns hostname.
+     *
+     * If hostname is null, returns the result of calling
+     * InetAddress.getLocalHost().getCanonicalHostName().
+     * Any exceptions generated during said call are rethrown as
+     * RuntimeException.
+     *
+     * @throws RuntimeException in case of UnknownHostException for localhost
+     * @return sanitized hostname
+     */
+    private static String interpretHostname(String hostname) {
+        if (null == hostname) {
+            try {
+                return InetAddress.getLocalHost().getCanonicalHostName();
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            return hostname;
+        }
+    }
 }

@@ -6,21 +6,19 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
-import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.diskstorage.writeaggregation.*;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.BatchKeyColumnValueStoreMutator;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.DirectKeyColumnValueStoreMutator;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.KeyColumnValueStoreMutator;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.writeaggregation.DirectStoreMutator;
+import com.thinkaurelius.titan.diskstorage.writeaggregation.StoreMutator;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.NodeIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.statistics.InternalGraphStatistics;
 import com.thinkaurelius.titan.graphdb.database.statistics.TransactionStatistics;
 import com.thinkaurelius.titan.graphdb.database.util.EdgeTypeSignature;
 import com.thinkaurelius.titan.graphdb.database.util.LimitTracker;
@@ -61,27 +59,29 @@ public class StandardGraphDB implements GraphDB {
 	private final StorageManager storage;
 	private final OrderedKeyColumnValueStore edgeStore;
 	private final OrderedKeyColumnValueStore propertyIndex;
+    private final boolean bufferMutations;
+    private final int bufferSize;
 	
 	private final Serializer serializer;
 	
 	private final NodeIDAssigner idAssigner;
-	private final InternalGraphStatistics statistics;
-	
-	
-	public StandardGraphDB(GraphDatabaseConfiguration configuration,
-			StorageManager storage, OrderedKeyColumnValueStore edgeStore, OrderedKeyColumnValueStore propertyIndex,
-			Serializer serializer, NodeIDAssigner idAssigner, InternalGraphStatistics statistics) {
-		this.config=configuration;
-		this.idManager = idAssigner.getIDManager();
-		this.etManager = new SimpleEdgeTypeManager(this);
 
-		this.storage = storage;
-		this.edgeStore = edgeStore;
-		this.propertyIndex = propertyIndex;
+	
+	public StandardGraphDB(GraphDatabaseConfiguration configuration) {
+		this.config=configuration;
+
+		this.storage = configuration.getStorageManager();
+		this.edgeStore = configuration.getEdgeStore(this.storage);
+		this.propertyIndex = configuration.getPropertyIndex(this.storage);
+        this.bufferMutations = configuration.hasBufferMutations();
+        this.bufferSize = configuration.getBufferSize();
+        Preconditions.checkArgument(bufferSize>0);
+
+        this.idAssigner = config.getIDAssigner(this.storage);
+        this.idManager = idAssigner.getIDManager();
 		
-		this.serializer = serializer;
-		this.idAssigner = idAssigner;
-		this.statistics=statistics;
+		this.serializer = config.getSerializer();
+        this.etManager = new SimpleEdgeTypeManager(this);
 	}
 	
 	@Override
@@ -102,7 +102,7 @@ public class StandardGraphDB implements GraphDB {
 		edgeStore.close();
 		propertyIndex.close();
 		storage.close();
-		config.close();
+
 		idAssigner.close();
 	}
 
@@ -482,17 +482,16 @@ public class StandardGraphDB implements GraphDB {
 
     // ################### WRITE #########################
 	
-	private final KeyColumnValueStoreMutator getEdgeStoreMutator(KeyColumnValueStore store, TransactionHandle txh) {
-		if (config.isEdgeBatchWritingEnabled()) {
-            if (store instanceof MultiWriteKeyColumnValueStore) {
-                return new BatchKeyColumnValueStoreMutator(txh, (MultiWriteKeyColumnValueStore)store,config.getEdgeBatchWriteSize());
+	private final StoreMutator getStoreMutator(TransactionHandle txh) {
+		if (bufferMutations) {
+            if (edgeStore instanceof MultiWriteKeyColumnValueStore &&
+                    propertyIndex instanceof MultiWriteKeyColumnValueStore) {
+                return new BatchStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize);
             } else {
-				//config.setEdgeBatchWritingEnabled(false);
-				log.error("Batching writing disabled on edge store");
-				log.error("Edge store {} does not support batching", store);
+				log.error("Storage backend does not support buffered writes, hence disabled: {}", storage.getClass().getCanonicalName());
 			}
 		}
-		return new DirectKeyColumnValueStoreMutator(txh, store);
+		return new DirectStoreMutator(txh, edgeStore, propertyIndex);
 	}
 
 
@@ -527,12 +526,8 @@ public class StandardGraphDB implements GraphDB {
 		TransactionHandle txh = tx.getTxHandle();
 		TransactionStatistics stats = new TransactionStatistics();
 		
-		KeyColumnValueStoreMutator edgeMutator = getEdgeStoreMutator(edgeStore,txh);
-		KeyColumnValueStoreMutator propMutator = getEdgeStoreMutator(propertyIndex, txh);
-		
+		StoreMutator mutator = getStoreMutator(txh);
 
-		
-		
 		//1. Assign Node IDs
 		assignIDs(addedEdges,tx);
 
@@ -547,13 +542,13 @@ public class StandardGraphDB implements GraphDB {
                         mutations.put(node,del);
                         if (node.isDeleted()) stats.removedNode(node);
                     }
-                    if (config.takeLocks() && pos==0 && del.getEdgeType().isFunctional()) {
+                    if (pos==0 && del.getEdgeType().isFunctional()) {
                         Entry entry = getEntry(tx,del,node,signatures);
-                        edgeMutator.acquireLock(IDHandler.getKey(node.getID()),entry.getColumn(),entry.getValue());
+                        mutator.acquireEdgeLock(IDHandler.getKey(node.getID()),entry.getColumn(),entry.getValue());
                     }
                 }
-                if (config.takeLocks() && del.isProperty()) {
-                    lockKeyedProperty((Property)del,propMutator);
+                if (del.isProperty()) {
+                    lockKeyedProperty((Property)del,mutator);
                 }
 
                 stats.removedEdge(del);
@@ -596,34 +591,31 @@ public class StandardGraphDB implements GraphDB {
 						if (node.isNew() && !mutations.containsKey(node)) stats.addedNode(node);
 						mutations.put(node, edge);
 					}
-                    if (config.takeLocks() && pos==0 && edge.getEdgeType().isFunctional() && !node.isNew()) {
+                    if (pos==0 && edge.getEdgeType().isFunctional() && !node.isNew()) {
                         Entry entry = getEntry(tx,edge,node,signatures,true);
-                        edgeMutator.acquireLock(IDHandler.getKey(node.getID()),entry.getColumn(),null);
+                        mutator.acquireEdgeLock(IDHandler.getKey(node.getID()),entry.getColumn(),null);
                     }
 				}
 			}
-            if (config.takeLocks() && edge.isProperty()) {
-                lockKeyedProperty((Property)edge,propMutator);
+            if (edge.isProperty()) {
+                lockKeyedProperty((Property)edge,mutator);
             }
 		}
 		addedEdges.clear(); addedEdges=null;
 		
 		//3. Persist
-		if (simpleEdgeTypes!=null) persist(simpleEdgeTypes,signatures,tx,edgeMutator,propMutator);
-		if (otherEdgeTypes!=null) persist(otherEdgeTypes,signatures,tx,edgeMutator,propMutator);
-        edgeMutator.flush();
-        propMutator.flush();
+		if (simpleEdgeTypes!=null) persist(simpleEdgeTypes,signatures,tx,mutator);
+		if (otherEdgeTypes!=null) persist(otherEdgeTypes,signatures,tx,mutator);
+        mutator.flush();
 
         //Commit saved EdgeTypes to EdgeTypeManager
         if (simpleEdgeTypes!=null) commitEdgeTypes(simpleEdgeTypes.keySet());
         if (otherEdgeTypes!=null) commitEdgeTypes(otherEdgeTypes.keySet());
 
-		if (!mutations.isEmpty()) persist(mutations,signatures,tx,edgeMutator,propMutator);
-        propMutator.flush();
-        edgeMutator.flush();
+		if (!mutations.isEmpty()) persist(mutations,signatures,tx,mutator);
+        mutator.flush();
 
-		//Update statistics
-		statistics.update(stats);
+		//Update statistics: statistics.update(stats);
 
 		return true;
 	}
@@ -634,7 +626,7 @@ public class StandardGraphDB implements GraphDB {
 	
 
 	private<N extends InternalNode> void persist(ListMultimap<N,InternalEdge> mutatedEdges, Map<EdgeType,EdgeTypeSignature> signatures,
-			GraphTx tx, KeyColumnValueStoreMutator edgeMutator, KeyColumnValueStoreMutator propMutator) {
+			GraphTx tx, StoreMutator mutator) {
 		assert mutatedEdges!=null && !mutatedEdges.isEmpty();
 
 		Collection<N> nodes = mutatedEdges.keySet();
@@ -661,7 +653,7 @@ public class StandardGraphDB implements GraphDB {
 			for (InternalEdge edge : edges) {
                 if (edge.isDeleted()) {
                     if (edge.isProperty()) {
-                        deleteIndexEntry((Property)edge, propMutator);
+                        deleteIndexEntry((Property)edge, mutator);
                     }
                     deletions.add(getEntry(tx,edge,node,signatures,true).getColumn());
                 } else {
@@ -671,10 +663,10 @@ public class StandardGraphDB implements GraphDB {
                 }
 
 			}
-			edgeMutator.mutate(IDHandler.getKey(node.getID()), additions, deletions);
+			mutator.mutateEdges(IDHandler.getKey(node.getID()), additions, deletions);
             //Persist property index for retrieval
             for (Property prop : properties) {
-                addIndexEntry(prop, propMutator);
+                addIndexEntry(prop, mutator);
             }
         }
 
@@ -831,44 +823,44 @@ public class StandardGraphDB implements GraphDB {
     // ################### PROPERTY INDEX HANDLING #########################
 
 	
-    private void lockKeyedProperty(Property prop, KeyColumnValueStoreMutator propMutator) {
+    private void lockKeyedProperty(Property prop, StoreMutator mutator) {
         PropertyType pt = prop.getPropertyType();
         assert pt.getCategory()==EdgeCategory.Simple;
         if (pt.hasIndex() && pt.isKeyed()) {
             if (prop.isNew()) {
-                propMutator.acquireLock(getIndexKey(prop.getAttribute()),getKeyedIndexColumn(pt),null);
+                mutator.acquireIndexLock(getIndexKey(prop.getAttribute()), getKeyedIndexColumn(pt), null);
             } else {
                 assert prop.isDeleted();
-                propMutator.acquireLock(getIndexKey(prop.getAttribute()),getKeyedIndexColumn(pt),getIndexValue(prop));
+                mutator.acquireIndexLock(getIndexKey(prop.getAttribute()), getKeyedIndexColumn(pt), getIndexValue(prop));
             }
         }
     }
     
     
-	private void deleteIndexEntry(Property prop, KeyColumnValueStoreMutator propMutator) {
+	private void deleteIndexEntry(Property prop, StoreMutator mutator) {
 		PropertyType pt = prop.getPropertyType();
 		assert pt.getCategory()==EdgeCategory.Simple;
 		if (pt.hasIndex()) {
             if (pt.isKeyed()) {
-                propMutator.mutate(getIndexKey(prop.getAttribute()), null,
+                mutator.mutateIndex(getIndexKey(prop.getAttribute()), null,
                         ImmutableList.of(getKeyedIndexColumn(prop.getPropertyType())));
             } else {
-                propMutator.mutate(getIndexKey(prop.getAttribute()), null,
+                mutator.mutateIndex(getIndexKey(prop.getAttribute()), null,
                         ImmutableList.of(getIndexColumn(prop.getPropertyType(), prop.getID())));
             }
 
 		}
 	}
 	
-	private void addIndexEntry(Property prop, KeyColumnValueStoreMutator propMutator) {
+	private void addIndexEntry(Property prop, StoreMutator mutator) {
 		PropertyType pt = prop.getPropertyType();
 		assert pt.getCategory()==EdgeCategory.Simple;
 		if (pt.hasIndex()) {
             if (pt.isKeyed()) {
-                propMutator.mutate(getIndexKey(prop.getAttribute()),
+                mutator.mutateIndex(getIndexKey(prop.getAttribute()),
                         ImmutableList.of(new Entry(getKeyedIndexColumn(pt), getIndexValue(prop))), null);
             } else {
-                propMutator.mutate(getIndexKey(prop.getAttribute()),
+                mutator.mutateIndex(getIndexKey(prop.getAttribute()),
                         ImmutableList.of(new Entry(getIndexColumn(pt, prop.getID()), getIndexValue(prop))), null);
             }
 		}

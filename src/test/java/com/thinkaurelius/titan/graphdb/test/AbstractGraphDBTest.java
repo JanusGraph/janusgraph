@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.test;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.util.test.RandomGenerator;
 import org.junit.Test;

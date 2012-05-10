@@ -6,16 +6,6 @@ import com.thinkaurelius.titan.exceptions.GraphStorageException;
 public interface KeyValueStorageManager {
 
 	/**
-	 * Opens a database by the given name. If the database does not exist, it is
-	 * created. If it has already been opened, the existing handle is returned.
-	 * 
-	 * @param name Name of database
-	 * @return Database Handle
-	 * @throws GraphStorageException
-	 */
-	public KeyValueStore openDatabase(String name) throws GraphStorageException;
-	
-	/**
 	 * Opens an ordered database by the given name. If the database does not exist, it is
 	 * created. If it has already been opened, the existing handle is returned.
 	 * 
@@ -23,8 +13,19 @@ public interface KeyValueStorageManager {
 	 * @return Database Handle
 	 * @throws GraphStorageException
 	 */
-	public OrderedKeyValueStore openOrderedDatabase(String name) throws GraphStorageException;
-		
+	public OrderedKeyValueStore openDatabase(String name) throws GraphStorageException;
+
+
+    /**
+     * As defined in {@see com.thinkaurelius.titan.diskstorage.IDAuthority.getIDBlock(int,int)}
+     *
+     * @param partition Partition for which to request an id block.
+     * @param blockSize The size of the partition block.
+     * @return a range of ids for the particular partition
+     */
+    public long[] getIDBlock(int partition, int blockSize);
+
+
 	/**
 	 * Returns a transaction handle for a new transaction.
 	 * @return New Transaction Hanlde

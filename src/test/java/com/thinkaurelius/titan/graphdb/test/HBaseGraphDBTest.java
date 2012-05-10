@@ -1,10 +1,9 @@
 package com.thinkaurelius.titan.graphdb.test;
 
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Before;
 
 import com.thinkaurelius.titan.DiskgraphTest;
-import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.configuration.HBaseStorageConfiguration;
 
 public class HBaseGraphDBTest extends AbstractGraphDBTest  {
 	

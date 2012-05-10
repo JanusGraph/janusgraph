@@ -17,9 +17,9 @@ public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
 	
 	private final Database db;
 	private final String name;
-	private final BerkeleyDBStorageManager manager;
+	private final BerkeleyJEStorageManager manager;
 	
-	public BerkeleyKeyValueStore(String n, Database data, BerkeleyDBStorageManager m) {
+	public BerkeleyKeyValueStore(String n, Database data, BerkeleyJEStorageManager m) {
 		db = data;
 		name = n;
 		manager = m;
@@ -101,17 +101,17 @@ public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
 
 
 	@Override
-	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, boolean startInclusive, boolean endInclusive, TransactionHandle txh) {
-		return getSlice(keyStart,keyEnd,startInclusive,endInclusive,Integer.MAX_VALUE,txh);
+	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, TransactionHandle txh) {
+		return getSlice(keyStart,keyEnd,Integer.MAX_VALUE,txh);
 	}
 	
 	@Override
-	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, boolean startInclusive, boolean endInclusive, int limit, TransactionHandle txh) {
-		return getSlice(keyStart,keyEnd,startInclusive,endInclusive,new LimitedSelector(limit),txh);
+	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, int limit, TransactionHandle txh) {
+		return getSlice(keyStart,keyEnd,new LimitedSelector(limit),txh);
 	}
 	
 	@Override
-	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, boolean startInclusive, boolean endInclusive, 
+	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, 
 			KeySelector selector, TransactionHandle txh) {
 		log.trace("Get slice query");
 		Transaction tx =getTransaction(txh);
@@ -133,15 +133,11 @@ public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
 				ByteBuffer key = getByteBuffer(foundKey);
 				//log.debug("Fou: {}",ByteBufferUtil.toBitString(key, " "));
 				//keyEnd.rewind();
-				if (!ByteBufferUtil.isSmallerThanWithEqual(key, keyEnd, endInclusive)) break;
+				if (!ByteBufferUtil.isSmallerThanWithEqual(key, keyEnd, false)) break;
 				//key.rewind();
 				
 				boolean skip = false;
-				
-				if (!startInclusive) {
-					skip =  keyStart.equals(key);
-				}
-				
+
 				if (!skip) {
 					skip = !selector.include(key);
 					
@@ -173,27 +169,33 @@ public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
 	}
 	
 	public void insert(List<KeyValueEntry> entries, TransactionHandle txh, boolean allowOverwrite) {
-		log.trace("Insertion");
 		Transaction tx = getTransaction(txh);
-		try {
-			log.trace("Inserting multiple entries: {}",entries.size());
-			for (KeyValueEntry entry : entries) {
-				//log.debug("Key: {}",ByteBufferUtil.toBitString(entry.getKey(), " "));
-				
-				OperationStatus status = db.put(tx, getDataEntry(entry.getKey()), getDataEntry(entry.getValue()));
-				
-				if (status!=OperationStatus.SUCCESS) {
-					if (status==OperationStatus.KEYEXIST) {
-						throw new GraphStorageException("Key already exists on no-overwrite.");
-					} else {
-						throw new GraphStorageException("Could not write entity, return status: "+ status);
-					}
-				}
-			}
-		} catch (DatabaseException e) {
-			throw new GraphStorageException(e);
-		}		
+        log.trace("Inserting multiple entries: {}",entries.size());
+        for (KeyValueEntry entry : entries) {
+            insert(entry,tx,allowOverwrite);
+        }
 	}
+    
+    public void insert(KeyValueEntry entry, Transaction tx, boolean allowOverwrite) {
+        try {
+            //log.debug("Key: {}",ByteBufferUtil.toBitString(entry.getKey(), " "));
+            OperationStatus status = null;
+            if (allowOverwrite)
+                db.put(tx, getDataEntry(entry.getKey()), getDataEntry(entry.getValue()));
+            else
+                db.putNoOverwrite(tx, getDataEntry(entry.getKey()), getDataEntry(entry.getValue()));
+
+            if (status!=OperationStatus.SUCCESS) {
+                if (status==OperationStatus.KEYEXIST) {
+                    throw new GraphStorageException("Key already exists on no-overwrite.");
+                } else {
+                    throw new GraphStorageException("Could not write entity, return status: "+ status);
+                }
+            }
+        } catch (DatabaseException e) {
+            throw new GraphStorageException(e);
+        }
+}
 	
 
 

@@ -11,18 +11,8 @@ import com.thinkaurelius.titan.exceptions.GraphStorageException;
  * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
  *
  */
-public interface StorageManager {
+public interface StorageManager extends IDAuthority {
 
-	/**
-	 * Opens a database by the given name. If the database does not exist, it is
-	 * created. If it has already been opened, the existing handle is returned.
-	 * 
-	 * @param name Name of database
-	 * @return Database Handle
-	 * @throws GraphStorageException
-	 */
-	public KeyColumnValueStore openDatabase(String name) throws GraphStorageException;
-	
 	/**
 	 * Opens an ordered database by the given name. If the database does not exist, it is
 	 * created. If it has already been opened, the existing handle is returned.
@@ -31,9 +21,19 @@ public interface StorageManager {
 	 * @return Database Handle
 	 * @throws GraphStorageException
 	 */
-	public OrderedKeyColumnValueStore openOrderedDatabase(String name) throws GraphStorageException;
+	public OrderedKeyColumnValueStore openDatabase(String name) throws GraphStorageException;
 
-
+    /**
+     * Release a (sub-) range of previously acquired ids for the particular partition. Releasing the ids means that the
+     * calling client no longer needs the ids and that the ids may be assigned to another client in the future.
+     * Released ids can no longer be used by the client.
+     *
+     * TO BE IMPLEMENTED IN THE FUTURE
+     *
+     * @param partition Partition id for which to release the ids.
+     * @param ids The released ids where ids[0] is inclusive and ids[1] is exclusive. ids[1]>ids[0].
+     */
+//    public void releaseIDBlock(int partition, long[] ids);
 
 	/**
 	 * Returns a transaction handle for a new transaction.

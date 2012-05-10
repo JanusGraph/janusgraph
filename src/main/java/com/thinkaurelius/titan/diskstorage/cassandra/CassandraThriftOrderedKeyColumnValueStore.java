@@ -113,8 +113,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	 */
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, boolean startInclusive, boolean endInclusive,
-			int limit, TransactionHandle txh) throws GraphStorageException {
+			ByteBuffer columnEnd, int limit, TransactionHandle txh) throws GraphStorageException {
 		// Sanity check the limit argument
 		if (0 > limit) {
 			logger.warn("Setting negative limit ({}) to 0", limit);
@@ -130,32 +129,14 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		 * Cassandra's Thrift getSlice() throws InvalidRequestException
 		 * if columnStart = columnEnd.
 		 */
-		if (! ByteBufferUtil.isSmallerThan(columnStart, columnEnd)) {
+		if (!ByteBufferUtil.isSmallerThan(columnStart, columnEnd)) {
 			// Check for invalid arguments where columnEnd < columnStart
 			if (ByteBufferUtil.isSmallerThan(columnEnd, columnStart)) {
 				throw new GraphStorageException("columnStart=" + columnStart + 
 						" is greater than columnEnd=" + columnEnd + ". " +
 						"columnStart must be less than or equal to columnEnd");
 			}
-			/* Must be the case that columnStart equals columnEnd;
-			 * check inclusivity and refer to get() if appropriate.
-			 */
-			if (startInclusive && endInclusive) {
-				ByteBuffer name = columnStart.duplicate();
-				ByteBuffer value = get(key, columnStart.duplicate(), txh);
-				List<Entry> result = new ArrayList<Entry>(1);
-				result.add(new Entry(name, value));
-				return result;
-			} else {
-//				logger.debug(
-//						"Parameters columnStart=columnEnd={}, " +
-//						"startInclusive={}, endInclusive={} " + 
-//						"collectively form an empty interval; " +
-//						"returning an empty result list.", 
-//						new Object[]{columnStart.duplicate(), startInclusive,
-//								endInclusive});
-				return ImmutableList.<Entry>of();
-			}
+			return ImmutableList.<Entry>of();
 		}
 		
 		// true: columnStart < columnEnd
@@ -181,12 +162,10 @@ public class CassandraThriftOrderedKeyColumnValueStore
 			List<Entry> result = new ArrayList<Entry>(rows.size());
 			for (ColumnOrSuperColumn r : rows) {
 				Column c = r.getColumn();
-				// Skip columnStart if !startInclusive
-				if (!startInclusive && ByteBufferUtil.isSmallerOrEqualThan(c.bufferForName(), columnStart))
-					continue;
-				// Skip columnEnd if !endInclusive
-				if (!endInclusive && ByteBufferUtil.isSmallerOrEqualThan(columnEnd, c.bufferForName()))
-					continue;
+
+				// Skip column if it is equal to columnEnd because columnEnd is exclusive
+				if (columnEnd.equals(c.bufferForName())) continue;
+
 				result.add(new Entry(c.bufferForName(), c.bufferForValue()));
 			}
 			return result;
@@ -206,10 +185,8 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, boolean startInclusive, boolean endInclusive,
-			TransactionHandle txh) {
-		return getSlice(key, columnStart, columnEnd, 
-				startInclusive, endInclusive, Integer.MAX_VALUE, txh); 
+			ByteBuffer columnEnd, TransactionHandle txh) {
+		return getSlice(key, columnStart, columnEnd, Integer.MAX_VALUE, txh);
 	}
 
 	@Override

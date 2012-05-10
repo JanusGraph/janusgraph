@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.traversal;
 
 import com.thinkaurelius.titan.DiskgraphTest;
-import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class StandardJUNGTraversalTest extends AbstractJUNGTraversalTest {
 

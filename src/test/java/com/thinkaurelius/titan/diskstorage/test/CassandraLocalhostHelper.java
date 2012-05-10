@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.test;
 
 import com.thinkaurelius.titan.DiskgraphTest;
-import com.thinkaurelius.titan.configuration.CassandraStorageConfiguration;
-import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.GraphDatabase;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionFactory;

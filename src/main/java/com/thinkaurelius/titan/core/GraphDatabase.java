@@ -1,22 +1,21 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
-import com.thinkaurelius.titan.graphdb.database.statistics.GraphStatistics;
 
 /***
  * A graph database is the persistence framework for a graph consisting of {@link Node}s and {@link com.thinkaurelius.titan.core.Edge}s.
  * 
  * A graph database implementation coordinates all retrieval and persistence operations against the stored
- * graph. A graph database is opened via {@link com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration#openDatabase()} after it has
- * been configured using the methods provided by{@link com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration}.
+ * graph. A graph database is opened via {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#openDatabase()} after it has
+ * been configured using the methods provided by{@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration}.
  * 
  * All user interactions with a graph database are channeled through {@link GraphTransaction}s. A graph
  * database only provides methods for starting new transactions which in turn provide the means to modify
  * the stored graph.
  * 
- * @see com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration
+ * @see com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration
  * @see GraphTransaction
  * 
  * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
@@ -56,7 +55,7 @@ public interface GraphDatabase {
 	 * to the configuration at this point will not effect the graph database or lead to an exception.
 	 * 
 	 * @return The configuration used by this graph database.
-	 * @see com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration
+	 * @see com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration
 	 */
 	 public GraphDatabaseConfiguration getConfiguration();
 	 

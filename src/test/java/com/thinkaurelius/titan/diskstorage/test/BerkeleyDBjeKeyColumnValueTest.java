@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.test;
 
 import com.thinkaurelius.titan.DiskgraphTest;
-import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyDBStorageManager;
+import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageManager;
 import com.thinkaurelius.titan.diskstorage.util.KeyValueStorageManagerAdapter;
 
 
@@ -17,11 +17,11 @@ public class BerkeleyDBjeKeyColumnValueTest extends KeyColumnValueStoreTest {
 	
 	@Override
 	public void open() {
-		BerkeleyDBStorageManager sm = new BerkeleyDBStorageManager(DiskgraphTest.homeDirFile,readOnly,transactional,false);
+		BerkeleyJEStorageManager sm = new BerkeleyJEStorageManager(DiskgraphTest.homeDirFile,readOnly,transactional,false);
 		sm.initialize(cachePercent);
 		tx = sm.beginTransaction();
 		manager = new KeyValueStorageManagerAdapter(sm);
-		store = ((KeyValueStorageManagerAdapter)manager).openOrderedDatabase(storeName, 8);
+		store = ((KeyValueStorageManagerAdapter)manager).openDatabase(storeName, 8);
 	}
 	
 	@Override

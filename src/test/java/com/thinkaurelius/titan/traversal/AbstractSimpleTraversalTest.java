@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.traversal;
 
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.test.AbstractGraphDBTestCommon;
 import org.junit.Before;

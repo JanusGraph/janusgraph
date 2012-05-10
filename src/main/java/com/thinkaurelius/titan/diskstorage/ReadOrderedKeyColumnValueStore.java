@@ -20,42 +20,38 @@ public interface ReadOrderedKeyColumnValueStore {
 	/**
 	 * Retrieves the list of entries (i.e. column-value pairs) for a specified key which
 	 * lie between the specified start and end columns.
-	 * Whether the start and end columns should considered inclusive or exclusive is specified by additional boolean parameters.
+     * The start and end columns are considered to be inclusive and exclusive, respectively.
 	 * 
 	 * Only retrieves a maximum number of entries as specified by the limit. 
 	 * 
 	 * @param key Key
-	 * @param columnStart Start Column
-	 * @param startInclusive Whether columnStart is inclusive, i.e. part of the result set
-	 * @param columnEnd End Column
-	 * @param endInclusive Whether columnEnd is inclusive, i.e. part of the result set
+	 * @param columnStart Start Column (inclusive)
+	 * @param columnEnd End Column (exclusive)
 	 * @param limit Maximum number of entries to retrieve
 	 * @param txh Transaction
 	 * @throws com.thinkaurelius.titan.exceptions.GraphStorageException when columnEnd < columnStart as determined in
 	 *         {@link ByteBufferUtil#isSmallerThan(ByteBuffer,ByteBuffer)}
 	 * @return List of entries up to a maximum of "limit" entries
 	 */
-	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, boolean startInclusive, boolean endInclusive, int limit, TransactionHandle txh);
+	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, int limit, TransactionHandle txh);
 
 	
 	/**
 	 * Retrieves the list of entries (i.e. column-value pairs) for a specified key which
 	 * lie between the specified start and end columns.
-	 * Whether the start and end columns should considered inclusive or exclusive is specified by additional boolean parameters.
+	 * The start and end columns are considered to be inclusive and exclusive, respectively.
 	 * 
 	 * Retrieves all entries.
 	 * 
 	 * @param key Key
-	 * @param columnStart Start Column
-	 * @param startInclusive Whether columnStart is inclusive, i.e. part of the result set
-	 * @param columnEnd End Column
-	 * @param endInclusive Whether columnEnd is inclusive, i.e. part of the result set
+	 * @param columnStart Start Column (inclusive)
+	 * @param columnEnd End Column (exclusive)
 	 * @param txh Transaction
 	 * @throws com.thinkaurelius.titan.exceptions.GraphStorageException when columnEnd < columnStart as determined in
 	 *         {@link ByteBufferUtil#isSmallerThan(ByteBuffer,ByteBuffer)}
 	 * @return List of entries
 	 */
-	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, boolean startInclusive, boolean endInclusive, TransactionHandle txh);
+	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, TransactionHandle txh);
 
 	
 }

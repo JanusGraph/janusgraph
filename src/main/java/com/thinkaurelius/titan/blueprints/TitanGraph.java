@@ -5,12 +5,13 @@ import com.google.common.collect.HashMultimap;
 import com.thinkaurelius.titan.blueprints.util.TitanEdgeSequence;
 import com.thinkaurelius.titan.blueprints.util.TitanVertexSequence;
 import com.thinkaurelius.titan.blueprints.util.TransactionWrapper;
-import com.thinkaurelius.titan.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.exceptions.InvalidNodeException;
 import com.tinkerpop.blueprints.pgm.*;
 import com.tinkerpop.blueprints.pgm.Edge;
 import com.tinkerpop.blueprints.pgm.impls.StringFactory;
+import org.apache.commons.configuration.Configuration;
 
 import java.io.File;
 import java.util.*;
@@ -55,12 +56,13 @@ public class TitanGraph implements TransactionalGraph, IndexableGraph {
     }
     
     public TitanGraph(final String directory) {
-        this(new GraphDatabaseConfiguration(directory));
+        this(GraphDatabaseFactory.open(directory));
     }
     
-    public TitanGraph(final GraphDatabaseConfiguration config) {
-        this(config.openDatabase());
+    public TitanGraph(final Configuration config) {
+        this(GraphDatabaseFactory.open(config));
     }
+
     
     public TitanGraph(final GraphDatabase db) {
         this.db=db;
