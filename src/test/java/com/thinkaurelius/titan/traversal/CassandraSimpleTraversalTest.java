@@ -27,9 +27,9 @@ public class CassandraSimpleTraversalTest extends AbstractSimpleTraversalTest {
 	@Before
 	public void setUp() throws Exception {
 		CassandraThriftStorageManager.dropKeyspace(
-				CassandraStorageConfiguration.DEFAULT_KEYSPACE, 
+                CassandraThriftStorageManager.DEFAULT_KEYSPACE,
 				"127.0.0.1",
-				CassandraStorageConfiguration.DEFAULT_PORT);
+                CassandraThriftStorageManager.DEFAULT_PORT);
 		super.setUp();
 	}
 }

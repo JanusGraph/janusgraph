@@ -6,6 +6,7 @@ import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.util.test.RandomGenerator;
+import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,7 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 
 	private Logger log = LoggerFactory.getLogger(AbstractGraphDBTest.class);
 	
-	public AbstractGraphDBTest(GraphDatabaseConfiguration config) {
+	public AbstractGraphDBTest(Configuration config) {
 		super(config);
 	}
 

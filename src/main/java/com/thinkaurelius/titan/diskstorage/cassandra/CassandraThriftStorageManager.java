@@ -25,11 +25,11 @@ public class CassandraThriftStorageManager implements StorageManager {
     private static final Logger logger =
             LoggerFactory.getLogger(CassandraThriftStorageManager.class);
     
-    private static final String PROP_KEYSPACE = "keyspace";
-    private static final String PROP_HOSTNAME = "hostname";
-    private static final String PROP_PORT = "port";
-    private static final String PROP_SELF_HOSTNAME = "selfHostname";
-    private static final String PROP_TIMEOUT = "thrift_timeout";
+    public static final String PROP_KEYSPACE = "keyspace";
+    public static final String PROP_HOSTNAME = "hostname";
+    public static final String PROP_PORT = "port";
+    public static final String PROP_SELF_HOSTNAME = "selfHostname";
+    public static final String PROP_TIMEOUT = "thrift_timeout";
 
     /**
      * Default name for the Cassandra keyspace
@@ -98,11 +98,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 
 	@Override
 	public void close() {
-		try {
-            pool.close();
-        } catch (Exception e) {
-            throw new GraphStorageException(e);
-        }
+        //Do nothing
 	}
 
 

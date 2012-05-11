@@ -1,12 +1,13 @@
 package com.thinkaurelius.titan.diskstorage.test;
 
+import com.thinkaurelius.titan.DiskgraphTest;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStorageManager;
 
 public class HBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
 
 	@Override
 	public void open() {
-		manager = new HBaseStorageManager();
+		manager = new HBaseStorageManager(DiskgraphTest.getDirectoryStorageConfiguration());
 		store = manager.openDatabase("titantest");
 		tx = manager.beginTransaction();
 	}
@@ -19,7 +20,7 @@ public class HBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
 	
 	@Override
 	public void setUp() throws Exception {
-		(new HBaseStorageConfiguration()).deleteAll();
+        new HBaseStorageManager(DiskgraphTest.getDirectoryStorageConfiguration()).deleteAll();
 		super.setUp();
 	}
 

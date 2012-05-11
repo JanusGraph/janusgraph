@@ -158,9 +158,9 @@ public abstract class KeyValueStoreTest {
 	public void checkSlice(String[] values, Set<Integer> removed, int start, int end, int limit) {
 		List<KeyValueEntry> entries;
 		if (limit<=0)
-			entries = store.getSlice(getBuffer(start), getBuffer(end), true, false, tx);
+			entries = store.getSlice(getBuffer(start), getBuffer(end), tx);
 		else
-			entries = store.getSlice(getBuffer(start), getBuffer(end), true, false, limit, tx);
+			entries = store.getSlice(getBuffer(start), getBuffer(end), limit, tx);
 		
 		int pos=0;
 		for (int i=start;i<end;i++) {

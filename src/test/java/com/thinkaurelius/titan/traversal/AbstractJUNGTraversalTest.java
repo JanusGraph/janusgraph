@@ -7,6 +7,7 @@ import edu.uci.ics.jung.algorithms.scoring.BetweennessCentrality;
 import edu.uci.ics.jung.algorithms.scoring.VertexScorer;
 import edu.uci.ics.jung.algorithms.shortestpath.DijkstraShortestPath;
 import edu.uci.ics.jung.graph.Graph;
+import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +19,7 @@ public abstract class AbstractJUNGTraversalTest extends AbstractSimpleTraversalT
 	private static final Logger log =
 		LoggerFactory.getLogger(AbstractJUNGTraversalTest.class);
 	
-	protected AbstractJUNGTraversalTest(GraphDatabaseConfiguration config) {
+	protected AbstractJUNGTraversalTest(Configuration config) {
 		super(config);
 	}
 

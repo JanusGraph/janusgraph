@@ -81,7 +81,7 @@ public class GraphDatabaseConfiguration {
 	private static final String DEFAULT_CONFIG_FILE_NAME = "titanconfig.txt";
 
     private static final String ATTRIBUTE_NAMESPACE = "attributes";
-    private static final String STORAGE_NAMESPACE = "storage";
+    public static final String STORAGE_NAMESPACE = "storage";
 
     private static final String BUFFER_KEY = "buffer_mutations";
     private static final boolean BUFFER_DEFAULT = true;

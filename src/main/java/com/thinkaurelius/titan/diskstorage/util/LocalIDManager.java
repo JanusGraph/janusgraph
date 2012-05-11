@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import cern.colt.map.AbstractIntIntMap;
+import cern.colt.map.OpenIntIntHashMap;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.exceptions.GraphDatabaseException;
 import de.mathnbits.io.Serialization;
@@ -24,10 +25,17 @@ public class LocalIDManager {
     public LocalIDManager(String file) {
         Preconditions.checkNotNull(file);
         this.filename = file;
-        try {
-            idmap = Serialization.readObjectFromFile(filename);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Could not read id map from file: " + filename,e);
+        File f = new File(filename);
+        if (f.exists()) {
+            Preconditions.checkArgument(f.isFile(),"Need to specify a filename for id map");
+            Preconditions.checkArgument(f.canRead() && f.canWrite(),"Need to be able to access file for id map");
+            try {
+                idmap = Serialization.readObjectFromFile(filename);
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Could not read id map from file: " + filename,e);
+            }
+        } else {
+            idmap = new OpenIntIntHashMap();   
         }
     }
 

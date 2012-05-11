@@ -207,9 +207,9 @@ public abstract class KeyColumnValueStoreTest {
 	public void checkSlice(String[][] values, Set<KeyColumn> removed, int key, int start, int end, int limit) {
 		List<Entry> entries;
 		if (limit<=0)
-			entries = store.getSlice(getBuffer(key), getBuffer(start), getBuffer(end), true, false, tx);
+			entries = store.getSlice(getBuffer(key), getBuffer(start), getBuffer(end), tx);
 		else
-			entries = store.getSlice(getBuffer(key), getBuffer(start), getBuffer(end), true, false, limit, tx);
+			entries = store.getSlice(getBuffer(key), getBuffer(start), getBuffer(end), limit, tx);
 		
 		int pos=0;
 		for (int i=start;i<end;i++) {
@@ -324,17 +324,17 @@ public abstract class KeyColumnValueStoreTest {
 				
 		txn = manager.beginTransaction();
 		ByteBuffer columnStart = KeyColumnValueStoreUtil.longToByteBuffer(0);
-		ByteBuffer columnEnd = KeyColumnValueStoreUtil.longToByteBuffer(cols - 1);
+		ByteBuffer columnEnd = KeyColumnValueStoreUtil.longToByteBuffer(cols);
 		/* 
 		 * When limit is greater than or equal to the matching column count,
 		 * all matching columns must be returned.
 		 */
 		List<Entry> result =
-			store.getSlice(key, columnStart, columnEnd, true, true, cols, txn);
+			store.getSlice(key, columnStart, columnEnd, cols, txn);
 		assertEquals(cols, result.size());
 		assertEquals(entries, result);
 		result =
-			store.getSlice(key, columnStart, columnEnd, true, true, cols+10, txn);
+			store.getSlice(key, columnStart, columnEnd, cols+10, txn);
 		assertEquals(cols, result.size());
 		assertEquals(entries, result);
 
@@ -343,12 +343,12 @@ public abstract class KeyColumnValueStoreTest {
 		 * limit (ordered bytewise) must be returned.
 		 */
 		result = 
-			store.getSlice(key, columnStart, columnEnd, true, true, cols-1, txn);
+			store.getSlice(key, columnStart, columnEnd, cols-1, txn);
 		assertEquals(cols-1, result.size());
 		entries.remove(entries.size()-1);
 		assertEquals(entries, result);
 		result = 
-			store.getSlice(key, columnStart, columnEnd, true, true, 1, txn);
+			store.getSlice(key, columnStart, columnEnd, 1, txn);
 		assertEquals(1, result.size());
 		List<Entry> firstEntrySingleton = Arrays.asList(entries.get(0));
 		assertEquals(firstEntrySingleton, result);
@@ -374,33 +374,13 @@ public abstract class KeyColumnValueStoreTest {
 		store.mutate(key, entries, null, txn);
 		txn.commit();
 		
-		// getSlice() with startIncl=endIncl=false must return empty
-		txn = manager.beginTransaction();
-		List<Entry> result = store.getSlice(key, columnStart, columnEnd, false, false, txn);
-		assertEquals(0, result.size());
-		txn.commit();
-		
 		// getSlice() with only start inclusive
 		txn = manager.beginTransaction();
-		result = store.getSlice(key, columnStart, columnEnd, true, false, txn);
+        List<Entry> result = store.getSlice(key, columnStart, columnEnd, txn);
 		assertEquals(1, result.size());
 		assertEquals(777, result.get(0).getColumn().getLong());
 		txn.commit();
-		
-		// getSlice() with only end inclusive
-		txn = manager.beginTransaction();
-		result = store.getSlice(key, columnStart, columnEnd, false, true, txn);
-		assertEquals(1, result.size());
-		assertEquals(778, result.get(0).getColumn().getLong());
-		txn.commit();
-		
-		// getSlice() with start and end inclusive must return both data
-		txn = manager.beginTransaction();
-		result = store.getSlice(key, columnStart, columnEnd, true, true, txn);
-		assertEquals(2, result.size());
-		assertEquals(777, result.get(0).getColumn().getLong());
-		assertEquals(778, result.get(1).getColumn().getLong());
-		txn.commit();
+
 	}
 	
 

@@ -1,23 +1,29 @@
 package com.thinkaurelius.titan.graphdb.test;
 
+import com.thinkaurelius.titan.diskstorage.hbase.HBaseStorageManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.apache.commons.configuration.Configuration;
 import org.junit.Before;
 
 import com.thinkaurelius.titan.DiskgraphTest;
 
 public class HBaseGraphDBTest extends AbstractGraphDBTest  {
 	
-	private HBaseStorageConfiguration hbaseConf; 
+	private Configuration hbaseConf;
 	
 	public HBaseGraphDBTest() {
-		super(new GraphDatabaseConfiguration(DiskgraphTest.homeDir));
-		hbaseConf = new HBaseStorageConfiguration();
-		config.setStorage(hbaseConf);
+		super(getHBaseConfiguration());
 	}
 	
 	@Before
 	public void setUp() throws Exception {
-		hbaseConf.deleteAll();
+		new HBaseStorageManager(getHBaseConfiguration()).deleteAll();
 		super.setUp();
 	}
+    
+    public static Configuration getHBaseConfiguration() {
+        Configuration config = DiskgraphTest.getDefaultConfiguration();
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,"hbase");
+        return config;
+    }
 }

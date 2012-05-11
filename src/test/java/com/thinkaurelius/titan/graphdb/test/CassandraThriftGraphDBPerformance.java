@@ -27,9 +27,9 @@ public class CassandraThriftGraphDBPerformance extends AbstractGraphDBPerformanc
 	@Before
 	public void setUp() throws Exception {
 		CassandraThriftStorageManager.dropKeyspace(
-			CassandraStorageConfiguration.DEFAULT_KEYSPACE, 
-			"127.0.0.1", 
-			CassandraStorageConfiguration.DEFAULT_PORT);
+            CassandraThriftStorageManager.DEFAULT_KEYSPACE,
+			"127.0.0.1",
+            CassandraThriftStorageManager.DEFAULT_PORT);
 		super.setUp();
 	}
 }

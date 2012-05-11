@@ -149,7 +149,7 @@ public class StandardGraphDB implements GraphDB {
         } else {
             ByteBuffer startColumn = VariableLong.positiveByteBuffer(pt.getID());
             List<Entry> entries = propertyIndex.getSlice(getIndexKey(key), startColumn,
-                                                        ByteBufferUtil.nextBiggerBuffer(startColumn), true, false, tx.getTxHandle());
+                                                        ByteBufferUtil.nextBiggerBuffer(startColumn), tx.getTxHandle());
             nodes = new long[entries.size()];
             int i = 0;
             for (Entry ent : entries) {
@@ -468,8 +468,7 @@ public class StandardGraphDB implements GraphDB {
                                       List<Entry> entries, LimitTracker limit, TransactionHandle txh) {
 		if (limit.limitExhausted()) return null;
 		List<Entry> results = null;
-        results = edgeStore.getSlice(key, columnStart, columnEnd,
-            true, false, limit.getLimit(), txh);
+        results = edgeStore.getSlice(key, columnStart, columnEnd, limit.getLimit(), txh);
         limit.retrieved(results.size());
 
 		if (results==null) return null;

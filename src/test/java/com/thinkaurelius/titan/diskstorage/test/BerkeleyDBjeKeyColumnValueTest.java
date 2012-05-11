@@ -17,8 +17,7 @@ public class BerkeleyDBjeKeyColumnValueTest extends KeyColumnValueStoreTest {
 	
 	@Override
 	public void open() {
-		BerkeleyJEStorageManager sm = new BerkeleyJEStorageManager(DiskgraphTest.homeDirFile,readOnly,transactional,false);
-		sm.initialize(cachePercent);
+		BerkeleyJEStorageManager sm = new BerkeleyJEStorageManager(DiskgraphTest.getDirectoryStorageConfiguration());
 		tx = sm.beginTransaction();
 		manager = new KeyValueStorageManagerAdapter(sm);
 		store = ((KeyValueStorageManagerAdapter)manager).openDatabase(storeName, 8);

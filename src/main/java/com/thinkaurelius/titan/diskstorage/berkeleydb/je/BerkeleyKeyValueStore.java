@@ -181,9 +181,9 @@ public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
             //log.debug("Key: {}",ByteBufferUtil.toBitString(entry.getKey(), " "));
             OperationStatus status = null;
             if (allowOverwrite)
-                db.put(tx, getDataEntry(entry.getKey()), getDataEntry(entry.getValue()));
+                status = db.put(tx, getDataEntry(entry.getKey()), getDataEntry(entry.getValue()));
             else
-                db.putNoOverwrite(tx, getDataEntry(entry.getKey()), getDataEntry(entry.getValue()));
+                status = db.putNoOverwrite(tx, getDataEntry(entry.getKey()), getDataEntry(entry.getValue()));
 
             if (status!=OperationStatus.SUCCESS) {
                 if (status==OperationStatus.KEYEXIST) {

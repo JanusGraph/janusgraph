@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.test.AbstractGraphDBTestCommon;
+import org.apache.commons.configuration.Configuration;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -24,7 +25,7 @@ public abstract class AbstractSimpleTraversalTest
 	
 	protected static final int CHAIN_LENGTH = 1024;
 	
-	protected AbstractSimpleTraversalTest(GraphDatabaseConfiguration config) {
+	protected AbstractSimpleTraversalTest(Configuration config) {
 		super(config);
 	}
 

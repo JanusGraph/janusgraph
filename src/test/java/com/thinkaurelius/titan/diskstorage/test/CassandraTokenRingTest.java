@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.test;
 
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -13,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 public class CassandraTokenRingTest {
 
 	private static final String keyspace = "titantest00";
-	private static final int port = CassandraStorageConfiguration.DEFAULT_PORT;
+	private static final int port = CassandraThriftStorageManager.DEFAULT_PORT;
 	private static final String testAddr = "127.0.0.1";
 
 	private static CassandraLocalhostHelper ch1 = new CassandraLocalhostHelper("127.0.0.1");

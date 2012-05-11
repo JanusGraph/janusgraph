@@ -1,11 +1,15 @@
 package com.thinkaurelius.titan.diskstorage.test;
 
 import com.thinkaurelius.titan.DiskgraphTest;
+import com.thinkaurelius.titan.core.GraphDatabaseFactory;
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.GraphDatabase;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool;
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.thrift.transport.TTransportException;
@@ -35,7 +39,7 @@ public class CassandraLocalhostHelper {
 	
 	private static final String cassandraCommand = "cassandra";
 	private static final int port =
-		CassandraStorageConfiguration.DEFAULT_PORT;
+            CassandraThriftStorageManager.DEFAULT_PORT;
 	private static final Logger log =
 		LoggerFactory.getLogger(CassandraLocalhostHelper.class);
 	private static final long CASSANDRA_STARTUP_TIMEOUT = 10000L;
@@ -174,7 +178,7 @@ public class CassandraLocalhostHelper {
 			 */
 			log.debug("Clearing pooled Thrift connections for {}:{}",
 					address, port);
-			CTConnectionPool.getPool(address, port, CassandraStorageConfiguration.DEFAULT_THRIFT_TIMEOUT_MS).clear();
+			CTConnectionPool.getPool(address, port, CassandraThriftStorageManager.DEFAULT_THRIFT_TIMEOUT_MS).clear();
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
@@ -206,22 +210,29 @@ public class CassandraLocalhostHelper {
 	}
 	
 	public GraphDatabase openDatabase() {
-		// Open graph database against the cassandra daemon
-		return getConfiguration().openDatabase();
+        // Open graph database against the cassandra daemon
+		return GraphDatabaseFactory.open(getConfiguration());
 	}
 	
-	public GraphDatabaseConfiguration getConfiguration() {
-		GraphDatabaseConfiguration config = new GraphDatabaseConfiguration(DiskgraphTest.homeDir);
-		CassandraStorageConfiguration cassConf = new CassandraStorageConfiguration();
-		cassConf.setHostname(address);
-		cassConf.setSelfHostname(address);
-		cassConf.setThriftTimeoutMS(5 * 60000);
-		config.setStorage(cassConf);
+	public Configuration getConfiguration() {
+        Configuration config = new BaseConfiguration().subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE);
+        config.addProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY,DiskgraphTest.homeDir);
+        config.addProperty(CassandraThriftStorageManager.PROP_HOSTNAME,address);
+        config.addProperty(CassandraThriftStorageManager.PROP_SELF_HOSTNAME,address);
+        config.addProperty(CassandraThriftStorageManager.PROP_TIMEOUT,5*60000);
 		return config;
 	}
-	
+
+    public static Configuration getLocalStorageConfiguration() {
+        Configuration config = new BaseConfiguration();
+        config.addProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY,DiskgraphTest.homeDir);
+        config.addProperty(CassandraThriftStorageManager.PROP_HOSTNAME,"127.0.0.1");
+        config.addProperty(CassandraThriftStorageManager.PROP_TIMEOUT,10000);
+        return config;
+    }
+
 	public void waitForClusterSize(int minSize) throws InterruptedException {
-		CTConnectionFactory f = CTConnectionPool.getFactory(address, port, CassandraStorageConfiguration.DEFAULT_THRIFT_TIMEOUT_MS);
+		CTConnectionFactory f = CTConnectionPool.getFactory(address, port, CassandraThriftStorageManager.DEFAULT_THRIFT_TIMEOUT_MS);
 		CTConnection conn = null;
 		try {
 			conn = f.makeRawConnection();

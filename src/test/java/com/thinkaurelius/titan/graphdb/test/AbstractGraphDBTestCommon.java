@@ -4,16 +4,17 @@ package com.thinkaurelius.titan.graphdb.test;
 import com.thinkaurelius.titan.DiskgraphTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
+import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
 
 public abstract class AbstractGraphDBTestCommon {
 
-	public GraphDatabaseConfiguration config;
+	public Configuration config;
 	public GraphDatabase graphdb;
 	public GraphTransaction tx;
 	
-	public AbstractGraphDBTestCommon(GraphDatabaseConfiguration config) {
+	public AbstractGraphDBTestCommon(Configuration config) {
 		this.config = config;
 	}
 	
@@ -29,7 +30,7 @@ public abstract class AbstractGraphDBTestCommon {
 	}
 	
 	public void open() {
-		graphdb = config.openDatabase();
+		graphdb = GraphDatabaseFactory.open(config);
 		tx = graphdb.startTransaction();
 	}
 	

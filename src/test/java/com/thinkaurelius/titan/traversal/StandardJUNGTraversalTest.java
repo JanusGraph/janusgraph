@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 public class StandardJUNGTraversalTest extends AbstractJUNGTraversalTest {
 
 	public StandardJUNGTraversalTest() {
-		super(new GraphDatabaseConfiguration(DiskgraphTest.homeDir));
+		super(DiskgraphTest.getDefaultConfiguration());
 	}	
 }
 

@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.graphdb.edges.persist.PersistSimpleBinaryRelation
 import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
 import com.thinkaurelius.titan.util.test.PerformanceTest;
 import com.thinkaurelius.titan.util.test.RandomGenerator;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -30,11 +31,11 @@ public abstract class AbstractGraphDBPerformance extends AbstractGraphDBTestComm
 
 	private final LinkedHashMap<String, Metric> metrics = new LinkedHashMap<String, Metric>();
 
-	public AbstractGraphDBPerformance(GraphDatabaseConfiguration config) {
+	public AbstractGraphDBPerformance(Configuration config) {
 		this(config, 2, 8, true);
 	}
 	
-	public AbstractGraphDBPerformance(GraphDatabaseConfiguration config, int jitPretrials, int trials, boolean tryBatching) {
+	public AbstractGraphDBPerformance(Configuration config, int jitPretrials, int trials, boolean tryBatching) {
 		super(config);
 		this.jitPretrials = jitPretrials;
 		this.trials = trials;
@@ -107,10 +108,7 @@ public abstract class AbstractGraphDBPerformance extends AbstractGraphDBTestComm
 			
 			if (null != config) {
 				close();
-				config.setEdgeBatchWritingEnabled(batching);
-				config.setPropertyBatchWritingEnabled(batching);
-				config.setEdgeBatchWriteSize(batchSize);
-				config.setPropertyBatchWriteSize(batchSize);
+                config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BATCH_KEY,true);
 				open();
 			}
 			

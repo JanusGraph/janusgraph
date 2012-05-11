@@ -4,6 +4,7 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.util.test.RandomGenerator;
+import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +36,7 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 	
 	private ExecutorService executor;
 	
-	public AbstractConcurrentGraphDBTest(GraphDatabaseConfiguration config) {
+	public AbstractConcurrentGraphDBTest(Configuration config) {
 		super(config);
 	}
 	

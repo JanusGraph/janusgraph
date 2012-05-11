@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan;
 
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.test.IOUtils;
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
 
 import java.io.File;
 
@@ -28,5 +31,16 @@ public class DiskgraphTest {
         if (!success) System.err.println("Could not delete " + homeDir);
 	}
 
+    public static Configuration getDirectoryStorageConfiguration() {
+        BaseConfiguration config = new BaseConfiguration();
+        config.addProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY,homeDir);
+        return config;
+    }
+
+    public static Configuration getDefaultConfiguration() {
+        BaseConfiguration config = new BaseConfiguration();
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY,homeDir);
+        return config;
+    }
 	
 }

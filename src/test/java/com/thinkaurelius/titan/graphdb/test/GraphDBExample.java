@@ -26,8 +26,7 @@ public class GraphDBExample {
 	}
 	
 	public void open() {
-		GraphDatabaseConfiguration config = new GraphDatabaseConfiguration(homeDir);
-		graphdb = config.openDatabase();
+		graphdb = GraphDatabaseFactory.open(homeDir);
 		tx=graphdb.startTransaction();
 	}
 
