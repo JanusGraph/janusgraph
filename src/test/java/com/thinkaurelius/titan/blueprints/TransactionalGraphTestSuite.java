@@ -91,6 +91,11 @@ public class TransactionalGraphTestSuite  extends TestSuite {
 
         while (completedThreads.get() < totalThreads) {
         }
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
         graph.shutdown();
     }
     

@@ -6,6 +6,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
@@ -96,14 +97,13 @@ public class StandardGraphDB implements GraphDB {
 
 
 	@Override
-	public void close() throws GraphStorageException {
+	public synchronized void close() throws GraphStorageException {
 		etManager.close();
-		
+        idAssigner.close();
+
 		edgeStore.close();
 		propertyIndex.close();
 		storage.close();
-
-		idAssigner.close();
 	}
 
 	@Override
@@ -842,10 +842,10 @@ public class StandardGraphDB implements GraphDB {
 		if (pt.hasIndex()) {
             if (pt.isKeyed()) {
                 mutator.mutateIndex(getIndexKey(prop.getAttribute()), null,
-                        ImmutableList.of(getKeyedIndexColumn(prop.getPropertyType())));
+                        Lists.newArrayList(getKeyedIndexColumn(prop.getPropertyType())));
             } else {
                 mutator.mutateIndex(getIndexKey(prop.getAttribute()), null,
-                        ImmutableList.of(getIndexColumn(prop.getPropertyType(), prop.getID())));
+                        Lists.newArrayList(getIndexColumn(prop.getPropertyType(), prop.getID())));
             }
 
 		}
@@ -857,10 +857,10 @@ public class StandardGraphDB implements GraphDB {
 		if (pt.hasIndex()) {
             if (pt.isKeyed()) {
                 mutator.mutateIndex(getIndexKey(prop.getAttribute()),
-                        ImmutableList.of(new Entry(getKeyedIndexColumn(pt), getIndexValue(prop))), null);
+                        Lists.newArrayList(new Entry(getKeyedIndexColumn(pt), getIndexValue(prop))), null);
             } else {
                 mutator.mutateIndex(getIndexKey(prop.getAttribute()),
-                        ImmutableList.of(new Entry(getIndexColumn(pt, prop.getID()), getIndexValue(prop))), null);
+                        Lists.newArrayList(new Entry(getIndexColumn(pt, prop.getID()), getIndexValue(prop))), null);
             }
 		}
 	}

@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.SimpleNodeIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -111,7 +112,7 @@ public class GraphDatabaseConfiguration {
                     }
                 }
                 Preconditions.checkArgument(dirOrFile.isDirectory());
-                configuration = new PropertiesConfiguration(dirOrFile.getAbsolutePath() + File.separator + DEFAULT_CONFIG_FILE_NAME);
+                configuration = new BaseConfiguration();
                 configuration.setProperty(keyInNamespace(STORAGE_NAMESPACE,STORAGE_DIRECTORY_KEY),dirOrFile.getAbsolutePath());
             }
         } catch (ConfigurationException e) {
@@ -206,13 +207,13 @@ public class GraphDatabaseConfiguration {
         } catch (NoSuchMethodException e) {
             throw new IllegalArgumentException("Configured storage manager does not have required constructor: " + clazzname);
         } catch (InstantiationException e) {
-            throw new IllegalArgumentException("Could not instantiate storage manager class" + clazzname,e);
+            throw new IllegalArgumentException("Could not instantiate storage manager class " + clazzname,e);
         } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException("Could not instantiate storage manager class" + clazzname,e);
+            throw new IllegalArgumentException("Could not instantiate storage manager class " + clazzname,e);
         } catch (InvocationTargetException e) {
-            throw new IllegalArgumentException("Could not instantiate storage manager class" + clazzname,e);
+            throw new IllegalArgumentException("Could not instantiate storage manager class " + clazzname,e);
         } catch (ClassCastException e) {
-            throw new IllegalArgumentException("Could not instantiate storage manager class" + clazzname,e);
+            throw new IllegalArgumentException("Could not instantiate storage manager class " + clazzname,e);
         }
 	}
     

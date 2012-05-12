@@ -42,11 +42,9 @@ public class IDManager implements IDInspector {
 		public abstract long offset();
 		public abstract long id();
 		public final long addPadding(long id) {
-			assert id>0;
 			return (id<<offset()) | id();
 		}
 		public final boolean is(long id) {
-			assert id>0;
 			return (id&((1l<<offset())-1)) == id();
 		}
 	}
@@ -146,10 +144,13 @@ public class IDManager implements IDInspector {
 
 
 	private long addPartition(long id, long partitionID) {
+        assert id>0;
+        assert partitionID>=0;
         return prefixWithOffset(id,partitionID,partitionOffset,maxPartitionID);
 	}
 	
 	private long addGroup(long id, long groupID) {
+        assert id>0;
         return prefixWithOffset(id,groupID,groupOffset,maxGroupID);
 	}
 

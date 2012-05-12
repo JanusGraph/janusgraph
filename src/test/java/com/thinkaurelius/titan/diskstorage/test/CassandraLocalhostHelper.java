@@ -215,12 +215,13 @@ public class CassandraLocalhostHelper {
 	}
 	
 	public Configuration getConfiguration() {
-        Configuration config = new BaseConfiguration().subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE);
-        config.addProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY,DiskgraphTest.homeDir);
+        Configuration configuration = DiskgraphTest.getDefaultConfiguration();
+        Configuration config = configuration.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE);
+        config.addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,"cassandra");
         config.addProperty(CassandraThriftStorageManager.PROP_HOSTNAME,address);
         config.addProperty(CassandraThriftStorageManager.PROP_SELF_HOSTNAME,address);
         config.addProperty(CassandraThriftStorageManager.PROP_TIMEOUT,5*60000);
-		return config;
+		return configuration;
 	}
 
     public static Configuration getLocalStorageConfiguration() {

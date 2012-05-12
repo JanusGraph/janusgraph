@@ -116,7 +116,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
         ByteBuffer key = ByteBufferUtil.getIntByteBuffer(partition);
         BDBTxHandle tx = beginTransaction();
         ByteBuffer value = idDB.get(key,tx);
-        int counter = 0;
+        int counter = 1;
         if (value!=null) {
             assert value.remaining()==4;
             counter = value.getInt();

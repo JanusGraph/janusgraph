@@ -41,6 +41,7 @@ public class LocalIDManager {
 
     public synchronized long[] getIDBlock(int partition, int blockSize) {
         int current = idmap.get(partition);
+        if (current==0) current=1; //starting point
         Preconditions.checkArgument(Integer.MAX_VALUE-blockSize>current,"ID overflow for partition: " + partition);
         int next = current + blockSize;
         idmap.put(partition,next);

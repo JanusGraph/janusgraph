@@ -176,6 +176,7 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 	
 	@Override
 	public synchronized void commit() {
+        Preconditions.checkArgument(isOpen());
         if (!getTxConfiguration().isReadOnly()) {
             List<InternalEdge> added=addedEdges;
             Set<InternalEdge> deleted=deletedEdges;
@@ -196,6 +197,7 @@ public class StandardPersistGraphTx extends AbstractGraphTx {
 
 	@Override
 	public synchronized void abort() {
+        Preconditions.checkArgument(isOpen());
 		clear();
 		txHandle.abort();
 		super.abort();
