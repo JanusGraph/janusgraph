@@ -93,7 +93,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 
 	@Override
 	public TransactionHandle beginTransaction() {
-		return new CassandraTransaction();
+		return new CassandraTransaction(keyspace, pool);
 	}
 
 	@Override
@@ -113,31 +113,21 @@ public class CassandraThriftStorageManager implements StorageManager {
 			logger.debug("Looking up metadata on keyspace {}...", keyspace);
 			KsDef keyspaceDef = client.describe_keyspace(keyspace);
 			boolean foundColumnFamily = false;
+			boolean foundLockColumnFamily = false;
+			final String lockCfName = name + "_locks";
 			for (CfDef cfDef : keyspaceDef.getCf_defs()) {
-				if (cfDef.getName().equals(name)) {
+				String curCfName = cfDef.getName();
+				if (curCfName.equals(name)) {
 					foundColumnFamily = true;
+				} else if (curCfName.equals(lockCfName)) {
+					foundLockColumnFamily = true;
 				}
 			}
 			if (!foundColumnFamily) {
-				CfDef createColumnFamily = new CfDef();
-				createColumnFamily.setName(name);
-				createColumnFamily.setKeyspace(keyspace);
-				createColumnFamily.setComparator_type("org.apache.cassandra.db.marshal.BytesType");
-				logger.debug("Adding column family {} to keyspace {}...", name, keyspace);
-                String schemaVer = null;
-                try {
-                    schemaVer = client.system_add_column_family(createColumnFamily);
-                } catch (SchemaDisagreementException e) {
-                    throw new GraphStorageException("Error in setting up column family",e);
-                }
-                logger.debug("Added column family {} to keyspace {}.", name, keyspace);
-				
-				// Try to let Cassandra converge on the new column family
-				try {
-					CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
-				} catch (InterruptedException e) {
-					throw new GraphStorageException(e);
-				}
+				createColumnFamily(client, name);
+			}
+			if (!foundLockColumnFamily) {
+				createColumnFamily(client, lockCfName);
 			}
 		} catch (TException e) {
 			throw new GraphStorageException(e);
@@ -253,5 +243,29 @@ public class CassandraThriftStorageManager implements StorageManager {
         } else {
             return hostname;
         }
+    }
+    
+    private void createColumnFamily(Cassandra.Client client, String cfName)
+    		throws InvalidRequestException, TException {
+		CfDef createColumnFamily = new CfDef();
+		createColumnFamily.setName(cfName);
+		createColumnFamily.setKeyspace(keyspace);
+		createColumnFamily.setComparator_type("org.apache.cassandra.db.marshal.BytesType");
+		logger.debug("Adding column family {} to keyspace {}...", cfName, keyspace);
+        String schemaVer = null;
+        try {
+            schemaVer = client.system_add_column_family(createColumnFamily);
+        } catch (SchemaDisagreementException e) {
+            throw new GraphStorageException("Error in setting up column family",e);
+        }
+        logger.debug("Added column family {} to keyspace {}.", cfName, keyspace);
+		
+		// Try to let Cassandra converge on the new column family
+		try {
+			CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
+		} catch (InterruptedException e) {
+			throw new GraphStorageException(e);
+		}
+    	
     }
 }

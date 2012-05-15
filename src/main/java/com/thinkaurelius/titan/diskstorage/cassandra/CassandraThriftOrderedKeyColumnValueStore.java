@@ -290,7 +290,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	 * 	             returned value be one?
 	 * @return a timestamp as described above
 	 */
-	private long getNewTimestamp(final boolean setLSB) {
+	static long getNewTimestamp(final boolean setLSB) {
 		final long nanosSinceEpoch = System.nanoTime() - t0NanoTime + t0NanosSinceEpoch;
 		final long ts = ((nanosSinceEpoch) & 0xFFFFFFFFFFFFFFFEL) + (setLSB ? 1L : 0L);
 		return ts;
@@ -326,8 +326,13 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	@Override
 	public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue,
 			TransactionHandle txh) {
-		// TODO Auto-generated method stub
 		
+		CassandraTransaction ctxh = (CassandraTransaction)txh;
+		if (ctxh.isMutationStarted()) {
+			throw new GraphStorageException("Attempted to obtain a lock after one or more mutations");
+		}
+		
+		ctxh.writeBlindLockClaim(columnFamily, key, column, expectedValue);
 	}
 
     @Override
@@ -335,7 +340,16 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		
     	if (null == mutations)
     		return;
-		
+
+    	// Locking
+    	CassandraTransaction ctxh = (CassandraTransaction)txh;
+    	if (! ctxh.isMutationStarted()) {
+    		// This is the first mutate call in the transaction
+        	ctxh.mutationStarted();
+        	// Verify all blind lock claims now
+        	ctxh.verifyAllLockClaims(); // throws GSE and unlocks everything on any lock failure
+    	}
+    	
 		long deletionTimestamp = getNewTimestamp(false);
 		long additionTimestamp = getNewTimestamp(true);
 		
