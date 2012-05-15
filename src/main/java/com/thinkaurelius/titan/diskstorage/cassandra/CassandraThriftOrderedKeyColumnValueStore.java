@@ -136,7 +136,10 @@ public class CassandraThriftOrderedKeyColumnValueStore
 						" is greater than columnEnd=" + columnEnd + ". " +
 						"columnStart must be less than or equal to columnEnd");
 			}
-			return ImmutableList.<Entry>of();
+                        if (0 != columnStart.remaining() && 0 != columnEnd.remaining()) {
+                                logger.debug("Return empty list due to columnEnd==columnStart and neither empty");
+                                return ImmutableList.<Entry>of();
+                        }
 		}
 		
 		// true: columnStart < columnEnd
@@ -258,6 +261,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		} catch (UnavailableException e) {
 			throw new GraphStorageException(e);
 		} catch (InvalidRequestException e) {
+			e.printStackTrace();
 			throw new GraphStorageException(e);
 		} catch (NotFoundException e) {
 			return null;

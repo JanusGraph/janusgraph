@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.codec.binary.Hex;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
@@ -141,7 +142,7 @@ public class CassandraTransaction implements TransactionHandle {
 		ByteBuffer lockKey = lc.getLockKey();
 		
 		ByteBuffer valBuf = ByteBuffer.allocate(4);
-		valBuf.putInt(0).reset();
+		valBuf.putInt(0).rewind();
 		
 		boolean ok = false;
 		try {
@@ -162,6 +163,7 @@ public class CassandraTransaction implements TransactionHandle {
 					ok = true;
 					lastLockApplicationTimeMS = before;
 					lc.setTimestamp(ts);
+                                        log.debug("Wrote Cassandra lock: {}", lc);
 					break;
 				}
 			}
@@ -232,6 +234,8 @@ public class CassandraTransaction implements TransactionHandle {
 			// Determine the timestamp and rid of the earliest still-valid lock claim
 			Long earliestTS = null;
 			byte[] earliestRid = null;
+
+                        log.debug("Retrieved {} total lock claim(s) when verifying {}", entries.size(), lc);
 			
 			for (Entry e : entries) {
 				ByteBuffer bb = e.getColumn();
@@ -241,6 +245,7 @@ public class CassandraTransaction implements TransactionHandle {
 				
 				// Ignore expired lock claims
 				if (ts < now - lockExpirationMS) {
+                                        log.warn("Discarded expired lock with timestamp {}", ts);
 					continue;
 				}
 				
@@ -267,7 +272,9 @@ public class CassandraTransaction implements TransactionHandle {
 			}
 			
 			// Check: did our Rid win?
-			if (! earliestRid.equals(rid)) {
+			if (! Arrays.equals(earliestRid, rid)) {
+                                log.debug("My rid={} lost to earlier rid={},ts={}",
+                                          new Object[] { Hex.encodeHexString(rid), Hex.encodeHexString(earliestRid), earliestTS });
 				throw new GraphStorageException("Lock seniority failed: " + lc);
 			}
 			
@@ -295,6 +302,7 @@ public class CassandraTransaction implements TransactionHandle {
 			
 			// Delete lock
 			store.mutate(lockKeyBuf, null, Arrays.asList(lockColBuf), null);
+                        log.debug("Wrote Cassandra unlock: {}", lc);
 			
 			// Release local lock
 			LocalLockMediator llm = LocalLockMediator.get(lc.getCf());

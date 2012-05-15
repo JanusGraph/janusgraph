@@ -60,7 +60,7 @@ public class LockClaim {
 		}
 		
 		lockKey = ByteBuffer.allocate(key.remaining() + column.remaining() + 4);
-		lockKey.putInt(key.remaining()).put(key.duplicate()).put(column.duplicate()).reset();
+		lockKey.putInt(key.remaining()).put(key.duplicate()).put(column.duplicate()).rewind();
 		
 		return lockKey;
 	}
@@ -68,7 +68,7 @@ public class LockClaim {
 	public ByteBuffer getLockCol(long ts, byte[] rid) {
 		
 		lockCol = ByteBuffer.allocate(rid.length + 8);
-		lockCol.putLong(ts).put(rid).reset();
+		lockCol.putLong(ts).put(rid).rewind();
 		
 		return lockCol;
 	}

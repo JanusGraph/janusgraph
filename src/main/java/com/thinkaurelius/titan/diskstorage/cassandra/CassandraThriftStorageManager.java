@@ -119,9 +119,14 @@ public class CassandraThriftStorageManager implements StorageManager {
 	}
 
 	@Override
-	public synchronized CassandraThriftOrderedKeyColumnValueStore openDatabase(String name)
+	public CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name)
 			throws GraphStorageException {
-		
+	
+                synchronized (stores) {
+
+		final String lockCfName = getLockColumnFamilyName(name);
+
+	
 		CassandraThriftOrderedKeyColumnValueStore store =
 				stores.get(name);
 		
@@ -137,7 +142,6 @@ public class CassandraThriftStorageManager implements StorageManager {
 			KsDef keyspaceDef = client.describe_keyspace(keyspace);
 			boolean foundColumnFamily = false;
 			boolean foundLockColumnFamily = false;
-			final String lockCfName = getLockColumnFamilyName(name);
 			for (CfDef cfDef : keyspaceDef.getCf_defs()) {
 				String curCfName = cfDef.getName();
 				if (curCfName.equals(name)) {
@@ -164,10 +168,14 @@ public class CassandraThriftStorageManager implements StorageManager {
 		}
 		
 		store = new CassandraThriftOrderedKeyColumnValueStore(keyspace, name, pool);
-		
+                CassandraThriftOrderedKeyColumnValueStore lockStore =
+                        new CassandraThriftOrderedKeyColumnValueStore(keyspace, lockCfName, pool);
+
 		stores.put(name, store);
+                stores.put(lockCfName, lockStore);
 		
 		return store;
+                }
 	}
 	
 	CassandraThriftOrderedKeyColumnValueStore getOpenedDatabase(String name) {
@@ -206,6 +214,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 				return false;
 			}
 
+                        stores.clear();
 			return true;
 		} catch (Exception e) {
 			throw new GraphStorageException(e);
@@ -213,6 +222,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 			if (null != conn)
 				pool.genericReturnObject(keyspace, conn);
 		}
+
 	}
 	
 	
@@ -244,6 +254,8 @@ public class CassandraThriftStorageManager implements StorageManager {
 				
 				// Try to let Cassandra converge on the new column family
 				CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
+
+                                stores.clear();
 			} catch (NotFoundException e) {
 				// Keyspace doesn't exist yet: return immediately
 				logger.debug("Keyspace {} does not exist, not attempting to drop", 
@@ -255,6 +267,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 			if (null != conn && conn.getTransport().isOpen())
 				conn.getTransport().close();
 		}
+                
 	}
 
     /**

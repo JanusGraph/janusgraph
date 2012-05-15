@@ -37,8 +37,12 @@ public class LocalLockMediator {
 		LocalLockMediator m = mediators.get(name);
 		
 		if (null == m) {
-			m = mediators.putIfAbsent(name, new LocalLockMediator(name));
-			log.debug("Local lock mediator instantiated for namespace {}", name);
+			m = new LocalLockMediator(name);
+			LocalLockMediator old = mediators.putIfAbsent(name, m);
+			if (null != old)
+				m = old;
+			else 
+				log.debug("Local lock mediator instantiated for namespace {}", name);
 		}
 		
 		return m;
