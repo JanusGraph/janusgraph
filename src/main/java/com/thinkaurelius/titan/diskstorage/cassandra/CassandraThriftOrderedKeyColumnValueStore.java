@@ -341,13 +341,16 @@ public class CassandraThriftOrderedKeyColumnValueStore
     	if (null == mutations)
     		return;
 
-    	// Locking
-    	CassandraTransaction ctxh = (CassandraTransaction)txh;
-    	if (! ctxh.isMutationStarted()) {
-    		// This is the first mutate call in the transaction
-        	ctxh.mutationStarted();
-        	// Verify all blind lock claims now
-        	ctxh.verifyAllLockClaims(); // throws GSE and unlocks everything on any lock failure
+    	// null txh means a CassandraTransaction is calling this method
+    	if (null != txh) {
+    		// non-null txh -> make sure locks are valid
+    		CassandraTransaction ctxh = (CassandraTransaction)txh;
+    		if (! ctxh.isMutationStarted()) {
+    			// This is the first mutate call in the transaction
+    			ctxh.mutationStarted();
+    			// Verify all blind lock claims now
+    			ctxh.verifyAllLockClaims(); // throws GSE and unlocks everything on any lock failure
+    		}
     	}
     	
 		long deletionTimestamp = getNewTimestamp(false);

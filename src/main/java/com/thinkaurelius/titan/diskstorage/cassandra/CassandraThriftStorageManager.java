@@ -1,5 +1,24 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY;
+
+import java.io.File;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.cassandra.thrift.Cassandra;
+import org.apache.cassandra.thrift.CfDef;
+import org.apache.cassandra.thrift.InvalidRequestException;
+import org.apache.cassandra.thrift.KsDef;
+import org.apache.cassandra.thrift.NotFoundException;
+import org.apache.cassandra.thrift.SchemaDisagreementException;
+import org.apache.commons.configuration.Configuration;
+import org.apache.thrift.TException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
@@ -8,17 +27,6 @@ import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
 import com.thinkaurelius.titan.diskstorage.util.LocalIDManager;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
-import org.apache.cassandra.thrift.*;
-import org.apache.commons.configuration.Configuration;
-import org.apache.thrift.TException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY;
 
 public class CassandraThriftStorageManager implements StorageManager {
 
@@ -31,6 +39,9 @@ public class CassandraThriftStorageManager implements StorageManager {
     public static final String PROP_SELF_HOSTNAME = "selfHostname";
     public static final String PROP_TIMEOUT = "thrift_timeout";
 
+    public static Map<String, CassandraThriftOrderedKeyColumnValueStore> stores =
+    		new ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore>();
+    
     /**
      * Default name for the Cassandra keyspace
      * <p>
@@ -66,6 +77,13 @@ public class CassandraThriftStorageManager implements StorageManager {
      * Value = {@value}
      */
     public static final int DEFAULT_PORT = 9160;
+    
+    /**
+     * Default column family used for ID block management.
+     * <p>
+     * Value = {@value}
+     */
+    public static final String idCfName = "id_allocations";
 
 	private final String keyspace;
 	
@@ -73,7 +91,6 @@ public class CassandraThriftStorageManager implements StorageManager {
 			<String, CTConnection> pool;
 
     private final LocalIDManager idmanager;
-
 	
 	public CassandraThriftStorageManager(Configuration config) {
 		this.keyspace = config.getString(PROP_KEYSPACE,DEFAULT_KEYSPACE);
@@ -93,7 +110,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 
 	@Override
 	public TransactionHandle beginTransaction() {
-		return new CassandraTransaction(keyspace, pool);
+		return new CassandraTransaction(this);
 	}
 
 	@Override
@@ -101,11 +118,17 @@ public class CassandraThriftStorageManager implements StorageManager {
         //Do nothing
 	}
 
-
 	@Override
-	public CassandraThriftOrderedKeyColumnValueStore openDatabase(String name)
+	public synchronized CassandraThriftOrderedKeyColumnValueStore openDatabase(String name)
 			throws GraphStorageException {
 		
+		CassandraThriftOrderedKeyColumnValueStore store =
+				stores.get(name);
+		
+		if (null != store) {
+			return store;
+		}
+
 		CTConnection conn = null;
 		try {
 			conn =  pool.genericBorrowObject(keyspace);
@@ -114,7 +137,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 			KsDef keyspaceDef = client.describe_keyspace(keyspace);
 			boolean foundColumnFamily = false;
 			boolean foundLockColumnFamily = false;
-			final String lockCfName = name + "_locks";
+			final String lockCfName = getLockColumnFamilyName(name);
 			for (CfDef cfDef : keyspaceDef.getCf_defs()) {
 				String curCfName = cfDef.getName();
 				if (curCfName.equals(name)) {
@@ -140,7 +163,19 @@ public class CassandraThriftStorageManager implements StorageManager {
 				pool.genericReturnObject(keyspace, conn);
 		}
 		
-		return new CassandraThriftOrderedKeyColumnValueStore(keyspace, name, pool);
+		store = new CassandraThriftOrderedKeyColumnValueStore(keyspace, name, pool);
+		
+		stores.put(name, store);
+		
+		return store;
+	}
+	
+	CassandraThriftOrderedKeyColumnValueStore getOpenedDatabase(String name) {
+		return stores.get(name);
+	}
+	
+	String getLockColumnFamilyName(String cfName) {
+		return cfName + "_locks";
 	}
 	
 	/**
