@@ -68,9 +68,9 @@ public class SimpleBinaryTitanEdge extends AbstractTypedRelation implements Tita
 	}
 
 	@Override
-	public boolean isSelfLoop(TitanVertex vertex) {
-		if (!start.equals(end)) return false;
-		else return vertex ==null || vertex.equals(start);
+	public boolean isSelfLoop() {
+		if (start.equals(end)) return true;
+		else return false;
 	}
 
 	@Override

@@ -85,7 +85,7 @@ public class NodeUtil {
 
 			@Override
 			public boolean apply(InternalRelation edge) {
-				if (edge.isSelfLoop(v)) return false;
+				if (edge.isSelfLoop()) return false;
 				else return true;
 			}}
 		);

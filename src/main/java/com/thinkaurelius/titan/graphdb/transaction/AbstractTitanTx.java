@@ -195,7 +195,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
 	@Override
 	public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, TitanLabel label) {
-		InternalRelation e = edgeFactory.createNewRelationship(label, (InternalTitanVertex)outVertex, (InternalTitanVertex)label);
+		InternalRelation e = edgeFactory.createNewRelationship(label, (InternalTitanVertex)outVertex, (InternalTitanVertex)inVertex);
 		addedRelation(e);
 		return (TitanEdge)e;
 	}

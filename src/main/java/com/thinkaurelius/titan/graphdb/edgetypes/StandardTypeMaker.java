@@ -71,8 +71,8 @@ public class StandardTypeMaker implements TypeMaker {
 	
 	@Override
 	public TitanKey makePropertyKey() {
-		checkGeneralArguments();
         if (category==null) category = EdgeCategory.Simple;
+        checkGeneralArguments();
 		if (directionality!=Directionality.Directed)
 			throw new IllegalArgumentException("TitanProperty types must be directed!");
 		if (category!=EdgeCategory.Simple)
@@ -88,8 +88,8 @@ public class StandardTypeMaker implements TypeMaker {
 
 	@Override
 	public TitanLabel makeEdgeLabel() {
-		checkGeneralArguments();
         if (category==null) category = EdgeCategory.HasProperties;
+        checkGeneralArguments();
 		if (hasIndex)
 			throw new IllegalArgumentException("Cannot specify hasIndex for relationship type.");
 		return etManager.createRelationshipType(tx, name, category, directionality, 

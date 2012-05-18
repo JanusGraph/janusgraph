@@ -201,7 +201,7 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 		e=n3.addEdge(knows, n1);
 		n3.addEdge(connect, n3);
 		e.addProperty(id, 111);
-		assertEquals(3,Iterables.size(n3.getEdges()));
+		assertEquals(4,Iterables.size(n3.getEdges()));
 		
 		clopen();
 		
@@ -249,7 +249,7 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 		e=Iterables.getOnlyElement(n3.getTitanEdges(Direction.OUT,tx.getEdgeLabel("knows")));
 		assertEquals(111,e.getProperty(id));
 		
-		assertEquals(3,Iterables.size(n3.getEdges()));
+		assertEquals(4,Iterables.size(n3.getEdges()));
 				
 		//Delete Edges, create new ones		
 		e=Iterables.getOnlyElement(n2.getTitanEdges(Direction.OUT,tx.getEdgeLabel("knows")));

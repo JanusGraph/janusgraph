@@ -110,7 +110,7 @@ public interface TitanRelation extends TitanVertex {
 	 * @param vertex TitanVertex to check the loop condition for
 	 * @return true, if this edge is a loop with respect to the given node, else false.
 	 */
-	boolean isSelfLoop(TitanVertex vertex);
+	boolean isSelfLoop();
 
 	/**
 	 * Checks whether this edge is a property.

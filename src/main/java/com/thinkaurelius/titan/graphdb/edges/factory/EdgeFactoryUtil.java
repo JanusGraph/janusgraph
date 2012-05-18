@@ -29,7 +29,7 @@ public class EdgeFactoryUtil {
 		
 		int notloaded=0,loaded=0;
         int arity = edge.getArity();
-        if (edge.isUnidirected() || edge.isProperty() || edge.isSelfLoop(null)) {
+        if (edge.isUnidirected() || edge.isProperty() || edge.isSelfLoop()) {
             arity=1;
         }
         for (int i=0;i<arity;i++) {

@@ -51,7 +51,7 @@ public class SimpleProperty extends AbstractTypedRelation implements TitanProper
 	}
 
 	@Override
-	public boolean isSelfLoop(TitanVertex vertex) {
+	public boolean isSelfLoop() {
 		return false;
 	}
 

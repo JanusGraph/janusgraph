@@ -14,13 +14,13 @@ public class SystemKey extends SystemType implements PropertyTypeDefinition, Tit
 		new SystemKey("RelationshipTypeDefinition",StandardRelationshipType.class,3);
 
 	public static final SystemKey TypeName =
-		new SystemKey("TypeName",String.class,4,true);
+		new SystemKey("TypeName",String.class,4,true,true);
 	
 	public static final SystemKey Attribute =
 		new SystemKey("Attribute",Object.class,5);
 
     public static final SystemKey TypeClass =
-            new SystemKey("TypeClass",TitanTypeClass.class,6,true);
+            new SystemKey("TypeClass",TitanTypeClass.class,6,true,false);
 	
 	public static final Iterable<SystemKey> values() {
 		return ImmutableList.of(PropertyTypeDefinition,RelationshipTypeDefinition,TypeName,Attribute,TypeClass);
@@ -28,15 +28,17 @@ public class SystemKey extends SystemType implements PropertyTypeDefinition, Tit
 	
 	private final Class<?> dataType;
 	private final boolean index;
+    private final boolean unique;
 	
 	private SystemKey(String name, Class<?> dataType, int id) {
-		this(name,dataType,id,false);
+		this(name,dataType,id,false,false);
 	}
 	
-	private SystemKey(String name, Class<?> dataType, int id, boolean index) {
+	private SystemKey(String name, Class<?> dataType, int id, boolean index, boolean unique) {
 		super(name, IDManager.getSystemPropertyKeyID(id));
 		this.dataType=dataType;
 		this.index=index;
+        this.unique=unique;
 	}
 	
 
@@ -62,7 +64,7 @@ public class SystemKey extends SystemType implements PropertyTypeDefinition, Tit
 	
 	@Override
 	public boolean isUnique() {
-		return index;
+		return unique;
 	}
 	
 	@Override
