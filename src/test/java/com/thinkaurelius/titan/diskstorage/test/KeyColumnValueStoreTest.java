@@ -303,8 +303,8 @@ public abstract class KeyColumnValueStoreTest {
 //		
 //		txn.commit();
 //		
-//		store.close();
-//		manager.close();
+//		store.shutdown();
+//		manager.shutdown();
 //	}
 
 	@Test

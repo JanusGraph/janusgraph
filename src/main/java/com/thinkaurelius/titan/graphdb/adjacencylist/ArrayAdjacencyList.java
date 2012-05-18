@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.graphdb.adjacencylist;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.EdgeType;
-import com.thinkaurelius.titan.core.EdgeTypeGroup;
+import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.exceptions.InvalidEdgeException;
-import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
+import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -14,34 +14,34 @@ public class ArrayAdjacencyList implements AdjacencyList {
 	private static final long serialVersionUID = -2868708972683152295L;
 
 	private final ArrayAdjListFactory factory;
-	private InternalEdge[] contents;
+	private InternalRelation[] contents;
 
 	
 	ArrayAdjacencyList(ArrayAdjListFactory factory) {
 		this.factory=factory;
-		contents = new InternalEdge[factory.getInitialCapacity()];
+		contents = new InternalRelation[factory.getInitialCapacity()];
 	}
 	
 	@Override
-	public synchronized AdjacencyList addEdge(InternalEdge e, ModificationStatus status) {
+	public synchronized AdjacencyList addEdge(InternalRelation e, ModificationStatus status) {
 		return addEdge(e,false,status);
 	}
 
 
 	@Override
-	public synchronized AdjacencyList addEdge(InternalEdge e, boolean checkTypeUniqueness, ModificationStatus status) {
+	public synchronized AdjacencyList addEdge(InternalRelation e, boolean checkTypeUniqueness, ModificationStatus status) {
 		int emptySlot = -1;
 		for (int i=0;i<contents.length;i++) {
 			if (contents[i]==null) {
 				emptySlot=i;
 				continue;
 			}
-			InternalEdge oth = contents[i];
+			InternalRelation oth = contents[i];
 			assert oth!=null;
 			if (oth.equals(e)) {
 				status.nochange();
 				return this;
-			} else if (checkTypeUniqueness && oth.getEdgeType().equals(e.getEdgeType())) {
+			} else if (checkTypeUniqueness && oth.getType().equals(e.getType())) {
 				throw new InvalidEdgeException("Cannot add functional edge since an edge of that type already exists!");
 			}
 		}
@@ -53,7 +53,7 @@ public class ArrayAdjacencyList implements AdjacencyList {
 				contents[emptySlot]=e;
 			} else {
 				//Expand & copy
-				InternalEdge[] contents2 = new InternalEdge[factory.updateCapacity(contents.length)];
+				InternalRelation[] contents2 = new InternalRelation[factory.updateCapacity(contents.length)];
 				System.arraycopy(contents, 0, contents2, 0, contents.length);
 				contents2[contents.length]=e;
 				contents=contents2;
@@ -64,7 +64,7 @@ public class ArrayAdjacencyList implements AdjacencyList {
 	}
 
 	@Override
-	public boolean containsEdge(InternalEdge e) {
+	public boolean containsEdge(InternalRelation e) {
 		for (int i=0;i<contents.length;i++) {
 			if (contents[i]!=null && e.equals(contents[i])) return true;
 		}
@@ -81,7 +81,7 @@ public class ArrayAdjacencyList implements AdjacencyList {
 	}
 
 	@Override
-	public synchronized void removeEdge(InternalEdge e, ModificationStatus status) {
+	public synchronized void removeEdge(InternalRelation e, ModificationStatus status) {
 		status.nochange();
 		for (int i=0;i<contents.length;i++) {
 			if (contents[i]!=null && e.equals(contents[i])) {
@@ -99,11 +99,11 @@ public class ArrayAdjacencyList implements AdjacencyList {
 	
 
 	@Override
-	public Iterable<InternalEdge> getEdges() {
-		return new Iterable<InternalEdge>() {
+	public Iterable<InternalRelation> getEdges() {
+		return new Iterable<InternalRelation>() {
 
 			@Override
-			public Iterator<InternalEdge> iterator() {
+			public Iterator<InternalRelation> iterator() {
 				return new InternalIterator();
 			}
 			
@@ -111,11 +111,11 @@ public class ArrayAdjacencyList implements AdjacencyList {
 	}
 
 	@Override
-	public Iterable<InternalEdge> getEdges(final EdgeType type) {
-		return new Iterable<InternalEdge>() {
+	public Iterable<InternalRelation> getEdges(final TitanType type) {
+		return new Iterable<InternalRelation>() {
 
 			@Override
-			public Iterator<InternalEdge> iterator() {
+			public Iterator<InternalRelation> iterator() {
 				return new InternalTypeIterator(type);
 			}
 			
@@ -124,11 +124,11 @@ public class ArrayAdjacencyList implements AdjacencyList {
 	
 
 	@Override
-	public Iterable<InternalEdge> getEdges(final EdgeTypeGroup group) {
-		return new Iterable<InternalEdge>() {
+	public Iterable<InternalRelation> getEdges(final TypeGroup group) {
+		return new Iterable<InternalRelation>() {
 
 			@Override
-			public Iterator<InternalEdge> iterator() {
+			public Iterator<InternalRelation> iterator() {
 				return new InternalGroupIterator(group);
 			}
 			
@@ -138,9 +138,9 @@ public class ArrayAdjacencyList implements AdjacencyList {
 	
 	private class InternalGroupIterator extends InternalIterator {
 		
-		private final EdgeTypeGroup group;
+		private final TypeGroup group;
 		
-		private InternalGroupIterator(EdgeTypeGroup group) {
+		private InternalGroupIterator(TypeGroup group) {
 			super(false);
 			Preconditions.checkNotNull(group);
 			this.group=group;
@@ -148,17 +148,17 @@ public class ArrayAdjacencyList implements AdjacencyList {
 		}
 		
 		@Override
-		protected boolean applies(InternalEdge edge) {
-			return group.equals(edge.getEdgeType().getGroup());
+		protected boolean applies(InternalRelation edge) {
+			return group.equals(edge.getType().getGroup());
 		}
 		
 	}
 	
 	private class InternalTypeIterator extends InternalIterator {
 		
-		private final EdgeType type;
+		private final TitanType type;
 		
-		private InternalTypeIterator(EdgeType type) {
+		private InternalTypeIterator(TitanType type) {
 			super(false);
 			Preconditions.checkNotNull(type);
 			this.type=type;
@@ -166,17 +166,17 @@ public class ArrayAdjacencyList implements AdjacencyList {
 		}
 		
 		@Override
-		protected boolean applies(InternalEdge edge) {
-			return type.equals(edge.getEdgeType());
+		protected boolean applies(InternalRelation edge) {
+			return type.equals(edge.getType());
 		}
 		
 	}
 	
-	private class InternalIterator implements Iterator<InternalEdge> {
+	private class InternalIterator implements Iterator<InternalRelation> {
 
-		private InternalEdge next = null;
+		private InternalRelation next = null;
 		private int position = -1;
-		private InternalEdge last = null;
+		private InternalRelation last = null;
 
 		
 		InternalIterator() {
@@ -200,7 +200,7 @@ public class ArrayAdjacencyList implements AdjacencyList {
 			}
 		}
 		
-		protected boolean applies(InternalEdge edge) {
+		protected boolean applies(InternalRelation edge) {
 			return true;
 		}
 		
@@ -210,9 +210,9 @@ public class ArrayAdjacencyList implements AdjacencyList {
 		}
 
 		@Override
-		public InternalEdge next() {
+		public InternalRelation next() {
 			if (next==null) throw new NoSuchElementException();
-			InternalEdge old = next;
+			InternalRelation old = next;
 			findNext();
 			return old;
 		}
@@ -227,7 +227,7 @@ public class ArrayAdjacencyList implements AdjacencyList {
 
 
 	@Override
-	public Iterator<InternalEdge> iterator() {
+	public Iterator<InternalRelation> iterator() {
 		return new InternalIterator();
 	}
 

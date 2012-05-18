@@ -1,18 +1,18 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
-import com.thinkaurelius.titan.core.Edge;
-import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
+import com.thinkaurelius.titan.core.TitanRelation;
+import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 
 import java.util.Iterator;
 
-public class RemovableEdgeIterator <O extends Edge>
+public class RemovableEdgeIterator <O extends TitanRelation>
 implements Iterator<O> {
 
 	
-	private final Iterator<InternalEdge> iterator;
-	private InternalEdge current;
+	private final Iterator<InternalRelation> iterator;
+	private InternalRelation current;
 	
-	public RemovableEdgeIterator(Iterator<InternalEdge> iter) {
+	public RemovableEdgeIterator(Iterator<InternalRelation> iter) {
 		iterator = iter;
 		current = null;
 	}
@@ -33,7 +33,7 @@ implements Iterator<O> {
 	public void remove() {
 		assert current!=null;
         //iterator.remove();
-		current.delete();
+		current.remove();
 	}
 
 	

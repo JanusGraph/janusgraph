@@ -1,19 +1,19 @@
 package com.thinkaurelius.titan.graphdb.edges;
 
-import com.thinkaurelius.titan.core.PropertyType;
-import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
+import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 
-public class InlineProperty extends SimpleProperty implements InlineEdge {
+public class InlineProperty extends SimpleProperty implements InlineRelation {
 
-	public InlineProperty(PropertyType type, InternalNode node,
+	public InlineProperty(TitanKey type, InternalTitanVertex node,
 			Object attribute) {
 		super(type, node, attribute);
 	}
 	
 	
 	@Override
-	public InlineEdge clone() {
-		return new InlineProperty(getPropertyType(),getNodeAt(0),getAttribute());
+	public InlineRelation clone() {
+		return new InlineProperty(getPropertyKey(), getVertex(0),getAttribute());
 	}
 
 	@Override
@@ -23,32 +23,32 @@ public class InlineProperty extends SimpleProperty implements InlineEdge {
 	
 	@Override
 	public boolean isAvailable() {
-		return getStart().isAvailable();
+		return getVertex().isAvailable();
 	}
 	
 	@Override
 	public boolean isAccessible() {
-		return getStart().isAccessible();
+		return getVertex().isAccessible();
 	}
 
 	@Override
-	public boolean isDeleted() {
-		return getStart().isDeleted();
+	public boolean isRemoved() {
+		return getVertex().isRemoved();
 	}
 
 	@Override
 	public boolean isLoaded() {
-		return getStart().isLoaded();
+		return getVertex().isLoaded();
 	}
 
 	@Override
 	public boolean isModified() {
-		return getStart().isModified();
+		return getVertex().isModified();
 	}
 
 	@Override
 	public boolean isNew() {
-		return getStart().isNew();
+		return getVertex().isNew();
 	}
 
 

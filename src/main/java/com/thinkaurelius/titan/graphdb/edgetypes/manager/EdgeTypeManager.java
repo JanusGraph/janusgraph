@@ -2,36 +2,38 @@ package com.thinkaurelius.titan.graphdb.edgetypes.manager;
 
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.edgetypes.Directionality;
+import com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory;
 import com.thinkaurelius.titan.graphdb.edgetypes.EdgeTypeVisibility;
-import com.thinkaurelius.titan.graphdb.edgetypes.InternalEdgeType;
-import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
+import com.thinkaurelius.titan.graphdb.edgetypes.InternalTitanType;
+import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 
 public interface EdgeTypeManager {
 
-	public EdgeTypeMaker getEdgeTypeMaker(GraphTx tx);
+	public TypeMaker getEdgeTypeMaker(InternalTitanTransaction tx);
 	
-	public RelationshipType createRelationshipType(GraphTx tx, String name, EdgeCategory category,
+	public TitanLabel createRelationshipType(InternalTitanTransaction tx, String name, EdgeCategory category,
                                                    Directionality directionality, EdgeTypeVisibility visibility,
-                                                   boolean isfunctional, EdgeType[] keysig,
-                                                   EdgeType[] compactsig, EdgeTypeGroup group);
+                                                   boolean isfunctional, TitanType[] keysig,
+                                                   TitanType[] compactsig, TypeGroup group);
 
-	public PropertyType createPropertyType(GraphTx tx, String name, EdgeCategory category,
+	public TitanKey createPropertyType(InternalTitanTransaction tx, String name, EdgeCategory category,
                                            Directionality directionality, EdgeTypeVisibility visibility,
-                                           boolean isfunctional, EdgeType[] keysig,
-                                           EdgeType[] compactsig, EdgeTypeGroup group,
+                                           boolean isfunctional, TitanType[] keysig,
+                                           TitanType[] compactsig, TypeGroup group,
                                            boolean isKey, boolean hasIndex, Class<?> objectType);
 	
 	
 	
-	public InternalEdgeType getEdgeType(long id, GraphTx tx);
+	public InternalTitanType getEdgeType(long id, InternalTitanTransaction tx);
 	
-	public InternalEdgeType getEdgeType(String name, GraphTx tx);
+	public InternalTitanType getEdgeType(String name, InternalTitanTransaction tx);
 	
-	public boolean containsEdgeType(long id, GraphTx tx);
+	public boolean containsEdgeType(long id, InternalTitanTransaction tx);
 	
-	public boolean containsEdgeType(String name, GraphTx tx);
+	public boolean containsEdgeType(String name, InternalTitanTransaction tx);
 
-	public void committed(InternalEdgeType edgetype);
+	public void committed(InternalTitanType edgetype);
 	
 	public void close();
 	

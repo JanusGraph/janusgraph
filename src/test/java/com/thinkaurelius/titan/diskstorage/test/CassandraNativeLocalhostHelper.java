@@ -87,7 +87,7 @@ public class CassandraNativeLocalhostHelper {
 //	}
 	
 	public void stop() {
-//		manager.close();
+//		manager.shutdown();
 		restoreSystemProperties();
 	}
 }

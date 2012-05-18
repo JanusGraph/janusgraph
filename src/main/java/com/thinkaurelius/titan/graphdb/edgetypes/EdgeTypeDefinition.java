@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.graphdb.edgetypes;
 
-import com.thinkaurelius.titan.core.Directionality;
-import com.thinkaurelius.titan.core.EdgeCategory;
-import com.thinkaurelius.titan.core.EdgeType;
-import com.thinkaurelius.titan.core.EdgeTypeGroup;
+import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.TypeGroup;
 
 
 public interface EdgeTypeDefinition {
@@ -24,15 +22,11 @@ public interface EdgeTypeDefinition {
 	
 	public EdgeCategory getCategory();
 	
-	public EdgeTypeGroup getGroup();
+	public TypeGroup getGroup();
 
 	public String[] getKeySignature();
 	
 	public String[] getCompactSignature();
-	
-	public boolean hasSignatureEdgeType(EdgeType et);
-	
-	public int getSignatureIndex(EdgeType et);
 
 	
 }

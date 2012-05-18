@@ -1,11 +1,11 @@
 package com.thinkaurelius.titan.graphdb.edgetypes;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.Direction;
-import com.thinkaurelius.titan.core.EdgeType;
-import com.thinkaurelius.titan.core.EdgeTypeGroup;
-import com.thinkaurelius.titan.core.RelationshipType;
+import com.thinkaurelius.titan.core.TitanLabel;
+import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.graphdb.edges.EdgeDirection;
+import com.tinkerpop.blueprints.Direction;
 
 public abstract class DirWrapper<V> {
 	
@@ -45,32 +45,32 @@ public abstract class DirWrapper<V> {
 		if (!this.hasDirection() || !other.hasDirection()) return true;
 		Direction d1 = getDirection(), d2 = other.getDirection();
 		for (EdgeDirection dir : EdgeDirection.values()) {
-			if (d1.implies(dir) && d2.implies(dir)) return true;
+			if (dir.impliedBy(d1) && dir.impliedBy(d2)) return true;
 		}
 		return false;
 	}
 
-	public static final DirWrapper<RelationshipType> wrap(RelationshipType type) { 
+	public static final DirWrapper<TitanLabel> wrap(TitanLabel type) {
 		return wrapInternal(null,type);
 	}
 	
-	public static final DirWrapper<RelationshipType> wrap(Direction dir, RelationshipType type) { 
+	public static final DirWrapper<TitanLabel> wrap(Direction dir, TitanLabel type) {
 		return wrapInternal(dir,type);
 	}
 	
-	public static final DirWrapper<EdgeType> wrap(EdgeType type) { 
+	public static final DirWrapper<TitanType> wrap(TitanType type) {
 		return wrapInternal(null,type);
 	}
 	
-	public static final DirWrapper<EdgeType> wrap(Direction dir, EdgeType type) { 
+	public static final DirWrapper<TitanType> wrap(Direction dir, TitanType type) {
 		return wrapInternal(dir,type);
 	}
 	
-	public static final DirWrapper<EdgeTypeGroup> wrap(EdgeTypeGroup group) {
+	public static final DirWrapper<TypeGroup> wrap(TypeGroup group) {
 		return wrapInternal(null,group);
 	}
 
-	public static final DirWrapper<EdgeTypeGroup> wrap(Direction dir, EdgeTypeGroup group) {
+	public static final DirWrapper<TypeGroup> wrap(Direction dir, TypeGroup group) {
 		return wrapInternal(dir,group);
 	}
 	
@@ -78,25 +78,13 @@ public abstract class DirWrapper<V> {
 		Preconditions.checkNotNull(wrapped);
 		if (dir==null) return new AllWrapper<V>(wrapped);
 		switch(dir) {
-		case Undirected:
-			return new UndirectedWrapper<V>(wrapped);
-		case In:
+		case IN:
 			return new InWrapper<V>(wrapped);
-		case Out:
+		case OUT:
 			return new OutWrapper<V>(wrapped);
-		case Both:
+		case BOTH:
 			return new BothWrapper<V>(wrapped);
 		default: throw new IllegalArgumentException("Invalid direction: " + dir);
-		}
-	}
-	
-	private static final class UndirectedWrapper<V> extends DirWrapper<V> {
-
-		private UndirectedWrapper(V wrapped) { super(wrapped); }
-
-		@Override
-		public Direction getDirection() {
-			return Direction.Undirected;
 		}
 	}
 
@@ -106,7 +94,7 @@ public abstract class DirWrapper<V> {
 
 		@Override
 		public Direction getDirection() {
-			return Direction.In;
+			return Direction.IN;
 		}
 	}
 	
@@ -116,7 +104,7 @@ public abstract class DirWrapper<V> {
 
 		@Override
 		public Direction getDirection() {
-			return Direction.Out;
+			return Direction.OUT;
 		}
 	}
 	
@@ -126,7 +114,7 @@ public abstract class DirWrapper<V> {
 
 		@Override
 		public Direction getDirection() {
-			return Direction.Both;
+			return Direction.BOTH;
 		}
 	}
 	

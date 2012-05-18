@@ -119,7 +119,7 @@ public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
 		List<KeyValueEntry> result;
 		try {
 			//log.debug("Sta: {}",ByteBufferUtil.toBitString(keyStart, " "));
-			//log.debug("End: {}",ByteBufferUtil.toBitString(keyEnd, " "));
+			//log.debug("Head: {}",ByteBufferUtil.toBitString(keyEnd, " "));
 			
 			DatabaseEntry foundKey = getDataEntry(keyStart);
 			DatabaseEntry foundData = new DatabaseEntry();
@@ -208,7 +208,7 @@ public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
 			for (ByteBuffer entry : keys) {
 				OperationStatus status = db.delete(tx, getDataEntry(entry));
 				if (status!=OperationStatus.SUCCESS) {
-					throw new GraphStorageException("Could not delete: " + status);
+					throw new GraphStorageException("Could not remove: " + status);
 				}
 			}
 			

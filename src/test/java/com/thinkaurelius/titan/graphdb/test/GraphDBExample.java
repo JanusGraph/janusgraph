@@ -3,8 +3,10 @@ package com.thinkaurelius.titan.graphdb.test;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.edgetypes.Directionality;
+import com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory;
+import com.tinkerpop.blueprints.Direction;
 
 import static org.junit.Assert.assertEquals;
 
@@ -17,8 +19,8 @@ public class GraphDBExample {
 	}
 	
 	
-	public GraphDatabase graphdb;
-	public GraphTransaction tx;
+	public TitanGraph graphdb;
+	public TitanTransaction tx;
 	public final String homeDir;
 	
 	public GraphDBExample(String dir) {
@@ -26,14 +28,14 @@ public class GraphDBExample {
 	}
 	
 	public void open() {
-		graphdb = GraphDatabaseFactory.open(homeDir);
-		tx=graphdb.startTransaction();
+		graphdb = TitanFactory.open(homeDir);
+		tx=graphdb.startThreadTransaction(TransactionConfig.STANDARD);
 	}
 
 
 	public void close() {
 		if (tx!=null) tx.commit();
-		graphdb.close();
+		graphdb.shutdown();
     }
 
 
@@ -46,58 +48,56 @@ public class GraphDBExample {
 
 	public void createDelete() {
 		open();
-		PropertyType weight = makeWeightPropertyType("weight");
-		PropertyType id = makeIDPropertyType("id");
-		RelationshipType knows = makeLabeledRelationshipType("knows",id,weight);
+		TitanKey weight = makeWeightPropertyType("weight");
+		TitanKey id = makeIDPropertyType("id");
+		TitanLabel knows = makeLabeledRelationshipType("knows",id,weight);
 		
-		Node n1 = tx.createNode(), n3 = tx.createNode();
-		Relationship e=n3.createRelationship(knows, n1);
-		e.createProperty(id, 111);
-		n3.createProperty(id, 445);
-		assertEquals(111,e.getNumber(id));
+		TitanVertex n1 = tx.addVertex(), n3 = tx.addVertex();
+		TitanEdge e=n3.addEdge(knows, n1);
+		e.addProperty(id, 111);
+		n3.addProperty(id, 445);
+		assertEquals(111,e.getProperty(id, Number.class));
 		clopen();
 		long nid = n3.getID();
 		
-		n3 = tx.getNode(nid);
-		assertEquals(445,n3.getNumber("id"));
-		e=Iterators.getOnlyElement(n3.getRelationshipIterator(tx.getRelationshipType("knows"), Direction.Out));
-		assertEquals(111,e.getNumber(id));
-		Property p = Iterables.getOnlyElement(n3.getProperties("id"));
-		p.delete();
-		n3.createProperty("id", 353);
+		n3 = tx.getVertex(nid);
+		assertEquals(445,n3.getProperty("id", Number.class));
+		e=Iterables.getOnlyElement(n3.getTitanEdges(Direction.OUT, tx.getEdgeLabel("knows")));
+		assertEquals(111,e.getProperty(id,Number.class));
+		TitanProperty p = Iterables.getOnlyElement(n3.getProperties("id"));
+		p.remove();
+		n3.addProperty("id", 353);
 		clopen();
 		
-		n3 = tx.getNode(nid);
-		assertEquals(353,n3.getNumber("id"));
+		n3 = tx.getVertex(nid);
+		assertEquals(353,n3.getProperty("id"));
 		close();
 	}
 	
-	public PropertyType makeWeightPropertyType(String name) {
-		return tx.createEdgeType().withName(name).
-			category(EdgeCategory.Simple).functional(true).
-			dataType(Double.class).										
-			makePropertyType();
+	public TitanKey makeWeightPropertyType(String name) {
+		return tx.makeType().name(name).
+			simple().functional().
+			dataType(Double.class).
+                makePropertyKey();
 	}
 	
-	public PropertyType makeIDPropertyType(String name) {
-		return makeIDPropertyType(name,EdgeTypeGroup.DefaultGroup);
+	public TitanKey makeIDPropertyType(String name) {
+		return makeIDPropertyType(name, TypeGroup.DEFAULT_GROUP);
 	}
 	
-	public PropertyType makeIDPropertyType(String name, EdgeTypeGroup group) {
-		return tx.createEdgeType().withName(name).
-			category(EdgeCategory.Simple).functional(true).
-			makeKeyed().withIndex(true).
-			dataType(Integer.class).group(group).					
-			makePropertyType();
+	public TitanKey makeIDPropertyType(String name, TypeGroup group) {
+		return tx.makeType().name(name).
+			simple().functional().
+                unique().indexed().
+			dataType(Integer.class).group(group).
+                makePropertyKey();
 	}
 
-	public RelationshipType makeLabeledRelationshipType(String name, PropertyType key, PropertyType compact) {
-		EdgeTypeMaker etmaker = tx.createEdgeType();
-		RelationshipType relType = etmaker.withName(name).
-                keySignature(key).compactSignature(compact).
-										withDirectionality(Directionality.Directed).
-										category(EdgeCategory.Labeled).
-										makeRelationshipType();
+	public TitanLabel makeLabeledRelationshipType(String name, TitanKey key, TitanKey compact) {
+		TypeMaker etmaker = tx.makeType();
+		TitanLabel relType = etmaker.name(name).
+                primaryKey(key).signature(compact).directed().
+                makeEdgeLabel();
 		return relType;
 	}
 	

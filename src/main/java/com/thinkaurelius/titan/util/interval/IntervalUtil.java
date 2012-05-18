@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.util.interval;
 
-import com.tinkerpop.blueprints.pgm.Query;
+import com.tinkerpop.blueprints.Query;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)

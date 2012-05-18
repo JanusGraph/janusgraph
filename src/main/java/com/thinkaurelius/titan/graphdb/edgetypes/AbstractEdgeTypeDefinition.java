@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.graphdb.edgetypes;
 
-import com.thinkaurelius.titan.core.Directionality;
-import com.thinkaurelius.titan.core.EdgeCategory;
-import com.thinkaurelius.titan.core.EdgeType;
-import com.thinkaurelius.titan.core.EdgeTypeGroup;
+import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.TypeGroup;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,7 +10,7 @@ public abstract class AbstractEdgeTypeDefinition implements EdgeTypeDefinition {
 
 	public EdgeTypeVisibility visibility;
 	public String name;
-	public EdgeTypeGroup group;
+	public TypeGroup group;
 	public boolean isfunctional;
 	public Directionality directionality;
 	public EdgeCategory category;
@@ -26,7 +24,7 @@ public abstract class AbstractEdgeTypeDefinition implements EdgeTypeDefinition {
 	
 	AbstractEdgeTypeDefinition(String name, EdgeCategory category, Directionality directionality,
 					EdgeTypeVisibility visibility, boolean isfunctional,
-					String[] keysig, String[] compactsig, EdgeTypeGroup group) {
+					String[] keysig, String[] compactsig, TypeGroup group) {
 		this.name=name;
 		this.group = group;
 		this.category=category;
@@ -53,14 +51,14 @@ public abstract class AbstractEdgeTypeDefinition implements EdgeTypeDefinition {
 		return signatureIndex;
 	}
 	
-	public boolean hasSignatureEdgeType(EdgeType et) {
+	public boolean hasSignatureEdgeType(TitanType et) {
 		return getSignatureIndex().containsKey(et.getName());		
 	}
 	
-	public int getSignatureIndex(EdgeType et) {
+	public int getSignatureIndex(TitanType et) {
 		Integer i = getSignatureIndex().get(et.getName());
 		if (i==null)
-			throw new IllegalArgumentException("The provided EdgeType is not part of the signature: " + et);
+			throw new IllegalArgumentException("The provided TitanType is not part of the signature: " + et);
 		return i;
 	}
 	
@@ -92,7 +90,7 @@ public abstract class AbstractEdgeTypeDefinition implements EdgeTypeDefinition {
 	}
 	
 	@Override
-	public EdgeTypeGroup getGroup() {
+	public TypeGroup getGroup() {
 		return group;
 	}
 

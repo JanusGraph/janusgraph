@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.edgequery;
 
-import com.thinkaurelius.titan.core.Edge;
+import com.thinkaurelius.titan.core.TitanRelation;
 
 import java.util.Iterator;
 
@@ -8,12 +8,12 @@ import java.util.Iterator;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class DisjunctiveQueryIterable<T extends Edge> implements Iterable<T> {
+public class DisjunctiveQueryIterable<T extends TitanRelation> implements Iterable<T> {
 
-    private final ComplexEdgeQuery query;
+    private final ComplexTitanQuery query;
     private final Class<T> type;
     
-    DisjunctiveQueryIterable(ComplexEdgeQuery q, Class<T> type) {
+    DisjunctiveQueryIterable(ComplexTitanQuery q, Class<T> type) {
         this.query=q;
         this.type=type;
     }

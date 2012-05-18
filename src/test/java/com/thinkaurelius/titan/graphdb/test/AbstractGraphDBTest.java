@@ -3,15 +3,16 @@ package com.thinkaurelius.titan.graphdb.test;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory;
 import com.thinkaurelius.titan.util.test.RandomGenerator;
+import com.tinkerpop.blueprints.Direction;
+import static com.tinkerpop.blueprints.Direction.*;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -29,17 +30,17 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 	
     @Test
     public void basicTest() {
-        PropertyType weight = makeWeightPropertyType("weight");
-        Node n1 = tx.createNode();
-        n1.createProperty(weight,10.5);
+        TitanKey weight = makeWeightPropertyType("weight");
+        TitanVertex n1 = tx.addVertex();
+        n1.addProperty(weight, 10.5);
         clopen();
         long nid = n1.getID();
-        assertTrue(tx.containsNode(nid));
-        assertTrue(tx.containsEdgeType("weight"));
-        weight = tx.getPropertyType("weight");
+        assertTrue(tx.containsVertex(nid));
+        assertTrue(tx.containsType("weight"));
+        weight = tx.getPropertyKey("weight");
         assertEquals(weight.getDataType(),Double.class);
         assertEquals(weight.getName(),"weight");
-        n1 = tx.getNode(nid);
+        n1 = tx.getVertex(nid);
         // When this is commented, our HBase subclass fails this test.
         // When this is uncommented, our HBase subclass passes this test!
         // I suspect this is not supposed to have correctness side effects.
@@ -48,79 +49,79 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
         //
         // Cassandra fails this test regardless of whether the following
         // lines are commented.  It fails on the same assertion as does HBase.
-//        for (Property prop : n1.getProperties()) {
-//        	Object o = prop.getAttribute();
+//        for (TitanProperty prop : n1.properties()) {
+//        	Object o = prop.getProperty();
 //        }
-        n1.edgeQuery().getEdges();
+        n1.query().relations();
         System.out.println();
-        assertEquals(10.5,n1.getNumber(weight));
+        assertEquals(10.5,n1.getProperty(weight));
 
     }
     
 	@Test
 	public void primitiveCreateAndRetrieve() {
-		PropertyType weight = makeWeightPropertyType("weight");
-		PropertyType id = makeIDPropertyType("id");
-		RelationshipType knows = makeLabeledRelationshipType("knows",id,weight);
+		TitanKey weight = makeWeightPropertyType("weight");
+		TitanKey id = makeIDPropertyType("id");
+		TitanLabel knows = makeLabeledRelationshipType("knows",id,weight);
 		
-		Node n1 = tx.createNode(), n3 = tx.createNode();
-		Relationship e=n3.createRelationship(knows, n1);
-		e.createProperty(id, 111);
+		TitanVertex n1 = tx.addVertex(), n3 = tx.addVertex();
+		TitanEdge e=n3.addEdge(knows, n1);
+		e.addProperty(id, 111);
 		
-		assertEquals(111,e.getNumber(id));
+		assertEquals(111,e.getProperty(id));
 		clopen();
 		long nid = n3.getID();
 		
-		n3 = tx.getNode(nid);
+		n3 = tx.getVertex(nid);
 		
-		e=Iterators.getOnlyElement(n3.getRelationshipIterator(tx.getRelationshipType("knows"), Direction.Out));
-		assertEquals(111,e.getNumber(id));
+		e=Iterables.getOnlyElement(n3.getTitanEdges(Direction.OUT, tx.getEdgeLabel("knows")));
+		assertEquals(111,e.getProperty(id));
 
 	}
 	
 	@Test
 	public void createDelete() {
-		PropertyType weight = makeWeightPropertyType("weight");
-		PropertyType id = makeIDPropertyType("id");
-		RelationshipType knows = makeLabeledRelationshipType("knows",id,weight);
+		TitanKey weight = makeWeightPropertyType("weight");
+		TitanKey id = makeIDPropertyType("id");
+		TitanLabel knows = makeLabeledRelationshipType("knows",id,weight);
 		
-		Node n1 = tx.createNode(), n3 = tx.createNode();
-		Relationship e=n3.createRelationship(knows, n1);
-		e.createProperty(id, 111);
-		n3.createProperty(id, 445);
-		assertEquals(111,e.getNumber(id));
+		TitanVertex n1 = tx.addVertex(), n3 = tx.addVertex();
+		TitanEdge e=n3.addEdge(knows, n1);
+		e.addProperty(id, 111);
+		n3.addProperty(id, 445);
+		assertEquals(111,e.getProperty(id));
 		clopen();
 		long nid = n3.getID();
 		
-		n3 = tx.getNode(nid);
-		assertEquals(445,n3.getNumber("id"));
-		e=Iterators.getOnlyElement(n3.getRelationshipIterator(tx.getRelationshipType("knows"), Direction.Out));
-		assertEquals(111,e.getNumber(id));
-		Property p = Iterables.getOnlyElement(n3.getProperties("id"));
-		p.delete();
-		n3.createProperty("id", 353);
+		n3 = tx.getVertex(nid);
+		assertEquals(445,n3.getProperty("id"));
+		e=Iterables.getOnlyElement(n3.getTitanEdges(Direction.OUT, tx.getEdgeLabel("knows")));
+		assertEquals(111,e.getProperty(id));
+		TitanProperty p = Iterables.getOnlyElement(n3.getProperties("id"));
+		p.remove();
+		n3.addProperty("id", 353);
 		clopen();
 		
-		n3 = tx.getNode(nid);
-		assertEquals(353,n3.getNumber("id"));
+		n3 = tx.getVertex(nid);
+		assertEquals(353,n3.getProperty("id"));
 	}
 	
 	@Test
 	public void multipleIndexRetrieval() {
-		PropertyType id = makeIDPropertyType("id");
-		PropertyType name = makeUnkeyedStringPropertyType("name");
+		TitanKey id = makeIDPropertyType("id");
+		TitanKey name = makeUnkeyedStringPropertyType("name");
 		int noNodes = 100; int div = 10; int mod = noNodes/div;
 		for (int i=0;i<noNodes;i++) {
-			Node n = tx.createNode();
-			n.createProperty(id, i);
-			n.createProperty(name, "Name"+(i%mod));
+			TitanVertex n = tx.addVertex();
+			n.addProperty(id, i);
+			n.addProperty(name, "Name" + (i % mod));
 		}
 		clopen();
 		for (int j=0;j<mod;j++) {
-			Set<Node> nodes = tx.getNodesByAttribute("name", "Name"+j);
-			assertEquals(div,nodes.size());
-			for (Node n : nodes) {
-				int nid = n.getNumber("id").intValue();
+			Iterable<Vertex> nodes = tx.getVertices("name", "Name" + j);
+			assertEquals(div,Iterables.size(nodes));
+			for (Vertex n : nodes) {
+				int nid = ((Number)n.getProperty("id")).intValue();
 				assertEquals(j,nid%mod);
 			}
 		}
@@ -129,42 +130,42 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 	
 	@Test
 	public void edgeGroupTest() {
-		EdgeTypeGroup g1 = EdgeTypeGroup.of(3, "group1");
-		EdgeTypeGroup g2 = EdgeTypeGroup.of(5, "group2");
-		PropertyType name = makeStringIDPropertyType("name",g1);
-		PropertyType id = makeIDPropertyType("id",g2);
-		RelationshipType connect = makeRelationshipType("connect",g1);
-		RelationshipType knows = makeRelationshipType("knows",g2);
-		RelationshipType friend = makeRelationshipType("friend",g2);
+		TypeGroup g1 = TypeGroup.of(3, "group1");
+		TypeGroup g2 = TypeGroup.of(5, "group2");
+		TitanKey name = makeStringIDPropertyType("name",g1);
+		TitanKey id = makeIDPropertyType("id",g2);
+		TitanLabel connect = makeRelationshipType("connect",g1);
+		TitanLabel knows = makeRelationshipType("knows",g2);
+		TitanLabel friend = makeRelationshipType("friend",g2);
 		
 		int noNodes = 100;
-		Node nodes[] = new Node[noNodes];
+		TitanVertex nodes[] = new TitanVertex[noNodes];
 		for (int i=0;i<noNodes;i++) {
-			nodes[i] = tx.createNode();
-			nodes[i].createProperty(name, "Name"+(i));
-			nodes[i].createProperty(id, i);
+			nodes[i] = tx.addVertex();
+			nodes[i].addProperty(name, "Name" + (i));
+			nodes[i].addProperty(id, i);
 		}
 		
 		int noEdges = 4;
 		for (int i=0;i<noNodes;i++) {
-			Node n = nodes[i];
+			TitanVertex n = nodes[i];
 			for (int j =1;j<=noEdges;j++) {
-				n.createRelationship(connect, nodes[wrapAround(i+j,noNodes)]);
-				n.createRelationship(knows, nodes[wrapAround(i+j,noNodes)]);
-				n.createRelationship(friend, nodes[wrapAround(i+j,noNodes)]);
+				n.addEdge(connect, nodes[wrapAround(i + j, noNodes)]);
+				n.addEdge(knows, nodes[wrapAround(i + j, noNodes)]);
+				n.addEdge(friend, nodes[wrapAround(i + j, noNodes)]);
 			}
 		}
 		
 		clopen();
 		
 		for (int i=0;i<noNodes;i++) {
-			Node n = tx.getNodeByKey("id", i);
-			assertEquals(1,Iterables.size(n.getProperties(g1)));
-			assertEquals(1,Iterables.size(n.getProperties(g2)));
-			assertEquals(noEdges,Iterables.size(n.getRelationships(g1, Direction.Out)));
-			assertEquals(noEdges*2,Iterables.size(n.getRelationships(g1)));
-			assertEquals(noEdges*2,Iterables.size(n.getRelationships(g2, Direction.Out)));
-			assertEquals(noEdges*4,Iterables.size(n.getRelationships(g2)));
+			TitanVertex n = tx.getVertex("id", i);
+			assertEquals(1,Iterables.size(n.query().group(g1).properties()));
+			assertEquals(1,Iterables.size(n.query().group(g2).properties()));
+			assertEquals(noEdges,Iterables.size(n.query().group(g1).direction(Direction.OUT).edges()));
+			assertEquals(noEdges*2,Iterables.size(n.query().group(g1).edges()));
+			assertEquals(noEdges*2,Iterables.size(n.query().group(g2).direction(Direction.OUT).edges()));
+			assertEquals(noEdges*4,Iterables.size(n.query().group(g2).edges()));
 
 		}
 		
@@ -174,99 +175,99 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 	@Test
 	public void createAndRetrieveSimple() {
 		String[] etNames = {"connect","name","weight","knows"};
-		RelationshipType connect = makeRelationshipType(etNames[0]);
-		PropertyType name = makeStringPropertyType(etNames[1]);
-		PropertyType weight = makeWeightPropertyType(etNames[2]);
-		PropertyType id = makeIDPropertyType("id");
-		RelationshipType knows = makeLabeledRelationshipType(etNames[3],id,weight);
+		TitanLabel connect = makeRelationshipType(etNames[0]);
+		TitanKey name = makeStringPropertyType(etNames[1]);
+		TitanKey weight = makeWeightPropertyType(etNames[2]);
+		TitanKey id = makeIDPropertyType("id");
+		TitanLabel knows = makeLabeledRelationshipType(etNames[3],id,weight);
 		
-		assertEquals(connect,tx.getRelationshipType(etNames[0]));
-		assertEquals(name,tx.getPropertyType(etNames[1]));
-		assertEquals(knows,tx.getRelationshipType(etNames[3]));
-		assertTrue(knows.isRelationshipType());
+		assertEquals(connect,tx.getEdgeLabel(etNames[0]));
+		assertEquals(name,tx.getPropertyKey(etNames[1]));
+		assertEquals(knows,tx.getEdgeLabel(etNames[3]));
+		assertTrue(knows.isEdgeLabel());
 		
-		Node n1 = tx.createNode();
-		Node n2 = tx.createNode();
-		Node n3 = tx.createNode();
-		n1.createProperty(name, "Node1");
-		n2.createProperty(name, "Node2");
-		n3.createProperty(weight , 5.0);
-		Relationship e = n1.createRelationship(connect, n2);
-		assertEquals(n1,e.getStart());
-		assertEquals(n2,e.getEnd());
-		e = n2.createRelationship(knows, n3);
-		e.createProperty(weight, 3.0);
-		e.createProperty(name,"Labeled Edge");
-		e=n3.createRelationship(knows, n1);
-		n3.createRelationship(connect,n3);
-		e.createProperty(id, 111);
-		assertEquals(3,Iterables.size(n3.getRelationships()));
+		TitanVertex n1 = tx.addVertex();
+		TitanVertex n2 = tx.addVertex();
+		TitanVertex n3 = tx.addVertex();
+		n1.addProperty(name, "Node1");
+		n2.addProperty(name, "Node2");
+		n3.addProperty(weight, 5.0);
+		TitanEdge e = n1.addEdge(connect, n2);
+		assertEquals(n1,e.getVertex(OUT));
+		assertEquals(n2,e.getVertex(IN));
+		e = n2.addEdge(knows, n3);
+		e.addProperty(weight, 3.0);
+		e.addProperty(name, "HasProperties TitanRelation");
+		e=n3.addEdge(knows, n1);
+		n3.addEdge(connect, n3);
+		e.addProperty(id, 111);
+		assertEquals(3,Iterables.size(n3.getEdges()));
 		
 		clopen();
 		
-		connect = tx.getRelationshipType(etNames[0]);
-		assertEquals(connect.getCategory(),EdgeCategory.Simple);
+		connect = tx.getEdgeLabel(etNames[0]);
+        assertTrue(connect.isSimple());
 		assertEquals(connect.getName(),etNames[0]);
-		assertEquals(connect.getDirectionality(),Directionality.Directed);
-		name = tx.getPropertyType(etNames[1]);
-		assertTrue(name.isKeyed());
+        assertTrue(connect.isDirected());
+		name = tx.getPropertyKey(etNames[1]);
+		assertTrue(name.isUnique());
 		assertTrue(name.hasIndex());
 		log.debug("Loaded edge types");
-		n2 = tx.getNodeByKey(name, "Node2");
-		assertEquals("Node2",n2.getAttribute(name, String.class));
-		e = Iterators.getOnlyElement(n2.getRelationshipIterator(connect));
-		n1 = e.getStart();
+		n2 = tx.getVertex(name, "Node2");
+		assertEquals("Node2",n2.getProperty(name, String.class));
+		e = Iterables.getOnlyElement(n2.getTitanEdges(Direction.BOTH, connect));
+		n1 = e.getVertex(OUT);
 		log.debug("Retrieved node!");
-		assertEquals(n1,e.getStart());
-		assertEquals(n2,e.getEnd());
+		assertEquals(n1,e.getVertex(OUT));
+		assertEquals(n2,e.getVertex(IN));
 		
 		log.debug("First:");
-		assertEquals(e,Iterators.getOnlyElement(n2.getRelationshipIterator(Direction.In)));
+		assertEquals(e,Iterables.getOnlyElement(n2.getEdges(Direction.IN)));
 		log.debug("Second:");
-		assertEquals(e,Iterators.getOnlyElement(n1.getRelationshipIterator(Direction.Out)));
+		assertEquals(e,Iterables.getOnlyElement(n1.getEdges(Direction.OUT)));
 		
-		assertEquals(1,Iterables.size(n2.getRelationships(tx.getRelationshipType("knows"))));
+		assertEquals(1,Iterables.size(n2.getTitanEdges(Direction.BOTH,tx.getEdgeLabel("knows"))));
 		
-		assertEquals(1,Iterables.size(n1.getRelationships(tx.getRelationshipType("knows"))));
-		assertEquals(2,Iterables.size(n1.getRelationships()));
+		assertEquals(1,Iterables.size(n1.getTitanEdges(Direction.BOTH,tx.getEdgeLabel("knows"))));
+		assertEquals(2,Iterables.size(n1.getEdges()));
 
 		log.debug("Third:");
-		assertEquals(e,Iterators.getOnlyElement(n2.getRelationshipIterator("connect", Direction.In)));
+		assertEquals(e,Iterables.getOnlyElement(n2.getEdges(Direction.IN, "connect")));
 		log.debug("Four:");
-		assertEquals(e,Iterators.getOnlyElement(n1.getRelationshipIterator(connect, Direction.Out)));
+		assertEquals(e,Iterables.getOnlyElement(n1.getTitanEdges(Direction.OUT, connect)));
 		
 		log.debug("Fith:");
-		assertEquals(e,Iterators.getOnlyElement(n2.getRelationshipIterator("connect")));
+		assertEquals(e,Iterables.getOnlyElement(n2.getEdges(Direction.BOTH,"connect")));
 		log.debug("Sixth:");
-		assertEquals(e,Iterators.getOnlyElement(n1.getRelationshipIterator(connect)));
+		assertEquals(e,Iterables.getOnlyElement(n1.getTitanEdges(Direction.BOTH,connect)));
 		
-		e=Iterators.getOnlyElement(n2.getRelationshipIterator(tx.getRelationshipType("knows"), Direction.Out));
-		assertEquals(3.0,e.getNumber(weight));
-		assertEquals("Labeled Edge",e.getAttribute(name, String.class));
-		n3=e.getEnd();
+		e=Iterables.getOnlyElement(n2.getTitanEdges(Direction.OUT,tx.getEdgeLabel("knows")));
+		assertEquals(3.0,e.getProperty(weight));
+		assertEquals("HasProperties TitanRelation",e.getProperty(name, String.class));
+		n3=e.getVertex(IN);
 		
-		e=Iterators.getOnlyElement(n3.getRelationshipIterator(tx.getRelationshipType("knows"), Direction.Out));
-		assertEquals(111,e.getNumber(id));
+		e=Iterables.getOnlyElement(n3.getTitanEdges(Direction.OUT,tx.getEdgeLabel("knows")));
+		assertEquals(111,e.getProperty(id));
 		
-		assertEquals(3,Iterables.size(n3.getRelationships()));
+		assertEquals(3,Iterables.size(n3.getEdges()));
 				
 		//Delete Edges, create new ones		
-		e=Iterators.getOnlyElement(n2.getRelationshipIterator(tx.getRelationshipType("knows"), Direction.Out));
-		e.delete();
-		assertEquals(0,Iterables.size(n2.getRelationships(tx.getRelationshipType("knows"))));
-		assertEquals(1,Iterables.size(n3.getRelationships(tx.getRelationshipType("knows"))));
+		e=Iterables.getOnlyElement(n2.getTitanEdges(Direction.OUT,tx.getEdgeLabel("knows")));
+		e.remove();
+		assertEquals(0,Iterables.size(n2.getTitanEdges(Direction.BOTH,tx.getEdgeLabel("knows"))));
+		assertEquals(1,Iterables.size(n3.getTitanEdges(Direction.BOTH,tx.getEdgeLabel("knows"))));
 		
-		e = n2.createRelationship(knows, n1);
-		e.createProperty(weight, 111.5);
-		e.createProperty(name,"New Edge");
-		assertEquals(1,Iterables.size(n2.getRelationships("knows")));
-		assertEquals(2,Iterables.size(n1.getRelationships("knows")));
+		e = n2.addEdge(knows, n1);
+		e.addProperty(weight, 111.5);
+		e.addProperty(name, "New TitanRelation");
+		assertEquals(1,Iterables.size(n2.getEdges(Direction.BOTH,"knows")));
+		assertEquals(2,Iterables.size(n1.getEdges(Direction.BOTH,"knows")));
 		
 		clopen();
-		n2 = tx.getNodeByKey(name, "Node2");
-		e=Iterators.getOnlyElement(n2.getRelationshipIterator(tx.getRelationshipType("knows"), Direction.Out));
-		assertEquals("New Edge",e.getString(tx.getPropertyType("name")));
-		assertEquals(111.5,e.getNumber("weight").doubleValue(),0.01);
+		n2 = tx.getVertex(name, "Node2");
+		e=Iterables.getOnlyElement(n2.getTitanEdges(Direction.OUT,tx.getEdgeLabel("knows")));
+		assertEquals("New TitanRelation",e.getProperty(tx.getPropertyKey("name"),String.class));
+		assertEquals(111.5,e.getProperty("weight",Double.class).doubleValue(),0.01);
 		
 	}
 	
@@ -274,11 +275,11 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 	public void neighborhoodTest() {
 		createAndRetrieveSimple();
 		log.debug("Neighborhood:");
-		Node n1 = tx.getNodeByKey("name", "Node1");
-		EdgeQuery q = tx.makeEdgeQuery(n1.getID()).inDirection(Direction.Out).withEdgeType(tx.getRelationshipType("connect"));
-		NodeList res = q.getNeighborhood();
+		TitanVertex n1 = tx.getVertex("name", "Node1");
+		TitanQuery q = tx.query(n1.getID()).direction(Direction.OUT).types(tx.getEdgeLabel("connect"));
+		VertexList res = q.vertexIds();
 		assertEquals(1,res.size());
-		Node n2 = tx.getNodeByKey("name", "Node2");
+		TitanVertex n2 = tx.getVertex("name", "Node2");
 		assertEquals(n2.getID(),res.getID(0));
 	}
 
@@ -286,73 +287,73 @@ public abstract class AbstractGraphDBTest extends AbstractGraphDBTestCommon {
 	@Test
 	public void createAndRetrieveMedium() {
 		//Create Graph
-		RelationshipType connect = makeRelationshipType("connect");
-		PropertyType name = makeStringPropertyType("name");
-		PropertyType weight = makeWeightPropertyType("weight");
-		PropertyType id = makeIDPropertyType("id");
-		RelationshipType knows = makeLabeledRelationshipType("knows",id,weight);
+		TitanLabel connect = makeRelationshipType("connect");
+		TitanKey name = makeStringPropertyType("name");
+		TitanKey weight = makeWeightPropertyType("weight");
+		TitanKey id = makeIDPropertyType("id");
+		TitanLabel knows = makeLabeledRelationshipType("knows",id,weight);
 		
 		//Create Nodes
 		int noNodes = 500;
 		String[] names = new String[noNodes];
 		int[] ids = new int[noNodes];
-		Node[] nodes = new Node[noNodes];
+		TitanVertex[] nodes = new TitanVertex[noNodes];
 		for (int i=0;i<noNodes;i++) {
 			names[i]=RandomGenerator.randomString();
 			ids[i] = RandomGenerator.randomInt(1, Integer.MAX_VALUE/2);
-			nodes[i] = tx.createNode();
-			nodes[i].createProperty(name, names[i]);
-			nodes[i].createProperty(id, ids[i]);
+			nodes[i] = tx.addVertex();
+			nodes[i].addProperty(name, names[i]);
+			nodes[i].addProperty(id, ids[i]);
 			if (i%1000==999) log.debug(".");
 		}
 		log.debug("Nodes created");
 		int[] connectOff = {-100, -34, -4, 10, 20};
 		int[] knowsOff = {-400, -18, 8, 232, 334};
 		for (int i=0;i<noNodes;i++) {
-			Node n = nodes[i];
+			TitanVertex n = nodes[i];
 			for (int c : connectOff) {
-				n.createRelationship(connect, nodes[wrapAround(i+c,noNodes)]);
+				n.addEdge(connect, nodes[wrapAround(i + c, noNodes)]);
 			}
 			for (int k : knowsOff) {
-				Node n2 = nodes[wrapAround(i+k,noNodes)];
-				Relationship r = n.createRelationship(knows, n2);
-				r.createProperty(id, n.getNumber(id).intValue()+n2.getNumber(id).intValue());
-				r.createProperty(weight, k*1.5);
-				r.createProperty(name, i+"-"+k);
+				TitanVertex n2 = nodes[wrapAround(i+k,noNodes)];
+				TitanEdge r = n.addEdge(knows, n2);
+				r.addProperty(id, n.getProperty(id,Number.class).intValue() + n2.getProperty(id,Number.class).intValue());
+				r.addProperty(weight, k * 1.5);
+				r.addProperty(name, i + "-" + k);
 			}
 			if (i%100==99) log.debug(".");
 		}
 		
 		clopen();
 		
-		nodes = new Node[noNodes];
-		name = tx.getPropertyType("name");
+		nodes = new TitanVertex[noNodes];
+		name = tx.getPropertyKey("name");
 		assertEquals("name",name.getName());
-		id = tx.getPropertyType("id");
+		id = tx.getPropertyKey("id");
 		assertTrue(id.isFunctional());
 		for (int i=0;i<noNodes;i++) {
-			Node n = tx.getNodeByKey(id, ids[i]);
-			assertEquals(n,tx.getNodeByKey(name, names[i]));
-			assertEquals(names[i],n.getAttribute(name, String.class));
+			TitanVertex n = tx.getVertex(id, ids[i]);
+			assertEquals(n,tx.getVertex(name, names[i]));
+			assertEquals(names[i],n.getProperty(name, String.class));
 			nodes[i]=n;
 		}
-		knows = tx.getRelationshipType("knows");
-		assertEquals(knows.getCategory(),EdgeCategory.Labeled);
+		knows = tx.getEdgeLabel("knows");
+		assertTrue(!knows.isSimple());
 		for (int i=0;i<noNodes;i++) {
-			Node n = nodes[i];
-			assertEquals(connectOff.length+knowsOff.length,Iterables.size(n.getRelationships(Direction.Out)));
-			assertEquals(connectOff.length,Iterables.size(n.getRelationships(tx.getRelationshipType("connect"),Direction.Out)));
-			assertEquals(connectOff.length*2,Iterables.size(n.getRelationships(tx.getRelationshipType("connect"))));
-			assertEquals(knowsOff.length*2,Iterables.size(n.getRelationships(knows)),i);
+			TitanVertex n = nodes[i];
+			assertEquals(connectOff.length+knowsOff.length,Iterables.size(n.getEdges(Direction.OUT)));
+			assertEquals(connectOff.length,Iterables.size(n.getEdges(Direction.OUT,"connect")));
+			assertEquals(connectOff.length*2,Iterables.size(n.getTitanEdges(Direction.BOTH,tx.getEdgeLabel("connect"))));
+			assertEquals(knowsOff.length*2,Iterables.size(n.getTitanEdges(Direction.BOTH,knows)),i);
 			
-			assertEquals(connectOff.length+knowsOff.length+2,Iterables.size(n.getEdges(Direction.Out)));
-			for (Relationship r : n.getRelationships(knows,Direction.Out)) {
-				Node n2 = r.getOtherNode(n);
-				int idsum = n.getNumber(id).intValue()+n2.getNumber(id).intValue();
-				assertEquals(idsum,r.getNumber(id).intValue());
-				double k = r.getNumber(weight).doubleValue()/1.5;
+			assertEquals(connectOff.length+knowsOff.length+2,Iterables.size(n.query().direction(Direction.OUT).relations()));
+			for (TitanEdge r : n.getTitanEdges(Direction.OUT,knows)) {
+				TitanVertex n2 = r.getOtherVertex(n);
+				int idsum = n.getProperty(id,Number.class).intValue()+n2.getProperty(id,Number.class).intValue();
+				assertEquals(idsum,r.getProperty(id,Number.class).intValue());
+				double k = r.getProperty(weight,Number.class).doubleValue()/1.5;
 				int ki = (int)k;
-				assertEquals(i+"-"+ki,r.getAttribute(name, String.class));
+				assertEquals(i+"-"+ki,r.getProperty(name, String.class));
 			}
 		}
 	}

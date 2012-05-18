@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.statistics;
 
-import com.thinkaurelius.titan.core.EdgeTypeGroup;
+import com.thinkaurelius.titan.core.TypeGroup;
 
 /**
  * Holds statistical information about the stored graph.
@@ -53,7 +53,7 @@ public interface GraphStatistics {
 	/**
 	 * Returns the number of edges of a given edge type.
 	 * 
-	 * @param edgeTypeName {@link com.thinkaurelius.titan.core.EdgeType} for which to retrieve the number of stored edges.
+	 * @param edgeTypeName {@link com.thinkaurelius.titan.core.TitanType} for which to retrieve the number of stored edges.
 	 * @return Number of edges of a given edge type.
 	 */
 	public long getNoEdges(String edgeTypeName);
@@ -61,9 +61,9 @@ public interface GraphStatistics {
 	/**
 	 * Returns the number of edges in a given edge type group.
 	 * 
-	 * @param group {@link com.thinkaurelius.titan.core.EdgeTypeGroup} for which to retrieve the number of stored edges.
+	 * @param group {@link com.thinkaurelius.titan.core.TypeGroup} for which to retrieve the number of stored edges.
 	 * @return Number of edges in a given edge type group.
 	 */
-	public long getNoEdges(EdgeTypeGroup group);
+	public long getNoEdges(TypeGroup group);
 	
 }

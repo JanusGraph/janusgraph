@@ -142,7 +142,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 		if (environment!=null) {
             BerkeleyKeyValueStore idmanager = stores.get(idManagerTableName);
             if (idmanager!=null) idmanager.close();
-			if (!stores.isEmpty()) throw new GraphStorageException("Cannot close manager since some databases are still open");
+			if (!stores.isEmpty()) throw new GraphStorageException("Cannot shutdown manager since some databases are still open");
 			try {
 				environment.close();
 			} catch (DatabaseException e) {

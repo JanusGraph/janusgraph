@@ -4,18 +4,19 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.exceptions.InvalidNodeException;
-import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
-import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
+import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
+import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.Collection;
 
-public class SimpleProperty extends AbstractTypedEdge implements Property {
+public class SimpleProperty extends AbstractTypedRelation implements TitanProperty {
 
-	private final InternalNode node;
+	private final InternalTitanVertex node;
 	private final Object attribute;
 	
-	public SimpleProperty(PropertyType type, InternalNode node, Object attribute) {
+	public SimpleProperty(TitanKey type, InternalTitanVertex node, Object attribute) {
 		super(type);
 		Preconditions.checkNotNull(attribute);
 		Preconditions.checkArgument(type.getDataType().isInstance(attribute),"Provided attribute does not match property data type!");
@@ -25,7 +26,7 @@ public class SimpleProperty extends AbstractTypedEdge implements Property {
 	}
 	
 	@Override
-	public GraphTx getTransaction() {
+	public InternalTitanTransaction getTransaction() {
 		return node.getTransaction();
 	}
 	
@@ -37,20 +38,20 @@ public class SimpleProperty extends AbstractTypedEdge implements Property {
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
-		else if (!(oth instanceof Property)) return false;
-		Property other = (Property)oth;
-		if (!getEdgeType().equals(other.getEdgeType())) return false;
-		return node.equals(other.getStart()) && attribute.equals(other.getAttribute());
+		else if (!(oth instanceof TitanProperty)) return false;
+		TitanProperty other = (TitanProperty)oth;
+		if (!getType().equals(other.getType())) return false;
+		return node.equals(other.getVertex()) && attribute.equals(other.getAttribute());
 	}
 
 	@Override
-	public InternalNode getNodeAt(int pos) {
+	public InternalTitanVertex getVertex(int pos) {
 		if (pos==0) return node;
 		throw new ArrayIndexOutOfBoundsException("Exceeded number of vertices of 1 with given position: " + pos);
 	}
 
 	@Override
-	public boolean isSelfLoop(Node node) {
+	public boolean isSelfLoop(TitanVertex vertex) {
 		return false;
 	}
 
@@ -60,31 +61,20 @@ public class SimpleProperty extends AbstractTypedEdge implements Property {
 	}
 
 	@Override
-	public Direction getDirection(Node n) {
-		if (node.equals(n)) return Direction.Out;
-		else throw new InvalidNodeException("Edge is not incident on given node.");
+	public Direction getDirection(TitanVertex vertex) {
+		if (node.equals(vertex)) return Direction.OUT;
+		else throw new InvalidNodeException("TitanRelation is not incident on given node.");
 	}
 
 	@Override
-	public Collection<? extends Node> getNodes() {
-		return ImmutableList.of(node);
-	}
-	
-	@Override
-	public NodePosition getPosition(Node n) {
-		if (node.equals(n)) return NodePosition.Start;
-		throw new InvalidNodeException("Edge is not incident on given node.");
-	}
-
-	@Override
-	public boolean isIncidentOn(Node n) {
-		return node.equals(n);
+	public boolean isIncidentOn(TitanVertex vertex) {
+		return node.equals(vertex);
 	}
 
 	@Override
 	public void forceDelete() {
 		super.forceDelete();
-		node.deleteEdge(this);
+		node.removeRelation(this);
 	}
 
 	@Override
@@ -98,23 +88,13 @@ public class SimpleProperty extends AbstractTypedEdge implements Property {
 	}
 
 	@Override
-	public Node getStart() {
+	public TitanVertex getVertex() {
 		return node;
 	}
 
 	@Override
-	public PropertyType getPropertyType() {
-		return (PropertyType)type;
-	}
-
-	@Override
-	public Number getNumber() {
-		return getAttribute(Number.class);
-	}
-
-	@Override
-	public String getString() {
-		return getAttribute(String.class);
+	public TitanKey getPropertyKey() {
+		return (TitanKey)type;
 	}
 
 	@Override
@@ -123,7 +103,7 @@ public class SimpleProperty extends AbstractTypedEdge implements Property {
 	}
 
 	@Override
-	public final boolean isRelationship() {
+	public final boolean isEdge() {
 		return false;
 	}
 

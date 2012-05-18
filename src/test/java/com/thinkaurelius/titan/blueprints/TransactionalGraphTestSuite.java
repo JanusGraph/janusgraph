@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.blueprints;
 
-import com.tinkerpop.blueprints.pgm.Edge;
-import com.tinkerpop.blueprints.pgm.TestSuite;
-import com.tinkerpop.blueprints.pgm.TransactionalGraph;
-import com.tinkerpop.blueprints.pgm.Vertex;
-import com.tinkerpop.blueprints.pgm.impls.GraphTest;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.TestSuite;
+import com.tinkerpop.blueprints.TransactionalGraph;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.impls.GraphTest;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,11 +21,11 @@ public class TransactionalGraphTestSuite  extends TestSuite {
     }
 
     public void testCompetingThreads2() {
-        TransactionalGraph graph = (TransactionalGraph) graphTest.getGraphInstance();
+        TransactionalGraph graph = (TransactionalGraph) graphTest.generateGraph();
         graph.startTransaction();
         Vertex a = graph.addVertex(null);
         Vertex b = graph.addVertex(null);
-        Edge e = graph.addEdge(null, a, b, convertId("friend"));
+        Edge e = graph.addEdge(null, a, b, convertId(graph,"friend"));
 
         a.setProperty("test", 5);
         b.setProperty("blah", 0.5f);
@@ -37,7 +37,7 @@ public class TransactionalGraphTestSuite  extends TestSuite {
     }
 
     private void competingThreads() {
-        final TransactionalGraph graph = (TransactionalGraph) graphTest.getGraphInstance();
+        final TransactionalGraph graph = (TransactionalGraph) graphTest.generateGraph();
         int totalThreads = 250;
         final AtomicInteger vertices = new AtomicInteger(0);
         final AtomicInteger edges = new AtomicInteger(0);
@@ -50,28 +50,23 @@ public class TransactionalGraphTestSuite  extends TestSuite {
                         if (random.nextBoolean()) {
                             Vertex a = graph.addVertex(null);
                             Vertex b = graph.addVertex(null);
-                            Edge e = graph.addEdge(null, a, b, convertId("friend"));
+                            Edge e = graph.addEdge(null, a, b, convertId(graph,"friend"));
 
-                            if (!graphTest.isRDFModel) {
-                                a.setProperty("test", this.getId());
-                                b.setProperty("blah", random.nextFloat());
-                                e.setProperty("bloop", random.nextInt());
-                            }
+                            a.setProperty("test", this.getId());
+                            b.setProperty("blah", random.nextFloat());
+                            e.setProperty("bloop", random.nextInt());
 
                             vertices.getAndAdd(2);
                             edges.getAndAdd(1);
 
                         } else {
-                            graph.setMaxBufferSize(0);
                             graph.startTransaction();
                             Vertex a = graph.addVertex(null);
                             Vertex b = graph.addVertex(null);
-                            Edge e = graph.addEdge(null, a, b, convertId("friend"));
-                            if (!graphTest.isRDFModel) {
-                                a.setProperty("test", this.getId());
-                                b.setProperty("blah", random.nextFloat());
-                                e.setProperty("bloop", random.nextInt());
-                            }
+                            Edge e = graph.addEdge(null, a, b, convertId(graph,"friend"));
+                            a.setProperty("test", this.getId());
+                            b.setProperty("blah", random.nextFloat());
+                            e.setProperty("bloop", random.nextInt());
                             if (random.nextBoolean()) {
                                 graph.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
                                 vertices.getAndAdd(2);

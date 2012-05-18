@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.graphdb.loading.test;
 
-import com.thinkaurelius.titan.core.Direction;
-import com.thinkaurelius.titan.graphdb.edgequery.AtomicEdgeQuery;
-import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemRelationshipType;
+import com.thinkaurelius.titan.graphdb.edgequery.AtomicTitanQuery;
+import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemLabel;
 import com.thinkaurelius.titan.graphdb.loadingstatus.DefaultLoadingStatus;
 import com.thinkaurelius.titan.graphdb.loadingstatus.LoadingStatus;
+import com.tinkerpop.blueprints.Direction;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
@@ -16,7 +16,7 @@ public class EdgeLoadingTest {
 	public void edgeLoadingTest() {
 		LoadingStatus status1 = DefaultLoadingStatus.AllLoaded;
 		LoadingStatus status2 = DefaultLoadingStatus.NothingLoaded;
-		AtomicEdgeQuery q = new AtomicEdgeQuery(null,1);
+		AtomicTitanQuery q = new AtomicTitanQuery(null,1);
 		assertTrue(status1.hasLoadedEdges(q));
 		assertFalse(status2.hasLoadedEdges(q));
 		assertTrue(status1==status1.loadedEdges(q));
@@ -24,11 +24,11 @@ public class EdgeLoadingTest {
 		
 		LoadingStatus status=status2;
 		assertTrue(status.loadedEdges(q).hasLoadedEdges(q));
-		q.inDirection(Direction.Out);
+		q.direction(Direction.OUT);
 		assertFalse(status.hasLoadedEdges(q));
 		status2 = status.loadedEdges(q);
 		assertTrue(status2.hasLoadedEdges(q));
-		q.withEdgeType(SystemRelationshipType.EdgeType);
+		q.type(SystemLabel.TYPE);
 		assertTrue(status2.hasLoadedEdges(q));
 		assertFalse(status.hasLoadedEdges(q));
 	}

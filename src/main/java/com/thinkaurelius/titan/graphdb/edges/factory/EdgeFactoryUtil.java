@@ -1,26 +1,27 @@
 package com.thinkaurelius.titan.graphdb.edges.factory;
 
-import com.thinkaurelius.titan.core.Direction;
-import com.thinkaurelius.titan.core.EdgeType;
+import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.exceptions.InvalidEdgeException;
-import com.thinkaurelius.titan.graphdb.edgequery.AtomicEdgeQuery;
-import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
-import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
-import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
+import com.thinkaurelius.titan.graphdb.edgequery.AtomicTitanQuery;
+import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
+import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
+import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.tinkerpop.blueprints.Direction;
+import static com.tinkerpop.blueprints.Direction.*;
 
 public class EdgeFactoryUtil {
 	
-	public static final void connectEdge(InternalEdge edge, boolean isNew, GraphTx graph) {
+	public static final void connectEdge(InternalRelation edge, boolean isNew, InternalTitanTransaction graph) {
 		//Check that this edge has not previously been deleted
-		if (!isNew && graph.isDeletedEdge(edge)) return;
+		if (!isNew && graph.isDeletedRelation(edge)) return;
 		
-		EdgeType et = edge.getEdgeType();
+		TitanType et = edge.getType();
 		//If functional edge, check that it is indeed unique for that type
-		if (isNew && et.isFunctional() && !edge.getStart().isNew()) {
+		if (isNew && et.isFunctional() && !edge.getVertex(0).isNew()) {
 			
-			InternalNode start = (InternalNode)edge.getStart();
+			InternalTitanVertex start = (InternalTitanVertex)edge.getVertex(0);
 			
-			if (hasEdgeOfType(start,et,Direction.Out)) {
+			if (hasEdgeOfType(start,et,Direction.OUT)) {
 				throw new IllegalArgumentException("Cannot create functional edge since an edge of that type already exists!");
 			}
 			
@@ -32,26 +33,26 @@ public class EdgeFactoryUtil {
             arity=1;
         }
         for (int i=0;i<arity;i++) {
-            if (!edge.getNodeAt(i).addEdge(edge, isNew)) notloaded++;
+            if (!edge.getVertex(i).addRelation(edge, isNew)) notloaded++;
             else loaded++;
         }
 
 		
 		if (loaded>0) {
-			if (notloaded>0) throw new InvalidEdgeException("Edge already existed on some vertices but not on others.");
+			if (notloaded>0) throw new InvalidEdgeException("TitanRelation already existed on some vertices but not on others.");
 			else {
-				graph.loadedEdge(edge);
+				graph.loadedRelation(edge);
 			}
 		} else if (isNew) {
-			throw new InvalidEdgeException("New Edge could not be added.");
+			throw new InvalidEdgeException("New TitanRelation could not be added.");
 		}
 	}
 
 	
-	public static final boolean hasEdgeOfType(InternalNode start, EdgeType type, Direction dir) {
-		AtomicEdgeQuery q = new AtomicEdgeQuery(start);
-		q.includeHidden().withEdgeType(type).inDirection(dir);
-		if (start.getEdges(q, true).iterator().hasNext()) {
+	public static final boolean hasEdgeOfType(InternalTitanVertex start, TitanType type, Direction dir) {
+		AtomicTitanQuery q = new AtomicTitanQuery(start);
+		q.includeHidden().type(type).direction(dir);
+		if (start.getRelations(q, true).iterator().hasNext()) {
 			return true;
 		} else {
 			return false;

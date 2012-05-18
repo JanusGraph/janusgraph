@@ -1,24 +1,24 @@
 package com.thinkaurelius.titan.graphdb.vertices.factory;
 
 import com.thinkaurelius.titan.graphdb.adjacencylist.InitialAdjListFactory;
-import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
-import com.thinkaurelius.titan.graphdb.vertices.DualNode;
-import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
-import com.thinkaurelius.titan.graphdb.vertices.PersistDualNode;
+import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
+import com.thinkaurelius.titan.graphdb.vertices.StandardTitanVertex;
+import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.vertices.PersistStandardTitanVertex;
 
 public enum StandardNodeFactories implements NodeFactory {
 
 	DefaultPersisted {
 
 		@Override
-		public InternalNode createExisting(GraphTx tx, long id) {
-			return new PersistDualNode(tx,InitialAdjListFactory.BasicFactory,id);
+		public InternalTitanVertex createExisting(InternalTitanTransaction tx, long id) {
+			return new PersistStandardTitanVertex(tx,InitialAdjListFactory.BasicFactory,id);
 		}
 
 
 		@Override
-		public InternalNode createNew(GraphTx tx) {
-			InternalNode n = new PersistDualNode(tx,InitialAdjListFactory.BasicFactory);
+		public InternalTitanVertex createNew(InternalTitanTransaction tx) {
+			InternalTitanVertex n = new PersistStandardTitanVertex(tx,InitialAdjListFactory.BasicFactory);
             tx.registerNewEntity(n);
             return n;
 		}
@@ -29,14 +29,14 @@ public enum StandardNodeFactories implements NodeFactory {
 	DefaultInMemory {
 	
 		@Override
-		public InternalNode createExisting(GraphTx tx, long id) {
+		public InternalTitanVertex createExisting(InternalTitanTransaction tx, long id) {
 			throw new UnsupportedOperationException("Cannot create existing vertices for in-memory transaction!");
 		}
 
 
 		@Override
-		public InternalNode createNew(GraphTx tx) {
-			InternalNode n = new DualNode(tx,InitialAdjListFactory.BasicFactory);
+		public InternalTitanVertex createNew(InternalTitanTransaction tx) {
+			InternalTitanVertex n = new StandardTitanVertex(tx,InitialAdjListFactory.BasicFactory);
             tx.registerNewEntity(n);
             return n;
 		}

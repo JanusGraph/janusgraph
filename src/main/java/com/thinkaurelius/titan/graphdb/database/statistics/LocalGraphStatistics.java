@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.statistics;
 
-import com.thinkaurelius.titan.core.EdgeType;
-import com.thinkaurelius.titan.core.EdgeTypeGroup;
+import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.exceptions.GraphDatabaseException;
 import com.thinkaurelius.titan.util.datastructures.LongCounter;
 import org.apache.commons.configuration.ConfigurationException;
@@ -97,9 +97,9 @@ public class LocalGraphStatistics implements InternalGraphStatistics {
 	public synchronized void update(TransactionStatistics stats) {
 		noNodes += stats.getNodeDelta();
 		noEdgeTypes += stats.getEdgeTypeDelta();
-		for (Map.Entry<EdgeType, LongCounter> entry : stats.getDeltaEdgeTypes().entrySet()) {
+		for (Map.Entry<TitanType, LongCounter> entry : stats.getDeltaEdgeTypes().entrySet()) {
 			LongCounter lc = entry.getValue();
-			EdgeType type = entry.getKey();
+			TitanType type = entry.getKey();
 			
 			LongCounter count = edgeTypes.get(type.getName());
 			if (count==null) {
@@ -116,10 +116,10 @@ public class LocalGraphStatistics implements InternalGraphStatistics {
 			count.increment(lc.get());
 			
 			noEdges += lc.get();
-			if (type.isPropertyType()) {
+			if (type.isPropertyKey()) {
 				noProperties += lc.get();
 			} else {
-				assert type.isRelationshipType();
+				assert type.isEdgeLabel();
 				noRelationships += lc.get();
 			}
 		}
@@ -144,7 +144,7 @@ public class LocalGraphStatistics implements InternalGraphStatistics {
 	}
 
 	@Override
-	public long getNoEdges(EdgeTypeGroup group) {
+	public long getNoEdges(TypeGroup group) {
 		LongCounter lc = groups.get(group.getID());
 		if (lc==null) return 0;
 		else return lc.get();	

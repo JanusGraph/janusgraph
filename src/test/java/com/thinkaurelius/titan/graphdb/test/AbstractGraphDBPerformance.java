@@ -1,13 +1,13 @@
 package com.thinkaurelius.titan.graphdb.test;
 
 
+import com.thinkaurelius.titan.core.TitanEdge;
+import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.TitanLabel;
+import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.core.Node;
-import com.thinkaurelius.titan.core.PropertyType;
-import com.thinkaurelius.titan.core.Relationship;
-import com.thinkaurelius.titan.core.RelationshipType;
-import com.thinkaurelius.titan.graphdb.edges.persist.PersistSimpleBinaryRelationship;
-import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
+import com.thinkaurelius.titan.graphdb.edges.persist.PersistSimpleBinaryTitanEdge;
+import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.util.test.PerformanceTest;
 import com.thinkaurelius.titan.util.test.RandomGenerator;
 import org.apache.commons.configuration.Configuration;
@@ -44,27 +44,27 @@ public abstract class AbstractGraphDBPerformance extends AbstractGraphDBTestComm
 
 	@Test
 	public void vertexCreation() {
-		RelationshipType connect = makeRelationshipType("connect");
+		TitanLabel connect = makeRelationshipType("connect");
 		int noNodes = 20000;
-		Node[] nodes = new Node[noNodes];
+		TitanVertex[] nodes = new TitanVertex[noNodes];
 		PerformanceTest p = new PerformanceTest(true);
 		for (int i=0;i<noNodes;i++) {
 			nodes[i]=
-				tx.createNode();
+				tx.addVertex();
 		}
 		p.end();
 		log.debug("Time per node in (ns): {}", (p.getNanoTime()/noNodes));
 		
 		p = new PerformanceTest(true);
 		for (int i=0;i<noNodes;i++) {
-			new PersistSimpleBinaryRelationship(connect,(InternalNode)nodes[i],(InternalNode)nodes[(i+1)%noNodes]);
+			new PersistSimpleBinaryTitanEdge(connect,(InternalTitanVertex)nodes[i],(InternalTitanVertex)nodes[(i+1)%noNodes]);
 		}
 		p.end();
 		log.debug("Time per edge in (ns): {}", (p.getNanoTime()/noNodes));	
 		
 		p = new PerformanceTest(true);
 		for (int i=0;i<noNodes;i++) {
-			nodes[i].createRelationship(connect, nodes[(i+1)%noNodes]);
+			nodes[i].addEdge(connect, nodes[(i + 1) % noNodes]);
 		}
 		p.end();
 		log.debug("Time per edge creation+connection in (ns): {}", (p.getNanoTime()/noNodes));	
@@ -183,7 +183,7 @@ public abstract class AbstractGraphDBPerformance extends AbstractGraphDBTestComm
 
 			long edgesPerSec = noNodes * noEdgesPerNode * 1000
 					/ Math.max(1, postcommitMS - precommitMS);
-			getMetric("Edge commit rate", "edges/sec").addValue(edgesPerSec);
+			getMetric("TitanRelation commit rate", "edges/sec").addValue(edgesPerSec);
 		}
 		
 		protected abstract void doLoad();
@@ -202,31 +202,31 @@ public abstract class AbstractGraphDBPerformance extends AbstractGraphDBTestComm
 		
 		@Override
 		protected void doLoad() {
-			PropertyType weight = makeWeightPropertyType("weight");
-			PropertyType id = makeIDPropertyType("id");
-			RelationshipType knows = makeLabeledRelationshipType("knows",id,weight);
-			PropertyType name = makeStringPropertyType("name");
+			TitanKey weight = makeWeightPropertyType("weight");
+			TitanKey id = makeIDPropertyType("id");
+			TitanLabel knows = makeLabeledRelationshipType("knows",id,weight);
+			TitanKey name = makeStringPropertyType("name");
 			
 			String[] names = new String[noNodes];
-			Node[] nodes = new Node[noNodes];
+			TitanVertex[] nodes = new TitanVertex[noNodes];
 			for (int i=0;i<noNodes;i++) {
 				do {
 					names[i]=RandomGenerator.randomString();
 					// Retry in case of collision with existing name
-				} while (null != tx.getNodeByKey(name, names[i]));
-				nodes[i] = tx.createNode();
-				nodes[i].createProperty(name, names[i]);
+				} while (null != tx.getVertex(name, names[i]));
+				nodes[i] = tx.addVertex();
+				nodes[i].addProperty(name, names[i]);
 			}
 			int offsets[] = {-99, -71, -20, -17, -13, 2, 7, 15, 33, 89};
 			assert offsets.length==noEdgesPerNode;
 			
 			for (int i=0;i<noNodes;i++) {
-				Node n = nodes[i];
+				TitanVertex n = nodes[i];
 				for (int e=0;e<noEdgesPerNode;e++) {
-					Node n2 = nodes[wrapAround(i+offsets[e],noNodes)];
-					Relationship r = n.createRelationship(knows, n2);
-					r.createProperty(id, RandomGenerator.randomInt(0, Integer.MAX_VALUE));
-					r.createProperty(weight, Math.random());
+					TitanVertex n2 = nodes[wrapAround(i+offsets[e],noNodes)];
+					TitanEdge r = n.addEdge(knows, n2);
+					r.addProperty(id, RandomGenerator.randomInt(0, Integer.MAX_VALUE));
+					r.addProperty(weight, Math.random());
 				}
 				if (i%10000==0) log.debug(""+i);
 			}
@@ -247,27 +247,27 @@ public abstract class AbstractGraphDBPerformance extends AbstractGraphDBTestComm
 		@Override
 		public void doLoad() {
 
-			RelationshipType connect = makeRelationshipType("connect");
-			PropertyType name = makeStringPropertyType("name");
+			TitanLabel connect = makeRelationshipType("connect");
+			TitanKey name = makeStringPropertyType("name");
 			
 			String[] names = new String[noNodes];
-			Node[] nodes = new Node[noNodes];
+			TitanVertex[] nodes = new TitanVertex[noNodes];
 			for (int i = 0; i < noNodes; i++) {
 				do {
 					names[i]=RandomGenerator.randomString();
 					// Retry in case of collision with existing name
-				} while (null != tx.getNodeByKey(name, names[i]));
-				nodes[i] = tx.createNode();
-				nodes[i].createProperty(name, names[i]);
+				} while (null != tx.getVertex(name, names[i]));
+				nodes[i] = tx.addVertex();
+				nodes[i].addProperty(name, names[i]);
 			}
 			int offsets[] = { -99, -71, -20, -17, -13, 2, 7, 15, 33, 89 };
 			assert offsets.length == noEdgesPerNode;
 
 			for (int i = 0; i < noNodes; i++) {
-				Node n = nodes[i];
+				TitanVertex n = nodes[i];
 				for (int e = 0; e < noEdgesPerNode; e++) {
-					Node n2 = nodes[wrapAround(i + offsets[e], noNodes)];
-					n.createRelationship(connect, n2);
+					TitanVertex n2 = nodes[wrapAround(i + offsets[e], noNodes)];
+					n.addEdge(connect, n2);
 				}
 				if ((i + 1) % 10000 == 0)
 					log.debug("" + i);

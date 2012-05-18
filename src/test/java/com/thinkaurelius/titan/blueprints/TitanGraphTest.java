@@ -2,9 +2,13 @@ package com.thinkaurelius.titan.blueprints;
 
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.DiskgraphTest;
-import com.tinkerpop.blueprints.pgm.*;
-import com.tinkerpop.blueprints.pgm.impls.GraphTest;
-import com.tinkerpop.blueprints.pgm.util.io.graphml.GraphMLReaderTestSuite;
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.*;
+import com.tinkerpop.blueprints.impls.GraphTest;
+import com.tinkerpop.blueprints.util.io.gml.GMLReaderTestSuite;
+import com.tinkerpop.blueprints.util.io.graphml.GraphMLReaderTestSuite;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONReaderTestSuite;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
@@ -15,33 +19,6 @@ import java.util.Set;
  */
 
 public class TitanGraphTest extends GraphTest {
-
-    public TitanGraphTest() {
-        this.allowsDuplicateEdges = true;
-        this.allowsSelfLoops = true;
-        this.isPersistent = true;
-        this.isRDFModel = false;
-        this.supportsVertexIteration = false;
-        this.supportsEdgeIteration = false;
-        this.supportsVertexIndex = true;
-        this.supportsEdgeIndex = false;
-        this.ignoresSuppliedIds = true;
-        this.supportsTransactions = true;
-
-        this.allowSerializableObjectProperty = true;
-        this.allowBooleanProperty = true;
-        this.allowDoubleProperty = true;
-        this.allowFloatProperty = true;
-        this.allowIntegerProperty = true;
-        this.allowPrimitiveArrayProperty = true;
-        this.allowLongProperty = true;
-        this.allowMapProperty = true;
-        this.allowStringProperty = true;
-        this.allowUniformListProperty = true;
-        this.allowMixedListProperty = true;
-        
-
-    }
 
     public void testTitanBenchmarkTestSuite() throws Exception {
         this.stopWatch();
@@ -63,8 +40,14 @@ public class TitanGraphTest extends GraphTest {
 
     public void testGraphTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new GraphTestSuite(this),ImmutableSet.of("testVertexQuery"));
+        doTestSuite(new GraphTestSuite(this));
         printTestPerformance("GraphTestSuite", this.stopWatch());
+    }
+
+    public void testQueryTestSuite() throws Exception {
+        this.stopWatch();
+        doTestSuite(new QueryTestSuite(this));
+        printTestPerformance("QueryTestSuite", this.stopWatch());
     }
 
     //Titan does not support manual indexes
@@ -82,17 +65,17 @@ public class TitanGraphTest extends GraphTest {
 //        printTestPerformance("IndexTestSuite", this.stopWatch());
 //    }
 
-    public void testAutomaticIndexTestSuite() throws Exception {
+    public void testKeyIndexableGraphTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new AutomaticIndexTestSuite(this),ImmutableSet.of("testEdgeLabelIndexing"));
-        printTestPerformance("AutomaticIndexTestSuite", this.stopWatch());
+        doTestSuite(new KeyIndexableGraphTestSuite(this));
+        printTestPerformance("KeyIndexableGraphTestSuite", this.stopWatch());
     }
 
-//    public void testTransactionalGraphTestSuite() throws Exception {
-//        this.stopWatch();
-//        doTestSuite(new TransactionalGraphTestSuite(this));
-//        printTestPerformance("TransactionalGraphTestSuite", this.stopWatch());
-//    }
+    public void testTransactionalGraphTestSuite() throws Exception {
+        this.stopWatch();
+        doTestSuite(new TransactionalGraphTestSuite(this));
+        printTestPerformance("TransactionalGraphTestSuite", this.stopWatch());
+    }
 
     public void testGraphMLReaderTestSuite() throws Exception {
         this.stopWatch();
@@ -100,10 +83,21 @@ public class TitanGraphTest extends GraphTest {
         printTestPerformance("GraphMLReaderTestSuite", this.stopWatch());
     }
 
+    public void testGraphSONReaderTestSuite() throws Exception {
+        this.stopWatch();
+        doTestSuite(new GraphSONReaderTestSuite(this));
+        printTestPerformance("GraphSONReaderTestSuite", this.stopWatch());
+    }
+
+    public void testGMLReaderTestSuite() throws Exception {
+        this.stopWatch();
+        doTestSuite(new GMLReaderTestSuite(this));
+        printTestPerformance("GMLReaderTestSuite", this.stopWatch());
+    }
+
     @Override
-    public Graph getGraphInstance() {
-        graph = new TitanGraph(DiskgraphTest.homeDir);
-        graph.setMaxBufferSize(0);
+    public Graph generateGraph() {
+        graph = TitanFactory.open(DiskgraphTest.homeDir);
         return graph;
     }
     

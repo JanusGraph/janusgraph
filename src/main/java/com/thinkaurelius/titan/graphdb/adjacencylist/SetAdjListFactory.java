@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.adjacencylist;
 
-import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
+import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 
 public class SetAdjListFactory implements AdjacencyListFactory {
 
@@ -21,7 +21,7 @@ public class SetAdjListFactory implements AdjacencyListFactory {
 	}
 
 	@Override
-	public AdjacencyList extend(AdjacencyList list, InternalEdge newEdge,
+	public AdjacencyList extend(AdjacencyList list, InternalRelation newEdge,
 			ModificationStatus status) {
 		throw new UnsupportedOperationException("There is no extension for set adjacency lists!");
 	}

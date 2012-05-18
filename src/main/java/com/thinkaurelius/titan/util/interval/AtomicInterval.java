@@ -20,14 +20,14 @@ public interface AtomicInterval<V> {
 	/**
 	 * Returns the start point of the interval
 	 * 
-	 * @return Start point of the interval
+	 * @return Tail point of the interval
 	 */
 	public V getStartPoint();
 	
 	/**
 	 * Returns the end point of the interval
 	 * 
-	 * @return End point of the interval
+	 * @return Head point of the interval
 	 */
 	public V getEndPoint();
 	

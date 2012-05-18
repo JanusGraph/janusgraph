@@ -26,7 +26,7 @@ public class CTConnectionPool {
 	
 	/*
 	 * We don't want to risk creating a pool multiple times, since
-	 * each one must be explicitly close()d.  Synchronize the method
+	 * each one must be explicitly shutdown()d.  Synchronize the method
 	 * for now to guarantee that only one pool is ever created for a
 	 * particular PoolKey.
 	 */

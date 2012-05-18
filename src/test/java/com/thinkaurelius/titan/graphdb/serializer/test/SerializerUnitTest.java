@@ -1,16 +1,13 @@
 package com.thinkaurelius.titan.graphdb.serializer.test;
 
 
-import com.thinkaurelius.titan.core.Directionality;
-import com.thinkaurelius.titan.core.EdgeCategory;
+import com.thinkaurelius.titan.graphdb.edgetypes.*;
+import com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
-import com.thinkaurelius.titan.graphdb.edgetypes.EdgeTypeVisibility;
-import com.thinkaurelius.titan.graphdb.edgetypes.StandardPropertyType;
-import com.thinkaurelius.titan.graphdb.edgetypes.StandardRelationshipType;
-import com.thinkaurelius.titan.graphdb.edgetypes.group.StandardEdgeTypeGroup;
-import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemEdgeTypeManager;
+import com.thinkaurelius.titan.graphdb.edgetypes.group.StandardTypeGroup;
+import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemTypeManager;
 import com.thinkaurelius.titan.util.test.PerformanceTest;
 import org.junit.After;
 import org.junit.Before;
@@ -41,7 +38,7 @@ public class SerializerUnitTest {
 		serialize.registerClass(Directionality.class);
 		serialize.registerClass(EdgeCategory.class);
 		serialize.registerClass(EdgeTypeVisibility.class);
-		serialize.registerClass(StandardEdgeTypeGroup.class);
+		serialize.registerClass(StandardTypeGroup.class);
 		serialize.registerClass(StandardPropertyType.class);
 		
 		printStats = true;
@@ -118,10 +115,10 @@ public class SerializerUnitTest {
 	public void serializeRelationshipType() {
 		StandardRelationshipType relType = new StandardRelationshipType("testName",EdgeCategory.Simple,
 				Directionality.Directed,EdgeTypeVisibility.Modifiable,false,
-				new String[]{},new String[]{}, SystemEdgeTypeManager.systemETgroup);
-		StandardPropertyType propType = new StandardPropertyType("testName",EdgeCategory.Simple,
+				new String[]{},new String[]{}, SystemTypeManager.SYSTEM_TYPE_GROUP);
+		StandardPropertyType propType = new StandardPropertyType("testName", EdgeCategory.Simple,
 				Directionality.Directed,EdgeTypeVisibility.Modifiable,false,
-				new String[]{},new String[]{}, SystemEdgeTypeManager.systemETgroup,true,true,String.class);
+				new String[]{},new String[]{}, SystemTypeManager.SYSTEM_TYPE_GROUP,true,true,String.class);
 		DataOutput out = serialize.getDataOutput(128, true);
 		out.writeObjectNotNull(relType);
 		out.writeObjectNotNull(propType);

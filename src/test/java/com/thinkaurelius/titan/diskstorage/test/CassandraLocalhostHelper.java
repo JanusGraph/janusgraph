@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.test;
 
 import com.thinkaurelius.titan.DiskgraphTest;
-import com.thinkaurelius.titan.core.GraphDatabaseFactory;
+import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.core.GraphDatabase;
+import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool;
@@ -104,7 +104,7 @@ public class CassandraLocalhostHelper {
 			env.put("CASSANDRA_CONF", cassandraConfigDir);
 			env.put("CASSANDRA_INCLUDE", cassandraInclude);
 			pb.redirectErrorStream(true);
-			// Start Cassandra
+			// Tail Cassandra
 			log.debug("Starting Cassandra process {}...", 
 					StringUtils.join(pb.command(), ' '));
 			cassandraProcess = pb.start();
@@ -170,7 +170,7 @@ public class CassandraLocalhostHelper {
 			
 			/*
 			 * Destroy any pooled Thrift connections to this
-			 * Cassandra instance.  This isn't necessary in
+			 * Cassandra INSTANCE.  This isn't necessary in
 			 * normal operation, but in testing, where maven may
 			 * destroy and recreate a Cassandra cluster many
 			 * times without restarting the JVM, failure to
@@ -209,9 +209,9 @@ public class CassandraLocalhostHelper {
 		}
 	}
 	
-	public GraphDatabase openDatabase() {
+	public TitanGraph openDatabase() {
         // Open graph database against the cassandra daemon
-		return GraphDatabaseFactory.open(getConfiguration());
+		return TitanFactory.open(getConfiguration());
 	}
 	
 	public Configuration getConfiguration() {

@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.test;
 
-import com.thinkaurelius.titan.graphdb.transaction.InMemoryGraphDB;
+import com.thinkaurelius.titan.graphdb.transaction.InMemoryTitanGraph;
 import org.junit.Test;
 
 
@@ -12,7 +12,7 @@ public class InMemoryGraphDBPerformance extends AbstractGraphDBPerformance {
 	
 	@Override
 	public void open() {
-		tx=new InMemoryGraphDB();
+		tx=new InMemoryTitanGraph();
 	}
 
 	@Override

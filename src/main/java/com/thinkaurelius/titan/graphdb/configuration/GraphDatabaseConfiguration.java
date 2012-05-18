@@ -25,7 +25,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
- * Provides functionality to configure a {@link com.thinkaurelius.titan.core.GraphDatabase} instance.
+ * Provides functionality to configure a {@link com.thinkaurelius.titan.core.TitanGraph} INSTANCE.
  *
  * 
  * A graph database configuration is uniquely associated with a graph database and must not be used for multiple

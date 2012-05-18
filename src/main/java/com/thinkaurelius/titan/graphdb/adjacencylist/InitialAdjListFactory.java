@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.adjacencylist;
 
-import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
+import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 
 public enum InitialAdjListFactory implements AdjacencyListFactory {
 
@@ -13,7 +13,7 @@ public enum InitialAdjListFactory implements AdjacencyListFactory {
 
 
 		@Override
-		public AdjacencyList extend(AdjacencyList list, InternalEdge newEdge,
+		public AdjacencyList extend(AdjacencyList list, InternalRelation newEdge,
 				ModificationStatus status) {
 			AdjacencyList newList = new ArrayAdjacencyList(ArrayAdjListFactory.defaultInstance);
 			newList.addEdge(newEdge,status);
@@ -30,7 +30,7 @@ public enum InitialAdjListFactory implements AdjacencyListFactory {
 
 
 		@Override
-		public AdjacencyList extend(AdjacencyList list, InternalEdge newEdge,
+		public AdjacencyList extend(AdjacencyList list, InternalRelation newEdge,
 				ModificationStatus status) {
 			throw new IllegalStateException("Cannot add to emptied adjacency list.");
 		}
@@ -50,6 +50,6 @@ public enum InitialAdjListFactory implements AdjacencyListFactory {
 	 */
 	public abstract AdjacencyList emptyList();
 	public abstract AdjacencyList extend(AdjacencyList list, 
-			InternalEdge newEdge, ModificationStatus status);	
+			InternalRelation newEdge, ModificationStatus status);
 	
 }

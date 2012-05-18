@@ -2,12 +2,12 @@ package com.thinkaurelius.titan.graphdb.edgetypes.manager;
 
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.exceptions.InvalidEntityException;
-import com.thinkaurelius.titan.graphdb.database.GraphDB;
+import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.edgequery.EdgeQueryUtil;
 import com.thinkaurelius.titan.graphdb.edgetypes.*;
-import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemPropertyType;
+import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
-import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
+import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,7 +20,7 @@ import static com.thinkaurelius.titan.graphdb.edgetypes.manager.EdgeTypeManagerU
 
 public class SimpleEdgeTypeManager implements EdgeTypeManager {
 
-	private final GraphDB graphdb;
+	private final InternalTitanGraph graphdb;
 	private final EdgeTypeFactory factory;
 	
 	private final ReadWriteLock mapLock;
@@ -30,7 +30,7 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 	private final Map<Long,EdgeTypeInformation> idIndex;
 	private final Map<String,Long> nameIndex;
 	
-	public SimpleEdgeTypeManager(GraphDB graphdb) {
+	public SimpleEdgeTypeManager(InternalTitanGraph graphdb) {
 		this.graphdb = graphdb;
 		idIndex = new HashMap<Long,EdgeTypeInformation>();
 		nameIndex = new HashMap<String,Long>();
@@ -50,40 +50,40 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 	}
 
 	@Override
-	public boolean containsEdgeType(long id, GraphTx tx) {
+	public boolean containsEdgeType(long id, InternalTitanTransaction tx) {
 		mapReadLock.lock();
 		boolean contains = idIndex.containsKey(Long.valueOf(id));
 		mapReadLock.unlock();
 		if (contains) return true;
-		else return graphdb.containsNodeID(id, tx);
+		else return graphdb.containsVertexID(id, tx);
 	}
 
 
 
 	@Override
-	public boolean containsEdgeType(String name, GraphTx tx) {
+	public boolean containsEdgeType(String name, InternalTitanTransaction tx) {
 		mapReadLock.lock();
 		boolean contains = nameIndex.containsKey(name);
 		mapReadLock.unlock();
 		if (contains) return true;
-		else return graphdb.indexRetrieval(name, SystemPropertyType.EdgeTypeName, tx).length>0;
+		else return graphdb.indexRetrieval(name, SystemKey.TypeName, tx).length>0;
 	}
 
 	@Override
-	public void committed(InternalEdgeType edgetype) {
+	public void committed(InternalTitanType edgetype) {
 		Long id = edgetype.getID();
 		mapWriteLock.lock();
 		if (nameIndex.containsKey(edgetype.getName()))
-			throw new InvalidEntityException("Edge Type with name does already exist: " + edgetype.getName() + " | " + edgetype.isRelationshipType());
+			throw new InvalidEntityException("TitanRelation Type with name does already exist: " + edgetype.getName() + " | " + edgetype.isEdgeLabel());
 		nameIndex.put(edgetype.getName(),id);
 		//Determine system edge ids
-		long nameEdgeID = EdgeQueryUtil.queryHiddenFunctionalProperty(edgetype, SystemPropertyType.EdgeTypeName).getID();
+		long nameEdgeID = EdgeQueryUtil.queryHiddenFunctionalProperty(edgetype, SystemKey.TypeName).getID();
 		long defEdgeID = -1;
-		if (edgetype.isPropertyType()) {
-			defEdgeID = EdgeQueryUtil.queryHiddenFunctionalProperty(edgetype, SystemPropertyType.PropertyTypeDefinition).getID();
+		if (edgetype.isPropertyKey()) {
+			defEdgeID = EdgeQueryUtil.queryHiddenFunctionalProperty(edgetype, SystemKey.PropertyTypeDefinition).getID();
 		} else {
-			assert edgetype.isRelationshipType();
-			defEdgeID = EdgeQueryUtil.queryHiddenFunctionalProperty(edgetype, SystemPropertyType.RelationshipTypeDefinition).getID();			
+			assert edgetype.isEdgeLabel();
+			defEdgeID = EdgeQueryUtil.queryHiddenFunctionalProperty(edgetype, SystemKey.RelationshipTypeDefinition).getID();
 		}
 		idIndex.put(id, new EdgeTypeInformation(edgetype.getDefinition(), defEdgeID, nameEdgeID ));
 		mapWriteLock.unlock();
@@ -94,51 +94,51 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 		boolean exists = nameIndex.containsKey(name);
 		mapReadLock.unlock();
 		if (exists)
-			throw new IllegalArgumentException("Edge Type with name does already exist: " + name);
+			throw new IllegalArgumentException("TitanRelation Type with name does already exist: " + name);
 	}
 	
 	@Override
-	public PropertyType createPropertyType(GraphTx tx, String name,
+	public TitanKey createPropertyType(InternalTitanTransaction tx, String name,
 			EdgeCategory category, Directionality directionality,
 			EdgeTypeVisibility visibility,
-			boolean isfunctional, EdgeType[] keysig, EdgeType[] compactsig,
-			EdgeTypeGroup group, 
+			boolean isfunctional, TitanType[] keysig, TitanType[] compactsig,
+			TypeGroup group,
 			boolean isKey, boolean hasIndex, Class<?> objectType) {
 		checkUniqueName(name);
 		StandardPropertyType pt = new StandardPropertyType(name,category,directionality,visibility,
 				isfunctional,convertSignature(keysig),convertSignature(compactsig),group,isKey,hasIndex,objectType);
-		return factory.createNewPropertyType(pt, tx);
+		return factory.createNewPropertyKey(pt, tx);
 	}
 
 
 	@Override
-	public RelationshipType createRelationshipType(GraphTx tx, String name,
+	public TitanLabel createRelationshipType(InternalTitanTransaction tx, String name,
 			EdgeCategory category, Directionality directionality,
 			EdgeTypeVisibility visibility,
-			boolean isfunctional, EdgeType[] keysig, EdgeType[] compactsig,
-			EdgeTypeGroup group) {
+			boolean isfunctional, TitanType[] keysig, TitanType[] compactsig,
+			TypeGroup group) {
 		checkUniqueName(name);
 		StandardRelationshipType rt = new StandardRelationshipType(name,category,directionality,visibility,
 				isfunctional,convertSignature(keysig),convertSignature(compactsig),group);
-		return factory.createNewRelationshipType(rt, tx);
+		return factory.createNewEdgeLabel(rt, tx);
 	}
 
 
 
 	@Override
-	public InternalEdgeType getEdgeType(long id, GraphTx tx) {
+	public InternalTitanType getEdgeType(long id, InternalTitanTransaction tx) {
 		mapReadLock.lock();
 		EdgeTypeInformation info = idIndex.get(Long.valueOf(id));
 		mapReadLock.unlock();
 		if (info==null) {
-			if (!tx.containsNode(id)) throw new IllegalArgumentException("EdgeType is unknown: " + id);
+			if (!tx.containsVertex(id)) throw new IllegalArgumentException("TitanType is unknown: " + id);
 			IDInspector idspec = graphdb.getIDInspector();
 			assert idspec.isEdgeTypeID(id);
-			InternalEdgeType et=null;
+			InternalTitanType et=null;
 			if (idspec.isPropertyTypeID(id)) {
-				et = factory.createExistingPropertyType(id, tx);
+				et = factory.createExistingPropertyKey(id, tx);
 			} else if (idspec.isRelationshipTypeID(id)) {
-				et = factory.createExistingRelationshipType(id, tx);
+				et = factory.createExistingEdgeLabel(id, tx);
 			} else throw new AssertionError("Unexpected type id: " + id);
 			mapWriteLock.lock();
             if (idIndex.containsKey(Long.valueOf(id))) et = getEdgeType(id,tx);
@@ -146,19 +146,19 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
             mapWriteLock.unlock();
 			return et;
 		} else {
-			return factory.createExistingEdgeType(id, info, tx);
+			return factory.createExistingType(id, info, tx);
 		}
 	}
 
 
 
 	@Override
-	public InternalEdgeType getEdgeType(String name, GraphTx tx) {
+	public InternalTitanType getEdgeType(String name, InternalTitanTransaction tx) {
 		mapReadLock.lock();
 		Long id = nameIndex.get(name);
 		mapReadLock.unlock();
 		if (id==null) {
-			long[] ids = graphdb.indexRetrieval(name, SystemPropertyType.EdgeTypeName, tx);
+			long[] ids = graphdb.indexRetrieval(name, SystemKey.TypeName, tx);
 			if (ids.length==0) return null;
 			else {
 				assert ids.length==1;
@@ -171,8 +171,8 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 
 
 	@Override
-	public EdgeTypeMaker getEdgeTypeMaker(GraphTx tx) {
-		return new StandardEdgeTypeMaker(tx,this);
+	public TypeMaker getEdgeTypeMaker(InternalTitanTransaction tx) {
+		return new StandardTypeMaker(tx,this);
 	}
 
 	

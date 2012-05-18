@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.adjacencylist;
 
-import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
+import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 
 public class ArrayAdjListFactory implements AdjacencyListFactory {
 
@@ -31,7 +31,7 @@ public class ArrayAdjListFactory implements AdjacencyListFactory {
 	}
 
 	@Override
-	public AdjacencyList extend(AdjacencyList list, InternalEdge newEdge, ModificationStatus status) {
+	public AdjacencyList extend(AdjacencyList list, InternalRelation newEdge, ModificationStatus status) {
 		AdjacencyList newadj = null;
 		switch(extension) {
 		case Typed: 

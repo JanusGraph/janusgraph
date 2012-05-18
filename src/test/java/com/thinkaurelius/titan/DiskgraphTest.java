@@ -28,7 +28,7 @@ public class DiskgraphTest {
 		if (!homeDirFile.exists())
 			homeDirFile.mkdirs();
 		boolean success = IOUtils.deleteFromDirectory(homeDirFile);
-        if (!success) System.err.println("Could not delete " + homeDir);
+        if (!success) System.err.println("Could not remove " + homeDir);
 	}
 
     public static Configuration getDirectoryStorageConfiguration() {

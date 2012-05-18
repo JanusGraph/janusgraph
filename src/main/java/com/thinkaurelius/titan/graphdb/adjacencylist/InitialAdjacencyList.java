@@ -1,16 +1,16 @@
 package com.thinkaurelius.titan.graphdb.adjacencylist;
 
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.core.EdgeType;
-import com.thinkaurelius.titan.core.EdgeTypeGroup;
-import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
+import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.TypeGroup;
+import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 
 import java.util.Iterator;
 
 public class InitialAdjacencyList implements AdjacencyList {
 
-	private static final Iterable<InternalEdge> Empty = IterablesUtil.emptyIterable();	
+	private static final Iterable<InternalRelation> Empty = IterablesUtil.emptyIterable();
 	
 	private final AdjacencyListFactory factory;
 	
@@ -19,37 +19,37 @@ public class InitialAdjacencyList implements AdjacencyList {
 	}
 	
 	@Override
-	public synchronized AdjacencyList addEdge(InternalEdge e, ModificationStatus status) {
+	public synchronized AdjacencyList addEdge(InternalRelation e, ModificationStatus status) {
 		return factory.extend(this, e, status);
 	}
 
 	@Override
-	public synchronized AdjacencyList addEdge(InternalEdge e, boolean checkTypeUniqueness, ModificationStatus status) {
+	public synchronized AdjacencyList addEdge(InternalRelation e, boolean checkTypeUniqueness, ModificationStatus status) {
 		return factory.extend(this, e, status);
 	}
 
 	@Override
-	public boolean containsEdge(InternalEdge e) {
+	public boolean containsEdge(InternalRelation e) {
 		return false;
 	}
 
 	@Override
-	public Iterable<InternalEdge> getEdges() {
+	public Iterable<InternalRelation> getEdges() {
 		return Empty;
 	}
 
 	@Override
-	public Iterable<InternalEdge> getEdges(EdgeType type) {
+	public Iterable<InternalRelation> getEdges(TitanType type) {
 		return Empty;
 	}
 	
 	@Override
-	public Iterable<InternalEdge> getEdges(EdgeTypeGroup group) {
+	public Iterable<InternalRelation> getEdges(TypeGroup group) {
 		return Empty;
 	}
 
 	@Override
-	public void removeEdge(InternalEdge e, ModificationStatus status) {
+	public void removeEdge(InternalRelation e, ModificationStatus status) {
 		status.nochange();
 	}
 
@@ -59,7 +59,7 @@ public class InitialAdjacencyList implements AdjacencyList {
 	}
 
 	@Override
-	public Iterator<InternalEdge> iterator() {
+	public Iterator<InternalRelation> iterator() {
 		return Iterators.emptyIterator();
 	}
 

@@ -2,8 +2,9 @@ package com.thinkaurelius.titan.graphdb.test;
 
 
 import com.thinkaurelius.titan.DiskgraphTest;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.edgetypes.Directionality;
+import com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory;
 import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
@@ -11,8 +12,8 @@ import org.junit.Before;
 public abstract class AbstractGraphDBTestCommon {
 
 	public Configuration config;
-	public GraphDatabase graphdb;
-	public GraphTransaction tx;
+	public TitanGraph graphdb;
+	public TitanTransaction tx;
 	
 	public AbstractGraphDBTestCommon(Configuration config) {
 		this.config = config;
@@ -30,8 +31,8 @@ public abstract class AbstractGraphDBTestCommon {
 	}
 	
 	public void open() {
-		graphdb = GraphDatabaseFactory.open(config);
-		tx = graphdb.startTransaction();
+		graphdb = TitanFactory.open(config);
+		tx = graphdb.startThreadTransaction(TransactionConfig.STANDARD);
 	}
 	
 	public void close() {
@@ -39,7 +40,7 @@ public abstract class AbstractGraphDBTestCommon {
 			tx.commit();
 		
 		if (null != graphdb)
-			graphdb.close();
+			graphdb.shutdown();
     }
 	
 	public void clopen() {
@@ -53,132 +54,125 @@ public abstract class AbstractGraphDBTestCommon {
 		return value;
 	}
 	
-	public RelationshipType makeRelationshipType(String name) {
-		return makeRelationshipType(name,EdgeTypeGroup.DefaultGroup);
+	public TitanLabel makeRelationshipType(String name) {
+		return makeRelationshipType(name, TypeGroup.DEFAULT_GROUP);
 	}
 	
-	public RelationshipType makeUndirectedRelationshipType(String name) {
-		return makeRelationshipType(name, EdgeTypeGroup.DefaultGroup, Directionality.Undirected);
+	public TitanLabel makeUndirectedRelationshipType(String name) {
+		return makeRelationshipType(name, TypeGroup.DEFAULT_GROUP, Directionality.Undirected);
 	}
 	
-	public RelationshipType makeRelationshipType(String name, EdgeTypeGroup group) {
+	public TitanLabel makeRelationshipType(String name, TypeGroup group) {
 		return makeRelationshipType(name, group, Directionality.Directed);
 	}
 	
-	public RelationshipType makeRelationshipType(String name, EdgeTypeGroup group, Directionality dir) {
-		EdgeTypeMaker etmaker = tx.createEdgeType();
-		RelationshipType relType = etmaker.withName(name).
-                withDirectionality(dir).
-                category(EdgeCategory.Simple).group(group).
-										makeRelationshipType();
-		return relType;
+	public TitanLabel makeRelationshipType(String name, TypeGroup group, Directionality dir) {
+		TypeMaker etmaker = tx.makeType();
+		etmaker.name(name).simple().group(group);
+        switch(dir) {
+            case Undirected: etmaker.undirected(); break;
+            case Unidirected: etmaker.unidirected(); break;
+            case Directed: etmaker.directed(); break;
+        }
+		return etmaker.makeEdgeLabel();
 	}
 
 	
 	
-	public RelationshipType makeLabeledRelationshipType(String name) {
-		EdgeTypeMaker etmaker = tx.createEdgeType();
-		RelationshipType relType = etmaker.withName(name).
-                withDirectionality(Directionality.Directed).
-										category(EdgeCategory.Labeled).
-										makeRelationshipType();
+	public TitanLabel makeLabeledRelationshipType(String name) {
+		TypeMaker etmaker = tx.makeType();
+		TitanLabel relType = etmaker.name(name).directed().makeEdgeLabel();
 		return relType;
 	}
 	
-	public RelationshipType makeLabeledRelationshipType(String name, PropertyType key, PropertyType compact) {
-		EdgeTypeMaker etmaker = tx.createEdgeType();
-		RelationshipType relType = etmaker.withName(name).
-                keySignature(key).compactSignature(compact).
-										withDirectionality(Directionality.Directed).
-										category(EdgeCategory.Labeled).
-										makeRelationshipType();
+	public TitanLabel makeLabeledRelationshipType(String name, TitanKey key, TitanKey compact) {
+		TypeMaker etmaker = tx.makeType();
+		TitanLabel relType = etmaker.name(name).
+                primaryKey(key).signature(compact).directed().makeEdgeLabel();
 		return relType;
 	}
 	
-	public PropertyType makeStringPropertyType(String name) {
-		return tx.createEdgeType().withName(name).
-			category(EdgeCategory.Simple).
-			makeKeyed().withIndex(true).
-			dataType(String.class).										
-			makePropertyType();
+	public TitanKey makeStringPropertyType(String name) {
+		return tx.makeType().name(name).simple().
+                unique().indexed().dataType(String.class).makePropertyKey();
 	}
 	
-	public PropertyType makeStringIDPropertyType(String name) {
-		return makeStringIDPropertyType(name,EdgeTypeGroup.DefaultGroup);
+	public TitanKey makeStringIDPropertyType(String name) {
+		return makeStringIDPropertyType(name, TypeGroup.DEFAULT_GROUP);
 	}
 	
-	public PropertyType makeStringIDPropertyType(String name, EdgeTypeGroup group) {
-		return tx.createEdgeType().withName(name).
-			category(EdgeCategory.Simple).functional(true).
-			makeKeyed().withIndex(true).
-			dataType(String.class).group(group).								
-			makePropertyType();
+	public TitanKey makeStringIDPropertyType(String name, TypeGroup group) {
+		return tx.makeType().name(name).
+			simple().functional().
+                unique().indexed().
+			dataType(String.class).group(group).
+                makePropertyKey();
 	}
 	
-	public PropertyType makeUnkeyedStringPropertyType(String name) {
-		return tx.createEdgeType().withName(name).
-			category(EdgeCategory.Simple).withIndex(true).
-			dataType(String.class).									
-			makePropertyType();
+	public TitanKey makeUnkeyedStringPropertyType(String name) {
+		return tx.makeType().name(name).
+			simple().indexed().
+			dataType(String.class).
+                makePropertyKey();
 	}
 	
-	public PropertyType makeBooleanPropertyType(String name) {
-		return tx.createEdgeType().withName(name).
-			category(EdgeCategory.Simple).
-			dataType(Boolean.class).						
-			makePropertyType();		
+	public TitanKey makeBooleanPropertyType(String name) {
+		return tx.makeType().name(name).
+			simple().
+			dataType(Boolean.class).
+                makePropertyKey();
 	}
 	
-	public PropertyType makeIDPropertyType(String name) {
-		return makeIDPropertyType(name,EdgeTypeGroup.DefaultGroup);
+	public TitanKey makeIDPropertyType(String name) {
+		return makeIDPropertyType(name, TypeGroup.DEFAULT_GROUP);
 	}
 	
-	public PropertyType makeIDPropertyType(String name, EdgeTypeGroup group) {
-		return tx.createEdgeType().withName(name).
-			category(EdgeCategory.Simple).functional(true).
-			makeKeyed().withIndex(true).
-			dataType(Integer.class).group(group).					
-			makePropertyType();
+	public TitanKey makeIDPropertyType(String name, TypeGroup group) {
+		return tx.makeType().name(name).
+			simple().functional().
+                unique().indexed().
+			dataType(Integer.class).group(group).
+                makePropertyKey();
 	}
 
-	public PropertyType makeWeightPropertyType(String name) {
-		return tx.createEdgeType().withName(name).
-			category(EdgeCategory.Simple).functional(true).
-			dataType(Double.class).										
-			makePropertyType();
+	public TitanKey makeWeightPropertyType(String name) {
+		return tx.makeType().name(name).
+			simple().functional().
+			dataType(Double.class).
+                makePropertyKey();
 	}
 	
-	public PropertyType getOrMakeBooleanPropertyType(String name) {
-		if (tx.containsEdgeType(name))
-			return tx.getPropertyType(name);
+	public TitanKey getOrMakeBooleanPropertyType(String name) {
+		if (tx.containsType(name))
+			return tx.getPropertyKey(name);
 		return makeBooleanPropertyType(name);
 	}
 	
-	public PropertyType getOrMakeStringPropertyType(String name) {
-		if (tx.containsEdgeType(name))
-			return tx.getPropertyType(name);
+	public TitanKey getOrMakeStringPropertyType(String name) {
+		if (tx.containsType(name))
+			return tx.getPropertyKey(name);
 		return makeStringPropertyType(name);
 	}
 	
-	public PropertyType getOrMakeStringIDPropertyType(String name) {
-		if (tx.containsEdgeType(name))
-			return tx.getPropertyType(name);
+	public TitanKey getOrMakeStringIDPropertyType(String name) {
+		if (tx.containsType(name))
+			return tx.getPropertyKey(name);
 		return makeStringIDPropertyType(name);
 	}
 	
-	public PropertyType getOrMakeUnkeyedStringPropertyType(String name) {
-		if (tx.containsEdgeType(name))
-			return tx.getPropertyType(name);
+	public TitanKey getOrMakeUnkeyedStringPropertyType(String name) {
+		if (tx.containsType(name))
+			return tx.getPropertyKey(name);
 		return makeUnkeyedStringPropertyType(name);
 	}
 	
-	public RelationshipType getOrMakeLabeledRelationshipType(String name) {
-		if (tx.containsEdgeType(name))
-			return tx.getRelationshipType(name);
+	public TitanLabel getOrMakeLabeledRelationshipType(String name) {
+		if (tx.containsType(name))
+			return tx.getEdgeLabel(name);
 //		return makeLabeledRelationshipType(name);
 		return makeLabeledRelationshipType(name);
 //		try {
-//			return tx.getRelationshipType(name); // TODO tx.containsEdgeType()?
+//			return tx.getTitanLabel(name); // TODO tx.containsType()?
 //		} catch (IllegalArgumentException e) {
 //			return makeLabeledRelationshipType(name);
 //		}	

@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.edgetypes.manager;
 
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.edgetypes.*;
-import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
+import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 
 import static com.thinkaurelius.titan.graphdb.edgetypes.manager.EdgeTypeManagerUtil.convertSignature;
 
@@ -16,53 +16,53 @@ public class InMemoryEdgeTypeManager implements EdgeTypeManager  {
 	
 	
 	@Override
-	public PropertyType createPropertyType(GraphTx tx, String name,
+	public TitanKey createPropertyType(InternalTitanTransaction tx, String name,
 			EdgeCategory category, Directionality directionality,
-			EdgeTypeVisibility visibility, boolean isfunctional, EdgeType[] keysig, EdgeType[] compactsig,
-			EdgeTypeGroup group, boolean isKey, boolean hasIndex,
+			EdgeTypeVisibility visibility, boolean isfunctional, TitanType[] keysig, TitanType[] compactsig,
+			TypeGroup group, boolean isKey, boolean hasIndex,
 			Class<?> objectType) {
 		StandardPropertyType pt = new StandardPropertyType(name,category,directionality,visibility,
 				isfunctional,convertSignature(keysig),convertSignature(compactsig),group,isKey,hasIndex,objectType);
-		return factory.createNewPropertyType(pt, tx);
+		return factory.createNewPropertyKey(pt, tx);
 	}
 
 	@Override
-	public RelationshipType createRelationshipType(GraphTx tx, String name,
+	public TitanLabel createRelationshipType(InternalTitanTransaction tx, String name,
 			EdgeCategory category, Directionality directionality,
-			EdgeTypeVisibility visibility, boolean isfunctional, EdgeType[] keysig, EdgeType[] compactsig,
-			EdgeTypeGroup group) {
+			EdgeTypeVisibility visibility, boolean isfunctional, TitanType[] keysig, TitanType[] compactsig,
+			TypeGroup group) {
 		StandardRelationshipType rt = new StandardRelationshipType(name,category,directionality,visibility,
 				isfunctional,convertSignature(keysig),convertSignature(compactsig),group);
-		return factory.createNewRelationshipType(rt, tx);
+		return factory.createNewEdgeLabel(rt, tx);
 	}
 	
 	@Override
-	public EdgeTypeMaker getEdgeTypeMaker(GraphTx tx) {
-		return new StandardEdgeTypeMaker(tx,this);
+	public TypeMaker getEdgeTypeMaker(InternalTitanTransaction tx) {
+		return new StandardTypeMaker(tx,this);
 	}
 
 	@Override
-	public InternalEdgeType getEdgeType(long id, GraphTx tx) {
+	public InternalTitanType getEdgeType(long id, InternalTitanTransaction tx) {
 		throw new UnsupportedOperationException("Not supported for InMemory Transactions");
 	}
 
 	@Override
-	public InternalEdgeType getEdgeType(String name, GraphTx tx) {
+	public InternalTitanType getEdgeType(String name, InternalTitanTransaction tx) {
 		throw new UnsupportedOperationException("Not supported for InMemory Transactions");
 	}
 
 	@Override
-	public void committed(InternalEdgeType edgetype) {
+	public void committed(InternalTitanType edgetype) {
 		throw new UnsupportedOperationException("Not supported for InMemory Transactions");
 	}
 
 	@Override
-	public boolean containsEdgeType(long id, GraphTx tx) {
+	public boolean containsEdgeType(long id, InternalTitanTransaction tx) {
 		return false;
 	}
 
 	@Override
-	public boolean containsEdgeType(String name, GraphTx tx) {
+	public boolean containsEdgeType(String name, InternalTitanTransaction tx) {
 		return false;
 	}
 	

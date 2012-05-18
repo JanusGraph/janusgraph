@@ -2,13 +2,13 @@ package com.thinkaurelius.titan.graphdb.database.idassigner;
 
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.EdgeType;
-import com.thinkaurelius.titan.core.PropertyType;
-import com.thinkaurelius.titan.core.RelationshipType;
+import com.thinkaurelius.titan.core.TitanLabel;
+import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
-import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
+import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
+import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 
 import java.util.Random;
 
@@ -48,14 +48,14 @@ public class SimpleNodeIDAssigner implements NodeIDAssigner {
 	}
 
     @Override
-    public long getNewID(InternalNode node) {
+    public long getNewID(InternalTitanVertex node) {
         assert !node.hasID();
-        if (node instanceof InternalEdge) {
+        if (node instanceof InternalRelation) {
             return nextEdgeID();
-        } else if (node instanceof PropertyType) {
-            return nextPropertyTypeID(((EdgeType)node).getGroup().getID());
-        } else if (node instanceof RelationshipType) {
-            return nextRelationshipTypeID(((EdgeType)node).getGroup().getID());
+        } else if (node instanceof TitanKey) {
+            return nextPropertyTypeID(((TitanType)node).getGroup().getID());
+        } else if (node instanceof TitanLabel) {
+            return nextRelationshipTypeID(((TitanType)node).getGroup().getID());
         } else {
             return nextNodeID();
         }

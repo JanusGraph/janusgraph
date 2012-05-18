@@ -3,28 +3,29 @@ package com.thinkaurelius.titan.graphdb.vertices;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.Edge;
-import com.thinkaurelius.titan.core.Property;
-import com.thinkaurelius.titan.core.Relationship;
+import com.thinkaurelius.titan.core.TitanRelation;
+import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.exceptions.QueryException;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
-import com.thinkaurelius.titan.graphdb.edgequery.InternalEdgeQuery;
+import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 import com.thinkaurelius.titan.util.interval.AtomicInterval;
-import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
+import com.tinkerpop.blueprints.Direction;
 
 import java.util.Map;
 
 public class NodeUtil {
 
-	public static void checkAccessbility(InternalNode v) {
-		Preconditions.checkArgument(v.isAccessible(),"Node is not accessible!");
+	public static void checkAccessbility(InternalTitanVertex v) {
+		Preconditions.checkArgument(v.isAccessible(),"TitanVertex is not accessible!");
 	}
 	
-	public static void checkAvailability(InternalNode v) {
-		Preconditions.checkArgument(v.isAvailable(),"Node is not available!");
+	public static void checkAvailability(InternalTitanVertex v) {
+		Preconditions.checkArgument(v.isAvailable(),"TitanVertex is not available!");
 	}
 	
-	public static Iterable<InternalEdge> filterQueryQualifications(final InternalEdgeQuery query, Iterable<InternalEdge> iter ) {
+	public static Iterable<InternalRelation> filterQueryQualifications(final InternalTitanQuery query, Iterable<InternalRelation> iter ) {
 		if (iter==AdjacencyList.Empty) return iter;
 		
 		if (query.queryHidden() && query.queryUnmodifiable() && query.queryProperties()
@@ -33,27 +34,27 @@ public class NodeUtil {
 			throw new QueryException("Query excludes both: properties and relationships");
 		
 		
-		return Iterables.filter(iter,  new Predicate<InternalEdge>(){
+		return Iterables.filter(iter,  new Predicate<InternalRelation>(){
 
 				@Override
-				public boolean apply(InternalEdge e) {
+				public boolean apply(InternalRelation e) {
 					if (!query.queryProperties() && e.isProperty()) return false;
-					if (!query.queryRelationships() && e.isRelationship()) return false;
+					if (!query.queryRelationships() && e.isEdge()) return false;
 					if (!query.queryHidden() && e.isHidden()) return false;
 					if (!query.queryUnmodifiable() && !e.isModifiable()) return false;
                     if (query.hasConstraints()) {
 
                         int count = 0;
                         Map<String,Object> constraints = query.getConstraints();
-                        for (Edge ie : e.getEdges()) {
-                            if (constraints.containsKey(ie.getEdgeType().getName())) {
-                                Object o = constraints.get(ie.getEdgeType().getName());
+                        for (TitanRelation ie : e.getRelations()) {
+                            if (constraints.containsKey(ie.getType().getName())) {
+                                Object o = constraints.get(ie.getType().getName());
                                 if (o==null) return false;
-                                if (ie.isRelationship()) {
-                                    if (o.equals(((Relationship) ie).getEnd())) count++;
+                                if (ie.isEdge()) {
+                                    if (o.equals(((TitanEdge) ie).getVertex(Direction.IN))) count++;
                                 } else {
                                     assert ie.isProperty();
-                                    Object attribute = ((Property)ie).getAttribute();
+                                    Object attribute = ((TitanProperty)ie).getAttribute();
                                     assert attribute!=null;
                                     assert o instanceof AtomicInterval;
                                     AtomicInterval iv = (AtomicInterval)o;
@@ -78,12 +79,12 @@ public class NodeUtil {
 	}
 	
 	
-	public static final Iterable<InternalEdge> filterLoopEdges(Iterable<InternalEdge> iter, final InternalNode v) {
+	public static final Iterable<InternalRelation> filterLoopEdges(Iterable<InternalRelation> iter, final InternalTitanVertex v) {
 		if (iter==AdjacencyList.Empty) return iter;		
-		else return Iterables.filter(iter,new Predicate<InternalEdge>(){
+		else return Iterables.filter(iter,new Predicate<InternalRelation>(){
 
 			@Override
-			public boolean apply(InternalEdge edge) {
+			public boolean apply(InternalRelation edge) {
 				if (edge.isSelfLoop(v)) return false;
 				else return true;
 			}}
@@ -92,10 +93,11 @@ public class NodeUtil {
 	}
 
 
-    public static final Iterable<InternalEdge> getQuerySpecificIterable(AdjacencyList edges, InternalEdgeQuery query) {
+    public static final Iterable<InternalRelation> getQuerySpecificIterable(AdjacencyList edges, InternalTitanQuery query) {
+        assert query.isAtomic();
         if (query.hasEdgeTypeCondition()) {
-            assert query.getEdgeTypeCondition()!=null;
-            return edges.getEdges(query.getEdgeTypeCondition());
+            assert query.getTypeCondition()!=null;
+            return edges.getEdges(query.getTypeCondition());
         } else if (query.hasEdgeTypeGroupCondition()) {
             return edges.getEdges(query.getEdgeTypeGroupCondition());
         } else {
@@ -112,13 +114,13 @@ public class NodeUtil {
 	 * @param v2
 	 * @return
 	 */
-	public static final boolean equalIDs(InternalNode v1, InternalNode v2) {
+	public static final boolean equalIDs(InternalTitanVertex v1, InternalTitanVertex v2) {
 		if (v1.hasID() && v2.hasID()) {
 			return v1.getID()==v2.getID();
 		} else return false;
 	}
 	
-	public static final int getIDHashCode(InternalNode v1) {
+	public static final int getIDHashCode(InternalTitanVertex v1) {
 		if (v1.hasID()) {
 			long id = v1.getID();
 			return 37*31 + (int)(id ^ (id >>>32));

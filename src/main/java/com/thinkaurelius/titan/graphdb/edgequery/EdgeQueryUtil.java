@@ -1,24 +1,24 @@
 package com.thinkaurelius.titan.graphdb.edgequery;
 
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.core.Property;
-import com.thinkaurelius.titan.core.PropertyType;
-import com.thinkaurelius.titan.graphdb.edgetypes.InternalEdgeType;
-import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
+import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.graphdb.edgetypes.InternalTitanType;
+import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.util.interval.AtomicInterval;
 
 import java.util.Map;
 
 public class EdgeQueryUtil {
 
-	public static final Property queryHiddenFunctionalProperty(InternalNode node, PropertyType propType) {
+	public static final TitanProperty queryHiddenFunctionalProperty(InternalTitanVertex node, TitanKey propType) {
 		assert propType.isHidden() : "Expected hidden property type";
 		assert propType.isFunctional() : "Expected functional property  type";
 		return Iterators.getOnlyElement(
-				new AtomicEdgeQuery(node).
+				new AtomicTitanQuery(node).
 					includeHidden().
-					withEdgeType(propType).
-					getPropertyIterator(),null);
+                        type(propType).
+                        propertyIterator(),null);
 	}
 
     /**
@@ -28,10 +28,10 @@ public class EdgeQueryUtil {
      * @param query Query to check
      * @return
      */
-    public static boolean queryCoveredByDiskIndexes(InternalEdgeQuery query) {
+    public static boolean queryCoveredByDiskIndexes(InternalTitanQuery query) {
         if (!query.hasConstraints()) return true;
         if (!query.hasEdgeTypeGroupCondition()) return false;
-        String[] keysig = ((InternalEdgeType)query.getEdgeTypeCondition()).getDefinition().getKeySignature();
+        String[] keysig = ((InternalTitanType)query.getTypeCondition()).getDefinition().getKeySignature();
         Map<String,Object> constraints = query.getConstraints();
         int num = 0;
         for (String key : keysig) {
@@ -47,10 +47,10 @@ public class EdgeQueryUtil {
         return num==constraints.size();
     }
     
-    public static boolean hasFirstKeyConstraint(InternalEdgeQuery query) {
+    public static boolean hasFirstKeyConstraint(InternalTitanQuery query) {
         if (!query.hasConstraints()) return false;
         if (!query.hasEdgeTypeGroupCondition()) return false;
-        String[] keysig = ((InternalEdgeType)query.getEdgeTypeCondition()).getDefinition().getKeySignature();
+        String[] keysig = ((InternalTitanType)query.getTypeCondition()).getDefinition().getKeySignature();
         return query.getConstraints().containsKey(keysig[0]);
     }
     

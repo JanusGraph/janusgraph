@@ -56,7 +56,7 @@ public class CassandraTokenRingTest {
 //			"cassandra-tmp" + File.separator + "conf";
 //		File f = new File(confPath);
 //		for (File cassInstance : f.listFiles()) {
-//			String instance = cassInstance.getName();
+//			String INSTANCE = cassInstance.getName();
 //			File cassYaml = new File(cassInstance, "cassandra.yaml");
 //			if (cassYaml.isFile() && cassYaml.canRead()) {
 //				Yaml y = new Yaml();
@@ -66,14 +66,14 @@ public class CassandraTokenRingTest {
 //					@SuppressWarnings("unchecked")
 //					Map<String, ?> m = (Map<String, ?>) y.load(yamlStream);
 //					String tok = (String)m.get("initial_token");
-//					result.put(instance, tok);
-//					log.debug("Loaded Cassandra token {}->{}", instance, tok);
+//					result.put(INSTANCE, tok);
+//					log.debug("Loaded Cassandra token {}->{}", INSTANCE, tok);
 //				} finally {
 //					if (null != yamlStream)
 //						try {
-//							yamlStream.close();
+//							yamlStream.shutdown();
 //						} catch (IOException e) {
-//							log.error("Failed to close " + cassYaml, e);
+//							log.error("Failed to shutdown " + cassYaml, e);
 //						}
 //				}
 //			}

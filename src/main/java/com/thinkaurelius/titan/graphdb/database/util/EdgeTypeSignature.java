@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.graphdb.database.util;
 
-import com.thinkaurelius.titan.core.EdgeType;
-import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
+import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 import com.thinkaurelius.titan.graphdb.edgetypes.EdgeTypeDefinition;
-import com.thinkaurelius.titan.graphdb.edgetypes.InternalEdgeType;
-import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
+import com.thinkaurelius.titan.graphdb.edgetypes.InternalTitanType;
+import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,13 +13,13 @@ import java.util.Map;
 public class EdgeTypeSignature {
 
 	private Map<String,Integer> key;
-	private EdgeType[] keyET;
+	private TitanType[] keyET;
 	
 	private Map<String,Integer> value;
-	private EdgeType[] valueET;
+	private TitanType[] valueET;
 	
-	public EdgeTypeSignature(EdgeType et, GraphTx tx) {
-		EdgeTypeDefinition def = ((InternalEdgeType)et).getDefinition();
+	public EdgeTypeSignature(TitanType et, InternalTitanTransaction tx) {
+		EdgeTypeDefinition def = ((InternalTitanType)et).getDefinition();
 		key = buildIndex(def.getKeySignature());
 		keyET = parseEdgeTypes(def.getKeySignature(),tx);
 		value = buildIndex(def.getCompactSignature());
@@ -35,19 +35,19 @@ public class EdgeTypeSignature {
 		return res;
 	}
 	
-	private static final EdgeType[] parseEdgeTypes(String[] strs, GraphTx tx) {
-		EdgeType[] result = new EdgeType[strs.length];
+	private static final TitanType[] parseEdgeTypes(String[] strs, InternalTitanTransaction tx) {
+		TitanType[] result = new TitanType[strs.length];
 		for (int i=0;i<strs.length;i++) {
-			result[i]=tx.getEdgeType(strs[i]);
+			result[i]=tx.getType(strs[i]);
 		}
 		return result;
 	}
 	
-	public EdgeType getKeyEdgeType(int pos) {
+	public TitanType getKeyEdgeType(int pos) {
 		return keyET[pos];
 	}
 	
-	public EdgeType getValueEdgeType(int pos) {
+	public TitanType getValueEdgeType(int pos) {
 		return valueET[pos];
 	}
 	
@@ -59,9 +59,9 @@ public class EdgeTypeSignature {
 		return value.size();
 	}
 	
-	public void sort(Iterable<InternalEdge> edges, InternalEdge[] keys, InternalEdge[] values, Collection<InternalEdge> rest) {
-		for (InternalEdge edge : edges) {
-			String etName = edge.getEdgeType().getName();
+	public void sort(Iterable<InternalRelation> edges, InternalRelation[] keys, InternalRelation[] values, Collection<InternalRelation> rest) {
+		for (InternalRelation edge : edges) {
+			String etName = edge.getType().getName();
 			if (key.containsKey(etName)) {
 				int pos = key.get(etName);
 				assert keys[pos]==null;

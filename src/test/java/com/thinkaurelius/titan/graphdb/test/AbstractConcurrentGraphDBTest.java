@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.graphdb.test;
 
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.util.test.RandomGenerator;
+import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
@@ -48,20 +48,20 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 		executor = Executors.newFixedThreadPool(THREAD_COUNT);
 		// Generate synthetic graph
 		
-		RelationshipType[] rels = new RelationshipType[REL_COUNT];
+		TitanLabel[] rels = new TitanLabel[REL_COUNT];
 		for (int i = 0; i < rels.length; i++) {
 			rels[i] = makeRelationshipType("rel" + i);
 		}
-		PropertyType id = makeIDPropertyType("id");
-		Node nodes[] = new Node[NODE_COUNT];
+		TitanKey id = makeIDPropertyType("id");
+		TitanVertex nodes[] = new TitanVertex[NODE_COUNT];
 		for (int i=0;i<NODE_COUNT;i++) {
-			nodes[i]=tx.createNode();
-			nodes[i].createProperty(id, i);
+			nodes[i]=tx.addVertex();
+			nodes[i].addProperty(id, i);
 		}
 		for (int i=0;i<NODE_COUNT;i++) {
 			for (int r=0;r<rels.length;r++) {
 				for (int j=1; j<=EDGE_COUNT;j++) {
-					nodes[i].createRelationship(rels[r], nodes[wrapAround(i+j,NODE_COUNT)]);
+					nodes[i].addEdge(rels[r], nodes[wrapAround(i + j, NODE_COUNT)]);
 				}
 			}
 		}
@@ -92,14 +92,14 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 	 */
 	@Test
 	public void concurrentReadsOnSingleTransaction() throws Exception {
-		PropertyType id = tx.getPropertyType("id");
+		TitanKey id = tx.getPropertyKey("id");
 		
-		// Start many concurrent readers on a single transaction
+		// Tail many concurrent readers on a single transaction
 		CountDownLatch startLatch = new CountDownLatch(TASK_COUNT);
 		CountDownLatch stopLatch = new CountDownLatch(TASK_COUNT);
 		for (int i = 0; i < TASK_COUNT; i++) {
 			int nodeid = RandomGenerator.randomInt(0, NODE_COUNT);
-			RelationshipType rel = tx.getRelationshipType("rel" + RandomGenerator.randomInt(0, REL_COUNT));
+			TitanLabel rel = tx.getEdgeLabel("rel" + RandomGenerator.randomInt(0, REL_COUNT));
 			executor.execute(new SimpleReader(tx, startLatch, stopLatch, nodeid, rel, EDGE_COUNT*2,id));
 			startLatch.countDown();
 		}
@@ -107,7 +107,7 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 	}
 	
 	/**
-	 * Start many readers, as in {@link #concurrentReadsOnSingleTransaction()},
+	 * Tail many readers, as in {@link #concurrentReadsOnSingleTransaction()},
 	 * but also start some threads that add and remove relationships and 
 	 * properties while the readers are working; all tasks share a common
 	 * transaction.
@@ -119,7 +119,7 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 	 */
 	@Test
 	public void concurrentReadWriteOnSingleTransaction() throws Exception {
-		PropertyType id = tx.getPropertyType("id");
+		TitanKey id = tx.getPropertyKey("id");
 		
 		Runnable propMaker =
 			new RandomPropertyMaker(tx, NODE_COUNT, id,
@@ -135,7 +135,7 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 		CountDownLatch stopLatch = new CountDownLatch(TASK_COUNT);
 		for (int i = 0; i < TASK_COUNT; i++) {
 			int nodeid = RandomGenerator.randomInt(0, NODE_COUNT);
-			RelationshipType rel = tx.getRelationshipType("rel" + RandomGenerator.randomInt(0, REL_COUNT));
+			TitanLabel rel = tx.getEdgeLabel("rel" + RandomGenerator.randomInt(0, REL_COUNT));
 			executor.execute(new SimpleReader(tx, startLatch, stopLatch, nodeid, rel, EDGE_COUNT*2,id));
 			startLatch.countDown();
 		}
@@ -146,13 +146,13 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 	}
 	
 	private static class RandomPropertyMaker implements Runnable {
-		private final GraphTransaction tx;
+		private final TitanTransaction tx;
 		private final int nodeCount; //inclusive
-		private final PropertyType idProp;
-		private final PropertyType randomProp;
+		private final TitanKey idProp;
+		private final TitanKey randomProp;
 		
-		public RandomPropertyMaker(GraphTransaction tx, int nodeCount,
-				PropertyType idProp, PropertyType randomProp) {
+		public RandomPropertyMaker(TitanTransaction tx, int nodeCount,
+				TitanKey idProp, TitanKey randomProp) {
 			this.tx = tx;
 			this.nodeCount = nodeCount;
 			this.idProp = idProp;
@@ -163,9 +163,9 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 		public void run() {
 			while (true) {
 				// Set propType to a random value on a random node
-				Node n = tx.getNodeByKey(idProp, RandomGenerator.randomInt(0, nodeCount));
+				TitanVertex n = tx.getVertex(idProp, RandomGenerator.randomInt(0, nodeCount));
 				String propVal = RandomGenerator.randomString();
-				n.createProperty(randomProp, propVal);
+				n.addProperty(randomProp, propVal);
 				if (Thread.interrupted())
 					break;
 				
@@ -182,13 +182,13 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 	 */
 	private static class FixedRelationshipMaker implements Runnable {
 
-		private final GraphTransaction tx;
+		private final TitanTransaction tx;
 //		private final int nodeCount; //inclusive
-		private final PropertyType idProp;
-		private final RelationshipType relType;
+		private final TitanKey idProp;
+		private final TitanLabel relType;
 		
-		public FixedRelationshipMaker(GraphTransaction tx,
-				PropertyType id, RelationshipType relType) {
+		public FixedRelationshipMaker(TitanTransaction tx,
+				TitanKey id, TitanLabel relType) {
 			this.tx = tx;
 			this.idProp = id;
 			this.relType = relType;
@@ -198,17 +198,17 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 		public void run() {
 			while (true) {
 				// Make or break relType between two (possibly same) random nodes
-//				Node source = tx.getNodeByKey(idProp, RandomGenerator.randomInt(0, nodeCount));
-//				Node sink = tx.getNodeByKey(idProp, RandomGenerator.randomInt(0, nodeCount));
-				Node source = tx.getNodeByKey(idProp, 0);
-				Node sink = tx.getNodeByKey(idProp, 1);
-				for (Relationship r : source.getRelationships(relType, Direction.Out)) {
-					if (r.getEnd().getID() == sink.getID()) {
-						r.delete();
+//				TitanVertex source = tx.getVertex(idProp, RandomGenerator.randomInt(0, nodeCount));
+//				TitanVertex sink = tx.getVertex(idProp, RandomGenerator.randomInt(0, nodeCount));
+				TitanVertex source = tx.getVertex(idProp, 0);
+				TitanVertex sink = tx.getVertex(idProp, 1);
+				for (TitanEdge r : source.getTitanEdges(Direction.OUT, relType)) {
+					if (r.getVertex(Direction.IN).getID() == sink.getID()) {
+						r.remove();
 						continue;
 					}
 				}
-				source.createRelationship(relType, sink);
+				source.addEdge(relType, sink);
 				if (Thread.interrupted())
 					break;
 			}
@@ -219,13 +219,13 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 	private static class SimpleReader extends BarrierRunnable {
 
 		private final int nodeid;
-		private final RelationshipType relTypeToTraverse;
+		private final TitanLabel relTypeToTraverse;
 		private final long nodeTraversalCount = 256;
 		private final int expectedEdges;
-		private final PropertyType id;
+		private final TitanKey id;
 		
-		public SimpleReader(GraphTransaction tx, CountDownLatch startLatch, 
-				CountDownLatch stopLatch, int startNodeId, RelationshipType relTypeToTraverse, int expectedEdges, PropertyType id) {
+		public SimpleReader(TitanTransaction tx, CountDownLatch startLatch,
+				CountDownLatch stopLatch, int startNodeId, TitanLabel relTypeToTraverse, int expectedEdges, TitanKey id) {
 			super(tx, startLatch, stopLatch);
 			this.nodeid = startNodeId;
 			this.relTypeToTraverse = relTypeToTraverse;
@@ -235,12 +235,12 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 
 		@Override
 		protected void doRun() throws Exception {
-			Node n = tx.getNodeByKey(id, nodeid);
+			TitanVertex n = tx.getVertex(id, nodeid);
 			
 			for (int i = 0; i < nodeTraversalCount; i++) {
-				assertEquals(expectedEdges,Iterables.size(n.getRelationships(relTypeToTraverse)));
-				for (Relationship r : n.getRelationships(relTypeToTraverse, Direction.Out)) {
-					n = r.getEnd();
+				assertEquals(expectedEdges,Iterables.size(n.getTitanEdges(Direction.BOTH,relTypeToTraverse)));
+				for (TitanEdge r : n.getTitanEdges(Direction.OUT,relTypeToTraverse)) {
+					n = r.getVertex(Direction.IN);
 				}
 			}
 		}
@@ -248,11 +248,11 @@ public abstract class AbstractConcurrentGraphDBTest extends AbstractGraphDBTestC
 	
 	private abstract static class BarrierRunnable implements Runnable {
 		
-		protected final GraphTransaction tx;
+		protected final TitanTransaction tx;
 		protected final CountDownLatch startLatch;
 		protected final CountDownLatch stopLatch;
 		
-		public BarrierRunnable(GraphTransaction tx, CountDownLatch startLatch, CountDownLatch stopLatch) {
+		public BarrierRunnable(TitanTransaction tx, CountDownLatch startLatch, CountDownLatch stopLatch) {
 			this.tx = tx;
 			this.startLatch = startLatch;
 			this.stopLatch = stopLatch;

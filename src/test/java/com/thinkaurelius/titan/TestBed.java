@@ -20,6 +20,7 @@ public class TestBed {
 		while (res.length()<32) res = "0" + res;
 		return res;
 		
+
 	}
 	
 

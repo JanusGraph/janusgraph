@@ -159,7 +159,7 @@ public class IDManager implements IDInspector {
 		return groupID>0 && groupID<=maxGroupID;
 	}
 
-    /*		    	--- Entity id bit format ---
+    /*		    	--- TitanElement id bit format ---
       *  [ 0 | partitionID | count | ID padding ]
      */
 
@@ -178,7 +178,7 @@ public class IDManager implements IDInspector {
     }
 
 
-    /*		    	--- Edge Type id bit format ---
+    /*		    	--- TitanRelation Type id bit format ---
       *  [ 0 | partitionID | directionBits (=0) | groupID | count | ID padding ]
      */
 
@@ -207,95 +207,6 @@ public class IDManager implements IDInspector {
         return (groupid<<groupOffset) | edgetypeid;
     }
 
-
-
-
-//	public final long switchEdgeTypeID(long edgetypeid, long direction) {
-//		assert direction<=maxDirectionID && direction>=0;
-//		long idpadding = (edgetypeid & edgeTypePaddingMask)<<edgeTypePaddingFrontOffset;
-//		long group = (edgetypeid & groupIDMaskTMP) << groupIDDeltaOffset;
-//		//add direction
-//		return (edgetypeid>>>edgeTypeIDBackLength) | (direction<<edgeTypeDirectionOffset) | idpadding | group;
-//	}
-//
-//	public final long switchBackEdgeTypeID(long edgetypeid) {
-//		//first, remove direction
-//		long idpadding = (edgetypeid & edgeTypePaddingFrontMask)>>edgeTypePaddingFrontOffset;
-//		assert idpadding== IDType.PropertyType.id() || idpadding== IDType.RelationshipType.id();
-//		long group = (edgetypeid & groupIDFrontMask) >> groupIDDeltaOffset;
-//		assert (group>>edgeTypePaddingBits)>=0 && (group>>edgeTypePaddingBits)<=maxGroupID :
-//			(group>>edgeTypePaddingBits) + " < "  + maxGroupID;
-//
-//		edgetypeid = (edgetypeid & edgeTypeCountPartMask)<<edgeTypeIDBackLength;
-//		return edgetypeid | group | idpadding;
-//	}
-//
-//	public long getDirectionFront(long edgetypeid) {
-//		return (edgetypeid & edgeTypeDirectionMask)>>>edgeTypeDirectionOffset;
-//	}
-//
-//	public long getGroupIDFront(long edgetypeid) {
-//		return (edgetypeid & groupIDFrontMask) >> (groupIDDeltaOffset+edgeTypePaddingBits);
-//	}
-//
-//	private long getEdgeTypePaddingFront(long edgetypeid) {
-//		return (edgetypeid & edgeTypePaddingFrontMask)>>edgeTypePaddingFrontOffset;
-//	}
-//
-//	public boolean isPropertyTypeFront(long edgetypeid) {
-//		return IDType.PropertyType.is(getEdgeTypePaddingFront(edgetypeid));
-//	}
-//
-//	public boolean isRelationshipTypeFront(long edgetypeid) {
-//		return IDType.RelationshipType.is(getEdgeTypePaddingFront(edgetypeid));
-//	}
-//
-//    @Override
-//	public long[] getQueryBounds(long direction) {
-//		assert direction<=maxDirectionID && direction>=0;
-//		long res = direction;
-//		return new long[]{res<<edgeTypeDirectionOffset,(res+1)<<edgeTypeDirectionOffset};
-//	}
-//
-//	private long[] getQueryBoundsEdge(long direction, long edgeTypePadding) {
-//		assert direction<=maxDirectionID && direction>=0;
-//		long res = (direction<<edgeTypePaddingBits) + edgeTypePadding;
-//		return new long[]{res<<edgeTypePaddingFrontOffset,(res+1)<<edgeTypePaddingFrontOffset};
-//	}
-//
-//    @Override
-//    public long[] getQueryBoundsRelationship(long direction) {
-//		return getQueryBoundsEdge(direction, IDType.RelationshipType.id());
-//    }
-//
-//    @Override
-//	public long[] getQueryBoundsProperty(long direction) {
-//		return getQueryBoundsEdge(direction, IDType.PropertyType.id());
-//	}
-//
-//	private long[] getQueryBoundsEdge(long direction, long edgeTypePadding, long group) {
-//		assert direction<=maxDirectionID && direction>=0;
-//		long res = (direction<<edgeTypePaddingBits) + edgeTypePadding;
-//		assert group<=maxGroupID && group>=0;
-//		res = (res << groupBits) + group;
-//		return new long[]{res<<(edgeTypePaddingFrontOffset-groupBits),(res+1)<<(edgeTypePaddingFrontOffset-groupBits)};
-//	}
-//
-//    @Override
-//	public long[] getQueryBoundsRelationship(long direction, long group) {
-//		return getQueryBoundsEdge(direction, IDType.RelationshipType.id(), group);
-//	}
-//
-//    @Override
-//	public long[] getQueryBoundsProperty(long direction, long group) {
-//		return getQueryBoundsEdge(direction, IDType.PropertyType.id(), group);
-//	}
-//
-//    @Override
-//	public long[] getQueryBounds(long edgetypeid, long direction) {
-//		long sw = switchEdgeTypeID(edgetypeid, direction);
-//		return new long[]{sw,sw+1};
-//	}
 
 	public long getGroupBits() {
         return groupBits;
@@ -358,5 +269,15 @@ public class IDManager implements IDInspector {
 		return IDType.Edge.is(id);
 	}
 
-	
+
+    public final static long getSystemEdgeLabelID(long id) {
+        //assumes groupid=0 and partitionid=0
+        return IDManager.IDType.RelationshipType.addPadding(id);
+    }
+
+    public final static long getSystemPropertyKeyID(long id) {
+        //assumes groupid=0 and partitionid=0
+        return IDManager.IDType.PropertyType.addPadding(id);
+    }
+
 }

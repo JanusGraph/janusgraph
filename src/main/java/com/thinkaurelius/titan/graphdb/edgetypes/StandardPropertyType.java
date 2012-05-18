@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.graphdb.edgetypes;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.Directionality;
-import com.thinkaurelius.titan.core.EdgeCategory;
-import com.thinkaurelius.titan.core.EdgeTypeGroup;
+import com.thinkaurelius.titan.core.TypeGroup;
 
 public class StandardPropertyType extends AbstractEdgeTypeDefinition implements PropertyTypeDefinition {
 
@@ -16,7 +14,7 @@ public class StandardPropertyType extends AbstractEdgeTypeDefinition implements 
 	public StandardPropertyType(String name, EdgeCategory category,
 			Directionality directionality, EdgeTypeVisibility visibility,
 			boolean isfunctional, String[] keysig,
-			String[] compactsig, EdgeTypeGroup group,
+			String[] compactsig, TypeGroup group,
 			boolean isKey, boolean hasIndex, Class<?> objectType) {
 		super(name, category, directionality, visibility, isfunctional,
 				keysig, compactsig, group);
@@ -37,7 +35,7 @@ public class StandardPropertyType extends AbstractEdgeTypeDefinition implements 
 	}
 
 	@Override
-	public boolean isKeyed() {
+	public boolean isUnique() {
 		return isKey;
 	}
 

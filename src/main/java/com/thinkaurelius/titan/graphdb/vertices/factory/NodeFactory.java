@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.vertices.factory;
 
-import com.thinkaurelius.titan.graphdb.transaction.GraphTx;
-import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
+import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
+import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 
 public interface NodeFactory {
 
@@ -12,9 +12,9 @@ public interface NodeFactory {
      * @param tx
      * @return
      */
-	public InternalNode createNew(GraphTx tx);
+	public InternalTitanVertex createNew(InternalTitanTransaction tx);
 	
-	public InternalNode createExisting(GraphTx tx, long id);
+	public InternalTitanVertex createExisting(InternalTitanTransaction tx, long id);
 	
 	
 }

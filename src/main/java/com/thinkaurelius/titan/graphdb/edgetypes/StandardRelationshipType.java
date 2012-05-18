@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.graphdb.edgetypes;
 
-import com.thinkaurelius.titan.core.Directionality;
-import com.thinkaurelius.titan.core.EdgeCategory;
-import com.thinkaurelius.titan.core.EdgeTypeGroup;
+import com.thinkaurelius.titan.core.TypeGroup;
 
 public class StandardRelationshipType extends AbstractEdgeTypeDefinition implements RelationshipTypeDefinition {
 
@@ -11,7 +9,7 @@ public class StandardRelationshipType extends AbstractEdgeTypeDefinition impleme
 	public StandardRelationshipType(String name, EdgeCategory category,
 			Directionality directionality, EdgeTypeVisibility visibility,
 			boolean isfunctional, String[] keysig,
-			String[] compactsig, EdgeTypeGroup group) {
+			String[] compactsig, TypeGroup group) {
 		super(name, category, directionality, visibility, isfunctional,
 				keysig, compactsig,group);
 	}

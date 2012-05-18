@@ -1,24 +1,24 @@
 package com.thinkaurelius.titan.graphdb.edges.persist;
 
-import com.thinkaurelius.titan.core.PropertyType;
-import com.thinkaurelius.titan.graphdb.edges.InternalEdge;
+import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 import com.thinkaurelius.titan.graphdb.edges.SimpleProperty;
-import com.thinkaurelius.titan.graphdb.entitystatus.BasicEntity;
-import com.thinkaurelius.titan.graphdb.vertices.InternalNode;
+import com.thinkaurelius.titan.graphdb.entitystatus.BasicElement;
+import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.NodeUtil;
 
 public class PersistSimpleProperty extends SimpleProperty {
 
-	protected BasicEntity entity;
+	protected BasicElement entity;
 	
-	public PersistSimpleProperty(PropertyType type, InternalNode node, Object attribute) {
+	public PersistSimpleProperty(TitanKey type, InternalTitanVertex node, Object attribute) {
 		super(type, node, attribute);
-		entity = new BasicEntity();
+		entity = new BasicElement();
 	}
 
-	public PersistSimpleProperty(PropertyType type, InternalNode node, Object attribute, long id) {
+	public PersistSimpleProperty(TitanKey type, InternalTitanVertex node, Object attribute, long id) {
 		super(type, node, attribute);
-		entity = new BasicEntity(id);
+		entity = new BasicElement(id);
 	}
 	
 	@Override
@@ -30,8 +30,8 @@ public class PersistSimpleProperty extends SimpleProperty {
 	@Override
 	public boolean equals(Object oth) {
 		if (oth==this) return true;
-		else if (!(oth instanceof InternalEdge)) return false;
-		InternalEdge other = (InternalEdge)oth;
+		else if (!(oth instanceof InternalRelation)) return false;
+		InternalRelation other = (InternalRelation)oth;
 		if (hasID() || other.hasID()) {
 			if (hasID() && other.hasID()) return NodeUtil.equalIDs(this, other);
 			else return false;
@@ -42,7 +42,7 @@ public class PersistSimpleProperty extends SimpleProperty {
 	@Override
 	public void forceDelete() {
 		super.forceDelete();
-		entity.delete();
+		entity.remove();
 	}
 
 	
@@ -88,8 +88,8 @@ public class PersistSimpleProperty extends SimpleProperty {
 
 
 	@Override
-	public boolean isDeleted() {
-		return entity.isDeleted();
+	public boolean isRemoved() {
+		return entity.isRemoved();
 	}
 
 	@Override

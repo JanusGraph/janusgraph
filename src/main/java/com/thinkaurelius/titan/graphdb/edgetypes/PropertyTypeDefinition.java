@@ -6,6 +6,6 @@ public interface PropertyTypeDefinition extends EdgeTypeDefinition {
 	
 	public boolean hasIndex();
 	
-	public boolean isKeyed();
+	public boolean isUnique();
 	
 }
