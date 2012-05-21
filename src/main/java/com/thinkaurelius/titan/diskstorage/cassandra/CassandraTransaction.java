@@ -1,23 +1,22 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
-import java.lang.management.ManagementFactory;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.commons.codec.binary.Hex;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediatorProvider;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.LockClaim;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
+import com.thinkaurelius.titan.exceptions.LockingFailureException;
 
 /**
  * This class is not safe for concurrent use by multiple threads.
@@ -40,28 +39,26 @@ public class CassandraTransaction implements TransactionHandle {
 	private final LinkedHashSet<LockClaim> lockClaims =
 			new LinkedHashSet<LockClaim>();
 	
-	private final int lockExpirationMS = 300 * 1000;
-	private final int lockWaitMS = 500;
-	private final int lockRetryCount = 3;
+	private final long lockExpireMS;
+	private final long lockWaitMS;
+	private final int lockRetryCount;
 	
-	private final byte[] rid;
+	// These two should be final but are not to facilitate testing
+	private byte[] rid;
+	private LocalLockMediatorProvider mediators;
 	
 	private static final Logger log = LoggerFactory.getLogger(CassandraTransaction.class);
 	
-	CassandraTransaction(CassandraThriftStorageManager sm) {
+	CassandraTransaction(CassandraThriftStorageManager sm, byte[] rid, int lockRetryCount, long lockWaitMS, long lockExpireMS) {
 		this.sm = sm;
 		
-		byte[] addrBytes;
-		try {
-			addrBytes = InetAddress.getLocalHost().getAddress();
-		} catch (UnknownHostException e) {
-			throw new GraphStorageException(e);
-		}
-		byte[] procNameBytes = ManagementFactory.getRuntimeMXBean().getName().getBytes();
+		this.rid = rid;
 		
-		this.rid = new byte[addrBytes.length + procNameBytes.length];
-		System.arraycopy(addrBytes, 0, rid, 0, addrBytes.length);
-		System.arraycopy(procNameBytes, 0, rid, addrBytes.length, procNameBytes.length);
+		this.lockRetryCount = lockRetryCount;
+		this.lockWaitMS = lockWaitMS;
+		this.lockExpireMS = lockExpireMS;
+
+		this.mediators = LocalLockMediators.INSTANCE;
 	}
 	
 	@Override
@@ -79,6 +76,22 @@ public class CassandraTransaction implements TransactionHandle {
 	@Override
 	public boolean isReadOnly() {
 		return false;
+	}
+	
+	/**
+	 * This method is only used in testing.
+	 * Do not call it.
+	 */
+	public void setRid(byte rid[]) {
+		this.rid = rid;
+	}
+	
+	/**
+	 * This method is only used in testing.
+	 * Don not call it.
+	 */
+	public void setLocalLockMediatorProvider(LocalLockMediatorProvider p) {
+		this.mediators = p;
 	}
 	
 	boolean isMutationStarted() {
@@ -113,7 +126,7 @@ public class CassandraTransaction implements TransactionHandle {
 	 * throw a GraphStorageException with a string message to that effect.
 	 */
 	void writeBlindLockClaim(String cf, ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue)
-			throws GraphStorageException {
+			throws LockingFailureException {
 
 		LockClaim lc = new LockClaim(cf, key, column, expectedValue);
 		
@@ -124,9 +137,9 @@ public class CassandraTransaction implements TransactionHandle {
 		}
 		
 		// Check the local lock mediator
-		LocalLockMediator llm = LocalLockMediator.get(cf);
+		LocalLockMediator llm = mediators.get(cf);
 		if (!llm.lock(lc.getKc(), this)) {
-			throw new GraphStorageException("Lock contention among local transactions");
+			throwLockFailure("Lock contention among local transactions");
 		}
 		
 		/* Write lock to the backing store
@@ -163,16 +176,17 @@ public class CassandraTransaction implements TransactionHandle {
 					ok = true;
 					lastLockApplicationTimeMS = before;
 					lc.setTimestamp(ts);
-                                        log.debug("Wrote Cassandra lock: {}", lc);
-					break;
+                    log.debug("Wrote Cassandra lock: {}", lc);
+            		lockClaims.add(lc);
+					return;
 				}
 			}
+
+			throwLockFailure("Lock failed: exceeded max timeouts. " + lc);
 		} finally {
 			if (!ok)
 				llm.unlock(lc.getKc(), this);
 		}
-		
-		lockClaims.add(lc);
 	}
 
 	/*
@@ -196,7 +210,7 @@ public class CassandraTransaction implements TransactionHandle {
 	 * matches reality.
 	 * 
 	 */
-	void verifyAllLockClaims() throws GraphStorageException {
+	void verifyAllLockClaims() throws LockingFailureException {
 
 		// wait one full lockWaitMS since the last claim attempt, if needed
 		if (0 == lastLockApplicationTimeMS)
@@ -211,7 +225,7 @@ public class CassandraTransaction implements TransactionHandle {
 				try {
 					Thread.sleep(lockWaitMS - delta);
 				} catch (InterruptedException e) {
-					throw new GraphStorageException(e);
+					throwLockFailure(e);
 				}
 			} else {
 				break;
@@ -244,7 +258,7 @@ public class CassandraTransaction implements TransactionHandle {
 				bb.get(curRid);
 				
 				// Ignore expired lock claims
-				if (ts < now - lockExpirationMS) {
+				if (ts < now - lockExpireMS) {
                                         log.warn("Discarded expired lock with timestamp {}", ts);
 					continue;
 				}
@@ -266,7 +280,8 @@ public class CassandraTransaction implements TransactionHandle {
 					} else if (1 == i) {
 						// curRid comes after earliestRid -> don't change earliestRid
 					} else {
-						throw new GraphStorageException("Retrieved duplicate column from Cassandra!?");
+						// This should never happen
+						log.warn("Retrieved duplicate column from Cassandra during lock check!? lc={}", lc);
 					}
 				}
 			}
@@ -275,7 +290,7 @@ public class CassandraTransaction implements TransactionHandle {
 			if (! Arrays.equals(earliestRid, rid)) {
                                 log.debug("My rid={} lost to earlier rid={},ts={}",
                                           new Object[] { Hex.encodeHexString(rid), Hex.encodeHexString(earliestRid), earliestTS });
-				throw new GraphStorageException("Lock seniority failed: " + lc);
+				throwLockFailure("A remote transaction holds " + lc);
 			}
 			
 			
@@ -285,7 +300,7 @@ public class CassandraTransaction implements TransactionHandle {
 			if ((null == bb && null != lc.getExpectedValue()) ||
 			    (null != bb && null == lc.getExpectedValue()) ||
 			    (null != bb && null != lc.getExpectedValue() && !lc.getExpectedValue().equals(bb))) {
-				throw new GraphStorageException("Expected value mismatch: " + lc);
+				throwLockFailure("Expected value mismatch on " + lc);
 			}
 		}
 	}
@@ -305,8 +320,18 @@ public class CassandraTransaction implements TransactionHandle {
                         log.debug("Wrote Cassandra unlock: {}", lc);
 			
 			// Release local lock
-			LocalLockMediator llm = LocalLockMediator.get(lc.getCf());
+			LocalLockMediator llm = mediators.get(lc.getCf());
 			llm.unlock(lc.getKc(), this);
 		}
+	}
+	
+	private void throwLockFailure(String s) throws LockingFailureException {
+		unlockAll();
+		throw new LockingFailureException(s);
+	}
+	
+	private void throwLockFailure(Throwable t) throws LockingFailureException {
+		unlockAll();
+		throw new LockingFailureException(t);
 	}
 }

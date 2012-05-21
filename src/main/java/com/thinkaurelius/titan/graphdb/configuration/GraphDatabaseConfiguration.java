@@ -1,5 +1,24 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
+import java.io.File;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
@@ -12,17 +31,6 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.SimpleNodeIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.*;
 
 /**
  * Provides functionality to configure a {@link com.thinkaurelius.titan.core.TitanGraph} INSTANCE.
@@ -73,6 +81,13 @@ public class GraphDatabaseConfiguration {
     private static final int ID_BLOCK_SIZE_DEFAULT = 1000;
     private static final String ID_RANDOMIZER_BITS_KEY = "idrandom_bits";
     private static final int ID_RANDOMIZER_BITS_DEFAULT = 0;
+    
+    public static final String LOCK_RETRY_COUNT = "lock_retry_count";
+    public static final int LOCK_RETRY_COUNT_DEFAULT = 3;
+    public static final String LOCK_WAIT_MS = "lock_wait_ms";
+    public static final long LOCK_WAIT_MS_DEFAULT = 500;
+    public static final String LOCK_EXPIRE_MS = "lock_expire_ms";
+    public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
 
     
 	/**
@@ -226,7 +241,6 @@ public class GraphDatabaseConfiguration {
         String name = configuration.getString(keyInNamespace(STORAGE_NAMESPACE,STORAGE_PROPERTYINDEX_KEY),STORAGE_PROPERTYINDEX_DEFAULT);
         return m.openDatabase(name);
     }
-
 	
 	public Serializer getSerializer() {
 		Serializer serializer = new KryoSerializer();
