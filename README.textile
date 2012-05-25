@@ -1,6 +1,8 @@
 !https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-logo.png!
 
-Titan is a distributed "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for processing massive-scale graphs represented over a machine cluster. The primary features of Titan are itemized below.
+Titan is a distributed "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for processing massive-scale graphs represented over a machine cluster. Titan separates the concerns of graph query and manipulation from storing the graph on disk, delegating that concern to an extensible set of NoSQL solutions.
+
+h2. Feature Summary 
 
 * Support for various distributed storage layers
 ** "Cassandra":http://cassandra.apache.org/ 1.1.0
@@ -10,3 +12,35 @@ Titan is a distributed "graph database":http://en.wikipedia.org/wiki/Graph_datab
 ** "Frames":http://frames.tinkerpop.com graph-to-object mapper
 ** "Rexster":http://rexster.tinkerpop.com graph server
 * Open source with the liberal "Apache 2":http://www.apache.org/licenses/LICENSE-2.0.html license
+
+h2. General Titan Benefits
+
+* Support for "infinite" sized graphs via the addition of machines to the cluster.
+* Native support for the popular property graph data model exposed by Blueprints.
+* Native support for the graph traversal language Gremlin.
+* Numerous graph-level configurations provide knobs for tuning performance.
+* Micro-indices facilitate intelligent vertex-level querying to alleviate issues with the infamous super node problem.
+* Provides an optimized disk representation to allow for efficient use of storage and speed of access.
+* Data replication amongst the cluster ensures data is protected during machine failures.
+* Support for top-down, user prescribed graph partitioning algorithms.
+
+h2. Benefits of Titan on Cassandra
+
+!http://cassandra.apache.org/media/img/cassandra_logo.png!:http://cassandra.apache.org/
+
+* Continuously available with no single point of failure.
+* No read/write bottlenecks to the graph as there is no master/slave architecture.
+* Elastic scalability allows for the introduction and removal of machines.
+* Caching layer ensures that continuously accessed data is available in memory.
+* Increase the size of the cache by adding more machines to the cluster.
+
+h2. Benefits of Titan on HBase
+
+!http://hbase.apache.org/images/hbase_logo.png!:http://hbase.apache.org/
+
+* Tight integration with the Hadoop ecosystem.
+* Native support for strong consistency.
+
+h2. Documentation
+
+Comprehensive documentation and examples are on the "Titan wiki":http://github.com/thinkaurelius/titan/wiki.
