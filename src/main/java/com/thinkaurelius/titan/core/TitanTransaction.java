@@ -1,11 +1,10 @@
 
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
-
-import java.util.Set;
 
 /***
  * A graph transaction is the interface to interact with a graph database.

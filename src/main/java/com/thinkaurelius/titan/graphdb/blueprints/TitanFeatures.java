@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Features;
 
 /**
@@ -12,7 +13,7 @@ public class TitanFeatures {
         Features features = new Features();
         features.supportsDuplicateEdges = true;
         features.supportsSelfLoops = true;
-        features.supportsSerializableObjectProperty = true; //configurable
+        features.supportsSerializableObjectProperty = true; //TODO: this is configurable!
         features.supportsBooleanProperty = true;
         features.supportsDoubleProperty = true;
         features.supportsFloatProperty = true;

@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.test;
 
-import com.thinkaurelius.titan.core.TransactionConfig;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.diskstorage.test.CassandraLocalhostHelper;
 import org.junit.AfterClass;
@@ -38,6 +38,6 @@ public class CassandraConcurrentGraphDBTest
 	@Override
 	public void open() {
 		graphdb = ch.openDatabase();
-		tx=graphdb.startThreadTransaction(TransactionConfig.STANDARD);
+		tx=graphdb.startThreadTransaction();
 	}
 }

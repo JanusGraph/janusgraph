@@ -11,8 +11,8 @@ import java.nio.ByteBuffer;
 
 public class KryoSerializer extends Kryo implements Serializer {
 
-	public KryoSerializer() {
-		setRegistrationOptional(false);
+	public KryoSerializer(boolean allowAllSerializable) {
+		setRegistrationOptional(allowAllSerializable);
 		register(Class.class,new ClassSerializer(this));
 		registerClass(String[].class);
 		SerializerInitialization.initialize(this);

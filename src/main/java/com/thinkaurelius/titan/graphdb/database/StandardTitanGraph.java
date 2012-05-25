@@ -32,6 +32,7 @@ import com.thinkaurelius.titan.graphdb.edges.factory.RelationLoader;
 import com.thinkaurelius.titan.graphdb.edgetypes.InternalTitanType;
 import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.thinkaurelius.titan.util.interval.AtomicInterval;
 import com.thinkaurelius.titan.graphdb.edges.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.edgetypes.EdgeTypeDefinition;
@@ -114,7 +115,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 	@Override
 	public TitanTransaction startThreadTransaction() {
-        return startThreadTransaction(TransactionConfig.STANDARD);
+        return startThreadTransaction(config.getTransactionConfig());
 	}
 
 	@Override

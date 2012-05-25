@@ -4,7 +4,7 @@ package com.thinkaurelius.titan.graphdb.test;
 import com.thinkaurelius.titan.DiskgraphTest;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.edgetypes.Directionality;
-import com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
@@ -32,7 +32,7 @@ public abstract class AbstractGraphDBTestCommon {
 	
 	public void open() {
 		graphdb = TitanFactory.open(config);
-		tx = graphdb.startThreadTransaction(TransactionConfig.STANDARD);
+		tx = graphdb.startThreadTransaction();
 	}
 	
 	public void close() {

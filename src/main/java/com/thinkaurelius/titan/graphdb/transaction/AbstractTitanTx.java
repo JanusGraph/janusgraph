@@ -448,7 +448,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	 */	
 	
 	private void close() {
-        vertexCache.close(); vertexCache =null;
+         vertexCache.close(); vertexCache =null;
 		keyIndex.clear(); keyIndex=null;
 		isOpen=false;
 	}

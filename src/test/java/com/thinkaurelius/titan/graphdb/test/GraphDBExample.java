@@ -2,10 +2,8 @@ package com.thinkaurelius.titan.graphdb.test;
 
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.edgetypes.Directionality;
-import com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.tinkerpop.blueprints.Direction;
 
 import static org.junit.Assert.assertEquals;
@@ -29,7 +27,7 @@ public class GraphDBExample {
 	
 	public void open() {
 		graphdb = TitanFactory.open(homeDir);
-		tx=graphdb.startThreadTransaction(TransactionConfig.STANDARD);
+		tx=graphdb.startThreadTransaction();
 	}
 
 

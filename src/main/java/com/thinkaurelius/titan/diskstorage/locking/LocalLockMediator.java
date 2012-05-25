@@ -27,7 +27,7 @@ public class LocalLockMediator {
 	private final ConcurrentHashMap<KeyColumn, TransactionHandle> locks =
 			new ConcurrentHashMap<KeyColumn, TransactionHandle>();
 	
-	private LocalLockMediator(String name) {
+	public LocalLockMediator(String name) {
 		this.name = name;
 		
 		assert null != this.name;

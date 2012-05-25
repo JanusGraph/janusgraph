@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.database;
 import cern.colt.list.AbstractLongList;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TransactionConfig;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalRelation;

@@ -9,6 +9,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Features;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ExceptionFactory;
 
 import java.util.Iterator;
 
@@ -39,14 +40,17 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public Vertex addVertex(Object id) {
-        Preconditions.checkArgument(id==null,"Titan does not support vertex id assignment");
+        //Preconditions.checkArgument(id==null,"Titan does not support vertex id assignment");
         return addVertex();
     }
 
     @Override
     public Vertex getVertex(Object id) {
-        Preconditions.checkArgument(id instanceof Long && id!=null,"Invalid id - must be positive long");
-        return getVertex(((Long)id).longValue());
+        if (id==null) throw ExceptionFactory.vertexIdCanNotBeNull();
+        if (!(id instanceof Long)) return null;
+        long vid = ((Long)id).longValue();
+        if (vid<=0) return null;
+        return getVertex(vid);
     }
 
     @Override
@@ -64,7 +68,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public Edge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
-        Preconditions.checkArgument(id==null,"Titan does not support edge id assignment");
+        //Preconditions.checkArgument(id==null,"Titan does not support edge id assignment");
         Preconditions.checkArgument(outVertex instanceof TitanVertex);
         Preconditions.checkArgument(inVertex instanceof TitanVertex);
         return addEdge((TitanVertex)outVertex,(TitanVertex)inVertex,label);

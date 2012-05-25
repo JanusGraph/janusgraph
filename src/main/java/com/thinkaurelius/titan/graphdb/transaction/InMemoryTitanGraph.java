@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.transaction;
 
 import cern.colt.list.AbstractLongList;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
@@ -27,7 +26,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
     private final IDManager idManager;
     
     public InMemoryTitanGraph() {
-		super(null,StandardNodeFactories.DefaultInMemory, new InMemoryRelationFactory(), new InMemoryEdgeTypeManager(), TransactionConfig.AUTO_EDGE_TYPES);
+		super(null,StandardNodeFactories.DefaultInMemory, new InMemoryRelationFactory(), new InMemoryEdgeTypeManager(), new TransactionConfig());
         idCounter=new AtomicInteger(0);
         idManager = new IDManager(1,1);
         graphdb=this;

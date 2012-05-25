@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.SimpleNodeIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -83,6 +84,10 @@ public class GraphDatabaseConfiguration {
 
     private static final String ATTRIBUTE_NAMESPACE = "attributes";
     public static final String STORAGE_NAMESPACE = "storage";
+    
+    public static final String ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY = "allowAll";
+    public static final boolean ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT = true;
+
 
     private static final String BUFFER_KEY = "buffer_mutations";
     private static final boolean BUFFER_DEFAULT = true;
@@ -136,9 +141,8 @@ public class GraphDatabaseConfiguration {
     }
     
 
-    public List<RegisteredAttributeClass<?>> getRegisteredAttributeClasses() {
+    public static List<RegisteredAttributeClass<?>> getRegisteredAttributeClasses(Configuration config) {
         List<RegisteredAttributeClass<?>> all = new ArrayList<RegisteredAttributeClass<?>>();
-        Configuration config = configuration.subset(ATTRIBUTE_NAMESPACE);
         Iterator<String> iter = config.getKeys();
         while (iter.hasNext()) {
             String key = iter.next();
@@ -229,15 +233,24 @@ public class GraphDatabaseConfiguration {
 
 	
 	public Serializer getSerializer() {
-		Serializer serializer = new KryoSerializer();
-        for (RegisteredAttributeClass<?> clazz : getRegisteredAttributeClasses()) {
+        Configuration config = configuration.subset(ATTRIBUTE_NAMESPACE);
+		Serializer serializer = new KryoSerializer(config.getBoolean(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY,ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT));
+        for (RegisteredAttributeClass<?> clazz : getRegisteredAttributeClasses(config)) {
             clazz.registerWith(serializer);
         }
 		return serializer;
 	}
 
+    public boolean hasSerializeAll() {
+        return configuration.subset(ATTRIBUTE_NAMESPACE).getBoolean(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY,ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT);
+    }
+
 	private static final String keyInNamespace(String namespace, String key) {
         return namespace + "." + key;
+    }
+    
+    public TransactionConfig getTransactionConfig() {
+        return new TransactionConfig();
     }
     
 	/* ----------------------------------------

@@ -5,7 +5,9 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.edgetypes.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.tinkerpop.blueprints.*;
+import com.tinkerpop.blueprints.util.StringFactory;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -40,7 +42,7 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
     }
 
     private TitanTransaction internalStartTransaction() {
-        TitanTransaction tx = startThreadTransaction(TransactionConfig.IMMEDIATE_ID_ASSIGNMENT);
+        TitanTransaction tx = (TitanTransaction) startThreadTransaction();
         txs.set(tx);
         openTx.put(tx,Boolean.TRUE);
         return tx;
@@ -66,6 +68,11 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
             tx.commit();
         }
         openTx.clear();
+    }
+    
+    @Override
+    public String toString() {
+        return StringFactory.graphString(this,null);
     }
 
 

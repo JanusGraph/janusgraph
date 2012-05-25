@@ -1,17 +1,18 @@
-package com.thinkaurelius.titan.core;
+package com.thinkaurelius.titan.graphdb.transaction;
 
+import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.edgetypes.StandardDefaultTypeMaker;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /***
- * Provides functionality to configure a {@link TitanTransaction}.
+ * Provides functionality to configure a {@link com.thinkaurelius.titan.core.TitanTransaction}.
  * 
- * This class give the user fine grained control over the configuration of a {@link TitanTransaction} to be started
- * via the method {@link TitanGraph#startThreadTransaction(TransactionConfig)}.
+ * This class give the user fine grained control over the configuration of a {@link com.thinkaurelius.titan.core.TitanTransaction} to be started
+ * via the method {@link com.thinkaurelius.titan.core.TitanGraph#startThreadTransaction(TransactionConfig)}.
  * 
  * Note that the configuration parameters cannot be changed once the database has been opened.
  * 
- * @see TitanTransaction
+ * @see com.thinkaurelius.titan.core.TitanTransaction
  * 
  * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
  * 
@@ -21,36 +22,11 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  */
 public class TransactionConfig {
 
-	/**
-	 * Constant denoting a TransactionConfig with default configuration parameters.
-	 * This configuration cannot be changed.
-	 */
-	public static final TransactionConfig STANDARD = new TransactionConfig().close();
-	
-	/**
-     * Constant denoting a read-only TransactionConfig with otherwise default configuration parameters.
-     * This configuration cannot be changed.
-     */
-    public static final TransactionConfig READ_ONLY = new TransactionConfig().setReadOnly(true).close();
-
-    /**
-     * Constant denoting a TransactionConfig that automatically creates not yet existing edge types with otherwise default configuration parameters.
-     * This configuration cannot be changed.
-     */
-    public static final TransactionConfig AUTO_EDGE_TYPES = new TransactionConfig().setAutoCreateEdgeTypes(true).close();
-
-    /**
-     * Constant denoting a TransactionConfig that immediately assigns ids to database objects upon creation with otherwise default configuration parameters.
-     * This configuration cannot be changed.
-     */
-    public static final TransactionConfig IMMEDIATE_ID_ASSIGNMENT = new TransactionConfig().setAssignIDsImmediately(true).close();
-
-	
-	private boolean isReadOnly = false;
+    private boolean isReadOnly = false;
     
-    private boolean assignIDsImmediately = false;
+    private boolean assignIDsImmediately = true;
 
-    private boolean autoCreateEdgeTypes = false;
+    private boolean autoCreateEdgeTypes = true;
 	
 	private boolean verifyNodeExistence = true;
 	

@@ -30,7 +30,7 @@ public class SerializerUnitTest {
 	
 	@Before
 	public void setUp() throws Exception {
-		serialize = new KryoSerializer();
+		serialize = new KryoSerializer(false);
 		serialize.registerClass(TestEnum.class);
 		serialize.registerClass(TestClass.class);
 		serialize.registerClass(short[].class);

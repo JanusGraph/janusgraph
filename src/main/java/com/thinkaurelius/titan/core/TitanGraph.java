@@ -2,6 +2,7 @@
 package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
@@ -27,19 +28,10 @@ import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
  *
  */
 public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactionalGraph {
-	
-	/**
-	 * Starts a graph transaction against this database configured according to the provided
-	 * {@link TransactionConfig}.
-	 * 
-	 * @param txconfig Configuration for the graph transaction to be started.
-	 * @return A TitanTransaction configured according to the provided configuration.
-	 */
-	public TitanTransaction startThreadTransaction(TransactionConfig txconfig);
-    
+
     public TitanTransaction startThreadTransaction();
 
-	 
+
 	 /**
 	  * Closes the graph database.
 	  * 

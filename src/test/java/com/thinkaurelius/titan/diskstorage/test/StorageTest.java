@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 public class StorageTest {
 
 	private static final Logger log = LoggerFactory.getLogger(StorageTest.class);
-	public static final Serializer serial = new KryoSerializer();
+	public static final Serializer serial = new KryoSerializer(true);
 	public static final long idOffset = 1000;
 	
 	public static String[] generateData(int numKeys) {
