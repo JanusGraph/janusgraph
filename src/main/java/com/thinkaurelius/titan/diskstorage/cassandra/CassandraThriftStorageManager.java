@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY;
-
-import java.io.File;
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Map;
@@ -25,8 +23,8 @@ import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
-import com.thinkaurelius.titan.diskstorage.util.LocalIDManager;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class CassandraThriftStorageManager implements StorageManager {
 
@@ -38,7 +36,8 @@ public class CassandraThriftStorageManager implements StorageManager {
     public static final String PROP_PORT = "port";
     public static final String PROP_SELF_HOSTNAME = "selfHostname";
     public static final String PROP_TIMEOUT = "thrift_timeout";
-
+    public static final String PROP_ID_KEYSPACE = "id_keyspace";
+    
     public static Map<String, CassandraThriftOrderedKeyColumnValueStore> stores =
     		new ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore>();
     
@@ -84,13 +83,27 @@ public class CassandraThriftStorageManager implements StorageManager {
      * Value = {@value}
      */
     public static final String idCfName = "id_allocations";
+    
+    /**
+     * Default keyspace to be used for ID block management.
+     * <p>
+     * Value = {@value}
+     */
+    public static final String ID_KEYSPACE = "titan_ids";
+
 
 	private final String keyspace;
 	
 	private final UncheckedGenericKeyedObjectPool
 			<String, CTConnection> pool;
 
-    private final LocalIDManager idmanager;
+    private final CassandraIDManager idmanager;
+    
+    private final int lockRetryCount;
+    
+    private final long lockWaitMS, lockExpireMS;
+    
+    private static final byte[] rid;
 	
 	public CassandraThriftStorageManager(Configuration config) {
 		this.keyspace = config.getString(PROP_KEYSPACE,DEFAULT_KEYSPACE);
@@ -99,7 +112,38 @@ public class CassandraThriftStorageManager implements StorageManager {
 				interpretHostname(config.getString(PROP_HOSTNAME,DEFAULT_HOSTNAME)),
 				config.getInt(PROP_PORT,DEFAULT_PORT),
 				config.getInt(PROP_TIMEOUT,DEFAULT_THRIFT_TIMEOUT_MS));
-        idmanager = new LocalIDManager(config.getString(STORAGE_DIRECTORY_KEY) + File.separator + LocalIDManager.DEFAULT_NAME);
+		
+		this.lockRetryCount =
+				config.getInt(
+						GraphDatabaseConfiguration.LOCK_RETRY_COUNT,
+						GraphDatabaseConfiguration.LOCK_RETRY_COUNT_DEFAULT);
+		
+		this.lockWaitMS =
+				config.getLong(
+						GraphDatabaseConfiguration.LOCK_WAIT_MS,
+						GraphDatabaseConfiguration.LOCK_WAIT_MS_DEFAULT);
+		
+		this.lockExpireMS =
+				config.getLong(
+						GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
+						GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
+		
+        idmanager = new CassandraIDManager(openDatabase("blocks_allocated", ID_KEYSPACE, false), rid);
+	}
+	
+	static {
+		
+		byte[] addrBytes;
+		try {
+			addrBytes = InetAddress.getLocalHost().getAddress();
+		} catch (UnknownHostException e) {
+			throw new GraphStorageException(e);
+		}
+		byte[] procNameBytes = ManagementFactory.getRuntimeMXBean().getName().getBytes();
+		
+		rid = new byte[addrBytes.length + procNameBytes.length];
+		System.arraycopy(addrBytes, 0, rid, 0, addrBytes.length);
+		System.arraycopy(procNameBytes, 0, rid, addrBytes.length, procNameBytes.length);
 	}
 
     @Override
@@ -110,7 +154,10 @@ public class CassandraThriftStorageManager implements StorageManager {
 
 	@Override
 	public TransactionHandle beginTransaction() {
-		return new CassandraTransaction(this);
+		return new CassandraTransaction(this, rid, 
+				lockRetryCount,
+				lockWaitMS,
+				lockExpireMS);
 	}
 
 	@Override
@@ -121,8 +168,12 @@ public class CassandraThriftStorageManager implements StorageManager {
 	@Override
 	public CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name)
 			throws GraphStorageException {
+		return openDatabase(name, keyspace, true);
 	
-                synchronized (stores) {
+	}
+	
+	CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name, final String ksoverride, boolean createLockColumnFamily)
+			throws GraphStorageException {
 
 		final String lockCfName = getLockColumnFamilyName(name);
 
@@ -136,10 +187,10 @@ public class CassandraThriftStorageManager implements StorageManager {
 
 		CTConnection conn = null;
 		try {
-			conn =  pool.genericBorrowObject(keyspace);
+			conn =  pool.genericBorrowObject(ksoverride);
 			Cassandra.Client client = conn.getClient();
-			logger.debug("Looking up metadata on keyspace {}...", keyspace);
-			KsDef keyspaceDef = client.describe_keyspace(keyspace);
+			logger.debug("Looking up metadata on keyspace {}...", ksoverride);
+			KsDef keyspaceDef = client.describe_keyspace(ksoverride);
 			boolean foundColumnFamily = false;
 			boolean foundLockColumnFamily = false;
 			for (CfDef cfDef : keyspaceDef.getCf_defs()) {
@@ -151,10 +202,10 @@ public class CassandraThriftStorageManager implements StorageManager {
 				}
 			}
 			if (!foundColumnFamily) {
-				createColumnFamily(client, name);
+				createColumnFamily(client, ksoverride, name);
 			}
-			if (!foundLockColumnFamily) {
-				createColumnFamily(client, lockCfName);
+			if (!foundLockColumnFamily && createLockColumnFamily) {
+				createColumnFamily(client, ksoverride, lockCfName);
 			}
 		} catch (TException e) {
 			throw new GraphStorageException(e);
@@ -164,18 +215,19 @@ public class CassandraThriftStorageManager implements StorageManager {
 			throw new GraphStorageException(e);
 		} finally {
 			if (null != conn)
-				pool.genericReturnObject(keyspace, conn);
+				pool.genericReturnObject(ksoverride, conn);
 		}
 		
-		store = new CassandraThriftOrderedKeyColumnValueStore(keyspace, name, pool);
-                CassandraThriftOrderedKeyColumnValueStore lockStore =
-                        new CassandraThriftOrderedKeyColumnValueStore(keyspace, lockCfName, pool);
-
+		store = new CassandraThriftOrderedKeyColumnValueStore(ksoverride, name, pool);
 		stores.put(name, store);
+		
+		if (createLockColumnFamily) {
+                CassandraThriftOrderedKeyColumnValueStore lockStore =
+                        new CassandraThriftOrderedKeyColumnValueStore(ksoverride, lockCfName, pool);
                 stores.put(lockCfName, lockStore);
+		}
 		
 		return store;
-                }
 	}
 	
 	CassandraThriftOrderedKeyColumnValueStore getOpenedDatabase(String name) {
@@ -293,20 +345,20 @@ public class CassandraThriftStorageManager implements StorageManager {
         }
     }
     
-    private void createColumnFamily(Cassandra.Client client, String cfName)
+    private void createColumnFamily(Cassandra.Client client, String ksname, String cfName)
     		throws InvalidRequestException, TException {
 		CfDef createColumnFamily = new CfDef();
 		createColumnFamily.setName(cfName);
-		createColumnFamily.setKeyspace(keyspace);
+		createColumnFamily.setKeyspace(ksname);
 		createColumnFamily.setComparator_type("org.apache.cassandra.db.marshal.BytesType");
-		logger.debug("Adding column family {} to keyspace {}...", cfName, keyspace);
+		logger.debug("Adding column family {} to keyspace {}...", cfName, ksname);
         String schemaVer = null;
         try {
             schemaVer = client.system_add_column_family(createColumnFamily);
         } catch (SchemaDisagreementException e) {
             throw new GraphStorageException("Error in setting up column family",e);
         }
-        logger.debug("Added column family {} to keyspace {}.", cfName, keyspace);
+        logger.debug("Added column family {} to keyspace {}.", cfName, ksname);
 		
 		// Try to let Cassandra converge on the new column family
 		try {

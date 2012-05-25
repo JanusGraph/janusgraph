@@ -9,14 +9,7 @@ import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction;
 
 public class LocalLockMediator {
-	
-	/*
-	 * locking-namespace -> mediator.
-	 * 
-	 * For Cassandra, "locking-namespace" is a column family name.
-	 */
-	private static final ConcurrentHashMap<String, LocalLockMediator> mediators =
-			new ConcurrentHashMap<String, LocalLockMediator>();
+
 	
 	private static final Logger log = LoggerFactory.getLogger(LocalLockMediator.class);
 
@@ -31,21 +24,6 @@ public class LocalLockMediator {
 		this.name = name;
 		
 		assert null != this.name;
-	}
-	
-	public static LocalLockMediator get(String name) {
-		LocalLockMediator m = mediators.get(name);
-		
-		if (null == m) {
-			m = new LocalLockMediator(name);
-			LocalLockMediator old = mediators.putIfAbsent(name, m);
-			if (null != old)
-				m = old;
-			else 
-				log.debug("Local lock mediator instantiated for namespace {}", name);
-		}
-		
-		return m;
 	}
 	
 	public boolean lock(KeyColumn kc, TransactionHandle requestor) {

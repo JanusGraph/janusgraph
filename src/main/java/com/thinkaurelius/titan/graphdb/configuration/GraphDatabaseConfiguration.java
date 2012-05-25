@@ -74,6 +74,13 @@ public class GraphDatabaseConfiguration {
     private static final int ID_BLOCK_SIZE_DEFAULT = 1000;
     private static final String ID_RANDOMIZER_BITS_KEY = "idrandom_bits";
     private static final int ID_RANDOMIZER_BITS_DEFAULT = 0;
+    
+    public static final String LOCK_RETRY_COUNT = "lock_retry_count";
+    public static final int LOCK_RETRY_COUNT_DEFAULT = 3;
+    public static final String LOCK_WAIT_MS = "lock_wait_ms";
+    public static final long LOCK_WAIT_MS_DEFAULT = 500;
+    public static final String LOCK_EXPIRE_MS = "lock_expire_ms";
+    public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
 
     
 	/**
@@ -230,7 +237,6 @@ public class GraphDatabaseConfiguration {
         String name = configuration.getString(keyInNamespace(STORAGE_NAMESPACE,STORAGE_PROPERTYINDEX_KEY),STORAGE_PROPERTYINDEX_DEFAULT);
         return m.openDatabase(name);
     }
-
 	
 	public Serializer getSerializer() {
         Configuration config = configuration.subset(ATTRIBUTE_NAMESPACE);
