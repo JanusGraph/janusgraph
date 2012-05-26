@@ -65,12 +65,25 @@ public abstract class LockKeyColumnValueStoreTest {
         host1tx1 = manager.beginTransaction();
         host1tx2 = manager.beginTransaction();
         host2tx1 = manager.beginTransaction();
+        
+        configureTransactions();
     }
 
 	@After
 	public void tearDown() throws Exception {
 		close();
 	}
+	
+	/**
+	 * Perform any configuration on
+	 * host1tx1, host1tx2, host2tx1, etc.
+	 * 
+	 * This method is called from open().  open() will
+	 * guarantee that all of the transaction fields on
+	 * this object are non-null before this method
+	 * is called to configure them.
+	 */
+	protected abstract void configureTransactions();
 
     public void close() {
         store.close();

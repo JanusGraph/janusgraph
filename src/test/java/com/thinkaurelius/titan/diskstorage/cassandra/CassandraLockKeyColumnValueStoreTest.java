@@ -31,4 +31,14 @@ public class CassandraLockKeyColumnValueStoreTest
 	}
 
 
+	@Override
+	protected void configureTransactions() {
+		((CassandraTransaction)host1tx1).setRid(rid1);
+		((CassandraTransaction)host1tx2).setRid(rid1);
+		((CassandraTransaction)host2tx1).setRid(rid2);
+		
+		((CassandraTransaction)host1tx1).setLocalLockMediatorProvider(p1);
+		((CassandraTransaction)host1tx2).setLocalLockMediatorProvider(p1);
+		((CassandraTransaction)host2tx1).setLocalLockMediatorProvider(p2);
+	}
 }
