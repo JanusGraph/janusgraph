@@ -201,15 +201,6 @@ public abstract class KeyValueStoreTest {
 		loadValues(values);
 		Set<Integer> deleted = deleteValues(0,10);
 		clopen();
-//		for (int i : deleted) {
-//			log.debug("AtomicInterval for : {}",i);
-//			assertFalse(store.containsInInterval(getBuffer(i), getBuffer(i+1), tx));
-//			if (i+1<numKeys) {
-//				assertTrue(store.containsInInterval(getBuffer(i), getBuffer(i+2), tx));
-//				assertTrue(store.containsInInterval(getBuffer(i), getBuffer(i+12), tx));
-//				assertTrue(store.containsInInterval(getBuffer(i), getBuffer(i+118), tx));
-//			}
-//		}
 		checkSlice(values,deleted,5,25,-1);
 		checkSlice(values,deleted,5,250,10);
 		checkSlice(values,deleted,500,1250,-1);
