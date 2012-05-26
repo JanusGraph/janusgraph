@@ -27,8 +27,8 @@ public class HBaseStorageManager implements StorageManager {
 
 	private static final Logger log = LoggerFactory.getLogger(HBaseStorageManager.class);
 	
-    private static final String TABLE_NAME_KEY = "tablename";
-    private static final String TABLE_NAME_DEFAULT = "titantest";
+    static final String TABLE_NAME_KEY = "tablename";
+    static final String TABLE_NAME_DEFAULT = "titantest";
     
 
 	private final String tableName;
@@ -118,28 +118,6 @@ public class HBaseStorageManager implements StorageManager {
 		//Nothing to do
 	}
 
-    public void deleteAll() {
-        Configuration conf = HBaseConfiguration.create();
-        try {
-            HBaseAdmin adm = new HBaseAdmin(conf);
-            try {
-                adm.disableTable(tableName);
-            } catch (Exception e) {
-                /*
-                     * Swallow exception.  Disabling a table typically throws
-                     * an exception because the table doesn't exist or is
-                     * already disabled.  If there's a serious problem
-                     * interacting with HBase, then the following remove
-                     * statement will generate an appropriate exception
-                     * (which would propagate up as a RuntimeException).
-                     */
-            }
-            adm.deleteTable(tableName);
-        } catch (TableNotFoundException e) {
-            // Do nothing
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+
 
 }

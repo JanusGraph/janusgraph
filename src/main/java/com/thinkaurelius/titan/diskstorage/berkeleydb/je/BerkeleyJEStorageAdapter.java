@@ -11,6 +11,6 @@ import org.apache.commons.configuration.Configuration;
 public class BerkeleyJEStorageAdapter extends KeyValueStorageManagerAdapter {
 
     public BerkeleyJEStorageAdapter(Configuration config) {
-        super(new BerkeleyJEStorageManager(config));
+        super(new BerkeleyJEStorageManager(config),config);
     }
 }

@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.blueprints;
 
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.DiskgraphTest;
+import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.*;
@@ -97,7 +97,7 @@ public class TitanGraphTest extends GraphTest {
 
     @Override
     public Graph generateGraph() {
-        graph = TitanFactory.open(DiskgraphTest.homeDir);
+        graph = TitanFactory.open(StorageSetup.getHomeDir());
         return graph;
     }
     
@@ -109,7 +109,7 @@ public class TitanGraphTest extends GraphTest {
     }
     
     public void doTestSuite(TestSuite testSuite, Set<String> ignoreTests) throws Exception {
-        DiskgraphTest.deleteHomeDir();
+        StorageSetup.deleteHomeDir();
         for (Method method : testSuite.getClass().getDeclaredMethods()) {
             if (ignoreTests.contains(method.getName())) continue;
             try {
@@ -127,7 +127,7 @@ public class TitanGraphTest extends GraphTest {
                     graph.shutdown();
                     graph=null;
                 }
-                DiskgraphTest.deleteHomeDir();
+                StorageSetup.deleteHomeDir();
             }
         }
     }
