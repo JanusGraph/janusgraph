@@ -9,7 +9,7 @@ package com.thinkaurelius.titan.exceptions;
  * 
  * 
  */
-public class QueryException extends RuntimeException {
+public class QueryException extends GraphDatabaseException {
 
 	private static final long serialVersionUID = 1L;
 	

@@ -1,7 +1,6 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.exceptions.InvalidNodeException;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
@@ -32,7 +31,6 @@ public interface TitanEdge extends TitanRelation, Edge {
      * Returns the vertex for the specified direction
      *
      * @return The start node of this edge
-     * @throws com.thinkaurelius.titan.exceptions.InvalidEdgeException if the edge is not binary
      */
     public TitanVertex getVertex(Direction dir);
 

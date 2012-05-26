@@ -1,15 +1,12 @@
 package com.thinkaurelius.titan.graphdb.edges;
 
-import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.exceptions.InvalidNodeException;
+import com.thinkaurelius.titan.exceptions.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.tinkerpop.blueprints.Direction;
 import static com.tinkerpop.blueprints.Direction.*;
 import org.apache.commons.lang.builder.HashCodeBuilder;
-
-import java.util.Collection;
 
 public class SimpleBinaryTitanEdge extends AbstractTypedRelation implements TitanEdge {
 
@@ -84,7 +81,7 @@ public class SimpleBinaryTitanEdge extends AbstractTypedRelation implements Tita
             if (end.equals(vertex)) return BOTH;
             else return OUT;
         } else if (end.equals(vertex)) return IN;
-        else throw new InvalidNodeException("TitanRelation is not incident on given node.");
+        else throw new InvalidElementException("TitanRelation is not incident on given node.",vertex);
 	}
 
 	@Override
@@ -113,7 +110,7 @@ public class SimpleBinaryTitanEdge extends AbstractTypedRelation implements Tita
 	public TitanVertex getOtherVertex(TitanVertex vertex) {
 		if (start.equals(vertex)) return end;
 		else if (end.equals(vertex)) return start;
-		else throw new InvalidNodeException("TitanRelation is not incident on given node.");
+		else throw new InvalidElementException("TitanRelation is not incident on given node.",vertex);
 	}
 
 	@Override

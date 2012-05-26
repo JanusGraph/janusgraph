@@ -1,11 +1,7 @@
 package com.thinkaurelius.titan.exceptions;
 
-public class LockingFailureException extends RuntimeException {
+public class LockingFailureException extends GraphStorageException {
 
-	public LockingFailureException() {
-		super();
-	}
-	
 	public LockingFailureException(String msg) {
 		super(msg);
 	}

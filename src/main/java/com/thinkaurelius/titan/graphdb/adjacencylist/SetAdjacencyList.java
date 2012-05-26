@@ -4,7 +4,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
-import com.thinkaurelius.titan.exceptions.InvalidEdgeException;
+import com.thinkaurelius.titan.exceptions.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 
 import java.util.Collections;
@@ -43,7 +43,7 @@ public class SetAdjacencyList implements AdjacencyList {
 			else {
 				if ((factory.isUniformTyped() && !content.isEmpty()) ||
 						(!factory.isUniformTyped() && !Iterables.isEmpty(getEdges(e.getType())) )) {
-					throw new InvalidEdgeException("Cannot add functional edge since an edge of that type already exists!");
+					throw new InvalidElementException("Cannot add functional edge since an edge of that type already exists!",e);
 				} else {
 					status.change();
 					content.add(e);

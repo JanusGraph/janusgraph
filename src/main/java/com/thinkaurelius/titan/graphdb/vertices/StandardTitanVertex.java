@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.exceptions.InvalidEdgeException;
+import com.thinkaurelius.titan.exceptions.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.adjacencylist.InitialAdjListFactory;
@@ -44,10 +44,10 @@ public class StandardTitanVertex extends AbstractTitanVertex {
                 outEdges = outEdges.addEdge(e, e.getType().isFunctional(), status);
             }
             if (status.hasChanged()) {
-                if (loadIn && !success) throw new InvalidEdgeException("Could only load one direction of loop-edge!");
+                if (loadIn && !success) throw new InvalidElementException("Could only load one direction of loop-edge!",e);
                 success=true;
             } else {
-                if (loadIn && success) throw new InvalidEdgeException("Could only load one direction of loop-edge!");
+                if (loadIn && success) throw new InvalidElementException("Could only load one direction of loop-edge!",e);
                 success=false;
             }
         }

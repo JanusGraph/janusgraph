@@ -16,7 +16,7 @@ public class LocalLockMediator {
 	// Locking namespace
 	private final String name;
 	
-	// Lock map
+	// Lock map: TODO: Figure out good parameters constructor
 	private final ConcurrentHashMap<KeyColumn, TransactionHandle> locks =
 			new ConcurrentHashMap<KeyColumn, TransactionHandle>();
 	
@@ -65,4 +65,5 @@ public class LocalLockMediator {
 	public String toString() {
 		return "LocalLockMediator [" + name + ",  ~" + locks.size() + " current locks]";
 	}
+
 }

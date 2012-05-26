@@ -1,7 +1,6 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.exceptions.InvalidNodeException;
 import com.tinkerpop.blueprints.Direction;
 
 /**

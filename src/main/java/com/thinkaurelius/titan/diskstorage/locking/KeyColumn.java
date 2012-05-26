@@ -23,6 +23,7 @@ public class KeyColumn {
 		int result = 1;
 		result = prime * result + col.hashCode();
 		result = prime * result + key.hashCode();
+        //TODO: if the hashcode is needed frequently, we should store it
 		return result;
 	}
 

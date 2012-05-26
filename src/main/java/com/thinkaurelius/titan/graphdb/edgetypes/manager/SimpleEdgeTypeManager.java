@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.edgetypes.manager;
 
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.exceptions.InvalidEntityException;
+import com.thinkaurelius.titan.exceptions.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.edgequery.EdgeQueryUtil;
 import com.thinkaurelius.titan.graphdb.edgetypes.*;
@@ -74,7 +74,7 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 		Long id = edgetype.getID();
 		mapWriteLock.lock();
 		if (nameIndex.containsKey(edgetype.getName()))
-			throw new InvalidEntityException("TitanRelation Type with name does already exist: " + edgetype.getName() + " | " + edgetype.isEdgeLabel());
+			throw new InvalidElementException("TitanRelation Type with name does already exist: " + edgetype.getName() + " | " + edgetype.isEdgeLabel(),edgetype);
 		nameIndex.put(edgetype.getName(),id);
 		//Determine system edge ids
 		long nameEdgeID = EdgeQueryUtil.queryHiddenFunctionalProperty(edgetype, SystemKey.TypeName).getID();

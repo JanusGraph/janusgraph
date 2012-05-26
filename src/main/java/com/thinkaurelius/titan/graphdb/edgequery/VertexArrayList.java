@@ -7,7 +7,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexList;
-import com.thinkaurelius.titan.exceptions.InvalidNodeException;
+import com.thinkaurelius.titan.exceptions.InvalidElementException;
 
 import java.util.*;
 
@@ -73,7 +73,7 @@ public class VertexArrayList implements VertexListInternal {
 	private static final AbstractLongList toLongList(List<TitanVertex> nodes) {
 		AbstractLongList result = new LongArrayList(nodes.size());
 		for (TitanVertex n : nodes) {
-			if (!n.hasID()) throw new InvalidNodeException("Neighboring node does not have an id.");
+			if (!n.hasID()) throw new InvalidElementException("Neighboring node does not have an id.",n);
 			result.add(n.getID());
 		}
 		return result;

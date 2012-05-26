@@ -7,8 +7,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.exceptions.InvalidEntityException;
-import com.thinkaurelius.titan.exceptions.InvalidNodeException;
+import com.thinkaurelius.titan.exceptions.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.edgequery.ComplexTitanQuery;
@@ -128,7 +127,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     @Override
     public TitanVertex getVertex(long id) {
         if (getTxConfiguration().doVerifyNodeExistence() &&
-                !containsVertex(id)) throw new InvalidNodeException("TitanVertex does not exist!");
+                !containsVertex(id)) return null;
         return getExistingVertex(id);
     }
 
@@ -177,7 +176,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 		if (key.isUnique()) {
 			keyedPropertyCreateLock.lock();
 			if (config.doVerifyKeyUniqueness() && getVertex(key, attribute)!=null)
-				throw new InvalidEntityException("The specified attribute is already used as a key for the given property type: " + attribute);
+				throw new InvalidElementException("The specified attribute is already used as a key for the given property type: " + attribute,vertex);
 		}
 			
 		InternalRelation e = edgeFactory.createNewProperty(key, (InternalTitanVertex)vertex, attribute);

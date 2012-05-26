@@ -1,13 +1,12 @@
 package com.thinkaurelius.titan.graphdb.edges.factory;
 
 import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.exceptions.InvalidEdgeException;
+import com.thinkaurelius.titan.exceptions.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.edgequery.AtomicTitanQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.tinkerpop.blueprints.Direction;
-import static com.tinkerpop.blueprints.Direction.*;
 
 public class EdgeFactoryUtil {
 	
@@ -39,12 +38,12 @@ public class EdgeFactoryUtil {
 
 		
 		if (loaded>0) {
-			if (notloaded>0) throw new InvalidEdgeException("TitanRelation already existed on some vertices but not on others.");
+			if (notloaded>0) throw new InvalidElementException("TitanRelation already existed on some vertices but not on others.",edge);
 			else {
 				graph.loadedRelation(edge);
 			}
 		} else if (isNew) {
-			throw new InvalidEdgeException("New TitanRelation could not be added.");
+			throw new InvalidElementException("New TitanRelation could not be added.",edge);
 		}
 	}
 

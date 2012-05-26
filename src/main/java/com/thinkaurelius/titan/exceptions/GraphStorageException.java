@@ -9,7 +9,7 @@ package com.thinkaurelius.titan.exceptions;
  * 
  * 
  */
-public class GraphStorageException extends RuntimeException {
+public class GraphStorageException extends GraphDatabaseException {
 
 	private static final long serialVersionUID = 4056436257763972423L;
 

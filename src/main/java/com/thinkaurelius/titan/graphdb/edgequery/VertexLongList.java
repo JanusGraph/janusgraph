@@ -5,7 +5,7 @@ import cern.colt.list.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexList;
-import com.thinkaurelius.titan.exceptions.InvalidNodeException;
+import com.thinkaurelius.titan.exceptions.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 
 import java.util.Iterator;
@@ -32,7 +32,7 @@ public class VertexLongList implements VertexListInternal {
 
 	@Override
 	public void add(TitanVertex n) {
-		if (!n.hasID()) throw new InvalidNodeException("Neighboring node does not have an id.");
+		if (!n.hasID()) throw new InvalidElementException("Neighboring node does not have an id.",n);
 		if (sorted) Preconditions.checkArgument(n.getID()>=nodes.get(nodes.size()-1),"Nodes must be inserted in sorted order");
 		nodes.add(n.getID());
 	}
