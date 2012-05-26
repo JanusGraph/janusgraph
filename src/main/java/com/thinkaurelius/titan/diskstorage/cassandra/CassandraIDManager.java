@@ -73,12 +73,13 @@ public class CassandraIDManager {
 				log.debug("Wrote (but have not yet validated) claim for ID block [{},{})", nextStart, nextEnd);
 				
 				while (true) {
-					final long delta = System.currentTimeMillis();
-					if (delta >= lockWaitMS) {
+					// Wait until lockWaitMS has passed since our claim
+					final long sinceLock = System.currentTimeMillis() - after;
+					if (sinceLock >= lockWaitMS) {
 						break;
 					} else {
 						try {
-							Thread.sleep(lockWaitMS - delta);
+							Thread.sleep(lockWaitMS - sinceLock);
 						} catch (InterruptedException e) {
 							throw new RuntimeException(e); // different exception type?
 						}

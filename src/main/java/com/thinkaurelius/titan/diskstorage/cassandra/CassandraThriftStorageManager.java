@@ -28,7 +28,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class CassandraThriftStorageManager implements StorageManager {
 
-    private static final Logger logger =
+    private static final Logger log =
             LoggerFactory.getLogger(CassandraThriftStorageManager.class);
     
     public static final String PROP_KEYSPACE = "keyspace";
@@ -172,11 +172,8 @@ public class CassandraThriftStorageManager implements StorageManager {
 	
 	}
 	
-	CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name, final String ksoverride, boolean createLockColumnFamily)
+	private CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name, final String ksoverride, boolean createLockColumnFamily)
 			throws GraphStorageException {
-
-		final String lockCfName = getLockColumnFamilyName(name);
-
 	
 		CassandraThriftOrderedKeyColumnValueStore store =
 				stores.get(name);
@@ -189,23 +186,20 @@ public class CassandraThriftStorageManager implements StorageManager {
 		try {
 			conn =  pool.genericBorrowObject(ksoverride);
 			Cassandra.Client client = conn.getClient();
-			logger.debug("Looking up metadata on keyspace {}...", ksoverride);
+			log.debug("Looking up metadata on keyspace {}...", ksoverride);
 			KsDef keyspaceDef = client.describe_keyspace(ksoverride);
 			boolean foundColumnFamily = false;
-			boolean foundLockColumnFamily = false;
 			for (CfDef cfDef : keyspaceDef.getCf_defs()) {
 				String curCfName = cfDef.getName();
 				if (curCfName.equals(name)) {
 					foundColumnFamily = true;
-				} else if (curCfName.equals(lockCfName)) {
-					foundLockColumnFamily = true;
 				}
 			}
 			if (!foundColumnFamily) {
+				log.debug("Keyspace {} not found, about to create it", ksoverride);
 				createColumnFamily(client, ksoverride, name);
-			}
-			if (!foundLockColumnFamily && createLockColumnFamily) {
-				createColumnFamily(client, ksoverride, lockCfName);
+			} else {
+				log.debug("Found keyspace: {}", ksoverride);
 			}
 		} catch (TException e) {
 			throw new GraphStorageException(e);
@@ -218,20 +212,11 @@ public class CassandraThriftStorageManager implements StorageManager {
 				pool.genericReturnObject(ksoverride, conn);
 		}
 		
-		store = new CassandraThriftOrderedKeyColumnValueStore(ksoverride, name, pool);
+		store = new CassandraThriftOrderedKeyColumnValueStore(ksoverride, name, pool, this);
 		stores.put(name, store);
-		
-		if (createLockColumnFamily) {
-                CassandraThriftOrderedKeyColumnValueStore lockStore =
-                        new CassandraThriftOrderedKeyColumnValueStore(ksoverride, lockCfName, pool);
-                stores.put(lockCfName, lockStore);
-		}
+		log.debug("Created {}", store);
 		
 		return store;
-	}
-	
-	CassandraThriftOrderedKeyColumnValueStore getOpenedDatabase(String name) {
-		return stores.get(name);
 	}
 	
 	String getLockColumnFamilyName(String cfName) {
@@ -254,14 +239,14 @@ public class CassandraThriftStorageManager implements StorageManager {
 			try {
 				client.describe_keyspace(keyspace);
 				// Keyspace must exist
-				logger.debug("Dropping keyspace {}...", keyspace);
+				log.debug("Dropping keyspace {}...", keyspace);
 				String schemaVer = client.system_drop_keyspace(keyspace);
 				
 				// Try to let Cassandra converge on the new column family
 				CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
 			} catch (NotFoundException e) {
 				// Keyspace doesn't exist yet: return immediately
-				logger.debug("Keyspace {} does not exist, not attempting to drop", 
+				log.debug("Keyspace {} does not exist, not attempting to drop", 
 						keyspace);
 				return false;
 			}
@@ -301,7 +286,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 			try {
 				client.describe_keyspace(keyspace);
 				// Keyspace must exist
-				logger.debug("Dropping keyspace {}...", keyspace);
+				log.debug("Dropping keyspace {}...", keyspace);
 				String schemaVer = client.system_drop_keyspace(keyspace);
 				
 				// Try to let Cassandra converge on the new column family
@@ -310,7 +295,7 @@ public class CassandraThriftStorageManager implements StorageManager {
                                 stores.clear();
 			} catch (NotFoundException e) {
 				// Keyspace doesn't exist yet: return immediately
-				logger.debug("Keyspace {} does not exist, not attempting to drop", 
+				log.debug("Keyspace {} does not exist, not attempting to drop", 
 						keyspace);
 			}
 		} catch (Exception e) {
@@ -321,6 +306,35 @@ public class CassandraThriftStorageManager implements StorageManager {
 		}
                 
 	}
+	
+	/**
+	 * CassandraThriftOrderedKeyColumnValueStore instances call this method
+	 * when their own close() method is invoked.  This method removes a
+	 * close()ed store from the {@code stores} map on this object, so that
+	 * it can't be returned in future calls to openDatabase().
+	 * 
+	 * This method is idempotent, so a store may call it multiple times; only
+	 * the first invocation will do anything.
+	 * 
+	 * @param cf Column family name of a closing store
+	 * @param storeToClose the closing store
+	 */
+//	void closeStore(String cf, CassandraThriftOrderedKeyColumnValueStore storeToClose) {
+//		assert null != cf;
+//		assert null != storeToClose;
+//		
+//		CassandraThriftOrderedKeyColumnValueStore s = stores.get(cf);
+//		
+//		if (null == s) {
+//			log.debug("Store already closed: {}", storeToClose);
+//		} else if (s.equals(storeToClose)) {
+//			stores.remove(cf);
+//			log.debug("Closed store: {}", storeToClose);
+//		} else {
+//			log.warn("Attempted to close {} which is unknown to its StorageManager={}; Database references leaking?",
+//					storeToClose, this);
+//		}
+//	}
 
     /**
      * If hostname is non-null, returns hostname.
@@ -351,14 +365,14 @@ public class CassandraThriftStorageManager implements StorageManager {
 		createColumnFamily.setName(cfName);
 		createColumnFamily.setKeyspace(ksname);
 		createColumnFamily.setComparator_type("org.apache.cassandra.db.marshal.BytesType");
-		logger.debug("Adding column family {} to keyspace {}...", cfName, ksname);
+		log.debug("Adding column family {} to keyspace {}...", cfName, ksname);
         String schemaVer = null;
         try {
             schemaVer = client.system_add_column_family(createColumnFamily);
         } catch (SchemaDisagreementException e) {
             throw new GraphStorageException("Error in setting up column family",e);
         }
-        logger.debug("Added column family {} to keyspace {}.", cfName, ksname);
+        log.debug("Added column family {} to keyspace {}.", cfName, ksname);
 		
 		// Try to let Cassandra converge on the new column family
 		try {
@@ -368,4 +382,10 @@ public class CassandraThriftStorageManager implements StorageManager {
 		}
     	
     }
+
+
+	@Override
+	public String toString() {
+		return "CassandraThriftStorageManager[ks=" + keyspace + "]";
+	}
 }

@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediatorProvider;
@@ -24,7 +25,7 @@ import com.thinkaurelius.titan.exceptions.LockingFailureException;
  */
 public class CassandraTransaction implements TransactionHandle {
 
-	private final CassandraThriftStorageManager sm;
+	private final StorageManager sm;
 	
 	/*
 	 * This variable starts false.  It remains false during the
@@ -102,10 +103,6 @@ public class CassandraTransaction implements TransactionHandle {
 		isMutationStarted = true;
 	}
 	
-	OrderedKeyColumnValueStore getStore(String name) {
-		return sm.getOpenedDatabase(name);
-	}
-	
 	/*
 	 * This method first checks the local lock mediator to see whether
 	 * another transaction in this process holds the lock described
@@ -149,8 +146,8 @@ public class CassandraTransaction implements TransactionHandle {
 		 * 
 		 * The column we write is a concatenation of our rid and the timestamp.
 		 */
-		String lockCfName = sm.getLockColumnFamilyName(cf);
-		OrderedKeyColumnValueStore store = sm.getOpenedDatabase(lockCfName);
+		String lockCfName = getLockColumnFamilyName(cf);
+		OrderedKeyColumnValueStore store = sm.openDatabase(lockCfName);
 
 		ByteBuffer lockKey = lc.getLockKey();
 		
@@ -237,8 +234,8 @@ public class CassandraTransaction implements TransactionHandle {
 		for (LockClaim lc : lockClaims) {
 			
 			// Get the backing store
-			String lockCfName = sm.getLockColumnFamilyName(lc.getCf());
-			OrderedKeyColumnValueStore store = sm.getOpenedDatabase(lockCfName);
+			String lockCfName = getLockColumnFamilyName(lc.getCf());
+			OrderedKeyColumnValueStore store = sm.openDatabase(lockCfName);
 			
 			ByteBuffer lockKey = lc.getLockKey();
 			ByteBuffer empty = ByteBuffer.allocate(0);
@@ -295,7 +292,7 @@ public class CassandraTransaction implements TransactionHandle {
 			
 			
 			// Check expectedValue
-			store = sm.getOpenedDatabase(lc.getCf());
+			store = sm.openDatabase(lc.getCf());
 			ByteBuffer bb = store.get(lc.getKey(), lc.getColumn(), null);
 			if ((null == bb && null != lc.getExpectedValue()) ||
 			    (null != bb && null == lc.getExpectedValue()) ||
@@ -312,8 +309,8 @@ public class CassandraTransaction implements TransactionHandle {
 			ByteBuffer lockColBuf = lc.getLockCol(lc.getTimestamp(), rid);
 			
 			// Get the backing store
-			String lockCfName = sm.getLockColumnFamilyName(lc.getCf());
-			OrderedKeyColumnValueStore store = sm.getOpenedDatabase(lockCfName);
+			String lockCfName = getLockColumnFamilyName(lc.getCf());
+			OrderedKeyColumnValueStore store = sm.openDatabase(lockCfName);
 			
 			// Delete lock
 			store.mutate(lockKeyBuf, null, Arrays.asList(lockColBuf), null);
@@ -333,5 +330,9 @@ public class CassandraTransaction implements TransactionHandle {
 	private void throwLockFailure(Throwable t) throws LockingFailureException {
 		unlockAll();
 		throw new LockingFailureException(t);
+	}
+	
+	private String getLockColumnFamilyName(String baseColumnFamilyName) {
+		return baseColumnFamilyName + "_locks";
 	}
 }

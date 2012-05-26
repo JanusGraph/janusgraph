@@ -40,6 +40,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	
 	private final String keyspace;
 	private final String columnFamily;
+	private final CassandraThriftStorageManager manager;
 	private final UncheckedGenericKeyedObjectPool<String, CTConnection> pool;
 
 	// This is the value of System.nanoTime() at startup
@@ -53,11 +54,15 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	private static final Logger logger =
 		LoggerFactory.getLogger(CassandraThriftOrderedKeyColumnValueStore.class);
 	
-	public CassandraThriftOrderedKeyColumnValueStore(String keyspace, String columnFamily,
-                                UncheckedGenericKeyedObjectPool<String, CTConnection> pool) throws RuntimeException {
+	public CassandraThriftOrderedKeyColumnValueStore(
+			String keyspace,
+			String columnFamily,
+            UncheckedGenericKeyedObjectPool<String, CTConnection> pool,
+            CassandraThriftStorageManager manager) throws RuntimeException {
 		this.keyspace = keyspace;
 		this.columnFamily = columnFamily;
 		this.pool = pool;
+		this.manager = manager;
 	}
 	
 	// Initialize the t0 variables
@@ -194,7 +199,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
 	@Override
 	public void close() {
-		// Do nothing
+//		manager.closeStore(columnFamily, this);
 	}
 
 	@Override
@@ -426,4 +431,12 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		}
 		
     }
+
+	@Override
+	public String toString() {
+		return "CassandraThriftOrderedKeyColumnValueStore[ks="
+				+ keyspace + ", cf=" + columnFamily + "]";
+	}
+    
+    
 }
