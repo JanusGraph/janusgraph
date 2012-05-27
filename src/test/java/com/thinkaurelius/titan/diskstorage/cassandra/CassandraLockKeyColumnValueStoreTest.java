@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
+import org.junit.After;
+
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
-import org.junit.After;
-import org.junit.Before;
 
 public class CassandraLockKeyColumnValueStoreTest 
 	extends LockKeyColumnValueStoreTest {
@@ -28,17 +28,5 @@ public class CassandraLockKeyColumnValueStoreTest
 	@After
 	public void cassandraTearDown() {
 		ch.stopCassandra();
-	}
-
-
-	@Override
-	protected void configureTransactions() {
-		((CassandraTransaction)host1tx1).setRid(rid1);
-		((CassandraTransaction)host1tx2).setRid(rid1);
-		((CassandraTransaction)host2tx1).setRid(rid2);
-		
-		((CassandraTransaction)host1tx1).setLocalLockMediatorProvider(p1);
-		((CassandraTransaction)host1tx2).setLocalLockMediatorProvider(p1);
-		((CassandraTransaction)host2tx1).setLocalLockMediatorProvider(p2);
 	}
 }

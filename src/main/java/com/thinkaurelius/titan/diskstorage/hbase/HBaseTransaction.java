@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.StorageManager;
+import com.thinkaurelius.titan.diskstorage.locking.LockingTransaction;
 
 /**
  * Stub.  Does nothing.
@@ -8,24 +9,11 @@ import com.thinkaurelius.titan.diskstorage.TransactionHandle;
  * @author dalaro
  *
  */
-public class HBaseTransaction implements TransactionHandle {
+public class HBaseTransaction extends LockingTransaction {
 
-	@Override
-	public void commit() {
-		// TODO Auto-generated method stub
-		
+	public HBaseTransaction(StorageManager sm, byte[] rid,
+			int lockRetryCount, long lockWaitMS, long lockExpireMS) {
+		super(sm, rid, lockRetryCount, lockWaitMS, lockExpireMS);
 	}
-
-	@Override
-	public void abort() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean isReadOnly() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
+	
 }

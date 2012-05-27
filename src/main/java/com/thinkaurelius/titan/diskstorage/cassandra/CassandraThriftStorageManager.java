@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
-import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Map;
@@ -8,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.CfDef;
+import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.thrift.InvalidRequestException;
 import org.apache.cassandra.thrift.KsDef;
 import org.apache.cassandra.thrift.NotFoundException;
@@ -23,6 +23,8 @@ import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
+import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
+import com.thinkaurelius.titan.diskstorage.util.OrderedKeyColumnValueIDManager;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
@@ -90,22 +92,42 @@ public class CassandraThriftStorageManager implements StorageManager {
      * Value = {@value}
      */
     public static final String ID_KEYSPACE = "titan_ids";
-
+    
+    public static final String READ_CONSISTENCY_LEVEL_KEY = "read_consistency_level";
+    public static final String READ_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
+    
+    public static final String WRITE_CONSISTENCY_LEVEL_KEY = "write_consistency_level";
+    /*
+     * Any operation attempted with ConsistencyLevel.TWO
+     * against a single-node Cassandra cluster (like the one
+     * we use in a lot of our test cases) will fail with
+     * an UnavailableException.  In other words, if you
+     * set TWO here, Cassandra will require TWO nodes, even
+     * if only one node has ever been a member of the
+     * cluster in question.
+     */
+    public static final String WRITE_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
 
 	private final String keyspace;
 	
 	private final UncheckedGenericKeyedObjectPool
 			<String, CTConnection> pool;
 
-    private final CassandraIDManager idmanager;
+    private final OrderedKeyColumnValueIDManager idmanager;
     
     private final int lockRetryCount;
     
     private final long lockWaitMS, lockExpireMS;
     
-    private static final byte[] rid;
+    private final ConsistencyLevel readConsistencyLevel;
+    private final ConsistencyLevel writeConsistencyLevel;
+    
+    private final byte[] rid;
 	
 	public CassandraThriftStorageManager(Configuration config) {
+		
+		this.rid = ConfigHelper.getRid(config, this);
+		
 		this.keyspace = config.getString(PROP_KEYSPACE,DEFAULT_KEYSPACE);
 		
 		this.pool = CTConnectionPool.getPool(
@@ -128,29 +150,28 @@ public class CassandraThriftStorageManager implements StorageManager {
 						GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
 						GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
 		
-        idmanager = new CassandraIDManager(openDatabase("blocks_allocated", ID_KEYSPACE, false), rid);
-	}
-	
-	static {
+		this.readConsistencyLevel = ConsistencyLevel.valueOf(
+				config.getString(
+						READ_CONSISTENCY_LEVEL_KEY,
+						READ_CONSISTENCY_LEVEL_DEFAULT));
 		
-		byte[] addrBytes;
-		try {
-			addrBytes = InetAddress.getLocalHost().getAddress();
-		} catch (UnknownHostException e) {
-			throw new GraphStorageException(e);
-		}
-		byte[] procNameBytes = ManagementFactory.getRuntimeMXBean().getName().getBytes();
+		log.debug("Set read consistency level to {}", this.readConsistencyLevel);
 		
-		rid = new byte[addrBytes.length + procNameBytes.length];
-		System.arraycopy(addrBytes, 0, rid, 0, addrBytes.length);
-		System.arraycopy(procNameBytes, 0, rid, addrBytes.length, procNameBytes.length);
+		this.writeConsistencyLevel = ConsistencyLevel.valueOf(
+				config.getString(
+						WRITE_CONSISTENCY_LEVEL_KEY,
+						WRITE_CONSISTENCY_LEVEL_DEFAULT));
+		
+		log.debug("Set write consistency level to {}", this.writeConsistencyLevel);
+		
+        idmanager = new OrderedKeyColumnValueIDManager(
+        		openDatabase("blocks_allocated", ID_KEYSPACE), rid, config);
 	}
 
     @Override
     public long[] getIDBlock(int partition, int blockSize) {
         return idmanager.getIDBlock(partition,blockSize);
     }
-
 
 	@Override
 	public TransactionHandle beginTransaction() {
@@ -168,15 +189,17 @@ public class CassandraThriftStorageManager implements StorageManager {
 	@Override
 	public CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name)
 			throws GraphStorageException {
-		return openDatabase(name, keyspace, true);
+		return openDatabase(name, keyspace);
 	
 	}
 	
-	private CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name, final String ksoverride, boolean createLockColumnFamily)
+	private CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name, final String ksoverride)
 			throws GraphStorageException {
+		
+		String storeKey = keyspace + ":" + name;
 	
 		CassandraThriftOrderedKeyColumnValueStore store =
-				stores.get(name);
+				stores.get(storeKey);
 		
 		if (null != store) {
 			return store;
@@ -212,8 +235,10 @@ public class CassandraThriftStorageManager implements StorageManager {
 				pool.genericReturnObject(ksoverride, conn);
 		}
 		
-		store = new CassandraThriftOrderedKeyColumnValueStore(ksoverride, name, pool, this);
-		stores.put(name, store);
+		store = new CassandraThriftOrderedKeyColumnValueStore(
+				ksoverride, name, pool, this, 
+				readConsistencyLevel, writeConsistencyLevel);
+		stores.put(storeKey, store);
 		log.debug("Created {}", store);
 		
 		return store;
@@ -244,6 +269,8 @@ public class CassandraThriftStorageManager implements StorageManager {
 				
 				// Try to let Cassandra converge on the new column family
 				CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
+				
+				pool.clear(keyspace);
 			} catch (NotFoundException e) {
 				// Keyspace doesn't exist yet: return immediately
 				log.debug("Keyspace {} does not exist, not attempting to drop", 
@@ -251,7 +278,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 				return false;
 			}
 
-                        stores.clear();
+            stores.clear();
 			return true;
 		} catch (Exception e) {
 			throw new GraphStorageException(e);
@@ -292,7 +319,9 @@ public class CassandraThriftStorageManager implements StorageManager {
 				// Try to let Cassandra converge on the new column family
 				CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
 
-                                stores.clear();
+				CTConnectionPool.getPool(hostname, port, DEFAULT_THRIFT_TIMEOUT_MS).clear(keyspace);
+				
+                stores.clear();
 			} catch (NotFoundException e) {
 				// Keyspace doesn't exist yet: return immediately
 				log.debug("Keyspace {} does not exist, not attempting to drop", 
@@ -306,35 +335,6 @@ public class CassandraThriftStorageManager implements StorageManager {
 		}
                 
 	}
-	
-	/**
-	 * CassandraThriftOrderedKeyColumnValueStore instances call this method
-	 * when their own close() method is invoked.  This method removes a
-	 * close()ed store from the {@code stores} map on this object, so that
-	 * it can't be returned in future calls to openDatabase().
-	 * 
-	 * This method is idempotent, so a store may call it multiple times; only
-	 * the first invocation will do anything.
-	 * 
-	 * @param cf Column family name of a closing store
-	 * @param storeToClose the closing store
-	 */
-//	void closeStore(String cf, CassandraThriftOrderedKeyColumnValueStore storeToClose) {
-//		assert null != cf;
-//		assert null != storeToClose;
-//		
-//		CassandraThriftOrderedKeyColumnValueStore s = stores.get(cf);
-//		
-//		if (null == s) {
-//			log.debug("Store already closed: {}", storeToClose);
-//		} else if (s.equals(storeToClose)) {
-//			stores.remove(cf);
-//			log.debug("Closed store: {}", storeToClose);
-//		} else {
-//			log.warn("Attempted to close {} which is unknown to its StorageManager={}; Database references leaking?",
-//					storeToClose, this);
-//		}
-//	}
 
     /**
      * If hostname is non-null, returns hostname.
@@ -382,7 +382,6 @@ public class CassandraThriftStorageManager implements StorageManager {
 		}
     	
     }
-
 
 	@Override
 	public String toString() {

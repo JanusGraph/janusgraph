@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction;
 
 public class LocalLockMediator {
 
@@ -35,10 +34,10 @@ public class LocalLockMediator {
 		boolean r = null == holder || holder.equals(requestor);
 		
 		if (r) {
-			log.debug("Local lock succeeded: {} in namespace {} by txn {}",
+			log.trace("Local lock succeeded: {} in namespace {} by txn {}",
 					new Object[]{kc, name, requestor});
 		} else {
-			log.debug("Local lock failed: {} in namespace {} by txn {} (already owned by {})",
+			log.trace("Local lock failed: {} in namespace {} by txn {} (already owned by {})",
 					new Object[]{kc, name, requestor, holder});
 		}
 		
@@ -51,14 +50,14 @@ public class LocalLockMediator {
 	 * us assert that the lock being released is indeed held
 	 * by the transaction attempting to unlock.
 	 */
-	public void unlock(KeyColumn kc, CassandraTransaction requestor) {
+	public void unlock(KeyColumn kc, LockingTransaction requestor) {
 		
 		assert locks.containsKey(kc);
 		assert locks.get(kc).equals(requestor);
 		
 		locks.remove(kc);
 		
-		log.debug("Local unlock succeeded: {} in namespace {} by {}",
+		log.trace("Local unlock succeeded: {} in namespace {} by {}",
 				new Object[]{kc, name, requestor});
 	}
 	

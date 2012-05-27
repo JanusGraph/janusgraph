@@ -1,38 +1,64 @@
-package com.thinkaurelius.titan.diskstorage.cassandra;
+package com.thinkaurelius.titan.diskstorage.util;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
-public class CassandraIDManager {
+public class OrderedKeyColumnValueIDManager {
 	
 	private final OrderedKeyColumnValueStore store;
 	
-	private final ByteBuffer empty = ByteBuffer.allocate(0);
+	private final long blockSize;
+	private final long lockWaitMS;
+	private final int lockRetryCount;
 	
 	private final byte[] rid;
 	
-	private static final long BLOCK_SIZE_OVERRIDE = 1000;
+	/* This value can't be changed without either
+	 * corrupting existing ID allocations or taking
+	 * some additional action to prevent such
+	 * corruption.
+	 */
 	private static final long BASE_ID = 0;
-	
-	private static final int lockWaitMS = 500;
-	private static final int lockRetryCount = 3;
-	
-	private static final Logger log = LoggerFactory.getLogger(CassandraIDManager.class);
 
-    public CassandraIDManager(OrderedKeyColumnValueStore store, byte[] rid) {
+	private static final ByteBuffer empty = ByteBuffer.allocate(0);
+	
+	private static final Logger log = LoggerFactory.getLogger(OrderedKeyColumnValueIDManager.class);
+
+//    public OrderedKeyColumnValueIDManager(OrderedKeyColumnValueStore store, byte[] rid, int blockSize, long lockWaitMS, int lockRetryCount) {
+	public OrderedKeyColumnValueIDManager(OrderedKeyColumnValueStore store, byte[] rid, Configuration config) {
+
 		this.store = store;
+		
 		this.rid = rid;
+		
+		this.blockSize = 
+				config.getLong(
+						GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_KEY,
+						GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_DEFAULT);
+
+		this.lockWaitMS = 
+				config.getLong(
+						GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS_KEY,
+						GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS_DEFAULT);
+		
+		this.lockRetryCount = 
+				config.getInt(
+						GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_KEY,
+						GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_DEFAULT);
 	}
 
-	public long[] getIDBlock(int partition, int blockSize) {
+	public long[] getIDBlock(int partition, int unused) {
 		
 		for (int retry = 0; retry < lockRetryCount; retry++) {
 			
@@ -53,8 +79,8 @@ public class CassandraIDManager {
 			}
 			
 			// calculate the start (inclusive) and end (exclusive) of the allocation we're about to attempt
-			long nextStart = latest + BLOCK_SIZE_OVERRIDE;
-			long nextEnd = nextStart + BLOCK_SIZE_OVERRIDE;
+			long nextStart = latest + blockSize;
+			long nextEnd = nextStart + blockSize;
 			
 			ByteBuffer target = getBlockApplication(nextStart);
 			
@@ -70,7 +96,11 @@ public class CassandraIDManager {
 						new Object[] { nextStart, nextEnd, after - before });
 				store.mutate(partitionKey, null, Arrays.asList(target), null);
 			} else {
-				log.debug("Wrote (but have not yet validated) claim for ID block [{},{})", nextStart, nextEnd);
+				
+				/* At this point we've written our claim on [nextStart, nextEnd),
+				 * but we haven't yet guaranteed the absence of a contending claim on
+				 * the same id block from another machine
+				 */
 				
 				while (true) {
 					// Wait until lockWaitMS has passed since our claim
@@ -86,18 +116,37 @@ public class CassandraIDManager {
 					}
 				}
 				
+				assert 0 != target.remaining();
+				
+				// Read all id allocation claims on this partition
 				blocks = store.getSlice(partitionKey, empty, empty, null);
 				
-				// if our claim is the lexicographically last one, then we succeeded
+				/* If our claim is the lexicographically last one, then our claim
+				 * is the most senior one and we own this id block
+				 */
 				if (target.equals(blocks.get(blocks.size() - 1).getColumn())) {
 				
 					long result[] = new long[2];
 					result[0] = nextStart;
 					result[1] = nextEnd;
+					
+					if (log.isDebugEnabled()) {
+						log.debug("Acquired ID block [{},{}) on partition {} (my rid is {})",
+								new Object[] { nextStart, nextEnd, partition, new String(Hex.encodeHex(rid)) });
+					}
+					
 					return result;
 				}
+
+				log.debug("Failed to acquire ID block [{},{}) (another host claimed it first)", nextStart, nextEnd);
 				
-				// another claimant beat us to this id block -- try again from the top
+				/* Another claimant beat us to this id block -- try again.
+				 * 
+				 * Note that we don't have to delete our failed claim; it
+				 * is lexicographically prior to, and therefore considered
+				 * junior to, some other machine's claim.  We could delete
+				 * it, but doing so isn't necessary.
+				 */
 			}
 		}
 		

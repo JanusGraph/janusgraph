@@ -49,20 +49,20 @@ public class HBaseOrderedKeyColumnValueStore implements
 	private static final Logger log = LoggerFactory.getLogger(HBaseOrderedKeyColumnValueStore.class);
 	
 	private final String tableName;
-//	private final String family;
+	private final String columnFamily;
 	private final HTablePool pool;
 //	private final Configuration config;
 	
 	// This is cf.getBytes()
 	private final byte[] famBytes;
 	
-	HBaseOrderedKeyColumnValueStore(Configuration config, String tableName, String family) {
+	HBaseOrderedKeyColumnValueStore(Configuration config, String tableName, String columnFamily) {
 //		this.config = config;
 		this.tableName = tableName;
-//		this.family = family;
+		this.columnFamily = columnFamily;
 		// TODO The number 32 of max pooled instances per table should be a config option
 		this.pool = new HTablePool(config, 32);
-		this.famBytes = family.getBytes();
+		this.famBytes = columnFamily.getBytes();
 	}
 
 	@Override
@@ -280,6 +280,18 @@ public class HBaseOrderedKeyColumnValueStore implements
 	public void mutate(ByteBuffer key, List<Entry> additions,
 			List<ByteBuffer> deletions, TransactionHandle txh) {
 		
+    	// null txh means a LockingTransaction is calling this method
+    	if (null != txh) {
+    		// non-null txh -> make sure locks are valid
+    		HBaseTransaction lt = (HBaseTransaction)txh;
+    		if (! lt.isMutationStarted()) {
+    			// This is the first mutate call in the transaction
+    			lt.mutationStarted();
+    			// Verify all blind lock claims now
+    			lt.verifyAllLockClaims(); // throws GSE and unlocks everything on any lock failure
+    		}
+    	}
+		
 		byte[] keyBytes = toArray(key);
 		
 		// TODO use RowMutations (requires 0.94.x-ish HBase)
@@ -339,8 +351,12 @@ public class HBaseOrderedKeyColumnValueStore implements
 	@Override
 	public void acquireLock(ByteBuffer key, ByteBuffer column,
 			ByteBuffer expectedValue, TransactionHandle txh) {
-		// TODO Auto-generated method stub
+		HBaseTransaction lt = (HBaseTransaction)txh;
+		if (lt.isMutationStarted()) {
+			throw new GraphStorageException("Attempted to obtain a lock after one or more mutations");
+		}
 		
+		lt.writeBlindLockClaim(columnFamily, key, column, expectedValue);
 	}
 
 }

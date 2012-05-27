@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediatorProvider;
+import com.thinkaurelius.titan.diskstorage.locking.LockingTransaction;
 import com.thinkaurelius.titan.exceptions.LockingFailureException;
 
 public abstract class LockKeyColumnValueStoreTest {
@@ -83,7 +84,16 @@ public abstract class LockKeyColumnValueStoreTest {
 	 * this object are non-null before this method
 	 * is called to configure them.
 	 */
-	protected abstract void configureTransactions();
+	private void configureTransactions() {
+
+		((LockingTransaction)host1tx1).setRid(rid1);
+		((LockingTransaction)host1tx2).setRid(rid1);
+		((LockingTransaction)host2tx1).setRid(rid2);
+		
+		((LockingTransaction)host1tx1).setLocalLockMediatorProvider(p1);
+		((LockingTransaction)host1tx2).setLocalLockMediatorProvider(p1);
+		((LockingTransaction)host2tx1).setLocalLockMediatorProvider(p2);
+	}
 
     public void close() {
         store.close();

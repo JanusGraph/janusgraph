@@ -61,8 +61,17 @@ public class GraphDatabaseConfiguration {
     public static final boolean STORAGE_BATCH_DEFAULT = false;
     public static final String STORAGE_TRANSACTIONAL_KEY = "transactions";
     public static final boolean STORAGE_TRANSACTIONAL_DEFAULT = true;
-
-
+    
+    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority_wait_ms";
+    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 500;
+    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority_retry_count";
+    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 3;
+    public static final String IDAUTHORITY_BLOCK_SIZE_KEY = "idauthority_block_size";
+    public static final long IDAUTHORITY_BLOCK_SIZE_DEFAULT = 1000000L;
+    
+    public static final String INSTANCE_RID_RAW_KEY = "rid_raw";
+    public static final String INSTANCE_RID_SHORT_KEY = "rid_short"; 
+    		
     private static final String STORAGE_BACKEND_DEFAULT = "berkeleyje";
 
     private static final String STORAGE_EDGESTORE_KEY = "edgestore_name";

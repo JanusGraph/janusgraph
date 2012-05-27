@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
-import java.io.File;
 import java.io.IOException;
 
-import com.thinkaurelius.titan.diskstorage.util.LocalIDManager;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -14,14 +11,14 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.diskstorage.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
+import com.thinkaurelius.titan.diskstorage.util.OrderedKeyColumnValueIDManager;
 import com.thinkaurelius.titan.exceptions.GraphDatabaseException;
 import com.thinkaurelius.titan.exceptions.GraphStorageException;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class HBaseStorageManager implements StorageManager {
 
@@ -30,13 +27,37 @@ public class HBaseStorageManager implements StorageManager {
     static final String TABLE_NAME_KEY = "tablename";
     static final String TABLE_NAME_DEFAULT = "titantest";
     
-
 	private final String tableName;
-    private final LocalIDManager idmanager;
+    private final OrderedKeyColumnValueIDManager idmanager;
+    
+    private final int lockRetryCount;
+    
+    private final long lockWaitMS, lockExpireMS;
+    
+    private final byte[] rid;
 	
     public HBaseStorageManager(org.apache.commons.configuration.Configuration config) {
-        tableName = config.getString(TABLE_NAME_KEY,TABLE_NAME_DEFAULT);
-        idmanager = new LocalIDManager(config.getString(STORAGE_DIRECTORY_KEY) + File.separator + LocalIDManager.DEFAULT_NAME);
+    	this.rid = ConfigHelper.getRid(config, this);
+    	
+        this.tableName = config.getString(TABLE_NAME_KEY,TABLE_NAME_DEFAULT);
+        
+		this.lockRetryCount =
+				config.getInt(
+						GraphDatabaseConfiguration.LOCK_RETRY_COUNT,
+						GraphDatabaseConfiguration.LOCK_RETRY_COUNT_DEFAULT);
+		
+		this.lockWaitMS =
+				config.getLong(
+						GraphDatabaseConfiguration.LOCK_WAIT_MS,
+						GraphDatabaseConfiguration.LOCK_WAIT_MS_DEFAULT);
+		
+		this.lockExpireMS =
+				config.getLong(
+						GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
+						GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
+		
+        idmanager = new OrderedKeyColumnValueIDManager(
+        		openDatabase("blocks_allocated"), rid, config);
     }
 
 
@@ -110,7 +131,7 @@ public class HBaseStorageManager implements StorageManager {
 
 	@Override
 	public TransactionHandle beginTransaction() {
-		return new HBaseTransaction();
+		return new HBaseTransaction(this, rid, lockRetryCount, lockWaitMS, lockExpireMS);
 	}
 
 	@Override
