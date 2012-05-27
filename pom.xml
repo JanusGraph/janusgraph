@@ -321,11 +321,10 @@
                         <exclude>**/HBase*</exclude>
 
                         <!-- FIX IT: Currently excluded because there is something wrong with the test. -->
-                        <exclude>**/*ConcurrentGraphDBTest.java</exclude>
+                        <exclude>**/*ConcurrentTest.java</exclude>
 
                         <!-- Excluded because these take too long to run and require a lot of memory -->
-                        <exclude>**/*Performance.java</exclude>
-                        <exclude>**/*DuplicatePropertyValueTest.java</exclude>
+                        <exclude>**/*PerformanceTest.java</exclude>
                     </excludes>
                     <!-- <argLine>-Xmx2048m</argLine> -->
                 </configuration>
