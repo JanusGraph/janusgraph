@@ -273,7 +273,7 @@
                         <version>2.8.1</version>
                         <configuration>
                             <includes>
-                                <include>**/*Performance.java</include>
+                                <include>**/*PerformanceTest.java</include>
                             </includes>
                             <excludes>
                                 <exclude>unset-excludes</exclude>
