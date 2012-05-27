@@ -165,7 +165,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 		log.debug("Set write consistency level to {}", this.writeConsistencyLevel);
 		
         idmanager = new OrderedKeyColumnValueIDManager(
-        		openDatabase("blocks_allocated", ID_KEYSPACE), rid, config);
+        		openDatabase("blocks_allocated", ID_KEYSPACE, true), rid, config);
 	}
 
     @Override
@@ -189,19 +189,19 @@ public class CassandraThriftStorageManager implements StorageManager {
 	@Override
 	public CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name)
 			throws GraphStorageException {
-		return openDatabase(name, keyspace);
+		return openDatabase(name, keyspace, false);
 	
 	}
 	
-	private CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name, final String ksoverride)
+	private CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name, final String ksoverride, boolean forceCfCheck)
 			throws GraphStorageException {
 		
-		String storeKey = keyspace + ":" + name;
+		String storeKey = ksoverride + ":" + name;
 	
 		CassandraThriftOrderedKeyColumnValueStore store =
 				stores.get(storeKey);
 		
-		if (null != store) {
+		if (null != store && !forceCfCheck) {
 			return store;
 		}
 
@@ -233,6 +233,10 @@ public class CassandraThriftStorageManager implements StorageManager {
 		} finally {
 			if (null != conn)
 				pool.genericReturnObject(ksoverride, conn);
+		}
+		
+		if (null != store) {
+			return store;
 		}
 		
 		store = new CassandraThriftOrderedKeyColumnValueStore(
