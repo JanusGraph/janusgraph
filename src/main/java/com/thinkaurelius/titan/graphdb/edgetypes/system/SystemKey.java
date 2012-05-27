@@ -51,6 +51,11 @@ public class SystemKey extends SystemType implements PropertyTypeDefinition, Tit
 	public boolean isFunctional() {
 		return true;
 	}
+
+    @Override
+    public boolean isFunctionalLocking() {
+        return false;
+    }
 	
 	@Override
 	public Directionality getDirectionality() {

@@ -18,7 +18,7 @@ public class InMemoryEdgeTypeManager implements EdgeTypeManager  {
 	@Override
 	public TitanKey createPropertyType(InternalTitanTransaction tx, String name,
 			EdgeCategory category, Directionality directionality,
-			EdgeTypeVisibility visibility, boolean isfunctional, TitanType[] keysig, TitanType[] compactsig,
+			EdgeTypeVisibility visibility, FunctionalType isfunctional, TitanType[] keysig, TitanType[] compactsig,
 			TypeGroup group, boolean isKey, boolean hasIndex,
 			Class<?> objectType) {
 		StandardPropertyType pt = new StandardPropertyType(name,category,directionality,visibility,
@@ -29,7 +29,7 @@ public class InMemoryEdgeTypeManager implements EdgeTypeManager  {
 	@Override
 	public TitanLabel createRelationshipType(InternalTitanTransaction tx, String name,
 			EdgeCategory category, Directionality directionality,
-			EdgeTypeVisibility visibility, boolean isfunctional, TitanType[] keysig, TitanType[] compactsig,
+			EdgeTypeVisibility visibility, FunctionalType isfunctional, TitanType[] keysig, TitanType[] compactsig,
 			TypeGroup group) {
 		StandardRelationshipType rt = new StandardRelationshipType(name,category,directionality,visibility,
 				isfunctional,convertSignature(keysig),convertSignature(compactsig),group);

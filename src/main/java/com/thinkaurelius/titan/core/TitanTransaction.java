@@ -257,19 +257,6 @@ public interface TitanTransaction extends TransactionalGraph {
 	 */
 	public TypeMaker makeType();
 
-    /**
-     * Commits the current state of the transaction, but continues to keep the transaction
-     * open for further modifications or read operations.
-     * 
-     * In contrast to {@link #commit()}, which immediately closes the transaction after persisting the changes
-     * and releases any locks it may hold, rolling commit keeps the transaction open so further processing can happen.
-     * This has the advantage that the in-memory state is not lost and the disadvantage that the transaction will
-     * continue and locks will be held.
-     *
-     * @throws com.thinkaurelius.titan.exceptions.GraphStorageException if an error arises during persistence
-     */
-    public void rollingCommit();
-	
 	/**
 	 * Commits and closes the transaction.
 	 * 

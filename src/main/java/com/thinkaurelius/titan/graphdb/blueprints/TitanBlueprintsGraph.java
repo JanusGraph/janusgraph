@@ -2,7 +2,9 @@ package com.thinkaurelius.titan.graphdb.blueprints;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.edgetypes.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
@@ -94,7 +96,7 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
             if (!type.isPropertyKey()) throw new IllegalArgumentException("Key does not denote a property key but a label!");
             if (!((TitanKey)type).hasIndex()) throw new UnsupportedOperationException("Need to define particular key as indexed before it is being used!");
         } else {
-            tx.makeType().name(key).dataType(Object.class).indexed().makePropertyKey();
+            tx.makeType().functional(false).name(key).dataType(Object.class).indexed().makePropertyKey();
         }
     }
 
@@ -116,7 +118,10 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
     
     @Override
     public Features getFeatures() {
-        return TitanFeatures.getTitanFeatures();
+        Features features = TitanFeatures.getBaselineTitanFeatures();
+        GraphDatabaseConfiguration config = ((StandardTitanGraph)this).getConfiguration();
+        features.supportsSerializableObjectProperty = config.hasSerializeAll();
+        return features;
     }
 
     // ########## TRANSACTIONAL FORWARDING ###########################

@@ -2,11 +2,13 @@ package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageAdapter;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStorageManager;
+import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.database.idassigner.NodeIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idassigner.SimpleNodeIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
@@ -52,6 +54,10 @@ public class GraphDatabaseConfiguration {
         put("cassandra", CassandraThriftStorageManager.class);
         put("hbase", HBaseStorageManager.class);
     }};
+
+    private static final Map<String,DefaultTypeMaker> preregisteredAutoType = new HashMap<String,DefaultTypeMaker>() {{
+        put("blueprints", BlueprintsDefaultTypeMaker.INSTANCE);
+    }};
     
     public static final String STORAGE_DIRECTORY_KEY = "directory";
     public static final String STORAGE_BACKEND_KEY = "backend";
@@ -95,21 +101,36 @@ public class GraphDatabaseConfiguration {
     public static final String ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY = "allowAll";
     public static final boolean ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT = true;
 
+    private static final String ATTRIBUTE_PREFIX = "attribute";
+    private static final String SERIALIZER_PREFIX = "serializer";
 
     private static final String BUFFER_KEY = "buffer_mutations";
     private static final boolean BUFFER_DEFAULT = true;
     private static final String BUFFER_SIZE_KEY = "buffer_size";
     private static final int BUFFER_SIZE_DEFAULT = 1024;
 
-    private static final String ATTRIBUTE_PREFIX = "attribute";
-    private static final String SERIALIZER_PREFIX = "serializer";
+    private static final String READ_ONLY_KEY = "readonly";
+    private static final boolean READ_ONLY_DEFAULT = false;
+    private static final String FLUSH_IDS_KEY = "flushids";
+    private static final boolean FLUSH_IDS_DEFAULT = false;
+    private static final String AUTO_TYPE_KEY = "autotype";
+    private static final String AUTO_TYPE_DEFAULT = "";
+    private static final String BATCH_LOADING_KEY = "batch";
+    private static final boolean BATCH_LOADING_DEFAULT = false;
     
     
     private final Configuration configuration;
     
+    private boolean readOnly;
+    private boolean flushIDs;
+    private boolean batchLoading;
+    private DefaultTypeMaker defaultTypeMaker;
+    
+    
     public GraphDatabaseConfiguration(Configuration config) {
         Preconditions.checkNotNull(config);
         this.configuration = config;
+        preLoadConfiguration();
     }
 
 	public GraphDatabaseConfiguration(File dirOrFile) {
@@ -130,12 +151,35 @@ public class GraphDatabaseConfiguration {
         } catch (ConfigurationException e) {
                 throw new IllegalArgumentException("Could not load configuration at: " + dirOrFile,e);
         }
+        preLoadConfiguration();
 	}
 
 	public GraphDatabaseConfiguration(String dirOrFile) {
 		this(new File(dirOrFile));
 	}
 
+    private void preLoadConfiguration() {
+        readOnly = configuration.getBoolean(READ_ONLY_KEY,READ_ONLY_DEFAULT);
+        flushIDs = configuration.getBoolean(FLUSH_IDS_KEY,FLUSH_IDS_DEFAULT);
+        batchLoading = configuration.getBoolean(BATCH_LOADING_KEY,BATCH_LOADING_DEFAULT);
+        defaultTypeMaker = preregisteredAutoType.get(configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
+    }
+
+    public boolean isReadOnly() {
+        return readOnly;
+    }
+
+    public boolean hasFlushIDs() {
+        return flushIDs;
+    }
+
+    public boolean isBatchLoading() {
+        return batchLoading;
+    }
+
+    public DefaultTypeMaker getDefaultTypeMaker() {
+        return defaultTypeMaker;
+    }
 
     public boolean hasBufferMutations() {
         return configuration.getBoolean(BUFFER_KEY, BUFFER_DEFAULT);
@@ -254,10 +298,7 @@ public class GraphDatabaseConfiguration {
 	private static final String keyInNamespace(String namespace, String key) {
         return namespace + "." + key;
     }
-    
-    public TransactionConfig getTransactionConfig() {
-        return new TransactionConfig();
-    }
+
     
 	/* ----------------------------------------
 	 Methods for writing/reading config files

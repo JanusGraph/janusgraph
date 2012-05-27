@@ -11,7 +11,7 @@ public abstract class AbstractEdgeTypeDefinition implements EdgeTypeDefinition {
 	public EdgeTypeVisibility visibility;
 	public String name;
 	public TypeGroup group;
-	public boolean isfunctional;
+	public FunctionalType isfunctional;
 	public Directionality directionality;
 	public EdgeCategory category;
 	public String[] keysig;
@@ -23,7 +23,7 @@ public abstract class AbstractEdgeTypeDefinition implements EdgeTypeDefinition {
 	AbstractEdgeTypeDefinition() {}
 	
 	AbstractEdgeTypeDefinition(String name, EdgeCategory category, Directionality directionality,
-					EdgeTypeVisibility visibility, boolean isfunctional,
+					EdgeTypeVisibility visibility, FunctionalType isfunctional,
 					String[] keysig, String[] compactsig, TypeGroup group) {
 		this.name=name;
 		this.group = group;
@@ -94,11 +94,15 @@ public abstract class AbstractEdgeTypeDefinition implements EdgeTypeDefinition {
 		return group;
 	}
 
-
 	@Override
 	public boolean isFunctional() {
-		return isfunctional;
+		return isfunctional.isFunctional();
 	}
+
+    @Override
+    public boolean isFunctionalLocking() {
+        return isfunctional.isLocking();
+    }
 
 	@Override
 	public boolean isModifiable() {

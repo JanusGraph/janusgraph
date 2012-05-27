@@ -1,15 +1,15 @@
-package com.thinkaurelius.titan.graphdb.edgetypes;
+package com.thinkaurelius.titan.graphdb.blueprints;
 
 import com.thinkaurelius.titan.core.*;
 
 /**
  *
  */
-public class StandardDefaultTypeMaker implements DefaultTypeMaker {
+public class BlueprintsDefaultTypeMaker implements DefaultTypeMaker {
 
-    public static final DefaultTypeMaker INSTANCE = new StandardDefaultTypeMaker();
+    public static final DefaultTypeMaker INSTANCE = new BlueprintsDefaultTypeMaker();
 
-    private StandardDefaultTypeMaker() {}
+    private BlueprintsDefaultTypeMaker() {}
 
     @Override
     public TitanLabel makeRelationshipType(String name, TypeMaker factory) {
@@ -18,7 +18,7 @@ public class StandardDefaultTypeMaker implements DefaultTypeMaker {
 
     @Override
     public TitanKey makePropertyType(String name, TypeMaker factory) {
-        return factory.name(name).indexed().
+        return factory.name(name).functional(false).
                 dataType(Object.class).makePropertyKey();
     }
 }

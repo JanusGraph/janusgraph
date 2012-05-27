@@ -2,10 +2,7 @@ package com.thinkaurelius.titan.graphdb.edgetypes.manager;
 
 
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.edgetypes.Directionality;
-import com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory;
-import com.thinkaurelius.titan.graphdb.edgetypes.EdgeTypeVisibility;
-import com.thinkaurelius.titan.graphdb.edgetypes.InternalTitanType;
+import com.thinkaurelius.titan.graphdb.edgetypes.*;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 
 public interface EdgeTypeManager {
@@ -14,12 +11,12 @@ public interface EdgeTypeManager {
 	
 	public TitanLabel createRelationshipType(InternalTitanTransaction tx, String name, EdgeCategory category,
                                                    Directionality directionality, EdgeTypeVisibility visibility,
-                                                   boolean isfunctional, TitanType[] keysig,
+                                                   FunctionalType isfunctional, TitanType[] keysig,
                                                    TitanType[] compactsig, TypeGroup group);
 
 	public TitanKey createPropertyType(InternalTitanTransaction tx, String name, EdgeCategory category,
                                            Directionality directionality, EdgeTypeVisibility visibility,
-                                           boolean isfunctional, TitanType[] keysig,
+                                           FunctionalType isfunctional, TitanType[] keysig,
                                            TitanType[] compactsig, TypeGroup group,
                                            boolean isKey, boolean hasIndex, Class<?> objectType);
 	

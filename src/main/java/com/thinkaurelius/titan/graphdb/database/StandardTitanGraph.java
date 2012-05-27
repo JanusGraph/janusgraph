@@ -115,7 +115,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 	@Override
 	public TitanTransaction startThreadTransaction() {
-        return startThreadTransaction(config.getTransactionConfig());
+        return startThreadTransaction(new TransactionConfig(config));
 	}
 
 	@Override
@@ -549,7 +549,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                         mutations.put(node,del);
                         if (node.isRemoved()) stats.removedNode(node);
                     }
-                    if (pos==0 && del.getType().isFunctional()) {
+                    if (pos==0 && del.getType().isFunctional() && ((InternalTitanType)del.getType()).isFunctionalLocking()) {
                         Entry entry = getEntry(tx,del,node,signatures);
                         mutator.acquireEdgeLock(IDHandler.getKey(node.getID()),entry.getColumn(),entry.getValue());
                     }
@@ -597,7 +597,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 						if (node.isNew() && !mutations.containsKey(node)) stats.addedNode(node);
 						mutations.put(node, edge);
 					}
-                    if (pos==0 && edge.getType().isFunctional() && !node.isNew()) {
+                    if (pos==0 && edge.getType().isFunctional() && !node.isNew()
+                            && ((InternalTitanType)edge.getType()).isFunctionalLocking()) {
                         Entry entry = getEntry(tx,edge,node,signatures,true);
                         mutator.acquireEdgeLock(IDHandler.getKey(node.getID()),entry.getColumn(),null);
                     }

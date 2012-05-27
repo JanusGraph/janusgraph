@@ -13,7 +13,7 @@ public class StandardPropertyType extends AbstractEdgeTypeDefinition implements 
 	
 	public StandardPropertyType(String name, EdgeCategory category,
 			Directionality directionality, EdgeTypeVisibility visibility,
-			boolean isfunctional, String[] keysig,
+            FunctionalType isfunctional, String[] keysig,
 			String[] compactsig, TypeGroup group,
 			boolean isKey, boolean hasIndex, Class<?> objectType) {
 		super(name, category, directionality, visibility, isfunctional,

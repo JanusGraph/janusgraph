@@ -20,6 +20,7 @@ public class SerializerInitialization {
 		serializer.registerClass(EdgeTypeVisibility.class);
 		serializer.registerClass(Directionality.class);
 		serializer.registerClass(EdgeCategory.class);
+        serializer.registerClass(FunctionalType.class);
 		serializer.registerClass(StandardTypeGroup.class);
         serializer.registerClass(Object.class);
         serializer.registerClass(Date.class);
