@@ -318,8 +318,6 @@
                 <version>2.8.1</version>
                 <configuration>
                     <excludes>
-                        <exclude>**/HBase*</exclude>
-
                         <!-- FIX IT: Currently excluded because there is something wrong with the test. -->
                         <exclude>**/*ConcurrentTest.java</exclude>
 

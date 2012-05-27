@@ -69,6 +69,7 @@ public class HBaseStorageManager implements StorageManager {
 	@Override
 	public OrderedKeyColumnValueStore openDatabase(String name)
 			throws GraphStorageException {
+		
 		org.apache.hadoop.conf.Configuration conf = HBaseConfiguration.create();
 		HBaseAdmin adm = null;
 		try {
@@ -100,6 +101,7 @@ public class HBaseStorageManager implements StorageManager {
 				adm.disableTable(tableName);
 				desc.addFamily(new HColumnDescriptor(name));
 				adm.modifyTable(tableName.getBytes(), desc);
+				log.debug("Added HBase column family {}", name);
 				try {
 					Thread.sleep(5000L);
 				} catch (InterruptedException ie) {

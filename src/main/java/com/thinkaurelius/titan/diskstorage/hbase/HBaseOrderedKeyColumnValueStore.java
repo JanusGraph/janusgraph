@@ -154,8 +154,8 @@ public class HBaseOrderedKeyColumnValueStore implements
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
 			ByteBuffer columnEnd, int limit, TransactionHandle txh) {
 
-		byte[] colStartBytes = toArray(columnStart);
-		byte[] colEndBytes = toArray(columnEnd);
+		byte[] colStartBytes = columnEnd.hasRemaining() ? toArray(columnStart) : null;
+		byte[] colEndBytes = columnEnd.hasRemaining() ? toArray(columnEnd) : null;
 		
 		// Once ColumnCountGetFilter reaches its configured column limit,
 		// it drops the entire row on which the limit was reached.  This
@@ -193,8 +193,8 @@ public class HBaseOrderedKeyColumnValueStore implements
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
 			ByteBuffer columnEnd, TransactionHandle txh) {
 
-		byte[] colStartBytes = toArray(columnStart);
-		byte[] colEndBytes = toArray(columnEnd);
+		byte[] colStartBytes = columnEnd.hasRemaining() ? toArray(columnStart) : null;
+		byte[] colEndBytes = columnEnd.hasRemaining() ? toArray(columnEnd) : null;
 		
 		Filter colRangeFilter = new ColumnRangeFilter(colStartBytes, true, colEndBytes, false);
 

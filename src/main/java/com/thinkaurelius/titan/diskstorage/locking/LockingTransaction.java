@@ -171,7 +171,7 @@ public abstract class LockingTransaction implements TransactionHandle {
 					ok = true;
 					lastLockApplicationTimeMS = before;
 					lc.setTimestamp(ts);
-                    log.trace("Wrote Cassandra lock: {}", lc);
+                    log.trace("Wrote lock: {}", lc);
             		lockClaims.add(lc);
 					return;
 				}
@@ -226,7 +226,6 @@ public abstract class LockingTransaction implements TransactionHandle {
 				break;
 			}
 		}
-		
 		
 		// Check lock claim seniority
 		for (LockClaim lc : lockClaims) {
@@ -283,8 +282,8 @@ public abstract class LockingTransaction implements TransactionHandle {
 			
 			// Check: did our Rid win?
 			if (! Arrays.equals(earliestRid, rid)) {
-                                log.trace("My rid={} lost to earlier rid={},ts={}",
-                                          new Object[] { Hex.encodeHexString(rid), Hex.encodeHexString(earliestRid), earliestTS });
+                log.trace("My rid={} lost to earlier rid={},ts={}",
+                		new Object[] { Hex.encodeHexString(rid), Hex.encodeHexString(earliestRid), earliestTS });
 				throwLockFailure("A remote transaction holds " + lc);
 			}
 			
@@ -312,7 +311,7 @@ public abstract class LockingTransaction implements TransactionHandle {
 			
 			// Delete lock
 			store.mutate(lockKeyBuf, null, Arrays.asList(lockColBuf), null);
-                        log.trace("Wrote Cassandra unlock: {}", lc);
+                        log.trace("Wrote unlock: {}", lc);
 			
 			// Release local lock
 			LocalLockMediator llm = mediators.get(lc.getCf());
