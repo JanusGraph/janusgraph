@@ -126,7 +126,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 	
 	public CassandraThriftStorageManager(Configuration config) {
 		
-		this.rid = ConfigHelper.getRid(config, this);
+		this.rid = ConfigHelper.getRid(config);
 		
 		this.keyspace = config.getString(PROP_KEYSPACE,DEFAULT_KEYSPACE);
 		

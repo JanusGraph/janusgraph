@@ -37,7 +37,7 @@ public class HBaseStorageManager implements StorageManager {
     private final byte[] rid;
 	
     public HBaseStorageManager(org.apache.commons.configuration.Configuration config) {
-    	this.rid = ConfigHelper.getRid(config, this);
+    	this.rid = ConfigHelper.getRid(config);
     	
         this.tableName = config.getString(TABLE_NAME_KEY,TABLE_NAME_DEFAULT);
         
