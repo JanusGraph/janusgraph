@@ -320,9 +320,6 @@
                     <excludes>
                         <exclude>**/HBase*</exclude>
 
-			<!-- Excluded because it fails pending future refactoring -->
-			<exclude>**/TitanGraphTest.java</exclude>
-
                         <!-- FIX IT: Currently excluded because there is something wrong with the test. -->
                         <exclude>**/*ConcurrentTest.java</exclude>
 
