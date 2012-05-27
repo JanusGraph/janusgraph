@@ -2,3 +2,7 @@
 target/
 .idea/
 *.iml
+# Eclipse junk; leading slash makes patterns non-recursive
+/.settings/
+/.project
+/.classpath
