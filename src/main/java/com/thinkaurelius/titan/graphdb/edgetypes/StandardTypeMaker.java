@@ -17,7 +17,7 @@ public class StandardTypeMaker implements TypeMaker {
 	private EdgeTypeVisibility visibility;
 	private String name;
 	private TypeGroup group;
-	private boolean isFunctional;
+	private FunctionalType isFunctional;
 	private Directionality directionality;
 	private EdgeCategory category;
 	private List<TitanType> keysig;
@@ -40,7 +40,7 @@ public class StandardTypeMaker implements TypeMaker {
 		compactsig = new ArrayList<TitanType>();
 		category = null;
 		directionality = Directionality.Directed;
-		isFunctional = false;
+		isFunctional = FunctionalType.NON_FUNCTIONAL;
 		group = TypeGroup.DEFAULT_GROUP;
 		visibility = EdgeTypeVisibility.Modifiable;
 	}
@@ -123,9 +123,15 @@ public class StandardTypeMaker implements TypeMaker {
 
 	@Override
 	public StandardTypeMaker functional() {
-		isFunctional = true;
-		return this;
+		return functional(true);
 	}
+
+    @Override
+    public StandardTypeMaker functional(boolean locking) {
+        if (locking) isFunctional = FunctionalType.FUNCTIONAL_LOCKING;
+        else isFunctional = FunctionalType.FUNCTIONAL;
+        return this;
+    }
 
     @Override
     public TypeMaker directed() {

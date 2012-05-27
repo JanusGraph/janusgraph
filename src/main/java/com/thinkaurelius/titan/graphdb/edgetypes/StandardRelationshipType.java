@@ -8,7 +8,7 @@ public class StandardRelationshipType extends AbstractEdgeTypeDefinition impleme
 	
 	public StandardRelationshipType(String name, EdgeCategory category,
 			Directionality directionality, EdgeTypeVisibility visibility,
-			boolean isfunctional, String[] keysig,
+            FunctionalType isfunctional, String[] keysig,
 			String[] compactsig, TypeGroup group) {
 		super(name, category, directionality, visibility, isfunctional,
 				keysig, compactsig,group);

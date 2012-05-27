@@ -158,22 +158,6 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 		deletedEdges=null;
 	}
 
-
-    @Override
-    public synchronized void rollingCommit() {
-        super.rollingCommit();
-        if (!getTxConfiguration().isReadOnly()) {
-            try {
-                graphdb.save(addedEdges, deletedEdges, this);
-            } catch (GraphStorageException e) {
-                abort();
-                throw e;
-            }
-            deletedEdges = Collections.newSetFromMap(new ConcurrentHashMap<InternalRelation,Boolean>(10,0.75f,1));
-            addedEdges = Collections.synchronizedList(new ArrayList<InternalRelation>());
-        }
-    }
-	
 	@Override
 	public synchronized void commit() {
         Preconditions.checkArgument(isOpen());

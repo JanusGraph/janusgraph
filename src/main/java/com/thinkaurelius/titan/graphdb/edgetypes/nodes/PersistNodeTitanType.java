@@ -58,6 +58,11 @@ public abstract class PersistNodeTitanType extends PersistStandardTitanVertex im
 		return getDefinition().isFunctional();
 	}
 
+    @Override
+    public boolean isFunctionalLocking() {
+        return getDefinition().isFunctionalLocking();
+    }
+
 	@Override
 	public boolean isHidden() {
 		return getDefinition().isHidden();

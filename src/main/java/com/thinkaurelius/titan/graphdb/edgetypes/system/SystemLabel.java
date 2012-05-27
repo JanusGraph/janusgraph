@@ -30,6 +30,11 @@ public class SystemLabel extends SystemType implements RelationshipTypeDefinitio
 		return true;
 	}
 
+    @Override
+    public boolean isFunctionalLocking() {
+        return false;
+    }
+
 	@Override
 	public Directionality getDirectionality() {
 		return Directionality.Unidirected;

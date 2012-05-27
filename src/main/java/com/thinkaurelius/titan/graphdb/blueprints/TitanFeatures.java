@@ -9,7 +9,7 @@ import com.tinkerpop.blueprints.Features;
 
 public class TitanFeatures {
     
-    public static Features getTitanFeatures() {
+    public static Features getBaselineTitanFeatures() {
         Features features = new Features();
         features.supportsDuplicateEdges = true;
         features.supportsSelfLoops = true;

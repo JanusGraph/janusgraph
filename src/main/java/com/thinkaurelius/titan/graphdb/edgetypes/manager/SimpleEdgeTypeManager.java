@@ -101,7 +101,7 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 	public TitanKey createPropertyType(InternalTitanTransaction tx, String name,
 			EdgeCategory category, Directionality directionality,
 			EdgeTypeVisibility visibility,
-			boolean isfunctional, TitanType[] keysig, TitanType[] compactsig,
+            FunctionalType isfunctional, TitanType[] keysig, TitanType[] compactsig,
 			TypeGroup group,
 			boolean isKey, boolean hasIndex, Class<?> objectType) {
 		checkUniqueName(name);
@@ -115,7 +115,7 @@ public class SimpleEdgeTypeManager implements EdgeTypeManager {
 	public TitanLabel createRelationshipType(InternalTitanTransaction tx, String name,
 			EdgeCategory category, Directionality directionality,
 			EdgeTypeVisibility visibility,
-			boolean isfunctional, TitanType[] keysig, TitanType[] compactsig,
+            FunctionalType isfunctional, TitanType[] keysig, TitanType[] compactsig,
 			TypeGroup group) {
 		checkUniqueName(name);
 		StandardRelationshipType rt = new StandardRelationshipType(name,category,directionality,visibility,

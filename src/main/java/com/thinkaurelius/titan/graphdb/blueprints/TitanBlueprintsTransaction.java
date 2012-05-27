@@ -35,7 +35,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public Features getFeatures() {
-        return TitanFeatures.getTitanFeatures();
+        throw new UnsupportedOperationException("Not supported on transaction graph - all on parent graph");
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.core;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.transaction.InMemoryTitanGraph;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import org.apache.commons.configuration.Configuration;
 
 /**
@@ -23,7 +24,7 @@ public class TitanFactory {
      * @see TitanGraph
      */
     public static TitanGraph openInMemoryGraph() {
-        return new InMemoryTitanGraph();
+        return new InMemoryTitanGraph(new TransactionConfig(null,true));
     }
 
 

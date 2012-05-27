@@ -25,8 +25,8 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
     private AtomicInteger idCounter;
     private final IDManager idManager;
     
-    public InMemoryTitanGraph() {
-		super(null,StandardNodeFactories.DefaultInMemory, new InMemoryRelationFactory(), new InMemoryEdgeTypeManager(), new TransactionConfig());
+    public InMemoryTitanGraph(TransactionConfig config) {
+		super(null,StandardNodeFactories.DefaultInMemory, new InMemoryRelationFactory(), new InMemoryEdgeTypeManager(), config);
         idCounter=new AtomicInteger(0);
         idManager = new IDManager(1,1);
         graphdb=this;
@@ -37,7 +37,6 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 	public boolean isDeletedRelation(InternalRelation relation) {
 		return relation.isRemoved();
 	}
-	
 
 	public boolean isReferenceVertexID(long vertexid) {
 		return false;
@@ -53,17 +52,6 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 		return true;
 	}
 
-	@Override
-	public TitanVertex getVertex(long id) {
-		return getExistingVertex(id);
-	}	
-
-	@Override
-	public InternalTitanVertex getExistingVertex(long id) {
-		throw new IllegalArgumentException("TitanVertex with given ID does not exist: " + id);
-	}
-
-	
 	@Override
 	public void deletedRelation(InternalRelation relation) {
 		super.deletedRelation(relation);
@@ -102,11 +90,6 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 		throw new UnsupportedOperationException("InMemory Transactions do not have transaction handles!");
 	}
 
-    @Override
-    public synchronized void rollingCommit() {
-        super.rollingCommit();
-    }
-	
 	@Override
 	public synchronized void commit() {
 		super.commit();

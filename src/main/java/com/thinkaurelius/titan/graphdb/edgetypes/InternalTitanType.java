@@ -6,5 +6,7 @@ import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 public interface InternalTitanType extends TitanType, InternalTitanVertex {
 	
 	public EdgeTypeDefinition getDefinition();
+
+    public boolean isFunctionalLocking();
 	
 }

@@ -114,10 +114,10 @@ public class SerializerTest {
 	@Test
 	public void serializeRelationshipType() {
 		StandardRelationshipType relType = new StandardRelationshipType("testName",EdgeCategory.Simple,
-				Directionality.Directed,EdgeTypeVisibility.Modifiable,false,
+				Directionality.Directed,EdgeTypeVisibility.Modifiable,FunctionalType.NON_FUNCTIONAL,
 				new String[]{},new String[]{}, SystemTypeManager.SYSTEM_TYPE_GROUP);
 		StandardPropertyType propType = new StandardPropertyType("testName", EdgeCategory.Simple,
-				Directionality.Directed,EdgeTypeVisibility.Modifiable,false,
+				Directionality.Directed,EdgeTypeVisibility.Modifiable,FunctionalType.NON_FUNCTIONAL,
 				new String[]{},new String[]{}, SystemTypeManager.SYSTEM_TYPE_GROUP,true,true,String.class);
 		DataOutput out = serialize.getDataOutput(128, true);
 		out.writeObjectNotNull(relType);

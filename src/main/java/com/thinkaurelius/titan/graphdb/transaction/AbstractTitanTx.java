@@ -452,11 +452,6 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 		isOpen=false;
 	}
 
-    @Override
-    public synchronized void rollingCommit() {
-        if (!config.assignIDsImmediately()) throw new UnsupportedOperationException("Rolling commits are only supported for immediate ID assignment.");
-    }
-	
 	
 	@Override
 	public synchronized void commit() {

@@ -47,6 +47,13 @@ public interface TypeMaker {
 	 */
 	public TypeMaker functional();
 
+    /**
+     * Sets whether or not this edge type is functional.
+     *
+     * @return This edge type maker
+     */
+    public TypeMaker functional(boolean locking);
+
 	public TypeMaker directed();
     
     public TypeMaker undirected();

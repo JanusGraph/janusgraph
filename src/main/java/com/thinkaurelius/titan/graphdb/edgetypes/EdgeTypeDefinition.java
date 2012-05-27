@@ -13,6 +13,8 @@ public interface EdgeTypeDefinition {
 	public String getName();
 	
 	public boolean isFunctional();
+
+    public boolean isFunctionalLocking();
 	
 	public Directionality getDirectionality();	
 	
