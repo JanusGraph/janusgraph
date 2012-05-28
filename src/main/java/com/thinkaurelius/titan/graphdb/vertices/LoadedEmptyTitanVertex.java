@@ -196,7 +196,7 @@ public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
 
     @Override
     public Object getId() {
-        throw new UnsupportedOperationException(errorName + " don't have an ID!");
+        return Long.valueOf(getID());
     }
 
 	@Override

@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.edgetypes;
 
+import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.edgetypes.manager.EdgeTypeManager;
 import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemTypeManager;
@@ -8,9 +9,12 @@ import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class StandardTypeMaker implements TypeMaker {
 
+    private static final Set<String> RESERVED_NAMES = ImmutableSet.of("id","label");
+    
 	private final InternalTitanTransaction tx;
 	private final EdgeTypeManager etManager;
 	
@@ -49,7 +53,9 @@ public class StandardTypeMaker implements TypeMaker {
 		if (name==null || name.length()==0) 
 			throw new IllegalArgumentException("Need to specify name.");
 		if (name.startsWith(SystemTypeManager.systemETprefix))
-			throw new IllegalArgumentException("Name starts with a reserved keyword!");
+			throw new IllegalArgumentException("Name starts with a reserved keyword: "+SystemTypeManager.systemETprefix);
+        if (RESERVED_NAMES.contains(name.toLowerCase()))
+            throw new IllegalArgumentException("Name is reserved: " + name);
 		if ((!keysig.isEmpty() || !compactsig.isEmpty()) && category!=EdgeCategory.HasProperties)
 			throw new IllegalArgumentException("Can only specify signatures for labeled edge types.");
 	}
@@ -64,6 +70,8 @@ public class StandardTypeMaker implements TypeMaker {
 				throw new IllegalArgumentException("Signature edge types must be simple: " + et);
 			if (et.isEdgeLabel() && !((TitanLabel)et).isUnidirected())
 				throw new IllegalArgumentException("Signature relationship types must be unidirected: " + et);
+            if (et.isPropertyKey() && ((TitanKey)et).getDataType().equals(Object.class)) 
+                throw new IllegalArgumentException("Signature keys must have a declared datatype: " + et);
 			signature[i]=et;
 		}
 		return signature;

@@ -48,7 +48,7 @@ public class InMemoryEdgeTypeManager implements EdgeTypeManager  {
 
 	@Override
 	public InternalTitanType getEdgeType(String name, InternalTitanTransaction tx) {
-		throw new UnsupportedOperationException("Not supported for InMemory Transactions");
+		return null;
 	}
 
 	@Override

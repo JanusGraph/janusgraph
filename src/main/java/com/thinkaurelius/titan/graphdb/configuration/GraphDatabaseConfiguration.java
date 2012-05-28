@@ -121,9 +121,9 @@ public class GraphDatabaseConfiguration {
     private static final String READ_ONLY_KEY = "readonly";
     private static final boolean READ_ONLY_DEFAULT = false;
     private static final String FLUSH_IDS_KEY = "flushids";
-    private static final boolean FLUSH_IDS_DEFAULT = false;
+    private static final boolean FLUSH_IDS_DEFAULT = true;
     private static final String AUTO_TYPE_KEY = "autotype";
-    private static final String AUTO_TYPE_DEFAULT = "";
+    private static final String AUTO_TYPE_DEFAULT = "blueprints";
     private static final String BATCH_LOADING_KEY = "batch";
     private static final boolean BATCH_LOADING_DEFAULT = false;
     

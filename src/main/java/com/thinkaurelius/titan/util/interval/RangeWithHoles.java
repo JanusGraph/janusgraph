@@ -39,7 +39,10 @@ public class RangeWithHoles<V extends Comparable<V>> extends Range<V> {
     private void checkHoles(ImmutableSet<V> holes) {
         Preconditions.checkNotNull(holes);
         Preconditions.checkArgument(!holes.isEmpty(), "Need to specify non-empty set of holes");
-        for (V hole : holes) Preconditions.checkArgument(super.inInterval(hole),"Hole must lie in interval");
+        for (V hole : holes) {
+            Preconditions.checkNotNull(hole,"A hole may not be null");
+            Preconditions.checkArgument(super.inInterval(hole),"Hole must lie in interval");
+        }
     }
 
 

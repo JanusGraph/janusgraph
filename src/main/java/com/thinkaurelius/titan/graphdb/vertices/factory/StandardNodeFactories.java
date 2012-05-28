@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.vertices.factory;
 
 import com.thinkaurelius.titan.graphdb.adjacencylist.InitialAdjListFactory;
+import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.StandardTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
@@ -19,6 +20,7 @@ public enum StandardNodeFactories implements NodeFactory {
 		@Override
 		public InternalTitanVertex createNew(InternalTitanTransaction tx) {
 			InternalTitanVertex n = new PersistStandardTitanVertex(tx,InitialAdjListFactory.BasicFactory);
+            n.addProperty(SystemKey.VertexState,(byte)0);
             tx.registerNewEntity(n);
             return n;
 		}
@@ -36,7 +38,8 @@ public enum StandardNodeFactories implements NodeFactory {
 
 		@Override
 		public InternalTitanVertex createNew(InternalTitanTransaction tx) {
-			InternalTitanVertex n = new StandardTitanVertex(tx,InitialAdjListFactory.BasicFactory);
+			//InternalTitanVertex n = new StandardTitanVertex(tx,InitialAdjListFactory.BasicFactory);
+            InternalTitanVertex n = new PersistStandardTitanVertex(tx,InitialAdjListFactory.BasicFactory);
             tx.registerNewEntity(n);
             return n;
 		}

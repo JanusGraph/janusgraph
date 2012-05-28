@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 import com.thinkaurelius.titan.graphdb.edges.factory.InMemoryRelationFactory;
+import com.thinkaurelius.titan.graphdb.edges.factory.StandardPersistedRelationFactory;
 import com.thinkaurelius.titan.graphdb.edgetypes.manager.InMemoryEdgeTypeManager;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
@@ -26,7 +27,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
     private final IDManager idManager;
     
     public InMemoryTitanGraph(TransactionConfig config) {
-		super(null,StandardNodeFactories.DefaultInMemory, new InMemoryRelationFactory(), new InMemoryEdgeTypeManager(), config);
+		super(null,StandardNodeFactories.DefaultInMemory, new StandardPersistedRelationFactory(), new InMemoryEdgeTypeManager(), config);
         idCounter=new AtomicInteger(0);
         idManager = new IDManager(1,1);
         graphdb=this;
@@ -39,11 +40,6 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 	}
 
 	public boolean isReferenceVertexID(long vertexid) {
-		return false;
-	}
-		
-	@Override
-	public boolean containsVertex(long id) {
 		return false;
 	}
 
@@ -92,12 +88,12 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 
 	@Override
 	public synchronized void commit() {
-		super.commit();
+		//Simply ignore
 	}
 
 	@Override
 	public synchronized void abort() {
-		super.abort();
+		throw new UnsupportedOperationException("Cannot abort in memory graph transaction");
 	}
 
 
@@ -180,19 +176,4 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 		throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
 	}
 
-
-    @Override
-    public <T extends Element> void dropKeyIndex(String key, Class<T> elementClass) {
-        throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
-    }
-
-    @Override
-    public <T extends Element> void createKeyIndex(String key, Class<T> elementClass) {
-        throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
-    }
-
-    @Override
-    public <T extends Element> Set<String> getIndexedKeys(Class<T> elementClass) {
-        throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
-    }
 }

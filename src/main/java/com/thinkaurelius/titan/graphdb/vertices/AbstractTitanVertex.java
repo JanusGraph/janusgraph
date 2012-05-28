@@ -14,6 +14,7 @@ import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.velocity.runtime.parser.node.NodeUtils;
 
 import java.util.Set;
 
@@ -40,7 +41,7 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 	@Override
 	public int hashCode() {
 		if (hasID()) {
-			return NodeUtil.getIDHashCode(this);
+			return VertexUtil.getIDHashCode(this);
 		} else {
 			assert isNew();
 			return super.hashCode();
@@ -53,7 +54,7 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 		if (oth==this) return true;
 		else if (!(oth instanceof InternalTitanVertex)) return false;
 		InternalTitanVertex other = (InternalTitanVertex)oth;
-		return NodeUtil.equalIDs(this, other);
+		return VertexUtil.equalIDs(this, other);
 	}
 	
 	@Override
@@ -84,9 +85,8 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 
 	@Override
 	public void remove() {
-		NodeUtil.checkAvailability(this);
-		if (Iterables.size(getRelations(AtomicTitanQuery.queryAll(this), true))>0)
-			throw new IllegalStateException("Cannot remove node since it is still connected!");
+		VertexUtil.checkAvailability(this);
+        VertexUtil.prepareForRemoval(this);
         tx.deleteVertex(this);
 	}
 

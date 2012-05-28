@@ -52,7 +52,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 		for (int i = 0; i < rels.length; i++) {
 			rels[i] = makeRelationshipType("rel" + i);
 		}
-		TitanKey id = makeIDPropertyType("id");
+		TitanKey id = makeIDPropertyType("uid");
 		TitanVertex nodes[] = new TitanVertex[NODE_COUNT];
 		for (int i=0;i<NODE_COUNT;i++) {
 			nodes[i]=tx.addVertex();
@@ -92,7 +92,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 	 */
 	@Test
 	public void concurrentReadsOnSingleTransaction() throws Exception {
-		TitanKey id = tx.getPropertyKey("id");
+		TitanKey id = tx.getPropertyKey("uid");
 		
 		// Tail many concurrent readers on a single transaction
 		CountDownLatch startLatch = new CountDownLatch(TASK_COUNT);
@@ -119,7 +119,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 	 */
 	@Test
 	public void concurrentReadWriteOnSingleTransaction() throws Exception {
-		TitanKey id = tx.getPropertyKey("id");
+		TitanKey id = tx.getPropertyKey("uid");
 		
 		Runnable propMaker =
 			new RandomPropertyMaker(tx, NODE_COUNT, id,

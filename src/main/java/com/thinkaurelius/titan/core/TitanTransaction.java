@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -30,7 +31,7 @@ import com.tinkerpop.blueprints.Vertex;
  * 
  *
  */
-public interface TitanTransaction extends TransactionalGraph {
+public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph {
 
 	/***
 	 * Creates a new node in the graph.

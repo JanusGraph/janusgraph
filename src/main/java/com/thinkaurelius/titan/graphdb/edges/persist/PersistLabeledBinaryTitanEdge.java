@@ -89,8 +89,6 @@ public class PersistLabeledBinaryTitanEdge extends LabeledBinaryTitanEdge {
 		return entity.getID();
 	}
 
-
-
 	@Override
 	public boolean hasID() {
 		return entity.hasID();

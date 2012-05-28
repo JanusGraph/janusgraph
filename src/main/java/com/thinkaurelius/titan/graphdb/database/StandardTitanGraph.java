@@ -69,7 +69,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	private final Serializer serializer;
 	
 	private final NodeIDAssigner idAssigner;
-
+    private boolean isOpen;
 	
 	public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
 		this.config=configuration;
@@ -85,6 +85,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		
 		this.serializer = config.getSerializer();
         this.etManager = new SimpleEdgeTypeManager(this);
+        isOpen = true;
 	}
 	
 	@Override
@@ -97,9 +98,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         return false;
     }
 
+    @Override
+    public boolean isOpen() {
+        return isOpen;
+    }
 
 	@Override
 	public synchronized void shutdown() throws GraphStorageException {
+        if (!isOpen) return;
         super.shutdown();
 		etManager.close();
         idAssigner.close();
@@ -107,6 +113,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		edgeStore.close();
 		propertyIndex.close();
 		storage.close();
+        isOpen=false;
 	}
 
 	public GraphDatabaseConfiguration getConfiguration() {
@@ -258,14 +265,22 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 assert titanType.isPropertyKey();
                 assert dirID == 0;
                 TitanKey propType = ((TitanKey) titanType);
-                Object attribute = serializer.readObjectNotNull(value, propType.getDataType());
+                Object attribute = null;
+
+                if (propType.getDataType().equals(Object.class)) {
+                    attribute = serializer.readClassAndObject(value);
+                } else {
+                    attribute = serializer.readObjectNotNull(value, propType.getDataType());
+                }
+                assert attribute!=null;
+
                 if (titanType.isFunctional()) edgeid = VariableLong.readPositive(value);
                 assert edgeid>0;
                 edge = factory.createExistingProperty(edgeid, propType, node, attribute);
             }
             
 			//Read value inline edges if any
-			if (!titanType.isSimple()) { // || EdgeCategory.LabeledRestricted
+			if (!titanType.isSimple()) {
                 EdgeTypeDefinition def = ((InternalTitanType) titanType).getDefinition();
                 //First create all keys buffered above
                 String[] keysig = def.getKeySignature();
@@ -290,7 +305,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     private Object readInline(ByteBuffer read, TitanType type, InternalTitanTransaction tx) {
         if (type.isPropertyKey()) {
             TitanKey proptype = ((TitanKey) type);
-            return serializer.readObject(read,proptype.getDataType());
+            if (proptype.getDataType().equals(Object.class))
+                return serializer.readClassAndObject(read);
+            else return serializer.readObject(read,proptype.getDataType());
         } else {
             assert type.isEdgeLabel();
             long id = VariableLong.readPositive(read);
@@ -343,7 +360,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         }
         return dirs;
     }
-    
+
 	private List<Entry> queryForEntries(InternalTitanQuery query, TransactionHandle txh) {
         Preconditions.checkArgument(query.isAtomic());
 		ByteBuffer key = IDHandler.getKey(query.getNodeID());
@@ -730,7 +747,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                     assert edge.isProperty();
                     DataOutput out = serializer.getDataOutput(defaultOutputCapacity, true);
                     //Write object
-                    out.writeObjectNotNull(((TitanProperty)edge).getAttribute());
+                    writeAttribute(out,(TitanProperty)edge);
                     if (et.isFunctional()) {
                         VariableLong.writePositive(out,edge.getID());
                     }
@@ -763,7 +780,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                     VariableLong.write(out,nodeIDDiff);
                 } else {
                     assert edge.isProperty();
-                    out.writeObjectNotNull(((TitanProperty)edge).getAttribute());
+                    writeAttribute(out,(TitanProperty)edge);
                 }
 
                 if (et.isFunctional()) {
@@ -777,17 +794,31 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		}
 		return new Entry(column,value);
 	}
-	
-	private void writeInlineEdge(DataOutput out, InternalRelation edge) {
+
+
+    private static void writeAttribute(DataOutput out, TitanProperty property) {
+        Object attribute = property.getAttribute();
+        TitanKey key = (TitanKey)property.getType();
+        assert attribute!=null;
+        assert key.getDataType().isInstance(attribute);
+        if (key.getDataType().equals(Object.class)) {
+            out.writeClassAndObject(attribute);
+        } else {
+            out.writeObjectNotNull(attribute);
+        }
+    }
+
+
+    private void writeInlineEdge(DataOutput out, InternalRelation edge) {
 		assert edge!=null;
-		writeVirtualEdge(out,edge,edge.getType(),true);
+        writeInlineEdge(out,edge,edge.getType(),true);
 	}
 	
 	private void writeInlineEdge(DataOutput out, InternalRelation edge, TitanType titanType) {
-		writeVirtualEdge(out,edge, titanType,false);
+        writeInlineEdge(out,edge, titanType,false);
 	}
 	
-	private void writeVirtualEdge(DataOutput out, InternalRelation edge, TitanType titanType, boolean writeEdgeType) {
+	private void writeInlineEdge(DataOutput out, InternalRelation edge, TitanType titanType, boolean writeEdgeType) {
 		assert titanType.isSimple();
 
 		if (edge==null) {
@@ -803,7 +834,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 IDHandler.writeInlineEdgeType(out, titanType.getID(), idManager);
 			}
 			if (edge.isProperty()) {
-				out.writeObject(((TitanProperty)edge).getAttribute());
+                Object attribute = ((TitanProperty)edge).getAttribute();
+                if (((TitanKey)titanType).getDataType().equals(Object.class))
+                    out.writeClassAndObject(attribute);
+				else out.writeObject(attribute);
 			} else {
 				assert edge.isUnidirected() && edge.isEdge();
                 VariableLong.writePositive(out, edge.getVertex(1).getID());

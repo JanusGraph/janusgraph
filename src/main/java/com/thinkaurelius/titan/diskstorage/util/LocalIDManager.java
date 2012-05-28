@@ -4,7 +4,7 @@ import cern.colt.map.AbstractIntIntMap;
 import cern.colt.map.OpenIntIntHashMap;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.exceptions.GraphDatabaseException;
-import de.mathnbits.io.Serialization;
+import java.io.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +30,7 @@ public class LocalIDManager {
             Preconditions.checkArgument(f.isFile(),"Need to specify a filename for id map");
             Preconditions.checkArgument(f.canRead() && f.canWrite(),"Need to be able to access file for id map");
             try {
-                idmap = Serialization.readObjectFromFile(filename);
+                idmap = readObjectFromFile(filename);
             } catch (IOException e) {
                 throw new IllegalArgumentException("Could not read id map from file: " + filename,e);
             }
@@ -52,11 +52,35 @@ public class LocalIDManager {
     
     private void save() {
         try {
-            Serialization.writeObjectToFile(filename + temporaryFileExt, idmap);
-            Serialization.writeObjectToFile(filename, idmap);
+            writeObjectToFile(filename + temporaryFileExt, idmap);
+            writeObjectToFile(filename, idmap);
         } catch (IOException e) {
             throw new GraphDatabaseException("Could not write id map to disk for file: " + filename,e);
         }
+    }
+
+
+    @SuppressWarnings("unchecked")
+    public static final<T> T readObjectFromFile(String filename) throws IOException {
+        FileInputStream f = new FileInputStream(filename);
+        ObjectInputStream objstream = new ObjectInputStream(f);
+        Object ret = null;
+        try {
+            ret = objstream.readObject();
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Could not find class of read object!");
+        } finally {
+            f.close();
+        }
+        if (ret == null) throw new RuntimeException("Could not read any object from file!");
+        return (T)ret;
+    }
+
+    public static final<T extends Serializable> void writeObjectToFile(String filename, T obj) throws IOException {
+        FileOutputStream f = new FileOutputStream(filename);
+        ObjectOutputStream objstream = new ObjectOutputStream (f);
+        objstream.writeObject ( obj );
+        f.close();
     }
 
 }

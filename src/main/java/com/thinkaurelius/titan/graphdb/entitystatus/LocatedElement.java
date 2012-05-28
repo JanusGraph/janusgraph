@@ -43,7 +43,7 @@ public abstract class LocatedElement implements InternalElement {
 	public void setID(long id) {
 		Preconditions.checkArgument(isNew());
 		Preconditions.checkArgument(id!=NoID,"Illegal id: " + id);
-		if (hasID()) throw new IllegalStateException("The entity has already been assigned an ID!");
+		if (hasID()) throw new IllegalStateException("The entity has already been assigned an ID: " + getID());
 		this.id = id;
 	}
 	

@@ -66,11 +66,11 @@ public class StandardTitanVertex extends AbstractTitanVertex {
 			Iterable<InternalRelation> siter;
 			switch(dir) {
 			case OUT:
-                siter = NodeUtil.getQuerySpecificIterable(outEdges, query);
+                siter = VertexUtil.getQuerySpecificIterable(outEdges, query);
 				break;
 			case IN:
-                siter = NodeUtil.getQuerySpecificIterable(inEdges, query);
-                //if (query.isAllowedDirection(EdgeDirection.OUT)) siter = NodeUtil.filterLoopEdges(siter,this);
+                siter = VertexUtil.getQuerySpecificIterable(inEdges, query);
+                //if (query.isAllowedDirection(EdgeDirection.OUT)) siter = VertexUtil.filterLoopEdges(siter,this);
 				break;
 			default: throw new AssertionError("Unrecognized direction: "+ dir);
 			}
@@ -78,7 +78,7 @@ public class StandardTitanVertex extends AbstractTitanVertex {
 			else if (siter!=AdjacencyList.Empty) iter = Iterables.concat(iter, siter);
 		}
 	
-		iter = NodeUtil.filterQueryQualifications(query, iter);
+		iter = VertexUtil.filterByQuery(query, iter);
 		return iter;
 	}
 	

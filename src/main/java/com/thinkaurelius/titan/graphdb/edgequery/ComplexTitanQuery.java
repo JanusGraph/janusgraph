@@ -17,22 +17,17 @@ import java.util.*;
 
 public class ComplexTitanQuery extends AtomicTitanQuery {
 
-    private TitanType[] types;
-    
     
     public ComplexTitanQuery(InternalTitanVertex n) {
         super(n);
-        types = null;
     }
 
     public ComplexTitanQuery(InternalTitanTransaction tx, long nodeid) {
         super(tx,nodeid);
-        types = null;
     }
 
     ComplexTitanQuery(ComplexTitanQuery q) {
         super(q);
-        types = q.types;
     }
 
     @Override
@@ -41,51 +36,27 @@ public class ComplexTitanQuery extends AtomicTitanQuery {
         return q;
     }
 
-
-    @Override
-    public AtomicTitanQuery labels(String... type) {
-        if (type.length<2) return super.labels(type);
-        else {
-            TitanType[] etypes = new TitanType[type.length];
-            Preconditions.checkNotNull(tx);
-            for (int i=0;i<type.length;i++) {
-                etypes[i] = tx.getType(type[i]);
-                Preconditions.checkArgument(etypes[i].isEdgeLabel(),"Expected label but got: " + type[i]);
-            }
-            return types(etypes);
-        }
-    }
-
-    @Override
-    public AtomicTitanQuery keys(String... type) {
-        if (type.length<2) return super.keys(type);
-        else {
-            TitanType[] etypes = new TitanType[type.length];
-            Preconditions.checkNotNull(tx);
-            for (int i=0;i<type.length;i++) {
-                etypes[i] = tx.getType(type[i]);
-                Preconditions.checkArgument(etypes[i].isPropertyKey(),"Expected property key but got: " + type[i]);
-            }
-            return types(etypes);
-        }
-    }
-
     @Override
     public AtomicTitanQuery types(TitanType... type) {
-        if (type.length<2) return super.types(type);
+        int length = 0;
+        for (int i=0;i<type.length;i++)
+            if (type[i]!=null) length++;
+        TitanType[] ttypes = new TitanType[length];
+        int pos = 0;
+        for (int i=0;i<type.length;i++) {
+            if (type[i]!=null) {
+                ttypes[pos]=type[i];
+                pos++;
+            }
+        }
+        if (length==0 && type.length>0) return super.types(new TitanType[]{null});
+        if (ttypes.length<2) return super.types(ttypes);
         else {
-            for (int i=0;i<type.length;i++) Preconditions.checkNotNull(type[i],"Unknown edge type at position " + i);
-            types = type;
-            super.removeEdgeType();
+            types = ttypes;
             return this;
         }
     }
 
-    @Override
-    protected void removeEdgeType() {
-        types = null;
-        super.removeEdgeType();
-    }
 
     /* ---------------------------------------------------------------
       * Query Execution
@@ -93,7 +64,7 @@ public class ComplexTitanQuery extends AtomicTitanQuery {
       */
 
     public boolean isAtomic() {
-        return types == null;
+        return types == null || types.length<2;
     }
 
     List<? extends AtomicTitanQuery> getDisjunctiveQueries() {
@@ -103,7 +74,7 @@ public class ComplexTitanQuery extends AtomicTitanQuery {
             List<AtomicTitanQuery> queries = new ArrayList<AtomicTitanQuery>(types.length);
             for (int i=0;i<types.length;i++) {
                 AtomicTitanQuery query = new AtomicTitanQuery(this);
-                query.type(types[i]);
+                query.types(types[i]);
                 queries.add(query);
             }
             return queries;

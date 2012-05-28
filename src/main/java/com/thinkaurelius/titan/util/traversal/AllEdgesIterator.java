@@ -23,7 +23,6 @@ public class AllEdgesIterator implements Iterator<Edge> {
 
 	private final Set<? extends Vertex> nodes;
 	private final Iterator<? extends Vertex> nodeIter;
-	private Vertex currentNode=null;
 
 	private Iterator<Edge> currentRel=Iterators.emptyIterator();
 	
@@ -64,7 +63,10 @@ public class AllEdgesIterator implements Iterator<Edge> {
 				if (nodes!=null && !nodes.contains(rel.getVertex(Direction.IN)))
 					rel = null;
 			} else {
-				currentRel = currentNode.getEdges(Direction.OUT).iterator();
+                if (nodeIter.hasNext()) {
+                    Vertex nextVertex = nodeIter.next();
+                    currentRel = nextVertex.getEdges(Direction.OUT).iterator();
+                } else break;
 			}
 		}
 		return rel;

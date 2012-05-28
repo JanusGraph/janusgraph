@@ -30,7 +30,7 @@ public class StorageSetup {
 		if (!homeDirFile.exists())
 			homeDirFile.mkdirs();
 		boolean success = IOUtils.deleteFromDirectory(homeDirFile);
-        if (!success) System.err.println("Could not remove " + homeDirFile);
+        if (!success) throw new IllegalStateException("Could not remove " + homeDirFile) ;
 	}
 
     public static Configuration getLocalStorageConfiguration() {

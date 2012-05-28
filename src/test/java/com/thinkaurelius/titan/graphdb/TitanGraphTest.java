@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.testutil.MemoryAssess;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import com.tinkerpop.blueprints.Direction;
 import static com.tinkerpop.blueprints.Direction.*;
@@ -26,6 +27,15 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 	@Test
 	public void testOpenClose() { }
 	
+    @Test
+    public void testMultipleDatabases() {
+        for (int i=0;i<100;i++) {
+            graphdb.addVertex(null);
+            clopen();
+            //System.out.println("Memory: " + MemoryAssess.getMemoryUse()/1024);
+        }
+    }
+    
     @Test
     public void basicTest() {
         TitanKey weight = makeWeightPropertyType("weight");
@@ -59,7 +69,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 	@Test
 	public void primitiveCreateAndRetrieve() {
 		TitanKey weight = makeWeightPropertyType("weight");
-		TitanKey id = makeIDPropertyType("id");
+		TitanKey id = makeIDPropertyType("uid");
 		TitanLabel knows = makeLabeledRelationshipType("knows",id,weight);
 		
 		TitanVertex n1 = tx.addVertex(), n3 = tx.addVertex();
@@ -80,7 +90,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 	@Test
 	public void createDelete() {
 		TitanKey weight = makeWeightPropertyType("weight");
-		TitanKey id = makeIDPropertyType("id");
+		TitanKey id = makeIDPropertyType("uid");
 		TitanLabel knows = makeLabeledRelationshipType("knows",id,weight);
 		
 		TitanVertex n1 = tx.addVertex(), n3 = tx.addVertex();
@@ -92,21 +102,21 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		long nid = n3.getID();
 		
 		n3 = tx.getVertex(nid);
-		assertEquals(445,n3.getProperty("id"));
+		assertEquals(445,n3.getProperty("uid"));
 		e=Iterables.getOnlyElement(n3.getTitanEdges(Direction.OUT, tx.getEdgeLabel("knows")));
 		assertEquals(111,e.getProperty(id));
-		TitanProperty p = Iterables.getOnlyElement(n3.getProperties("id"));
+		TitanProperty p = Iterables.getOnlyElement(n3.getProperties("uid"));
 		p.remove();
-		n3.addProperty("id", 353);
+		n3.addProperty("uid", 353);
 		clopen();
 		
 		n3 = tx.getVertex(nid);
-		assertEquals(353,n3.getProperty("id"));
+		assertEquals(353,n3.getProperty("uid"));
 	}
 	
 	@Test
 	public void multipleIndexRetrieval() {
-		TitanKey id = makeIDPropertyType("id");
+		TitanKey id = makeIDPropertyType("uid");
 		TitanKey name = makeUnkeyedStringPropertyType("name");
 		int noNodes = 100; int div = 10; int mod = noNodes/div;
 		for (int i=0;i<noNodes;i++) {
@@ -119,7 +129,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 			Iterable<Vertex> nodes = tx.getVertices("name", "Name" + j);
 			assertEquals(div,Iterables.size(nodes));
 			for (Vertex n : nodes) {
-				int nid = ((Number)n.getProperty("id")).intValue();
+				int nid = ((Number)n.getProperty("uid")).intValue();
 				assertEquals(j,nid%mod);
 			}
 		}
@@ -131,7 +141,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		TypeGroup g1 = TypeGroup.of(3, "group1");
 		TypeGroup g2 = TypeGroup.of(5, "group2");
 		TitanKey name = makeStringIDPropertyType("name",g1);
-		TitanKey id = makeIDPropertyType("id",g2);
+		TitanKey id = makeIDPropertyType("uid",g2);
 		TitanLabel connect = makeRelationshipType("connect",g1);
 		TitanLabel knows = makeRelationshipType("knows",g2);
 		TitanLabel friend = makeRelationshipType("friend",g2);
@@ -157,7 +167,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		clopen();
 		
 		for (int i=0;i<noNodes;i++) {
-			TitanVertex n = tx.getVertex("id", i);
+			TitanVertex n = tx.getVertex("uid", i);
 			assertEquals(1,Iterables.size(n.query().group(g1).properties()));
 			assertEquals(1,Iterables.size(n.query().group(g2).properties()));
 			assertEquals(noEdges,Iterables.size(n.query().group(g1).direction(Direction.OUT).edges()));
@@ -176,7 +186,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		TitanLabel connect = makeRelationshipType(etNames[0]);
 		TitanKey name = makeStringPropertyType(etNames[1]);
 		TitanKey weight = makeWeightPropertyType(etNames[2]);
-		TitanKey id = makeIDPropertyType("id");
+		TitanKey id = makeIDPropertyType("uid");
 		TitanLabel knows = makeLabeledRelationshipType(etNames[3],id,weight);
 		
 		assertEquals(connect,tx.getEdgeLabel(etNames[0]));
@@ -288,7 +298,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		TitanLabel connect = makeRelationshipType("connect");
 		TitanKey name = makeStringPropertyType("name");
 		TitanKey weight = makeWeightPropertyType("weight");
-		TitanKey id = makeIDPropertyType("id");
+		TitanKey id = makeIDPropertyType("uid");
 		TitanLabel knows = makeLabeledRelationshipType("knows",id,weight);
 		
 		//Create Nodes
@@ -327,7 +337,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		nodes = new TitanVertex[noNodes];
 		name = tx.getPropertyKey("name");
 		assertEquals("name",name.getName());
-		id = tx.getPropertyKey("id");
+		id = tx.getPropertyKey("uid");
 		assertTrue(id.isFunctional());
 		for (int i=0;i<noNodes;i++) {
 			TitanVertex n = tx.getVertex(id, ids[i]);

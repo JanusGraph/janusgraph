@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.graphdb.edgetypes.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.tinkerpop.blueprints.*;
+import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
 
 import java.util.HashSet;
@@ -23,7 +24,7 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
 
     // ########## TRANSACTION HANDLING ###########################
     
-    private final ThreadLocal<TitanTransaction> txs =  new ThreadLocal<TitanTransaction>() {
+    private ThreadLocal<TitanTransaction> txs =  new ThreadLocal<TitanTransaction>() {
 
         protected TitanTransaction initialValue() {
             return null;
@@ -52,6 +53,7 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
 
     @Override
     public void startTransaction() {
+        if (txs.get()!=null) throw ExceptionFactory.transactionAlreadyStarted();
         getAutoStartTx();
     }
 
@@ -70,6 +72,7 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
             tx.commit();
         }
         openTx.clear();
+        txs=null;
     }
     
     @Override
@@ -87,31 +90,12 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
 
     @Override
     public <T extends Element> void createKeyIndex(String key, Class<T> elementClass) {
-        Preconditions.checkNotNull(key);
-        Preconditions.checkArgument(elementClass.equals(Vertex.class),"Only vertex indexing is supported");
-        
-        TitanTransaction tx = getAutoStartTx();
-        if (tx.containsType(key)) {
-            TitanType type = tx.getType(key);
-            if (!type.isPropertyKey()) throw new IllegalArgumentException("Key does not denote a property key but a label!");
-            if (!((TitanKey)type).hasIndex()) throw new UnsupportedOperationException("Need to define particular key as indexed before it is being used!");
-        } else {
-            tx.makeType().functional(false).name(key).dataType(Object.class).indexed().makePropertyKey();
-        }
+        getAutoStartTx().createKeyIndex(key,elementClass);
     }
 
     @Override
     public <T extends Element> Set<String> getIndexedKeys(Class<T> elementClass) {
-        Preconditions.checkArgument(elementClass.equals(Vertex.class),"Only vertex indexing is supported");
-        
-        Set<String> indexedkeys = new HashSet<String>();
-        TitanTransaction tx = getAutoStartTx();
-        for (TitanVertex v : tx.getVertices(SystemKey.TypeClass, TitanTypeClass.KEY)) {
-            assert v instanceof TitanKey;
-            TitanKey k = (TitanKey)v;
-            if (k.hasIndex()) indexedkeys.add(k.getName());
-        }
-        return indexedkeys;
+        return getAutoStartTx().getIndexedKeys(elementClass);
     }
 
     // ########## FEATURES ###########################

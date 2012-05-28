@@ -14,33 +14,43 @@ public class SystemKey extends SystemType implements PropertyTypeDefinition, Tit
 		new SystemKey("RelationshipTypeDefinition",StandardRelationshipType.class,3);
 
 	public static final SystemKey TypeName =
-		new SystemKey("TypeName",String.class,4,true,true);
+		new SystemKey("TypeName",String.class,4,true,true,false);
 	
 	public static final SystemKey Attribute =
 		new SystemKey("Attribute",Object.class,5);
 
     public static final SystemKey TypeClass =
-            new SystemKey("TypeClass",TitanTypeClass.class,6,true,false);
+            new SystemKey("TypeClass",TitanTypeClass.class,6,true,false,false);
+    
+    public static final SystemKey VertexState =
+            new SystemKey("VertexState",Byte.class,7,false,false,true);
 	
 	public static final Iterable<SystemKey> values() {
-		return ImmutableList.of(PropertyTypeDefinition,RelationshipTypeDefinition,TypeName,Attribute,TypeClass);
+		return ImmutableList.of(PropertyTypeDefinition,RelationshipTypeDefinition,TypeName,Attribute,TypeClass,VertexState);
 	}
 	
 	private final Class<?> dataType;
 	private final boolean index;
     private final boolean unique;
+    private final boolean modifiable;
 	
 	private SystemKey(String name, Class<?> dataType, int id) {
-		this(name,dataType,id,false,false);
+		this(name,dataType,id,false,false,false);
 	}
 	
-	private SystemKey(String name, Class<?> dataType, int id, boolean index, boolean unique) {
+	private SystemKey(String name, Class<?> dataType, int id, boolean index, boolean unique, boolean modifiable) {
 		super(name, IDManager.getSystemPropertyKeyID(id));
 		this.dataType=dataType;
 		this.index=index;
         this.unique=unique;
+        this.modifiable=modifiable;
 	}
 	
+    @Override
+    public boolean isModifiable() {
+        return modifiable;
+    }
+
 
 	@Override
 	public Class<?> getDataType() {

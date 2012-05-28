@@ -8,14 +8,16 @@ import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.exceptions.QueryException;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
+import com.thinkaurelius.titan.graphdb.edgequery.AtomicTitanQuery;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
+import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemKey;
 import com.thinkaurelius.titan.util.interval.AtomicInterval;
 import com.tinkerpop.blueprints.Direction;
 
 import java.util.Map;
 
-public class NodeUtil {
+public class VertexUtil {
 
 	public static void checkAccessbility(InternalTitanVertex v) {
 		Preconditions.checkArgument(v.isAccessible(),"TitanVertex is not accessible!");
@@ -24,8 +26,15 @@ public class NodeUtil {
 	public static void checkAvailability(InternalTitanVertex v) {
 		Preconditions.checkArgument(v.isAvailable(),"TitanVertex is not available!");
 	}
+    
+    public static void prepareForRemoval(InternalTitanVertex v) {
+        for (TitanRelation r : AtomicTitanQuery.queryAll(v).relations()) {
+            if (r.getType().equals(SystemKey.VertexState)) r.remove();
+            else throw new IllegalStateException("Cannot remove node since it is still connected");
+        }
+    }
 	
-	public static Iterable<InternalRelation> filterQueryQualifications(final InternalTitanQuery query, Iterable<InternalRelation> iter ) {
+	public static Iterable<InternalRelation> filterByQuery(final InternalTitanQuery query, Iterable<InternalRelation> iter) {
 		if (iter==AdjacencyList.Empty) return iter;
 		
 		if (query.queryHidden() && query.queryUnmodifiable() && query.queryProperties()
@@ -36,8 +45,11 @@ public class NodeUtil {
 		
 		return Iterables.filter(iter,  new Predicate<InternalRelation>(){
 
+                int counter = 0;
+            
 				@Override
 				public boolean apply(InternalRelation e) {
+                    if (query.getLimit()<=counter) return false;
 					if (!query.queryProperties() && e.isProperty()) return false;
 					if (!query.queryRelationships() && e.isEdge()) return false;
 					if (!query.queryHidden() && e.isHidden()) return false;
@@ -58,19 +70,14 @@ public class NodeUtil {
                                     assert attribute!=null;
                                     assert o instanceof AtomicInterval;
                                     AtomicInterval iv = (AtomicInterval)o;
-                                    if (iv.isPoint() && iv.getStartPoint().equals(attribute))
-                                        count++;
-                                    else {
-                                        assert iv.isRange();
-                                        if (((Comparable)iv.getStartPoint()).compareTo(attribute)<=0 &&
-                                                ((Comparable)iv.getEndPoint()).compareTo(attribute)==1) count++;
-                                    }
+                                    if (iv.inInterval(attribute)) count++;
                                 }
                             }
                         }
                         //TODO: There is a potential issue with double counting. Is this realistic for labeled edges (i.e. do we need to consider this)?
                         if (count<constraints.size()) return false;
                     }
+                    counter++;
 					return true;
 				}
 				

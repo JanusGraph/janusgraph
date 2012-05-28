@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.graphdb.blueprints.TitanInMemoryBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.transaction.InMemoryTitanGraph;
@@ -24,7 +25,7 @@ public class TitanFactory {
      * @see TitanGraph
      */
     public static TitanGraph openInMemoryGraph() {
-        return new InMemoryTitanGraph(new TransactionConfig(null,true));
+        return new TitanInMemoryBlueprintsGraph();
     }
 
 

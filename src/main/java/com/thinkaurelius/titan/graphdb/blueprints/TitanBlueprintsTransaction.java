@@ -1,17 +1,16 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Features;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.edgetypes.TitanTypeClass;
+import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemKey;
+import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
+import com.tinkerpop.blueprints.util.StringFactory;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -76,6 +75,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public Edge getEdge(Object id) {
+        if (id==null) throw ExceptionFactory.edgeIdCanNotBeNull();
         throw new UnsupportedOperationException("Titan does not support direct edge retrieval.");
     }
 
@@ -92,5 +92,44 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     @Override
     public void shutdown() {
         commit();
+    }
+
+    @Override
+    public String toString() {
+        return StringFactory.graphString(this, null);
+    }
+
+    // ########## INDEX HANDLING ###########################
+
+    @Override
+    public <T extends Element> void dropKeyIndex(String key, Class<T> elementClass) {
+        throw new UnsupportedOperationException("Key indexes cannot be dropped.");
+    }
+
+    @Override
+    public <T extends Element> void createKeyIndex(String key, Class<T> elementClass) {
+        Preconditions.checkNotNull(key);
+        Preconditions.checkArgument(elementClass.equals(Vertex.class),"Only vertex indexing is supported");
+
+        if (containsType(key)) {
+            TitanType type = getType(key);
+            if (!type.isPropertyKey()) throw new IllegalArgumentException("Key does not denote a property key but a label!");
+            if (!((TitanKey)type).hasIndex()) throw new UnsupportedOperationException("Need to define particular key as indexed before it is being used!");
+        } else {
+            makeType().functional(false).name(key).dataType(Object.class).indexed().makePropertyKey();
+        }
+    }
+
+    @Override
+    public <T extends Element> Set<String> getIndexedKeys(Class<T> elementClass) {
+        Preconditions.checkArgument(elementClass.equals(Vertex.class),"Only vertex indexing is supported");
+
+        Set<String> indexedkeys = new HashSet<String>();
+        for (TitanVertex v : getVertices(SystemKey.TypeClass, TitanTypeClass.KEY)) {
+            assert v instanceof TitanKey;
+            TitanKey k = (TitanKey)v;
+            if (k.hasIndex()) indexedkeys.add(k.getName());
+        }
+        return indexedkeys;
     }
 }

@@ -50,9 +50,9 @@ public class TitanBenchmarkSuite extends TestSuite {
             double currentTime = this.stopWatch();
             totalTime = totalTime + currentTime;
             BaseTest.printPerformance(graph.toString(), counter, "TinkerGraph elements touched", currentTime);
-            graph.shutdown();
         }
         BaseTest.printPerformance("TinkerGraph", 1, "TinkerGraph experiment average", totalTime / (double) TOTAL_RUNS);
+        graph.shutdown();
     }
 
 }

@@ -203,7 +203,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 		@Override
 		protected void doLoad() {
 			TitanKey weight = makeWeightPropertyType("weight");
-			TitanKey id = makeIDPropertyType("id");
+			TitanKey id = makeIDPropertyType("uid");
 			TitanLabel knows = makeLabeledRelationshipType("knows",id,weight);
 			TitanKey name = makeStringPropertyType("name");
 			

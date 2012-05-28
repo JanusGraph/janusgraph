@@ -97,7 +97,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         assert (!(n instanceof InternalRelation) || !((InternalRelation)n).isInline());
         assert n.isNew();
         assert !n.hasID();
-        
+
         boolean isNode = !(n instanceof InternalRelation);
         if (config.assignIDsImmediately()) {
             graphdb.assignID(n);           
@@ -447,7 +447,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	 */	
 	
 	private void close() {
-         vertexCache.close(); vertexCache =null;
+        vertexCache.close(); vertexCache =null;
 		keyIndex.clear(); keyIndex=null;
 		isOpen=false;
 	}

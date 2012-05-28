@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.util.interval;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
@@ -113,10 +114,11 @@ public class Range<V extends Comparable<V>> implements AtomicInterval<V> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean inInterval(Object obj) {
-		if (!(start.getClass().isAssignableFrom(obj.getClass()))) return false;
+        Preconditions.checkNotNull(obj);
+        if (start==null && end==null) return true;
 		V p = (V)obj;
-		int startcomp = p.compareTo(start);
-		int endcomp = p.compareTo(end);
+		int startcomp = start==null?1:p.compareTo(start);
+		int endcomp = end==null?-1:p.compareTo(end);
 		if (startcomp<0 || endcomp>0) return false;
 		else if (startcomp==0 && !startInclusive) return false;
 		else if (endcomp==0 && !endInclusive) return false;

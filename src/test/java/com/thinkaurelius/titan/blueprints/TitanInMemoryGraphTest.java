@@ -1,11 +1,9 @@
 package com.thinkaurelius.titan.blueprints;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.testutil.MemoryAssess;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.GraphTest;
 import com.tinkerpop.blueprints.util.io.gml.GMLReaderTestSuite;
@@ -20,7 +18,7 @@ import java.util.Set;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class TitanGraphTest extends GraphTest {
+public class TitanInMemoryGraphTest extends GraphTest {
 
     public void testTitanBenchmarkTestSuite() throws Exception {
         this.stopWatch();
@@ -52,16 +50,25 @@ public class TitanGraphTest extends GraphTest {
         printTestPerformance("QueryTestSuite", this.stopWatch());
     }
 
+    //Titan does not support manual indexes
+
+//    public void testIndexableGraphTestSuite() throws Exception {
+//        this.stopWatch();
+//        doTestSuite(new IndexableGraphTestSuite(this));
+//        printTestPerformance("IndexableGraphTestSuite", this.stopWatch());
+//    }
+
+
+//    public void testIndexTestSuite() throws Exception {
+//        this.stopWatch();
+//        doTestSuite(new IndexTestSuite(this));
+//        printTestPerformance("IndexTestSuite", this.stopWatch());
+//    }
+
     public void testKeyIndexableGraphTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new KeyIndexableGraphTestSuite(this), ImmutableSet.of("testAutoIndexKeyManagementWithPersistence"));
+        doTestSuite(new KeyIndexableGraphTestSuite(this));
         printTestPerformance("KeyIndexableGraphTestSuite", this.stopWatch());
-    }
-
-    public void testTransactionalGraphTestSuite() throws Exception {
-        this.stopWatch();
-        doTestSuite(new TransactionalGraphTestSuite(this), ImmutableSet.of("testTransactionsForEdges", "testBulkTransactionsOnEdges"));
-        printTestPerformance("TransactionalTitanGraphTestSuite", this.stopWatch());
     }
 
     public void testGraphMLReaderTestSuite() throws Exception {
@@ -84,10 +91,10 @@ public class TitanGraphTest extends GraphTest {
 
     @Override
     public Graph generateGraph() {
-        graph = TitanFactory.open(StorageSetup.getHomeDir());
+        graph = TitanFactory.openInMemoryGraph();
         return graph;
     }
-
+    
     private TitanGraph graph = null;
 
     @Override
@@ -98,21 +105,19 @@ public class TitanGraphTest extends GraphTest {
     public void doTestSuite(TestSuite testSuite, Set<String> ignoreTests) throws Exception {
         StorageSetup.deleteHomeDir();
         for (Method method : testSuite.getClass().getDeclaredMethods()) {
-            if (ignoreTests.contains(method.getName())
-                    || !method.getName().startsWith("test")) continue;
+            if (ignoreTests.contains(method.getName())) continue;
             try {
-
-                System.out.println("Testing " + method.getName() + "...");
-                method.invoke(testSuite);
-//                System.out.println("##################### MEMORY ############");
-//                System.out.println(MemoryAssess.getMemoryUse()/1024);
+                if (method.getName().startsWith("test")) {
+                    System.out.println("Testing " + method.getName() + "...");
+                    method.invoke(testSuite);
+                }
                 graph = null;
             } catch (Throwable e) {
                 System.err.println("Encountered error in " + method.getName());
                 e.printStackTrace();
                 throw new RuntimeException(e);
             } finally {
-                if (graph!=null && graph.isOpen()) {
+                if (graph!=null) {
                     graph.shutdown();
                     graph=null;
                 }

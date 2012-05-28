@@ -13,10 +13,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class TransactionalGraphTestSuite  extends TestSuite {
+public class TransactionalTitanGraphTestSuite extends TestSuite {
 
 
-    public TransactionalGraphTestSuite(final GraphTest graphTest) {
+    public TransactionalTitanGraphTestSuite(final GraphTest graphTest) {
         super(graphTest);
     }
 

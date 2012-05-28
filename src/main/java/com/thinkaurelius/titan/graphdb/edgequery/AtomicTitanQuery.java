@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableEdgeIterable;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableEdgeIterator;
+import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.interval.AtomicInterval;
 import com.thinkaurelius.titan.util.interval.IntervalUtil;
 import com.thinkaurelius.titan.util.interval.PointInterval;
@@ -17,6 +18,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -30,7 +32,7 @@ public class AtomicTitanQuery implements InternalTitanQuery {
     private boolean inMemoryRetrieval=false;
     
     private Direction dir;
-    private TitanType type;
+    protected TitanType[] types;
     private TypeGroup group;
     private Map<String,Object> constraints;
 
@@ -46,7 +48,7 @@ public class AtomicTitanQuery implements InternalTitanQuery {
         this.tx=tx;
         
         dir = null;
-        type = null;
+        types = null;
         group = null;
         queryProps=true;
         queryRelships=true;
@@ -76,7 +78,8 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 
     AtomicTitanQuery(AtomicTitanQuery q) {
         dir = q.dir;
-        type = q.type;
+        if (q.types==null) types=null;
+        else types = q.types.clone();
         group = q.group;
         queryProps=q.queryProps;
         queryRelships=q.queryRelships;
@@ -194,69 +197,61 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 
     @Override
     public AtomicTitanQuery labels(String... type) {
-        if (type.length==0) {
-            this.type=null;
-        } else {
-            Preconditions.checkArgument(type.length==1);
-            type(type[0]);
+        Preconditions.checkNotNull(type);
+        TitanType[] ttype = new TitanType[type.length];
+        Preconditions.checkNotNull(tx);
+        for (int i=0;i<type.length;i++) {
+            ttype[i] = tx.getType(type[i]);
         }
-        return this;
+        return types(ttype);
     }
 
     @Override
     public AtomicTitanQuery keys(String... type) {
-        if (type.length==0) {
-            this.type=null;
-        } else {
-            Preconditions.checkArgument(type.length==1);
-            type(type[0]);
-        }
-        return this;
+        return labels(type);
     }
     
     @Override
     public AtomicTitanQuery types(TitanType... type) {
-        if (type.length==0) {
-            this.type=null;
-        } else {
-            Preconditions.checkArgument(type.length==1);
-            type(type[0]);
+        Preconditions.checkNotNull(type);
+        if (type.length==0) types=null;
+        else if (type.length>1) throw new IllegalArgumentException("Atomic query does not support multiple labels or keys");
+        else {
+            if (type[0]==null) types = new TitanType[0];
+            else {
+                type(type[0]);
+            }
         }
+        group = null;
         return this;
-    }
-    
-    public AtomicTitanQuery type(String type) {
-        Preconditions.checkNotNull(tx);
-        return type(tx.getType(type));
     }
     
     public AtomicTitanQuery type(TitanType type) {
         Preconditions.checkNotNull(type);
-        this.type = type;
-        group = null;
-        if (type.isEdgeLabel()) {
+        types = new TitanType[]{type};
+        if (types[0].isEdgeLabel()) {
             edgesOnly();
             if (dir==null) {
-                if (((TitanLabel)type).isUnidirected()) dir = Direction.OUT;
+                if (((TitanLabel)types[0]).isUnidirected()) dir = Direction.OUT;
                 else dir = Direction.BOTH;
             }
         }
         else {
-            assert type.isPropertyKey();
+            assert types[0].isPropertyKey();
             propertiesOnly();
         }
         return this;
     }
 
-    protected void removeEdgeType() {
-        type = null;
-    }
+//    protected void removeEdgeType() {
+//        type = null;
+//    }
 	
 	@Override
 	public AtomicTitanQuery group(TypeGroup group) {
         Preconditions.checkNotNull(group);
         this.group=group;
-        removeEdgeType();
+        this.types=null;
         allEdges();
 		return this;
 	}
@@ -283,11 +278,6 @@ public class AtomicTitanQuery implements InternalTitanQuery {
     @Override
     public AtomicTitanQuery limit(long limit) {
         this.limit=limit;
-        return this;
-    }
-    
-    public AtomicTitanQuery resetRetrievalLimit() {
-        this.limit = Long.MAX_VALUE;
         return this;
     }
 
@@ -323,13 +313,13 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 
     @Override
     public boolean hasEdgeTypeCondition() {
-        return type!=null;
+        return types!=null && types.length>0;
     }
 
     @Override
     public TitanType getTypeCondition() {
         if (!hasEdgeTypeCondition()) throw new IllegalStateException("This query does not have a edge type condition!");
-        return type;
+        return types[0];
     }
 
 
@@ -415,58 +405,66 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 	 * ---------------------------------------------------------------
 	 */
 	
+    private boolean emptyQuery() {
+        return types!=null && types.length==0;
+    }
 	
 	@Override
 	public Iterable<TitanProperty> properties() {
 		propertiesOnly();
+        if (emptyQuery()) return IterablesUtil.emptyIterable();
 		return new RemovableEdgeIterable<TitanProperty>(node.getRelations(this, true));
 	}
 
 
 	public Iterator<TitanProperty> propertyIterator() {
 		propertiesOnly();
+        if (emptyQuery()) return Iterators.emptyIterator();
 		return new RemovableEdgeIterator<TitanProperty>(node.getRelations(this, true).iterator());
 	}
 
 	public Iterator<TitanEdge> edgeIterator() {
 		edgesOnly();
+        if (emptyQuery()) return Iterators.emptyIterator();
 		return new RemovableEdgeIterator<TitanEdge>(node.getRelations(this, true).iterator());
 	}
 
 	@Override
 	public Iterable<Edge> edges() {
 		edgesOnly();
+        if (emptyQuery()) return IterablesUtil.emptyIterable();
 		return (Iterable)new RemovableEdgeIterable<TitanEdge>(node.getRelations(this, true));
 	}
 
     @Override
     public Iterable<TitanEdge> titanEdges() {
         edgesOnly();
+        if (emptyQuery()) return IterablesUtil.emptyIterable();
         return new RemovableEdgeIterable<TitanEdge>(node.getRelations(this, true));
     }
 
 
     public Iterator<TitanRelation> relationIterator() {
 		allEdges();
+        if (emptyQuery()) return Iterators.emptyIterator();
 		return new RemovableEdgeIterator<TitanRelation>(node.getRelations(this, true).iterator());
 	}
 
 	@Override
 	public Iterable<TitanRelation> relations() {
 		allEdges();
+        if (emptyQuery()) return IterablesUtil.emptyIterable();
 		return new RemovableEdgeIterable<TitanRelation>(node.getRelations(this, true));
 	}
 	
     @Override
     public long count() {
-        resetRetrievalLimit();
         edgesOnly();
         return Iterators.size(edgeIterator());
     }
 
     @Override
     public long propertyCount() {
-        resetRetrievalLimit();
         propertiesOnly();
         return Iterators.size(propertyIterator());
     }
@@ -491,7 +489,9 @@ public class AtomicTitanQuery implements InternalTitanQuery {
     @Override
     public VertexListInternal vertexIds() {
         Preconditions.checkNotNull(tx);
-        if (retrieveInMemory()) {
+        if (emptyQuery()) {
+            return new VertexArrayList();
+        } else if (retrieveInMemory()) {
             return retrieveFromMemory(new VertexArrayList());
         } else {
             return getVertexIDs();

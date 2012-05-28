@@ -42,7 +42,9 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
 	  * 
 	  * @throws GraphStorageException if closing the graph database caused errors in the storage backend
 	  */
-	 public void shutdown() throws GraphStorageException;
+	public void shutdown() throws GraphStorageException;
+
+    public boolean isOpen();
 
 	
 }

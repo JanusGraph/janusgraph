@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 import com.thinkaurelius.titan.graphdb.edges.SimpleBinaryTitanEdge;
 import com.thinkaurelius.titan.graphdb.entitystatus.BasicElement;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
-import com.thinkaurelius.titan.graphdb.vertices.NodeUtil;
+import com.thinkaurelius.titan.graphdb.vertices.VertexUtil;
 
 public class PersistSimpleBinaryTitanEdge extends SimpleBinaryTitanEdge {
 
@@ -25,7 +25,7 @@ public class PersistSimpleBinaryTitanEdge extends SimpleBinaryTitanEdge {
 
 	@Override
 	public int hashCode() {
-		if (hasID()) return NodeUtil.getIDHashCode(this);
+		if (hasID()) return VertexUtil.getIDHashCode(this);
 		else return super.hashCode();
 	}
 
@@ -35,7 +35,7 @@ public class PersistSimpleBinaryTitanEdge extends SimpleBinaryTitanEdge {
 		else if (!(oth instanceof InternalRelation)) return false;
 		InternalRelation other = (InternalRelation)oth;
 		if (hasID() || other.hasID()) {
-			if (hasID() && other.hasID()) return NodeUtil.equalIDs(this, other);
+			if (hasID() && other.hasID()) return VertexUtil.equalIDs(this, other);
 			else return false;
 		}
 		return super.equals(other);

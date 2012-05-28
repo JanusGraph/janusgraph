@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.graphdb.edgequery.ComplexTitanQuery;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
-import com.thinkaurelius.titan.graphdb.vertices.NodeUtil;
+import com.thinkaurelius.titan.graphdb.vertices.VertexUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -57,7 +57,7 @@ public class LabeledBinaryTitanEdge extends SimpleBinaryTitanEdge {
 	public Iterable<InternalRelation> getRelations(InternalTitanQuery query,
                                                    boolean loadRemaining) {
 		if (!query.isAllowedDirection(EdgeDirection.OUT)) return AdjacencyList.Empty;
-		else return NodeUtil.filterQueryQualifications(query, NodeUtil.getQuerySpecificIterable(outEdges, query));
+		else return VertexUtil.filterByQuery(query, VertexUtil.getQuerySpecificIterable(outEdges, query));
 	}
 	
 	@Override
@@ -104,7 +104,7 @@ public class LabeledBinaryTitanEdge extends SimpleBinaryTitanEdge {
     @Override
     public int hashCode() {
         if (hasID()) {
-            return NodeUtil.getIDHashCode(this);
+            return VertexUtil.getIDHashCode(this);
         } else {
             assert isNew();
             return super.hashCode();
@@ -117,7 +117,7 @@ public class LabeledBinaryTitanEdge extends SimpleBinaryTitanEdge {
         if (oth==this) return true;
         else if (!(oth instanceof InternalTitanVertex)) return false;
         InternalTitanVertex other = (InternalTitanVertex)oth;
-        return NodeUtil.equalIDs(this, other);
+        return VertexUtil.equalIDs(this, other);
     }
 
     @Override

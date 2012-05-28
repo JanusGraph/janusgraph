@@ -17,7 +17,7 @@ public class MemoryAssess {
 	
 	  private static long fSLEEP_INTERVAL = 100;
 
-	  private static long getMemoryUse(){
+	  public static long getMemoryUse(){
 	    putOutTheGarbage();
 	    long totalMemory = Runtime.getRuntime().totalMemory();
 

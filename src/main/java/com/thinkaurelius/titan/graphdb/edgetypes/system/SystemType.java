@@ -37,7 +37,6 @@ public abstract class SystemType extends LoadedEmptyTitanVertex implements Inter
 		return true;
 	}
 
-
 	@Override
 	public boolean isModifiable() {
 		return false;
