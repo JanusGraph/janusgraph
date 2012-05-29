@@ -16,28 +16,28 @@ import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.DirectStoreMutator;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.StoreMutator;
 import com.thinkaurelius.titan.core.GraphStorageException;
-import com.thinkaurelius.titan.graphdb.database.idassigner.NodeIDAssigner;
+import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.statistics.TransactionStatistics;
-import com.thinkaurelius.titan.graphdb.database.util.EdgeTypeSignature;
+import com.thinkaurelius.titan.graphdb.database.util.TypeSignature;
 import com.thinkaurelius.titan.graphdb.database.util.LimitTracker;
-import com.thinkaurelius.titan.graphdb.edgequery.AtomicTitanQuery;
-import com.thinkaurelius.titan.graphdb.edgequery.EdgeQueryUtil;
-import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
-import com.thinkaurelius.titan.graphdb.edges.factory.RelationLoader;
-import com.thinkaurelius.titan.graphdb.edgetypes.InternalTitanType;
-import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemTypeManager;
+import com.thinkaurelius.titan.graphdb.query.AtomicTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
+import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.relations.factory.RelationLoader;
+import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
+import com.thinkaurelius.titan.graphdb.types.manager.SimpleTypeManager;
+import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
+import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.thinkaurelius.titan.util.interval.AtomicInterval;
-import com.thinkaurelius.titan.graphdb.edges.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.edgetypes.EdgeTypeDefinition;
-import com.thinkaurelius.titan.graphdb.edgetypes.manager.EdgeTypeManager;
-import com.thinkaurelius.titan.graphdb.edgetypes.manager.SimpleEdgeTypeManager;
+import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinition;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.transaction.StandardPersistTitanTx;
@@ -58,7 +58,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	
 	private final GraphDatabaseConfiguration config;
 	private final IDManager idManager;
-	private final EdgeTypeManager etManager;
+	private final TypeManager etManager;
 	
 	private final StorageManager storage;
 	private final OrderedKeyColumnValueStore edgeStore;
@@ -68,7 +68,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	
 	private final Serializer serializer;
 	
-	private final NodeIDAssigner idAssigner;
+	private final VertexIDAssigner idAssigner;
     private boolean isOpen;
 	
 	public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
@@ -84,7 +84,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         this.idManager = idAssigner.getIDManager();
 		
 		this.serializer = config.getSerializer();
-        this.etManager = new SimpleEdgeTypeManager(this);
+        this.etManager = new SimpleTypeManager(this);
         isOpen = true;
 	}
 	
@@ -134,7 +134,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 	@Override
 	public boolean containsVertexID(long id, InternalTitanTransaction tx) {
-		log.debug("Checking node existence for {}",id);
+		log.trace("Checking node existence for {}", id);
 		return edgeStore.containsKey(IDHandler.getKey(id), tx.getTxHandle());
 	}
 
@@ -145,30 +145,30 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		Preconditions.checkArgument(pt.hasIndex(),
 					"Cannot retrieve for given property type - it does not have an hasIndex.");
 
-		long[] nodes = null;
+		long[] vertices = null;
 			
         Preconditions.checkArgument(pt.getDataType().isInstance(key),"Specified object is incompatible with property data type ["+pt.getName()+"].");
 
         if (pt.isUnique()) {
             ByteBuffer value = propertyIndex.get(getIndexKey(key), getKeyedIndexColumn(pt), tx.getTxHandle());
             if (value!=null) {
-                nodes = new long[1];
-                nodes[0]=VariableLong.readPositive(value);
+                vertices = new long[1];
+                vertices[0]=VariableLong.readPositive(value);
             }
         } else {
             ByteBuffer startColumn = VariableLong.positiveByteBuffer(pt.getID());
             List<Entry> entries = propertyIndex.getSlice(getIndexKey(key), startColumn,
                                                         ByteBufferUtil.nextBiggerBuffer(startColumn), tx.getTxHandle());
-            nodes = new long[entries.size()];
+            vertices = new long[entries.size()];
             int i = 0;
             for (Entry ent : entries) {
-                nodes[i++] = VariableLong.readPositive(ent.getValue());
+                vertices[i++] = VariableLong.readPositive(ent.getValue());
             }
         }
 
 
-		if (nodes==null) return new long[0];
-		else return nodes;
+		if (vertices==null) return new long[0];
+		else return vertices;
 	}
 
     private final TitanType getTypeFromID(long etid, InternalTitanTransaction tx) {
@@ -182,7 +182,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 	@Override
 	public AbstractLongList getRawNeighborhood(InternalTitanQuery query, InternalTitanTransaction tx) {
-        Preconditions.checkArgument(EdgeQueryUtil.queryCoveredByDiskIndexes(query),
+        Preconditions.checkArgument(QueryUtil.queryCoveredByDiskIndexes(query),
                 "Raw retrieval is currently does not support in-memory filtering. To be implemented!");
 		List<Entry> entries = queryForEntries(query,tx.getTxHandle());
 		
@@ -234,7 +234,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
             Object[] keys = null;
             if (!titanType.isSimple()) {
-                EdgeTypeDefinition def = ((InternalTitanType) titanType).getDefinition();
+                TypeDefinition def = ((InternalTitanType) titanType).getDefinition();
                 String[] keysig = def.getKeySignature();
                 keys = new Object[keysig.length];
                 for (int i=0;i<keysig.length;i++) 
@@ -281,7 +281,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
             
 			//Read value inline edges if any
 			if (!titanType.isSimple()) {
-                EdgeTypeDefinition def = ((InternalTitanType) titanType).getDefinition();
+                TypeDefinition def = ((InternalTitanType) titanType).getDefinition();
                 //First create all keys buffered above
                 String[] keysig = def.getKeySignature();
                 for (int i=0;i<keysig.length;i++) {
@@ -376,7 +376,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 boolean isRange = false;
                 if (query.hasConstraints()) {
                     assert !et.isSimple();
-                    EdgeTypeDefinition def = ((InternalTitanType)et).getDefinition();
+                    TypeDefinition def = ((InternalTitanType)et).getDefinition();
                     String[] keysig = def.getKeySignature();
                     applicableConstraints = new ArrayList<Object>(keysig.length);
                     Map<String,Object> constraints = query.getConstraints();
@@ -507,15 +507,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     // ################### WRITE #########################
 	
 	private final StoreMutator getStoreMutator(TransactionHandle txh) {
-		if (bufferMutations) {
-            if (edgeStore instanceof MultiWriteKeyColumnValueStore &&
+		if (bufferMutations && edgeStore instanceof MultiWriteKeyColumnValueStore &&
                     propertyIndex instanceof MultiWriteKeyColumnValueStore) {
-                return new BatchStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize);
-            } else {
-				log.error("Storage backend does not support buffered writes, hence disabled: {}", storage.getClass().getCanonicalName());
-			}
-		}
-		return new DirectStoreMutator(txh, edgeStore, propertyIndex);
+            return new BatchStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize);
+		} else {
+		    return new DirectStoreMutator(txh, edgeStore, propertyIndex);
+        }
 	}
 
 
@@ -545,13 +542,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	@Override
 	public boolean save(Collection<InternalRelation> addedRelations,
 			Collection<InternalRelation> deletedRelations, InternalTitanTransaction tx) throws GraphStorageException {
-		log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
-		Map<TitanType,EdgeTypeSignature> signatures = new HashMap<TitanType,EdgeTypeSignature>();
+		log.trace("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
+		Map<TitanType,TypeSignature> signatures = new HashMap<TitanType,TypeSignature>();
 		TransactionHandle txh = tx.getTxHandle();
 		TransactionStatistics stats = new TransactionStatistics();
 		
 		StoreMutator mutator = getStoreMutator(txh);
-
+        boolean acquireLocks = tx.getTxConfiguration().acquireLocks();
+        
 		//1. Assign TitanVertex IDs
 		assignIDs(addedRelations,tx);
 
@@ -566,12 +564,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                         mutations.put(node,del);
                         if (node.isRemoved()) stats.removedNode(node);
                     }
-                    if (pos==0 && del.getType().isFunctional() && ((InternalTitanType)del.getType()).isFunctionalLocking()) {
+                    if (pos==0 && acquireLocks && del.getType().isFunctional() &&
+                            ((InternalTitanType)del.getType()).isFunctionalLocking()) {
                         Entry entry = getEntry(tx,del,node,signatures);
                         mutator.acquireEdgeLock(IDHandler.getKey(node.getID()),entry.getColumn(),entry.getValue());
                     }
                 }
-                if (del.isProperty()) {
+                if (acquireLocks && del.isProperty()) {
                     lockKeyedProperty((TitanProperty)del,mutator);
                 }
 
@@ -614,14 +613,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 						if (node.isNew() && !mutations.containsKey(node)) stats.addedNode(node);
 						mutations.put(node, edge);
 					}
-                    if (pos==0 && edge.getType().isFunctional() && !node.isNew()
+                    if (pos==0 && acquireLocks && edge.getType().isFunctional() && !node.isNew()
                             && ((InternalTitanType)edge.getType()).isFunctionalLocking()) {
                         Entry entry = getEntry(tx,edge,node,signatures,true);
                         mutator.acquireEdgeLock(IDHandler.getKey(node.getID()),entry.getColumn(),null);
                     }
 				}
 			}
-            if (edge.isProperty()) {
+            if (acquireLocks && edge.isProperty()) {
                 lockKeyedProperty((TitanProperty)edge,mutator);
             }
 		}
@@ -632,7 +631,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		if (otherEdgeTypes!=null) persist(otherEdgeTypes,signatures,tx,mutator);
         mutator.flush();
 
-        //Commit saved EdgeTypes to EdgeTypeManager
+        //Commit saved EdgeTypes to TypeManager
         if (simpleEdgeTypes!=null) commitEdgeTypes(simpleEdgeTypes.keySet());
         if (otherEdgeTypes!=null) commitEdgeTypes(otherEdgeTypes.keySet());
 
@@ -649,14 +648,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	}
 	
 
-	private<N extends InternalTitanVertex> void persist(ListMultimap<N,InternalRelation> mutatedEdges, Map<TitanType,EdgeTypeSignature> signatures,
+	private<N extends InternalTitanVertex> void persist(ListMultimap<N,InternalRelation> mutatedEdges, Map<TitanType,TypeSignature> signatures,
 			InternalTitanTransaction tx, StoreMutator mutator) {
 		assert mutatedEdges!=null && !mutatedEdges.isEmpty();
 
-		Collection<N> nodes = mutatedEdges.keySet();
+		Collection<N> vertices = mutatedEdges.keySet();
 //		if (sortNodes) {
-//			List<N> sortednodes = new ArrayList<N>(nodes);
-//			Collections.sort(sortednodes, new Comparator<N>(){
+//			List<N> sortedvertices = new ArrayList<N>(vertices);
+//			Collections.sort(sortedvertices, new Comparator<N>(){
 //
 //				@Override
 //				public int compare(N o1, N o2) {
@@ -666,10 +665,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 //				}
 //
 //			});
-//			nodes=sortednodes;
+//			vertices=sortedvertices;
 //		}
 
-		for (N node : nodes) {
+		for (N node : vertices) {
 			List<InternalRelation> edges = mutatedEdges.get(node);
 			List<Entry> additions = new ArrayList<Entry>(edges.size());
             List<ByteBuffer> deletions = new ArrayList<ByteBuffer>(Math.max(10,edges.size()/10));
@@ -696,11 +695,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 	}
 
-	private Entry getEntry(InternalTitanTransaction tx,InternalRelation edge, InternalTitanVertex perspective, Map<TitanType,EdgeTypeSignature> signatures) {
+	private Entry getEntry(InternalTitanTransaction tx,InternalRelation edge, InternalTitanVertex perspective, Map<TitanType,TypeSignature> signatures) {
 		return getEntry(tx,edge,perspective,signatures,false);
 	}
 
-	private Entry getEntry(InternalTitanTransaction tx,InternalRelation edge, InternalTitanVertex perspective, Map<TitanType,EdgeTypeSignature> signatures, boolean columnOnly) {
+	private Entry getEntry(InternalTitanTransaction tx,InternalRelation edge, InternalTitanVertex perspective, Map<TitanType,TypeSignature> signatures, boolean columnOnly) {
 		TitanType et = edge.getType();
         long etid = et.getID();
 
@@ -755,7 +754,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 }
             }
         } else {
-			EdgeTypeSignature ets = getSignature(tx,et,signatures);
+			TypeSignature ets = getSignature(tx,et,signatures);
 			
 			InternalRelation[] keys = new InternalRelation[ets.keyLength()],
 						   values = new InternalRelation[ets.valueLength()];
@@ -765,7 +764,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 			DataOutput out = serializer.getDataOutput(defaultOutputCapacity, true);
             IDHandler.writeEdgeType(out,etid,dirID,idManager);
 
-			for (int i=0;i<keys.length;i++) writeInlineEdge(out, keys[i], ets.getKeyEdgeType(i));
+			for (int i=0;i<keys.length;i++) writeInlineEdge(out, keys[i], ets.getKeyType(i));
 			
 			if (!et.isFunctional()) {
 				VariableLong.writePositive(out,edge.getID());
@@ -787,7 +786,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                     assert edge.isEdge();
                     VariableLong.writePositive(out, edge.getID());
                 }
-                for (int i=0;i<values.length;i++) writeInlineEdge(out, values[i], ets.getValueEdgeType(i));
+                for (int i=0;i<values.length;i++) writeInlineEdge(out, values[i], ets.getValueType(i));
                 for (InternalRelation v: rest) writeInlineEdge(out, v);
                 value = out.getByteBuffer();
             }
@@ -845,10 +844,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		}
 	}
 	
-	private static EdgeTypeSignature getSignature(InternalTitanTransaction tx,TitanType et, Map<TitanType,EdgeTypeSignature> signatures) {
-		EdgeTypeSignature ets = signatures.get(et);
+	private static TypeSignature getSignature(InternalTitanTransaction tx,TitanType et, Map<TitanType,TypeSignature> signatures) {
+		TypeSignature ets = signatures.get(et);
 		if (ets==null) {
-			ets = new EdgeTypeSignature(et,tx);
+			ets = new TypeSignature(et,tx);
 			signatures.put(et, ets);
 		}
 		return ets;

@@ -6,14 +6,15 @@ import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.QueryException;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsVertexUtil;
-import com.thinkaurelius.titan.graphdb.edgequery.AtomicTitanQuery;
-import com.thinkaurelius.titan.graphdb.edgequery.ComplexTitanQuery;
-import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.ComplexTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
 import com.thinkaurelius.titan.graphdb.entitystatus.InMemoryElement;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.StringFactory;
 
 import java.util.Set;
 
@@ -60,6 +61,11 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 	public InternalTitanVertex clone() throws CloneNotSupportedException{
 		throw new CloneNotSupportedException();
 	}
+    
+    @Override
+    public String toString() {
+        return StringFactory.vertexString(this);
+    }
 
 	
 	/* ---------------------------------------------------------------
@@ -256,7 +262,8 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 
     @Override
     public Object getId() {
-        return Long.valueOf(getID());
+        if (hasID()) return Long.valueOf(getID());
+        else return null;
     }
 
 	@Override

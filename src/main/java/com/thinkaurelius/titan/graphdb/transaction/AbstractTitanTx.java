@@ -10,16 +10,16 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
-import com.thinkaurelius.titan.graphdb.edgequery.ComplexTitanQuery;
-import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
-import com.thinkaurelius.titan.graphdb.edges.factory.RelationFactory;
-import com.thinkaurelius.titan.graphdb.edgetypes.InternalTitanType;
-import com.thinkaurelius.titan.graphdb.edgetypes.manager.EdgeTypeManager;
-import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.query.ComplexTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.relations.factory.RelationFactory;
+import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
+import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
+import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
-import com.thinkaurelius.titan.graphdb.vertices.factory.NodeFactory;
+import com.thinkaurelius.titan.graphdb.vertices.factory.VertexFactory;
 import com.thinkaurelius.titan.util.traversal.AllEdgesIterable;
 import com.thinkaurelius.titan.util.datastructures.Factory;
 import com.thinkaurelius.titan.util.datastructures.Maps;
@@ -43,8 +43,8 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
     protected InternalTitanGraph graphdb;
 
-	protected final EdgeTypeManager etManager;
-	protected final NodeFactory nodeFactory;
+	protected final TypeManager etManager;
+	protected final VertexFactory vertexFactory;
 	protected final RelationFactory edgeFactory;
 	
 	private ConcurrentMap<TitanKey,ConcurrentMap<Object,TitanVertex>> keyIndex;
@@ -58,11 +58,11 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     private boolean isOpen;
 	private final TransactionConfig config;
 
-	public AbstractTitanTx(InternalTitanGraph g, NodeFactory nodeFac, RelationFactory edgeFac,
-                           EdgeTypeManager etManage, TransactionConfig config) {
+	public AbstractTitanTx(InternalTitanGraph g, VertexFactory vertexFac, RelationFactory edgeFac,
+                           TypeManager etManage, TransactionConfig config) {
 		graphdb = g;
         etManager = etManage;
-		nodeFactory = nodeFac;
+		vertexFactory = vertexFac;
 		edgeFactory = edgeFac;
 		edgeFactory.setTransaction(this);
 		
@@ -113,7 +113,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	@Override
 	public TitanVertex addVertex() {
 		verifyWriteAccess();
-		InternalTitanVertex n = nodeFactory.createNew(this);
+		InternalTitanVertex n = vertexFactory.createNew(this);
 		return n;
 	}
     
@@ -144,11 +144,11 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
                 IDInspector idspec = graphdb.getIDInspector();
 
                 if (idspec.isEdgeTypeID(id)) {
-                    node = etManager.getEdgeType(id, this);
+                    node = etManager.getType(id, this);
                 } else if (graphdb.isReferenceVertexID(id)) {
                     throw new UnsupportedOperationException("Reference vertices are currently not supported!");
                 } else if (idspec.isNodeID(id)) {
-                    node = nodeFactory.createExisting(this,id);
+                    node = vertexFactory.createExisting(this,id);
                 } else throw new IllegalArgumentException("ID could not be recognized!");
                 vertexCache.add(node, id);
             }
@@ -209,14 +209,14 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	@Override
 	public TypeMaker makeType() {
 		verifyWriteAccess();
-		return etManager.getEdgeTypeMaker(this);
+		return etManager.getTypeMaker(this);
 	}
 
 	@Override
 	public boolean containsType(String name) {
 		Map<Object,TitanVertex> subindex = keyIndex.get(SystemKey.TypeName);
 		if (subindex==null || !subindex.containsKey(name)) {
-            return etManager.containsEdgeType(name, this);
+            return etManager.containsType(name, this);
         } else return true;
 	}
 
@@ -228,8 +228,8 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
             et = (TitanType)subindex.get(name);
         }
         if (et==null) {
-            //Second, check EdgeTypeManager
-            InternalTitanType eti = etManager.getEdgeType(name, this);
+            //Second, check TypeManager
+            InternalTitanType eti = etManager.getType(name, this);
             if (eti!=null)
                 vertexCache.add(eti, eti.getID());
             et=eti;
@@ -429,15 +429,15 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         Preconditions.checkArgument(key.hasIndex());
         //First, get stuff from disk
         long[] nodeids = getVertexIDsFromDisk(key, attribute);
-        Set<TitanVertex> nodes = new HashSet<TitanVertex>(nodeids.length);
+        Set<TitanVertex> vertices = new HashSet<TitanVertex>(nodeids.length);
         for (int i=0;i<nodeids.length;i++)
-            nodes.add(getExistingVertex(nodeids[i]));
+            vertices.add(getExistingVertex(nodeids[i]));
         //Next, the in-memory stuff
         Multimap<Object,TitanVertex> subindex = attributeIndex.get(key);
         if (subindex!=null) {
-            nodes.addAll(subindex.get(attribute));
+            vertices.addAll(subindex.get(attribute));
         }
-		return nodes;
+		return vertices;
 	}
 
 	

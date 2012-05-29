@@ -37,9 +37,9 @@ public interface GraphStatistics {
 	public long getNoEdges();
 	
 	/**
-	 * Returns the number of nodes stored in the graph database.
+	 * Returns the number of vertices stored in the graph database.
 	 * 
-	 * @return Number of nodes stored in the graph database.
+	 * @return Number of vertices stored in the graph database.
 	 */
 	public long getNoNodes();
 	

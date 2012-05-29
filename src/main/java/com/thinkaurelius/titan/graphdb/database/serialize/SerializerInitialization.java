@@ -1,12 +1,12 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
-import com.thinkaurelius.titan.graphdb.edgetypes.*;
-import com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory;
+import com.thinkaurelius.titan.graphdb.types.*;
+import com.thinkaurelius.titan.graphdb.types.TypeCategory;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.DoubleSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.FloatSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.IntegerSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.LongSerializer;
-import com.thinkaurelius.titan.graphdb.edgetypes.group.StandardTypeGroup;
+import com.thinkaurelius.titan.graphdb.types.group.StandardTypeGroup;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -15,11 +15,11 @@ import java.util.HashMap;
 public class SerializerInitialization {
 
 	public static final void initialize(Serializer serializer) {
-		serializer.registerClass(StandardPropertyType.class);
-		serializer.registerClass(StandardRelationshipType.class);
-		serializer.registerClass(EdgeTypeVisibility.class);
+		serializer.registerClass(StandardPropertyKey.class);
+		serializer.registerClass(StandardEdgeLabel.class);
+		serializer.registerClass(TypeVisibility.class);
 		serializer.registerClass(Directionality.class);
-		serializer.registerClass(EdgeCategory.class);
+		serializer.registerClass(TypeCategory.class);
         serializer.registerClass(FunctionalType.class);
 		serializer.registerClass(StandardTypeGroup.class);
         serializer.registerClass(Object.class);

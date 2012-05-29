@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

@@ -1,10 +1,8 @@
 package com.thinkaurelius.titan.graphdb;
 
 
-import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
-import com.thinkaurelius.titan.graphdb.edgetypes.Directionality;
+import com.thinkaurelius.titan.graphdb.types.Directionality;
 import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;

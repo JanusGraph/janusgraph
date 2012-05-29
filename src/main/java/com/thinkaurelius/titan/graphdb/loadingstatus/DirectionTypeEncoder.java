@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.loadingstatus;
 
-import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
-import com.thinkaurelius.titan.graphdb.edges.EdgeDirection;
+import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.util.datastructures.BitMap;
 
 public class DirectionTypeEncoder {

@@ -1,17 +1,14 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
+import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
-import java.util.Iterator;
 import java.util.Set;
 
 public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
@@ -196,7 +193,8 @@ public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
 
     @Override
     public Object getId() {
-        return Long.valueOf(getID());
+        if (hasID()) return Long.valueOf(getID());
+        else return null;
     }
 
 	@Override

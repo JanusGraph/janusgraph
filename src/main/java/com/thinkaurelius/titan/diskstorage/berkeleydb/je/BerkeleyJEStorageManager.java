@@ -8,6 +8,8 @@ import com.thinkaurelius.titan.diskstorage.util.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import org.apache.commons.configuration.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 import java.io.File;
@@ -16,6 +18,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BerkeleyJEStorageManager implements KeyValueStorageManager {
+
+    private Logger log = LoggerFactory.getLogger(BerkeleyJEStorageManager.class);
+
 
     private static final String CACHE_KEY = "cache_percentage";
     private static final int CACHE_DEFAULT = 65;
@@ -40,7 +45,12 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
         Preconditions.checkArgument(directory.isDirectory() && directory.canWrite(),"Cannot open or write to directory: " + directory);
 		isReadOnly= configuration.getBoolean(STORAGE_READONLY_KEY,STORAGE_READONLY_DEFAULT);
 		batchLoading=configuration.getBoolean(STORAGE_BATCH_KEY,STORAGE_BATCH_DEFAULT);
-        transactional = configuration.getBoolean(STORAGE_TRANSACTIONAL_KEY,STORAGE_TRANSACTIONAL_DEFAULT);
+        boolean transactional = configuration.getBoolean(STORAGE_TRANSACTIONAL_KEY,STORAGE_TRANSACTIONAL_DEFAULT);
+        if (batchLoading) {
+            if (transactional) log.warn("Disabling transactional since batch loading is enabled!");
+            transactional=false;
+        }
+        this.transactional=transactional;
         int cachePercentage = configuration.getInt(CACHE_KEY,CACHE_DEFAULT);
         
         idManagerTableName = configuration.getString(IDMANAGER_KEY,IDMANAGER_DEFAULT);

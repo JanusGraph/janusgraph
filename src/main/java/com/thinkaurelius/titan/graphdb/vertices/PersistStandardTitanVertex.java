@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
-import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
+import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.entitystatus.BasicElement;
 import com.thinkaurelius.titan.graphdb.loadingstatus.LoadingStatus;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
@@ -124,12 +124,6 @@ public class PersistStandardTitanVertex extends StandardTitanVertex {
 	@Override
 	public boolean isReferenceVertex() {
 		return entity.isReferenceVertex();
-	}
-
-	@Override
-	public String toString() {
-		if (hasID()) return "TitanVertex"+ getID();
-		else return super.toString();
 	}
 
 

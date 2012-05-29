@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.edges.persist.PersistSimpleBinaryTitanEdge;
+import com.thinkaurelius.titan.graphdb.relations.persist.PersistSimpleTitanEdge;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
@@ -53,21 +53,21 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 				tx.addVertex();
 		}
 		p.end();
-		log.debug("Time per node in (ns): {}", (p.getNanoTime()/noNodes));
+		System.out.println("Time per node in (ns): " + (p.getNanoTime()/noNodes));
 		
 		p = new PerformanceTest(true);
 		for (int i=0;i<noNodes;i++) {
-			new PersistSimpleBinaryTitanEdge(connect,(InternalTitanVertex)nodes[i],(InternalTitanVertex)nodes[(i+1)%noNodes]);
+			new PersistSimpleTitanEdge(connect,(InternalTitanVertex)nodes[i],(InternalTitanVertex)nodes[(i+1)%noNodes]);
 		}
 		p.end();
-		log.debug("Time per edge in (ns): {}", (p.getNanoTime()/noNodes));	
+		System.out.println("Time per edge in (ns): " + (p.getNanoTime()/noNodes));
 		
 		p = new PerformanceTest(true);
 		for (int i=0;i<noNodes;i++) {
 			nodes[i].addEdge(connect, nodes[(i + 1) % noNodes]);
 		}
 		p.end();
-		log.debug("Time per edge creation+connection in (ns): {}", (p.getNanoTime()/noNodes));	
+		System.out.println("Time per edge creation+connection in (ns): " + (p.getNanoTime()/noNodes));
 		tx.abort(); tx=null;
 	}
 	
@@ -113,9 +113,9 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 			}
 			
 			if (trial < jitPretrials)
-				log.debug("Starting pretrial {}/{}", trial + 1, jitPretrials);
+				System.out.println("Starting pretrial " + (trial + 1) + "/" + jitPretrials);
 			else
-				log.debug("Starting trial {}/{}", trial - jitPretrials + 1, trials);
+				System.out.println("Starting trial " + (trial - jitPretrials + 1) + "/" + trials);
 
 			task.run();
 			
@@ -152,6 +152,10 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 		
 		protected final int noNodes;
 		protected final int noEdgesPerNode;
+
+        protected EdgeInsertion() {
+            this(50000,10);
+        }
 		
 		protected EdgeInsertion(int noNodes, int noEdgesPerNode) {
 			this.noNodes = noNodes;
@@ -192,7 +196,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 	private class LabeledEdgeInsertion extends EdgeInsertion {
 		
 		private LabeledEdgeInsertion() {
-			super(50000, 10);
+			super();
 		}
 
 		@Override
@@ -217,6 +221,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 				nodes[i] = tx.addVertex();
 				nodes[i].addProperty(name, names[i]);
 			}
+            log.info("Nodes loaded.");
 			int offsets[] = {-99, -71, -20, -17, -13, 2, 7, 15, 33, 89};
 			assert offsets.length==noEdgesPerNode;
 			
@@ -228,7 +233,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 					r.addProperty(id, RandomGenerator.randomInt(0, Integer.MAX_VALUE));
 					r.addProperty(weight, Math.random());
 				}
-				if (i%10000==0) log.debug(""+i);
+				if ((i+1)%10000==0) System.out.println(""+(i+1));
 			}
 		}
 	}
@@ -236,7 +241,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 	private class UnlabeledEdgeInsertion extends EdgeInsertion {
 		
 		public UnlabeledEdgeInsertion() {
-			super(100000, 10);
+			super();
 		}
 		
 		@Override
@@ -260,6 +265,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 				nodes[i] = tx.addVertex();
 				nodes[i].addProperty(name, names[i]);
 			}
+            log.info("Nodes loaded.");
 			int offsets[] = { -99, -71, -20, -17, -13, 2, 7, 15, 33, 89 };
 			assert offsets.length == noEdgesPerNode;
 
@@ -270,7 +276,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 					n.addEdge(connect, n2);
 				}
 				if ((i + 1) % 10000 == 0)
-					log.debug("" + i);
+					System.out.println("" + (i+1));
 			}
 		}
 	}

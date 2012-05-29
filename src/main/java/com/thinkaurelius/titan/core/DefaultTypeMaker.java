@@ -21,7 +21,7 @@ public interface DefaultTypeMaker {
      * Creates a new label type with the given name and default settings against the provided TypeMaker.
      *
      * @param name Name of the label
-     * @param factory TypeMaker through which the edge type is created
+     * @param factory TypeMaker through which the edge label is created
      * @return A new edge label for the given name
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */

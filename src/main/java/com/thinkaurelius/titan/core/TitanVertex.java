@@ -118,6 +118,7 @@ public interface TitanVertex extends TitanElement, Vertex {
 	 * Retrieves the attribute value for the only property of the specified property key incident on this vertex.
 	 * 
 	 * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
+     * If there could be multiple properties (i.e. for non-functional property keys), then use {@link #getProperties(TitanKey)}
 	 * 
 	 * @param key key of the property for which to retrieve the attribute value
 	 * @return Attribute value of the property with the specified type or null if no such property exists
@@ -129,7 +130,8 @@ public interface TitanVertex extends TitanElement, Vertex {
 	 * Retrieves the attribute value for the only property of the specified property key incident on this vertex.
 	 * 
 	 * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
-	 * 
+	 * If there could be multiple properties (i.e. for non-functional property keys), then use {@link #getProperties(String)}
+     *
 	 * @param key key name of the property for which to retrieve the attribute value
 	 * @return Attribute value of the property with the specified type or null if no such property exists
 	 * @throws IllegalArgumentException	if more than one property of the specified key are incident on this vertex.
@@ -262,5 +264,5 @@ public interface TitanVertex extends TitanElement, Vertex {
 	 * @return true, if this vertex has at least one incident edge, else false
 	 */
 	public boolean isConnected();
-	
+
 }

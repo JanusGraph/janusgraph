@@ -48,12 +48,12 @@ public class StandardVertexCache extends OpenLongObjectHashMap implements Vertex
 
     @Override
     public Iterable<InternalTitanVertex> getAll() {
-        ArrayList<InternalTitanVertex> nodes = new ArrayList<InternalTitanVertex>(super.size()+2);
+        ArrayList<InternalTitanVertex> vertices = new ArrayList<InternalTitanVertex>(super.size()+2);
         readLock.lock();
         ObjectArrayList all = super.values();
-        for (int i=0;i<all.size();i++) nodes.add((InternalTitanVertex)all.get(i));
+        for (int i=0;i<all.size();i++) vertices.add((InternalTitanVertex)all.get(i));
         readLock.unlock();
-        return nodes;
+        return vertices;
     }
     
     @Override

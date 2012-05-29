@@ -8,17 +8,10 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 /***
  * Provides functionality to configure a {@link com.thinkaurelius.titan.core.TitanTransaction}.
  * 
- * This class give the user fine grained control over the configuration of a {@link com.thinkaurelius.titan.core.TitanTransaction} to be started
- * via the method {@link com.thinkaurelius.titan.core.TitanGraph#startThreadTransaction(TransactionConfig)}.
- * 
- * Note that the configuration parameters cannot be changed once the database has been opened.
- * 
+ *
  * @see com.thinkaurelius.titan.core.TitanTransaction
  * 
  * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
- * 
- * 
- * 
  *
  */
 public class TransactionConfig {
@@ -32,6 +25,8 @@ public class TransactionConfig {
 	private boolean verifyNodeExistence = true;
 	
 	private boolean verifyKeyUniqueness = true;
+
+    private boolean acquireLocks = true;
 	
 	/**
 	 * Constructs a new TitanTransaction configuration with default configuration parameters.
@@ -43,6 +38,7 @@ public class TransactionConfig {
         if (graphConfig.isBatchLoading()) {
             verifyKeyUniqueness = false;
             verifyNodeExistence = false;
+            acquireLocks = false;
         }
 	}
 
@@ -87,6 +83,15 @@ public class TransactionConfig {
      */
     public boolean doAutoCreateEdgeTypes() {
         return defaultTypeMaker!=null;
+    }
+
+    /**
+     * Whether the persistence layer should acquire locks for this transaction during persistence.
+     *
+     * @return True, if locks should be acquired, else false
+     */
+    public boolean acquireLocks() {
+        return acquireLocks;
     }
 
     /**
