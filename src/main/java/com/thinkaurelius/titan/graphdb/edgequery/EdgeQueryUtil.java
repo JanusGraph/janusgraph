@@ -12,7 +12,7 @@ import java.util.Map;
 public class EdgeQueryUtil {
 
 	public static final TitanProperty queryHiddenFunctionalProperty(InternalTitanVertex node, TitanKey propType) {
-		assert propType.isHidden() : "Expected hidden property type";
+		assert ((InternalTitanType)propType).isHidden() : "Expected hidden property type";
 		assert propType.isFunctional() : "Expected functional property  type";
 		return Iterators.getOnlyElement(
 				new AtomicTitanQuery(node).

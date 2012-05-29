@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
+import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
 
 public interface KeyValueStorageManager {
 

@@ -5,9 +5,9 @@ import cern.colt.list.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.google.common.primitives.Longs;
+import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexList;
-import com.thinkaurelius.titan.exceptions.InvalidElementException;
 
 import java.util.*;
 

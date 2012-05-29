@@ -2,10 +2,10 @@ package com.thinkaurelius.titan.graphdb.transaction;
 
 import cern.colt.list.AbstractLongList;
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalRelation;

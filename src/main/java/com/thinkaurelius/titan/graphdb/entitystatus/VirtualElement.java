@@ -67,7 +67,7 @@ public class VirtualElement implements InternalElement {
 	}
 
 	@Override
-	public boolean isReferenceNode() {
+	public boolean isReferenceVertex() {
 		return false;
 	}
 

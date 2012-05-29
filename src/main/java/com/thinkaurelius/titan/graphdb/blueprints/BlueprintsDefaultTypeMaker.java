@@ -12,12 +12,12 @@ public class BlueprintsDefaultTypeMaker implements DefaultTypeMaker {
     private BlueprintsDefaultTypeMaker() {}
 
     @Override
-    public TitanLabel makeRelationshipType(String name, TypeMaker factory) {
+    public TitanLabel makeLabel(String name, TypeMaker factory) {
         return factory.name(name).directed().makeEdgeLabel();
     }
 
     @Override
-    public TitanKey makePropertyType(String name, TypeMaker factory) {
+    public TitanKey makeKey(String name, TypeMaker factory) {
         return factory.name(name).functional(false).
                 dataType(Object.class).makePropertyKey();
     }

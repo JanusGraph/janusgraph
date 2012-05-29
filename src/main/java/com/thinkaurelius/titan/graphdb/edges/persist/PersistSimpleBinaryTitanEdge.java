@@ -106,8 +106,8 @@ public class PersistSimpleBinaryTitanEdge extends SimpleBinaryTitanEdge {
 	}
 
 	@Override
-	public boolean isReferenceNode() {
-		return entity.isReferenceNode();
+	public boolean isReferenceVertex() {
+		return entity.isReferenceVertex();
 	}
 
 

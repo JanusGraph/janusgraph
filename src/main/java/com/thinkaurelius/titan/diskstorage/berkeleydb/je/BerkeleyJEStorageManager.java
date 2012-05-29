@@ -3,9 +3,9 @@ package com.thinkaurelius.titan.diskstorage.berkeleydb.je;
 
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.*;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.diskstorage.util.*;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
+
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import org.apache.commons.configuration.Configuration;
 

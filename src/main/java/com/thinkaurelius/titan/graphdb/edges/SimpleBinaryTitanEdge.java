@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.edges;
 
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.exceptions.InvalidElementException;
+import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.tinkerpop.blueprints.Direction;
@@ -65,7 +65,7 @@ public class SimpleBinaryTitanEdge extends AbstractTypedRelation implements Tita
 	}
 
 	@Override
-	public boolean isSelfLoop() {
+	public boolean isLoop() {
 		if (start.equals(end)) return true;
 		else return false;
 	}

@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.CfDef;
 import org.apache.cassandra.thrift.ConsistencyLevel;
@@ -25,7 +26,6 @@ import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
 import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
 import com.thinkaurelius.titan.diskstorage.util.OrderedKeyColumnValueIDManager;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class CassandraThriftStorageManager implements StorageManager {
@@ -170,7 +170,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 
     @Override
     public long[] getIDBlock(int partition, int blockSize) {
-        return idmanager.getIDBlock(partition,blockSize);
+        return idmanager.getIDBlock(partition, blockSize);
     }
 
 	@Override

@@ -4,127 +4,119 @@ package com.thinkaurelius.titan.core;
 import com.tinkerpop.blueprints.Direction;
 
 /**
- * TitanRelation is one of the two basic entities of a graph - the other one being {@link TitanVertex}.
- * An edge, also called <i>connection</i> or <i>link</i>, connects entities in a graph. 
- * For more information on the mathematical definition of a graph and the concept of edges see 
- * <a href="http://en.wikipedia.org/wiki/Graph_%28mathematics%29">Graph Definition</a>.
- * 
- * An edge connects multiple nodes, in which case it is called {@link TitanEdge}, or a node with an
- * attribute, in which case it is called a {@link TitanProperty}. An edge can be either a relationship <b>or</b>
- * a property - never both.
- * All edges have a unique associated {@link TitanType} which defines characteristics of the edge such
- * as its arity (i.e. the number of nodes it connects).
- * 
- * Depending on the implementation, edges are treated as entities or nodes in their own right, meaning
- * edges may have incident relationships or properties. An edge with incident properties is called <i>labeled</i>.
- * 
- * Edges are created on a node by calling the node's {@link TitanVertex#addEdge(TitanLabel, TitanVertex)} and
- * {@link TitanVertex#addProperty(TitanKey, Object)} methods, or using the methods
- * {@link TitanTransaction#addEdge(TitanLabel, TitanVertex start, TitanVertex end)} and {@link TitanTransaction#addProperty(TitanKey, TitanVertex, Object)}
- * provided by a graph transaction.
- * 
- * @see    TitanVertex
+ * TitanRelation is the most abstract form of a relation between a vertex and some other entity, where
+ * relation is understood in its mathematical sense. It generalizes the notion of an edge and a property.
+ * <br />
+ * A TitanRelation extends {@link TitanVertex} which means it is an entity in its own right. This means, a TitanRelation
+ * can have properties and unidirectional edges connecting it to other vertices. However, a {@link TitanType} can be
+ * declared <strong>simple</strong>, which means that all relations of that type are simple and do not accept properties
+ * or incident edges.
+ * <br />
+ * A TitanRelation is an abstract concept. A TitanRelation is either a {@link TitanProperty} or a {@link TitanEdge}.
+ * A TitanRelation has a type which is either a label or key depending on the implementation.
+ * <br />
+ * A TitanRelation is either directed, undirected, or unidirected. Properties are always directed (connecting a vertex
+ * with an attribute). A directed edge, the position or direction of a vertex matter whereas it does not for undirected
+ * edges. A unidirected edge is a special type of directed edge where the connection is only established from the
+ * perspective of the outgoing vertex. In that sense, a unidirected edge is akin to a link.
+ *
  * @see TitanEdge
  * @see TitanProperty
- * 
- * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
- * 
- * 
- * 
+ *
+ * @author	Matthias Br&ouml;cheler (http://www.matthiasb.com)
  *
  */
 public interface TitanRelation extends TitanVertex {
 
 
 	/**
-	 * Returns the edge type of this edge
+	 * Returns the type of this relation.
+     * 
+     * The type is either a label ({@link TitanLabel} if this relation is an edge or a key ({@link TitanKey}) if this
+     * relation is a property.
 	 * 
-	 * @return TitanRelation Type of this edge
+	 * @return Type of this relation
 	 */
 	public TitanType getType();
 
 	/**
-	 * Returns the direction of this edge from the perspective of the specified node.
+	 * Returns the direction of this relation from the perspective of the specified vertex.
 	 * 
-	 * @param vertex node on which the edge is incident
-	 * @return The direction of this edge from the perspective of the specified node.
-	 * @throws InvalidNodeException if this edge is not incident on the node
+	 * @param vertex vertex on which the relation is incident
+	 * @return The direction of this relation from the perspective of the specified vertex.
+	 * @throws InvalidElementException if this relation is not incident on the vertex
 	 *
 	 */
 	public Direction getDirection(TitanVertex vertex);
 	
 	/**
-	 * Checks whether this edge is incident on the specified node.
+	 * Checks whether this relation is incident on the specified vertex.
 	 * 
-	 * @param vertex TitanVertex to check incidence for
-	 * @return true, if this edge is incident on the node, else false
+	 * @param vertex vertex to check incidence for
+	 * @return true, if this relation is incident on the vertex, else false
 	 */
 	public boolean isIncidentOn(TitanVertex vertex);
 	
 	/**
-	 * Checks whether this edge is directed.
+	 * Checks whether this relation is directed.
 	 * 
-	 * @return true, if this edge is directed, else false.
-	 * @see com.thinkaurelius.titan.graphdb.edgetypes.Directionality
+	 * @return true, if this relation is directed, else false.
 	 */
 	public boolean isDirected();
 	
 	
 	/**
-	 * Checks whether this edge is undirected.
+	 * Checks whether this relation is undirected.
 	 * 
-	 * @return true, if this edge is undirected, else false.
-	 * @see com.thinkaurelius.titan.graphdb.edgetypes.Directionality
+	 * @return true, if this relation is undirected, else false.
 	 */
 	public boolean isUndirected();
 	
 	/**
-	 * Checks whether this edge is unidirected.
+	 * Checks whether this relation is unidirected.
 	 * 
-	 * @return true, if this edge is unidirected, else false.
-	 * @see com.thinkaurelius.titan.graphdb.edgetypes.Directionality
+	 * @return true, if this relation is unidirected, else false.
 	 */
 	public boolean isUnidirected();
 	
 	/**
-	 * Checks whether this edge can be modified in the context of this transaction.
+	 * Checks whether this relation can be modified in the context of this transaction.
 	 * 
-	 * @return true, if this edge can be modified, else false.
+	 * @return true, if this relation can be modified, else false.
 	 */
 	public boolean isModifiable();
 
 	/**
-	 * Checks whether this edge is simple.
+	 * Checks whether this relation is simple.
+     *
+     * A simple relation cannot have properties or incident edges.
 	 * 
-	 * @return true, if this edge is simple, else false
-	 * @see com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory
+	 * @return true, if this relation is simple, else false
 	 */
 	public boolean isSimple();
 
 	
 	/**
-	 * Checks whether this edge is a loop with respect to the specified node.
-	 * An edge is a loop if it connects a node with itself.
+	 * Checks whether this relation is a loop.
+	 * An relation is a loop if it connects a vertex with itself.
 	 * 
-	 * @param vertex TitanVertex to check the loop condition for
-	 * @return true, if this edge is a loop with respect to the given node, else false.
+	 * @return true, if this relation is a loop, else false.
 	 */
-	boolean isSelfLoop();
+	boolean isLoop();
 
 	/**
-	 * Checks whether this edge is a property.
-	 * 
-	 * 
-	 * @return true, if this edge is a property, else false.
+	 * Checks whether this relation is a property.
+	 *
+	 * @return true, if this relation is a property, else false.
 	 * @see TitanProperty
 	 */
 	boolean isProperty();
 	
 	/**
-	 * Checks whether this edge is a relationship.
+	 * Checks whether this relation is an edge.
 	 * 
 	 * 
-	 * @return true, if this edge is a relationship, else false.
+	 * @return true, if this relation is an edge, else false.
 	 * @see TitanEdge
 	 */
 	boolean isEdge();

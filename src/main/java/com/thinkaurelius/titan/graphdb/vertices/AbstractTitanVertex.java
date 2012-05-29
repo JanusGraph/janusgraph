@@ -4,7 +4,7 @@ package com.thinkaurelius.titan.graphdb.vertices;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.exceptions.QueryException;
+import com.thinkaurelius.titan.core.QueryException;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsVertexUtil;
 import com.thinkaurelius.titan.graphdb.edgequery.AtomicTitanQuery;
 import com.thinkaurelius.titan.graphdb.edgequery.ComplexTitanQuery;
@@ -14,7 +14,6 @@ import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.velocity.runtime.parser.node.NodeUtils;
 
 import java.util.Set;
 
@@ -302,8 +301,8 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 	}
 
 	@Override
-	public boolean isReferenceNode() {
-		return InMemoryElement.instance.isReferenceNode();
+	public boolean isReferenceVertex() {
+		return InMemoryElement.instance.isReferenceVertex();
 	}
 
 

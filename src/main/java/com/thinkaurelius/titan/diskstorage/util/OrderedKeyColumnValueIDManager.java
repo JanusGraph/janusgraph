@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
+import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
@@ -11,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class OrderedKeyColumnValueIDManager {

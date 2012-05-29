@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.edges.factory;
 
+import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.exceptions.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.edgequery.AtomicTitanQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
@@ -28,7 +28,7 @@ public class EdgeFactoryUtil {
 		
 		int notloaded=0,loaded=0;
         int arity = edge.getArity();
-        if (edge.isUnidirected() || edge.isProperty() || edge.isSelfLoop()) {
+        if (edge.isUnidirected() || edge.isProperty() || edge.isLoop()) {
             arity=1;
         }
         for (int i=0;i<arity;i++) {

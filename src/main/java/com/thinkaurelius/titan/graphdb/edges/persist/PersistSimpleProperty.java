@@ -104,8 +104,8 @@ public class PersistSimpleProperty extends SimpleProperty {
 	}
 
 	@Override
-	public boolean isReferenceNode() {
-		return entity.isReferenceNode();
+	public boolean isReferenceVertex() {
+		return entity.isReferenceVertex();
 	}
 
 	

@@ -2,6 +2,8 @@ package com.thinkaurelius.titan.diskstorage.hbase;
 
 import java.io.IOException;
 
+import com.thinkaurelius.titan.core.GraphDatabaseException;
+import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -16,8 +18,6 @@ import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
 import com.thinkaurelius.titan.diskstorage.util.OrderedKeyColumnValueIDManager;
-import com.thinkaurelius.titan.exceptions.GraphDatabaseException;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class HBaseStorageManager implements StorageManager {

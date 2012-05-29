@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.GraphDatabaseException;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
-import com.thinkaurelius.titan.exceptions.GraphDatabaseException;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)

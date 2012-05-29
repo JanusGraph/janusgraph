@@ -15,7 +15,7 @@ import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.DirectStoreMutator;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.StoreMutator;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
+import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.NodeIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -307,7 +307,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
             TitanKey proptype = ((TitanKey) type);
             if (proptype.getDataType().equals(Object.class))
                 return serializer.readClassAndObject(read);
-            else return serializer.readObject(read,proptype.getDataType());
+            else return serializer.readObject(read, proptype.getDataType());
         } else {
             assert type.isEdgeLabel();
             long id = VariableLong.readPositive(read);
@@ -780,7 +780,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                     VariableLong.write(out,nodeIDDiff);
                 } else {
                     assert edge.isProperty();
-                    writeAttribute(out,(TitanProperty)edge);
+                    writeAttribute(out, (TitanProperty) edge);
                 }
 
                 if (et.isFunctional()) {
@@ -811,11 +811,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
     private void writeInlineEdge(DataOutput out, InternalRelation edge) {
 		assert edge!=null;
-        writeInlineEdge(out,edge,edge.getType(),true);
+        writeInlineEdge(out, edge, edge.getType(), true);
 	}
 	
 	private void writeInlineEdge(DataOutput out, InternalRelation edge, TitanType titanType) {
-        writeInlineEdge(out,edge, titanType,false);
+        writeInlineEdge(out, edge, titanType, false);
 	}
 	
 	private void writeInlineEdge(DataOutput out, InternalRelation edge, TitanType titanType, boolean writeEdgeType) {

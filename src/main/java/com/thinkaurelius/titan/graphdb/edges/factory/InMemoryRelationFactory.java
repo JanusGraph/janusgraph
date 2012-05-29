@@ -2,11 +2,8 @@ package com.thinkaurelius.titan.graphdb.edges.factory;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.exceptions.ToBeImplementedException;
 import com.thinkaurelius.titan.graphdb.adjacencylist.InitialAdjListFactory;
 import com.thinkaurelius.titan.graphdb.edges.*;
-import com.thinkaurelius.titan.graphdb.edgetypes.Directionality;
-import com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 
@@ -58,7 +55,7 @@ public class InMemoryRelationFactory implements RelationFactory {
             rel = new InlineProperty(type,node,attribute);
 		} else if (type.isSimple()){
 			rel = new SimpleProperty(type,node,attribute);
-		} else throw new ToBeImplementedException();
+		} else throw new UnsupportedOperationException();
         if (!rel.isInline()) getTx().registerNewEntity(rel);
 		EdgeFactoryUtil.connectEdge(rel, true, getTx());
 		return rel;

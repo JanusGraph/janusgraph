@@ -5,17 +5,13 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import com.thinkaurelius.titan.diskstorage.*;
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
-import com.thinkaurelius.titan.exceptions.LockingFailureException;
+import com.thinkaurelius.titan.diskstorage.LockingFailureException;
 
 /**
  * This class is not safe for concurrent use by multiple threads.

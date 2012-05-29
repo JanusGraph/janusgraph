@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.Column;
 import org.apache.cassandra.thrift.ColumnOrSuperColumn;
@@ -34,7 +35,6 @@ import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGeneric
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
 
 public class CassandraThriftOrderedKeyColumnValueStore
 	implements OrderedKeyColumnValueStore, MultiWriteKeyColumnValueStore {

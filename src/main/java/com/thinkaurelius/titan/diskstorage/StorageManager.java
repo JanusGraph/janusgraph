@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
+import com.thinkaurelius.titan.core.GraphStorageException;
 
 /**
  * StorageManager provides the persistence context to the graph database middleware.

@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.exceptions.QueryException;
+import com.thinkaurelius.titan.core.QueryException;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.adjacencylist.ModificationStatus;

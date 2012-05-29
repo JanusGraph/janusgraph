@@ -29,7 +29,7 @@ public interface ReadOrderedKeyColumnValueStore {
 	 * @param columnEnd Head Column (exclusive)
 	 * @param limit Maximum number of entries to retrieve
 	 * @param txh Transaction
-	 * @throws com.thinkaurelius.titan.exceptions.GraphStorageException when columnEnd < columnStart as determined in
+	 * @throws com.thinkaurelius.titan.core.GraphStorageException when columnEnd < columnStart as determined in
 	 *         {@link ByteBufferUtil#isSmallerThan(ByteBuffer,ByteBuffer)}
 	 * @return List of entries up to a maximum of "limit" entries
 	 */
@@ -47,7 +47,7 @@ public interface ReadOrderedKeyColumnValueStore {
 	 * @param columnStart Tail Column (inclusive)
 	 * @param columnEnd Head Column (exclusive)
 	 * @param txh Transaction
-	 * @throws com.thinkaurelius.titan.exceptions.GraphStorageException when columnEnd < columnStart as determined in
+	 * @throws com.thinkaurelius.titan.core.GraphStorageException when columnEnd < columnStart as determined in
 	 *         {@link ByteBufferUtil#isSmallerThan(ByteBuffer,ByteBuffer)}
 	 * @return List of entries
 	 */

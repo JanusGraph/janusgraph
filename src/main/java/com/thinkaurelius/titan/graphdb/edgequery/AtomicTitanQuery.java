@@ -159,17 +159,17 @@ public class AtomicTitanQuery implements InternalTitanQuery {
     }
 
     @Override
-    public<T extends Comparable<T>> TitanQuery interval(TitanKey ptype, T start, T end) {
+    public<T extends Comparable<T>> TitanQuery interval(TitanKey key, T start, T end) {
         Preconditions.checkNotNull(start);
         Preconditions.checkNotNull(end);
-        Preconditions.checkNotNull(ptype);
-        return withPropertyConstraint(ptype, new Range(start, end));
+        Preconditions.checkNotNull(key);
+        return withPropertyConstraint(key, new Range(start, end));
     }
 
     @Override
-    public<T extends Comparable<T>> TitanQuery interval(String ptype, T start, T end) {
-        if (!tx.containsType(ptype)) throw new IllegalArgumentException("Unknown property type: " + ptype);
-        return interval(tx.getPropertyKey(ptype), start, end);
+    public<T extends Comparable<T>> TitanQuery interval(String key, T start, T end) {
+        if (!tx.containsType(key)) throw new IllegalArgumentException("Unknown property type: " + key);
+        return interval(tx.getPropertyKey(key), start, end);
     }
     
     @Override

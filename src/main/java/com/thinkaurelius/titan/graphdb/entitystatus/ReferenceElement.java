@@ -42,7 +42,7 @@ public class ReferenceElement extends LocatedElement {
 	}
 
 	@Override
-	public boolean isReferenceNode() {
+	public boolean isReferenceVertex() {
 		return true;
 	}
 	

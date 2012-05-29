@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.database.statistics;
 
+import com.thinkaurelius.titan.core.GraphDatabaseException;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
-import com.thinkaurelius.titan.exceptions.GraphDatabaseException;
 import com.thinkaurelius.titan.util.datastructures.LongCounter;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;

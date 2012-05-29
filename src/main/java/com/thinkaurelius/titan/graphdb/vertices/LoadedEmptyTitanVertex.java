@@ -240,7 +240,7 @@ public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
 	}
 
 	@Override
-	public boolean isReferenceNode() {
+	public boolean isReferenceVertex() {
 		return false;
 	}
 	

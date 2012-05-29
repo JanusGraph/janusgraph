@@ -1,16 +1,16 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 
 /***
- * A graph transaction is the interface to interact with a graph database.
+ * TitanTransaction defines a transactional context for a {@link TitanGraph}. Since TitanGraph is a transactional graph
+ * database, all interactions with the graph are mitigated by a TitanTransaction.
  * 
- * All node and edge retrievals are channeled by a graph transaction which bundles all such retrievals, creations and
+ * All vertex and edge retrievals are channeled by a graph transaction which bundles all such retrievals, creations and
  * deletions into one transaction. A graph transaction is analogous to a 
  * <a href="http://en.wikipedia.org/wiki/Database_transaction">database transaction</a>.
  * The isolation level and <a href="http://en.wikipedia.org/wiki/ACID">ACID support</a> are configured through the storage
@@ -18,241 +18,237 @@ import com.tinkerpop.blueprints.Vertex;
  * 
  * A graph transaction supports:
  * <ul>
- * <li>Creating nodes, properties and relationships</li>
- * <li>Creating edge types</li>
- * <li>Index-based retrieval of nodes</li>
- * <li>Querying edges and neighborhoods</li>
+ * <li>Creating vertices, properties and edges</li>
+ * <li>Creating types</li>
+ * <li>Index-based retrieval of vertices</li>
+ * <li>Querying edges and vertices</li>
  * <li>Aborting and committing transaction</li>
  * </ul>
- * 
- * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
- * 
- * 
- * 
+ *
+ * @author	Matthias Br&ouml;cheler (http://www.matthiasb.com)
  *
  */
 public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph {
 
 	/***
-	 * Creates a new node in the graph.
+	 * Creates a new vertex in the graph.
 	 * 
-	 * @return New node in the graph created in the context of this transaction.
+	 * @return New vertex in the graph created in the context of this transaction.
 	 */
 	public TitanVertex addVertex();
 	
 	/**
-	 * Creates a new relationship connecting the specified nodes.
+	 * Creates a new edge connecting the specified vertices.
 	 * 
-	 * Creates and returns a new {@link TitanEdge} of the specified type connecting the nodes in the order
-	 * specified. For a binary relationship, the first node is the start node and the second node is the end node.
-	 * For hyperedges the order is adopted from the relationship type definition.
+	 * Creates and returns a new {@link TitanEdge} with given label connecting the vertices in the order
+	 * specified.
 	 * 
-	 * @param label	type of the relationship to be created
-     * @param outVertex		Starting node of the relationship
-     * @param inVertex       Head node of the relationship
-	 * @return 			New relationship of specified type
+	 * @param label	label of the edge to be created
+     * @param outVertex	outgoing vertex of the edge
+     * @param inVertex  incoming vertex of the edge
+	 * @return 	new edge
 	 */
 	public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, TitanLabel label);
-	
-	/**
-	 * Creates a new relationship connecting the specified nodes.
-	 * 
-	 * Creates and returns a new {@link TitanEdge} of the specified type connecting the nodes in the order
-	 * specified. For a binary relationship, the first node is the start node and the second node is the end node.
-	 * For hyperedges the order is adopted from the relationship type definition.
-	 * 
-	 * @param label	type name of the relationship to be created
-	 * @param outVertex		Starting node of the relationship
-     * @param inVertex       Head node of the relationship
-	 * @return 			New relationship of specified type
-	 * @throws	IllegalArgumentException if name of the relationship type is unknown, i.e. a relationship type with said name has not yet been created.
-	 */
+
+    /**
+     * Creates a new edge connecting the specified vertices.
+     *
+     * Creates and returns a new {@link TitanEdge} with given label connecting the vertices in the order
+     * specified.
+     * <br />
+     * Automatically creates the edge label if it does not exist and automatic creation of types is enabled. Otherwise,
+     * this method with throw an {@link IllegalArgumentException}.
+     *
+     * @param label	label of the edge to be created
+     * @param outVertex	outgoing vertex of the edge
+     * @param inVertex  incoming vertex of the edge
+     * @return 	new edge
+     */
 	public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, String label);
 							
 	/**
-	 * Creates a new property for the given node with the specified attribute.
+	 * Creates a new property for the given vertex and key with the specified attribute.
 	 * 
-	 * Creates and returns a new {@link TitanProperty} of the specified property type with the node being the start
-	 * node and the given object being the attribute.
+	 * Creates and returns a new {@link TitanProperty} with specified property key and the given object being the attribute.
 	 * 
-	 * @param propType	type of the property to be created
-	 * @param vertex		TitanVertex for which to create the property
+	 * @param key	key of the property to be created
+	 * @param vertex vertex for which to create the property
 	 * @param attribute	attribute of the property to be created
-	 * @return 			New property of specified type
+	 * @return 	new property
 	 * @throws	IllegalArgumentException if the attribute does not match the data type of the given property type.
 	 */
-	public TitanProperty addProperty(TitanVertex vertex, TitanKey propType, Object attribute);
+	public TitanProperty addProperty(TitanVertex vertex, TitanKey key, Object attribute);
+
+    /**
+     * Creates a new property for the given vertex and key with the specified attribute.
+     *
+     * Creates and returns a new {@link TitanProperty} with specified property key and the given object being the attribute.
+     * <br />
+     * Automatically creates the property key if it does not exist and automatic creation of types is enabled. Otherwise,
+     * this method with throw an {@link IllegalArgumentException}.
+     *
+     * @param key	key of the property to be created
+     * @param vertex vertex for which to create the property
+     * @param attribute	attribute of the property to be created
+     * @return 	new property
+     * @throws	IllegalArgumentException if the attribute does not match the data type of the given property type.
+     */
+	public TitanProperty addProperty(TitanVertex vertex, String key, Object attribute);
 	
 	/**
-	 * Creates a new property for the given node with the specified attribute.
-	 * 
-	 * Creates and returns a new {@link TitanProperty} of the specified property type with the node being the start
-	 * node and the given object being the attribute.
-	 * 
-	 * @param propType	type name of the property to be created
-	 * @param vertex		TitanVertex for which to create the property
-	 * @param attribute	attribute of the property to be created
-	 * @return 			New property of specified type
-	 * @throws	IllegalArgumentException if the attribute does not match the data type of the given property type.
-	 * @throws	IllegalArgumentException if name of the property type is unknown, i.e. a property type with said name has not yet been created.
-	 */
-	public TitanProperty addProperty(TitanVertex vertex, String propType, Object attribute);
-	
-	/**
-	 * Retrieves the node for the specified node id.
-	 * 
-	 * This method assumes that a node with the given id exists, otherwise it throws an exception
-	 * 
-	 * @param id ID of the node to retrieve
-	 * @return TitanVertex with the given id
-	 * @throws com.thinkaurelius.titan.exceptions.InvalidNodeException if id does not exist in the database
+	 * Retrieves the vertex for the specified id.
+	 *
+	 * @param id id of the vertex to retrieve
+	 * @return vertex with the given id if it exists, else null
 	 * @see #containsVertex
 	 */
 	public TitanVertex getVertex(long id);
 
 	/**
-	 * Checks whether a node with the specified id exists in the graph database.
+	 * Checks whether a vertex with the specified id exists in the graph database.
 	 * 
-	 * @param nodeid TitanVertex ID
-	 * @return true, if a node with that id exists, else false
+	 * @param vertexid vertex id
+	 * @return true, if a vertex with that id exists, else false
 	 */
-	public boolean containsVertex(long nodeid);
+	public boolean containsVertex(long vertexid);
 
 	/**
-	 * Creates a new edge query for the node with the specified id.
+	 * Creates a new query for the vertex identified by the given id.
 	 * 
-	 * @param nodeid Id of the node for which to create a new edge query
-	 * @return An {@link TitanQuery} constructor for the specified node id
-	 * @throws com.thinkaurelius.titan.exceptions.InvalidNodeException if id does not exist in the database
+	 * @param vertexid Id of the vertex for which to create a new query
+	 * @return An {@link TitanQuery}
+	 * @throws InvalidElementException if id does not exist in the database
 	 * @see TitanQuery
-	 * @see TitanVertex#query()
 	 */
-	public TitanQuery query(long nodeid);
+	public TitanQuery query(long vertexid);
 	
 	/**
-	 * Retrieves the node whose attribute value for the specified property type matches the given key.
+	 * Retrieves the vertex whose attribute value for the specified property key matches the given value.
 	 * 
-	 * This method assumes that the property type is keyed, i.e. that each attribute for a property of
-	 * such type is associated with at most one node. In other words, a node can be uniquely identified
-	 * given the property type and the attribute (also called the <b>key</b>).
+	 * This method assumes that the property key is unique, i.e. that each attribute for a property of
+	 * this key is associated with at most one vertex. In other words, a vertex can be uniquely identified
+	 * given the property key and the attribute
 	 * 
-	 * @param key TitanProperty type which is keyed
-	 * @param value A property attribute
-	 * @return The node uniquely identified by the key and property type, or null if no such exists
-	 * @throws IllegalArgumentException if the property type is not keyed
+	 * @param key property key
+	 * @param value value to retrieve vertex for
+	 * @return The vertex uniquely identified by the property key and value, or null if no such exists
+	 * @throws IllegalArgumentException if the property key is not unique
 	 * @see TitanKey#isUnique()
 	 */
 	public TitanVertex getVertex(TitanKey key, Object value);
-	
-	/**
-	 * Retrieves the node whose attribute value for the specified property type name matches the given key.
-	 *  
-	 * @param key Name of the property type which is keyed
-	 * @param value A property attribute
-	 * @return The node uniquely identified by the key and property type, or null if no such exists
-	 * @throws IllegalArgumentException if the property type is not keyed
-	 * @see TitanKey#isUnique()
-	 * @see #getVertex
-	 * @throws	IllegalArgumentException if name of the property type is unknown, i.e. a property type with said name has not yet been created.
-	 * @throws	IllegalArgumentException if the property type is not keyed.
-	 */
+
+    /**
+     * Retrieves the vertex whose attribute value for the specified property key matches the given value.
+     *
+     * This method assumes that the property key is unique, i.e. that each attribute for a property of
+     * this key is associated with at most one vertex. In other words, a vertex can be uniquely identified
+     * given the property key and the attribute
+     *
+     * @param key property key
+     * @param value value to retrieve vertex for
+     * @return The vertex uniquely identified by the property key and value, or null if no such exists
+     * @throws IllegalArgumentException if the property key is not unique
+     * @see TitanKey#isUnique()
+     */
 	public TitanVertex getVertex(String key, Object value);
 
 	/**
-	 * Retrieves all nodes which have an incident property of the given type with the specified attribute.
+	 * Retrieves all vertices which have an incident property of the given key with the specified value.
 	 * 
-	 * The given property type must have an hasIndex defined for this retrieval to succeed.
+	 * The given property key must be indexed.
 	 * 
-	 * @param key TitanProperty type for which to retrieve nodes
-	 * @param attribute Attribute value
-	 * @return	All nodes which have an incident property of the given type with the specified attribute.
-	 * @throws	IllegalArgumentException if the property type is not indexed.
+	 * @param key property key
+	 * @param attribute attribute value
+	 * @return	All vertices which have an incident property of the given key with the specified value.
+	 * @throws	IllegalArgumentException if the property key is not indexed.
+     * @see com.thinkaurelius.titan.core.TitanKey#hasIndex()
 	 */
 	public Iterable<TitanVertex> getVertices(TitanKey key, Object attribute);
-	
-	/**
-	 * Retrieves all nodes which have an incident property of the given type with the specified attribute.
-	 * 
-	 * The given property type must have an hasIndex defined for this retrieval to succeed.
-	 * 
-	 * @param key TitanProperty type name for which to retrieve nodes
-	 * @param attribute Attribute value
-	 * @return	All nodes which have an incident property of the given type with the specified attribute.
-	 * @throws	IllegalArgumentException if name of the property type is unknown, i.e. a property type with said name has not yet been created.
-	 * @throws	IllegalArgumentException if the property type is not indexed.
-	 */
+
+    /**
+     * Retrieves all vertices which have an incident property of the given key with the specified value.
+     *
+     * The given property key must be indexed.
+     *
+     * @param key property key
+     * @param attribute attribute value
+     * @return	All vertices which have an incident property of the given key with the specified value.
+     * @throws	IllegalArgumentException if the property key is not indexed.
+     * @see com.thinkaurelius.titan.core.TitanKey#hasIndex()
+     */
 	public Iterable<Vertex> getVertices(String key, Object attribute);
 
 	/**
-	 * Returns an iterable over all nodes loaded in the current transaction.
+	 * Returns an iterable over all vertices loaded in the current transaction.
 	 * 
-	 * The order in which the nodes are returned is arbitrary. Note, that this method only returns those
-     * nodes that have been previously loaded to avoid excessive memory loads.
+	 * The order in which the vertices are returned is arbitrary. Note, that this method only returns those
+     * vertices that have been PREVIOUSLY loaded to avoid excessive memory loads. Hence, this method violates
+     * the contract of {@link com.tinkerpop.blueprints.Graph#getVertices()} unless all vertices are currently
+     * loaded in the transaction.
 	 * 
-	 * For in-memory graph transactions ({@link com.thinkaurelius.titan.configuration.InMemoryGraphDatabase})
-     * this method returns the entire node set of the database.
-	 * 
-	 * @return An iterable over all nodes in the transaction
+	 * @return An iterable over all vertices in the transaction
 	 */
 	public Iterable<Vertex> getVertices();
 	
 	/**
-	 * Returns an iterable over all relationships for all nodes loaded in the current transaction.
+	 * Returns an iterable over all edges incident on the vertices loaded in the current transaction.
 	 * 
-	 * The order in which the relationships are returned is arbitrary. Note, that this method only returns those
-     * relationships for which at least one node that have been previously loaded to avoid excessive memory loads.
-     * This method might still require significant disk access to retrieve all of those.
-	 * 
-	 * For in-memory graph transactions ({@link com.thinkaurelius.titan.configuration.InMemoryGraphDatabase})
-     * this method returns the entire relationship set of the database.
+	 * The order in which the edges are returned is arbitrary. Note, that this method only returns those
+     * edges for which at least one vertex that have been previously loaded to avoid excessive memory loads.
+     * This method might still require significant disk access to retrieve all of these edges. Hence, this method violates
+     * the contract of {@link com.tinkerpop.blueprints.Graph#getEdges()}} unless all edges are connected to a vertex
+     * currently loaded in this transaction.
      *
-	 * @return An iterable over all relationships in the transaction
+	 * @return An iterable over all edges in the transaction
 	 */
 	public Iterable<Edge> getEdges();
 
 	/**
-	 * Checks whether an edge type with the specified name exists.
+	 * Checks whether a type with the specified name exists.
 	 * 
-	 * @param name Name of the edge type
-	 * @return true, if an edge type with the given name exists, else false
+	 * @param name name of the type
+	 * @return true, if a type with the given name exists, else false
 	 */
 	public boolean containsType(String name);
 	
 	/**
-	 * Returns the edge type with the given name.
-	 * Note, that edge type names must be unique.
+	 * Returns the type with the given name.
+	 * Note, that type names must be unique.
 	 * 
-	 * @param name Name of the edge type to return
-	 * @return The edge type with the given name, or null if such does not exist
+	 * @param name name of the type to return
+	 * @return The type with the given name, or null if such does not exist
+     * @see TitanType
 	 */
 	public TitanType getType(String name);
 
 	/**
-	 * Returns the property type with the given name.
+	 * Returns the property key with the given name.
 	 * 
-	 * @param name Name of the property type to return
-	 * @return The property type with the given name
-	 * @throws IllegalArgumentException if a property type with the given name does not exist or if the edge
-	 * type with the given name is not a property type
+	 * @param name name of the property key to return
+	 * @return the property key with the given name
+	 * @throws IllegalArgumentException if a property key with the given name does not exist or if the
+	 * type with the given name is not a property key
+     * @see TitanKey
 	 */
 	public TitanKey getPropertyKey(String name);
 
 	/**
-	 * Returns the relationship type with the given name.
+	 * Returns the edge label with the given name.
 	 * 
-	 * @param name Name of the relationship type to return
-	 * @return The relationship type with the given name
-	 * @throws IllegalArgumentException if a relationship type with the given name does not exist or if the edge
-	 * type with the given name is not a relationship type
+	 * @param name name of the edge label to return
+	 * @return the edge label with the given name
+	 * @throws IllegalArgumentException if an edge label with the given name does not exist or if the
+	 * type with the given name is not an edge label
+     * @see TitanLabel
 	 */
 	public TitanLabel getEdgeLabel(String name);
 	
 	/**
-	 * Returns a new edge type maker to create edge types.
+	 * Returns a new {@link TypeMaker} instance to create types.
 	 * 
-	 * The edge type constructed with this maker will be created in the context of this transaction.
+	 * The type constructed with this maker will be created in the context of this transaction.
 	 * 
-	 * @return An edge type maker linked to this transaction.
+	 * @return a type maker linked to this transaction.
 	 * @see TypeMaker
 	 * @see TitanType
 	 */
@@ -260,21 +256,24 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
 
 	/**
 	 * Commits and closes the transaction.
-	 * 
-	 * The call releases data structures if possible. All handles (e.g. node handles) retrieved
+     *
+     * Will attempt to persist all modifications which may result in exceptions in case of persistence failures or
+     * lock contention.
+	 * <br />
+	 * The call releases data structures if possible. All element references (e.g. vertex objects) retrieved
 	 * through this transaction are stale after the transaction closes and should no longer be used.
-	 * 
-	 * @throws com.thinkaurelius.titan.exceptions.GraphStorageException if an error arises during persistence
+	 *
+	 * @throws GraphStorageException if an error arises during persistence
 	 */
 	public void commit();
 
 	/**
-	 * Aborts and closes the transaction.
+	 * Aborts and closes the transaction. Will discard all modifications.
+	 *
+     * The call releases data structures if possible. All element references (e.g. vertex objects) retrieved
+     * through this transaction are stale after the transaction closes and should no longer be used.
 	 * 
-	 * The call releases data structures if possible. All handles (e.g. node handles) retrieved
-	 * through this transaction are stale after the transaction closes and should no longer be used.
-	 * 
-	 * @throws com.thinkaurelius.titan.exceptions.GraphStorageException if an error arises when releasing the transaction handle
+	 * @throws GraphStorageException if an error arises when releasing the transaction handle
 	 */
 	public void abort();
 	
@@ -293,16 +292,9 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
 	public boolean isClosed();
 	
 	/**
-	 * Returns the configuration used by this graph transaction
-	 * 
-	 * @return The configuration for this transaction
-	 */
-	public TransactionConfig getTxConfiguration();
-	
-	/**
 	 * Checks whether any changes to the graph database have been made in this transaction.
 	 * 
-	 * A modification may be an edge or node update, addition, or deletion.
+	 * A modification may be an edge or vertex update, addition, or deletion.
 	 * 
 	 * @return true, if the transaction contains updates, else false.
 	 */

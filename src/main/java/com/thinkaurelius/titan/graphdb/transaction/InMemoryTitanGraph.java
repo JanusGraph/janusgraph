@@ -4,21 +4,18 @@ import cern.colt.list.AbstractLongList;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
+import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
 import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
-import com.thinkaurelius.titan.graphdb.edges.factory.InMemoryRelationFactory;
 import com.thinkaurelius.titan.graphdb.edges.factory.StandardPersistedRelationFactory;
 import com.thinkaurelius.titan.graphdb.edgetypes.manager.InMemoryEdgeTypeManager;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.factory.StandardNodeFactories;
-import com.tinkerpop.blueprints.Element;
 
 import java.util.Collection;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitanGraph {

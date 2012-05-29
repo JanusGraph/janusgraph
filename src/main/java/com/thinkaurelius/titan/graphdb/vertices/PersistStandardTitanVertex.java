@@ -122,8 +122,8 @@ public class PersistStandardTitanVertex extends StandardTitanVertex {
 	}
 
 	@Override
-	public boolean isReferenceNode() {
-		return entity.isReferenceNode();
+	public boolean isReferenceVertex() {
+		return entity.isReferenceVertex();
 	}
 
 	@Override

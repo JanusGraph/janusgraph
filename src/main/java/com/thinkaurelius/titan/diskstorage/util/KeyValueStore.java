@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
+import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
 
 import java.nio.ByteBuffer;
 import java.util.List;

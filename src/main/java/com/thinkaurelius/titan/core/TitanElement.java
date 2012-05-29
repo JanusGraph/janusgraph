@@ -3,34 +3,36 @@ package com.thinkaurelius.titan.core;
 
 
 /***
- * Represents the abstract concept of an entity in the graph and specifies basic methods for interacting
+ * TitanElement represents the abstract concept of an entity in the graph and specifies basic methods for interacting
  * with entities.
- * The two basic entities in a graph database are {@link TitanRelation}s and {@link TitanVertex}s.
+ * The two basic entities in a graph database are {@link TitanRelation} and {@link TitanVertex}.
  * Entities have a life cycle state which reflects the current state of the entity with respect
  * to the {@link TitanTransaction} in which it occurs. An entity may be in any one of these states
  * and any given time:
  * <ul>
- * <li>New: The entity has been created in the current transaction</li>
- * <li>Loaded: The entity has been loaded from disk into the current transaction and has not been modified</li>
- * <li>Modified: The entity has been loaded from disk into the current transaction and has been modified</li>
- * <li>Deleted: The entity has been deleted in the current transaction</li>
- * <li>ReferenceNode: The entity is a reference to a remotely hosted node. It cannot be loaded into the current transaction but
- * only references the actual entity. This only applies when running Titan embedded in a distributed environment.
- * 
+ * <li><strong>New:</strong> The entity has been created in the current transaction</li>
+ * <li><strong>Loaded:</strong> The entity has been loaded from disk into the current transaction and has not been modified</li>
+ * <li><strong>Modified:</strong> The entity has been loaded from disk into the current transaction and has been modified</li>
+ * <li><strong>Deleted:</strong> The entity has been deleted in the current transaction</li>
+ * </ul>
  * Depending on the concrete type of the entity, an entity may be identifiable, 
  * i.e. it has a unique ID which can be retrieved via {@link #getID}
  * (use {@link #hasID} to determine if a given entity has a unique ID).
- * 
- * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
- * 
- * 
- * 
+ *
+ * @see TitanVertex
+ * @see TitanRelation
+ * @author	Matthias Br&ouml;cheler (http://www.matthiasb.com)
  *
  */
 public interface TitanElement {
 
 	/**
 	 * Returns a unique identifier for this entity. 
+     * 
+     * The unique identifier may only be set when the transaction in which entity is created commits.
+     * The <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a> explains
+     * how to configure when entity ids are assigned.
+     * Some entities are never assigned a unique identifier if they depend on a parent entity.
 	 * 
 	 * @return The unique identifier for this entity
 	 * @throws IllegalStateException if the entity does not (yet) have a unique identifier
@@ -45,11 +47,16 @@ public interface TitanElement {
 	 * assigned an identifier at the end of a transaction.
 	 * 
 	 * @return true if this entity has been assigned a unique id, else false
+     * @see #getID() 
 	 */
 	public boolean hasID();
 	
 	/**
-	 * Deletes this entity from the graph database
+	 * Deletes this entity from the graph.
+     * 
+     * Removing an entity assumes that the entity does not have any incident TitanRelations. 
+     * Use {@link com.tinkerpop.blueprints.Graph#removeEdge(com.tinkerpop.blueprints.Edge)} or {@link com.tinkerpop.blueprints.Graph#removeEdge(com.tinkerpop.blueprints.Edge)}
+     * to remove an entity unconditionally.
 	 * 
 	 * @throws IllegalStateException if the entity cannot be deleted or if the user does not
 	 * have permission to remove the entity
@@ -88,16 +95,16 @@ public interface TitanElement {
 	public boolean isRemoved();
 	
 	/**
-	 * Checks whether this entity denotes a reference node which cannot be loaded into the current transaction.
+	 * Checks whether this entity denotes a reference vertex which cannot be loaded into the current transaction.
 	 * 
-	 * @return True, if this entity denotes a reference node, else false.
+	 * @return True, if this entity denotes a reference vertex, else false.
 	 */
-	public boolean isReferenceNode();
+	public boolean isReferenceVertex();
 	
 	/**
 	 * Checks whether this entity is available in the current transaction.
 	 * 
-	 * An entity is considered available iff it is not deleted and also not a reference node.
+	 * An entity is considered available iff it is not deleted and also not a reference vertex.
 	 * In other words, an entity is available if it is new, loaded or modified.
 	 * 
 	 * @return true, if the entity is available, else false

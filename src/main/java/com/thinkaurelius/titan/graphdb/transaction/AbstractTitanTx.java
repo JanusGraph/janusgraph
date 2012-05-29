@@ -7,7 +7,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.exceptions.InvalidElementException;
+import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.edgequery.ComplexTitanQuery;
@@ -241,7 +241,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	public TitanKey getPropertyKey(String name) {
 		TitanType et = getType(name);
 		if (et==null) {
-            if (config.doAutoCreateEdgeTypes()) return config.getAutoEdgeTypeMaker().makePropertyType(name, makeType());
+            if (config.doAutoCreateEdgeTypes()) return config.getAutoEdgeTypeMaker().makeKey(name, makeType());
 			else throw new IllegalArgumentException("TitanKey with given name does not exist: " + name);
         } else if (et.isPropertyKey()) {
 			return (TitanKey)et;
@@ -254,7 +254,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	public TitanLabel getEdgeLabel(String name) {
 		TitanType et = getType(name);
 		if (et==null) {
-            if (config.doAutoCreateEdgeTypes()) return config.getAutoEdgeTypeMaker().makeRelationshipType(name, makeType());
+            if (config.doAutoCreateEdgeTypes()) return config.getAutoEdgeTypeMaker().makeLabel(name, makeType());
             throw new IllegalArgumentException("RelationType with given name does not exist: " + name);
         } else if (et.isEdgeLabel()) {
 			return (TitanLabel)et;

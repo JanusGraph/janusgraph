@@ -57,7 +57,7 @@ public class InMemoryElement implements InternalElement {
 	}
 
 	@Override
-	public boolean isReferenceNode() {
+	public boolean isReferenceVertex() {
 		return false;
 	}
 

@@ -4,13 +4,13 @@ import java.lang.management.ManagementFactory;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 
+import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**

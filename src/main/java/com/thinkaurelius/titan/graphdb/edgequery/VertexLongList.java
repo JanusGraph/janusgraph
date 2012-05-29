@@ -3,9 +3,9 @@ package com.thinkaurelius.titan.graphdb.edgequery;
 import cern.colt.list.AbstractLongList;
 import cern.colt.list.LongArrayList;
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexList;
-import com.thinkaurelius.titan.exceptions.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 
 import java.util.Iterator;

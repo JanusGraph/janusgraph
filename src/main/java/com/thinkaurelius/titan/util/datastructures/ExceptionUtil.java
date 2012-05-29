@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.exceptions;
+package com.thinkaurelius.titan.util.datastructures;
 
-class ExceptionUtil {
+public class ExceptionUtil {
 
-	static final boolean isCausedBy(Throwable exception, Class<?> exType) {
+	public static final boolean isCausedBy(Throwable exception, Class<?> exType) {
 		Throwable ex2 = exception.getCause();
 		if (ex2==null || ex2 == exception) return false;
 		else if (exType.isInstance(ex2)) return true;

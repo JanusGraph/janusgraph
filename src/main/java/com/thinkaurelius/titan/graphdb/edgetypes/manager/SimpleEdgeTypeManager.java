@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.edgetypes.manager;
 
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.exceptions.InvalidElementException;
+import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.edgequery.EdgeQueryUtil;
 import com.thinkaurelius.titan.graphdb.edgetypes.*;

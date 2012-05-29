@@ -1,4 +1,6 @@
-package com.thinkaurelius.titan.exceptions;
+package com.thinkaurelius.titan.diskstorage;
+
+import com.thinkaurelius.titan.core.GraphStorageException;
 
 public class LockingFailureException extends GraphStorageException {
 

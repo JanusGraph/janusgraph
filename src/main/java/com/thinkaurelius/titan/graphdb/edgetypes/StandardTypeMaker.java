@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.edgetypes;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.edgetypes.manager.EdgeTypeManager;
 import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemTypeManager;
@@ -58,6 +59,12 @@ public class StandardTypeMaker implements TypeMaker {
             throw new IllegalArgumentException("Name is reserved: " + name);
 		if ((!keysig.isEmpty() || !compactsig.isEmpty()) && category!=EdgeCategory.HasProperties)
 			throw new IllegalArgumentException("Can only specify signatures for labeled edge types.");
+        checkSignature(keysig);
+        checkSignature(compactsig);
+        Set<TitanType> intersectSign = Sets.newHashSet(keysig);
+        intersectSign.retainAll(compactsig);
+        if (!intersectSign.isEmpty())
+            throw new IllegalArgumentException("The primary key and the compact signature contain identical types: " + intersectSign);
 	}
 	
 	private TitanType[] checkSignature(List<TitanType> sig) {
@@ -106,14 +113,14 @@ public class StandardTypeMaker implements TypeMaker {
 	}
 
 	@Override
-	public StandardTypeMaker signature(TitanType... et) {
-		compactsig = Arrays.asList(et);
+	public StandardTypeMaker signature(TitanType... types) {
+		compactsig = Arrays.asList(types);
 		return this;
 	}
 
 	@Override
-	public StandardTypeMaker primaryKey(TitanType... et) {
-		keysig = Arrays.asList(et);
+	public StandardTypeMaker primaryKey(TitanType... types) {
+		keysig = Arrays.asList(types);
 		return this;
 	}
 

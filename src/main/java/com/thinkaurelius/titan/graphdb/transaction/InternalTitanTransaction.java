@@ -16,8 +16,14 @@ public interface InternalTitanTransaction extends TitanTransaction {
 	 * @return The storage backend transaction handle issued to this transaction
 	 */
 	TransactionHandle getTxHandle();
-	
-	
+
+    /**
+     * Returns the configuration used by this graph transaction
+     *
+     * @return The configuration for this transaction
+     */
+    public TransactionConfig getTxConfiguration();
+
 	/**
 	 * Returns a proxy to load edges into this transaction
 	 * @return Proxy to load edges into this transaction

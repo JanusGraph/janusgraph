@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Delete;
@@ -23,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
 
 /*
  * This is a naive and slow implementation.  Here are some areas that might need work:

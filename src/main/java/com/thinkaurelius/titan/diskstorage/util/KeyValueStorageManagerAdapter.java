@@ -2,15 +2,13 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.exceptions.GraphStorageException;
 import org.apache.commons.configuration.Configuration;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 public class KeyValueStorageManagerAdapter implements StorageManager {
 

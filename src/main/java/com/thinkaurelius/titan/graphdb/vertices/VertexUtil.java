@@ -3,10 +3,10 @@ package com.thinkaurelius.titan.graphdb.vertices;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.QueryException;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.exceptions.QueryException;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
 import com.thinkaurelius.titan.graphdb.edgequery.AtomicTitanQuery;
 import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
@@ -92,7 +92,7 @@ public class VertexUtil {
 
 			@Override
 			public boolean apply(InternalRelation edge) {
-				if (edge.isSelfLoop()) return false;
+				if (edge.isLoop()) return false;
 				else return true;
 			}}
 		);

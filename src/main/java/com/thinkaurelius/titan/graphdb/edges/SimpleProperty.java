@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.edges;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.exceptions.InvalidElementException;
+import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.tinkerpop.blueprints.Direction;
@@ -48,7 +48,7 @@ public class SimpleProperty extends AbstractTypedRelation implements TitanProper
 	}
 
 	@Override
-	public boolean isSelfLoop() {
+	public boolean isLoop() {
 		return false;
 	}
 

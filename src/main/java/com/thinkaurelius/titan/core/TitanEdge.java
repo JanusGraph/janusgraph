@@ -5,43 +5,39 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
 /**
- * A relationship is an edge which connects multiple nodes.
- * Compared to {@link TitanRelation}, a relationship provides additional methods for retrieving the connected nodes.
- * 
- * 
+ * A TitanEdge connects two {@link TitanVertex}. It extends the functionality provided by Blueprint's {@link Edge}.
+ *
+ * @see Edge
  * @see TitanRelation
  * @see TitanLabel
- * 
- * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
- * 
- * 
- * 
+ *
+ * @author	Matthias Br&ouml;cheler (http://www.matthiasb.com)
  *
  */
 public interface TitanEdge extends TitanRelation, Edge {
 
 	/**
-	 * Returns the relationship type of this relationship
+	 * Returns the edge label of this edge
 	 * 
-	 * @return relationship type of this relationship
+	 * @return edge label of this edge
 	 */
 	public TitanLabel getTitanLabel();
 
     /**
-     * Returns the vertex for the specified direction
+     * Returns the vertex for the specified direction.
+     * The direction cannot be Direction.BOTH.
      *
-     * @return The start node of this edge
+     * @return the vertex for the specified direction
      */
     public TitanVertex getVertex(Direction dir);
 
 	/**
-	 * Returns the node at the opposite end of the relationship.
+	 * Returns the vertex at the opposite end of the edge.
 	 * 
 	 *
-	 * @param vertex TitanVertex on which this relationship is incident
-	 * @return The node at the opposite end of the relationship.
-	 * @throws InvalidNodeException if the relationship is not incident on the specified node or if the 
-	 * relationship is not binary.
+	 * @param vertex vertex on which this edge is incident
+	 * @return The vertex at the opposite end of the edge.
+	 * @throws InvalidElementException if the edge is not incident on the specified vertex
 	 */
 	public TitanVertex getOtherVertex(TitanVertex vertex);
 
