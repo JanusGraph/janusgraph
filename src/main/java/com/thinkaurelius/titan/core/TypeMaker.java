@@ -2,29 +2,18 @@
 package com.thinkaurelius.titan.core;
 
 /**
- * TypeMaker is a factory for {@link TitanType}s. 
- * 
+ * TypeMaker is a factory for {@link TitanType}s. TitanTypes can be configured to provide data verification, 
+ * better storage efficiency, and higher performance. The TitanType defines the schema for all {@link TitanRelation}s
+ * of that type.
+ * <br />
  * All user defined types are configured using a TypeMaker instance returned by {@link com.thinkaurelius.titan.core.TitanTransaction#makeType()}.
  * Hence, types are defined within the context of a transaction like every other object in a TitanGraph. The TypeMaker
  * is used to create both: property keys and edge labels using either {@link #makePropertyKey()} or {@link #makeEdgeLabel()}, 
  * respectively. Some of the methods in TypeMaker are only applicable to one or the other.
  * <br />
- * Using the edge type maker's methods, the following characteristics of an edge type can be defined:
- * <ul>
- * <li>Name of the edge type. No default value</li>
- * <li>Whether the edge type is functional. Default value: false</li>
- * <li>Directionality of the edge type. Default value: {@link com.thinkaurelius.titan.graphdb.edgetypes.Directionality#Directed} </li>
- * <li>Category of the edge type. Default value: {@link com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory#HasProperties}</li>
- * <li>Group of the edge type. Default value: {@link TypeGroup#DEFAULT_GROUP}</li>
- * <li>Whether or not the property type is keyed. Default value: false</li>
- * <li>The data type of the property type. No default value</li>
- * <li>Whether properties of the type should be indexed. Default is: no hasIndex</li>
- * <li>The key and compact signature of the edge type. Default value: no signature</li>
- * </ul>
- * 
- * Once the user has set all characteristics, a edge type or property type can be created using the
- * methods {@link #makeEdgeLabel} and {@link #makePropertyKey} respectively.
- * When there is no default value, the user has to set it explicitly.
+ * Most configuration options provided by the methods of this class are optional and default values are assumed as 
+ * documented for the particular methods. However, one must call {@link #name(String)} to define the unqiue name of the type.
+ * When defining property keys, one must also configure the data type using {@link #dataType(Class)}.
  * 
  * @see TitanType
  * @see <a href="https://github.com/thinkaurelius/titan/wiki/Type-configuration">Titan Type Wiki</a>
@@ -45,6 +34,8 @@ public interface TypeMaker {
 	
 	/**
 	 * Configures the type to be functional.
+     * 
+     * By default, the type is non-functional.
 	 *
      * @return this type maker
      * @see com.thinkaurelius.titan.core.TitanType#isFunctional() 
@@ -68,6 +59,8 @@ public interface TypeMaker {
     /**
      * Configures the type to be directed. This only applies to edge labels.
      * 
+     * By default, the type is directed.
+     * 
      * @return this type maker
      * @see com.thinkaurelius.titan.core.TitanLabel#isDirected() 
      */
@@ -75,6 +68,8 @@ public interface TypeMaker {
 
     /**
      * Configures the type to be undirected. This only applies to edge labels.
+     *
+     * By default, the type is directed.
      * 
      * @return this type maker
      * @see com.thinkaurelius.titan.core.TitanLabel#isUndirected() 
@@ -83,6 +78,8 @@ public interface TypeMaker {
 
     /**
      * Configures the type to be unidirected. This only applies to edge labels.
+     *
+     * By default, the type is directed.
      * 
      * @return this type maker
      * @see com.thinkaurelius.titan.core.TitanLabel#isUnidirected() 
@@ -91,6 +88,8 @@ public interface TypeMaker {
 
     /**
      * Configures the type to be simple, which means that relation instances of the type do not support incident properties.
+     *
+     * By default, the type is not simple and allows incident properties.
      * 
      * @return this type maker
      * @see com.thinkaurelius.titan.core.TitanType#isSimple() 
@@ -100,6 +99,8 @@ public interface TypeMaker {
 
 	/**
 	 * Assigns the type to the specified {@link TypeGroup}.
+     *
+     * By default, the type is not assigned to {@link TypeGroup#DEFAULT_GROUP}.
 	 * 
 	 * @param group group to assign type to.
      * @return this type maker
@@ -145,6 +146,8 @@ public interface TypeMaker {
      * <br />
      * The signature should not contain any types already included in the primary key. The primary key provides the same
      * storage and retrieval efficiency.
+     * <br />
+     * The signature is empty by default.
 	 *
      * @param types TitanTypes composing the primary key. The order is irrelevant.
      * @return this type maker
@@ -154,6 +157,8 @@ public interface TypeMaker {
 	/**
 	 * Configures the type to be unqiue, which means that each value for a property of this type is uniquely associated
      * with a vertex. This only applies to property keys.
+     *
+     * By default, the type is not unique.
 	 *
      * @return this type maker
 	 * @see TitanKey#isUnique()
@@ -162,7 +167,9 @@ public interface TypeMaker {
 	
 	/**
 	 * Configures instances of this type to be indexed. This only applies to property keys.
-	 * 
+     *
+     * By default, the type is not indexed.
+	 *
      * @return this type maker
      * @see com.thinkaurelius.titan.core.TitanKey#hasIndex()
 	 */
@@ -172,6 +179,9 @@ public interface TypeMaker {
 	 * Configures the data type for this type.  This only applies to property keys.
 	 *
      * Property instances for this key will only accept attribute values that are instances of this class.
+     * Every property key must have its data type configured. Setting the data type to Object.class allows
+     * any type of attribute but comes at the expense of longer serialization because class information
+     * is stored with the attribute value.
 	 * 
 	 * @param clazz Data type to be configured.
      * @return this type maker

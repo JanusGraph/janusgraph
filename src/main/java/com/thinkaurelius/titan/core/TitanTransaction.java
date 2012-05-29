@@ -75,7 +75,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
 	 * @param vertex vertex for which to create the property
 	 * @param attribute	attribute of the property to be created
 	 * @return 	new property
-	 * @throws	IllegalArgumentException if the attribute does not match the data type of the given property type.
+	 * @throws	IllegalArgumentException if the attribute does not match the data type of the given property key.
 	 */
 	public TitanProperty addProperty(TitanVertex vertex, TitanKey key, Object attribute);
 
@@ -91,7 +91,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @param vertex vertex for which to create the property
      * @param attribute	attribute of the property to be created
      * @return 	new property
-     * @throws	IllegalArgumentException if the attribute does not match the data type of the given property type.
+     * @throws	IllegalArgumentException if the attribute does not match the data type of the given property key.
      */
 	public TitanProperty addProperty(TitanVertex vertex, String key, Object attribute);
 	

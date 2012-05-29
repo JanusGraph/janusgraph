@@ -203,7 +203,7 @@ public interface TitanQuery extends Query {
 
 
     /**
-     * Retrieves all vertices connected to this query's central node by edges
+     * Retrieves all vertices connected to this query's central vertex by edges
      * matching the conditions defined in this query.
      *
      * No guarantee is made as to the order in which the vertices are listed. Use {@link com.thinkaurelius.titan.core.VertexList#sort()}
