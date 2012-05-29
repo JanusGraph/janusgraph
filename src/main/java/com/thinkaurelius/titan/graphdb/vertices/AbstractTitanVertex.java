@@ -14,6 +14,7 @@ import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.StringFactory;
 
 import java.util.Set;
 
@@ -60,6 +61,11 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 	public InternalTitanVertex clone() throws CloneNotSupportedException{
 		throw new CloneNotSupportedException();
 	}
+    
+    @Override
+    public String toString() {
+        return StringFactory.vertexString(this);
+    }
 
 	
 	/* ---------------------------------------------------------------
@@ -256,7 +262,8 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 
     @Override
     public Object getId() {
-        return Long.valueOf(getID());
+        if (hasID()) return Long.valueOf(getID());
+        else return null;
     }
 
 	@Override

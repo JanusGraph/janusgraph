@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 public class SimpleProperty extends AbstractTypedRelation implements TitanProperty {
@@ -40,6 +41,13 @@ public class SimpleProperty extends AbstractTypedRelation implements TitanProper
 		if (!getType().equals(other.getType())) return false;
 		return node.equals(other.getVertex()) && attribute.equals(other.getAttribute());
 	}
+    
+    @Override
+    public String toString() {
+        return "p" + StringFactory.L_BRACKET + getId() + StringFactory.R_BRACKET +
+                StringFactory.L_BRACKET + getVertex().getId() + StringFactory.DASH +
+                getPropertyKey().getName() + StringFactory.ARROW + getAttribute() + StringFactory.R_BRACKET;
+    }
 
 	@Override
 	public InternalTitanVertex getVertex(int pos) {

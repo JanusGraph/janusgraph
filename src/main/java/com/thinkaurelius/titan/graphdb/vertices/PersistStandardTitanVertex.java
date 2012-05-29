@@ -126,11 +126,5 @@ public class PersistStandardTitanVertex extends StandardTitanVertex {
 		return entity.isReferenceVertex();
 	}
 
-	@Override
-	public String toString() {
-		if (hasID()) return "TitanVertex"+ getID();
-		else return super.toString();
-	}
-
 
 }

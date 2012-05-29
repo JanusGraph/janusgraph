@@ -254,9 +254,14 @@ public class GraphDatabaseConfiguration {
                 configuration.getInt(ID_BLOCK_SIZE_KEY,ID_BLOCK_SIZE_DEFAULT));
 	}
 
+    public String getStorageManagerClassName() {
+        Configuration storageconfig = configuration.subset(STORAGE_NAMESPACE);
+        return storageconfig.getString(STORAGE_BACKEND_KEY,STORAGE_BACKEND_DEFAULT);
+    }
+    
 	public StorageManager getStorageManager() {
 		Configuration storageconfig = configuration.subset(STORAGE_NAMESPACE);
-        String clazzname = storageconfig.getString(STORAGE_BACKEND_KEY,STORAGE_BACKEND_DEFAULT);
+        String clazzname = getStorageManagerClassName();
         if (preregisteredStorageManagers.containsKey(clazzname.toLowerCase())) {
             clazzname = preregisteredStorageManagers.get(clazzname.toLowerCase()).getCanonicalName();
         }

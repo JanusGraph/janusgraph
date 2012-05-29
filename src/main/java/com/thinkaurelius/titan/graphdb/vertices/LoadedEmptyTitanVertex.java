@@ -196,7 +196,8 @@ public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
 
     @Override
     public Object getId() {
-        return Long.valueOf(getID());
+        if (hasID()) return Long.valueOf(getID());
+        else return null;
     }
 
 	@Override

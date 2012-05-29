@@ -6,6 +6,8 @@ import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.tinkerpop.blueprints.Direction;
 import static com.tinkerpop.blueprints.Direction.*;
+
+import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 public class SimpleBinaryTitanEdge extends AbstractTypedRelation implements TitanEdge {
@@ -48,6 +50,11 @@ public class SimpleBinaryTitanEdge extends AbstractTypedRelation implements Tita
 			return start.equals(other.getVertex(OUT)) && end.equals(other.getVertex(IN));
 		}
 	}
+    
+    @Override
+    public String toString() {
+        return StringFactory.edgeString(this);
+    }
 
     @Override
     public String getLabel() {
@@ -126,11 +133,6 @@ public class SimpleBinaryTitanEdge extends AbstractTypedRelation implements Tita
 	@Override
 	public final boolean isEdge() {
 		return true;
-	}
-
-	@Override
-	public String toString() {
-		return start.toString() + " - " + getTitanLabel().getName() + " -> " + end.toString();
 	}
 
 
