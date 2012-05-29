@@ -134,7 +134,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 	@Override
 	public boolean containsVertexID(long id, InternalTitanTransaction tx) {
-		log.debug("Checking node existence for {}",id);
+		log.trace("Checking node existence for {}",id);
 		return edgeStore.containsKey(IDHandler.getKey(id), tx.getTxHandle());
 	}
 
@@ -507,15 +507,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     // ################### WRITE #########################
 	
 	private final StoreMutator getStoreMutator(TransactionHandle txh) {
-		if (bufferMutations) {
-            if (edgeStore instanceof MultiWriteKeyColumnValueStore &&
+		if (bufferMutations && edgeStore instanceof MultiWriteKeyColumnValueStore &&
                     propertyIndex instanceof MultiWriteKeyColumnValueStore) {
-                return new BatchStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize);
-            } else {
-				log.error("Storage backend does not support buffered writes, hence disabled: {}", storage.getClass().getCanonicalName());
-			}
-		}
-		return new DirectStoreMutator(txh, edgeStore, propertyIndex);
+            return new BatchStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize);
+		} else {
+		    return new DirectStoreMutator(txh, edgeStore, propertyIndex);
+        }
 	}
 
 
@@ -545,13 +542,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	@Override
 	public boolean save(Collection<InternalRelation> addedRelations,
 			Collection<InternalRelation> deletedRelations, InternalTitanTransaction tx) throws GraphStorageException {
-		log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
+		log.trace("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
 		Map<TitanType,EdgeTypeSignature> signatures = new HashMap<TitanType,EdgeTypeSignature>();
 		TransactionHandle txh = tx.getTxHandle();
 		TransactionStatistics stats = new TransactionStatistics();
 		
 		StoreMutator mutator = getStoreMutator(txh);
-
+        boolean acquireLocks = tx.getTxConfiguration().acquireLocks();
+        
 		//1. Assign TitanVertex IDs
 		assignIDs(addedRelations,tx);
 
@@ -566,12 +564,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                         mutations.put(node,del);
                         if (node.isRemoved()) stats.removedNode(node);
                     }
-                    if (pos==0 && del.getType().isFunctional() && ((InternalTitanType)del.getType()).isFunctionalLocking()) {
+                    if (pos==0 && acquireLocks && del.getType().isFunctional() &&
+                            ((InternalTitanType)del.getType()).isFunctionalLocking()) {
                         Entry entry = getEntry(tx,del,node,signatures);
                         mutator.acquireEdgeLock(IDHandler.getKey(node.getID()),entry.getColumn(),entry.getValue());
                     }
                 }
-                if (del.isProperty()) {
+                if (acquireLocks && del.isProperty()) {
                     lockKeyedProperty((TitanProperty)del,mutator);
                 }
 
@@ -614,14 +613,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 						if (node.isNew() && !mutations.containsKey(node)) stats.addedNode(node);
 						mutations.put(node, edge);
 					}
-                    if (pos==0 && edge.getType().isFunctional() && !node.isNew()
+                    if (pos==0 && acquireLocks && edge.getType().isFunctional() && !node.isNew()
                             && ((InternalTitanType)edge.getType()).isFunctionalLocking()) {
                         Entry entry = getEntry(tx,edge,node,signatures,true);
                         mutator.acquireEdgeLock(IDHandler.getKey(node.getID()),entry.getColumn(),null);
                     }
 				}
 			}
-            if (edge.isProperty()) {
+            if (acquireLocks && edge.isProperty()) {
                 lockKeyedProperty((TitanProperty)edge,mutator);
             }
 		}
