@@ -237,8 +237,6 @@
                         <!-- FIX IT: Currently excluded because there is something wrong with the test. -->
                         <exclude>**/*ConcurrentTest.java</exclude>
 
-                        <exclude></exclude>
-
                         <!-- Excluded because these take too long to run and require a lot of memory -->
                         <exclude>**/*PerformanceTest.java</exclude>
                     </excludes>
