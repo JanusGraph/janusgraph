@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
+import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.entitystatus.InternalElement;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 

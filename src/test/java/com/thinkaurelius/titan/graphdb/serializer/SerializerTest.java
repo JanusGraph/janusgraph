@@ -1,13 +1,13 @@
 package com.thinkaurelius.titan.graphdb.serializer;
 
 
-import com.thinkaurelius.titan.graphdb.edgetypes.*;
-import com.thinkaurelius.titan.graphdb.edgetypes.EdgeCategory;
+import com.thinkaurelius.titan.graphdb.types.*;
+import com.thinkaurelius.titan.graphdb.types.TypeCategory;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
-import com.thinkaurelius.titan.graphdb.edgetypes.group.StandardTypeGroup;
-import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemTypeManager;
+import com.thinkaurelius.titan.graphdb.types.group.StandardTypeGroup;
+import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
 import org.junit.After;
 import org.junit.Before;
@@ -34,12 +34,12 @@ public class SerializerTest {
 		serialize.registerClass(TestEnum.class);
 		serialize.registerClass(TestClass.class);
 		serialize.registerClass(short[].class);
-		serialize.registerClass(StandardRelationshipType.class);
+		serialize.registerClass(StandardEdgeLabel.class);
 		serialize.registerClass(Directionality.class);
-		serialize.registerClass(EdgeCategory.class);
-		serialize.registerClass(EdgeTypeVisibility.class);
+		serialize.registerClass(TypeCategory.class);
+		serialize.registerClass(TypeVisibility.class);
 		serialize.registerClass(StandardTypeGroup.class);
-		serialize.registerClass(StandardPropertyType.class);
+		serialize.registerClass(StandardPropertyKey.class);
 		
 		printStats = true;
 	}
@@ -113,19 +113,19 @@ public class SerializerTest {
 	
 	@Test
 	public void serializeRelationshipType() {
-		StandardRelationshipType relType = new StandardRelationshipType("testName",EdgeCategory.Simple,
-				Directionality.Directed,EdgeTypeVisibility.Modifiable,FunctionalType.NON_FUNCTIONAL,
+		StandardEdgeLabel relType = new StandardEdgeLabel("testName", TypeCategory.Simple,
+				Directionality.Directed, TypeVisibility.Modifiable,FunctionalType.NON_FUNCTIONAL,
 				new String[]{},new String[]{}, SystemTypeManager.SYSTEM_TYPE_GROUP);
-		StandardPropertyType propType = new StandardPropertyType("testName", EdgeCategory.Simple,
-				Directionality.Directed,EdgeTypeVisibility.Modifiable,FunctionalType.NON_FUNCTIONAL,
+		StandardPropertyKey propType = new StandardPropertyKey("testName", TypeCategory.Simple,
+				Directionality.Directed, TypeVisibility.Modifiable,FunctionalType.NON_FUNCTIONAL,
 				new String[]{},new String[]{}, SystemTypeManager.SYSTEM_TYPE_GROUP,true,true,String.class);
 		DataOutput out = serialize.getDataOutput(128, true);
 		out.writeObjectNotNull(relType);
 		out.writeObjectNotNull(propType);
 		ByteBuffer b = out.getByteBuffer();
 		if (printStats) log.debug(bufferStats(b));
-		assertEquals("testName",serialize.readObjectNotNull(b, StandardRelationshipType.class).name);
-		assertEquals(String.class,serialize.readObjectNotNull(b, StandardPropertyType.class).getDataType());
+		assertEquals("testName",serialize.readObjectNotNull(b, StandardEdgeLabel.class).name);
+		assertEquals(String.class,serialize.readObjectNotNull(b, StandardPropertyKey.class).getDataType());
 		assertFalse(b.hasRemaining());
 	}
 	

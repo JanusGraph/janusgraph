@@ -3,8 +3,8 @@ package com.thinkaurelius.titan.graphdb.loadingstatus;
 import cern.colt.map.AbstractIntIntMap;
 import cern.colt.map.OpenIntIntHashMap;
 import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.graphdb.edgequery.EdgeQueryUtil;
-import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
+import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -53,7 +53,7 @@ public class BasicLoadingStatus implements LoadingStatus {
 	
 	@Override
 	public LoadingStatus loadedEdges(InternalTitanQuery query) {
-		if (query.hasEdgeTypeCondition() && !EdgeQueryUtil.hasFirstKeyConstraint(query)) {
+		if (query.hasEdgeTypeCondition() && !QueryUtil.hasFirstKeyConstraint(query)) {
 			TitanType type = query.getTypeCondition();
 			if (loadedTypes==null) loadedTypes = new HashMap<TitanType,Byte>();
 			byte code = 0;

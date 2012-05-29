@@ -6,14 +6,14 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
-import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
-import com.thinkaurelius.titan.graphdb.edges.factory.StandardPersistedRelationFactory;
-import com.thinkaurelius.titan.graphdb.edgetypes.manager.InMemoryEdgeTypeManager;
+import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.relations.factory.StandardPersistedRelationFactory;
+import com.thinkaurelius.titan.graphdb.types.manager.InMemoryTypeManager;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
-import com.thinkaurelius.titan.graphdb.vertices.factory.StandardNodeFactories;
+import com.thinkaurelius.titan.graphdb.vertices.factory.StandardVertexFactories;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,7 +24,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
     private final IDManager idManager;
     
     public InMemoryTitanGraph(TransactionConfig config) {
-		super(null,StandardNodeFactories.DefaultInMemory, new StandardPersistedRelationFactory(), new InMemoryEdgeTypeManager(), config);
+		super(null, StandardVertexFactories.DefaultInMemory, new StandardPersistedRelationFactory(), new InMemoryTypeManager(), config);
         idCounter=new AtomicInteger(0);
         idManager = new IDManager(1,1);
         graphdb=this;

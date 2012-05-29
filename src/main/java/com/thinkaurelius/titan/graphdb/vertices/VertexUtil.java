@@ -8,10 +8,10 @@ import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
-import com.thinkaurelius.titan.graphdb.edgequery.AtomicTitanQuery;
-import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
-import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.query.AtomicTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.util.interval.AtomicInterval;
 import com.tinkerpop.blueprints.Direction;
 
@@ -38,7 +38,7 @@ public class VertexUtil {
 		if (iter==AdjacencyList.Empty) return iter;
 		
 		if (query.queryHidden() && query.queryUnmodifiable() && query.queryProperties()
-				&& query.queryRelationships() && !query.hasConstraints()) return iter;
+				&& query.queryRelationships() && !query.hasConstraints() && query.getLimit()==Long.MAX_VALUE) return iter;
 		if (!query.queryProperties() && !query.queryRelationships()) 
 			throw new QueryException("Query excludes both: properties and relationships");
 		

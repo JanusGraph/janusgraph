@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.adjacencylist;
 
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 
 public enum InitialAdjListFactory implements AdjacencyListFactory {
 

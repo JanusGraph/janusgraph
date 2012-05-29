@@ -13,7 +13,7 @@ public class CassandraGraphPerformanceTest extends TitanGraphPerformanceTest {
     public static CassandraLocalhostHelper ch = new CassandraLocalhostHelper();
 
     public CassandraGraphPerformanceTest() {
-        super(ch.getConfiguration());
+        super(ch.getConfiguration(),0,1,false);
     }
 
     @BeforeClass

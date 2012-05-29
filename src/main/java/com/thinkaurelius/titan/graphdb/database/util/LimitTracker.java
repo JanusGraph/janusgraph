@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.util;
 
-import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
 
 public class LimitTracker {
 

@@ -3,8 +3,8 @@ package com.thinkaurelius.titan.graphdb.adjacencylist;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
-import com.thinkaurelius.titan.graphdb.edgetypes.EdgeTypeComparator;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.types.TypeComparator;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentNavigableMap;
@@ -20,7 +20,7 @@ public class TypedAdjacencyList implements AdjacencyList {
 		this.factory = factory;
 //		content = new ConcurrentHashMap<TitanType,AdjacencyList>
 //						(factory.getInitialCapacity(),factory.getLoadFactor(),factory.getConcurrencyLevel());
-		content = new ConcurrentSkipListMap<TitanType,AdjacencyList>(EdgeTypeComparator.Instance);
+		content = new ConcurrentSkipListMap<TitanType,AdjacencyList>(TypeComparator.INSTANCE);
 	}
 	
 	TypedAdjacencyList(TypedAdjListFactory factory, AdjacencyList base) {
@@ -72,8 +72,8 @@ public class TypedAdjacencyList implements AdjacencyList {
 		if (content.isEmpty()) return AdjacencyList.Empty;
 		else {
 			ConcurrentNavigableMap<TitanType,AdjacencyList> submap = content.subMap(
-						EdgeTypeComparator.getGroupComparisonEdgeType(group.getID()), 
-						EdgeTypeComparator.getGroupComparisonEdgeType((short)(group.getID()+1)));
+						TypeComparator.getGroupComparisonType(group.getID()),
+						TypeComparator.getGroupComparisonType((short) (group.getID() + 1)));
 			return Iterables.concat(submap.values());
 		}
 	}

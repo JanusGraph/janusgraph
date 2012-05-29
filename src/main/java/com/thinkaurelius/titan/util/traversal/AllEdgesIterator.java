@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.util.traversal;
 
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -11,61 +10,61 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
- * Defines an {@link java.util.Iterator} over all {@link com.thinkaurelius.titan.core.TitanEdge}s connecting a provided set of nodes.
+ * Defines an {@link java.util.Iterator} over all {@link com.thinkaurelius.titan.core.TitanEdge}s connecting a provided set of vertices.
  * 
- * Given a set of nodes, one may be interested in all relationships that are contained in the subgraph spanned
- * by those nodes. This iterator will return these relationships.
+ * Given a set of vertices, one may be interested in all edges that are contained in the subgraph spanned
+ * by those vertices. This iterator will return these edges.
  * 
  * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
  * 
  */
 public class AllEdgesIterator implements Iterator<Edge> {
 
-	private final Set<? extends Vertex> nodes;
-	private final Iterator<? extends Vertex> nodeIter;
+	private final Set<? extends Vertex> vertices;
+	private final Iterator<? extends Vertex> vertexIter;
 
-	private Iterator<Edge> currentRel=Iterators.emptyIterator();
+	private Iterator<Edge> currentEdges =Iterators.emptyIterator();
 	
 	private Edge next;
 	
 	/**
-	 * Returns an iterator over all relationships incident on the nodes returned by the given Iterable over nodes.
+	 * Returns an iterator over all edges incident on the vertices returned by the given Iterable over vertices.
 	 * 
-	 * Note that this method assumes that the given Iterable will return all nodes in the connected component,
+	 * Note that this method assumes that the given Iterable will return all vertices in the connected component,
 	 * otherwise the behavior of this method is undefined.
 	 * 
-	 * @param nodeIter Iterator over a set of nodes defining a connected component.
+	 * @param vertexIter Iterator over a set of vertices defining a connected component.
 	 */
-	public AllEdgesIterator(Iterator<? extends Vertex> nodeIter) {
-		this.nodeIter=nodeIter;
-		this.nodes = null;
+	public AllEdgesIterator(Iterator<? extends Vertex> vertexIter) {
+		this.vertexIter = vertexIter;
+		this.vertices = null;
 		next = findNext();
 	}
 	
 	/**
-	 * Returns an iterator over all relationships contained in the subgraph spanned by the given nodes.
+	 * Returns an iterator over all edges contained in the subgraph spanned by the given vertices.
 	 * 
-	 * This method will return all relationships whose end points are contained in the given set of nodes.
+	 * This method will return all edges whose end points are contained in the given set of vertices.
 	 * 
-	 * @param nodes Set of nodes
+	 * @param vertices Set of vertices
 	 */
-	public AllEdgesIterator(Set<? extends Vertex> nodes) {
-		this.nodeIter=nodes.iterator();
-		this.nodes = nodes;
+	public AllEdgesIterator(Set<? extends Vertex> vertices) {
+		this.vertexIter =vertices.iterator();
+		this.vertices = vertices;
 		next = findNext();
 	}
 	
 	private Edge findNext() {
 		Edge rel = null;
 		while (rel==null) {
-			if (currentRel.hasNext()) {
-				rel = currentRel.next();
-				if (nodes!=null && !nodes.contains(rel.getVertex(Direction.IN)))
+			if (currentEdges.hasNext()) {
+				rel = currentEdges.next();
+				if (vertices!=null && !vertices.contains(rel.getVertex(Direction.IN)))
 					rel = null;
 			} else {
-                if (nodeIter.hasNext()) {
-                    Vertex nextVertex = nodeIter.next();
-                    currentRel = nextVertex.getEdges(Direction.OUT).iterator();
+                if (vertexIter.hasNext()) {
+                    Vertex nextVertex = vertexIter.next();
+                    currentEdges = nextVertex.getEdges(Direction.OUT).iterator();
                 } else break;
 			}
 		}
@@ -86,7 +85,7 @@ public class AllEdgesIterator implements Iterator<Edge> {
 	}
 
 	/**
-	 * Removing relationships is not supported!
+	 * Removing edges is not supported!
 	 * @throws UnsupportedOperationException if invoked
 	 */
 	@Override

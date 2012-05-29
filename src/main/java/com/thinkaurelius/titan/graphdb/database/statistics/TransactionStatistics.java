@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.database.statistics;
 
 import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
-import com.thinkaurelius.titan.graphdb.edgetypes.InternalTitanType;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.util.datastructures.LongCounter;
 

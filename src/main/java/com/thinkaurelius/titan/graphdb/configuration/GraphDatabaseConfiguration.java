@@ -9,12 +9,11 @@ import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageAdapte
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStorageManager;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
-import com.thinkaurelius.titan.graphdb.database.idassigner.NodeIDAssigner;
-import com.thinkaurelius.titan.graphdb.database.idassigner.SimpleNodeIDAssigner;
+import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
+import com.thinkaurelius.titan.graphdb.database.idassigner.SimpleVertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -124,8 +123,6 @@ public class GraphDatabaseConfiguration {
     private static final boolean FLUSH_IDS_DEFAULT = true;
     private static final String AUTO_TYPE_KEY = "autotype";
     private static final String AUTO_TYPE_DEFAULT = "blueprints";
-    private static final String BATCH_LOADING_KEY = "batch";
-    private static final boolean BATCH_LOADING_DEFAULT = false;
     
     
     private final Configuration configuration;
@@ -170,7 +167,7 @@ public class GraphDatabaseConfiguration {
     private void preLoadConfiguration() {
         readOnly = configuration.getBoolean(READ_ONLY_KEY,READ_ONLY_DEFAULT);
         flushIDs = configuration.getBoolean(FLUSH_IDS_KEY,FLUSH_IDS_DEFAULT);
-        batchLoading = configuration.getBoolean(BATCH_LOADING_KEY,BATCH_LOADING_DEFAULT);
+        batchLoading = configuration.subset(STORAGE_NAMESPACE).getBoolean(STORAGE_BATCH_KEY,STORAGE_BATCH_DEFAULT);
         defaultTypeMaker = preregisteredAutoType.get(configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
     }
 
@@ -247,9 +244,9 @@ public class GraphDatabaseConfiguration {
         return all;
     }
 
-	public NodeIDAssigner getIDAssigner(StorageManager storage) {
+	public VertexIDAssigner getIDAssigner(StorageManager storage) {
         IDManager idmanager = new IDManager();
-		return new SimpleNodeIDAssigner(idmanager, storage,
+		return new SimpleVertexIDAssigner(idmanager, storage,
                 configuration.getInt(ID_RANDOMIZER_BITS_KEY,ID_RANDOMIZER_BITS_DEFAULT),
                 configuration.getInt(ID_BLOCK_SIZE_KEY,ID_BLOCK_SIZE_DEFAULT));
 	}

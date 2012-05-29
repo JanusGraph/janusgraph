@@ -7,12 +7,12 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
-import com.thinkaurelius.titan.graphdb.edgequery.InternalTitanQuery;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
-import com.thinkaurelius.titan.graphdb.edges.factory.StandardPersistedRelationFactory;
-import com.thinkaurelius.titan.graphdb.edgetypes.manager.EdgeTypeManager;
+import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.relations.factory.StandardPersistedRelationFactory;
+import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
-import com.thinkaurelius.titan.graphdb.vertices.factory.StandardNodeFactories;
+import com.thinkaurelius.titan.graphdb.vertices.factory.StandardVertexFactories;
 import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +35,9 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 	
 
 	
-	public StandardPersistTitanTx(InternalTitanGraph g, EdgeTypeManager etManage, TransactionConfig config,
+	public StandardPersistTitanTx(InternalTitanGraph g, TypeManager etManage, TransactionConfig config,
                                   TransactionHandle tx) {
-		super(g,StandardNodeFactories.DefaultPersisted,new StandardPersistedRelationFactory(),
+		super(g, StandardVertexFactories.DefaultPersisted,new StandardPersistedRelationFactory(),
 				etManage,config);
 		Preconditions.checkNotNull(g);
 		txHandle = tx;
@@ -130,7 +130,7 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 	
 	@Override
 	public long[] getVertexIDsFromDisk(TitanKey type, Object attribute) {
-		Preconditions.checkArgument(type.hasIndex(),"Can only retrieve nodes for indexed property types.");
+		Preconditions.checkArgument(type.hasIndex(),"Can only retrieve vertices for indexed property types.");
 		if (!type.isNew()) {
 			long[] ids = graphdb.indexRetrieval(attribute, type, this);
 			return ids;

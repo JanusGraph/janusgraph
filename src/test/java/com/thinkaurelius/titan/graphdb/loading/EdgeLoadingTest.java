@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.loading;
 
-import com.thinkaurelius.titan.graphdb.edgequery.AtomicTitanQuery;
-import com.thinkaurelius.titan.graphdb.edgetypes.system.SystemLabel;
+import com.thinkaurelius.titan.graphdb.query.AtomicTitanQuery;
+import com.thinkaurelius.titan.graphdb.types.system.SystemLabel;
 import com.thinkaurelius.titan.graphdb.loadingstatus.DefaultLoadingStatus;
 import com.thinkaurelius.titan.graphdb.loadingstatus.LoadingStatus;
 import com.tinkerpop.blueprints.Direction;

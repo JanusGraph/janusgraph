@@ -5,7 +5,7 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
-import com.thinkaurelius.titan.graphdb.edges.InternalRelation;
+import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 
 import java.util.Collections;
 import java.util.Iterator;

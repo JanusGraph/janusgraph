@@ -6,7 +6,7 @@ import java.util.Set;
 /**
  * Defines and interval of attribute values.
  * 
- * Intervals are needed when querying for nodes which have attributes in a range of values.
+ * Intervals are needed when querying for vertices which have attributes in a range of values.
  * Intervals have start and end points which are either inclusive or exclusive. An interval can be a proper {@link Range},
  * where the start point is different from the end point, or a {@link PointInterval} where those points are identical.
  * 
