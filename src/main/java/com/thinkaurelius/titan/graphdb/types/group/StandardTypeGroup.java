@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types.group;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TypeGroup;
 
 public class StandardTypeGroup extends TypeGroup {
@@ -10,8 +11,9 @@ public class StandardTypeGroup extends TypeGroup {
 	public StandardTypeGroup() {}
 	
 	public StandardTypeGroup(short id, String name) {
-		assert id>=0;
-		this.id=id;
+        Preconditions.checkArgument(id >= 0, "Id must be bigger than 0");
+        Preconditions.checkArgument(name!=null);
+        this.id=id;
 		this.name=name;
 	}
 	

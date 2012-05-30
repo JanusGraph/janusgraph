@@ -44,7 +44,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 
 	@Test
 	public void vertexCreation() {
-		TitanLabel connect = makeRelationshipType("connect");
+		TitanLabel connect = makeSimpleEdgeLabel("connect");
 		int noNodes = 20000;
 		TitanVertex[] nodes = new TitanVertex[noNodes];
 		PerformanceTest p = new PerformanceTest(true);
@@ -206,10 +206,10 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 		
 		@Override
 		protected void doLoad() {
-			TitanKey weight = makeWeightPropertyType("weight");
-			TitanKey id = makeIDPropertyType("uid");
-			TitanLabel knows = makeLabeledRelationshipType("knows",id,weight);
-			TitanKey name = makeStringPropertyType("name");
+			TitanKey weight = makeWeightPropertyKey("weight");
+			TitanKey id = makeIntegerUIDPropertyKey("uid");
+			TitanLabel knows = makeKeyedEdgeLabel("knows", id, weight);
+			TitanKey name = makeUniqueStringPropertyKey("name");
 			
 			String[] names = new String[noNodes];
 			TitanVertex[] nodes = new TitanVertex[noNodes];
@@ -252,8 +252,8 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 		@Override
 		public void doLoad() {
 
-			TitanLabel connect = makeRelationshipType("connect");
-			TitanKey name = makeStringPropertyType("name");
+			TitanLabel connect = makeSimpleEdgeLabel("connect");
+			TitanKey name = makeUniqueStringPropertyKey("name");
 			
 			String[] names = new String[noNodes];
 			TitanVertex[] nodes = new TitanVertex[noNodes];

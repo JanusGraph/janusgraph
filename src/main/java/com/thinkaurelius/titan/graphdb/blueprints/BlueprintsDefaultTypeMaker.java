@@ -18,7 +18,7 @@ public class BlueprintsDefaultTypeMaker implements DefaultTypeMaker {
 
     @Override
     public TitanKey makeKey(String name, TypeMaker factory) {
-        return factory.name(name).functional(false).
+        return factory.name(name).functional(false).indexed().
                 dataType(Object.class).makePropertyKey();
     }
 }

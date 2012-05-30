@@ -267,7 +267,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 TitanKey propType = ((TitanKey) titanType);
                 Object attribute = null;
 
-                if (propType.getDataType().equals(Object.class)) {
+                if (hasGenericDataType(propType)) {
                     attribute = serializer.readClassAndObject(value);
                 } else {
                     attribute = serializer.readObjectNotNull(value, propType.getDataType());
@@ -305,7 +305,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     private Object readInline(ByteBuffer read, TitanType type, InternalTitanTransaction tx) {
         if (type.isPropertyKey()) {
             TitanKey proptype = ((TitanKey) type);
-            if (proptype.getDataType().equals(Object.class))
+            if (hasGenericDataType(proptype))
                 return serializer.readClassAndObject(read);
             else return serializer.readObject(read, proptype.getDataType());
         } else {
@@ -437,7 +437,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                                         if (interval.endInclusive())
                                             endColumn = ByteBufferUtil.nextBiggerBuffer(endColumn);
 
-                                        entries = appendResults(key,start.getByteBuffer(),end.getByteBuffer(),entries,limit,txh);
+                                        entries = appendResults(key,startColumn,endColumn,entries,limit,txh);
                                         break; //redundant, this must be the last iteration because its a range
                                     }
                                 } else {
@@ -800,7 +800,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         TitanKey key = (TitanKey)property.getType();
         assert attribute!=null;
         assert key.getDataType().isInstance(attribute);
-        if (key.getDataType().equals(Object.class)) {
+        if (hasGenericDataType(key)) {
             out.writeClassAndObject(attribute);
         } else {
             out.writeObjectNotNull(attribute);
@@ -817,24 +817,26 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         writeInlineEdge(out, edge, titanType, false);
 	}
 	
-	private void writeInlineEdge(DataOutput out, InternalRelation edge, TitanType titanType, boolean writeEdgeType) {
-		assert titanType.isSimple();
+	private void writeInlineEdge(DataOutput out, InternalRelation edge, TitanType type, boolean writeEdgeType) {
+		assert type.isSimple();
+        assert writeEdgeType || type.isEdgeLabel() || 
+                (type.isPropertyKey() && !hasGenericDataType((TitanKey)type) );
 
 		if (edge==null) {
 			assert !writeEdgeType;
-			if (titanType.isPropertyKey()) {
+			if (type.isPropertyKey()) {
 				out.writeObject(null);
 			} else {
-				assert titanType.isEdgeLabel();
+				assert type.isEdgeLabel();
                 VariableLong.writePositive(out, 0);
 			}
 		} else {
 			if (writeEdgeType) {
-                IDHandler.writeInlineEdgeType(out, titanType.getID(), idManager);
+                IDHandler.writeInlineEdgeType(out, type.getID(), idManager);
 			}
 			if (edge.isProperty()) {
                 Object attribute = ((TitanProperty)edge).getAttribute();
-                if (((TitanKey)titanType).getDataType().equals(Object.class))
+                if (hasGenericDataType((TitanKey)type))
                     out.writeClassAndObject(attribute);
 				else out.writeObject(attribute);
 			} else {
@@ -852,6 +854,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		}
 		return ets;
 	}
+    
+    private static final boolean hasGenericDataType(TitanKey key) {
+        return key.getDataType().equals(Object.class);
+    }
 
     // ################### PROPERTY INDEX HANDLING #########################
 

@@ -2,6 +2,8 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
+import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Before;
@@ -118,6 +120,19 @@ public class IDManagementTest {
             assertEquals(groupID,group%64);
 
 		}
+
+
+        KryoSerializer serializer = new KryoSerializer(true);
+        for (int dir = 0; dir<4; dir++) {
+            for (int t=0;t<1000;t++) {
+                long etid = RandomGenerator.randomLong(1,eid.getMaxEdgeTypeID());
+                ByteBuffer b = IDHandler.getEdgeType(etid,dir,eid);
+                DataOutput out = serializer.getDataOutput(100,true);
+                IDHandler.writeEdgeType(out,etid,dir,eid);
+                assertEquals(b,out.getByteBuffer());
+
+            }
+        }
 	}
 
     @Test

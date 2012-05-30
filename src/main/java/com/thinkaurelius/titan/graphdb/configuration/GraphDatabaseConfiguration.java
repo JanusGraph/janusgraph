@@ -103,7 +103,7 @@ public class GraphDatabaseConfiguration {
 	 */
 	private static final String DEFAULT_CONFIG_FILE_NAME = "titanconfig.txt";
 
-    private static final String ATTRIBUTE_NAMESPACE = "attributes";
+    public static final String ATTRIBUTE_NAMESPACE = "attributes";
     public static final String STORAGE_NAMESPACE = "storage";
     
     public static final String ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY = "allowAll";

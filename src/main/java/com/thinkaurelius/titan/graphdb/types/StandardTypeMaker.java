@@ -78,7 +78,7 @@ public class StandardTypeMaker implements TypeMaker {
 			if (et.isEdgeLabel() && !((TitanLabel)et).isUnidirected())
 				throw new IllegalArgumentException("Signature relationship types must be unidirected: " + et);
             if (et.isPropertyKey() && ((TitanKey)et).getDataType().equals(Object.class)) 
-                throw new IllegalArgumentException("Signature keys must have a declared datatype: " + et);
+                throw new IllegalArgumentException("Signature keys must have a proper declared datatype: " + et);
 			signature[i]=et;
 		}
 		return signature;

@@ -50,9 +50,9 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 		
 		TitanLabel[] rels = new TitanLabel[REL_COUNT];
 		for (int i = 0; i < rels.length; i++) {
-			rels[i] = makeRelationshipType("rel" + i);
+			rels[i] = makeSimpleEdgeLabel("rel" + i);
 		}
-		TitanKey id = makeIDPropertyType("uid");
+		TitanKey id = makeIntegerUIDPropertyKey("uid");
 		TitanVertex nodes[] = new TitanVertex[NODE_COUNT];
 		for (int i=0;i<NODE_COUNT;i++) {
 			nodes[i]=tx.addVertex();
@@ -123,10 +123,10 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 		
 		Runnable propMaker =
 			new RandomPropertyMaker(tx, NODE_COUNT, id,
-					makeStringPropertyType("dummyProperty"));
+					makeUniqueStringPropertyKey("dummyProperty"));
 		Runnable relMaker =
 			new FixedRelationshipMaker(tx, id,
-					makeRelationshipType("dummyRelationship"));
+					makeSimpleEdgeLabel("dummyRelationship"));
 		
 		Future<?> propFuture = executor.submit(propMaker);
 		Future<?> relFuture = executor.submit(relMaker);
