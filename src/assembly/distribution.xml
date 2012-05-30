@@ -8,13 +8,12 @@
                 <include>pom.xml</include>
             </includes>
         </fileSet>
-        <!--<fileSet>
+        <fileSet>
             <fileMode>0775</fileMode>
             <includes>
-                <include>gremlin-groovy.sh</include>
-                <include>gremlin-groovy.bat</include>
+                <include>gremlin.sh</include>
             </includes>
-        </fileSet>-->
+        </fileSet>
         <fileSet>
             <directory>src</directory>
         </fileSet>
@@ -29,6 +28,10 @@
         </fileSet>
     </fileSets>
     <files>
+        <file>
+            <source>data/graph-of-the-gods.xml</source>
+            <outputDirectory>data</outputDirectory>
+        </file>
         <file>
             <source>LICENSE.txt</source>
             <outputDirectory>/</outputDirectory>

@@ -1,6 +1,6 @@
 !https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-logo.png!
 
-Titan is a distributed "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for processing massive-scale graphs represented over a machine cluster. Titan separates the concerns of graph query and manipulation from storing the graph on disk, delegating that concern to an extensible set of NoSQL solutions.
+Titan is a distributed "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for processing massive-scale graphs represented over a machine cluster. Titan separates the concerns of graph processing and manipulation from storing the graph on disk, delegating that concern to an extensible set of persistence solutions.
 
 h2. Features
 
