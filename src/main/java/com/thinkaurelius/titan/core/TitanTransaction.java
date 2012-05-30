@@ -155,7 +155,9 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
 	/**
 	 * Retrieves all vertices which have an incident property of the given key with the specified value.
 	 * 
-	 * The given property key must be indexed.
+	 * The given property key must be indexed. In this regard, it violates the Blueprints contract which
+     * requires iterating over all vertices and filtering based on the attribute. However, Titan does not
+     * support vertex iteration.
 	 * 
 	 * @param key property key
 	 * @param attribute attribute value
@@ -168,7 +170,9 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     /**
      * Retrieves all vertices which have an incident property of the given key with the specified value.
      *
-     * The given property key must be indexed.
+     * The given property key must be indexed. In this regard, it violates the Blueprints contract which
+     * requires iterating over all vertices and filtering based on the attribute. However, Titan does not
+     * support vertex iteration.
      *
      * @param key property key
      * @param attribute attribute value

@@ -54,13 +54,13 @@ public class TitanGraphTest extends GraphTest {
 
     public void testKeyIndexableGraphTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new KeyIndexableGraphTestSuite(this), ImmutableSet.of("testAutoIndexKeyManagementWithPersistence"));
+        doTestSuite(new KeyIndexableGraphTestSuite(this), ImmutableSet.of("testAutoIndexKeyDroppingWithPersistence"));
         printTestPerformance("KeyIndexableGraphTestSuite", this.stopWatch());
     }
 
     public void testTransactionalGraphTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new TransactionalGraphTestSuite(this), ImmutableSet.of("testTransactionsForEdges", "testBulkTransactionsOnEdges"));
+        doTestSuite(new TransactionalGraphTestSuite(this), ImmutableSet.of("testTransactionsForEdges"));
         printTestPerformance("TransactionalTitanGraphTestSuite", this.stopWatch());
     }
 

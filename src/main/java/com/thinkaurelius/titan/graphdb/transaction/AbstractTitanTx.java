@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ArrayListMultimap;
@@ -25,6 +26,7 @@ import com.thinkaurelius.titan.util.datastructures.Factory;
 import com.thinkaurelius.titan.util.datastructures.Maps;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.PropertyFilteredIterable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -418,26 +420,35 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
 	@Override
 	public Iterable<Vertex> getVertices(String key, Object attribute) {
+        Preconditions.checkNotNull(attribute);
+        Preconditions.checkNotNull(key);
         if (!containsType(key)) return ImmutableSet.of();
-		else return (Iterable)getVertices(getPropertyKey(key), attribute);
+        TitanKey tkey = getPropertyKey(key);
+        return (Iterable)getVertices(tkey, attribute);
+        //return new PropertyFilteredIterable<Vertex>(key,attribute,getVertices());
 	}
 	
 
 	
 	@Override
-	public Iterable<TitanVertex> getVertices(TitanKey key, Object attribute) {
-        Preconditions.checkArgument(key.hasIndex());
-        //First, get stuff from disk
-        long[] nodeids = getVertexIDsFromDisk(key, attribute);
-        Set<TitanVertex> vertices = new HashSet<TitanVertex>(nodeids.length);
-        for (int i=0;i<nodeids.length;i++)
-            vertices.add(getExistingVertex(nodeids[i]));
-        //Next, the in-memory stuff
-        Multimap<Object,TitanVertex> subindex = attributeIndex.get(key);
-        if (subindex!=null) {
-            vertices.addAll(subindex.get(attribute));
+	public Iterable<TitanVertex> getVertices(final TitanKey key, final Object attribute) {
+        Preconditions.checkNotNull(attribute);
+        Preconditions.checkNotNull(key);
+        if (key.hasIndex()) {
+            //First, get stuff from disk
+            long[] nodeids = getVertexIDsFromDisk(key, attribute);
+            Set<TitanVertex> vertices = new HashSet<TitanVertex>(nodeids.length);
+            for (int i=0;i<nodeids.length;i++)
+                vertices.add(getExistingVertex(nodeids[i]));
+            //Next, the in-memory stuff
+            Multimap<Object,TitanVertex> subindex = attributeIndex.get(key);
+            if (subindex!=null) {
+                vertices.addAll(subindex.get(attribute));
+            }
+            return vertices;
+        } else {
+            throw new UnsupportedOperationException("getVertices only supports indexed keys since TitanGraph does not support vertex iteration outside the transaction");
         }
-		return vertices;
 	}
 
 	
