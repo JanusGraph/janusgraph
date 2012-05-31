@@ -10,9 +10,8 @@
     <artifactId>titan</artifactId>
     <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
-
     <name>Titan: A Highly Scalable, Distributed Graph Database</name>
-    <url>http://titan.thinkaurelius.com</url>
+    <url>http://thinkaurelius.github.com/titan/</url>
     <description>
         Titan is a highly scalable, distributed graph database.
     </description>
@@ -80,6 +79,7 @@
             <groupId>com.tinkerpop.blueprints</groupId>
             <artifactId>blueprints-test</artifactId>
             <version>2.1.0-SNAPSHOT</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.tinkerpop.gremlin</groupId>
@@ -91,6 +91,7 @@
             		<groupId>org.sonatype.gossip</groupId>
             	</exclusion>
             </exclusions>
+            <!--<scope>provided</scope>-->
         </dependency>
         <!-- Utility -->
         <dependency>
@@ -309,8 +310,8 @@
                 <configuration>
                     <attach>false</attach>
                     <descriptors>
-                        <descriptor>src/assembly/distribution.xml</descriptor>
                         <descriptor>src/assembly/standalone.xml</descriptor>
+                        <descriptor>src/assembly/distribution.xml</descriptor>
                         <!--<descriptor>src/assembly/archive-with-deps.xml</descriptor> -->
                     </descriptors>
                     <finalName>${project.artifactId}-${project.version}</finalName>
