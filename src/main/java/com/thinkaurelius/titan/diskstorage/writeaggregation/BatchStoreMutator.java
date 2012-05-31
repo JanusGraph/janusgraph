@@ -47,7 +47,8 @@ public class BatchStoreMutator extends BufferStoreMutator {
         super.flush();
         int waitTimeMS = 1;
         while (runningWorkers.get()>0) {
-            log.debug("Waiting for workers to finish persisting data ({})",waitTimeMS);
+            log.debug("Waiting for {} workers to finish persisting data ({})",runningWorkers.get(),waitTimeMS);
+            waitTimeMS*=2;
             try {
                 Thread.sleep(waitTimeMS);
             } catch (InterruptedException e) {
