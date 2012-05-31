@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.cassandra.thrift.Cassandra;
+import org.apache.cassandra.thrift.CassandraDaemon;
 import org.apache.cassandra.thrift.CfDef;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.thrift.InvalidRequestException;
@@ -42,7 +43,6 @@ public class CassandraThriftStorageManager implements StorageManager {
     public static final String PROP_PORT = "port";
     public static final String PROP_SELF_HOSTNAME = "selfHostname";
     public static final String PROP_TIMEOUT = "thrift_timeout";
-    public static final String PROP_ID_KEYSPACE = "id_keyspace";
     
     public static ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore> stores =
     		new ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore>();
@@ -89,13 +89,6 @@ public class CassandraThriftStorageManager implements StorageManager {
      * Value = {@value}
      */
     public static final String idCfName = "id_allocations";
-    
-    /**
-     * Default keyspace to be used for ID block management.
-     * <p>
-     * Value = {@value}
-     */
-    public static final String ID_KEYSPACE = "titan_ids";
     
     public static final String READ_CONSISTENCY_LEVEL_KEY = "read_consistency_level";
     public static final String READ_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
@@ -195,7 +188,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 		log.debug("Set write consistency level to {}", this.writeConsistencyLevel);
 		
         idmanager = new OrderedKeyColumnValueIDManager(
-        		openDatabase("blocks_allocated", ID_KEYSPACE, null, null), rid, config);
+        		openDatabase("titan_ids", keyspace, null, null), rid, config);
 	}
 
     @Override
