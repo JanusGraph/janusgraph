@@ -20,11 +20,11 @@ import java.util.Set;
 
 public class TitanInMemoryGraphTest extends GraphTest {
 
-    public void testTitanBenchmarkTestSuite() throws Exception {
+    /*public void testTitanBenchmarkTestSuite() throws Exception {
         this.stopWatch();
         doTestSuite(new TitanBenchmarkSuite(this));
         printTestPerformance("TitanBenchmarkTestSuite", this.stopWatch());
-    }
+    }*/
 
     public void testVertexTestSuite() throws Exception {
         this.stopWatch();

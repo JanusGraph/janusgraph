@@ -283,7 +283,7 @@
                 <configuration>
                     <argLine>-Xms256m -Xmx756m</argLine>
                     <excludes>
-                        <exclue>**/Titan*</exclue>
+                        <!--<exclue>**/Titan*</exclue>-->
 
                         <exclue>**/HBase*</exclue>
                         <!--<exclue>**/Cassandra*</exclue>-->

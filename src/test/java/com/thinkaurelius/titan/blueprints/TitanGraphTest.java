@@ -22,11 +22,11 @@ import java.util.Set;
 
 public class TitanGraphTest extends GraphTest {
 
-    public void testTitanBenchmarkTestSuite() throws Exception {
+    /*public void testTitanBenchmarkTestSuite() throws Exception {
         this.stopWatch();
         doTestSuite(new TitanBenchmarkSuite(this));
         printTestPerformance("TitanBenchmarkTestSuite", this.stopWatch());
-    }
+    }*/
 
     public void testVertexTestSuite() throws Exception {
         this.stopWatch();
@@ -58,11 +58,11 @@ public class TitanGraphTest extends GraphTest {
         printTestPerformance("KeyIndexableGraphTestSuite", this.stopWatch());
     }
 
-    public void testTransactionalGraphTestSuite() throws Exception {
+    /*public void testTransactionalGraphTestSuite() throws Exception {
         this.stopWatch();
         doTestSuite(new TransactionalGraphTestSuite(this), ImmutableSet.of("testTransactionsForEdges"));
         printTestPerformance("TransactionalTitanGraphTestSuite", this.stopWatch());
-    }
+    }*/
 
     public void testGraphMLReaderTestSuite() throws Exception {
         this.stopWatch();
