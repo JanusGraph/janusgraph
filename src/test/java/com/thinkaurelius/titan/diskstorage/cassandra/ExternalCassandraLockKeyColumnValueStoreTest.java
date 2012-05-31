@@ -8,8 +8,7 @@ import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
-public class CassandraLockKeyColumnValueStoreTest 
-	extends LockKeyColumnValueStoreTest {
+public class ExternalCassandraLockKeyColumnValueStoreTest extends LockKeyColumnValueStoreTest {
 
     public static CassandraLocalhostHelper ch = new CassandraLocalhostHelper("127.0.0.1");
 
