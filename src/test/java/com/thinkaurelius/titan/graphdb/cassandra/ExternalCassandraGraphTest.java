@@ -30,9 +30,5 @@ public class ExternalCassandraGraphTest extends TitanGraphTest {
                 CassandraThriftStorageManager.DEFAULT_KEYSPACE,
 				"127.0.0.1",
                 CassandraThriftStorageManager.DEFAULT_PORT);
-		CassandraThriftStorageManager.dropKeyspace(
-                CassandraThriftStorageManager.ID_KEYSPACE,
-				"127.0.0.1",
-                CassandraThriftStorageManager.DEFAULT_PORT);
 	}
 }
