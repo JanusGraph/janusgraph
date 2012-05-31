@@ -19,6 +19,9 @@ import org.slf4j.LoggerFactory;
 import java.text.NumberFormat;
 import java.util.LinkedHashMap;
 
+import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 
 	private static final Logger log = LoggerFactory.getLogger(TitanGraphPerformanceTest.class);
@@ -188,6 +191,12 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 			long edgesPerSec = noNodes * noEdgesPerNode * 1000
 					/ Math.max(1, postcommitMS - precommitMS);
 			getMetric("TitanRelation commit rate", "edges/sec").addValue(edgesPerSec);
+            
+            //Verify that data was written
+            TitanVertex v1 = tx.getVertex("uid",50);
+            TitanVertex v2 = tx.getVertex("uid",150);
+            assertTrue(v1.query().count()>0);
+            assertEquals(v1.query().count(), v2.query().count());
 		}
 		
 		protected abstract void doLoad();
@@ -220,6 +229,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 				} while (null != tx.getVertex(name, names[i]));
 				nodes[i] = tx.addVertex();
 				nodes[i].addProperty(name, names[i]);
+                nodes[i].addProperty(id,i);
 			}
             log.info("Nodes loaded.");
 			int offsets[] = {-99, -71, -20, -17, -13, 2, 7, 15, 33, 89};
@@ -254,6 +264,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 
 			TitanLabel connect = makeSimpleEdgeLabel("connect");
 			TitanKey name = makeUniqueStringPropertyKey("name");
+            TitanKey id = makeIntegerUIDPropertyKey("uid");
 			
 			String[] names = new String[noNodes];
 			TitanVertex[] nodes = new TitanVertex[noNodes];
@@ -264,6 +275,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 				} while (null != tx.getVertex(name, names[i]));
 				nodes[i] = tx.addVertex();
 				nodes[i].addProperty(name, names[i]);
+                nodes[i].addProperty(id,i);
 			}
             log.info("Nodes loaded.");
 			int offsets[] = { -99, -71, -20, -17, -13, 2, 7, 15, 33, 89 };
