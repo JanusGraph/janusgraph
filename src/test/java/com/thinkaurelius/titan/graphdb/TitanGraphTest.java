@@ -483,6 +483,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(7,v.query().labels("knows").direction(Direction.OUT).has("author",v).count());
         assertEquals(7,v.query().labels("knows").direction(Direction.OUT).has("author",v).interval("weight",0.0,2.0).count());
         assertEquals(3,v.query().labels("knows").direction(Direction.OUT).has("author",v).interval("weight",0.0,1.0).count());
+        assertEquals(20,Iterables.size(v.query().inMemory().labels("connect","friend").direction(Direction.OUT).interval("time",3,33).vertices()));
+        assertEquals(50,Iterables.size(v.query().inMemory().labels("connect","friend","knows").has("weight",1.5).vertexIds()));
 
 
         clopen();
@@ -505,6 +507,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(7,v.query().labels("knows").direction(Direction.OUT).has("author",v).count());
         assertEquals(7,v.query().labels("knows").direction(Direction.OUT).has("author",v).interval("weight",0.0,2.0).count());
         assertEquals(3,v.query().labels("knows").direction(Direction.OUT).has("author",v).interval("weight",0.0,1.0).count());
+        assertEquals(20,Iterables.size(v.query().labels("connect","friend").direction(Direction.OUT).interval("time",3,33).vertices()));
+        assertEquals(20,Iterables.size(v.query().labels("connect","friend").direction(Direction.OUT).interval("time",3,33).vertexIds()));
+        assertEquals(50,Iterables.size(v.query().labels("connect","friend","knows").has("weight",1.5).vertexIds()));
 
 
     }

@@ -30,7 +30,7 @@ public class QueryUtil {
      */
     public static boolean queryCoveredByDiskIndexes(InternalTitanQuery query) {
         if (!query.hasConstraints()) return true;
-        if (!query.hasEdgeTypeGroupCondition()) return false;
+        if (!query.hasEdgeTypeCondition()) return false;
         String[] keysig = ((InternalTitanType)query.getTypeCondition()).getDefinition().getKeySignature();
         Map<String,Object> constraints = query.getConstraints();
         int num = 0;

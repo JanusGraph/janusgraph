@@ -69,7 +69,7 @@ public class VertexLongList implements VertexListInternal {
         Preconditions.checkArgument(nodelist instanceof VertexLongList,"Only supporting union of identical lists.");
         VertexLongList other = (VertexLongList)nodelist;
         sorted=false;
-        vertices.addAllOfFromTo(other.vertices,0,other.vertices.size());
+        vertices.addAllOfFromTo(other.vertices,0,other.vertices.size()-1);
     }
 
 	@Override
