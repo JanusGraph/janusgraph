@@ -2,88 +2,99 @@ package com.thinkaurelius.titan.diskstorage.writeaggregation;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class BatchStoreMutator implements StoreMutator {
+public class BatchStoreMutator extends BufferStoreMutator {
 
-	private final TransactionHandle txh;
-	private final int maxBatch;
-	private final MultiWriteKeyColumnValueStore edgeStore;
-    private final MultiWriteKeyColumnValueStore propertyIndex;
+    private static final Logger log =
+            LoggerFactory.getLogger(BatchStoreMutator.class);
 
-    private final Map<ByteBuffer, Mutation> edgeMutations = new HashMap<ByteBuffer, Mutation>();
-    private final Map<ByteBuffer, Mutation> indexMutations = new HashMap<ByteBuffer, Mutation>();
-    private int numMutations = 0;
 
+    private final ExecutorService executor;
+    
+    private final AtomicInteger runningWorkers;
 
 	public BatchStoreMutator(TransactionHandle txh,
                              MultiWriteKeyColumnValueStore edgeStore,
                              MultiWriteKeyColumnValueStore propertyIndex,
-                             int maxBatch) {
-		this.txh = txh;
-		this.edgeStore = edgeStore;
-        this.propertyIndex = propertyIndex;
-		this.maxBatch = maxBatch;
+                             int bufferSize, int numThreads) {
+		super(txh, edgeStore, propertyIndex, bufferSize);
+        executor = Executors.newFixedThreadPool(numThreads);
+        runningWorkers = new AtomicInteger(0);
 	}
 
     @Override
-    public void mutateEdges(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) {
-        mutate(edgeMutations, key, additions, deletions);
-    }
-
-    @Override
     public void acquireEdgeLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) {
-        edgeStore.acquireLock(key,column,expectedValue,txh);
-    }
-
-    @Override
-    public void mutateIndex(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) {
-        mutate(indexMutations,key,additions,deletions);
+        throw new UnsupportedOperationException("Should not acquire locks during batch operations.");
     }
 
     @Override
     public void acquireIndexLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) {
-        propertyIndex.acquireLock(key,column,expectedValue,txh);
-    }
-
-    private void mutate(Map<ByteBuffer, Mutation> mutations, ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) {
-        if ((additions==null || additions.isEmpty()) && (deletions==null || deletions.isEmpty())) return; 
-        
-        Mutation m = new Mutation(additions,deletions);
-        Mutation existingM = mutations.get(key);
-        if (existingM!=null) {
-            existingM.merge(m);
-        } else {
-            mutations.put(key, m);
-        }
-        
-        if (additions!=null) numMutations+= additions.size();
-        if (deletions!=null) numMutations+= deletions.size();
-        
-        if (numMutations >= maxBatch) {
-            flush();
-        }
+        throw new UnsupportedOperationException("Should not acquire locks during batch operations.");
     }
 
 	@Override
 	public void flush() {
-        if (numMutations>0) {
-            if (!edgeMutations.isEmpty()) {
-                edgeStore.mutateMany(edgeMutations,txh);
-                edgeMutations.clear();
+        super.flush();
+        int waitTimeMS = 1;
+        while (runningWorkers.get()>0) {
+            log.debug("Waiting for workers to finish persisting data ({})",waitTimeMS);
+            try {
+                Thread.sleep(waitTimeMS);
+            } catch (InterruptedException e) {
+                log.warn("Interrupted while waiting for workers to persist data.");
+                break;
             }
-
-            if (!indexMutations.isEmpty()) {
-                propertyIndex.mutateMany(indexMutations,txh);
-                indexMutations.clear();
-            }
-
-            numMutations = 0;
         }
 	}
+
+    protected void flushInternal() {
+        if (!edgeMutations.isEmpty()) {
+            executor.execute(new MakePeristenceCalls(edgeStore, edgeMutations));
+            edgeMutations = new HashMap<ByteBuffer, Mutation>();
+        }
+
+        if (!indexMutations.isEmpty()) {
+            executor.execute(new MakePeristenceCalls(propertyIndex, indexMutations));
+            indexMutations = new HashMap<ByteBuffer, Mutation>();
+        }
+
+        numMutations = 0;
+    }
+
+    @Override
+    protected void finalize() {
+        executor.shutdown();
+    }
+
+    private class MakePeristenceCalls implements Runnable {
+
+        private final MultiWriteKeyColumnValueStore store;
+        private final Map<ByteBuffer, Mutation> mutations;
+
+        public MakePeristenceCalls(MultiWriteKeyColumnValueStore store, Map<ByteBuffer, Mutation> mutations) {
+            this.store=store;
+            this.mutations=mutations;
+            runningWorkers.incrementAndGet();
+            log.debug("Initialized new peristence worker");
+        }
+
+        @Override
+        public void run() {
+            log.debug("Starting persistence...");
+            store.mutateMany(mutations,txh);
+            runningWorkers.decrementAndGet();
+            log.debug("... stopped persistence.");
+        }
+    }
 
 }

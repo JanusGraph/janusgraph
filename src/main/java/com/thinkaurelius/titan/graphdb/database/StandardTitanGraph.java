@@ -507,12 +507,15 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     // ################### WRITE #########################
 	
 	private final StoreMutator getStoreMutator(TransactionHandle txh) {
-		if (bufferMutations && edgeStore instanceof MultiWriteKeyColumnValueStore &&
-                    propertyIndex instanceof MultiWriteKeyColumnValueStore) {
-            return new BatchStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize);
-		} else {
-		    return new DirectStoreMutator(txh, edgeStore, propertyIndex);
+        if (edgeStore instanceof MultiWriteKeyColumnValueStore &&
+                propertyIndex instanceof MultiWriteKeyColumnValueStore) {
+            if (config.isBatchLoading()) {
+                return new BatchStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize, 8);
+            } else if (bufferMutations) {
+                return new BufferStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize);
+            }
         }
+		return new DirectStoreMutator(txh, edgeStore, propertyIndex);
 	}
 
 
@@ -820,7 +823,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	private void writeInlineEdge(DataOutput out, InternalRelation edge, TitanType type, boolean writeEdgeType) {
 		assert type.isSimple();
         assert writeEdgeType || type.isEdgeLabel() || 
-                (type.isPropertyKey() && !hasGenericDataType((TitanKey)type) );
+                (type.isPropertyKey() && !hasGenericDataType((TitanKey) type) );
 
 		if (edge==null) {
 			assert !writeEdgeType;
@@ -836,7 +839,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 			}
 			if (edge.isProperty()) {
                 Object attribute = ((TitanProperty)edge).getAttribute();
-                if (hasGenericDataType((TitanKey)type))
+                if (hasGenericDataType((TitanKey) type))
                     out.writeClassAndObject(attribute);
 				else out.writeObject(attribute);
 			} else {
