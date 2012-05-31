@@ -2,6 +2,9 @@ package com.thinkaurelius.titan.diskstorage.cassandra;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.cassandra.thrift.Cassandra;
@@ -111,6 +114,9 @@ public class CassandraThriftStorageManager implements StorageManager {
     
     public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local_lock_mediator_prefix";
     public static final String LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT = "cassandra";
+    
+    public static final String REPLICATION_FACTOR_KEY = "replication_factor";
+    public static final int REPLICATION_FACTOR_DEFAULT  = 1;
 
 	private final String keyspace;
 	
@@ -132,6 +138,8 @@ public class CassandraThriftStorageManager implements StorageManager {
     
     private final String hostname;
     private final int port;
+    
+    private final int replicationFactor;
 	
 	public CassandraThriftStorageManager(Configuration config) {
 		
@@ -151,6 +159,11 @@ public class CassandraThriftStorageManager implements StorageManager {
 				config.getString(
 						LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
 						LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT);
+		
+		this.replicationFactor = 
+				config.getInt(
+						REPLICATION_FACTOR_KEY,
+						REPLICATION_FACTOR_DEFAULT);
 		
 		this.lockRetryCount =
 				config.getInt(
@@ -228,10 +241,11 @@ public class CassandraThriftStorageManager implements StorageManager {
 
 		CTConnection conn = null;
 		try {
+			KsDef keyspaceDef = ensureKeyspaceExists(ksoverride);
+			
 			conn =  pool.genericBorrowObject(ksoverride);
 			Cassandra.Client client = conn.getClient();
 			log.debug("Looking up metadata on keyspace {}...", ksoverride);
-			KsDef keyspaceDef = client.describe_keyspace(ksoverride);
 			boolean foundColumnFamily = false;
 			for (CfDef cfDef : keyspaceDef.getCf_defs()) {
 				String curCfName = cfDef.getName();
@@ -250,6 +264,8 @@ public class CassandraThriftStorageManager implements StorageManager {
 		} catch (InvalidRequestException e) {
 			throw new GraphStorageException(e);
 		} catch (NotFoundException e) {
+			throw new GraphStorageException(e);
+		} catch (SchemaDisagreementException e) {
 			throw new GraphStorageException(e);
 		} finally {
 			if (null != conn)
@@ -326,6 +342,50 @@ public class CassandraThriftStorageManager implements StorageManager {
 		
 		return false;
                 
+	}
+	
+	private KsDef ensureKeyspaceExists(String name)
+			throws NotFoundException, InvalidRequestException, TException,
+			SchemaDisagreementException {
+		
+		CTConnectionFactory fac = 
+				CTConnectionPool.getFactory(hostname, port, DEFAULT_THRIFT_TIMEOUT_MS);
+		
+		CTConnection conn = fac.makeRawConnection();
+		Cassandra.Client client = conn.getClient();
+		
+		try {
+			
+			try {
+				client.set_keyspace(name);
+				log.debug("Found existing keyspace {}", name);
+			} catch (InvalidRequestException e) {
+				// Keyspace didn't exist; create it
+				log.debug("Creating keyspace {}...", name);
+				KsDef ksdef = new KsDef();
+				ksdef.setName(name);
+				ksdef.setStrategy_class("org.apache.cassandra.locator.SimpleStrategy");
+				Map<String, String> stratops = new HashMap<String, String>();
+				stratops.put("replication_factor", String.valueOf(replicationFactor));
+				ksdef.setStrategy_options(stratops);
+				ksdef.setCf_defs(new LinkedList<CfDef>()); // cannot be null but can be empty
+
+				String schemaVer = client.system_add_keyspace(ksdef);
+				// Try to block until Cassandra converges on the new keyspace
+				try {
+					CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
+				} catch (InterruptedException ie) {
+					throw new GraphStorageException(ie);
+				}
+			}
+
+			return client.describe_keyspace(name);
+			
+		} finally {
+			if (null != conn && null != conn.getTransport() && conn.getTransport().isOpen()) {
+				conn.getTransport().close();
+			}
+		}
 	}
 
     /**
