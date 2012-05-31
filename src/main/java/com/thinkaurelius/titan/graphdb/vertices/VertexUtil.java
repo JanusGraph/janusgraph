@@ -105,8 +105,8 @@ public class VertexUtil {
         if (query.hasEdgeTypeCondition()) {
             assert query.getTypeCondition()!=null;
             return edges.getEdges(query.getTypeCondition());
-        } else if (query.hasEdgeTypeGroupCondition()) {
-            return edges.getEdges(query.getEdgeTypeGroupCondition());
+        } else if (query.hasGroupCondition()) {
+            return edges.getEdges(query.getGroupCondition());
         } else {
             return edges.getEdges();
         }

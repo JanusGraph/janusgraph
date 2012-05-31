@@ -49,7 +49,7 @@ public class QueryUtil {
     
     public static boolean hasFirstKeyConstraint(InternalTitanQuery query) {
         if (!query.hasConstraints()) return false;
-        if (!query.hasEdgeTypeGroupCondition()) return false;
+        if (!query.hasEdgeTypeCondition()) return false;
         String[] keysig = ((InternalTitanType)query.getTypeCondition()).getDefinition().getKeySignature();
         return query.getConstraints().containsKey(keysig[0]);
     }

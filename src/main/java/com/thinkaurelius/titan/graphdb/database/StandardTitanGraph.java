@@ -457,8 +457,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                     }
                 }
 			}
-		} else if (query.hasEdgeTypeGroupCondition()) {
-			int groupid = query.getEdgeTypeGroupCondition().getID();
+		} else if (query.hasGroupCondition()) {
+			int groupid = query.getGroupCondition().getID();
             for (int dirID=0;dirID<4;dirID++) {
                 if (dirs[dirID]) {
                     ByteBuffer columnStart = IDHandler.getEdgeTypeGroup(groupid,dirID,idManager);

@@ -25,9 +25,9 @@ public interface InternalTitanQuery extends TitanQuery {
 
     TitanType getTypeCondition();
 
-    boolean hasEdgeTypeGroupCondition();
+    boolean hasGroupCondition();
 
-    TypeGroup getEdgeTypeGroupCondition();
+    TypeGroup getGroupCondition();
 
     boolean hasDirectionCondition();
 

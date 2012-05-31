@@ -323,13 +323,13 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 
 
     @Override
-    public TypeGroup getEdgeTypeGroupCondition() {
-        if (!hasEdgeTypeGroupCondition()) throw new IllegalStateException("This query does not have a edge type group condition!");
+    public TypeGroup getGroupCondition() {
+        if (!hasGroupCondition()) throw new IllegalStateException("This query does not have a edge type group condition!");
         return group;
     }
 
     @Override
-    public boolean hasEdgeTypeGroupCondition() {
+    public boolean hasGroupCondition() {
         return group!=null;
     }
 

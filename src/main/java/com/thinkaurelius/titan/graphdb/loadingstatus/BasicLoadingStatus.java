@@ -32,9 +32,9 @@ public class BasicLoadingStatus implements LoadingStatus {
 	public boolean hasLoadedEdges(InternalTitanQuery query) {
 		if (DirectionTypeEncoder.hasAllCovered(allLoadedDirsIndex, query)) return true;
 		
-		if (groups!=null && (query.hasEdgeTypeGroupCondition() || query.hasEdgeTypeCondition())) {
+		if (groups!=null && (query.hasGroupCondition() || query.hasEdgeTypeCondition())) {
 			short groupid=-1;
-			if (query.hasEdgeTypeGroupCondition()) groupid = query.getEdgeTypeGroupCondition().getID();
+			if (query.hasGroupCondition()) groupid = query.getGroupCondition().getID();
 			else if (query.hasEdgeTypeCondition()) groupid = query.getTypeCondition().getGroup().getID();
 			assert groupid>=0;
 			
@@ -61,8 +61,8 @@ public class BasicLoadingStatus implements LoadingStatus {
 			if (tmp!=null) code = tmp.byteValue();
 			code = DirectionTypeEncoder.loaded(code, query);
 			loadedTypes.put(type, Byte.valueOf(code));
-		} else if (query.hasEdgeTypeGroupCondition()) {
-			short groupid = query.getEdgeTypeGroupCondition().getID();
+		} else if (query.hasGroupCondition()) {
+			short groupid = query.getGroupCondition().getID();
 			if (groups==null) groups=new OpenIntIntHashMap(5);
 			byte code = (byte)groups.get(groupid);
 			code = DirectionTypeEncoder.loaded(code, query);

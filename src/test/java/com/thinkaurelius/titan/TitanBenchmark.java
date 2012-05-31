@@ -22,8 +22,8 @@ public class TitanBenchmark {
     
     
     public static void main(String[] args) throws IOException {
-        Preconditions.checkArgument(args.length==2);
-        final int batchSize = 10000;
+        Preconditions.checkArgument(args.length==3);
+        final int batchSize = Integer.parseInt(args[2]);
         final int maxTime = 1000000;
 
         String configFile = args[0];
