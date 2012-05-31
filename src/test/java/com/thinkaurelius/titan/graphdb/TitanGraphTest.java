@@ -468,6 +468,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         
         //Queries
         assertEquals(10,v.query().labels("connect").direction(Direction.OUT).interval("time",3,31).count());
+        assertEquals(33,v.query().labels("connect").direction(Direction.OUT).count());
         assertEquals(10,v.query().inMemory().labels("connect").direction(Direction.OUT).interval("time",3,31).vertexIds().size());
         assertEquals(10,Iterables.size(v.query().inMemory().labels("connect").direction(Direction.OUT).interval("time",3,31).vertices()));
         assertEquals(1,v.query().has("time",1).count());
@@ -493,6 +494,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         //Same queries as above but without memory loading
         assertEquals(10,v.query().labels("connect").direction(Direction.OUT).interval("time",3,31).count());
+        assertEquals(33,v.query().labels("connect").direction(Direction.OUT).count());
         assertEquals(10,v.query().labels("connect").direction(Direction.OUT).interval("time",3,31).vertexIds().size());
         assertEquals(10,Iterables.size(v.query().labels("connect").direction(Direction.OUT).interval("time",3,31).vertices()));
         assertEquals(1,v.query().has("time",1).count());
