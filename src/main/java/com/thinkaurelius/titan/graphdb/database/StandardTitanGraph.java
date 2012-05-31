@@ -510,7 +510,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         if (edgeStore instanceof MultiWriteKeyColumnValueStore &&
                 propertyIndex instanceof MultiWriteKeyColumnValueStore) {
             if (config.isBatchLoading()) {
-                return new BatchStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize, 8);
+//                return new BatchStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize, 8);
+                return new BufferStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize);
             } else if (bufferMutations) {
                 return new BufferStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize);
             }
