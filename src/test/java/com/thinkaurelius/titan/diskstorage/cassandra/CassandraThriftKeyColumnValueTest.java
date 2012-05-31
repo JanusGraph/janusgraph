@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
+import org.junit.After;
+
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
-import org.junit.After;
-import org.junit.Before;
 
 
 public class CassandraThriftKeyColumnValueTest extends KeyColumnValueStoreTest {

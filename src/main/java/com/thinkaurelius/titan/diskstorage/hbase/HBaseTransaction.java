@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
-import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.locking.LockingTransaction;
 
 /**
@@ -11,9 +10,8 @@ import com.thinkaurelius.titan.diskstorage.locking.LockingTransaction;
  */
 public class HBaseTransaction extends LockingTransaction {
 
-	public HBaseTransaction(StorageManager sm, byte[] rid,
-			int lockRetryCount, long lockWaitMS, long lockExpireMS) {
-		super(sm, rid, lockRetryCount, lockWaitMS, lockExpireMS);
+	public HBaseTransaction() {
+		super();
 	}
 	
 }

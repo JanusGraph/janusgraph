@@ -4,38 +4,40 @@ import java.nio.ByteBuffer;
 
 import org.apache.cassandra.utils.ByteBufferUtil;
 
+import com.thinkaurelius.titan.diskstorage.LockConfig;
+
 public class LockClaim {
-	private final String cf;
-	private final ByteBuffer key;
-	private final ByteBuffer column;
-	private final ByteBuffer expectedValue;
-	private final KeyColumn kc;
-	private ByteBuffer lockKey, lockCol;
+
+	private ByteBuffer cachedLockKey, lockCol;
 	private long timestamp;
 	
-	public LockClaim(String cf, ByteBuffer key, ByteBuffer column,
-			ByteBuffer expectedValue) {
-		this.cf = cf;
-		this.key = key;
-		this.column = column;
-		this.expectedValue = expectedValue;
-		this.kc = new KeyColumn(this.key, this.column);
+	private final LockConfig backer;
+	private final ByteBuffer expectedValue;
+	private final KeyColumn kc;
+	
+	public LockClaim(LockConfig backer, ByteBuffer key,
+			ByteBuffer column, ByteBuffer expectedValue) {
+
+		assert null != backer;
+		assert null != key;
+		assert null != column;
 		
-		assert null != this.cf;
-		assert null != this.key;
-		assert null != this.column;
+		this.backer = backer;
+		this.expectedValue = expectedValue;
+		this.kc = new KeyColumn(key, column);
+		
 	}
 	
-	public String getCf() {
-		return cf;
+	public LockConfig getBacker() {
+		return backer;
 	}
-	
+
 	public ByteBuffer getKey() {
-		return key;
+		return kc.getKey();
 	}
 	
 	public ByteBuffer getColumn() {
-		return column;
+		return kc.getCol();
 	}
 	
 	public ByteBuffer getExpectedValue() {
@@ -55,14 +57,17 @@ public class LockClaim {
 	}
 
 	public ByteBuffer getLockKey() {
-		if (null != lockKey) {
-			return lockKey;
+		if (null != cachedLockKey) {
+			return cachedLockKey;
 		}
 		
-		lockKey = ByteBuffer.allocate(key.remaining() + column.remaining() + 4);
-		lockKey.putInt(key.remaining()).put(key.duplicate()).put(column.duplicate()).rewind();
+		ByteBuffer key = kc.getKey();
+		ByteBuffer column = kc.getCol();
 		
-		return lockKey;
+		cachedLockKey = ByteBuffer.allocate(key.remaining() + column.remaining() + 4);
+		cachedLockKey.putInt(key.remaining()).put(key.duplicate()).put(column.duplicate()).rewind();
+		
+		return cachedLockKey;
 	}
 	
 	public ByteBuffer getLockCol(long ts, byte[] rid) {
@@ -77,9 +82,8 @@ public class LockClaim {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + cf.hashCode();
-		result = prime * result + column.hashCode();
-		result = prime * result + key.hashCode();
+		result = prime * result + backer.hashCode();
+		result = prime * result + kc.hashCode();
 		return result;
 	}
 	
@@ -97,16 +101,15 @@ public class LockClaim {
 		if (getClass() != obj.getClass())
 			return false;
 		LockClaim other = (LockClaim) obj;
-		return other.cf.equals(this.cf) &&
-				other.key.equals(this.key) &&
-				other.column.equals(this.column);
+		return other.kc.equals(this.kc) &&
+				other.backer.equals(this.backer);
 	}
 
 	@Override
 	public String toString() {
-		return "LockClaim [cf=" + cf 
-				+ ", key=0x" + ByteBufferUtil.bytesToHex(key) 
-			    + ", column=0x" + ByteBufferUtil.bytesToHex(column)
+		return "LockClaim [backer=" + backer 
+				+ ", key=0x" + ByteBufferUtil.bytesToHex(kc.getKey()) 
+			    + ", col=0x" + ByteBufferUtil.bytesToHex(kc.getCol())
 				+ ", expectedValue=" + (null == expectedValue ? "null" : "0x" + ByteBufferUtil.bytesToHex(expectedValue)) + "]";
 	}
 	
