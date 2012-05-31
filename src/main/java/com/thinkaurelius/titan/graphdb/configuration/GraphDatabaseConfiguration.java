@@ -79,9 +79,7 @@ public class GraphDatabaseConfiguration {
     		
     private static final String STORAGE_BACKEND_DEFAULT = "berkeleyje";
 
-    private static final String STORAGE_EDGESTORE_KEY = "edgestore_name";
     private static final String STORAGE_EDGESTORE_DEFAULT = "edgestore";
-    private static final String STORAGE_PROPERTYINDEX_KEY = "propertyindex_name";
     private static final String STORAGE_PROPERTYINDEX_DEFAULT = "propertyindex";
 
     private static final String ID_BLOCK_SIZE_KEY = "idblock_size";
@@ -284,12 +282,12 @@ public class GraphDatabaseConfiguration {
 	}
     
     public OrderedKeyColumnValueStore getEdgeStore(StorageManager m) {
-        String name = configuration.getString(keyInNamespace(STORAGE_NAMESPACE,STORAGE_EDGESTORE_KEY),STORAGE_EDGESTORE_DEFAULT);
+        String name = STORAGE_EDGESTORE_DEFAULT;
         return m.openDatabase(name);
     }
     
     public OrderedKeyColumnValueStore getPropertyIndex(StorageManager m) {
-        String name = configuration.getString(keyInNamespace(STORAGE_NAMESPACE,STORAGE_PROPERTYINDEX_KEY),STORAGE_PROPERTYINDEX_DEFAULT);
+        String name = STORAGE_PROPERTYINDEX_DEFAULT;
         return m.openDatabase(name);
     }
 	
