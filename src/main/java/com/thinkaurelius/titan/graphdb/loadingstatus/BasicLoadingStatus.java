@@ -53,14 +53,16 @@ public class BasicLoadingStatus implements LoadingStatus {
 	
 	@Override
 	public LoadingStatus loadedEdges(InternalTitanQuery query) {
-		if (query.hasEdgeTypeCondition() && !QueryUtil.hasFirstKeyConstraint(query)) {
-			TitanType type = query.getTypeCondition();
-			if (loadedTypes==null) loadedTypes = new HashMap<TitanType,Byte>();
-			byte code = 0;
-			Byte tmp = loadedTypes.get(type);
-			if (tmp!=null) code = tmp.byteValue();
-			code = DirectionTypeEncoder.loaded(code, query);
-			loadedTypes.put(type, Byte.valueOf(code));
+		if (query.hasEdgeTypeCondition()) {
+            if (!QueryUtil.hasFirstKeyConstraint(query)) {
+                TitanType type = query.getTypeCondition();
+                if (loadedTypes==null) loadedTypes = new HashMap<TitanType,Byte>();
+                byte code = 0;
+                Byte tmp = loadedTypes.get(type);
+                if (tmp!=null) code = tmp.byteValue();
+                code = DirectionTypeEncoder.loaded(code, query);
+                loadedTypes.put(type, Byte.valueOf(code));
+            }
 		} else if (query.hasGroupCondition()) {
 			short groupid = query.getGroupCondition().getID();
 			if (groups==null) groups=new OpenIntIntHashMap(5);
