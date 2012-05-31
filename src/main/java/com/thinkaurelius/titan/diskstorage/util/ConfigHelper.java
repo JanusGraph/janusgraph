@@ -64,7 +64,7 @@ public class ConfigHelper {
 				throw new RuntimeException(e);
 			}
 			
-			log.debug("Set rid from hex string: 0x{}" + ridText);
+			log.debug("Set rid from hex string: 0x{}", ridText);
 		} else {
 			final byte[] endBytes;
 			
@@ -95,7 +95,7 @@ public class ConfigHelper {
 			System.arraycopy(endBytes, 0, tentativeRid, addrBytes.length, endBytes.length);
 			
 			if (log.isDebugEnabled()) {
-				log.debug("Set rid: 0x{}" + new String(Hex.encodeHex(tentativeRid)));
+				log.debug("Set rid: 0x{}", new String(Hex.encodeHex(tentativeRid)));
 			}
 		}
 		

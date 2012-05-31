@@ -1,28 +1,21 @@
 package com.thinkaurelius.titan.graphdb.cassandra;
 
+import org.junit.BeforeClass;
+
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraDaemonWrapper;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraLocalhostHelper;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.graphdb.TitanGraphTest;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 
-public class CassandraGraphTest extends TitanGraphTest {
+public class InternalCassandraGraphTest extends TitanGraphTest {
 
-	public static CassandraLocalhostHelper ch = new CassandraLocalhostHelper();
-	
-	public CassandraGraphTest() {
-		super(ch.getConfiguration());
+	public InternalCassandraGraphTest() {
+		super((new CassandraLocalhostHelper()).getConfiguration());
 	}
 
 	@BeforeClass
 	public static void beforeClass() {
-		ch.startCassandra();
-	}
-	
-	@AfterClass
-	public static void afterClass() throws InterruptedException {
-		ch.stopCassandra();
+		CassandraDaemonWrapper.start();
 	}
 
 	public void cleanUp() {

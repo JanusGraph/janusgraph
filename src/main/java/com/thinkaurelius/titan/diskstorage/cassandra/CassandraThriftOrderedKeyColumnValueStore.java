@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.Column;
 import org.apache.cassandra.thrift.ColumnOrSuperColumn;
@@ -27,12 +26,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.LockConfig;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
 
@@ -46,6 +49,8 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	private final ConsistencyLevel readConsistencyLevel;
 	private final ConsistencyLevel writeConsistencyLevel;
 	
+	private final LockConfig internals;
+	
 	private static final Logger logger =
 		LoggerFactory.getLogger(CassandraThriftOrderedKeyColumnValueStore.class);
 	
@@ -53,14 +58,26 @@ public class CassandraThriftOrderedKeyColumnValueStore
 			String keyspace,
 			String columnFamily,
             UncheckedGenericKeyedObjectPool<String, CTConnection> pool,
-            CassandraThriftStorageManager manager,
             ConsistencyLevel readConsistencyLevel,
-            ConsistencyLevel writeConsistencyLevel) throws RuntimeException {
+            ConsistencyLevel writeConsistencyLevel,
+            CassandraThriftOrderedKeyColumnValueStore lockStore,
+            LocalLockMediator llm,
+            byte[] rid,
+            int lockRetryCount,
+            long lockWaitMS,
+            long lockExpireMS) throws RuntimeException {
 		this.keyspace = keyspace;
 		this.columnFamily = columnFamily;
 		this.pool = pool;
 		this.readConsistencyLevel = readConsistencyLevel;
 		this.writeConsistencyLevel = writeConsistencyLevel;
+		
+		if (null != llm && null != lockStore) {
+			this.internals = new SimpleLockConfig(this, lockStore, llm,
+					rid, lockRetryCount, lockWaitMS, lockExpireMS);
+		} else {
+			this.internals = null;
+		}
 	}
 
 	/**
@@ -300,7 +317,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 			throw new GraphStorageException("Attempted to obtain a lock after one or more mutations");
 		}
 		
-		ctxh.writeBlindLockClaim(columnFamily, key, column, expectedValue);
+		ctxh.writeBlindLockClaim(internals, key, column, expectedValue);
 	}
 
     @Override

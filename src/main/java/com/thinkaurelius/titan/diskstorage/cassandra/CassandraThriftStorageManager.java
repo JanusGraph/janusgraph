@@ -2,10 +2,11 @@ package com.thinkaurelius.titan.diskstorage.cassandra;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.CfDef;
 import org.apache.cassandra.thrift.ConsistencyLevel;
@@ -18,12 +19,15 @@ import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
 import com.thinkaurelius.titan.diskstorage.util.OrderedKeyColumnValueIDManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -40,7 +44,7 @@ public class CassandraThriftStorageManager implements StorageManager {
     public static final String PROP_TIMEOUT = "thrift_timeout";
     public static final String PROP_ID_KEYSPACE = "id_keyspace";
     
-    public static Map<String, CassandraThriftOrderedKeyColumnValueStore> stores =
+    public static ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore> stores =
     		new ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore>();
     
     /**
@@ -107,6 +111,12 @@ public class CassandraThriftStorageManager implements StorageManager {
      * cluster in question.
      */
     public static final String WRITE_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
+    
+    public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local_lock_mediator_prefix";
+    public static final String LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT = "cassandra";
+    
+    public static final String REPLICATION_FACTOR_KEY = "replication_factor";
+    public static final int REPLICATION_FACTOR_DEFAULT  = 1;
 
 	private final String keyspace;
 	
@@ -122,7 +132,14 @@ public class CassandraThriftStorageManager implements StorageManager {
     private final ConsistencyLevel readConsistencyLevel;
     private final ConsistencyLevel writeConsistencyLevel;
     
+    private final String llmPrefix;
+    
     private final byte[] rid;
+    
+    private final String hostname;
+    private final int port;
+    
+    private final int replicationFactor;
 	
 	public CassandraThriftStorageManager(Configuration config) {
 		
@@ -130,10 +147,23 @@ public class CassandraThriftStorageManager implements StorageManager {
 		
 		this.keyspace = config.getString(PROP_KEYSPACE,DEFAULT_KEYSPACE);
 		
+		this.hostname = interpretHostname(config.getString(PROP_HOSTNAME,DEFAULT_HOSTNAME));
+		this.port = config.getInt(PROP_PORT,DEFAULT_PORT);
+		
 		this.pool = CTConnectionPool.getPool(
-				interpretHostname(config.getString(PROP_HOSTNAME,DEFAULT_HOSTNAME)),
-				config.getInt(PROP_PORT,DEFAULT_PORT),
+				hostname,
+				port,
 				config.getInt(PROP_TIMEOUT,DEFAULT_THRIFT_TIMEOUT_MS));
+		
+		this.llmPrefix =
+				config.getString(
+						LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
+						LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT);
+		
+		this.replicationFactor = 
+				config.getInt(
+						REPLICATION_FACTOR_KEY,
+						REPLICATION_FACTOR_DEFAULT);
 		
 		this.lockRetryCount =
 				config.getInt(
@@ -165,7 +195,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 		log.debug("Set write consistency level to {}", this.writeConsistencyLevel);
 		
         idmanager = new OrderedKeyColumnValueIDManager(
-        		openDatabase("blocks_allocated", ID_KEYSPACE, true), rid, config);
+        		openDatabase("blocks_allocated", ID_KEYSPACE, null, null), rid, config);
 	}
 
     @Override
@@ -175,10 +205,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 
 	@Override
 	public TransactionHandle beginTransaction() {
-		return new CassandraTransaction(this, rid, 
-				lockRetryCount,
-				lockWaitMS,
-				lockExpireMS);
+		return new CassandraTransaction();
 	}
 
 	@Override
@@ -189,28 +216,36 @@ public class CassandraThriftStorageManager implements StorageManager {
 	@Override
 	public CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name)
 			throws GraphStorageException {
-		return openDatabase(name, keyspace, false);
+		
+		CassandraThriftOrderedKeyColumnValueStore lockStore =
+				openDatabase(name + "_locks", keyspace, null, null);
+		LocalLockMediator llm = LocalLockMediators.INSTANCE.get(llmPrefix + ":" + name);
+		CassandraThriftOrderedKeyColumnValueStore dataStore =
+				openDatabase(name, keyspace, lockStore, llm);
+		
+		return dataStore;
 	
 	}
 	
-	private CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name, final String ksoverride, boolean forceCfCheck)
+	private CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name, final String ksoverride, CassandraThriftOrderedKeyColumnValueStore lockStore, LocalLockMediator llm)
 			throws GraphStorageException {
 		
-		String storeKey = ksoverride + ":" + name;
+		String storeKey = llmPrefix + ":" + ksoverride + ":" + name;
 	
 		CassandraThriftOrderedKeyColumnValueStore store =
 				stores.get(storeKey);
 		
-		if (null != store && !forceCfCheck) {
+		if (null != store) {
 			return store;
 		}
 
 		CTConnection conn = null;
 		try {
+			KsDef keyspaceDef = ensureKeyspaceExists(ksoverride);
+			
 			conn =  pool.genericBorrowObject(ksoverride);
 			Cassandra.Client client = conn.getClient();
 			log.debug("Looking up metadata on keyspace {}...", ksoverride);
-			KsDef keyspaceDef = client.describe_keyspace(ksoverride);
 			boolean foundColumnFamily = false;
 			for (CfDef cfDef : keyspaceDef.getCf_defs()) {
 				String curCfName = cfDef.getName();
@@ -230,26 +265,21 @@ public class CassandraThriftStorageManager implements StorageManager {
 			throw new GraphStorageException(e);
 		} catch (NotFoundException e) {
 			throw new GraphStorageException(e);
+		} catch (SchemaDisagreementException e) {
+			throw new GraphStorageException(e);
 		} finally {
 			if (null != conn)
 				pool.genericReturnObject(ksoverride, conn);
 		}
 		
-		if (null != store) {
-			return store;
-		}
-		
-		store = new CassandraThriftOrderedKeyColumnValueStore(
-				ksoverride, name, pool, this, 
-				readConsistencyLevel, writeConsistencyLevel);
-		stores.put(storeKey, store);
+		store = new CassandraThriftOrderedKeyColumnValueStore(ksoverride, name,
+				pool, readConsistencyLevel, writeConsistencyLevel, lockStore,
+				llm, rid, lockRetryCount, lockWaitMS, lockExpireMS);
+		stores.putIfAbsent(storeKey, store);
+		store = stores.get(storeKey);
 		log.debug("Created {}", store);
 		
 		return store;
-	}
-	
-	String getLockColumnFamilyName(String cfName) {
-		return cfName + "_locks";
 	}
 	
 	/**
@@ -260,37 +290,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 	 * @returns true if the keyspace was dropped, false if it was not present
 	 */
 	public boolean dropKeyspace(String keyspace) throws GraphStorageException {
-		CTConnection conn = null;
-		try {
-			conn =  pool.genericBorrowObject(keyspace);
-			Cassandra.Client client = conn.getClient();
-			
-			try {
-				client.describe_keyspace(keyspace);
-				// Keyspace must exist
-				log.debug("Dropping keyspace {}...", keyspace);
-				String schemaVer = client.system_drop_keyspace(keyspace);
-				
-				// Try to let Cassandra converge on the new column family
-				CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
-				
-				pool.clear(keyspace);
-			} catch (NotFoundException e) {
-				// Keyspace doesn't exist yet: return immediately
-				log.debug("Keyspace {} does not exist, not attempting to drop", 
-						keyspace);
-				return false;
-			}
-
-            stores.clear();
-			return true;
-		} catch (Exception e) {
-			throw new GraphStorageException(e);
-		} finally {
-			if (null != conn)
-				pool.genericReturnObject(keyspace, conn);
-		}
-
+		return dropKeyspace(keyspace, hostname, port);
 	}
 	
 	
@@ -306,7 +306,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 	 * @throws RuntimeException if any checked Thrift or UnknownHostException
 	 *         is thrown in the body of this method
 	 */
-	public static void dropKeyspace(String keyspace, String hostname, int port)
+	public static boolean dropKeyspace(String keyspace, String hostname, int port)
 		throws GraphStorageException {
 		CTConnection conn = null;
 		try {
@@ -315,6 +315,10 @@ public class CassandraThriftStorageManager implements StorageManager {
 			Cassandra.Client client = conn.getClient();
 			
 			try {
+                stores.clear();
+
+				CTConnectionPool.getPool(hostname, port, DEFAULT_THRIFT_TIMEOUT_MS).clear(keyspace);
+                
 				client.describe_keyspace(keyspace);
 				// Keyspace must exist
 				log.debug("Dropping keyspace {}...", keyspace);
@@ -322,10 +326,8 @@ public class CassandraThriftStorageManager implements StorageManager {
 				
 				// Try to let Cassandra converge on the new column family
 				CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
-
-				CTConnectionPool.getPool(hostname, port, DEFAULT_THRIFT_TIMEOUT_MS).clear(keyspace);
 				
-                stores.clear();
+				return true;
 			} catch (NotFoundException e) {
 				// Keyspace doesn't exist yet: return immediately
 				log.debug("Keyspace {} does not exist, not attempting to drop", 
@@ -337,7 +339,53 @@ public class CassandraThriftStorageManager implements StorageManager {
 			if (null != conn && conn.getTransport().isOpen())
 				conn.getTransport().close();
 		}
+		
+		return false;
                 
+	}
+	
+	private KsDef ensureKeyspaceExists(String name)
+			throws NotFoundException, InvalidRequestException, TException,
+			SchemaDisagreementException {
+		
+		CTConnectionFactory fac = 
+				CTConnectionPool.getFactory(hostname, port, DEFAULT_THRIFT_TIMEOUT_MS);
+		
+		CTConnection conn = fac.makeRawConnection();
+		Cassandra.Client client = conn.getClient();
+		
+		try {
+			
+			try {
+				client.set_keyspace(name);
+				log.debug("Found existing keyspace {}", name);
+			} catch (InvalidRequestException e) {
+				// Keyspace didn't exist; create it
+				log.debug("Creating keyspace {}...", name);
+				KsDef ksdef = new KsDef();
+				ksdef.setName(name);
+				ksdef.setStrategy_class("org.apache.cassandra.locator.SimpleStrategy");
+				Map<String, String> stratops = new HashMap<String, String>();
+				stratops.put("replication_factor", String.valueOf(replicationFactor));
+				ksdef.setStrategy_options(stratops);
+				ksdef.setCf_defs(new LinkedList<CfDef>()); // cannot be null but can be empty
+
+				String schemaVer = client.system_add_keyspace(ksdef);
+				// Try to block until Cassandra converges on the new keyspace
+				try {
+					CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
+				} catch (InterruptedException ie) {
+					throw new GraphStorageException(ie);
+				}
+			}
+
+			return client.describe_keyspace(name);
+			
+		} finally {
+			if (null != conn && null != conn.getTransport() && conn.getTransport().isOpen()) {
+				conn.getTransport().close();
+			}
+		}
 	}
 
     /**

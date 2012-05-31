@@ -2,26 +2,28 @@ package com.thinkaurelius.titan.diskstorage.locking;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 
-import com.thinkaurelius.titan.diskstorage.*;
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.LockingFailureException;
+import com.thinkaurelius.titan.diskstorage.LockConfig;
+import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
 /**
  * This class is not safe for concurrent use by multiple threads.
  *
  */
 public abstract class LockingTransaction implements TransactionHandle {
-
-	private final StorageManager sm;
 	
-	/*
+	/**
 	 * This variable starts false.  It remains false during the
 	 * locking stage of a transaction.  It is set to true at the
 	 * beginning of the first mutate/mutateMany call in a transaction
@@ -29,31 +31,25 @@ public abstract class LockingTransaction implements TransactionHandle {
 	 */
 	private boolean isMutationStarted;
 	
-	private long lastLockApplicationTimeMS;
+	/**
+	 * This variable holds the last time we successfully wrote a
+	 * lock via the {@link #writeBlindLockClaim()} method.
+	 */
+	private final Map<LockConfig, Long> lastLockApplicationTimesMS =
+			new HashMap<LockConfig, Long>();
 	
+	/**
+	 * All locks currently claimed by this transaction.  Note that locks
+	 * in this set may not necessarily be actually held; membership in the
+	 * set only signifies that we've attempted to claim the lock via the
+	 * {@link #writeBlindLockClaim()} method.
+	 */
 	private final LinkedHashSet<LockClaim> lockClaims =
 			new LinkedHashSet<LockClaim>();
 	
-	private final long lockExpireMS;
-	private final long lockWaitMS;
-	private final int lockRetryCount;
-	
-	// These two should be final but are not to facilitate testing
-	private byte[] rid;
-	private LocalLockMediatorProvider mediators;
-	
 	private static final Logger log = LoggerFactory.getLogger(LockingTransaction.class);
 	
-	public LockingTransaction(StorageManager sm, byte[] rid, int lockRetryCount, long lockWaitMS, long lockExpireMS) {
-		this.sm = sm;
-		
-		this.rid = rid;
-		
-		this.lockRetryCount = lockRetryCount;
-		this.lockWaitMS = lockWaitMS;
-		this.lockExpireMS = lockExpireMS;
-
-		this.mediators = LocalLockMediators.INSTANCE;
+	public LockingTransaction() {
 	}
 	
 	@Override
@@ -71,22 +67,6 @@ public abstract class LockingTransaction implements TransactionHandle {
 	@Override
 	public boolean isReadOnly() {
 		return false;
-	}
-	
-	/**
-	 * This method is only used in testing.
-	 * Do not call it.
-	 */
-	public void setRid(byte rid[]) {
-		this.rid = rid;
-	}
-	
-	/**
-	 * This method is only used in testing.
-	 * Don not call it.
-	 */
-	public void setLocalLockMediatorProvider(LocalLockMediatorProvider p) {
-		this.mediators = p;
 	}
 	
 	public boolean isMutationStarted() {
@@ -116,10 +96,12 @@ public abstract class LockingTransaction implements TransactionHandle {
 	 * If we can't get the lock from the local lock mediator, then we
 	 * throw a GraphStorageException with a string message to that effect.
 	 */
-	public void writeBlindLockClaim(String cf, ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue)
+	public void writeBlindLockClaim(
+			LockConfig backer, ByteBuffer key,
+			ByteBuffer column, ByteBuffer expectedValue)
 			throws LockingFailureException {
 
-		LockClaim lc = new LockClaim(cf, key, column, expectedValue);
+		LockClaim lc = new LockClaim(backer, key, column, expectedValue);
 		
 		// Check to see whether we already hold this lock
 		if (lockClaims.contains(lc)) {
@@ -128,8 +110,7 @@ public abstract class LockingTransaction implements TransactionHandle {
 		}
 		
 		// Check the local lock mediator
-		LocalLockMediator llm = mediators.get(cf);
-		if (!llm.lock(lc.getKc(), this)) {
+		if (!backer.getLocalLockMediator().lock(lc.getKc(), this)) {
 			throwLockFailure("Lock contention among local transactions");
 		}
 		
@@ -140,9 +121,6 @@ public abstract class LockingTransaction implements TransactionHandle {
 		 * 
 		 * The column we write is a concatenation of our rid and the timestamp.
 		 */
-		String lockCfName = getLockColumnFamilyName(cf);
-		OrderedKeyColumnValueStore store = sm.openDatabase(lockCfName);
-
 		ByteBuffer lockKey = lc.getLockKey();
 		
 		ByteBuffer valBuf = ByteBuffer.allocate(4);
@@ -150,22 +128,22 @@ public abstract class LockingTransaction implements TransactionHandle {
 		
 		boolean ok = false;
 		try {
-			for (int i = 0; i < lockRetryCount; i++) {
+			for (int i = 0; i < backer.getLockRetryCount(); i++) {
 				long ts = TimestampProvider.getApproxNSSinceEpoch(false);
-				Entry addition = new Entry(lc.getLockCol(ts, rid), valBuf);
+				Entry addition = new Entry(lc.getLockCol(ts, backer.getRid()), valBuf);
 				
 				long before = System.currentTimeMillis();
-				store.mutate(lockKey, Arrays.asList(addition), null, null);
+				backer.getLockStore().mutate(lockKey, Arrays.asList(addition), null, null);
 				long after = System.currentTimeMillis();
 				
-				if (lockWaitMS < after - before) {
+				if (backer.getLockWaitMS() < after - before) {
 					// Too slow
 					// Delete lock claim and loop again
 					ts = TimestampProvider.getApproxNSSinceEpoch(false);
-					store.mutate(lockKey, null, Arrays.asList(lc.getLockCol(ts, rid)), null);
+					backer.getLockStore().mutate(lockKey, null, Arrays.asList(lc.getLockCol(ts, backer.getRid())), null);
 				} else {
 					ok = true;
-					lastLockApplicationTimeMS = before;
+					lastLockApplicationTimesMS.put(backer, before);
 					lc.setTimestamp(ts);
                     log.trace("Wrote lock: {}", lc);
             		lockClaims.add(lc);
@@ -176,7 +154,7 @@ public abstract class LockingTransaction implements TransactionHandle {
 			throwLockFailure("Lock failed: exceeded max timeouts. " + lc);
 		} finally {
 			if (!ok)
-				llm.unlock(lc.getKc(), this);
+				backer.getLocalLockMediator().unlock(lc.getKc(), this);
 		}
 	}
 
@@ -204,36 +182,35 @@ public abstract class LockingTransaction implements TransactionHandle {
 	public void verifyAllLockClaims() throws LockingFailureException {
 
 		// wait one full lockWaitMS since the last claim attempt, if needed
-		if (0 == lastLockApplicationTimeMS)
+		if (0 == lastLockApplicationTimesMS.size())
 			return; // no locks
-		long now;
-		while (true) {
-			now = System.currentTimeMillis();
-			
-			final long delta = now - lastLockApplicationTimeMS;
 		
-			if (delta < lockWaitMS) {
-				try {
-					Thread.sleep(lockWaitMS - delta);
-				} catch (InterruptedException e) {
-					throwLockFailure(e);
-				}
-			} else {
-				break;
+		long now = System.currentTimeMillis();
+		
+		// Iterate over all backends and sleep, if necessary, until
+		// the backend-specific grace period since our last lock application
+		// has passed.
+		for (LockConfig i : lastLockApplicationTimesMS.keySet()) {
+			long appTime = lastLockApplicationTimesMS.get(i);
+			
+			long mustSleepUntil = appTime + i.getLockWaitMS();
+			
+			if (mustSleepUntil < now) {
+				continue;
 			}
+			
+			sleepUntil(appTime + i.getLockWaitMS());
 		}
 		
 		// Check lock claim seniority
 		for (LockClaim lc : lockClaims) {
 			
-			// Get the backing store
-			String lockCfName = getLockColumnFamilyName(lc.getCf());
-			OrderedKeyColumnValueStore store = sm.openDatabase(lockCfName);
-			
 			ByteBuffer lockKey = lc.getLockKey();
 			ByteBuffer empty = ByteBuffer.allocate(0);
 			
-			List<Entry> entries = store.getSlice(lockKey, empty, empty, null);
+			LockConfig backer = lc.getBacker();
+			
+			List<Entry> entries = backer.getLockStore().getSlice(lockKey, empty, empty, null);
 			
 			// Determine the timestamp and rid of the earliest still-valid lock claim
 			Long earliestTS = null;
@@ -248,7 +225,7 @@ public abstract class LockingTransaction implements TransactionHandle {
 				bb.get(curRid);
 				
 				// Ignore expired lock claims
-				if (ts < now - lockExpireMS) {
+				if (ts < now - backer.getLockExpireMS()) {
                     log.warn("Discarded expired lock with timestamp {}", ts);
 					continue;
 				}
@@ -277,6 +254,7 @@ public abstract class LockingTransaction implements TransactionHandle {
 			}
 			
 			// Check: did our Rid win?
+			byte rid[] = backer.getRid();
 			if (! Arrays.equals(earliestRid, rid)) {
                 log.trace("My rid={} lost to earlier rid={},ts={}",
                 		new Object[] { Hex.encodeHexString(rid), Hex.encodeHexString(earliestRid), earliestTS });
@@ -285,8 +263,7 @@ public abstract class LockingTransaction implements TransactionHandle {
 			
 			
 			// Check expectedValue
-			store = sm.openDatabase(lc.getCf());
-			ByteBuffer bb = store.get(lc.getKey(), lc.getColumn(), null);
+			ByteBuffer bb = backer.getDataStore().get(lc.getKey(), lc.getColumn(), null);
 			if ((null == bb && null != lc.getExpectedValue()) ||
 			    (null != bb && null == lc.getExpectedValue()) ||
 			    (null != bb && null != lc.getExpectedValue() && !lc.getExpectedValue().equals(bb))) {
@@ -299,19 +276,14 @@ public abstract class LockingTransaction implements TransactionHandle {
 		
 		for (LockClaim lc : lockClaims) {
 			ByteBuffer lockKeyBuf = lc.getLockKey();
-			ByteBuffer lockColBuf = lc.getLockCol(lc.getTimestamp(), rid);
-			
-			// Get the backing store
-			String lockCfName = getLockColumnFamilyName(lc.getCf());
-			OrderedKeyColumnValueStore store = sm.openDatabase(lockCfName);
+			ByteBuffer lockColBuf = lc.getLockCol(lc.getTimestamp(), lc.getBacker().getRid());
 			
 			// Delete lock
-			store.mutate(lockKeyBuf, null, Arrays.asList(lockColBuf), null);
+			lc.getBacker().getLockStore().mutate(lockKeyBuf, null, Arrays.asList(lockColBuf), null);
                         log.trace("Wrote unlock: {}", lc);
 			
 			// Release local lock
-			LocalLockMediator llm = mediators.get(lc.getCf());
-			llm.unlock(lc.getKc(), this);
+			lc.getBacker().getLocalLockMediator().unlock(lc.getKc(), this);
 		}
 	}
 	
@@ -325,7 +297,26 @@ public abstract class LockingTransaction implements TransactionHandle {
 		throw new LockingFailureException(t);
 	}
 	
-	private String getLockColumnFamilyName(String baseColumnFamilyName) {
-		return baseColumnFamilyName + "_locks";
+	private void sleepUntil(long untilTimeMillis) {
+		long now;
+		
+		while (true) {
+			now = System.currentTimeMillis();
+			
+			if (now > untilTimeMillis) {
+				break;
+			}
+			
+			long delta = untilTimeMillis - now + 1;
+			
+			assert 0 <= delta;
+			
+			try {
+				log.debug("About to sleep for {} ms", delta);
+				Thread.sleep(delta);
+			} catch (InterruptedException e) {
+				throwLockFailure(e);
+			}
+		}
 	}
 }

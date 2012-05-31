@@ -1,32 +1,29 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
+import org.junit.BeforeClass;
+
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
-import org.junit.After;
-import org.junit.Before;
 
 
-public class CassandraThriftKeyColumnValueTest extends KeyColumnValueStoreTest {
+public class InternalCassandraThriftKeyColumnValueTest extends KeyColumnValueStoreTest {
 
-
-	public static CassandraLocalhostHelper ch = new CassandraLocalhostHelper("127.0.0.1");
-
+	@BeforeClass
+	public static void startCassandra() {
+    	CassandraDaemonWrapper.start();
+	}
+	
     @Override
     public void cleanUp() {
-        ch.startCassandra();
-        CassandraThriftStorageManager cmanager = new CassandraThriftStorageManager(CassandraLocalhostHelper.getLocalStorageConfiguration());
+        CassandraThriftStorageManager cmanager =
+        		new CassandraThriftStorageManager(CassandraLocalhostHelper.getLocalStorageConfiguration());
         cmanager.dropKeyspace(CassandraThriftStorageManager.DEFAULT_KEYSPACE);
+        cmanager.dropKeyspace(CassandraThriftStorageManager.ID_KEYSPACE);
     }
 
     @Override
     public StorageManager openStorageManager() {
         return new CassandraThriftStorageManager(CassandraLocalhostHelper.getLocalStorageConfiguration());
     }
-
-	@After
-	public void cassandraTearDown() {
-		ch.stopCassandra();
-	}
-	
-
+    
 }

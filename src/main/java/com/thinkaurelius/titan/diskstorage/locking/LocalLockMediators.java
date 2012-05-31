@@ -33,4 +33,11 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
 		
 		return m;
 	}
+	
+	/**
+	 * Only use this in testing.
+	 */
+	public void clear() {
+		mediators.clear();
+	}
 }

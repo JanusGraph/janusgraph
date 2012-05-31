@@ -4,26 +4,21 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediatorProvider;
-import com.thinkaurelius.titan.diskstorage.locking.LockingTransaction;
 
 public abstract class LockKeyColumnValueStoreTest {
 
-	public StorageManager manager;
+	public StorageManager manager1, manager2;
 	public TransactionHandle host1tx1, host1tx2, host2tx1;
-	public OrderedKeyColumnValueStore store;
+	public OrderedKeyColumnValueStore store1, store2;
 
     public static final String dbName = "test";
 	
@@ -31,9 +26,6 @@ public abstract class LockKeyColumnValueStoreTest {
 	
 	protected final byte[] rid1 = new byte[] { 'a' };
 	protected final byte[] rid2 = new byte[] { 'b' };
-	
-	protected final LocalLockMediatorProvider p1 = new MockupLockMediator();
-	protected final LocalLockMediatorProvider p2 = new MockupLockMediator();
 	
 	@Before
 	public void setUp() throws Exception {
@@ -56,90 +48,73 @@ public abstract class LockKeyColumnValueStoreTest {
 
     public abstract void cleanUp();
 
-    public abstract StorageManager openStorageManager();
+    public abstract StorageManager openStorageManager(short hostIndex);
 
     public void open() {
-        manager = openStorageManager();
-        store = manager.openDatabase(dbName);
-        host1tx1 = manager.beginTransaction();
-        host1tx2 = manager.beginTransaction();
-        host2tx1 = manager.beginTransaction();
-        
-        configureTransactions();
+        manager1 = openStorageManager((short)1);
+        manager2 = openStorageManager((short)2);
+        store1 = manager1.openDatabase(dbName);
+        store2 = manager2.openDatabase(dbName);
+        host1tx1 = manager1.beginTransaction();
+        host1tx2 = manager1.beginTransaction();
+        host2tx1 = manager2.beginTransaction();
     }
 
 	@After
 	public void tearDown() throws Exception {
 		close();
 	}
-	
-	/**
-	 * Perform any configuration on
-	 * host1tx1, host1tx2, host2tx1, etc.
-	 * 
-	 * This method is called from open().  open() will
-	 * guarantee that all of the transaction fields on
-	 * this object are non-null before this method
-	 * is called to configure them.
-	 */
-	private void configureTransactions() {
-
-		((LockingTransaction)host1tx1).setRid(rid1);
-		((LockingTransaction)host1tx2).setRid(rid1);
-		((LockingTransaction)host2tx1).setRid(rid2);
-		
-		((LockingTransaction)host1tx1).setLocalLockMediatorProvider(p1);
-		((LockingTransaction)host1tx2).setLocalLockMediatorProvider(p1);
-		((LockingTransaction)host2tx1).setLocalLockMediatorProvider(p2);
-	}
 
     public void close() {
-        store.close();
-        manager.close();
+        store1.close();
+        store2.close();
+        manager1.close();
+        manager2.close();
+        LocalLockMediators.INSTANCE.clear();
     }
 	
 	@Test
 	public void singleLockAndUnlock() {
-		store.acquireLock(k, c1, null, host1tx1);
-		store.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
+		store1.acquireLock(k, c1, null, host1tx1);
+		store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
 		host1tx1.commit();
 		
-		host1tx1 = manager.beginTransaction();
-		assertEquals(v1, store.get(k, c1, host1tx1));
+		host1tx1 = manager1.beginTransaction();
+		assertEquals(v1, store1.get(k, c1, host1tx1));
 	}
 	
 	@Test
 	public void transactionMayReenterLock() {
-		store.acquireLock(k, c1, null, host1tx1);
-		store.acquireLock(k, c1, null, host1tx1);
-		store.acquireLock(k, c1, null, host1tx1);
-		store.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
+		store1.acquireLock(k, c1, null, host1tx1);
+		store1.acquireLock(k, c1, null, host1tx1);
+		store1.acquireLock(k, c1, null, host1tx1);
+		store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
 		host1tx1.commit();
 		
-		host1tx1 = manager.beginTransaction();
-		assertEquals(v1, store.get(k, c1, host1tx1));
+		host1tx1 = manager1.beginTransaction();
+		assertEquals(v1, store1.get(k, c1, host1tx1));
 	}
 	
 	@Test(expected=LockingFailureException.class)
 	public void expectedValueMismatchCausesMutateFailure() {
-		store.acquireLock(k, c1, v1, host1tx1);
-		store.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
+		store1.acquireLock(k, c1, v1, host1tx1);
+		store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
 		host1tx1.commit();
 	}
 	
 	@Test
 	public void testLocalLockContention() {
-		store.acquireLock(k, c1, null, host1tx1);
+		store1.acquireLock(k, c1, null, host1tx1);
 		
 		try {
-			store.acquireLock(k, c1, null, host1tx2);
+			store1.acquireLock(k, c1, null, host1tx2);
 			fail("Lock contention exception not thrown");
 		} catch (LockingFailureException e) {
 			
 		}
 		
 		try {
-			store.acquireLock(k, c1, null, host1tx2);
+			store1.acquireLock(k, c1, null, host1tx2);
 			fail("Lock contention exception not thrown (2nd try)");
 		} catch (LockingFailureException e) {
 			
@@ -151,13 +126,13 @@ public abstract class LockKeyColumnValueStoreTest {
 	@Test
 	public void testRemoteLockContention() throws InterruptedException {
 		// acquire lock on "host1"
-		store.acquireLock(k, c1, null, host1tx1);
+		store1.acquireLock(k, c1, null, host1tx1);
 		
 		Thread.sleep(50L);
 		
 		try {
 			// acquire same lock on "host2"
-			store.acquireLock(k, c1, null, host2tx1);
+			store2.acquireLock(k, c1, null, host2tx1);
 		} catch (LockingFailureException e) {
 			/* Lock attempts between hosts with different LocalLockMediators,
 			 * such as host1tx1 and host2tx1 in this example, should
@@ -175,79 +150,57 @@ public abstract class LockKeyColumnValueStoreTest {
 		
 		try {
 			// This must fail since "host1" took the lock first
-			store.mutate(k, Arrays.asList(new Entry(c1, v2)), null, host2tx1);
+			store2.mutate(k, Arrays.asList(new Entry(c1, v2)), null, host2tx1);
 			fail("Expected lock contention between remote transactions did not occur");
 		} catch (LockingFailureException e) {
 			
 		}
 		
 		// This should succeed
-		store.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
+		store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
 		
 		host1tx1.commit();
-		host1tx1 = manager.beginTransaction();
-		assertEquals(v1, store.get(k, c1, host1tx1));
+		host1tx1 = manager1.beginTransaction();
+		assertEquals(v1, store1.get(k, c1, host1tx1));
 	}
 	
 	@Test
 	public void singleTransactionWithMultipleLocks() {
 		
-		tryWrites(host1tx1, host1tx1);
+		tryWrites(store1, manager1, host1tx1, store1, host1tx1);
 	}
 	
 	@Test
 	public void twoLocalTransactionsWithIndependentLocks() {
 
-		tryWrites(host1tx1, host1tx2);
+		tryWrites(store1, manager1, host1tx1, store1, host1tx2);
 	}
 	
 	@Test
 	public void twoTransactionsWithIndependentLocks() {
 		
-		tryWrites(host1tx1, host2tx1);
+		tryWrites(store1, manager1, host1tx1, store2, host2tx1);
 	}
 	
-	private void tryWrites(TransactionHandle tx1, TransactionHandle tx2) {
-		assertNull(store.get(k, c1, tx1));
-		assertNull(store.get(k, c2, tx2));
+	private void tryWrites(OrderedKeyColumnValueStore store1, StorageManager checkmgr,
+			TransactionHandle tx1, OrderedKeyColumnValueStore store2,
+			TransactionHandle tx2) {
+		assertNull(store1.get(k, c1, tx1));
+		assertNull(store2.get(k, c2, tx2));
 		
-		store.acquireLock(k, c1, null, tx1);
-		store.acquireLock(k, c2, null, tx2);
+		store1.acquireLock(k, c1, null, tx1);
+		store2.acquireLock(k, c2, null, tx2);
 
-		store.mutate(k, Arrays.asList(new Entry(c1, v1)), null, tx1);
-		store.mutate(k, Arrays.asList(new Entry(c2, v2)), null, tx2);
+		store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, tx1);
+		store2.mutate(k, Arrays.asList(new Entry(c2, v2)), null, tx2);
 		
 		tx1.commit();
 		if (tx2 != tx1)
 			tx2.commit();
 		
-		TransactionHandle checktx = manager.beginTransaction();
-		assertEquals(v1, store.get(k, c1, checktx));
-		assertEquals(v2, store.get(k, c2, checktx));
+		TransactionHandle checktx = checkmgr.beginTransaction();
+		assertEquals(v1, store1.get(k, c1, checktx));
+		assertEquals(v2, store1.get(k, c2, checktx));
 		checktx.commit();
-	}
-	
-	private static class MockupLockMediator implements LocalLockMediatorProvider {
-		
-		private static final Logger log =
-				LoggerFactory.getLogger(MockupLockMediator.class);
-		
-		private final ConcurrentHashMap<String, LocalLockMediator> mediators =
-				new ConcurrentHashMap<String, LocalLockMediator>();
-
-		public LocalLockMediator get(String namespace) {
-			LocalLockMediator m = mediators.get(namespace);
-			
-			if (null == m) {
-				m = new LocalLockMediator(namespace);
-				LocalLockMediator old = mediators.putIfAbsent(namespace, m);
-				if (null != old)
-					m = old;
-				else 
-					log.debug("Local lock mediator instantiated for namespace {}", namespace);
-			}
-			
-			return m;
-		}
 	}
 }

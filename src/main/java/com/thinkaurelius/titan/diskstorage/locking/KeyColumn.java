@@ -8,6 +8,7 @@ public class KeyColumn {
 	
 	private final ByteBuffer key;
 	private final ByteBuffer col;
+	private int cachedHashCode;
 	
 	public KeyColumn(ByteBuffer key, ByteBuffer col) {
 		this.key = key;
@@ -17,13 +18,28 @@ public class KeyColumn {
 		assert null != this.col;
 	}
 
+	public ByteBuffer getKey() {
+		return key;
+	}
+
+	public ByteBuffer getCol() {
+		return col;
+	}
+
 	@Override
 	public int hashCode() {
+        // if the hashcode is needed frequently, we should store it
+		if (0 != cachedHashCode)
+			return cachedHashCode;
+		
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + col.hashCode();
 		result = prime * result + key.hashCode();
-        //TODO: if the hashcode is needed frequently, we should store it
+		
+		// This is only thread-safe because cachedHashCode is an int and not a long
+		cachedHashCode = result;
+		
 		return result;
 	}
 

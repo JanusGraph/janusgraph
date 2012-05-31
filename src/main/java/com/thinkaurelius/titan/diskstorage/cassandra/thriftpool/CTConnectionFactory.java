@@ -64,24 +64,6 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory {
 		
 		CTConnection conn = makeRawConnection();
 		Cassandra.Client client = conn.getClient();
-		try {
-			client.set_keyspace(keyspace);
-		} catch (InvalidRequestException e) {
-			// Keyspace didn't exist; create it
-			log.debug("Creating keyspace {}...", keyspace);
-			KsDef ksdef = new KsDef();
-			ksdef.setName(keyspace);
-			ksdef.setStrategy_class("org.apache.cassandra.locator.SimpleStrategy");
-			Map<String, String> stratops = new HashMap<String, String>();
-			stratops.put("replication_factor", "1");
-			ksdef.setStrategy_options(stratops);
-			ksdef.setCf_defs(new LinkedList<CfDef>()); // cannot be null but can be empty
-
-			String schemaVer = client.system_add_keyspace(ksdef);
-			// Try to block until Cassandra converges on the new keyspace
-			validateSchemaIsSettled(client, schemaVer);
-		}
-		
 		client.set_keyspace(keyspace);
 		
 		return conn;

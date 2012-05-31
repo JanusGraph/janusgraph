@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Delete;
@@ -21,9 +20,13 @@ import org.apache.hadoop.hbase.filter.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.LockConfig;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
 
 /*
  * This is a naive and slow implementation.  Here are some areas that might need work:
@@ -49,20 +52,31 @@ public class HBaseOrderedKeyColumnValueStore implements
 	private static final Logger log = LoggerFactory.getLogger(HBaseOrderedKeyColumnValueStore.class);
 	
 	private final String tableName;
-	private final String columnFamily;
+//	private final String columnFamily;
 	private final HTablePool pool;
+	private final LockConfig internals;
 //	private final Configuration config;
 	
 	// This is cf.getBytes()
 	private final byte[] famBytes;
 	
-	HBaseOrderedKeyColumnValueStore(Configuration config, String tableName, String columnFamily) {
+	HBaseOrderedKeyColumnValueStore(Configuration config, String tableName,
+			String columnFamily, OrderedKeyColumnValueStore lockStore,
+			LocalLockMediator llm, byte[] rid, int lockRetryCount,
+			long lockWaitMS, long lockExpireMS) {
 //		this.config = config;
 		this.tableName = tableName;
-		this.columnFamily = columnFamily;
+//		this.columnFamily = columnFamily;
 		// TODO The number 32 of max pooled instances per table should be a config option
 		this.pool = new HTablePool(config, 32);
 		this.famBytes = columnFamily.getBytes();
+		
+		if (null != llm && null != lockStore) {
+			this.internals = new SimpleLockConfig(this, lockStore, llm,
+					rid, lockRetryCount, lockWaitMS, lockExpireMS);
+		} else {
+			this.internals = null;
+		}
 	}
 
 	@Override
@@ -356,7 +370,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 			throw new GraphStorageException("Attempted to obtain a lock after one or more mutations");
 		}
 		
-		lt.writeBlindLockClaim(columnFamily, key, column, expectedValue);
+		lt.writeBlindLockClaim(internals, key, column, expectedValue);
 	}
 
 }
