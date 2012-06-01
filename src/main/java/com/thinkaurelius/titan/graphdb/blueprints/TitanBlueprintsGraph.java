@@ -72,6 +72,8 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
     
     @Override
     public String toString() {
+//        return "titangraph" + StringFactory.L_BRACKET +
+//                ((StandardTitanGraph)this).getConfiguration().getStorageManagerClassName() + StringFactory.R_BRACKET;
         return StringFactory.graphString(this,((StandardTitanGraph)this).getConfiguration().getStorageManagerClassName());
     }
 

@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageManage
 import com.thinkaurelius.titan.diskstorage.util.KeyValueStorageManagerAdapter;
 import org.apache.commons.configuration.Configuration;
 
-public class HBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
+public class ExternalHBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
 
     public StorageManager openStorageManager() {
         return new HBaseStorageManager(StorageSetup.getHBaseStorageConfiguration());

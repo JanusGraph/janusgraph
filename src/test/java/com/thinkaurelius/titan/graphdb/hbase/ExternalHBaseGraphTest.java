@@ -1,15 +1,17 @@
 package com.thinkaurelius.titan.graphdb.hbase;
 
-import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseHelper;
-import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceTest;
 import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.apache.commons.configuration.Configuration;
+import org.junit.Before;
 
-public class HBaseGraphPerformanceTest extends TitanGraphPerformanceTest {
+import com.thinkaurelius.titan.StorageSetup;
 
-	public HBaseGraphPerformanceTest() {
-		super(StorageSetup.getHBaseGraphConfiguration(),0,1,false);
+public class ExternalHBaseGraphTest extends TitanGraphTest {
+
+	public ExternalHBaseGraphTest() {
+		super(StorageSetup.getHBaseGraphConfiguration());
 	}
 
     @Override

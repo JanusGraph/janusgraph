@@ -49,6 +49,7 @@ public class GraphDatabaseConfiguration {
 		LoggerFactory.getLogger(GraphDatabaseConfiguration.class);
 
     private static final Map<String,Class<? extends StorageManager>> preregisteredStorageManagers = new HashMap<String,Class<? extends StorageManager>>() {{
+        put("local", BerkeleyJEStorageAdapter.class);
         put("berkeleyje", BerkeleyJEStorageAdapter.class);
         put("cassandra", CassandraThriftStorageManager.class);
         put("hbase", HBaseStorageManager.class);
@@ -77,7 +78,7 @@ public class GraphDatabaseConfiguration {
     public static final String INSTANCE_RID_RAW_KEY = "rid_raw";
     public static final String INSTANCE_RID_SHORT_KEY = "rid_short"; 
     		
-    private static final String STORAGE_BACKEND_DEFAULT = "berkeleyje";
+    private static final String STORAGE_BACKEND_DEFAULT = "local";
 
     private static final String STORAGE_EDGESTORE_DEFAULT = "edgestore";
     private static final String STORAGE_PROPERTYINDEX_DEFAULT = "propertyindex";

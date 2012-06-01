@@ -283,15 +283,11 @@
                 <configuration>
                     <argLine>-Xms256m -Xmx756m</argLine>
                     <excludes>
-                        <!--<exclue>**/Titan*</exclue>-->
-
-                        <exclue>**/HBase*</exclue>
-                        <!--<exclue>**/Cassandra*</exclue>-->
+                        <exclude>**/External*.java</exclude>
 
                         <!-- Excluded because these take too long to run and require a lot of memory -->
                         <exclude>**/*PerformanceTest.java</exclude>
                         <exclude>**/*ConcurrentTest.java</exclude>
-                        <exclude>**/External*.java</exclude>
                     </excludes>
                     <!-- <argLine>-Xmx2048m</argLine> -->
                 </configuration>

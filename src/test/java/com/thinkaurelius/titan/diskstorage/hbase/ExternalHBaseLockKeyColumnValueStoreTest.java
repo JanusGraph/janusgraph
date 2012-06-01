@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
-public class HBaseLockKeyColumnValueStoreTest 
+public class ExternalHBaseLockKeyColumnValueStoreTest
 	extends LockKeyColumnValueStoreTest {
 	
 	@Override

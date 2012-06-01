@@ -343,10 +343,12 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		TitanVertex n1 = tx.addVertex();
 		TitanVertex n2 = tx.addVertex();
 		TitanVertex n3 = tx.addVertex();
+        assertNotNull(n1.toString());
 		n1.addProperty(name, "Node1");
 		n2.addProperty(name, "Node2");
 		n3.addProperty(weight, 5.0);
 		TitanEdge e = n1.addEdge(connect, n2);
+        assertNotNull(e.toString());
 		assertEquals(n1,e.getVertex(OUT));
 		assertEquals(n2,e.getVertex(IN));
 		e = n2.addEdge(knows, n3);
@@ -368,8 +370,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		assertTrue(name.hasIndex());
 		log.debug("Loaded edge types");
 		n2 = tx.getVertex(name, "Node2");
+        assertNotNull(n2.toString());
 		assertEquals("Node2",n2.getProperty(name, String.class));
 		e = Iterables.getOnlyElement(n2.getTitanEdges(Direction.BOTH, connect));
+        assertNotNull(e.toString());
 		n1 = e.getVertex(OUT);
 		log.debug("Retrieved node!");
 		assertEquals(n1,e.getVertex(OUT));
