@@ -4,12 +4,17 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.testutil.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
 
 public class StorageSetup {
 
-   
+	public static final String cassandraYamlPath = StringUtils.join(
+			new String[] { "file://", System.getProperty("user.dir"), "target",
+					"cassandra-tmp", "conf", "127.0.0.1", "cassandra.yaml" },
+			File.separator);
+	
     public static final String getHomeDir() {
         String homedir = System.getProperty("titan.testdir");
         if (null ==  homedir) {

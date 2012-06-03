@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.cassandra;
 
 import org.junit.BeforeClass;
 
+import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraDaemonWrapper;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraLocalhostHelper;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
@@ -15,7 +16,7 @@ public class InternalCassandraGraphTest extends TitanGraphTest {
 
 	@BeforeClass
 	public static void beforeClass() {
-		CassandraDaemonWrapper.start();
+		CassandraDaemonWrapper.start(StorageSetup.cassandraYamlPath);
 	}
 
 	public void cleanUp() {

@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.cassandra;
 
 import org.junit.BeforeClass;
 
+import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 
@@ -10,7 +11,7 @@ public class InternalCassandraThriftKeyColumnValueTest extends KeyColumnValueSto
 
 	@BeforeClass
 	public static void startCassandra() {
-    	CassandraDaemonWrapper.start();
+    	CassandraDaemonWrapper.start(StorageSetup.cassandraYamlPath);
 	}
 	
     @Override
