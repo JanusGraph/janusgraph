@@ -16,19 +16,29 @@ public class CassandraDaemonWrapper {
 	
 	private static final Logger log = LoggerFactory.getLogger(CassandraDaemonWrapper.class);
 	
-	public static synchronized void start() {
-		if (started)
+	private static String liveCassandraYamlPath;
+	
+	public static synchronized void start(String cassandraYamlPath) {
+		if (started) {
+			if (null != cassandraYamlPath &&
+					!cassandraYamlPath.equals(liveCassandraYamlPath)) {
+				log.warn("Can't start in-process Cassandra instance " +
+						"with yaml path {} because an instance was " +
+						"previously started with yaml path {}", 
+						cassandraYamlPath, liveCassandraYamlPath);
+			}
+			
 			return;
+		}
 		
 		log.debug("Current working directory: {}", System.getProperty("user.dir"));
 		
-		System.setProperty("cassandra.config",
-				"file://" +
-				System.getProperty("user.dir") + "/" + 
-				"target/cassandra-tmp/conf/127.0.0.1/cassandra.yaml"); // TODO this is a hack
+		System.setProperty("cassandra.config", cassandraYamlPath);
 		System.setProperty("log4j.defaultInitOverride", "false");
 		
 		(new Thread(new CassandraRunner())).run();
+		
+		liveCassandraYamlPath = cassandraYamlPath;
 		
 		started = true;
 	}
