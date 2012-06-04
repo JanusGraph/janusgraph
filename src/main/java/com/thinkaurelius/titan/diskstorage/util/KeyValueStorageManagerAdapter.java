@@ -52,8 +52,8 @@ public class KeyValueStorageManagerAdapter implements StorageManager {
 	}
 
     @Override
-    public long[] getIDBlock(int partition, int blockSize) {
-        return manager.getIDBlock(partition,blockSize);
+    public long[] getIDBlock(int partition) {
+        return manager.getIDBlock(partition);
     }
 
 

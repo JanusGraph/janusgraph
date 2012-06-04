@@ -23,7 +23,7 @@ public interface KeyValueStorageManager {
      * @param blockSize The size of the partition block.
      * @return a range of ids for the particular partition
      */
-    public long[] getIDBlock(int partition, int blockSize);
+    public long[] getIDBlock(int partition);
 
 
 	/**

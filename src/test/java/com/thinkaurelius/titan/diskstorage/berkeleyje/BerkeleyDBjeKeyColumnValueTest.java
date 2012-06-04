@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.berkeleyje;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
+import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEHelper;
 import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageManager;
 import com.thinkaurelius.titan.diskstorage.util.KeyValueStorageManagerAdapter;
 import com.thinkaurelius.titan.diskstorage.util.KeyValueStoreAdapter;
@@ -14,7 +15,7 @@ import static junit.framework.Assert.assertEquals;
 public class BerkeleyDBjeKeyColumnValueTest extends KeyColumnValueStoreTest {
 
     public void cleanUp() {
-        StorageSetup.deleteHomeDir();
+        BerkeleyJEHelper.clearEnvironment(StorageSetup.getHomeDirFile());
     }
 
     public StorageManager openStorageManager() {

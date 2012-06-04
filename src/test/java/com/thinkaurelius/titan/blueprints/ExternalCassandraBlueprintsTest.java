@@ -28,7 +28,7 @@ public class ExternalCassandraBlueprintsTest extends LocalBlueprintsTest {
 
     @Override
     public Graph generateGraph() {
-        graph = TitanFactory.open(ch.getConfiguration());
+        Graph graph = TitanFactory.open(ch.getConfiguration());
         return graph;
     }
 

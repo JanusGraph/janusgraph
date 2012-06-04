@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.concurrent;
+package com.thinkaurelius.titan.util.system;
 
 public class Threads {
 

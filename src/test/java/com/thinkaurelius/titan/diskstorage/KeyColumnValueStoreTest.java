@@ -392,30 +392,35 @@ public abstract class KeyColumnValueStoreTest {
 		txn.commit();
 
 	}
-	
 
 
+    @Test
+    public void containsKeyReturnsTrueOnExtantKey() throws Exception {
+        ByteBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
+        TransactionHandle txn = manager.beginTransaction();
+        assertFalse(store.containsKey(key1.duplicate(), txn));
+        KeyColumnValueStoreUtil.insert(store, txn, 1, "c", "v");
+        txn.commit();
+
+        txn = manager.beginTransaction();
+        assertTrue(store.containsKey(key1.duplicate(), txn));
+        txn.commit();
+    }
 
 	
 	@Test
 	public void containsKeyReturnsFalseOnNonexistentKey() throws Exception {
-		TransactionHandle txn = manager.beginTransaction();
-		ByteBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
-		assertFalse(store.containsKey(key1.duplicate(), txn));
-		txn.commit();
+        TransactionHandle txn = manager.beginTransaction();
+        KeyColumnValueStoreUtil.insert(store, txn, 1, "c", "v");
+        txn.abort();
+
+        txn = manager.beginTransaction();
+        ByteBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
+        assertFalse(store.containsKey(key1.duplicate(), txn));
+        txn.commit();
 	}
 	
-	@Test
-	public void containsKeyReturnsTrueOnExtantKey() throws Exception {
-		TransactionHandle txn = manager.beginTransaction();
-		KeyColumnValueStoreUtil.insert(store, txn, 1, "c", "v");
-		txn.commit();
 
-		txn = manager.beginTransaction();
-		ByteBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
-		assertTrue(store.containsKey(key1.duplicate(), txn));
-		txn.commit();
-	}
 	
 	@Test
 	public void containsKeyColumnReturnsFalseOnNonexistentInput() throws Exception {

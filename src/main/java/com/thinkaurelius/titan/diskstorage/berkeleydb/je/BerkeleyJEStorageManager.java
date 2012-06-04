@@ -7,6 +7,8 @@ import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.diskstorage.util.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 	private final boolean transactional;
 	private final boolean isReadOnly;
 	private final boolean batchLoading;
+    private final int blockSize;
     
     private final String idManagerTableName;
 
@@ -46,6 +49,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 		isReadOnly= configuration.getBoolean(STORAGE_READONLY_KEY,STORAGE_READONLY_DEFAULT);
 		batchLoading=configuration.getBoolean(STORAGE_BATCH_KEY,STORAGE_BATCH_DEFAULT);
         boolean transactional = configuration.getBoolean(STORAGE_TRANSACTIONAL_KEY,STORAGE_TRANSACTIONAL_DEFAULT);
+        this.blockSize = configuration.getInt(IDAUTHORITY_BLOCK_SIZE_KEY,IDAUTHORITY_BLOCK_SIZE_DEFAULT);
         if (batchLoading) {
             if (transactional) log.warn("Disabling transactional since batch loading is enabled!");
             transactional=false;
@@ -121,7 +125,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 	}
 
     @Override
-    public synchronized long[] getIDBlock(int partition, int blockSize) {
+    public synchronized long[] getIDBlock(int partition) {
         BerkeleyKeyValueStore idDB = openDatabase(idManagerTableName);
         ByteBuffer key = ByteBufferUtil.getIntByteBuffer(partition);
         BDBTxHandle tx = beginTransaction();

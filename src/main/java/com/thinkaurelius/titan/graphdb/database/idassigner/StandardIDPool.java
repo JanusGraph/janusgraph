@@ -10,13 +10,13 @@ import com.thinkaurelius.titan.diskstorage.IDAuthority;
 
 public class StandardIDPool implements IDPool {
     
-    private static final int RENEW_FRACTION = 10;
+    private static final int RENEW_ID_COUNT = 100;
     
     private static final int SLEEP_TIME = 100;
     private static final int MAX_WAIT_TIME = 2000;
     
     private final IDAuthority idAuthority;
-    private final int blockSize;
+    //private final int blockSize;
     private final int partitionID;
         
     private long nextID;
@@ -26,12 +26,10 @@ public class StandardIDPool implements IDPool {
     private long bufferNextID;
     private long bufferMaxID;
     
-    public StandardIDPool(IDAuthority idAuthority, long partitionID, int blockSize) {
-        Preconditions.checkArgument(blockSize>0);
+    public StandardIDPool(IDAuthority idAuthority, long partitionID) {
         Preconditions.checkArgument(partitionID>=0);
         Preconditions.checkArgument(partitionID<Integer.MAX_VALUE);
         this.idAuthority = idAuthority;
-        this.blockSize=blockSize;
         this.partitionID=(int)partitionID;
         
         nextID = 0;
@@ -50,7 +48,7 @@ public class StandardIDPool implements IDPool {
         long time = System.currentTimeMillis();
         while (bufferMaxID<0 || bufferMaxID<0) {
             //Updating thread has not yet completed
-            Thread.sleep(100);
+            Thread.sleep(SLEEP_TIME);
             if (System.currentTimeMillis()-time>MAX_WAIT_TIME) {
                 throw new InterruptedException("Waited too long for new id block!");
             }
@@ -64,7 +62,7 @@ public class StandardIDPool implements IDPool {
         bufferNextID = -1;
         bufferMaxID = -1;
         
-        renewBufferID = maxID - (blockSize/RENEW_FRACTION);
+        renewBufferID = maxID - RENEW_ID_COUNT;
         if (renewBufferID>=maxID) renewBufferID = maxID-1;
         if (renewBufferID<nextID) renewBufferID = nextID;
         assert renewBufferID>=nextID && renewBufferID<maxID;
@@ -72,7 +70,7 @@ public class StandardIDPool implements IDPool {
     
     private void renewBuffer() {
         assert bufferNextID==-1 && bufferMaxID==-1;
-        long[] idblock = idAuthority.getIDBlock(partitionID,blockSize);
+        long[] idblock = idAuthority.getIDBlock(partitionID);
         bufferNextID = idblock[0];
         bufferMaxID = idblock[1];
         Preconditions.checkArgument(bufferNextID>0);

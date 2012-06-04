@@ -14,8 +14,6 @@ import java.util.Random;
 
 
 public class SimpleVertexIDAssigner implements VertexIDAssigner {
-	
-    private static final int EDGETYPE_BLOCK_SIZE = 20;
     
 	private final IDPool node;
 	private final IDPool edge;
@@ -29,7 +27,7 @@ public class SimpleVertexIDAssigner implements VertexIDAssigner {
 	private final Random randomSource;
 	
 	
-	public SimpleVertexIDAssigner(IDManager idManager, StorageManager storage, int randomBits, int blockSize) {
+	public SimpleVertexIDAssigner(IDManager idManager, StorageManager storage, int randomBits) {
         Preconditions.checkNotNull(idManager);
         Preconditions.checkNotNull(storage);
         Preconditions.checkArgument(randomBits>=0 && randomBits<=8,"RandomBits must be in [0,8]");
@@ -41,9 +39,9 @@ public class SimpleVertexIDAssigner implements VertexIDAssigner {
         this.offset = randomSource.nextInt((1<<randomBits));
 
         
-		node = new StandardIDPool(storage,IDManager.IDType.Node.addPadding(offset),blockSize);
-		edge = new StandardIDPool(storage,IDManager.IDType.Edge.addPadding(offset),blockSize*5);
-		edgeType = new StandardIDPool(storage,IDManager.IDType.EdgeType.addPadding(offset),EDGETYPE_BLOCK_SIZE);
+		node = new StandardIDPool(storage,IDManager.IDType.Node.addPadding(offset));
+		edge = new StandardIDPool(storage,IDManager.IDType.Edge.addPadding(offset));
+		edgeType = new StandardIDPool(storage,IDManager.IDType.EdgeType.addPadding(offset));
 
 	}
 

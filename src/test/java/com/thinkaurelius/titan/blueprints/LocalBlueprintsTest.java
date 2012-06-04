@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEHelper;
 import com.thinkaurelius.titan.testutil.MemoryAssess;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.GraphTest;
@@ -14,10 +15,11 @@ import com.tinkerpop.blueprints.util.io.graphson.GraphSONReaderTestSuite;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (http://www.matthiasb.com)
  */
 
 public class LocalBlueprintsTest extends GraphTest {
@@ -35,7 +37,7 @@ public class LocalBlueprintsTest extends GraphTest {
     }
 
     public void testEdgeTestSuite() throws Exception {
-        this.stopWatch();
+        this.stopWatch();                   //Exclusions: retrieval by edge id is not supported
         doTestSuite(new EdgeTestSuite(this),ImmutableSet.of("testGetEdges","testGetNonExistantEdges"));
         printTestPerformance("EdgeTestSuite", this.stopWatch());
     }
@@ -53,8 +55,8 @@ public class LocalBlueprintsTest extends GraphTest {
     }
 
     public void testKeyIndexableGraphTestSuite() throws Exception {
-        this.stopWatch();
-        doTestSuite(new KeyIndexableGraphTestSuite(this), ImmutableSet.of("testAutoIndexKeyDroppingWithPersistence","testAutoIndexKeyManagementWithPersistence"));
+        this.stopWatch();                                   //Exclusions: 1st because unsupported, 2nd for old test, 3rd does not close database
+        doTestSuite(new KeyIndexableGraphTestSuite(this), ImmutableSet.of("testAutoIndexKeyDroppingWithPersistence","testAutoIndexKeyManagementWithPersistence","testReIndexingOfElements"));
         printTestPerformance("KeyIndexableGraphTestSuite", this.stopWatch());
     }
 
@@ -84,11 +86,9 @@ public class LocalBlueprintsTest extends GraphTest {
 
     @Override
     public Graph generateGraph() {
-        graph = TitanFactory.open(StorageSetup.getHomeDir());
+        Graph graph = TitanFactory.open(StorageSetup.getHomeDir());
         return graph;
     }
-
-    protected TitanGraph graph = null;
 
     @Override
     public void doTestSuite(TestSuite testSuite) throws Exception {    
@@ -96,7 +96,8 @@ public class LocalBlueprintsTest extends GraphTest {
     }
 
     public void cleanUp() {
-        StorageSetup.deleteHomeDir();
+        BerkeleyJEHelper.clearEnvironment(StorageSetup.getHomeDirFile());
+        assertFalse(StorageSetup.getHomeDirFile().exists() && StorageSetup.getHomeDirFile().listFiles().length>0);
     }
 
     public void startUp() {
@@ -104,7 +105,7 @@ public class LocalBlueprintsTest extends GraphTest {
     }
 
     public void shutDown() {
-       //Nothing
+        assertFalse(StorageSetup.getHomeDirFile().exists() && StorageSetup.getHomeDirFile().listFiles().length>0);
     }
 
     public void doTestSuite(TestSuite testSuite, Set<String> ignoreTests) throws Exception {
@@ -119,20 +120,17 @@ public class LocalBlueprintsTest extends GraphTest {
                 method.invoke(testSuite);
 //                System.out.println("##################### MEMORY ############");
 //                System.out.println(MemoryAssess.getMemoryUse()/1024);
-                graph = null;
+//                graph = null;
             } catch (Throwable e) {
                 System.err.println("Encountered error in " + method.getName());
                 e.printStackTrace();
                 throw new RuntimeException(e);
             } finally {
-                if (graph!=null && graph.isOpen()) {
-                    graph.shutdown();
-                    graph=null;
-                }
                 cleanUp();
             }
         }
         shutDown();
     }
+
 
 }

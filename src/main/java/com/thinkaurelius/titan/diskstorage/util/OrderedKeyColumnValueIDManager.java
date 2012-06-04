@@ -58,7 +58,7 @@ public class OrderedKeyColumnValueIDManager {
 						GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_DEFAULT);
 	}
 
-	public long[] getIDBlock(int partition, int unused) {
+	public long[] getIDBlock(int partition) {
 		
 		for (int retry = 0; retry < lockRetryCount; retry++) {
 			

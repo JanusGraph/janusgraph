@@ -74,8 +74,8 @@ public class HBaseStorageManager implements StorageManager {
 
 
     @Override
-    public long[] getIDBlock(int partition, int blockSize) {
-        return idmanager.getIDBlock(partition,blockSize);
+    public long[] getIDBlock(int partition) {
+        return idmanager.getIDBlock(partition);
     }
 
 	@Override

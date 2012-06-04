@@ -18,6 +18,6 @@ public interface IDAuthority {
      * @param blockSize The size of the partition block. The range of ids (i.e. return[1]-return[0]) is expected to be equal to blockSize - however, it may be smaller. Returned ids must be positive.
      * @return a range of ids for the particular partition
      */
-    public long[] getIDBlock(int partition, int blockSize);
+    public long[] getIDBlock(int partition);
 
 }

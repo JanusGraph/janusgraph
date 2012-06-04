@@ -27,7 +27,7 @@ public class ExternalHBaseBlueprintsTest extends LocalBlueprintsTest {
 
     @Override
     public Graph generateGraph() {
-        graph = TitanFactory.open(StorageSetup.getHBaseGraphConfiguration());
+        Graph graph = TitanFactory.open(StorageSetup.getHBaseGraphConfiguration());
         return graph;
     }
 
