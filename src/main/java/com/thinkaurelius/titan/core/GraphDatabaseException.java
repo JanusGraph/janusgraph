@@ -49,7 +49,9 @@ public class GraphDatabaseException extends RuntimeException {
 		return ExceptionUtil.isCausedBy(this, causeExceptionType);
 	}
 	
-
+    public static final RuntimeException transactionNotOpenException() {
+        return new IllegalStateException("Operation cannot be executed because the enclosing transaction is closed");
+    }
 
 	
 	

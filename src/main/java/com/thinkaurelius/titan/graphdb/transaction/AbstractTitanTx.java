@@ -85,9 +85,14 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	}
 
 
-	protected void verifyWriteAccess() {
+	protected final void verifyWriteAccess() {
 		if (config.isReadOnly()) throw new UnsupportedOperationException("Cannot create new entities in read-only transaction");
+        verifyOpen();
 	}
+    
+    protected final void verifyOpen() {
+        if (isClosed()) throw GraphDatabaseException.transactionNotOpenException();
+    }
 	
 	/* ---------------------------------------------------------------
 	 * TitanVertex and TitanRelation creation
@@ -122,12 +127,14 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
     @Override
     public boolean containsVertex(long id) {
+        verifyOpen();
         if (vertexCache.contains(id)) return true;
         else return false;
     }
 
     @Override
     public TitanVertex getVertex(long id) {
+        verifyOpen();
         if (getTxConfiguration().doVerifyNodeExistence() &&
                 !containsVertex(id)) return null;
         return getExistingVertex(id);
@@ -161,6 +168,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     
     @Override
     public void deleteVertex(InternalTitanVertex n) {
+        verifyWriteAccess();
         boolean removed;
         if (n.hasID()) {
             removed = vertexCache.remove(n.getID());
@@ -174,6 +182,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
 	@Override
 	public TitanProperty addProperty(TitanVertex vertex, TitanKey key, Object attribute) {
+        verifyWriteAccess();
 		//Check that attribute of keyed propertyType is unique
 		if (key.isUnique()) {
 			keyedPropertyCreateLock.lock();
@@ -196,7 +205,8 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
 	@Override
 	public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, TitanLabel label) {
-		InternalRelation e = edgeFactory.createNewRelationship(label, (InternalTitanVertex)outVertex, (InternalTitanVertex)inVertex);
+		verifyWriteAccess();
+        InternalRelation e = edgeFactory.createNewRelationship(label, (InternalTitanVertex)outVertex, (InternalTitanVertex)inVertex);
 		addedRelation(e);
 		return (TitanEdge)e;
 	}
@@ -216,6 +226,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
 	@Override
 	public boolean containsType(String name) {
+        verifyOpen();
 		Map<Object,TitanVertex> subindex = keyIndex.get(SystemKey.TypeName);
 		if (subindex==null || !subindex.containsKey(name)) {
             return etManager.containsType(name, this);
@@ -224,6 +235,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
     @Override
     public TitanType getType(String name) {
+        verifyOpen();
         Map<Object,TitanVertex> subindex = keyIndex.get(SystemKey.TypeName);
         TitanType et = null;
         if (subindex!=null) {
@@ -304,6 +316,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
 	@Override
 	public Iterable<Vertex> getVertices() {
+        verifyOpen();
         Iterable<InternalTitanVertex> iter = null;
         if (newNodes!=null) 
             iter = Iterables.concat(vertexCache.getAll(),newNodes);
@@ -400,7 +413,8 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
 	@Override
 	public TitanVertex getVertex(TitanKey key, Object value) {
-		Preconditions.checkArgument(key.isUnique());
+        verifyOpen();
+		Preconditions.checkArgument(key.isUnique(),"Key is not declared unique");
 		Map<Object,TitanVertex> subindex = keyIndex.get(key);
 		if (subindex==null) {
 			return null;
@@ -432,6 +446,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	
 	@Override
 	public Iterable<TitanVertex> getVertices(final TitanKey key, final Object attribute) {
+        verifyOpen();
         Preconditions.checkNotNull(attribute);
         Preconditions.checkNotNull(key);
         if (key.hasIndex()) {
