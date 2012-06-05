@@ -212,9 +212,11 @@
                         <version>2.8.1</version>
                         <configuration>
                             <argLine>-Xms256m -Xmx1024m</argLine>
-                            <!--<includes>-->
-                                <!--<include>**/External*.java</include>-->
-                            <!--</includes>-->
+                            <includes>
+                                <include>**/*PerformanceTest.java</include>
+                                <include>**/*ConcurrentTest.java</include>
+                                <include>**/External*.java</include>
+                            </includes>
                             <!--<excludes>-->
                                 <!--<exclude>**/*PerformanceTest.java</exclude>-->
                                 <!--<exclude>**/*ConcurrentTest.java</exclude>-->
@@ -327,7 +329,7 @@
                 <version>2.8.1</version>
                 <configuration>
                     <excludePackageNames>
-                        com.thinkaurelius.diskstorage,
+                        com.thinkaurelius.titan.diskstorage, com.thinkaurelius.titan.graphdb, com.thinkaurelius.titan.util
                     </excludePackageNames>
                 </configuration>
             </plugin>
