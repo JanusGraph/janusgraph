@@ -89,7 +89,7 @@ public class GraphDatabaseConfiguration {
     public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
     public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 3;
     public static final String IDAUTHORITY_BLOCK_SIZE_KEY = "idauthority-block-size";
-    public static final int IDAUTHORITY_BLOCK_SIZE_DEFAULT = 10000;
+    public static final int IDAUTHORITY_BLOCK_SIZE_DEFAULT = 100000;
 
 
     public static final String INSTANCE_RID_RAW_KEY = "machine-id";
