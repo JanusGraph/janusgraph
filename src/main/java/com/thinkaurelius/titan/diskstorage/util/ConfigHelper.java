@@ -61,7 +61,7 @@ public class ConfigHelper {
 			try {
 				tentativeRid = Hex.decodeHex(ridText.toCharArray());
 			} catch (DecoderException e) {
-				throw new RuntimeException(e);
+				throw new GraphStorageException(e);
 			}
 			
 			log.debug("Set rid from hex string: 0x{}", ridText);

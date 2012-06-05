@@ -32,7 +32,7 @@ public class VertexLongList implements VertexListInternal {
 
 	@Override
 	public void add(TitanVertex n) {
-		if (!n.hasID()) throw new InvalidElementException("Neighboring node does not have an id.",n);
+		if (!n.hasID()) throw new InvalidElementException("Neighboring node does not have an id",n);
 		if (sorted) Preconditions.checkArgument(n.getID()>=vertices.get(vertices.size()-1),"Nodes must be inserted in sorted order");
 		vertices.add(n.getID());
 	}
@@ -91,7 +91,7 @@ public class VertexLongList implements VertexListInternal {
 
 			@Override
 			public void remove() {
-				throw new UnsupportedOperationException("Nodes cannot be removed from neighborhood list.");
+				throw new UnsupportedOperationException("Nodes cannot be removed from neighborhood list");
 			}
 			
 		};

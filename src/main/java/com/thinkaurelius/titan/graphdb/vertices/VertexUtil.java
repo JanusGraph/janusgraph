@@ -131,7 +131,7 @@ public class VertexUtil {
 		if (v1.hasID()) {
 			long id = v1.getID();
 			return 37*31 + (int)(id ^ (id >>>32));
-		} else throw new IllegalArgumentException("Given node does not have an ID!");
+		} else throw new IllegalArgumentException("Given node does not have an id");
 	}
 
 

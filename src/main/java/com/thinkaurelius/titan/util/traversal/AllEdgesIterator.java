@@ -90,7 +90,7 @@ public class AllEdgesIterator implements Iterator<Edge> {
 	 */
 	@Override
 	public void remove() {
-		throw new UnsupportedOperationException("Removals are not supported!");
+		throw new UnsupportedOperationException("Removals are not supported");
 	}
 
 }

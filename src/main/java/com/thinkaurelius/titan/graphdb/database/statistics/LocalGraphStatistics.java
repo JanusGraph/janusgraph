@@ -64,7 +64,7 @@ public class LocalGraphStatistics implements InternalGraphStatistics {
 		try {
 			persistence.save();
 		} catch (ConfigurationException e) {
-			throw new GraphDatabaseException("Could not save statistics!",e);
+			throw new GraphDatabaseException("Could not save statistics",e);
 		}
 	}
 	

@@ -32,7 +32,7 @@ public enum InitialAdjListFactory implements AdjacencyListFactory {
 		@Override
 		public AdjacencyList extend(AdjacencyList list, InternalRelation newEdge,
 				ModificationStatus status) {
-			throw new IllegalStateException("Cannot add to emptied adjacency list.");
+			throw new IllegalStateException("Cannot add to emptied adjacency list");
 		}
 		
 	};

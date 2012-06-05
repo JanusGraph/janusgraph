@@ -20,12 +20,12 @@ public class ImmutableIntSet implements IntSet {
 	
 	@Override
 	public boolean add(int value) {
-		throw new UnsupportedOperationException("This IntSet is immutable!");
+		throw new UnsupportedOperationException("This IntSet is immutable");
 	}
 
 	@Override
 	public boolean addAll(int[] values) {
-		throw new UnsupportedOperationException("This IntSet is immutable!");
+		throw new UnsupportedOperationException("This IntSet is immutable");
 	}
 
 	@Override
@@ -43,7 +43,7 @@ public class ImmutableIntSet implements IntSet {
 
 	@Override
 	public boolean remove(int value) {
-		throw new UnsupportedOperationException("This IntSet is immutable!");
+		throw new UnsupportedOperationException("This IntSet is immutable");
 	}
 	
 	@Override

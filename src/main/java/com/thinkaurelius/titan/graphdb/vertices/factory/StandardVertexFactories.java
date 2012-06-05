@@ -31,7 +31,7 @@ public enum StandardVertexFactories implements VertexFactory {
 	
 		@Override
 		public InternalTitanVertex createExisting(InternalTitanTransaction tx, long id) {
-			throw new UnsupportedOperationException("Cannot create existing vertices for in-memory transaction!");
+			throw new UnsupportedOperationException("Cannot create existing vertices for in-memory transaction");
 		}
 
 

@@ -44,10 +44,10 @@ public class StandardTitanVertex extends AbstractTitanVertex {
                 outEdges = outEdges.addEdge(e, e.getType().isFunctional(), status);
             }
             if (status.hasChanged()) {
-                if (loadIn && !success) throw new InvalidElementException("Could only load one direction of loop-edge!",e);
+                if (loadIn && !success) throw new InvalidElementException("Could only load one direction of loop-edge",e);
                 success=true;
             } else {
-                if (loadIn && success) throw new InvalidElementException("Could only load one direction of loop-edge!",e);
+                if (loadIn && success) throw new InvalidElementException("Could only load one direction of loop-edge",e);
                 success=false;
             }
         }

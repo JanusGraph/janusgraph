@@ -4,6 +4,7 @@ import cern.colt.map.AbstractIntIntMap;
 import cern.colt.map.OpenIntIntHashMap;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.GraphDatabaseException;
+import com.thinkaurelius.titan.core.GraphStorageException;
 
 import java.io.*;
 
@@ -56,7 +57,7 @@ public class LocalIDManager {
             writeObjectToFile(filename + temporaryFileExt, idmap);
             writeObjectToFile(filename, idmap);
         } catch (IOException e) {
-            throw new GraphDatabaseException("Could not write id map to disk for file: " + filename,e);
+            throw new GraphStorageException("Could not write id map to disk for file: " + filename,e);
         }
     }
 
@@ -69,11 +70,11 @@ public class LocalIDManager {
         try {
             ret = objstream.readObject();
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Could not find class of read object!");
+            throw new GraphStorageException("Could not find class of read object");
         } finally {
             f.close();
         }
-        if (ret == null) throw new RuntimeException("Could not read any object from file!");
+        if (ret == null) throw new GraphStorageException("Could not read any object from file");
         return (T)ret;
     }
 

@@ -57,7 +57,7 @@ public class VirtualElement implements InternalElement {
 	
 	@Override
 	public boolean isAccessible() {
-		throw new UnsupportedOperationException("Method only available in transaction context!");
+		throw new UnsupportedOperationException("Method only available in transaction context");
 	}
 
 
@@ -78,7 +78,7 @@ public class VirtualElement implements InternalElement {
 
 	public final boolean modified() {
 		switch(lifecycle) {
-		case Deleted: throw new IllegalStateException("TitanElement is already deleted");
+		case Deleted: throw new IllegalStateException("Element is already deleted");
 		case New: return false;
 		case Modified: return false;
 		case Loaded: lifecycle = Modified; return true;
@@ -89,7 +89,7 @@ public class VirtualElement implements InternalElement {
 	@Override
 	public void remove() {
 		switch(lifecycle) {
-		case Deleted: throw new IllegalStateException("TitanElement is already deleted");
+		case Deleted: throw new IllegalStateException("Element is already deleted");
 		case New: 
 		case Modified: 
 		case Loaded: lifecycle = Deleted; break;
@@ -130,7 +130,7 @@ public class VirtualElement implements InternalElement {
 
 	@Override
 	public long getID() {
-		throw new IllegalStateException("The entity has not yet been assigned an ID!");
+		throw new IllegalStateException("The entity has not yet been assigned an id");
 	}
 
 

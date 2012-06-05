@@ -16,7 +16,7 @@ public class InMemoryRelationFactory implements RelationFactory {
 	}
 	
 	private final InternalTitanTransaction getTx() {
-		if (tx==null) throw new IllegalStateException("Factory has not been properly initialized!");
+		if (tx==null) throw new IllegalStateException("Factory has not been properly initialized");
 		return tx;
 	}
 	

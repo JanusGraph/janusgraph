@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
 import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -163,7 +164,7 @@ public class CassandraLocalhostHelper {
 			if (!outputReader.awaitThrift(CASSANDRA_STARTUP_TIMEOUT, TimeUnit.MILLISECONDS)) {
 				String msg = "Cassandra process failed to bind Thrift-port within timeout.";
 				log.error(msg);
-				throw new RuntimeException(msg);
+				throw new GraphStorageException(msg);
 			}
 			log.debug("Cassandra process logged successful Thrift-port bind.");
 			
@@ -180,7 +181,7 @@ public class CassandraLocalhostHelper {
 			CTConnectionPool.getPool(address, port, CassandraThriftStorageManager.DEFAULT_THRIFT_TIMEOUT_MS).clear();
 		} catch (Exception e) {
 			e.printStackTrace();
-			throw new RuntimeException(e);
+			throw new GraphStorageException(e);
 		}
 	}
 	
@@ -204,7 +205,7 @@ public class CassandraLocalhostHelper {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			throw new RuntimeException(e);
+			throw new GraphStorageException(e);
 		}
 	}
 	
@@ -238,7 +239,7 @@ public class CassandraLocalhostHelper {
 			conn = f.makeRawConnection();
 			CTConnectionFactory.waitForClusterSize(conn.getClient(), minSize);
 		} catch (TTransportException e) {
-			throw new RuntimeException(e);
+			throw new GraphStorageException(e);
 		} finally {
 			if (null != conn)
 				if (conn.getTransport().isOpen())

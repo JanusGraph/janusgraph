@@ -21,7 +21,7 @@ public class RelationFactoryUtil {
 			InternalTitanVertex start = (InternalTitanVertex)relation.getVertex(0);
 			
 			if (hasRelationOfType(start, et, Direction.OUT)) {
-				throw new IllegalArgumentException("Cannot create functional relation since an relation of that type already exists!");
+				throw new IllegalArgumentException("Cannot create functional relation since an relation of that type already exists");
 			}
 			
 		}
@@ -38,12 +38,12 @@ public class RelationFactoryUtil {
 
 		
 		if (loaded>0) {
-			if (notloaded>0) throw new InvalidElementException("Relation already existed on some vertices but not on others.",relation);
+			if (notloaded>0) throw new InvalidElementException("Relation already existed on some vertices but not on others",relation);
 			else {
 				graph.loadedRelation(relation);
 			}
 		} else if (isNew) {
-			throw new InvalidElementException("New relation could not be added.",relation);
+			throw new InvalidElementException("New relation could not be added",relation);
 		}
 	}
 

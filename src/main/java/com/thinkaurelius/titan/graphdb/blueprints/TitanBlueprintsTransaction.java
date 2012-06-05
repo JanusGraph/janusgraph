@@ -34,7 +34,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public Features getFeatures() {
-        throw new UnsupportedOperationException("Not supported on transaction graph - all on parent graph");
+        throw new UnsupportedOperationException("Not supported threaded transaction graph. Call on parent graph");
     }
 
     @Override
@@ -76,7 +76,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     @Override
     public Edge getEdge(Object id) {
         if (id==null) throw ExceptionFactory.edgeIdCanNotBeNull();
-        throw new UnsupportedOperationException("Titan does not support direct edge retrieval.");
+        throw new UnsupportedOperationException("Titan does not support direct edge retrieval");
     }
 
     @Override
@@ -86,7 +86,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public Iterable<Edge> getEdges(String key, Object value) {
-        throw new UnsupportedOperationException("Titan does not support direct edge retrieval.");
+        throw new UnsupportedOperationException("Titan does not support direct edge retrieval");
     }
 
     @Override
@@ -103,7 +103,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public <T extends Element> void dropKeyIndex(String key, Class<T> elementClass) {
-        throw new UnsupportedOperationException("Key indexes cannot be dropped.");
+        throw new UnsupportedOperationException("Key indexes cannot be dropped");
     }
 
     @Override
@@ -113,8 +113,8 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
         if (containsType(key)) {
             TitanType type = getType(key);
-            if (!type.isPropertyKey()) throw new IllegalArgumentException("Key does not denote a property key but a label!");
-            if (!((TitanKey)type).hasIndex()) throw new UnsupportedOperationException("Need to define particular key as indexed before it is being used!");
+            if (!type.isPropertyKey()) throw new IllegalArgumentException("Key string does not denote a property key but a label");
+            if (!((TitanKey)type).hasIndex()) throw new UnsupportedOperationException("It is not possible to set a key as indexable once it has been used");
         } else {
             makeType().functional(false).name(key).dataType(Object.class).indexed().makePropertyKey();
         }

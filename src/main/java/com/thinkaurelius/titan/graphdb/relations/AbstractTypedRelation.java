@@ -37,12 +37,12 @@ public abstract class AbstractTypedRelation extends NewEmptyTitanVertex implemen
 	
 	@Override
 	public Object clone() throws CloneNotSupportedException {
-		throw new CloneNotSupportedException("To be implemented!");
+		throw new CloneNotSupportedException("To be implemented");
 	}
 	
 	@Override
 	public void remove() {
-		if (!isModifiable()) throw new UnsupportedOperationException("This edge is unmodifiable and hence cannot be deleted!");
+		if (!isModifiable()) throw new UnsupportedOperationException("This edge is unmodifiable and hence cannot be deleted");
 		forceDelete();
 	}
 	

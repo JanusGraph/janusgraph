@@ -77,7 +77,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 			//Open the environment
 			environment = new Environment(directory, envConfig);
 		} catch (DatabaseException e) {
-			throw new GraphStorageException(e);
+			throw new GraphStorageException("Error during BerkeleyJE initialization: ",e);
 		}
 		
 	}
@@ -91,7 +91,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 			}
 			return new BDBTxHandle(tx);
 		} catch (DatabaseException e) {
-			throw new GraphStorageException(e);
+			throw new GraphStorageException("Could not start BerkeleyJE transaction",e);
 		}
 	}
 
@@ -120,7 +120,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 			stores.put(name, store);
 			return store;
 		} catch (DatabaseException e) {
-			throw new GraphStorageException(e);
+			throw new GraphStorageException("Could not open BerkeleyJE data store",e);
 		}
 	}
 
@@ -160,7 +160,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 			try {
 				environment.close();
 			} catch (DatabaseException e) {
-				throw new GraphStorageException(e);
+				throw new GraphStorageException("Could not close BerkeleyJE database",e);
 			}
 		}
 		

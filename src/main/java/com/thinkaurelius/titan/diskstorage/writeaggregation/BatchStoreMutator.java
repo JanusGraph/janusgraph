@@ -34,12 +34,12 @@ public class BatchStoreMutator extends BufferStoreMutator {
 
     @Override
     public void acquireEdgeLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) {
-        throw new UnsupportedOperationException("Should not acquire locks during batch operations.");
+        throw new UnsupportedOperationException("Locking is not supported during batch operations");
     }
 
     @Override
     public void acquireIndexLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) {
-        throw new UnsupportedOperationException("Should not acquire locks during batch operations.");
+        throw new UnsupportedOperationException("Locking is not supported during batch operations");
     }
 
 	@Override

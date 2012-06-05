@@ -17,18 +17,18 @@ public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
 	
 	@Override
 	public boolean addRelation(InternalRelation e, boolean isNew) {
-		throw new UnsupportedOperationException(errorName + " do not support incident edges!");
+		throw new UnsupportedOperationException(errorName + " do not support incident edges");
 	}
 	
 	@Override
 	public void removeRelation(InternalRelation e) {
-		throw new UnsupportedOperationException(errorName + " do not support incident edges!");
+		throw new UnsupportedOperationException(errorName + " do not support incident edges");
 	}
 
 	
 	@Override
 	public void loadedEdges(InternalTitanQuery query) {
-		throw new UnsupportedOperationException(errorName + " do not support incident edges!");
+		throw new UnsupportedOperationException(errorName + " do not support incident edges");
 	}
 
 	@Override
@@ -43,7 +43,7 @@ public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
 	
 	@Override
 	public TitanQuery query() {
-		throw new UnsupportedOperationException(errorName + " do not support querying!");
+		throw new UnsupportedOperationException(errorName + " do not support querying");
 	}
 
 	@Override
@@ -149,35 +149,35 @@ public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
 	
 	@Override
 	public TitanProperty addProperty(TitanKey key, Object attribute) {
-		throw new UnsupportedOperationException(errorName + " do not support incident properties!");
+		throw new UnsupportedOperationException(errorName + " do not support incident properties");
 	}
 
 
 	@Override
 	public TitanProperty addProperty(String key, Object attribute) {
-		throw new UnsupportedOperationException(errorName + " do not support incident properties!");
+		throw new UnsupportedOperationException(errorName + " do not support incident properties");
 	}
 
     @Override
     public void setProperty(String key, Object value) {
-        throw new UnsupportedOperationException(errorName + " do not support incident properties!");
+        throw new UnsupportedOperationException(errorName + " do not support incident properties");
     }
 
     @Override
     public Object removeProperty(String key) {
-        throw new UnsupportedOperationException(errorName + " do not support incident properties!");
+        throw new UnsupportedOperationException(errorName + " do not support incident properties");
     }
 
 
 	@Override
 	public TitanEdge addEdge(TitanLabel label, TitanVertex vertex) {
-		throw new UnsupportedOperationException(errorName + " do not support incident relationships!");
+		throw new UnsupportedOperationException(errorName + " do not support incident edges");
 	}
 
 
 	@Override
 	public TitanEdge addEdge(String label, TitanVertex vertex) {
-		throw new UnsupportedOperationException(errorName + " do not support incident relationships!");
+		throw new UnsupportedOperationException(errorName + " do not support incident edges");
 	}
 
 	
@@ -188,7 +188,7 @@ public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
 
 	@Override
 	public long getID() {
-		throw new UnsupportedOperationException(errorName + " don't have an ID!");
+		throw new UnsupportedOperationException(errorName + " don't have an ID");
 	}
 
     @Override
@@ -204,7 +204,7 @@ public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
 	
 	@Override
 	public void setID(long id) {
-		throw new UnsupportedOperationException(errorName + " don't have an ID!");
+		throw new UnsupportedOperationException(errorName + " don't have an id");
 	}
 
 	@Override

@@ -70,17 +70,17 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 	
 	@Override
 	public void loadRelations(InternalTitanQuery query) {
-		throw new UnsupportedOperationException("InMemory Transactions do not support edge loading!");
+		throw new UnsupportedOperationException("InMemory Transactions do not support edge loading");
 	}
 	
 	@Override
 	public AbstractLongList getRawNeighborhood(InternalTitanQuery query) {
-		throw new UnsupportedOperationException("InMemory Transactions do not support disk retrieval!");
+		throw new UnsupportedOperationException("InMemory Transactions do not support disk retrieval");
 	}
 	
 	@Override
 	public TransactionHandle getTxHandle() {
-		throw new UnsupportedOperationException("InMemory Transactions do not have transaction handles!");
+		throw new UnsupportedOperationException("InMemory Transactions do not have transaction handles");
 	}
 
 	@Override
@@ -145,32 +145,32 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 	
 	@Override
 	public IDInspector getIDInspector() {
-		throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
+		throw new UnsupportedOperationException("Not supported for in-memory graph databases");
 	}
 
 	@Override
 	public AbstractLongList getRawNeighborhood(InternalTitanQuery query,
 			InternalTitanTransaction tx) {
-		throw new UnsupportedOperationException("Not supported for in-memory graph databases.");		
+		throw new UnsupportedOperationException("Not supported for in-memory graph databases");
 	}
 
 
 	@Override
 	public long[] indexRetrieval(Object attribute, TitanKey key, InternalTitanTransaction tx) {
-		throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
+		throw new UnsupportedOperationException("Not supported for in-memory graph databases");
 	}
 
 
 	@Override
 	public void loadRelations(InternalTitanQuery query, InternalTitanTransaction tx) {
-		throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
+		throw new UnsupportedOperationException("Not supported for in-memory graph databases");
 	}
 
 	@Override
 	public boolean save(Collection<InternalRelation> addedRelations,
 			Collection<InternalRelation> deletedRelations, InternalTitanTransaction tx)
 			throws GraphStorageException {
-		throw new UnsupportedOperationException("Not supported for in-memory graph databases.");
+		throw new UnsupportedOperationException("Not supported for in-memory graph databases");
 	}
 
 }

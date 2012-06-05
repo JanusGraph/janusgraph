@@ -134,7 +134,7 @@ public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
 
 	@Override
 	public void remove() {
-		throw new UnsupportedOperationException("TitanElement has already been removed!");
+		throw new UnsupportedOperationException("Element has already been removed");
 	}
 
 	@Override

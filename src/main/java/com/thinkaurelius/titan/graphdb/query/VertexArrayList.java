@@ -73,7 +73,7 @@ public class VertexArrayList implements VertexListInternal {
 	private static final AbstractLongList toLongList(List<TitanVertex> vertices) {
 		AbstractLongList result = new LongArrayList(vertices.size());
 		for (TitanVertex n : vertices) {
-			if (!n.hasID()) throw new InvalidElementException("Neighboring node does not have an id.",n);
+			if (!n.hasID()) throw new InvalidElementException("Neighboring node does not have an id",n);
 			result.add(n.getID());
 		}
 		return result;

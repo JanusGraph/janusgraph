@@ -49,7 +49,7 @@ public class ObjectAccumulator<K extends Object> {
 	
 	public double getCountSave(K o) {
 		Counter c = countMap.get(o);
-		if (c==null) throw new NoSuchElementException("Object ["+o+"] does not exist.");
+		if (c==null) throw new NoSuchElementException("Object ["+o+"] does not exist");
 		return c.count;
 	}
 	

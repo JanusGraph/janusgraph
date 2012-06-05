@@ -363,7 +363,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 	private List<Entry> queryForEntries(InternalTitanQuery query, TransactionHandle txh) {
         Preconditions.checkArgument(query.isAtomic());
-		ByteBuffer key = IDHandler.getKey(query.getNodeID());
+		ByteBuffer key = IDHandler.getKey(query.getVertexID());
 		List<Entry> entries = null;
 		LimitTracker limit = new LimitTracker(query);
 		

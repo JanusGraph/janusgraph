@@ -86,7 +86,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
 
 	protected void verifyWriteAccess() {
-		if (config.isReadOnly()) throw new UnsupportedOperationException("Cannot create new entities in read-only transaction!");
+		if (config.isReadOnly()) throw new UnsupportedOperationException("Cannot create new entities in read-only transaction");
 	}
 	
 	/* ---------------------------------------------------------------
@@ -148,10 +148,10 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
                 if (idspec.isEdgeTypeID(id)) {
                     node = etManager.getType(id, this);
                 } else if (graphdb.isReferenceVertexID(id)) {
-                    throw new UnsupportedOperationException("Reference vertices are currently not supported!");
+                    throw new UnsupportedOperationException("Reference vertices are currently not supported");
                 } else if (idspec.isNodeID(id)) {
                     node = vertexFactory.createExisting(this,id);
-                } else throw new IllegalArgumentException("ID could not be recognized!");
+                } else throw new IllegalArgumentException("ID could not be recognized");
                 vertexCache.add(node, id);
             }
             return node;
@@ -244,10 +244,10 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 		TitanType et = getType(name);
 		if (et==null) {
             if (config.doAutoCreateEdgeTypes()) return config.getAutoEdgeTypeMaker().makeKey(name, makeType());
-			else throw new IllegalArgumentException("TitanKey with given name does not exist: " + name);
+			else throw new IllegalArgumentException("Key with given name does not exist: " + name);
         } else if (et.isPropertyKey()) {
 			return (TitanKey)et;
-		} else throw new IllegalArgumentException("The TitanType of given name is not a TitanKey!");
+		} else throw new IllegalArgumentException("The type of given name is not a key: " + name);
 
 	}
 	
@@ -257,10 +257,10 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 		TitanType et = getType(name);
 		if (et==null) {
             if (config.doAutoCreateEdgeTypes()) return config.getAutoEdgeTypeMaker().makeLabel(name, makeType());
-            throw new IllegalArgumentException("RelationType with given name does not exist: " + name);
+            throw new IllegalArgumentException("Type with given name does not exist: " + name);
         } else if (et.isEdgeLabel()) {
 			return (TitanLabel)et;
-		} else throw new IllegalArgumentException("The TitanType of given name is not a TitanLabel! " + name);
+		} else throw new IllegalArgumentException("The type of given name is not a label: " + name);
 	}
 	
 
@@ -352,19 +352,19 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         }
     };
 	
-	protected void addProperty2Index(TitanKey type, Object att, TitanVertex node) {
-        Preconditions.checkArgument(type.hasIndex());
-		if (type.isUnique()) {
+	protected void addProperty2Index(TitanKey key, Object att, TitanVertex vertex) {
+        Preconditions.checkArgument(key.hasIndex());
+		if (key.isUnique()) {
             //TODO ignore NO-ENTRTY
-            ConcurrentMap<Object,TitanVertex> subindex = Maps.putIfAbsent(keyIndex, type, keyIndexFactory);
+            ConcurrentMap<Object,TitanVertex> subindex = Maps.putIfAbsent(keyIndex, key, keyIndexFactory);
 
-            TitanVertex oth = subindex.putIfAbsent(att, node);
-            if (oth!=null && !oth.equals(node)) {
-                throw new IllegalArgumentException("The key is already used by another node!");
+            TitanVertex oth = subindex.putIfAbsent(att, vertex);
+            if (oth!=null && !oth.equals(vertex)) {
+                throw new IllegalArgumentException("The value is already used by another vertex and the key is unique");
             }
         } else {
-            Multimap<Object,TitanVertex> subindex = Maps.putIfAbsent(attributeIndex, type, attributeIndexFactory);
-            subindex.put(att,node);
+            Multimap<Object,TitanVertex> subindex = Maps.putIfAbsent(attributeIndex, key, attributeIndexFactory);
+            subindex.put(att,vertex);
         }
 	}
 	

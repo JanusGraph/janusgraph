@@ -42,7 +42,7 @@ public class ArrayAdjacencyList implements AdjacencyList {
 				status.nochange();
 				return this;
 			} else if (checkTypeUniqueness && oth.getType().equals(e.getType())) {
-				throw new InvalidElementException("Cannot add functional edge since an edge of that type already exists!",e);
+				throw new InvalidElementException("Cannot add functional edge since an edge of that type already exists",e);
 			}
 		}
 		if (emptySlot<0 && contents.length>=factory.getMaxCapacity()) {

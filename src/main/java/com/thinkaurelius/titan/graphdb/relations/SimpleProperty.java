@@ -70,7 +70,7 @@ public class SimpleProperty extends AbstractTypedRelation implements TitanProper
 	@Override
 	public Direction getDirection(TitanVertex vertex) {
 		if (node.equals(vertex)) return Direction.OUT;
-		else throw new InvalidElementException("TitanRelation is not incident on given node.",vertex);
+		else throw new InvalidElementException("TitanRelation is not incident on given node",vertex);
 	}
 
 	@Override

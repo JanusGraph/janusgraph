@@ -43,7 +43,7 @@ public class SetAdjacencyList implements AdjacencyList {
 			else {
 				if ((factory.isUniformTyped() && !content.isEmpty()) ||
 						(!factory.isUniformTyped() && !Iterables.isEmpty(getEdges(e.getType())) )) {
-					throw new InvalidElementException("Cannot add functional edge since an edge of that type already exists!",e);
+					throw new InvalidElementException("Cannot add functional edge since an edge of that type already exists",e);
 				} else {
 					status.change();
 					content.add(e);

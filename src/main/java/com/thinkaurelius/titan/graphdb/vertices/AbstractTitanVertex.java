@@ -76,7 +76,7 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 	
 	@Override
 	public void loadedEdges(InternalTitanQuery query) {
-		throw new UnsupportedOperationException("TitanRelation loading is not supported on in memory vertices!");
+		throw new UnsupportedOperationException("Relation loading is not supported on in memory vertices");
 	}
 
 	@Override

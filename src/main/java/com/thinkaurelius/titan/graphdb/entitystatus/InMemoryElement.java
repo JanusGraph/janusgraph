@@ -8,7 +8,7 @@ public class InMemoryElement implements InternalElement {
 	
 	@Override
 	public void setID(long id) {
-		throw new UnsupportedOperationException("Virtual entities don't have an ID!");
+		throw new UnsupportedOperationException("Virtual entities don't have an id");
 	}
 
 	@Override
@@ -18,7 +18,7 @@ public class InMemoryElement implements InternalElement {
 
 	@Override
 	public long getID() {
-		throw new UnsupportedOperationException("Virtual entities don't have an ID!");
+		throw new UnsupportedOperationException("Virtual entities don't have an id");
 	}
 
 	@Override
@@ -28,7 +28,7 @@ public class InMemoryElement implements InternalElement {
 
 	@Override
 	public boolean isAccessible() {
-		throw new UnsupportedOperationException("Method only available in transaction context!");
+		throw new UnsupportedOperationException("Method only available in transaction context");
 	}
 
 	@Override

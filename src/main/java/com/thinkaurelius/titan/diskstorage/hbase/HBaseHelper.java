@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
+import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableNotFoundException;
@@ -39,7 +40,7 @@ public class HBaseHelper {
         } catch (TableNotFoundException e) {
             // Do nothing
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new GraphStorageException(e);
         }
     }
     

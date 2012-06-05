@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thriftpool;
 
+import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
 import org.apache.commons.pool.impl.GenericKeyedObjectPool;
 
@@ -40,7 +41,7 @@ public class UncheckedGenericKeyedObjectPool<K,V> extends GenericKeyedObjectPool
 		try {
 			return super.borrowObject(key);
 		} catch (Exception e) {
-			throw new RuntimeException(e);
+			throw new GraphStorageException(e);
 		}
 	}
 
@@ -49,7 +50,7 @@ public class UncheckedGenericKeyedObjectPool<K,V> extends GenericKeyedObjectPool
 		try {
 			super.returnObject(key, o);
 		} catch (Exception e) {
-			throw new RuntimeException(e);
+			throw new GraphStorageException(e);
 		}
 	}
 	

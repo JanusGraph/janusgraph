@@ -20,7 +20,7 @@ public class TypedAdjListFactory implements AdjacencyListFactory {
 	@Override
 	public AdjacencyList extend(AdjacencyList list, InternalRelation newEdge,
 			ModificationStatus status) {
-		throw new UnsupportedOperationException("There is no extension for typed adjacency lists!");
+		throw new UnsupportedOperationException("There is no extension for typed adjacency lists");
 	}
 	
 	AdjacencyList getEmptyTypeAdjList() {

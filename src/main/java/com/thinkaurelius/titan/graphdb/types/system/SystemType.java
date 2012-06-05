@@ -84,17 +84,17 @@ public abstract class SystemType extends LoadedEmptyTitanVertex implements Inter
 
 	@Override
 	public void setID(long id) {
-		throw new IllegalStateException("System TitanType has already been assigned an id.");
+		throw new IllegalStateException("SystemType has already been assigned an id");
 	}	
 	
 	@Override
 	public InternalTitanTransaction getTransaction() {
-		throw new UnsupportedOperationException("Operation is not supported on SystemType.");
+		throw new UnsupportedOperationException("Operation is not supported on SystemType");
 	}
 	
 	@Override
 	public void remove() {
-		throw new UnsupportedOperationException("Operation is not supported on SystemType.");
+		throw new UnsupportedOperationException("Operation is not supported on SystemType");
 	}
 
 	@Override

@@ -50,7 +50,7 @@ public class StandardIDPool implements IDPool {
             //Updating thread has not yet completed
             Thread.sleep(SLEEP_TIME);
             if (System.currentTimeMillis()-time>MAX_WAIT_TIME) {
-                throw new InterruptedException("Waited too long for new id block!");
+                throw new InterruptedException("Wait time exceeded while allocating new id block");
             }
         }
         
@@ -84,7 +84,7 @@ public class StandardIDPool implements IDPool {
             try {
                 nextBlock();
             } catch (InterruptedException e) {
-                throw new GraphDatabaseException("Could not renew id block!",e);
+                throw new GraphDatabaseException("Could not renew id block",e);
             }
         }
 

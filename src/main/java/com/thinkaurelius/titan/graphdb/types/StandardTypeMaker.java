@@ -29,7 +29,7 @@ public class StandardTypeMaker implements TypeMaker {
 	private List<TitanType> compactsig;
 	
 	private boolean hasIndex;
-	private boolean isKey;
+	private boolean isUnique;
 	private Class<?> objectType;
 	
 	public StandardTypeMaker(InternalTitanTransaction tx, TypeManager etManager) {
@@ -40,7 +40,7 @@ public class StandardTypeMaker implements TypeMaker {
 		objectType = null;
 		name = null;
 		hasIndex = false;
-		isKey = false;
+		isUnique = false;
 		keysig = new ArrayList<TitanType>();
 		compactsig = new ArrayList<TitanType>();
 		category = null;
@@ -52,13 +52,13 @@ public class StandardTypeMaker implements TypeMaker {
 	
 	private void checkGeneralArguments() {
 		if (name==null || name.length()==0) 
-			throw new IllegalArgumentException("Need to specify name.");
+			throw new IllegalArgumentException("Need to specify name");
 		if (name.startsWith(SystemTypeManager.systemETprefix))
 			throw new IllegalArgumentException("Name starts with a reserved keyword: "+SystemTypeManager.systemETprefix);
         if (RESERVED_NAMES.contains(name.toLowerCase()))
             throw new IllegalArgumentException("Name is reserved: " + name);
 		if ((!keysig.isEmpty() || !compactsig.isEmpty()) && category!= TypeCategory.HasProperties)
-			throw new IllegalArgumentException("Can only specify signatures for labeled edge types.");
+			throw new IllegalArgumentException("Can only specify signatures for labeled edge types");
         checkSignature(keysig);
         checkSignature(compactsig);
         Set<TitanType> intersectSign = Sets.newHashSet(keysig);
@@ -89,16 +89,16 @@ public class StandardTypeMaker implements TypeMaker {
         if (category==null) category = TypeCategory.Simple;
         checkGeneralArguments();
 		if (directionality!=Directionality.Directed)
-			throw new IllegalArgumentException("TitanProperty types must be directed!");
+			throw new IllegalArgumentException("keys must be directed");
 		if (category!= TypeCategory.Simple)
-			throw new IllegalArgumentException("Only simple properties are supported!");
+			throw new IllegalArgumentException("Only simple properties are supported");
 		if (objectType==null)
-			throw new IllegalArgumentException("Need to specify data type.");
-		if (isKey && !hasIndex)
-			throw new IllegalArgumentException("Need to define an hasIndex for keyed TitanKey");
+			throw new IllegalArgumentException("Need to specify data type");
+		if (isUnique && !hasIndex)
+			throw new IllegalArgumentException("A unique key must have an index");
 		return etManager.createPropertyKey(tx, name, category, directionality,
                 visibility, isFunctional, checkSignature(keysig), checkSignature(compactsig),
-                group, isKey, hasIndex, objectType);
+                group, isUnique, hasIndex, objectType);
 	}
 
 	@Override
@@ -106,7 +106,7 @@ public class StandardTypeMaker implements TypeMaker {
         if (category==null) category = TypeCategory.HasProperties;
         checkGeneralArguments();
 		if (hasIndex)
-			throw new IllegalArgumentException("Cannot specify hasIndex for relationship type.");
+			throw new IllegalArgumentException("Cannot declare labels to be indexed");
 		return etManager.createEdgeLabel(tx, name, category, directionality,
                 visibility, isFunctional, checkSignature(keysig), checkSignature(compactsig), group);
 
@@ -180,7 +180,7 @@ public class StandardTypeMaker implements TypeMaker {
 
 	@Override
 	public TypeMaker unique() {
-		isKey = true;
+		isUnique = true;
 		return this;
 	}
 

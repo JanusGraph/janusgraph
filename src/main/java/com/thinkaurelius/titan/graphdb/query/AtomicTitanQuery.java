@@ -317,14 +317,14 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 
     @Override
     public TitanType getTypeCondition() {
-        if (!hasEdgeTypeCondition()) throw new IllegalStateException("This query does not have a edge type condition!");
+        if (!hasEdgeTypeCondition()) throw new IllegalStateException("This query does not have an edge type condition");
         return types[0];
     }
 
 
     @Override
     public TypeGroup getGroupCondition() {
-        if (!hasGroupCondition()) throw new IllegalStateException("This query does not have a edge type group condition!");
+        if (!hasGroupCondition()) throw new IllegalStateException("This query does not have a group condition!");
         return group;
     }
 
@@ -340,7 +340,7 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 
     @Override
     public Direction getDirectionCondition() {
-        if (!hasDirectionCondition()) throw new IllegalStateException("This query does not have a direction condition!");
+        if (!hasDirectionCondition()) throw new IllegalStateException("This query does not have a direction condition");
         return dir;
     }
 
@@ -372,9 +372,9 @@ public class AtomicTitanQuery implements InternalTitanQuery {
     }
 
     @Override
-    public long getNodeID() {
+    public long getVertexID() {
         if (nodeid>0) return nodeid;
-        else throw new IllegalStateException("NodeID has not been set for query!");
+        else throw new IllegalStateException("Vertex id has not been set for query");
     }
 
     @Override

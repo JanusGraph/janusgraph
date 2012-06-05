@@ -74,7 +74,7 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
 	
 	@Override
 	public void loadedEdges(InternalTitanQuery query) {
-		throw new UnsupportedOperationException("TitanRelation loading is not supported on labeled edges!");
+		throw new UnsupportedOperationException("Relation loading is not supported on labeled edges");
 	}
 
 	@Override

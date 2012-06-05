@@ -88,7 +88,7 @@ public class SimpleTitanEdge extends AbstractTypedRelation implements TitanEdge 
             if (end.equals(vertex)) return BOTH;
             else return OUT;
         } else if (end.equals(vertex)) return IN;
-        else throw new InvalidElementException("TitanRelation is not incident on given node.",vertex);
+        else throw new InvalidElementException("TitanRelation is not incident on given node",vertex);
 	}
 
 	@Override
@@ -117,7 +117,7 @@ public class SimpleTitanEdge extends AbstractTypedRelation implements TitanEdge 
 	public TitanVertex getOtherVertex(TitanVertex vertex) {
 		if (start.equals(vertex)) return end;
 		else if (end.equals(vertex)) return start;
-		else throw new InvalidElementException("TitanRelation is not incident on given node.",vertex);
+		else throw new InvalidElementException("TitanRelation is not incident on given node",vertex);
 	}
 
 	@Override

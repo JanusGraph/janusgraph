@@ -411,10 +411,6 @@ public abstract class KeyColumnValueStoreTest {
 	@Test
 	public void containsKeyReturnsFalseOnNonexistentKey() throws Exception {
         TransactionHandle txn = manager.beginTransaction();
-        KeyColumnValueStoreUtil.insert(store, txn, 1, "c", "v");
-        txn.abort();
-
-        txn = manager.beginTransaction();
         ByteBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
         assertFalse(store.containsKey(key1.duplicate(), txn));
         txn.commit();

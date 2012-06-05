@@ -5,7 +5,7 @@ public class ModificationStatus {
 	public static final ModificationStatus none = new ModificationStatus() {
 		@Override
 		public boolean hasChanged() {
-			throw new UnsupportedOperationException("Cannot query modification status!");
+			throw new UnsupportedOperationException("Cannot query modification status");
 		}
 	};
 	

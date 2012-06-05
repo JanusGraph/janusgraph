@@ -19,7 +19,7 @@ public interface InternalTitanQuery extends TitanQuery {
 
 
 
-    public long getNodeID();
+    public long getVertexID();
 
     boolean hasEdgeTypeCondition();
 

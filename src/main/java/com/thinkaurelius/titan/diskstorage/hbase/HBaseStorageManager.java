@@ -129,7 +129,7 @@ public class HBaseStorageManager implements StorageManager {
 				try {
 					Thread.sleep(5000L);
 				} catch (InterruptedException ie) {
-					throw new RuntimeException(ie);
+					throw new GraphStorageException(ie);
 				}
 				adm.enableTable(tableName);
 			} catch (TableNotFoundException ee) {

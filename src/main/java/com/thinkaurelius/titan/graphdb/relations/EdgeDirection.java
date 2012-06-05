@@ -48,7 +48,7 @@ public enum EdgeDirection {
 		switch(dir) {
 		case 1: return OUT;
 		case 2: return IN;
-		default: throw new IllegalArgumentException("Unkown edge direction!");
+		default: throw new IllegalArgumentException("Unkown edge direction");
 		}
 	}
 	

@@ -40,7 +40,7 @@ public class TypeComparator implements Comparator<TitanType> {
 				getID=TitanType.class.getMethod("getID");
 				getName=TitanType.class.getMethod("getName");
 			} catch (NoSuchMethodException e) {
-				throw new AssertionError("Invalid method references!");
+				throw new AssertionError("Invalid method references");
 			}
 		}
 		

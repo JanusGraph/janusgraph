@@ -100,7 +100,7 @@ public class TransactionConfig {
      * @throws UnsupportedOperationException when automatically creating edge types is not supported
      */
     public DefaultTypeMaker getAutoEdgeTypeMaker() {
-        if (!doAutoCreateEdgeTypes()) throw new UnsupportedOperationException("Auto edge type creation not supported!");
+        if (!doAutoCreateEdgeTypes()) throw new UnsupportedOperationException("Auto edge type creation not supported in this configuration");
         return defaultTypeMaker;
     }
 	

@@ -33,7 +33,7 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
     public void stopTransaction(final Conclusion conclusion) {
         TitanTransaction tx = txs.get();
         if (tx==null || tx.isClosed())
-            throw new IllegalStateException("No running transaction.");
+            throw new IllegalStateException("No running transaction");
         tx.stopTransaction(conclusion);
         txs.remove();
         openTx.remove(tx);
@@ -82,7 +82,7 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
 
     @Override
     public <T extends Element> void dropKeyIndex(String key, Class<T> elementClass) {
-        throw new UnsupportedOperationException("Key indexes cannot be dropped.");
+        throw new UnsupportedOperationException("Key indexes cannot be dropped");
     }
 
     @Override

@@ -124,7 +124,7 @@ public abstract class DirWrapper<V> {
 
 		@Override
 		public Direction getDirection() {
-			throw new UnsupportedOperationException("Does not have direction!");
+			throw new UnsupportedOperationException("Does not have direction");
 		}
 		
 		@Override

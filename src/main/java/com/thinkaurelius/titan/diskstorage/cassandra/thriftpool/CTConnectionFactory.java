@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.cassandra.db.marshal.TimeUUIDType;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.thrift.Cassandra;
@@ -152,7 +153,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory {
             	lastTry = System.currentTimeMillis();
                 versions = thriftClient.describe_schema_versions(); // getting schema version for nodes of the ring
             }  catch (Exception e) {
-                throw new RuntimeException("Failed to fetch Cassandra Thrift schema versions: " + 
+                throw new GraphStorageException("Failed to fetch Cassandra Thrift schema versions: " +
                 		((e instanceof InvalidRequestException) ? 
                 				((InvalidRequestException) e).getWhy() : e.getMessage()));
             }
@@ -187,7 +188,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory {
         }
 
         if (null == versions) {
-        	throw new RuntimeException("Couldn't contact Cassandra nodes before timeout; wait time " + CTConnectionPool.SCHEMA_WAIT_MAX + " ms too small?");
+        	throw new GraphStorageException("Couldn't contact Cassandra nodes before timeout");
         }
         
         if (versions.containsKey(StorageProxy.UNREACHABLE))
@@ -195,8 +196,8 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory {
             		Joiner.on(", ").join(versions.get(StorageProxy.UNREACHABLE)));
         
         if (!inAgreement) {
-            throw new RuntimeException("The schema has not settled in " + 
-            		CTConnectionPool.SCHEMA_WAIT_MAX + " ms; Wanted version " +
+            throw new GraphStorageException("The schema has not settled in " +
+            		CTConnectionPool.SCHEMA_WAIT_MAX + " ms. Wanted version " +
             		currentVersionId + "; Versions are " + FBUtilities.toString(versions));
         } else {
         	log.debug("Cassandra schema version {} propagated in about {} ms; Versions are {}",
@@ -246,12 +247,12 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory {
                 	return;
                 } 
             }  catch (Exception e) {
-                throw new RuntimeException("Failed to fetch Cassandra Thrift schema versions: " + 
+                throw new GraphStorageException("Failed to fetch Cassandra Thrift schema versions: " +
                 		((e instanceof InvalidRequestException) ? 
                 				((InvalidRequestException) e).getWhy() : e.getMessage()));
             }
         }
-        throw new RuntimeException("Could not verify Cassandra cluster size");
+        throw new GraphStorageException("Could not verify Cassandra cluster size");
     }
     
     int getTimeoutMS() {

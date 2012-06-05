@@ -28,7 +28,7 @@ public class BasicElement extends VirtualElement {
 	@Override
 	public long getID() {
 		if (!hasID())
-			throw new IllegalStateException("The entity has not yet been assigned an ID!");
+			throw new IllegalStateException("The entity has not yet been assigned an id");
 		else return id;
 	}
 
@@ -40,9 +40,9 @@ public class BasicElement extends VirtualElement {
 	
 	@Override
 	public void setID(long id) {
-		Preconditions.checkArgument(isNew(), "Illegal lifecycle status for setting id.");
+		Preconditions.checkArgument(isNew(), "Illegal lifecycle status for setting id");
 		Preconditions.checkArgument(id!=NoID,"Illegal id: " + id);
-		if (hasID()) throw new IllegalStateException("The entity has already been assigned an ID!");
+		if (hasID()) throw new IllegalStateException("The entity has already been assigned an id");
 		this.id = id;
 	}
 	
