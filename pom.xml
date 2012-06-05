@@ -45,10 +45,10 @@
         <developerConnection>scm:git:git@github.com:thinkaurelius/titan.git</developerConnection>
         <url>git@github.com:thinkaurelius/titan.git</url>
     </scm>
+    
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <cassandra.dir>${project.build.directory}/cassandra-tmp/workdir</cassandra.dir>
-        <log.level>DEBUG</log.level>
     </properties>
 
     <repositories>
@@ -247,7 +247,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
+                <version>2.5.1</version>
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
@@ -258,7 +258,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.8.1</version>
+                <version>2.12</version>
                 <configuration>
                     <argLine>-Xms256m -Xmx756m</argLine>
                     <excludes>
@@ -272,7 +272,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.2-beta-4</version>
+                <version>2.3</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -286,7 +286,6 @@
                     <descriptors>
                         <descriptor>src/assembly/standalone.xml</descriptor>
                         <descriptor>src/assembly/distribution.xml</descriptor>
-                        <!--<descriptor>src/assembly/archive-with-deps.xml</descriptor> -->
                     </descriptors>
                     <finalName>${project.artifactId}-${project.version}</finalName>
                     <outputDirectory>target</outputDirectory>
@@ -311,69 +310,12 @@
                             <outputDirectory>target/cassandra-tmp/conf/127.0.0.1</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>testdata/cassandra</directory>
+                                    <directory>config/cassandra</directory>
                                     <filtering>true</filtering>
                                 </resource>
                             </resources>
                             <filters>
-                                <filter>testdata/cassandra-filters/127.0.0.1.properties</filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-resources-127.0.0.2</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>target/cassandra-tmp/conf/127.0.0.2</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>testdata/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                            <filters>
-                                <filter>testdata/cassandra-filters/127.0.0.2.properties</filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-resources-127.0.1.1</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>target/cassandra-tmp/conf/127.0.1.1</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>testdata/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                            <filters>
-                                <filter>testdata/cassandra-filters/127.0.1.1.properties</filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-resources-127.0.1.2</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>target/cassandra-tmp/conf/127.0.1.2</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>testdata/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                            <filters>
-                                <filter>testdata/cassandra-filters/127.0.1.2.properties</filter>
+                                <filter>config/cassandra-filters/127.0.0.1.properties</filter>
                             </filters>
                         </configuration>
                     </execution>
@@ -382,7 +324,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.7</version>
+                <version>2.8.1</version>
                 <configuration>
                     <excludePackageNames>
                         com.thinkaurelius.diskstorage,
