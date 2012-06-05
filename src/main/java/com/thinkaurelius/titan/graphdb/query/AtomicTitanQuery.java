@@ -45,7 +45,7 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 
     public AtomicTitanQuery(InternalTitanTransaction tx) {
         this.tx=tx;
-        if (tx.isClosed()) throw GraphDatabaseException.transactionNotOpenException();
+        if (tx!=null && tx.isClosed()) throw GraphDatabaseException.transactionNotOpenException();
 
         dir = null;
         types = null;
