@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thriftpool;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -11,9 +9,7 @@ import com.thinkaurelius.titan.core.GraphStorageException;
 import org.apache.cassandra.db.marshal.TimeUUIDType;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.thrift.Cassandra;
-import org.apache.cassandra.thrift.CfDef;
 import org.apache.cassandra.thrift.InvalidRequestException;
-import org.apache.cassandra.thrift.KsDef;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -28,7 +24,12 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterators;
 
-
+/**
+ * A factory compatible with Apache commons-pool for Cassandra Thrift API
+ * connections.
+ * 
+ * @author Dan LaRocque <dalaro@hopcount.org>
+ */
 public class CTConnectionFactory implements KeyedPoolableObjectFactory { 
 
 	private final String hostname;

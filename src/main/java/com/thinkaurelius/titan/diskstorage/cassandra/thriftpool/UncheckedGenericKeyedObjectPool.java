@@ -25,7 +25,7 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool;
  * need the flexibility of heterogeneous types for pooling Thrift
  * connections, the original work that precipitated writing this class.
  * 
- * @author dalaro
+ * @author Dan LaRocque <dalaro@hopcount.org>
  *
  * @param <K> Key type
  * @param <V> Pooled object type

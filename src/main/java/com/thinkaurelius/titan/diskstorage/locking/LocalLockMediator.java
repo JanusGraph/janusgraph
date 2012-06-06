@@ -7,6 +7,19 @@ import org.slf4j.LoggerFactory;
 
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 
+/**
+ * This class resolves lock contention between two transactions on the same JVM.
+ * 
+ * This is not just an optimization to reduce network traffic. Locks written by
+ * Titan to a distributed key-value store contain an identifier, the "Rid",
+ * which is unique only to the process level. The Rid can't tell which
+ * transaction in a process holds any given lock. This class prevents two
+ * transactions in a single process from concurrently writing the same lock to a
+ * distributed key-value store.
+ * 
+ * @author Dan LaRocque <dalaro@hopcount.org>
+ */
+
 public class LocalLockMediator {
 
 	

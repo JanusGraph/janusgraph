@@ -39,6 +39,14 @@ import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
 
+/**
+ * A Titan {@code OrderedKeyColumnValueStore} backed by Cassandra.
+ * This uses the Cassandra Thrift API.
+ * 
+ * @see CassandraThriftStorageManager
+ * @author Dan LaRocque <dalaro@hopcount.org>
+ * 
+ */
 public class CassandraThriftOrderedKeyColumnValueStore
 	implements OrderedKeyColumnValueStore, MultiWriteKeyColumnValueStore {
 	

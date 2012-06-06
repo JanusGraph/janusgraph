@@ -6,9 +6,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This class starts a Thrift CassandraDaemon inside the current JVM.
+ * The only substantial use for this class is in testing at the moment.
  * 
- * @author dalaro
- *
+ * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class CassandraDaemonWrapper {
 	
