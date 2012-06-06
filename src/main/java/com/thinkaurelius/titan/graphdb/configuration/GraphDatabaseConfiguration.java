@@ -59,48 +59,120 @@ public class GraphDatabaseConfiguration {
         put("blueprints", BlueprintsDefaultTypeMaker.INSTANCE);
     }};
 
-    public static final String ATTRIBUTE_NAMESPACE = "attributes";
+
     public static final String STORAGE_NAMESPACE = "storage";
 
+    /**
+     * Storage directory for those storage backends that require local storage
+     */
     public static final String STORAGE_DIRECTORY_KEY = "directory";
 
+    /**
+     * Define the storage backed to use for persistence
+     */
     public static final String STORAGE_BACKEND_KEY = "backend";
     public static final String STORAGE_BACKEND_DEFAULT = "local";
+
+    /**
+     * Specifies whether write operations are supported
+     */
     public static final String STORAGE_READONLY_KEY = "read-only";
     public static final boolean STORAGE_READONLY_DEFAULT = false;
+
+    /**
+     * Enables batch loading which improves write performance but assumes that only one thread is interacting with
+     * the graph
+     */
     public static final String STORAGE_BATCH_KEY = "batch-loading";
     public static final boolean STORAGE_BATCH_DEFAULT = false;
+
+    /**
+     * Enables transactions on storage backends that support them
+     */
     public static final String STORAGE_TRANSACTIONAL_KEY = "transactions";
     public static final boolean STORAGE_TRANSACTIONAL_DEFAULT = true;
-    public static final String BUFFER_KEY = "buffer-mutations";
-    public static final boolean BUFFER_DEFAULT = true;
+
+
+
+
+    /**
+     * Buffers graph mutations locally up to the specified number before persisting them against the storage backend.
+     * Set to 0 to disable buffering. Buffering is disabled automatically if the storage backend does not support buffered mutations.
+     */
     public static final String BUFFER_SIZE_KEY = "buffer-size";
     public static final int BUFFER_SIZE_DEFAULT = 1024;
+
+    /**
+     * If flush ids is enabled, vertices and edges are assigned ids immediately upon creation. If not, then ids are only
+     * assigned when the transaction is committed.
+     */
     public static final String FLUSH_IDS_KEY = "flush-ids";
     public static final boolean FLUSH_IDS_DEFAULT = true;
+
+    /**
+     * Configures the {@link DefaultTypeMaker} to be used by this graph. If left empty, automatic creation of types
+     * is disabled.
+     */
     public static final String AUTO_TYPE_KEY = "autotype";
     public static final String AUTO_TYPE_DEFAULT = "blueprints";
+    
     private static final String ID_RANDOMIZER_BITS_KEY = "id-random-bits";
     private static final int ID_RANDOMIZER_BITS_DEFAULT = 0;
 
-    
+    /**
+     * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.
+     * Also, the time waited after the application before verifying that the application was successful.
+     */
     public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
-    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 500;
+    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
+    /**
+     * Number of times the system attempts to acquire a unique id block before giving up and throwing an exception.
+     */
     public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
     public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 3;
+    /**
+     * Size of the block to be acquired. Larger block sizes require fewer block applications but also leave a larger
+     * fraction of the id pool occupied and potentially lost. For write heavy applications, larger block sizes should
+     * be chosen.
+     */
     public static final String IDAUTHORITY_BLOCK_SIZE_KEY = "idauthority-block-size";
     public static final int IDAUTHORITY_BLOCK_SIZE_DEFAULT = 100000;
 
 
+    /**
+     *  A unique identifier for the machine running the @TitanGraph@ instance.
+     *  It must be ensured that no other machine accessing the storage backend can have the same identifier.
+     */
     public static final String INSTANCE_RID_RAW_KEY = "machine-id";
+    /**
+     * A locally unique identifier for a particular @TitanGraph@ instance. This only needs to be configured
+     * when multiple @TitanGraph@ instances are running on the same machine. A unique machine specific appendix
+     * guarantees a globally unique identifier.
+     */
     public static final String INSTANCE_RID_SHORT_KEY = "machine-id-appendix";
 
+    /**
+     * Number of times the system attempts to acquire a lock before giving up and throwing an exception.
+     */
     public static final String LOCK_RETRY_COUNT = "lock-retries";
     public static final int LOCK_RETRY_COUNT_DEFAULT = 3;
+    /**
+     * The number of milliseconds the system waits for a lock application to be acknowledged by the storage backend.
+     * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
+     * This value should be a small multiple of the average consistent write time.
+     */
     public static final String LOCK_WAIT_MS = "lock-wait-time";
-    public static final long LOCK_WAIT_MS_DEFAULT = 500;
+    public static final long LOCK_WAIT_MS_DEFAULT = 100;
+    /**
+     * Number of milliseconds after which a lock is considered to have expired. Lock applications that were not released
+     * are considered expired after this time and released.
+     * This value should be larger than the maximum time a transaction can take in order to guarantee that no correctly
+     * held applications are expired pre-maturely and as small as possible to avoid dead lock.
+     */
     public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
     public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
+
+    public static final String ATTRIBUTE_NAMESPACE = "attributes";
 
     public static final String ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY = "allow-all";
     public static final boolean ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT = true;
@@ -175,7 +247,7 @@ public class GraphDatabaseConfiguration {
     }
 
     public boolean hasBufferMutations() {
-        return configuration.getBoolean(BUFFER_KEY, BUFFER_DEFAULT);
+        return configuration.getInt(BUFFER_SIZE_KEY, BUFFER_SIZE_DEFAULT)>0;
     }
     
     public int getBufferSize() {

@@ -126,11 +126,13 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
     public Iterable<Vertex> getVertices() {
         return getAutoStartTx().getVertices();
     }
-    
+
+    @Override
     public TypeMaker makeType() {
         return getAutoStartTx().makeType();
     }
-    
+
+    @Override
     public TitanType getType(String name) {
         return getAutoStartTx().getType(name);
     }

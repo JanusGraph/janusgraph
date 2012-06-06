@@ -146,7 +146,7 @@ public class AtomicTitanQuery implements InternalTitanQuery {
             return withPropertyConstraint(etype,value);
         } else {
             assert etype.isPropertyKey();
-            Preconditions.checkArgument(((TitanKey) etype).getDataType().isInstance(value), "Value is not an INSTANCE of the property type's data type.");
+            Preconditions.checkArgument(((TitanKey) etype).getDataType().isInstance(value), "Value is not an instance of the property key's data type.");
             return withPropertyConstraint(etype,new PointInterval(value));
         }
     }
@@ -154,7 +154,7 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 
     @Override
     public AtomicTitanQuery has(String ptype, Object value) {
-        if (!tx.containsType(ptype)) throw new IllegalArgumentException("Unknown property type: " + ptype);
+        if (!tx.containsType(ptype)) throw new IllegalArgumentException("Unknown property key: " + ptype);
         return has(tx.getType(ptype), value);
     }
 
@@ -168,13 +168,13 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 
     @Override
     public<T extends Comparable<T>> TitanQuery interval(String key, T start, T end) {
-        if (!tx.containsType(key)) throw new IllegalArgumentException("Unknown property type: " + key);
+        if (!tx.containsType(key)) throw new IllegalArgumentException("Unknown property key: " + key);
         return interval(tx.getPropertyKey(key), start, end);
     }
     
     @Override
     public<T extends Comparable<T>> TitanQuery has(String ptype, T value, Query.Compare compare) {
-        if (!tx.containsType(ptype)) throw new IllegalArgumentException("Unknown property type: " + ptype);
+        if (!tx.containsType(ptype)) throw new IllegalArgumentException("Unknown property key: " + ptype);
         return has(tx.getPropertyKey(ptype),value,compare);
     }
 

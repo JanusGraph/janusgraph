@@ -37,6 +37,13 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
 	  */
 	public void shutdown() throws GraphStorageException;
 
+
+    public TypeMaker makeType();
+
+
+    public TitanType getType(String name);
+
+
     /**
      * Checks whether the graph is still open.
      *

@@ -187,7 +187,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 		if (key.isUnique()) {
 			keyedPropertyCreateLock.lock();
 			if (config.doVerifyKeyUniqueness() && getVertex(key, attribute)!=null)
-				throw new InvalidElementException("The specified attribute is already used as a key for the given property type: " + attribute,vertex);
+				throw new InvalidElementException("The specified attribute is already used for the given property key: " + attribute,vertex);
 		}
 			
 		InternalRelation e = edgeFactory.createNewProperty(key, (InternalTitanVertex)vertex, attribute);

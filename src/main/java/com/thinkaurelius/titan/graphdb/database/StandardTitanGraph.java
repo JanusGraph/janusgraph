@@ -141,9 +141,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     @Override
 	public long[] indexRetrieval(Object key, TitanKey pt, InternalTitanTransaction tx) {
 		Preconditions.checkArgument(pt.isSimple(),
-					"Currently, only simple properties are supported for hasIndex retrieval!");
+					"Currently, only simple properties are supported for index retrieval!");
 		Preconditions.checkArgument(pt.hasIndex(),
-					"Cannot retrieve for given property type - it does not have an hasIndex.");
+					"Cannot retrieve for given property key - it does not have an index.");
 
 		long[] vertices = null;
 			

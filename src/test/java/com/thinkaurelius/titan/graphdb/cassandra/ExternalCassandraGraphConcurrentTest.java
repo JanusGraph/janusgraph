@@ -27,9 +27,9 @@ public class ExternalCassandraGraphConcurrentTest extends TitanGraphConcurrentTe
 
     public void cleanUp() {
         CassandraThriftStorageManager.dropKeyspace(
-                CassandraThriftStorageManager.DEFAULT_KEYSPACE,
+                CassandraThriftStorageManager.KEYSPACE_DEFAULT,
                 "127.0.0.1",
-                CassandraThriftStorageManager.DEFAULT_PORT);
+                CassandraThriftStorageManager.PORT_DEFAULT);
     }
 
 }

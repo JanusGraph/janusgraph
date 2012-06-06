@@ -24,8 +24,8 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
     private Logger log = LoggerFactory.getLogger(BerkeleyJEStorageManager.class);
 
 
-    private static final String CACHE_KEY = "cache_percentage";
-    private static final int CACHE_DEFAULT = 65;
+    public static final String CACHE_KEY = "cache_percentage";
+    public static final int CACHE_DEFAULT = 65;
     
     private static final String IDMANAGER_KEY = "idmanager_table";
     private static final String IDMANAGER_DEFAULT = "titan_idmanager";

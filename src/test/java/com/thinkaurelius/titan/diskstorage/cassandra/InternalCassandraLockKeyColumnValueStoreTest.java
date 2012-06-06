@@ -20,7 +20,7 @@ public class InternalCassandraLockKeyColumnValueStoreTest extends LockKeyColumnV
     public void cleanUp() {
         CassandraThriftStorageManager cmanager =
         		new CassandraThriftStorageManager(CassandraLocalhostHelper.getLocalStorageConfiguration());
-        cmanager.dropKeyspace(CassandraThriftStorageManager.DEFAULT_KEYSPACE);
+        cmanager.dropKeyspace(CassandraThriftStorageManager.KEYSPACE_DEFAULT);
     }
     
     @Override

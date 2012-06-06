@@ -39,7 +39,7 @@ public class CassandraLocalhostHelper {
 	
 	private static final String cassandraCommand = "cassandra";
 	private static final int port =
-            CassandraThriftStorageManager.DEFAULT_PORT;
+            CassandraThriftStorageManager.PORT_DEFAULT;
 	private static final Logger log =
 		LoggerFactory.getLogger(CassandraLocalhostHelper.class);
 	private static final long CASSANDRA_STARTUP_TIMEOUT = 10000L;
@@ -178,7 +178,7 @@ public class CassandraLocalhostHelper {
 			 */
 			log.debug("Clearing pooled Thrift connections for {}:{}",
 					address, port);
-			CTConnectionPool.getPool(address, port, CassandraThriftStorageManager.DEFAULT_THRIFT_TIMEOUT_MS).clear();
+			CTConnectionPool.getPool(address, port, CassandraThriftStorageManager.THRIFT_TIMEOUT_DEFAULT).clear();
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new GraphStorageException(e);
@@ -218,22 +218,22 @@ public class CassandraLocalhostHelper {
         Configuration configuration = StorageSetup.getLocalGraphConfiguration();
         Configuration config = configuration.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE);
         config.addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,"cassandra");
-        config.addProperty(CassandraThriftStorageManager.PROP_HOSTNAME,address);
-        config.addProperty(CassandraThriftStorageManager.PROP_SELF_HOSTNAME,address);
-        config.addProperty(CassandraThriftStorageManager.PROP_TIMEOUT,5*60000);
+        config.addProperty(CassandraThriftStorageManager.HOSTNAME_KEY,address);
+        config.addProperty(CassandraThriftStorageManager.SELF_HOSTNAME_KEY,address);
+        config.addProperty(CassandraThriftStorageManager.THRIFT_TIMEOUT_KEY,5*60000);
 		return configuration;
 	}
 
     public static Configuration getLocalStorageConfiguration() {
         Configuration config = new BaseConfiguration();
         config.addProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, StorageSetup.getHomeDir());
-        config.addProperty(CassandraThriftStorageManager.PROP_HOSTNAME,"127.0.0.1");
-        config.addProperty(CassandraThriftStorageManager.PROP_TIMEOUT,10000);
+        config.addProperty(CassandraThriftStorageManager.HOSTNAME_KEY,"127.0.0.1");
+        config.addProperty(CassandraThriftStorageManager.THRIFT_TIMEOUT_KEY,10000);
         return config;
     }
 
 	public void waitForClusterSize(int minSize) throws InterruptedException {
-		CTConnectionFactory f = CTConnectionPool.getFactory(address, port, CassandraThriftStorageManager.DEFAULT_THRIFT_TIMEOUT_MS);
+		CTConnectionFactory f = CTConnectionPool.getFactory(address, port, CassandraThriftStorageManager.THRIFT_TIMEOUT_DEFAULT);
 		CTConnection conn = null;
 		try {
 			conn = f.makeRawConnection();

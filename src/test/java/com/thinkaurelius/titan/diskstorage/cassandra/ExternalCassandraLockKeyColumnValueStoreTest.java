@@ -17,7 +17,7 @@ public class ExternalCassandraLockKeyColumnValueStoreTest extends LockKeyColumnV
         StorageSetup.deleteHomeDir();
         ch.startCassandra();
         CassandraThriftStorageManager cmanager = new CassandraThriftStorageManager(CassandraLocalhostHelper.getLocalStorageConfiguration());
-        cmanager.dropKeyspace(CassandraThriftStorageManager.DEFAULT_KEYSPACE);
+        cmanager.dropKeyspace(CassandraThriftStorageManager.KEYSPACE_DEFAULT);
     }
 
     @Override

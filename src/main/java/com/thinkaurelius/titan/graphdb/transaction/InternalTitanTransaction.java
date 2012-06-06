@@ -119,9 +119,9 @@ public interface InternalTitanTransaction extends TitanTransaction {
     /**
      * Retrieves all ids for vertices which have an incident property of the given type with the specified attribute value
      *
-     * The given property type must have an hasIndex defined for this retrieval to succeed.
+     * The given property key must have an hasIndex defined for this retrieval to succeed.
      *
-     * @param type TitanProperty type for which to retrieve vertices
+     * @param type Property key for which to retrieve vertices
      * @param attribute Attribute value for which to retrieve vertices
      * @return	All ids for vertices which have an incident property of the given type with the specified attribute value
      * @throws	IllegalArgumentException if the property type is not indexed.

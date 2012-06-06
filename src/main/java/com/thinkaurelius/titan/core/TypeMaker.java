@@ -140,7 +140,7 @@ public interface TypeMaker {
      * For instance, if all edges with label <i>friend</i> have a property with key <i>createdOn</i>, then specifying
      * (<i>createdOn</i>) as the signature for type <i>friend</i> allows friend edges to be stored more efficiently.
      * <br />
-     * {@link TitanType}s used in the primary key must be either property keys or unidirected edge lables.
+     * {@link TitanType}s used in the signature must be either property keys or unidirected edge lables.
      * Also, they must be simple ({@link com.thinkaurelius.titan.core.TitanType#isSimple()}) and
      * functional ({@link com.thinkaurelius.titan.core.TitanType#isFunctional()}).
      * <br />

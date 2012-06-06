@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.cassandra.thrift.Cassandra;
-import org.apache.cassandra.thrift.CassandraDaemon;
 import org.apache.cassandra.thrift.CfDef;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.thrift.InvalidRequestException;
@@ -38,11 +37,11 @@ public class CassandraThriftStorageManager implements StorageManager {
     private static final Logger log =
             LoggerFactory.getLogger(CassandraThriftStorageManager.class);
     
-    public static final String PROP_KEYSPACE = "keyspace";
-    public static final String PROP_HOSTNAME = "hostname";
-    public static final String PROP_PORT = "port";
-    public static final String PROP_SELF_HOSTNAME = "selfHostname";
-    public static final String PROP_TIMEOUT = "thrift_timeout";
+    public static final String KEYSPACE_KEY = "keyspace";
+    public static final String HOSTNAME_KEY = "hostname";
+    public static final String PORT_KEY = "port";
+    public static final String SELF_HOSTNAME_KEY = "selfHostname";
+    public static final String THRIFT_TIMEOUT_KEY = "thrift_timeout";
     
     public static ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore> stores =
     		new ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore>();
@@ -52,21 +51,21 @@ public class CassandraThriftStorageManager implements StorageManager {
      * <p>
      * Value = {@value}
      */
-    public static final String DEFAULT_KEYSPACE = "titantest00";
+    public static final String KEYSPACE_DEFAULT = "titan";
 
     /**
      * Default hostname at which to attempt Cassandra Thrift connection.
      * <p>
      * Value = {@value}
      */
-    public static final String DEFAULT_HOSTNAME = null;
+    public static final String HOSTNAME_DEFAULT = null;
 
     /**
      * Default canonical hostname of the local machine.
      * <p>
      * Value = {@value}
      */
-    public static final String DEFAULT_SELF_HOSTNAME = null;
+    public static final String SELF_HOSTNAME_DEFAULT = null;
 
     /**
      * Default timeout for Thrift TSocket objects used to
@@ -74,14 +73,14 @@ public class CassandraThriftStorageManager implements StorageManager {
      * <p>
      * Value = {@value}
      */
-    public static final int DEFAULT_THRIFT_TIMEOUT_MS = 10000;
+    public static final int THRIFT_TIMEOUT_DEFAULT = 10000;
 
     /**
      * Default port at which to attempt Cassandra Thrift connection.
      * <p>
      * Value = {@value}
      */
-    public static final int DEFAULT_PORT = 9160;
+    public static final int PORT_DEFAULT = 9160;
     
     /**
      * Default column family used for ID block management.
@@ -138,15 +137,15 @@ public class CassandraThriftStorageManager implements StorageManager {
 		
 		this.rid = ConfigHelper.getRid(config);
 		
-		this.keyspace = config.getString(PROP_KEYSPACE,DEFAULT_KEYSPACE);
+		this.keyspace = config.getString(KEYSPACE_KEY, KEYSPACE_DEFAULT);
 		
-		this.hostname = interpretHostname(config.getString(PROP_HOSTNAME,DEFAULT_HOSTNAME));
-		this.port = config.getInt(PROP_PORT,DEFAULT_PORT);
+		this.hostname = interpretHostname(config.getString(HOSTNAME_KEY, HOSTNAME_DEFAULT));
+		this.port = config.getInt(PORT_KEY, PORT_DEFAULT);
 		
 		this.pool = CTConnectionPool.getPool(
 				hostname,
 				port,
-				config.getInt(PROP_TIMEOUT,DEFAULT_THRIFT_TIMEOUT_MS));
+				config.getInt(THRIFT_TIMEOUT_KEY, THRIFT_TIMEOUT_DEFAULT));
 		
 		this.llmPrefix =
 				config.getString(
@@ -303,14 +302,14 @@ public class CassandraThriftStorageManager implements StorageManager {
 		throws GraphStorageException {
 		CTConnection conn = null;
 		try {
-			conn = CTConnectionPool.getFactory(hostname, port, DEFAULT_THRIFT_TIMEOUT_MS).makeRawConnection();
+			conn = CTConnectionPool.getFactory(hostname, port, THRIFT_TIMEOUT_DEFAULT).makeRawConnection();
 
 			Cassandra.Client client = conn.getClient();
 			
 			try {
                 stores.clear();
 
-				CTConnectionPool.getPool(hostname, port, DEFAULT_THRIFT_TIMEOUT_MS).clear(keyspace);
+				CTConnectionPool.getPool(hostname, port, THRIFT_TIMEOUT_DEFAULT).clear(keyspace);
                 
 				client.describe_keyspace(keyspace);
 				// Keyspace must exist
@@ -342,7 +341,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 			SchemaDisagreementException {
 		
 		CTConnectionFactory fac = 
-				CTConnectionPool.getFactory(hostname, port, DEFAULT_THRIFT_TIMEOUT_MS);
+				CTConnectionPool.getFactory(hostname, port, THRIFT_TIMEOUT_DEFAULT);
 		
 		CTConnection conn = fac.makeRawConnection();
 		Cassandra.Client client = conn.getClient();
