@@ -36,6 +36,9 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 	public TransactionHandle tx;
 	public MultiWriteKeyColumnValueStore store;
 	
+
+	private Random rand = new Random(10);
+	
 	@Before
 	public void setUp() throws Exception {
 		cleanUp();
@@ -119,18 +122,24 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     	Map<ByteBuffer, Map<ByteBuffer, ByteBuffer>> state =
     			new HashMap<ByteBuffer, Map<ByteBuffer, ByteBuffer>>();
     	
+    	int dels = 1024;
+    	int adds = 4096;
     	
     	for (int round = 0; round < 10; round++) {
-    		Map<ByteBuffer, Mutation> changes = mutateState(state, 4096);
+    		Map<ByteBuffer, Mutation> changes = mutateState(state, dels, adds);
     	
     		store.mutateMany(changes, tx);
     	
-    		checkThatStateExistsInStore(state, (KeyColumnValueStore)store, round);
-    		checkThatDeletionsApplied(changes, (KeyColumnValueStore)store, round);
+    		int deletesExpected = 0 == round ? 0 : dels;
+    		
+    		int stateSizeExpected = adds + (adds - dels) * round;
+    		
+    		assertEquals(stateSizeExpected, checkThatStateExistsInStore(state, (KeyColumnValueStore)store, round));
+    		assertEquals(deletesExpected, checkThatDeletionsApplied(changes, (KeyColumnValueStore)store, round));
     	}
     }
     
-    public void checkThatStateExistsInStore(Map<ByteBuffer, Map<ByteBuffer, ByteBuffer>> state, KeyColumnValueStore store, int round) {
+    public int checkThatStateExistsInStore(Map<ByteBuffer, Map<ByteBuffer, ByteBuffer>> state, KeyColumnValueStore store, int round) {
     	int checked = 0;
     	
     	for (ByteBuffer key : state.keySet()) {
@@ -144,10 +153,13 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     	}
     	
     	log.debug("Checked existence of {} key-column-value triples on round {}", checked, round);
+    	
+    	return checked;
     }
     
-    public void checkThatDeletionsApplied(Map<ByteBuffer, Mutation> changes, KeyColumnValueStore store, int round) {
+    public int checkThatDeletionsApplied(Map<ByteBuffer, Mutation> changes, KeyColumnValueStore store, int round) {
     	int checked = 0;
+    	int skipped = 0;
     	
     	for (ByteBuffer key : changes.keySet()) {
     		Mutation m = changes.get(key);
@@ -162,6 +174,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     		for (ByteBuffer col : deletions) {
     			
     			if (null != additions && additions.contains(new Entry(col, col))) {
+    				skipped++;
     				continue;
     			}
     			
@@ -171,105 +184,111 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     		}
     	}
     	
-    	log.debug("Checked absence of {} key-column-value deletions on round {}", checked, round);
+    	log.debug("Checked absence of {} key-column-value deletions on round {} (skipped {})", new Object[] { checked, round, skipped });
+    	
+    	return checked;
     }
     
-    public Map<ByteBuffer, Mutation> mutateState(Map<ByteBuffer, Map<ByteBuffer, ByteBuffer>> state, int mutationCount) {
-    	Random rand = new Random(10);
+    /**
+	 * Pseudorandomly change the supplied {@code state}.
+	 * 
+	 * This method removes {@code min(maxDeletionCount, S)} entries from the
+	 * maps in {@code state.values()}, where {@code S} is the sum of the sizes
+	 * of the maps in {@code state.values()}; this method then adds
+	 * {@code additionCount} pseudorandomly generated entries spread across
+	 * {@code state.values()}, potentially adding new keys to {@code state}
+	 * since they are randomly generated. This method then returns a map of keys
+	 * to Mutations representing the changes it has made to {@code state}.
+	 * 
+	 * @param state
+	 *            Maps keys -> columns -> values
+	 * @param maxDeletionCount
+	 *            Remove at most this many entries from state
+	 * @param additionCount
+	 *            Add exactly this many entries to state
+	 * @return A Mutation map compatible with
+	 *         {@link MultiWriteKeyColumnValueStore#mutateMany(Map, TransactionHandle)}
+	 */
+	public Map<ByteBuffer, Mutation> mutateState(
+			Map<ByteBuffer, Map<ByteBuffer, ByteBuffer>> state,
+			int maxDeletionCount, int additionCount) {
 
-    	final int keyLength = 8;
-    	final int colLength = 6;
-    	
-    	Map<ByteBuffer, Mutation> result = new HashMap<ByteBuffer, Mutation>();
-    	
-    	Map<ByteBuffer, Set<ByteBuffer>> delta = new
-    			HashMap<ByteBuffer, Set<ByteBuffer>>();
-    	
-    	for (int i = 0; i < mutationCount; i++) {
-    		if (3 > rand.nextInt() % 4) {
-    			// addition
-    			
-    			ByteBuffer key, col;
-    			
-    			while (true) {
-    	    		byte keyBuf[] = new byte[keyLength];
-    	    		rand.nextBytes(keyBuf);
-    	    		key = ByteBuffer.wrap(keyBuf);
-    	    		
-        			byte colBuf[] = new byte[colLength];
-        			rand.nextBytes(colBuf);
-        			col = ByteBuffer.wrap(colBuf);
-        			
-        			if (!state.containsKey(key) || !state.get(key).containsKey(col)) {
-        				break;
-        			}
-    			}
-        			
-        		if (!state.containsKey(key)) {
-        			Map<ByteBuffer, ByteBuffer> m = new HashMap<ByteBuffer, ByteBuffer>();
-        			state.put(key, m);
-        		}
-        			
-        		state.get(key).put(col, col);
-        		
-        		if (!delta.containsKey(key)) {
-        			delta.put(key, new HashSet<ByteBuffer>());
-        		}
-        		
-        		delta.get(key).add(col);
-        		
-        		if (!result.containsKey(key)) {
-        			Mutation m = new Mutation(new LinkedList<Entry>(), new LinkedList<ByteBuffer>());
-        			result.put(key, m);
-        		}
-        			
-        		result.get(key).getAdditions().add(new Entry(col, col));
-        		
-    		} else {
-    			// deletion
-    			
-    			ByteBuffer key, col;
+		final int keyLength = 8;
+		final int colLength = 16;
 
-    			Iterator<Map.Entry<ByteBuffer, Map<ByteBuffer, ByteBuffer>>> keyIter =
-    					state.entrySet().iterator();
-    			
-    			if (!keyIter.hasNext())
-    				continue;
-    			
-    			Map.Entry<ByteBuffer, Map<ByteBuffer, ByteBuffer>> target = keyIter.next();
-    			
-    			key = target.getKey();
-    			
-    			Iterator<ByteBuffer> colIter = target.getValue().values().iterator();
-    			
-    			if (!colIter.hasNext())
-    				continue;
-    			
-    			col = colIter.next();
+		Map<ByteBuffer, Mutation> result = new HashMap<ByteBuffer, Mutation>();
 
-    			if (delta.containsKey(key) && delta.get(key).contains(col)) {
-    				// just skip the whole deletion
-    				// this can put us under mutationCount
-    				continue;
-    			}
-    			
-        		if (!result.containsKey(key)) {
-        			Mutation m = new Mutation(new LinkedList<Entry>(), new LinkedList<ByteBuffer>());
-        			result.put(key, m);
-        		}
-        		
-        		result.get(key).getDeletions().add(col);
+		// deletion pass
+		int dels = 0;
+		
+		ByteBuffer key = null, col = null;
 
-    			state.get(key).remove(col);
-    			
-    			if (state.get(key).isEmpty()) {
-    				state.remove(key);
-    			}
-    		}
-    	}
-    	
-    	return result;
-    }
+		Iterator<ByteBuffer> keyIter = state.keySet().iterator();
+
+		while (keyIter.hasNext() && dels < maxDeletionCount) {
+			key = keyIter.next();
+
+			Iterator<ByteBuffer> colIter = 
+					state.get(key).keySet().iterator();
+			
+			while (colIter.hasNext() && dels < maxDeletionCount) {
+				col = colIter.next();
+
+				if (!result.containsKey(key)) {
+					Mutation m = new Mutation(new LinkedList<Entry>(),
+							new LinkedList<ByteBuffer>());
+					result.put(key, m);
+				}
+
+				result.get(key).getDeletions().add(col);
+
+				dels++;
+
+				colIter.remove();
+				
+				if (state.get(key).isEmpty()) {
+					assert !colIter.hasNext();
+					keyIter.remove();
+				}
+			}
+		}
+
+		// addition pass
+		for (int i = 0; i < additionCount; i++) {
+
+			while (true) {
+				byte keyBuf[] = new byte[keyLength];
+				rand.nextBytes(keyBuf);
+				key = ByteBuffer.wrap(keyBuf);
+
+				byte colBuf[] = new byte[colLength];
+				rand.nextBytes(colBuf);
+				col = ByteBuffer.wrap(colBuf);
+
+				if (!state.containsKey(key) || !state.get(key).containsKey(col)) {
+					break;
+				}
+			}
+
+			if (!state.containsKey(key)) {
+				Map<ByteBuffer, ByteBuffer> m = new HashMap<ByteBuffer, ByteBuffer>();
+				state.put(key, m);
+			}
+
+			state.get(key).put(col, col);
+
+			if (!result.containsKey(key)) {
+				Mutation m = new Mutation(new LinkedList<Entry>(),
+						new LinkedList<ByteBuffer>());
+				result.put(key, m);
+			}
+
+			result.get(key).getAdditions().add(new Entry(col, col));
+
+		}
+
+		return result;
+	}
     
     public Map<ByteBuffer, Mutation> generateMutation(int keyCount, int columnCount, Map<ByteBuffer, Mutation> deleteFrom) {
     	Map<ByteBuffer, Mutation> result = new HashMap<ByteBuffer, Mutation>(keyCount);
