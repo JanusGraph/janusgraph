@@ -28,10 +28,14 @@ import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
 
-/*
- * This is a naive and slow implementation.  Here are some areas that might need work:
+/**
+ * Experimental HBase store.
+ * 
+ * This is not ready for production.  It's pretty slow.
+ * 
+ * Here are some areas that might need work:
  *
- * - batching (consider HTable#batch, HTable#setAutoFlush(false)
+ * - batching? (consider HTable#batch, HTable#setAutoFlush(false)
  * - tuning HTable#setWriteBufferSize (?)
  * - writing a server-side filter to replace ColumnCountGetFilter, which drops
  *   all columns on the row where it reaches its limit.  This requires getSlice,
@@ -39,10 +43,6 @@ import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
  *   scale.
  * - RowMutations for combining Puts+Deletes (need a newer HBase than 0.92 for this)
  * - (maybe) fiddle with HTable#setRegionCachePrefetch and/or #prewarmRegionCache
- * 
- * Features that definitely aren't implemented:
- * - transactions
- * - locks
  * 
  * There may be other problem areas.  These are just the ones of which I'm aware.
  */

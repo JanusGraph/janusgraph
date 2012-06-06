@@ -6,6 +6,15 @@ import org.apache.cassandra.utils.ByteBufferUtil;
 
 import com.thinkaurelius.titan.diskstorage.LockConfig;
 
+/**
+ * An attempted lock.
+ * 
+ * Contains the key, column, and expected-value at the key-column coordinate in
+ * some underlying store. A reference to the store is also indirectly maintained
+ * through a {@see LockConfig} instance passed to the constructor.
+ * 
+ * @author Dan LaRocque <dalaro@hopcount.org>
+ */
 public class LockClaim {
 
 	private ByteBuffer cachedLockKey, lockCol;

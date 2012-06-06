@@ -4,7 +4,13 @@ import java.nio.ByteBuffer;
 
 import org.apache.cassandra.utils.ByteBufferUtil;
 
-public class KeyColumn {
+/**
+ * This is just a (key, column) pair.
+ * 
+ * @author Dan LaRocque <dalaro@hopcount.org>
+ *
+ */
+class KeyColumn {
 	
 	private final ByteBuffer key;
 	private final ByteBuffer col;

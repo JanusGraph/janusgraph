@@ -22,6 +22,13 @@ import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
 import com.thinkaurelius.titan.diskstorage.util.OrderedKeyColumnValueIDManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
+/**
+ * Experimental storage manager for HBase.
+ * 
+ * This is not ready for production.
+ * 
+ * @author Dan LaRocque <dalaro@hopcount.org>
+ */
 public class HBaseStorageManager implements StorageManager {
 
 	private static final Logger log = LoggerFactory.getLogger(HBaseStorageManager.class);

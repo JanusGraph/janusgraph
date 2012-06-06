@@ -439,7 +439,5 @@ public abstract class KeyColumnValueStoreTest {
 		assertTrue(store.containsKeyColumn(key1.duplicate(), c.duplicate(), txn));
 		txn.commit();
 	}
-
-
 }
  

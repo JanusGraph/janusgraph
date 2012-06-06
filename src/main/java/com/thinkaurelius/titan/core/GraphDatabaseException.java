@@ -42,8 +42,8 @@ public class GraphDatabaseException extends RuntimeException {
 
     /**
      * Checks whether this exception is cause by an exception of the given type.
-     * @param causeExceptionType
-     * @return
+     * @param causeExceptionType exception type
+     * @return true, if this exception is caused by the given type
      */
 	public boolean isCausedBy(Class<?> causeExceptionType) {
 		return ExceptionUtil.isCausedBy(this, causeExceptionType);

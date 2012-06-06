@@ -1,12 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.writeaggregation;
 
-import com.thinkaurelius.titan.diskstorage.Entry;
+import java.nio.ByteBuffer;
+import java.util.Map;
+
 import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Map;
 
 public interface MultiWriteKeyColumnValueStore extends LockKeyColumnValueStore {
 

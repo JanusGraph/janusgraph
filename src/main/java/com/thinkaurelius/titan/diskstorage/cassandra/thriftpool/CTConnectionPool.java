@@ -5,11 +5,9 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Thrift connection pooler for use by Cassandra-Thrift classes.
+ * Cassandra-Thrift connection pooler classes using Apache commons-pool.
  * 
- * Uses the Apache Commons Pool component.
- * 
- * @author dalaro
+ * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class CTConnectionPool {
 
