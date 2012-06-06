@@ -1,0 +1,16 @@
+Titan: A Highly Scalable, Distributed Graph Database
+"http://thinkaurelius.github.com/titan/":http://thinkaurelius.github.com/titan/
+
+h2. Titan 0.x
+
+h3. Version 0.1 (NOT OFFICIALLY RELEASED YET)
+
+```xml
+<dependency>
+  <groupId>com.thinkaurelius</groupId>
+  <artifactId>titan</artifactId>
+  <version>0.1-SNAPSHOT</version>
+</dependency>
+```
+
+* First release and therefore, no changes.

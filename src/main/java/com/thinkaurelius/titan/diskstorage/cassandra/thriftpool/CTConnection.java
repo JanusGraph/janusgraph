@@ -5,6 +5,12 @@ import org.apache.cassandra.thrift.Cassandra.Client;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TTransport;
 
+/**
+ * Wraps a Cassandra.Client object along with its Thrift protocol and transport
+ * objects.
+ * 
+ * @author Dan LaRocque <dalaro@hopcount.org>
+ */
 public class CTConnection {
 	private final TTransport transport;
 	private final TProtocol proto;

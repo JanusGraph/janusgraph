@@ -29,7 +29,7 @@ public class OrderedKeyColumnValueIDManager {
 	 * some additional action to prevent such
 	 * corruption.
 	 */
-	private static final long BASE_ID = 0;
+	private static final long BASE_ID = 1;
 
 	private static final ByteBuffer empty = ByteBuffer.allocate(0);
 	
@@ -67,7 +67,7 @@ public class OrderedKeyColumnValueIDManager {
 			partitionKey.putInt(partition).rewind();
 			List<Entry> blocks = store.getSlice(partitionKey, empty, empty, null);
 			
-			long latest = BASE_ID;
+			long latest = BASE_ID - blockSize;
 			
 			if (null != blocks) {
 				for (Entry e : blocks) {

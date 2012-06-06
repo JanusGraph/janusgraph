@@ -18,8 +18,12 @@ import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
 /**
+ * This class implements locking according to the Titan key-column-expectedvalue
+ * protocol.
+ * 
  * This class is not safe for concurrent use by multiple threads.
- *
+ * 
+ * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public abstract class LockingTransaction implements TransactionHandle {
 	

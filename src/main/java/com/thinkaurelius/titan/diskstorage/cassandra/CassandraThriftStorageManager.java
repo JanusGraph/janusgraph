@@ -32,6 +32,14 @@ import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
 import com.thinkaurelius.titan.diskstorage.util.OrderedKeyColumnValueIDManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
+/**
+ * This class creates {@see CassandraThriftOrderedKeyColumnValueStore}s and
+ * handles Cassandra-backed allocation of vertex IDs for Titan (when so
+ * configured).
+ * 
+ * @author Dan LaRocque <dalaro@hopcount.org>
+ * 
+ */
 public class CassandraThriftStorageManager implements StorageManager {
 
     private static final Logger log =

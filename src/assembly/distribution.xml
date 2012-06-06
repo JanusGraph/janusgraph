@@ -5,14 +5,10 @@
     </formats>
     <fileSets>
         <fileSet>
-            <includes>
-                <include>pom.xml</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <fileMode>0775</fileMode>
             <includes>
                 <include>gremlin.sh</include>
+                <include>gremlin.bat</include>
             </includes>
         </fileSet>
         <fileSet>
@@ -35,6 +31,10 @@
         </file>
         <file>
             <source>LICENSE.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>src/main/bin/README.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
     </files>

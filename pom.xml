@@ -91,7 +91,7 @@
             		<groupId>org.sonatype.gossip</groupId>
             	</exclusion>
             </exclusions>
-            <!--<scope>provided</scope>-->
+            <scope>provided</scope>
         </dependency>
         <!-- Utility -->
         <dependency>
@@ -210,23 +210,20 @@
                         <configuration>
                             <argLine>-Xms256m -Xmx1024m</argLine>
                             <includes>
-                                <include>**/Test*.java</include>
- 								<include>**/*Test.java</include>
- 								<include>**/*TestCase.java</include>
-                                <include>**/*PerformanceTest.java</include>
-                                <include>**/*ConcurrentTest.java</include>
-                                <include>**/External*.java</include>
+			        <include>**/*Test.java</include>
                             </includes>
                             <excludes>
-                            	<exclude></exclude>
+			        <exclude>**/Internal*.java</exclude>
+			        <exclude>**/*Suite.java</exclude>
                             </excludes>
-
-                            <!--<excludes>-->
-                                <!--<exclude>**/*PerformanceTest.java</exclude>-->
-                                <!--<exclude>**/*ConcurrentTest.java</exclude>-->
-                                <!--<exclude>**/Internal*.java</exclude>-->
-                                <!--<exclude>unset-excludes</exclude>-->
-                            <!--</excludes>-->
+			    <!-- Forking per class is required for the
+				 Internal and External Cassandra tests
+				 to run in the same suite.  Otherwise,
+				 when an Internal runs before an External,
+				 the Internal Cassandra daemon will hold
+				 all its ports open and the External
+				 Cassandra daemon will fail to bind them.  -->
+			    <forkMode>always</forkMode>
                         </configuration>
                     </plugin>
                 </plugins>
