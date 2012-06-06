@@ -91,7 +91,7 @@
             		<groupId>org.sonatype.gossip</groupId>
             	</exclusion>
             </exclusions>
-            <!--<scope>provided</scope>-->
+            <scope>provided</scope>
         </dependency>
         <!-- Utility -->
         <dependency>

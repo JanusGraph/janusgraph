@@ -13,6 +13,7 @@
             <fileMode>0775</fileMode>
             <includes>
                 <include>gremlin.sh</include>
+                <include>gremlin.bat</include>
             </includes>
         </fileSet>
         <fileSet>
