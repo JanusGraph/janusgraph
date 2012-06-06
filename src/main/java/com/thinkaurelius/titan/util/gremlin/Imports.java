@@ -13,7 +13,7 @@ public class Imports {
     static {
         // titan
         imports.add("com.thinkaurelius.titan.core.*");
-        imports.add("org.apache.commons.configuration.BaseConfiguration");
+        imports.add("org.apache.commons.configuration.*");
 
         // gremlin
         imports.add("com.tinkerpop.gremlin.*");
