@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -35,13 +36,13 @@ public class HBaseStorageManager implements StorageManager {
 	
     static final String TABLE_NAME_KEY = "tablename";
     static final String TABLE_NAME_DEFAULT = "titantest";
-    
+
+    public static final String PROP_HBASE_KEY = "hbconf";
     public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local_lock_mediator_prefix";
     public static final String LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT = "hbase";
     
 	private final String tableName;
     private final OrderedKeyColumnValueIDManager idmanager;
-    
     private final int lockRetryCount;
     
     private final long lockWaitMS, lockExpireMS;
@@ -49,6 +50,8 @@ public class HBaseStorageManager implements StorageManager {
     private final byte[] rid;
     
     private final String llmPrefix;
+    
+    private final org.apache.hadoop.conf.Configuration hconf;
 	
     public HBaseStorageManager(org.apache.commons.configuration.Configuration config) {
     	this.rid = ConfigHelper.getRid(config);
@@ -59,7 +62,7 @@ public class HBaseStorageManager implements StorageManager {
 				config.getString(
 						LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
 						LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT);
-		
+        
 		this.lockRetryCount =
 				config.getInt(
 						GraphDatabaseConfiguration.LOCK_RETRY_COUNT,
@@ -74,6 +77,29 @@ public class HBaseStorageManager implements StorageManager {
 				config.getLong(
 						GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
 						GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
+		
+		// Copy a subset of our commons config into a Hadoop config
+		org.apache.commons.configuration.Configuration hbCommons =
+			config.subset(PROP_HBASE_KEY);
+		@SuppressWarnings("unchecked") // I hope commons-config eventually fixes this
+		Iterator<String> keys = hbCommons.getKeys();
+		
+		int keysLoaded = 0;
+
+		this.hconf = HBaseConfiguration.create();
+		
+		while (keys.hasNext()) {
+			String k = keys.next();
+			String v = hbCommons.getString(k);
+			
+			log.debug("HBase configuration: setting {}={}", k, v);
+			
+			hconf.set(k, v);
+			
+			keysLoaded++;
+		}
+		
+		log.debug("HBase configuration: set a total of {} configuration values", keysLoaded);
 		
         idmanager = new OrderedKeyColumnValueIDManager(
         		openDatabase("blocks_allocated", null, null), rid, config);
@@ -101,10 +127,9 @@ public class HBaseStorageManager implements StorageManager {
 	private OrderedKeyColumnValueStore openDatabase(String name, LocalLockMediator llm, OrderedKeyColumnValueStore lockStore)
 			throws GraphStorageException {
 		
-		org.apache.hadoop.conf.Configuration conf = HBaseConfiguration.create();
 		HBaseAdmin adm = null;
 		try {
-			adm = new HBaseAdmin(conf);
+			adm = new HBaseAdmin(hconf);
 		} catch (IOException e) {
 			throw new GraphDatabaseException(e);
 		}
@@ -159,7 +184,7 @@ public class HBaseStorageManager implements StorageManager {
 //			throw new GraphStorageException(e);
 //		}
 		
-		return new HBaseOrderedKeyColumnValueStore(conf, tableName, name, lockStore,
+		return new HBaseOrderedKeyColumnValueStore(hconf, tableName, name, lockStore,
 				llm, rid, lockRetryCount, lockWaitMS, lockExpireMS);
 	}
 
