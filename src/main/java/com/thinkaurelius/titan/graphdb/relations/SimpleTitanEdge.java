@@ -97,7 +97,7 @@ public class SimpleTitanEdge extends AbstractTypedRelation implements TitanEdge 
 	}
 
 	@Override
-	public void forceDelete() {
+	public synchronized void forceDelete() {
 		start.removeRelation(this);
 		if (!isUnidirected())
 			end.removeRelation(this);

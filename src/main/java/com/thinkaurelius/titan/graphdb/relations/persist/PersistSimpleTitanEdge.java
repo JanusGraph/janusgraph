@@ -42,7 +42,7 @@ public class PersistSimpleTitanEdge extends SimpleTitanEdge {
 	}
 	
 	@Override
-	public void forceDelete() {
+	public synchronized void forceDelete() {
 		super.forceDelete();
 		entity.remove();
 	}

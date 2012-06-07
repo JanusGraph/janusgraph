@@ -79,7 +79,7 @@ public class SimpleProperty extends AbstractTypedRelation implements TitanProper
 	}
 
 	@Override
-	public void forceDelete() {
+	public synchronized void forceDelete() {
 		super.forceDelete();
 		node.removeRelation(this);
 	}

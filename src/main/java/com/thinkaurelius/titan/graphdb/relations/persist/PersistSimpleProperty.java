@@ -40,7 +40,7 @@ public class PersistSimpleProperty extends SimpleProperty {
 	}
 	
 	@Override
-	public void forceDelete() {
+	public synchronized void forceDelete() {
 		super.forceDelete();
 		entity.remove();
 	}
