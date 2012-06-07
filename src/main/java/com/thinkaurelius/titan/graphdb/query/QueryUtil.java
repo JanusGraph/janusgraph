@@ -51,7 +51,7 @@ public class QueryUtil {
         if (!query.hasConstraints()) return false;
         if (!query.hasEdgeTypeCondition()) return false;
         String[] keysig = ((InternalTitanType)query.getTypeCondition()).getDefinition().getKeySignature();
-        return query.getConstraints().containsKey(keysig[0]);
+        return keysig.length>0 && query.getConstraints().containsKey(keysig[0]);
     }
     
 }
