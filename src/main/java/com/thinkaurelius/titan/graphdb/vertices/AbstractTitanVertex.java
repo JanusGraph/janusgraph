@@ -89,7 +89,7 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 	}
 
 	@Override
-	public void remove() {
+	public synchronized void remove() {
 		VertexUtil.checkAvailability(this);
         VertexUtil.prepareForRemoval(this);
         tx.deleteVertex(this);

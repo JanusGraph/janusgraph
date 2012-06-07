@@ -47,7 +47,7 @@ public abstract class AbstractTypedRelation extends NewEmptyTitanVertex implemen
 	}
 	
 	@Override
-	public void forceDelete() {
+	public synchronized void forceDelete() {
 		getTransaction().deletedRelation(this);
 	}
 	
