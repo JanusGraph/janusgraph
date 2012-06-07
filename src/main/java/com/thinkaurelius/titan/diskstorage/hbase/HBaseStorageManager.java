@@ -36,7 +36,7 @@ public class HBaseStorageManager implements StorageManager {
     static final String TABLE_NAME_KEY = "tablename";
     static final String TABLE_NAME_DEFAULT = "titan";
     
-    public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local_lock_mediator_prefix";
+    public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local-lock-mediator-prefix";
     public static final String LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT = "hbase";
     
 	private final String tableName;

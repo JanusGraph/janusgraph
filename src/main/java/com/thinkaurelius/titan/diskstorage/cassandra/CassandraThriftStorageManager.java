@@ -49,7 +49,7 @@ public class CassandraThriftStorageManager implements StorageManager {
     public static final String HOSTNAME_KEY = "hostname";
     public static final String PORT_KEY = "port";
     public static final String SELF_HOSTNAME_KEY = "selfHostname";
-    public static final String THRIFT_TIMEOUT_KEY = "thrift_timeout";
+    public static final String THRIFT_TIMEOUT_KEY = "thrift-timeout";
     
     public static ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore> stores =
     		new ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore>();
@@ -97,10 +97,10 @@ public class CassandraThriftStorageManager implements StorageManager {
      */
     public static final String idCfName = "id_allocations";
     
-    public static final String READ_CONSISTENCY_LEVEL_KEY = "read_consistency_level";
+    public static final String READ_CONSISTENCY_LEVEL_KEY = "read-consistency-level";
     public static final String READ_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
     
-    public static final String WRITE_CONSISTENCY_LEVEL_KEY = "write_consistency_level";
+    public static final String WRITE_CONSISTENCY_LEVEL_KEY = "write-consistency-level";
     /*
      * Any operation attempted with ConsistencyLevel.TWO
      * against a single-node Cassandra cluster (like the one
@@ -112,10 +112,10 @@ public class CassandraThriftStorageManager implements StorageManager {
      */
     public static final String WRITE_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
     
-    public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local_lock_mediator_prefix";
+    public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local-lock-mediator-prefix";
     public static final String LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT = "cassandra";
     
-    public static final String REPLICATION_FACTOR_KEY = "replication_factor";
+    public static final String REPLICATION_FACTOR_KEY = "replication-factor";
     public static final int REPLICATION_FACTOR_DEFAULT  = 1;
 
 	private final String keyspace;
