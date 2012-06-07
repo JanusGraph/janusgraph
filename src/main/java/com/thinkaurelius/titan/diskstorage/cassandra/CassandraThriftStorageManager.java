@@ -45,11 +45,7 @@ public class CassandraThriftStorageManager implements StorageManager {
     private static final Logger log =
             LoggerFactory.getLogger(CassandraThriftStorageManager.class);
     
-    public static final String KEYSPACE_KEY = "keyspace";
-    public static final String HOSTNAME_KEY = "hostname";
-    public static final String PORT_KEY = "port";
-    public static final String SELF_HOSTNAME_KEY = "selfHostname";
-    public static final String THRIFT_TIMEOUT_KEY = "thrift-timeout";
+
     
     public static ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore> stores =
     		new ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore>();
@@ -60,6 +56,8 @@ public class CassandraThriftStorageManager implements StorageManager {
      * Value = {@value}
      */
     public static final String KEYSPACE_DEFAULT = "titan";
+    public static final String KEYSPACE_KEY = "keyspace";
+
 
     /**
      * Default hostname at which to attempt Cassandra Thrift connection.
@@ -67,6 +65,8 @@ public class CassandraThriftStorageManager implements StorageManager {
      * Value = {@value}
      */
     public static final String HOSTNAME_DEFAULT = null;
+    public static final String HOSTNAME_KEY = "hostname";
+
 
     /**
      * Default canonical hostname of the local machine.
@@ -74,6 +74,8 @@ public class CassandraThriftStorageManager implements StorageManager {
      * Value = {@value}
      */
     public static final String SELF_HOSTNAME_DEFAULT = null;
+    public static final String SELF_HOSTNAME_KEY = "selfHostname";
+
 
     /**
      * Default timeout for Thrift TSocket objects used to
@@ -82,6 +84,7 @@ public class CassandraThriftStorageManager implements StorageManager {
      * Value = {@value}
      */
     public static final int THRIFT_TIMEOUT_DEFAULT = 10000;
+    public static final String THRIFT_TIMEOUT_KEY = "thrift-timeout";
 
     /**
      * Default port at which to attempt Cassandra Thrift connection.
@@ -89,7 +92,9 @@ public class CassandraThriftStorageManager implements StorageManager {
      * Value = {@value}
      */
     public static final int PORT_DEFAULT = 9160;
-    
+    public static final String PORT_KEY = "port";
+
+
     /**
      * Default column family used for ID block management.
      * <p>
