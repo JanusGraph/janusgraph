@@ -79,8 +79,7 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 	@Override
 	public void deletedRelation(InternalRelation relation) {
 		super.deletedRelation(relation);
-		if (relation.isNew()) return;
-		if (!relation.isInline()) {
+		if (relation.isLoaded() && !relation.isInline()) {
 			//Only store those deleted edges that matter, i.e. those that we need to erase from memory on their own		
 			boolean success = deletedEdges.add(relation);
 			assert success;

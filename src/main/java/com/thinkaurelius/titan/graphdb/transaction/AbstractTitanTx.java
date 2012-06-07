@@ -285,7 +285,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	@Override
 	public void deletedRelation(InternalRelation relation) {
 		verifyWriteAccess();
-		if (relation.isProperty() && !relation.isInline()) {
+		if (relation.isProperty() && !relation.isRemoved() && !relation.isInline()) {
 			TitanProperty prop = (TitanProperty) relation;
 			if (prop.getPropertyKey().hasIndex()) {
 				removeKeyFromIndex(prop);
@@ -389,7 +389,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
             Map<Object,TitanVertex> subindex = keyIndex.get(type);
             Preconditions.checkNotNull(subindex);
             TitanVertex n = subindex.remove(property.getAttribute());
-            Preconditions.checkArgument(n!=null && n.equals(property.getVertex()));
+            assert n!=null && n.equals(property.getVertex());
             //TODO Set to NO-ENTRY node object
         } else {
             boolean hasIdenticalProperty = false;
