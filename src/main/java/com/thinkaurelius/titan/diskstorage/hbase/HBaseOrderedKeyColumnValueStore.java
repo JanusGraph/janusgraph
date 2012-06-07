@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.diskstorage.hbase;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +29,8 @@ import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
 
 /**
  * Experimental HBase store.
@@ -47,7 +51,7 @@ import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
  * There may be other problem areas.  These are just the ones of which I'm aware.
  */
 public class HBaseOrderedKeyColumnValueStore implements
-		OrderedKeyColumnValueStore {
+		OrderedKeyColumnValueStore, MultiWriteKeyColumnValueStore {
 	
 	private static final Logger log = LoggerFactory.getLogger(HBaseOrderedKeyColumnValueStore.class);
 	
@@ -97,6 +101,11 @@ public class HBaseOrderedKeyColumnValueStore implements
 		
 		Get g = new Get(keyBytes);
 		g.addColumn(famBytes, colBytes);
+		try {
+			g.setMaxVersions(1);
+		} catch (IOException e1) {
+			throw new RuntimeException(e1);
+		}
 		
 		try {
 			HTableInterface table = null;
@@ -359,6 +368,95 @@ public class HBaseOrderedKeyColumnValueStore implements
 			throw new GraphStorageException(e);
 		} catch (InterruptedException e) {
 			throw new GraphStorageException(e);
+		}
+	}
+
+	@Override
+	public void mutateMany(
+			Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations,
+			TransactionHandle txh) {
+		
+    	// null txh means a LockingTransaction is calling this method
+    	if (null != txh) {
+    		// non-null txh -> make sure locks are valid
+    		HBaseTransaction lt = (HBaseTransaction)txh;
+    		if (! lt.isMutationStarted()) {
+    			// This is the first mutate call in the transaction
+    			lt.mutationStarted();
+    			// Verify all blind lock claims now
+    			lt.verifyAllLockClaims(); // throws GSE and unlocks everything on any lock failure
+    		}
+    	}
+		
+		Map<byte[], Put> puts = new HashMap<byte[], Put>();
+		Map<byte[], Delete> dels = new HashMap<byte[], Delete>();
+
+		List<Row> batchOps = new LinkedList<Row>();
+
+		final long delTS = System.currentTimeMillis();
+		final long putTS = delTS + 1;
+		
+		for (ByteBuffer keyBB : mutations.keySet()) {
+			byte[] keyBytes = toArray(keyBB);
+			
+			com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation m = mutations.get(keyBB);
+			
+			if (m.hasDeletions()) {
+				Delete d = dels.get(keyBytes);
+				
+				if (null == d) {
+					d = new Delete(keyBytes, delTS, null);
+					dels.put(keyBytes, d);
+					batchOps.add(d);
+				}
+				
+				for (ByteBuffer b : m.getDeletions()) {
+					d.deleteColumns(famBytes, toArray(b), delTS);
+				}
+			}
+			
+
+			if (m.hasAdditions()) {
+				Put p = puts.get(keyBytes);
+				
+				if (null == p) {
+					p = new Put(keyBytes, putTS);
+					puts.put(keyBytes, p);
+					batchOps.add(p);
+				}
+				
+				for (Entry e : m.getAdditions()) {
+					byte[] colBytes = toArray(e.getColumn());
+					byte[] valBytes = toArray(e.getValue());
+					p.add(famBytes, colBytes, putTS, valBytes);
+				}
+			}
+		}
+		
+		try {
+			HTableInterface table = null;
+			try {
+				table = pool.getTable(tableName);
+				table.batch(batchOps);
+				table.flushCommits();
+			} finally {
+				if (null != table)
+					table.close();
+			}
+		} catch (IOException e) {
+			throw new GraphStorageException(e);
+		} catch (InterruptedException e) {
+			throw new GraphStorageException(e);
+		}
+		
+		long now = System.currentTimeMillis(); 
+		while (now <= putTS) {
+			try {
+				Thread.sleep(1L);
+				now = System.currentTimeMillis();
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 

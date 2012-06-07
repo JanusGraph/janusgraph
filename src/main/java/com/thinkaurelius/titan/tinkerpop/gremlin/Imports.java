@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.gremlin;
+package com.thinkaurelius.titan.tinkerpop.gremlin;
 
 import java.util.ArrayList;
 import java.util.List;

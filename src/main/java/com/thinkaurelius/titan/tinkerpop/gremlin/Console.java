@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.gremlin;
+package com.thinkaurelius.titan.tinkerpop.gremlin;
 
 import com.tinkerpop.gremlin.groovy.Gremlin;
 import com.tinkerpop.gremlin.groovy.console.ErrorHookClosure;
