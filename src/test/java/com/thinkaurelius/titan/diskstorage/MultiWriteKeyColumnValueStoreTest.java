@@ -98,10 +98,15 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     	
     	assertEquals(b1, result);
     	
+    	store.mutateMany(deleteOnly, tx);
+    	
     	for (int i = 0; i < 100; i++) {
+    		ByteBuffer n = ((KeyColumnValueStore)store).get(b1, b1, tx);
+    		assertNull(n);
     		store.mutateMany(addOnly, tx);
     		store.mutateMany(deleteOnly, tx);
-    		assertNull(((KeyColumnValueStore)store).get(b1, b1, tx));
+    		n = ((KeyColumnValueStore)store).get(b1, b1, tx);
+    		assertNull(n);
     	}
     	
     	for (int i = 0; i < 100; i++) {

@@ -29,6 +29,7 @@ import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
 
 /**
@@ -100,6 +101,11 @@ public class HBaseOrderedKeyColumnValueStore implements
 		
 		Get g = new Get(keyBytes);
 		g.addColumn(famBytes, colBytes);
+		try {
+			g.setMaxVersions(1);
+		} catch (IOException e1) {
+			throw new RuntimeException(e1);
+		}
 		
 		try {
 			HTableInterface table = null;
@@ -382,30 +388,39 @@ public class HBaseOrderedKeyColumnValueStore implements
     		}
     	}
 		
-		
-		
-		// TODO use RowMutations (requires 0.94.x-ish HBase)
-		// error handling through the legacy batch() method sucks
-        //RowMutations rms = new RowMutations(keyBytes);
-		
 		Map<byte[], Put> puts = new HashMap<byte[], Put>();
 		Map<byte[], Delete> dels = new HashMap<byte[], Delete>();
 
 		List<Row> batchOps = new LinkedList<Row>();
-		
-		long putTS = 0; // TODO
-		long delTS = 0; // TODO
+
+		final long delTS = System.currentTimeMillis();
+		final long putTS = delTS + 1;
 		
 		for (ByteBuffer keyBB : mutations.keySet()) {
 			byte[] keyBytes = toArray(keyBB);
 			
 			com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation m = mutations.get(keyBB);
 			
+			if (m.hasDeletions()) {
+				Delete d = dels.get(keyBytes);
+				
+				if (null == d) {
+					d = new Delete(keyBytes, delTS, null);
+					dels.put(keyBytes, d);
+					batchOps.add(d);
+				}
+				
+				for (ByteBuffer b : m.getDeletions()) {
+					d.deleteColumns(famBytes, toArray(b), delTS);
+				}
+			}
+			
+
 			if (m.hasAdditions()) {
 				Put p = puts.get(keyBytes);
 				
 				if (null == p) {
-					p = new Put(keyBytes);
+					p = new Put(keyBytes, putTS);
 					puts.put(keyBytes, p);
 					batchOps.add(p);
 				}
@@ -414,20 +429,6 @@ public class HBaseOrderedKeyColumnValueStore implements
 					byte[] colBytes = toArray(e.getColumn());
 					byte[] valBytes = toArray(e.getValue());
 					p.add(famBytes, colBytes, putTS, valBytes);
-				}
-			}
-			
-			if (m.hasDeletions()) {
-				Delete d = dels.get(keyBytes);
-				
-				if (null == d) {
-					d = new Delete(keyBytes);
-					dels.put(keyBytes, d);
-					batchOps.add(d);
-				}
-				
-				for (ByteBuffer b : m.getDeletions()) {
-					d.deleteColumn(famBytes, toArray(b), delTS);
 				}
 			}
 		}
@@ -446,6 +447,16 @@ public class HBaseOrderedKeyColumnValueStore implements
 			throw new GraphStorageException(e);
 		} catch (InterruptedException e) {
 			throw new GraphStorageException(e);
+		}
+		
+		long now = System.currentTimeMillis(); 
+		while (now <= putTS) {
+			try {
+				Thread.sleep(1L);
+				now = System.currentTimeMillis();
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
