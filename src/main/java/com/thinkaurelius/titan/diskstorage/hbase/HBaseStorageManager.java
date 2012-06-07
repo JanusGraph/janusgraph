@@ -2,7 +2,9 @@ package com.thinkaurelius.titan.diskstorage.hbase;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -37,11 +39,14 @@ public class HBaseStorageManager implements StorageManager {
     static final String TABLE_NAME_KEY = "tablename";
     static final String TABLE_NAME_DEFAULT = "titan";
     
-    public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local-lock-mediator-prefix";
     public static final String LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT = "hbase";
 
-    public static final String PROP_HBASE_KEY = "hbconf";
+    public static final String HBASE_CONFIGURATION_NAMESPACE = "hbase-config";
 
+    public static final Map<String,String> HBASE_CONFIGURATION_MAP = new ImmutableMap.Builder<String,String>().
+            put(HOSTNAME_KEY,"hbase.zookeeper.quorum").
+            put(PORT_KEY, "hbase.zookeeper.property.clientPort").
+            build();
 
 	private final String tableName;
     private final OrderedKeyColumnValueIDManager idmanager;
@@ -80,24 +85,27 @@ public class HBaseStorageManager implements StorageManager {
 						GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
 						GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
 		
-		// Copy a subset of our commons config into a Hadoop config
-		org.apache.commons.configuration.Configuration hbCommons =
-			config.subset(PROP_HBASE_KEY);
-		@SuppressWarnings("unchecked") // I hope commons-config eventually fixes this
-		Iterator<String> keys = hbCommons.getKeys();
-		
-		int keysLoaded = 0;
+
 
 		this.hconf = HBaseConfiguration.create();
+        for (Map.Entry<String,String> confEntry : HBASE_CONFIGURATION_MAP.entrySet()) {
+            if (config.containsKey(confEntry.getKey())) {
+                hconf.set(confEntry.getValue(),config.getString(confEntry.getKey()));
+            }
+        }
+
+        // Copy a subset of our commons config into a Hadoop config
+        org.apache.commons.configuration.Configuration hbCommons =
+                config.subset(HBASE_CONFIGURATION_NAMESPACE);
+        @SuppressWarnings("unchecked") // I hope commons-config eventually fixes this
+        Iterator<String> keys = hbCommons.getKeys();
+        int keysLoaded = 0;
 		
 		while (keys.hasNext()) {
-			String k = keys.next();
-			String v = hbCommons.getString(k);
-			
-			log.debug("HBase configuration: setting {}={}", k, v);
-			
-			hconf.set(k, v);
-			
+			String key = keys.next();
+			String value = hbCommons.getString(key);
+			log.debug("HBase configuration: setting {}={}", key, value);
+			hconf.set(key, value);
 			keysLoaded++;
 		}
 		

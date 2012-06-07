@@ -13,6 +13,22 @@ import com.thinkaurelius.titan.core.GraphStorageException;
  */
 public interface StorageManager extends IDAuthority {
 
+    /**
+     * Configuration key for the hostname or list of hostname of remote storage backend servers to connect to.
+     */
+    public static final String HOSTNAME_KEY = "hostname";
+
+    /**
+     * Configuration key for the port on which to connect to remote storage backend servers.
+     */
+    public static final String PORT_KEY = "port";
+
+    /**
+     * Configuration setting key for the lock lock mediator prefix
+     */
+    public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local-lock-mediator-prefix";
+
+
 	/**
 	 * Opens an ordered database by the given name. If the database does not exist, it is
 	 * created. If it has already been opened, the existing handle is returned.

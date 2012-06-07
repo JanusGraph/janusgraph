@@ -19,8 +19,8 @@ public class ExternalHBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
 	
 	private Configuration getConfig() {
 		Configuration c = StorageSetup.getHBaseStorageConfiguration();
-//		c.setProperty("hbconf.hbase.zookeeper.quorum", "localhost");
-//		c.setProperty("hbconf.hbase.zookeeper.property.clientPort", "2181");
+//		c.setProperty("hbase-config.hbase.zookeeper.quorum", "localhost");
+//		c.setProperty("hbase-config.hbase.zookeeper.property.clientPort", "2181");
 		return c;
 	}
 
