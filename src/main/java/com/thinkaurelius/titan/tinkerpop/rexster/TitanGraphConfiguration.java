@@ -12,7 +12,10 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * Implements a Rexster GraphConfiguration for Titan
+ *
+ *
+ * @author Matthias Broecheler (http://www.matthiasb.com)
  */
 
 public class TitanGraphConfiguration implements GraphConfiguration {
