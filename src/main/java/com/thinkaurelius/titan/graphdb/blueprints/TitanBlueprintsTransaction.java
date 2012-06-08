@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
@@ -122,7 +123,8 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public <T extends Element> Set<String> getIndexedKeys(Class<T> elementClass) {
-        Preconditions.checkArgument(elementClass==null || elementClass.equals(Vertex.class),"Only vertex indexing is supported");
+        Preconditions.checkNotNull(elementClass,"Must provide either Vertex.class or Edge.class as an argument");
+        if (!elementClass.equals(Vertex.class)) return Sets.newHashSet();
 
         Set<String> indexedkeys = new HashSet<String>();
         for (TitanVertex v : getVertices(SystemKey.TypeClass, TitanTypeClass.KEY)) {
