@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.StandardPersistedRelationFactory;
 import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
@@ -114,6 +115,7 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 		TitanVertex node = super.getVertex(key, value);
 		if (node==null && !key.isNew()) {
 			//Look up
+            value = AttributeUtil.prepareAttribute(value, key.getDataType());
 			long[] ids = graphdb.indexRetrieval(value, key, this);
 			if (ids.length==0) {
                 //TODO Set NO-ENTRY

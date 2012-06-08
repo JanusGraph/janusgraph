@@ -87,7 +87,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
                 dataType(String.class).makePropertyKey();
 
         TitanKey weight = tx.makeType().name("weight").functional().dataType(Double.class).makePropertyKey();
-        
+
+        TitanKey someid = tx.makeType().name("someid").functional().dataType(Object.class).indexed().makePropertyKey();
+
         TitanKey number = tx.makeType().name("number").dataType(Number.class).functional().makePropertyKey();
 
         TitanKey sint = tx.makeType().name("int").dataType(SpecialInt.class).functional().makePropertyKey();
@@ -99,6 +101,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         
         TitanVertex v1 = tx.addVertex();
         v1.setProperty("uid","v1");
+        v1.setProperty("someid",100l);
         try {
             v1.addProperty(number,10.5);
             fail();
@@ -191,7 +194,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         v1 = tx.getVertex(id,"v1");
         assertEquals(77, ((SpecialInt) v1.getProperty("int")).getValue());
-
+        assertEquals(v1,Iterables.getOnlyElement(tx.getVertices("someid",100l)));
     }
 
     @Test

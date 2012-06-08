@@ -16,14 +16,16 @@ public class SimpleProperty extends AbstractTypedRelation implements TitanProper
 	
 	public SimpleProperty(TitanKey type, InternalTitanVertex node, Object attribute) {
 		super(type);
-		Preconditions.checkNotNull(attribute);
+        attribute = AttributeUtil.prepareAttribute(attribute,type.getDataType());
         if (!type.getDataType().equals(Object.class)) {
-		    Preconditions.checkArgument(type.getDataType().equals(attribute.getClass()),"Provided attribute does not match property data type!");
+            Preconditions.checkArgument(type.getDataType().equals(attribute.getClass()),"Provided attribute does not match property data type!");
         }
 		Preconditions.checkNotNull(node);
 		this.node = node;
 		this.attribute = attribute;
 	}
+    
+
 	
 	@Override
 	public InternalTitanTransaction getTransaction() {

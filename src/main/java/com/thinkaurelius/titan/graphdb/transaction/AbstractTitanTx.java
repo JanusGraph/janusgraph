@@ -13,6 +13,7 @@ import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.query.ComplexTitanQuery;
 import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.RelationFactory;
 import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
@@ -414,7 +415,9 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	@Override
 	public TitanVertex getVertex(TitanKey key, Object value) {
         verifyOpen();
+        Preconditions.checkNotNull(key);
 		Preconditions.checkArgument(key.isUnique(),"Key is not declared unique");
+        value = AttributeUtil.prepareAttribute(value,key.getDataType());
 		Map<Object,TitanVertex> subindex = keyIndex.get(key);
 		if (subindex==null) {
 			return null;
@@ -425,16 +428,15 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	}
 	
 	@Override
-	public TitanVertex getVertex(String type, Object key) {
+	public TitanVertex getVertex(String type, Object value) {
         if (!containsType(type)) return null;
-		return getVertex(getPropertyKey(type), key);
+		return getVertex(getPropertyKey(type), value);
 	}
 
     // #### General Indexed Properties #####
 
 	@Override
 	public Iterable<Vertex> getVertices(String key, Object attribute) {
-        Preconditions.checkNotNull(attribute);
         Preconditions.checkNotNull(key);
         if (!containsType(key)) return ImmutableSet.of();
         TitanKey tkey = getPropertyKey(key);
@@ -445,10 +447,10 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
 	
 	@Override
-	public Iterable<TitanVertex> getVertices(final TitanKey key, final Object attribute) {
+	public Iterable<TitanVertex> getVertices(final TitanKey key, Object attribute) {
         verifyOpen();
-        Preconditions.checkNotNull(attribute);
         Preconditions.checkNotNull(key);
+        attribute = AttributeUtil.prepareAttribute(attribute,key.getDataType());
         if (key.hasIndex()) {
             //First, get stuff from disk
             long[] nodeids = getVertexIDsFromDisk(key, attribute);
