@@ -16,12 +16,6 @@ public class AttributeUtil {
             } else if (attribute instanceof Float && datatype.equals(Double.class)) {
                 attribute = Double.valueOf((Float)attribute);
             }
-        } else {
-            if (attribute instanceof Integer) {
-                attribute = Long.valueOf((Integer)attribute);
-            } else if (attribute instanceof Float) {
-                attribute = Double.valueOf((Float)attribute);
-            }
         }
         return attribute;
     }
