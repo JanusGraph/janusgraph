@@ -122,7 +122,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public <T extends Element> Set<String> getIndexedKeys(Class<T> elementClass) {
-        Preconditions.checkArgument(elementClass.equals(Vertex.class),"Only vertex indexing is supported");
+        Preconditions.checkArgument(elementClass==null || elementClass.equals(Vertex.class),"Only vertex indexing is supported");
 
         Set<String> indexedkeys = new HashSet<String>();
         for (TitanVertex v : getVertices(SystemKey.TypeClass, TitanTypeClass.KEY)) {
