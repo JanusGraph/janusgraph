@@ -22,6 +22,10 @@ public class TitanGraphConfiguration implements GraphConfiguration {
 
     @Override
     public Graph configureGraphInstance(final Configuration properties) throws GraphConfigurationException {
+        return TitanFactory.open(convertConfiguration(properties));
+    }
+    
+    public Configuration convertConfiguration(final Configuration properties) throws GraphConfigurationException {
         try {
             Configuration titanConfig = null;
             try {
@@ -36,7 +40,10 @@ public class TitanGraphConfiguration implements GraphConfiguration {
             if (properties.containsKey(Tokens.REXSTER_GRAPH_READ_ONLY)) {
                 rewriteConfig.setProperty("storage.read-only",properties.getBoolean(Tokens.REXSTER_GRAPH_READ_ONLY));
             }
-            return TitanFactory.open(new CompositeConfiguration(ImmutableList.of(rewriteConfig, titanConfig)));
+            CompositeConfiguration jointConfig = new CompositeConfiguration();
+            jointConfig.addConfiguration(rewriteConfig);
+            jointConfig.addConfiguration(titanConfig);
+            return jointConfig;
         } catch (Exception e) {
             throw new GraphConfigurationException(e);
         }

@@ -44,7 +44,7 @@ public class LocalBlueprintsTest extends GraphTest {
 
     public void testGraphTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new GraphTestSuite(this));
+        doTestSuite(new GraphTestSuite(this),ImmutableSet.of("testStringRepresentation"));
         printTestPerformance("GraphTestSuite", this.stopWatch());
     }
 

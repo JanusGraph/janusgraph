@@ -309,14 +309,21 @@ public class GraphDatabaseConfiguration {
                 configuration.getInt(ID_RANDOMIZER_BITS_KEY,ID_RANDOMIZER_BITS_DEFAULT));
 	}
 
-    public String getStorageManagerClassName() {
+    public String getStorageManagerDescription() {
         Configuration storageconfig = configuration.subset(STORAGE_NAMESPACE);
-        return storageconfig.getString(STORAGE_BACKEND_KEY,STORAGE_BACKEND_DEFAULT);
+        String clazzname = storageconfig.getString(STORAGE_BACKEND_KEY,STORAGE_BACKEND_DEFAULT);
+        if (storageconfig.containsKey(StorageManager.HOSTNAME_KEY)) {
+            return clazzname + ":" + storageconfig.getString(StorageManager.HOSTNAME_KEY);
+        } else {
+            return clazzname + ":" + storageconfig.getString(STORAGE_DIRECTORY_KEY);
+        }
     }
+    
+
     
 	public StorageManager getStorageManager() {
 		Configuration storageconfig = configuration.subset(STORAGE_NAMESPACE);
-        String clazzname = getStorageManagerClassName();
+        String clazzname = storageconfig.getString(STORAGE_BACKEND_KEY,STORAGE_BACKEND_DEFAULT);
         if (preregisteredStorageManagers.containsKey(clazzname.toLowerCase())) {
             clazzname = preregisteredStorageManagers.get(clazzname.toLowerCase()).getCanonicalName();
         }
