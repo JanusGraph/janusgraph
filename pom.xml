@@ -13,7 +13,9 @@
     <name>Titan: A Highly Scalable, Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     <description>
-        Titan is a highly scalable, distributed graph database.
+        Titan is a distributed graph database optimized for processing massive-scale graphs represented over a machine cluster.
+        Titan separates the concerns of graph processing and manipulation from storing the graph on disk,
+        delegating that concern to an extensible set of persistence solutions.
     </description>
     <developers>
         <developer>
