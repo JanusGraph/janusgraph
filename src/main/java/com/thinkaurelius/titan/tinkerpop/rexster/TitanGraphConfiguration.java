@@ -11,11 +11,13 @@ import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
+import java.util.Iterator;
+
 /**
  * Implements a Rexster GraphConfiguration for Titan
  *
- *
  * @author Matthias Broecheler (http://www.matthiasb.com)
+ * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 
 public class TitanGraphConfiguration implements GraphConfiguration {
@@ -24,23 +26,34 @@ public class TitanGraphConfiguration implements GraphConfiguration {
     public Graph configureGraphInstance(final Configuration properties) throws GraphConfigurationException {
         return TitanFactory.open(convertConfiguration(properties));
     }
-    
+
     public Configuration convertConfiguration(final Configuration properties) throws GraphConfigurationException {
         try {
-            Configuration titanConfig = null;
+            final Configuration titanConfig = new BaseConfiguration();
             try {
-                titanConfig = ((HierarchicalConfiguration) properties).configurationAt(Tokens.REXSTER_GRAPH_PROPERTIES);
+                final Configuration titanConfigProperties = ((HierarchicalConfiguration) properties).configurationAt(Tokens.REXSTER_GRAPH_PROPERTIES);
+
+                final Iterator<String> titanConfigPropertiesKeys = titanConfigProperties.getKeys();
+                while (titanConfigPropertiesKeys.hasNext()) {
+                    String key = titanConfigPropertiesKeys.next();
+
+                    // replace the ".." put in play by apache commons configuration.  that's expected behavior
+                    // due to parsing key names to xml.
+                    titanConfig.setProperty(key.replace("..", "."), titanConfigProperties.getString(key));
+                }
             } catch (IllegalArgumentException iae) {
                 throw new GraphConfigurationException("Check graph configuration. Missing or empty configuration element: " + Tokens.REXSTER_GRAPH_PROPERTIES);
             }
-            Configuration rewriteConfig = new BaseConfiguration();
+
+            final Configuration rewriteConfig = new BaseConfiguration();
             if (properties.containsKey(Tokens.REXSTER_GRAPH_LOCATION)) {
                 rewriteConfig.setProperty("storage.directory",properties.getString(Tokens.REXSTER_GRAPH_LOCATION));
             }
             if (properties.containsKey(Tokens.REXSTER_GRAPH_READ_ONLY)) {
                 rewriteConfig.setProperty("storage.read-only",properties.getBoolean(Tokens.REXSTER_GRAPH_READ_ONLY));
             }
-            CompositeConfiguration jointConfig = new CompositeConfiguration();
+
+            final CompositeConfiguration jointConfig = new CompositeConfiguration();
             jointConfig.addConfiguration(rewriteConfig);
             jointConfig.addConfiguration(titanConfig);
             return jointConfig;

@@ -7,13 +7,18 @@ import com.tinkerpop.rexster.Tokens;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.configuration.XMLConfiguration;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.FileInputStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (http://www.matthiasb.com)
+ * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 
 public class TitanGraphConfigurationTest {
@@ -22,23 +27,13 @@ public class TitanGraphConfigurationTest {
     
     @Test
     public void testGraphConfiguration() throws Exception {
-        HierarchicalConfiguration rc = new HierarchicalConfiguration();
-        rc.addProperty(Tokens.REXSTER_GRAPH_LOCATION, StorageSetup.getHomeDir());
-        rc.addProperty(Tokens.REXSTER_GRAPH_READ_ONLY, false);
-        rc.addProperty(subProperty("storage.backend"),"local");
+        XMLConfiguration configuration = new XMLConfiguration(ClassLoader.getSystemResource("rexster-fragment.xml"));
         
-//        Configuration cc = rc.configurationAt("rexster");
-//        assertEquals(cc.getString("one"),"two");
-        
-        Configuration tc = rexsterConfig.convertConfiguration(rc);
+        Configuration tc = rexsterConfig.convertConfiguration(configuration);
         Configuration storage = tc.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE);
-        assertEquals(storage.getString(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY),"local");
-        assertEquals(storage.getBoolean(GraphDatabaseConfiguration.STORAGE_READONLY_KEY),false);
-        assertEquals(storage.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY),StorageSetup.getHomeDir());
-        
-        TitanGraph graph = (TitanGraph)rexsterConfig.configureGraphInstance(rc);
-        assertTrue(graph.isOpen());
-        graph.shutdown();
+        assertEquals(storage.getBoolean(GraphDatabaseConfiguration.STORAGE_READONLY_KEY), false);
+        assertEquals(storage.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY), "home");
+        assertEquals(storage.getString(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY), "local");
     }
     
     private static final String subProperty(String key) {
