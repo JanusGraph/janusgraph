@@ -27,8 +27,8 @@ titan$ ./gremlin.sh
          \,,,/
          (o o)
 -----oOOo-(_)-oOOo-----
-gremlin> g = TitanFactory.open('tmp/titan-local');
-==>standardtitangraph[local]
+gremlin> g = TitanFactory.open('/tmp/titan-local');
+==>titangraph[local:/tmp/titan-local]
 
 
 2. Running Titan/Cassandra via Gremlin
@@ -43,8 +43,9 @@ gremlin> conf = new BaseConfiguration();
 gremlin> conf.setProperty("storage.backend","cassandra");
 gremlin> conf.setProperty("storage.hostname","127.0.0.1");
 gremlin> g = TitanFactory.open(conf);
-==>standardtitangraph[cassandra]
+==>titangraph[cassandra:127.0.0.1]
 
+It is possible to use TitanFactory.open('bin/cassandra.local') to reduce verbosity of opening a local instance.
 
 3. Running Titan/HBase via Gremlin
 
@@ -58,7 +59,9 @@ gremlin> conf = new BaseConfiguration();
 gremlin> conf.setProperty("storage.backend","hbase");
 gremlin> conf.setProperty("storage.hostname","127.0.0.1");
 gremlin> g = TitanFactory.open(conf);
-==>standardtitangraph[hbase]
+==>titangraph[hbase:127.0.0.1]
+
+It is possible to use TitanFactory.open('bin/hbase.local') to reduce verbosity of opening a local instance.
 
 ----------------------------------------------------------
 

@@ -1,7 +1,7 @@
 :: Windows launcher script for Gremlin
 @echo off
 
-cd %CD%\target\
+cd %CD%\..\target\
 
 set TARGET=
 
