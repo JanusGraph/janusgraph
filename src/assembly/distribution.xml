@@ -40,6 +40,14 @@
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
+            <source>CHANGELOG.textile</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>NOTICE.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
             <source>src/main/bin/README.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
