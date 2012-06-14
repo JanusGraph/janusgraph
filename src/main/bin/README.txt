@@ -22,7 +22,7 @@ Titan documentation can be found online at:
 
 1. Running Titan Locally via Gremlin
 
-titan$ ./gremlin.sh
+titan$ bin/gremlin.sh
 
          \,,,/
          (o o)
@@ -34,7 +34,7 @@ gremlin> g = TitanFactory.open('/tmp/titan-local');
 2. Running Titan/Cassandra via Gremlin
 
 titan$ cassandra
-titan$ ./gremlin.sh
+titan$ bin/gremlin.sh
 
          \,,,/
          (o o)
@@ -50,7 +50,7 @@ It is possible to use TitanFactory.open('bin/cassandra.local') to reduce verbosi
 3. Running Titan/HBase via Gremlin
 
 titan$ start-hbase.sh
-titan$ ./gremlin.sh
+titan$ bin/gremlin.sh
 
          \,,,/
          (o o)
