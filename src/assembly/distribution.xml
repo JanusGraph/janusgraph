@@ -6,9 +6,11 @@
     <fileSets>
         <fileSet>
             <fileMode>0775</fileMode>
+            <directory>target/${project.artifactId}-${project.version}-standalone/bin</directory>
+            <outputDirectory>bin</outputDirectory>
             <includes>
-                <include>bin/gremlin.sh</include>
-                <include>bin/gremlin.bat</include>
+                <include>*.sh</include>
+                <include>*.bat</include>
             </includes>
         </fileSet>
         <fileSet>
@@ -22,12 +24,14 @@
         </fileSet>
         <fileSet>
             <directory>target/apidocs</directory>
+            <outputDirectory>doc/javadoc</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>target/site</directory>
         </fileSet>
         <fileSet>
-            <directory>target/${project.artifactId}-${project.version}-standalone</directory>
+            <directory>target/${project.artifactId}-${project.version}-standalone/lib</directory>
+            <outputDirectory>lib</outputDirectory>
         </fileSet>
     </fileSets>
     <files>
