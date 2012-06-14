@@ -27,14 +27,15 @@
             <outputDirectory>doc/javadoc</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>target/site</directory>
-        </fileSet>
-        <fileSet>
             <directory>target/${project.artifactId}-${project.version}-standalone/lib</directory>
             <outputDirectory>lib</outputDirectory>
         </fileSet>
     </fileSets>
     <files>
+        <file>
+            <source>pom.xml</source>
+            <outputDirectory>src</outputDirectory>
+        </file>
         <file>
             <source>data/graph-of-the-gods.xml</source>
             <outputDirectory>data</outputDirectory>
