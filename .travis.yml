@@ -1,0 +1,5 @@
+language: java
+notifications:
+  email:
+    - matthias@thinkaurelius.com
+    - marko@thinkaurelius.com
