@@ -1,6 +1,12 @@
 #!/bin/bash
 
-CP=$( echo `dirname $0`/../lib/*.jar . | sed 's/ /:/g')
+case `uname -o` in
+  Cygwin)
+    CP=$( echo `dirname $0`/../lib/*.jar . | sed 's/ /;/g')
+    ;;
+  *)
+    CP=$( echo `dirname $0`/../lib/*.jar . | sed 's/ /:/g')
+esac
 #echo $CP
 
 # Find Java
