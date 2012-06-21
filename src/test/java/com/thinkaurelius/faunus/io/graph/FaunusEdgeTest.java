@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus.io.graph;
 
+import com.tinkerpop.blueprints.Direction;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.WritableComparator;
@@ -44,8 +45,8 @@ public class FaunusEdgeTest extends TestCase {
 
         FaunusEdge edge1 = new FaunusEdge(new FaunusVertex(1), new FaunusVertex(2), "knows");
         assertEquals(edge1.getLabel(), "knows");
-        assertEquals(edge1.getOutVertex().getId(), 1l);
-        assertEquals(edge1.getInVertex().getId(), 2l);
+        assertEquals(edge1.getVertex(Direction.OUT).getId(), 1l);
+        assertEquals(edge1.getVertex(Direction.IN).getId(), 2l);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(bytes);
@@ -58,8 +59,8 @@ public class FaunusEdgeTest extends TestCase {
         assertEquals(edge2.compareTo(edge1), 0);
         assertEquals(edge2.getId(), -1l);
         assertEquals(edge2.getLabel(), "knows");
-        assertEquals(edge2.getOutVertex().getId(), 1l);
-        assertEquals(edge2.getInVertex().getId(), 2l);
+        assertEquals(edge2.getVertex(Direction.OUT).getId(), 1l);
+        assertEquals(edge2.getVertex(Direction.IN).getId(), 2l);
 
     }
 
@@ -68,8 +69,8 @@ public class FaunusEdgeTest extends TestCase {
         FaunusEdge edge1 = new FaunusEdge(new FaunusVertex(1), new FaunusVertex(2), "knows");
         edge1.setProperty("weight", 0.5f);
         assertEquals(edge1.getLabel(), "knows");
-        assertEquals(edge1.getOutVertex().getId(), 1l);
-        assertEquals(edge1.getInVertex().getId(), 2l);
+        assertEquals(edge1.getVertex(Direction.OUT).getId(), 1l);
+        assertEquals(edge1.getVertex(Direction.IN).getId(), 2l);
         assertEquals(edge1.getProperty("weight"), 0.5f);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -83,8 +84,8 @@ public class FaunusEdgeTest extends TestCase {
         assertEquals(edge2.compareTo(edge1), 0);
         assertEquals(edge2.getId(), -1l);
         assertEquals(edge2.getLabel(), "knows");
-        assertEquals(edge2.getOutVertex().getId(), 1l);
-        assertEquals(edge2.getInVertex().getId(), 2l);
+        assertEquals(edge2.getVertex(Direction.OUT).getId(), 1l);
+        assertEquals(edge2.getVertex(Direction.IN).getId(), 2l);
         assertEquals(edge2.getProperty("weight"), 0.5f);
         assertEquals(edge2.getPropertyKeys().size(), 1);
 

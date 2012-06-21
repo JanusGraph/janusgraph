@@ -4,11 +4,13 @@ import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
 import com.thinkaurelius.faunus.mapreduce.algebra.util.Function;
-import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -40,8 +42,8 @@ public class EdgeFunctionFilter {
             long filterCounter = 0;
             long allowedCounter = 0;
 
-            final List<Edge> newEdges = new LinkedList<Edge>();
-            for (final Edge edge : value.getOutEdges()) {
+            final List<Edge> newEdges = new ArrayList<Edge>();
+            for (final Edge edge : value.getEdges(Direction.OUT)) {
                 if (this.function.compute((FaunusEdge) edge)) {
                     newEdges.add(edge);
                     allowedCounter++;

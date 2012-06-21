@@ -2,7 +2,8 @@ package com.thinkaurelius.faunus.io.formats.json.util;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
-import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import junit.framework.TestCase;
 
 import java.io.IOException;
@@ -17,7 +18,7 @@ public class FaunusJSONParserTest extends TestCase {
         FaunusJSONParser reader = new FaunusJSONParser();
         FaunusVertex vertex = reader.parse("{\"id\":1}");
         assertEquals(vertex.getId(), 1l);
-        assertFalse(vertex.getOutEdges().iterator().hasNext());
+        assertFalse(vertex.getEdges(Direction.OUT).iterator().hasNext());
 
     }
 
@@ -25,7 +26,7 @@ public class FaunusJSONParserTest extends TestCase {
         FaunusJSONParser reader = new FaunusJSONParser();
         FaunusVertex vertex = reader.parse("{\"id\":1, \"properties\":{\"name\":\"marko\",\"age\":32}}");
         assertEquals(vertex.getId(), 1l);
-        assertFalse(vertex.getOutEdges().iterator().hasNext());
+        assertFalse(vertex.getEdges(Direction.OUT).iterator().hasNext());
         assertEquals(vertex.getPropertyKeys().size(), 2);
         assertEquals(vertex.getProperty("name"), "marko");
         assertEquals(vertex.getProperty("age"), 32l);
@@ -35,11 +36,11 @@ public class FaunusJSONParserTest extends TestCase {
         FaunusJSONParser reader = new FaunusJSONParser();
         FaunusVertex vertex = reader.parse("{\"id\":1, \"properties\":{\"name\":\"marko\",\"age\":32}, \"outE\":[{\"inId\":2, \"label\":\"knows\"}, {\"inId\":3, \"label\":\"created\"}]}");
         assertEquals(vertex.getId(), 1l);
-        assertTrue(vertex.getOutEdges().iterator().hasNext());
+        assertTrue(vertex.getEdges(Direction.OUT).iterator().hasNext());
         assertEquals(vertex.getPropertyKeys().size(), 2);
         assertEquals(vertex.getProperty("name"), "marko");
         assertEquals(vertex.getProperty("age"), 32l);
-        List<Edge> edges = BaseTest.asList(vertex.getOutEdges());
+        List<Edge> edges = BaseTest.asList(vertex.getEdges(Direction.OUT));
         for (final Edge edge : edges) {
             assertTrue(edge.getLabel().equals("knows") || edge.getLabel().equals("created"));
         }

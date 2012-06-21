@@ -2,14 +2,15 @@ package com.thinkaurelius.faunus.mapreduce.algebra;
 
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
-import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -38,8 +39,8 @@ public class LabelFilter {
             if (null != this.legalLabels) {
                 long allowedCounter = 0;
                 long filteredCounter = 0;
-                final List<Edge> newEdges = new LinkedList<Edge>();
-                for (final Edge edge : value.getOutEdges()) {
+                final List<Edge> newEdges = new ArrayList<Edge>();
+                for (final Edge edge : value.getEdges(Direction.OUT)) {
                     if (this.legalLabels.contains(edge.getLabel())) {
                         newEdges.add(edge);
                         allowedCounter++;
@@ -55,7 +56,7 @@ public class LabelFilter {
                 if (filteredCounter > 0)
                     context.getCounter(Counters.EDGES_FILTERED_BY_LABEL).increment(filteredCounter);
             } else {
-                context.getCounter(Counters.EDGES_ALLOWED_BY_LABEL).increment(((List) value.getOutEdges()).size());
+                context.getCounter(Counters.EDGES_ALLOWED_BY_LABEL).increment(((List) value.getEdges(Direction.OUT)).size());
             }
             context.write(NullWritable.get(), value);
 

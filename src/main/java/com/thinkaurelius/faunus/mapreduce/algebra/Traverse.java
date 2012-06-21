@@ -6,7 +6,8 @@ import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.thinkaurelius.faunus.io.graph.util.Holder;
 import com.thinkaurelius.faunus.io.graph.util.TaggedHolder;
 import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
-import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -45,11 +46,11 @@ public class Traverse {
             vertex.setProperties(value.getProperties());
             context.write(new LongWritable((Long) vertex.getId()), new TaggedHolder<FaunusVertex>('v', vertex));
 
-            for (final Edge edge : value.getOutEdges()) {
+            for (final Edge edge : value.getEdges(Direction.OUT)) {
                 if (edge.getLabel().equals(this.labels[0])) {
-                    context.write(new LongWritable((Long) edge.getInVertex().getId()), new TaggedHolder<FaunusEdge>('a', (FaunusEdge) edge));
+                    context.write(new LongWritable((Long) edge.getVertex(Direction.IN).getId()), new TaggedHolder<FaunusEdge>('a', (FaunusEdge) edge));
                 } else if (edge.getLabel().equals(this.labels[1])) {
-                    context.write(new LongWritable((Long) edge.getOutVertex().getId()), new TaggedHolder<FaunusEdge>('b', (FaunusEdge) edge));
+                    context.write(new LongWritable((Long) edge.getVertex(Direction.OUT).getId()), new TaggedHolder<FaunusEdge>('b', (FaunusEdge) edge));
                 }
             }
         }
@@ -94,7 +95,7 @@ public class Traverse {
 
             for (final FaunusEdge edgeA : edgesA) {
                 for (final FaunusEdge edgeB : edgesB) {
-                    context.write(new LongWritable((Long) edgeA.getOutVertex().getId()), new Holder<FaunusEdge>(new FaunusEdge((FaunusVertex) edgeA.getOutVertex(), (FaunusVertex) edgeB.getInVertex(), this.newLabel)));
+                    context.write(new LongWritable((Long) edgeA.getVertex(Direction.OUT).getId()), new Holder<FaunusEdge>(new FaunusEdge((FaunusVertex) edgeA.getVertex(Direction.OUT), (FaunusVertex) edgeB.getVertex(Direction.IN), this.newLabel)));
                     counter++;
                 }
             }

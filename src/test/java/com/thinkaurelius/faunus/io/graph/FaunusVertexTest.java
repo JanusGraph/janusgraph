@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.io.graph;
 
-import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import junit.framework.TestCase;
 
 import java.io.ByteArrayInputStream;
@@ -43,7 +44,7 @@ public class FaunusVertexTest extends TestCase {
         assertEquals(vertex1.compareTo(vertex2), 0);
         assertEquals(vertex2.compareTo(vertex1), 0);
         assertEquals(vertex2.getId(), 10l);
-        assertFalse(vertex2.getOutEdges().iterator().hasNext());
+        assertFalse(vertex2.getEdges(Direction.OUT).iterator().hasNext());
 
     }
 
@@ -80,7 +81,7 @@ public class FaunusVertexTest extends TestCase {
         assertEquals(vertex2.getProperty("latitude"), 11.4f);
         assertEquals(vertex1.getProperty("size"), 10l);
 
-        Iterator<Edge> edges = vertex2.getOutEdges().iterator();
+        Iterator<Edge> edges = vertex2.getEdges(Direction.OUT).iterator();
         assertTrue(edges.hasNext());
         assertEquals(edges.next().getLabel(), "knows");
         assertTrue(edges.hasNext());

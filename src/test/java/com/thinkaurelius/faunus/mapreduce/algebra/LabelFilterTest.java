@@ -4,7 +4,8 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
-import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapDriver;
@@ -38,7 +39,7 @@ public class LabelFilterTest extends BaseTest {
         assertEquals(list.size(), 1);
 
         FaunusVertex vertex2 = list.get(0).getSecond();
-        List<Edge> edges = BaseTest.asList(vertex2.getOutEdges());
+        List<Edge> edges = BaseTest.asList(vertex2.getEdges(Direction.OUT));
         assertEquals(edges.size(), 2);
         assertTrue(edges.get(0).getLabel().equals("knows") || edges.get(0).getLabel().equals("created"));
         assertTrue(edges.get(1).getLabel().equals("knows") || edges.get(1).getLabel().equals("created"));
@@ -64,7 +65,7 @@ public class LabelFilterTest extends BaseTest {
         assertEquals(list.size(), 1);
 
         FaunusVertex vertex2 = list.get(0).getSecond();
-        List<Edge> edges = BaseTest.asList(vertex2.getOutEdges());
+        List<Edge> edges = BaseTest.asList(vertex2.getEdges(Direction.OUT));
         assertEquals(edges.size(), 1);
         assertEquals(edges.get(0).getLabel(), "knows");
 

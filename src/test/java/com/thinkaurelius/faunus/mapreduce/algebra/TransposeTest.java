@@ -4,7 +4,8 @@ import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.thinkaurelius.faunus.io.graph.util.Holder;
 import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
-import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -41,14 +42,14 @@ public class TransposeTest extends TestCase {
             assertEquals(pair.getFirst(), NullWritable.get());
             FaunusVertex temp = pair.getSecond();
             if (temp.getId().equals(1l)) {
-                assertFalse(temp.getOutEdges().iterator().hasNext());
+                assertFalse(temp.getEdges(Direction.OUT).iterator().hasNext());
                 assertEquals(temp.getPropertyKeys().size(), 1);
                 assertEquals(temp.getProperty("name"), "marko");
             } else {
-                Edge edge = temp.getOutEdges().iterator().next();
+                Edge edge = temp.getEdges(Direction.OUT).iterator().next();
                 assertEquals(edge.getLabel(), "created_inv");
-                assertEquals(edge.getInVertex(), vertex1);
-                assertEquals(edge.getOutVertex(), vertex2);
+                assertEquals(edge.getVertex(Direction.IN), vertex1);
+                assertEquals(edge.getVertex(Direction.OUT), vertex2);
                 assertEquals(temp.getPropertyKeys().size(), 1);
                 assertEquals(temp.getProperty("name"), "gremlin");
             }

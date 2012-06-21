@@ -1,6 +1,6 @@
 package com.thinkaurelius.faunus.io.graph;
 
-import com.tinkerpop.blueprints.pgm.Element;
+import com.tinkerpop.blueprints.Element;
 import org.apache.hadoop.io.WritableComparable;
 
 import java.util.HashMap;

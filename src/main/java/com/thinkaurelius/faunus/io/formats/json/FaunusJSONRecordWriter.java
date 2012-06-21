@@ -1,7 +1,8 @@
 package com.thinkaurelius.faunus.io.formats.json;
 
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
-import com.tinkerpop.blueprints.pgm.Edge;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -48,12 +49,12 @@ public class FaunusJSONRecordWriter extends RecordWriter<NullWritable, FaunusVer
                 object.put(JSONTokens.PROPERTIES, vertexProperties);
             }
 
-            final List<Edge> outEdges = (List<Edge>) vertex.getOutEdges();
+            final List<Edge> outEdges = (List<Edge>) vertex.getEdges(Direction.OUT);
             if (!outEdges.isEmpty()) {
                 final JSONArray outEdgesArray = new JSONArray();
                 for (final Edge outEdge : outEdges) {
                     final JSONObject edge = new JSONObject();
-                    edge.put(JSONTokens.IN_ID, outEdge.getInVertex().getId());
+                    edge.put(JSONTokens.IN_ID, outEdge.getVertex(Direction.IN).getId());
                     edge.put(JSONTokens.LABEL, outEdge.getLabel());
                     final Set<String> edgeKeys = outEdge.getPropertyKeys();
                     if (!edgeKeys.isEmpty()) {

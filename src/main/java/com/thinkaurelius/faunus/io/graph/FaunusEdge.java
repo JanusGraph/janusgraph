@@ -1,9 +1,11 @@
 package com.thinkaurelius.faunus.io.graph;
 
 import com.thinkaurelius.faunus.io.graph.util.ElementProperties;
-import com.tinkerpop.blueprints.pgm.Edge;
-import com.tinkerpop.blueprints.pgm.Vertex;
-import com.tinkerpop.blueprints.pgm.impls.StringFactory;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ExceptionFactory;
+import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
@@ -43,12 +45,14 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
         this.label = label;
     }
 
-    public Vertex getOutVertex() {
-        return outVertex;
-    }
-
-    public Vertex getInVertex() {
-        return inVertex;
+    public Vertex getVertex(final Direction direction) {
+        if (Direction.OUT.equals(direction)) {
+            return outVertex;
+        } else if (Direction.IN.equals(direction)) {
+            return inVertex;
+        } else {
+            throw ExceptionFactory.bothIsNotSupported();
+        }
     }
 
     public String getLabel() {
@@ -58,8 +62,8 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
     public void write(final DataOutput out) throws IOException {
         out.writeByte(ElementType.EDGE.val);
         out.writeLong(this.id);
-        out.writeLong((Long) this.getInVertex().getId());
-        out.writeLong((Long) this.getOutVertex().getId());
+        out.writeLong((Long) this.getVertex(Direction.IN).getId());
+        out.writeLong((Long) this.getVertex(Direction.OUT).getId());
         out.writeUTF(this.getLabel());
         ElementProperties.write(this.properties, out);
     }

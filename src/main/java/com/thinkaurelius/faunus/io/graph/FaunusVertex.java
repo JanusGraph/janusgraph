@@ -2,9 +2,12 @@ package com.thinkaurelius.faunus.io.graph;
 
 import com.thinkaurelius.faunus.io.graph.util.EdgeArray;
 import com.thinkaurelius.faunus.io.graph.util.ElementProperties;
-import com.tinkerpop.blueprints.pgm.Edge;
-import com.tinkerpop.blueprints.pgm.Vertex;
-import com.tinkerpop.blueprints.pgm.impls.StringFactory;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Query;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.DefaultQuery;
+import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
 
@@ -12,9 +15,9 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -27,7 +30,8 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
         WritableComparator.define(FaunusVertex.class, new Comparator());
     }
 
-    private List<Edge> outEdges = new LinkedList<Edge>();
+    private List<Edge> outEdges = new ArrayList<Edge>();
+    private List<Edge> inEdges = new ArrayList<Edge>();
 
     public FaunusVertex() {
         super(-1l);
@@ -42,23 +46,44 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
         this.readFields(in);
     }
 
-    public Iterable<Edge> getOutEdges(final String... labels) {
-        if (null != labels && labels.length > 0) {
-            final Set<String> legalLabels = new HashSet<String>(Arrays.asList(labels));
-            final LinkedList<Edge> filteredEdges = new LinkedList<Edge>();
-            for (final Edge edge : this.outEdges) {
-                if (legalLabels.contains(edge.getLabel())) {
-                    filteredEdges.add(edge);
+    public Query query() {
+        return new DefaultQuery(this);
+    }
+
+    public Iterable<Edge> getEdges(final Direction direction, final String... labels) {
+        if (Direction.OUT.equals(direction)) {
+            if (null != labels && labels.length > 0) {
+                final Set<String> legalLabels = new HashSet<String>(Arrays.asList(labels));
+                final List<Edge> filteredEdges = new ArrayList<Edge>();
+                for (final Edge edge : this.outEdges) {
+                    if (legalLabels.contains(edge.getLabel())) {
+                        filteredEdges.add(edge);
+                    }
                 }
+                return filteredEdges;
+            } else {
+                return this.outEdges;
             }
-            return filteredEdges;
+        } else if (Direction.IN.equals(direction)) {
+            if (null != labels && labels.length > 0) {
+                final Set<String> legalLabels = new HashSet<String>(Arrays.asList(labels));
+                final List<Edge> filteredEdges = new ArrayList<Edge>();
+                for (final Edge edge : this.inEdges) {
+                    if (legalLabels.contains(edge.getLabel())) {
+                        filteredEdges.add(edge);
+                    }
+                }
+                return filteredEdges;
+            } else {
+                return this.inEdges;
+            }
         } else {
-            return this.outEdges;
+            return null;
         }
     }
 
-    public Iterable<Edge> getInEdges(final String... labels) {
-        throw new UnsupportedOperationException("To reduce data redundancy, this operation is not supported");
+    public Iterable<Vertex> getVertices(final Direction direction, final String... labels) {
+        return null;
     }
 
     public void addOutEdge(final FaunusEdge edge) {
