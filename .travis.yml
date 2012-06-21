@@ -3,3 +3,7 @@ notifications:
   email:
     - matthias@thinkaurelius.com
     - marko@thinkaurelius.com
+jdk:
+  - oraclejdk7
+  - openjdk7
+  - openjdk6
