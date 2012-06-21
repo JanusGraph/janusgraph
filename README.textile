@@ -6,7 +6,7 @@ h2. Features
 
 * Support for various data sources
 ** "Titan 0.1":http://thinkaurelius.github.com/titan/
-** "Hadoop File System":http://hadoop.apache.org/hdfs/ (HDFS) 1.0
+** "Hadoop File System":http://hadoop.apache.org/hdfs/ (HDFS) 1.0.3
 ** "HBase":http://hbase.apache.org/ 0.92.1
 * Natively implements the "Blueprints":http://blueprints.tinkerpop.com graph API
 * Open source with the liberal "Apache 2":http://www.apache.org/licenses/LICENSE-2.0.html license

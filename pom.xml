@@ -6,7 +6,7 @@
     <artifactId>faunus</artifactId>
     <version>0.1</version>
     <packaging>jar</packaging>
-    <url>http://thinkaurelius.com</url>
+    <url>http://thinkaurelius.github.com/faunus/</url>
     <name>Faunus: A Library of Graph-Based Hadoop Tools</name>
     <description>
     </description>
