@@ -1,12 +1,17 @@
-h2. Faunus: A Library of Graph-Based Hadoop Tools
+!https://github.com/thinkaurelius/faunus/raw/master/doc/images/faunus-logo.png!
 
-h3. REQUIREMENTS
-  * Hadoop 0.20+
-  * Java 1.6+
-  * Maven3
+Faunus is a library for processing graphs using "Hadoop's":http://hadoop.apache.org/ "MapReduce":http://hadoop.apache.org/mapreduce/ framework. Faunus provides operators that implement a "property graph algebra":http://arxiv.org/abs/0806.2274 that can be used to process massive scale graphs.
 
-h3. USAGE
+h2. Features
 
-  * @mvn clean package@
-  * @hadoop jar target/faunus-0.1-job.jar com.thinkaurelius.faunus.drivers.PathAlgebra jsongraph.txt out.txt@
-  * @hadoop fs -getmerge out.txt ~/Desktop/out.txt@
+* Support for various data sources
+** "Titan 0.1":http://thinkaurelius.github.com/titan/
+** "Hadoop File System":http://hadoop.apache.org/hdfs/ (HDFS) 1.0
+** "HBase":http://hbase.apache.org/ 0.92.1
+* Natively implements the "Blueprints":http://blueprints.tinkerpop.com graph API
+* Open source with the liberal "Apache 2":http://www.apache.org/licenses/LICENSE-2.0.html license
+
+
+h2. Getting Started
+
+Comprehensive documentation and examples are on the "Faunus wiki":http://github.com/thinkaurelius/faunus/wiki.
