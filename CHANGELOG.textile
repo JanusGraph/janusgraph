@@ -1,0 +1,16 @@
+Faunus: A Library of Graph Based Hadoop Tools
+"http://thinkaurelius.github.com/faunus/":http://thinkaurelius.github.com/faunus/
+
+h2. Faunus 0.x
+
+h3. Version 0.1 (NOT OFFICIALLY RELEASED YET)
+
+```xml
+<dependency>
+  <groupId>com.thinkaurelius</groupId>
+  <artifactId>faunus</artifactId>
+  <version>0.1-SNAPSHOT</version>
+</dependency>
+```
+
+* First release and therefore, no changes.
