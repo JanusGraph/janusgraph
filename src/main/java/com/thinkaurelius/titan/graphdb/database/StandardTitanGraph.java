@@ -141,13 +141,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     @Override
 	public long[] indexRetrieval(Object key, TitanKey pt, InternalTitanTransaction tx) {
 		Preconditions.checkArgument(pt.isSimple(),
-					"Currently, only simple properties are supported for index retrieval!");
+					"Currently, only simple properties are supported for index retrieval");
 		Preconditions.checkArgument(pt.hasIndex(),
-					"Cannot retrieve for given property key - it does not have an index.");
+					"Cannot retrieve for given property key - it does not have an index");
 
 		long[] vertices = null;
 			
-        Preconditions.checkArgument(pt.getDataType().isInstance(key),"Specified object is incompatible with property data type ["+pt.getName()+"].");
+        Preconditions.checkArgument(pt.getDataType().isInstance(key),"Specified object is incompatible with property data type ["+pt.getName()+"]");
 
         if (pt.isUnique()) {
             ByteBuffer value = propertyIndex.get(getIndexKey(key), getKeyedIndexColumn(pt), tx.getTxHandle());
@@ -183,7 +183,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	@Override
 	public AbstractLongList getRawNeighborhood(InternalTitanQuery query, InternalTitanTransaction tx) {
         Preconditions.checkArgument(QueryUtil.queryCoveredByDiskIndexes(query),
-                "Raw retrieval is currently does not support in-memory filtering. To be implemented!");
+                "Raw retrieval is currently does not support in-memory filtering");
 		List<Entry> entries = queryForEntries(query,tx.getTxHandle());
 		
         InternalTitanVertex node = query.getNode();

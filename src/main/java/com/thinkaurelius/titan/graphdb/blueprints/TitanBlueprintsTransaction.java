@@ -45,12 +45,26 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     }
 
     @Override
-    public Vertex getVertex(Object id) {
-        if (id==null) throw ExceptionFactory.vertexIdCanNotBeNull();
-        if (!(id instanceof Number)) return null;
-        long vid = ((Number)id).longValue();
-        if (vid<=0) return null;
-        return getVertex(vid);
+    public Vertex getVertex(final Object id) {
+        if (null == id)
+            throw ExceptionFactory.vertexIdCanNotBeNull();
+
+        final long longId;
+        if (id instanceof Long)
+            longId = (Long) id;
+        else if (id instanceof Number) {
+            longId = ((Number) id).longValue();
+        } else {
+            try {
+                longId = Double.valueOf(id.toString()).longValue();
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        if (longId <= 0)
+            return null;
+        else
+            return getVertex(longId);
     }
 
     @Override
