@@ -231,10 +231,13 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		TitanProperty p = Iterables.getOnlyElement(n3.getProperties("uid"));
 		p.remove();
 		n3.addProperty("uid", 353);
+
+
 		clopen();
 		
 		n3 = tx.getVertex(nid);
 		assertEquals(353,n3.getProperty("uid"));
+        TitanEdge e2 = n3.addEdge("knows",tx.addVertex());
 	}
 	
 	@Test
