@@ -32,11 +32,12 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
     @Override
     public void stopTransaction(final Conclusion conclusion) {
         TitanTransaction tx = txs.get();
-        if (tx==null || tx.isClosed())
-            throw new IllegalStateException("No running transaction");
-        tx.stopTransaction(conclusion);
-        txs.remove();
-        openTx.remove(tx);
+        if (tx!=null) {
+            assert tx.isOpen();
+            tx.stopTransaction(conclusion);
+            txs.remove();
+            openTx.remove(tx);
+        }
     }
 
     private TitanTransaction internalStartTransaction() {
@@ -44,12 +45,6 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
         txs.set(tx);
         openTx.put(tx,Boolean.TRUE);
         return tx;
-    }
-
-    @Override
-    public void startTransaction() {
-        if (txs.get()!=null) throw ExceptionFactory.transactionAlreadyStarted();
-        getAutoStartTx();
     }
 
     private TitanTransaction getAutoStartTx() {
