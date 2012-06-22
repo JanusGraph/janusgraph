@@ -37,13 +37,13 @@ public class LocalBlueprintsTest extends GraphTest {
     }
 
     public void testEdgeTestSuite() throws Exception {
-        this.stopWatch();                   //Exclusions: retrieval by edge id is not supported
-        doTestSuite(new EdgeTestSuite(this),ImmutableSet.of("testGetEdges","testGetNonExistantEdges"));
+        this.stopWatch();
+        doTestSuite(new EdgeTestSuite(this));
         printTestPerformance("EdgeTestSuite", this.stopWatch());
     }
 
     public void testGraphTestSuite() throws Exception {
-        this.stopWatch();
+        this.stopWatch();                       //Excluded test case because toString representation is non-standard
         doTestSuite(new GraphTestSuite(this),ImmutableSet.of("testStringRepresentation"));
         printTestPerformance("GraphTestSuite", this.stopWatch());
     }
@@ -55,16 +55,16 @@ public class LocalBlueprintsTest extends GraphTest {
     }
 
     public void testKeyIndexableGraphTestSuite() throws Exception {
-        this.stopWatch();                                   //Exclusions: 1st because unsupported, 2nd for old test, 3rd does not close database
-        doTestSuite(new KeyIndexableGraphTestSuite(this), ImmutableSet.of("testAutoIndexKeyDroppingWithPersistence","testAutoIndexKeyManagementWithPersistence","testReIndexingOfElements"));
+        this.stopWatch();                                   //Excluded test cases because Titan does not yet support dropping or modifying key indexes
+        doTestSuite(new KeyIndexableGraphTestSuite(this), ImmutableSet.of("testAutoIndexKeyDroppingWithPersistence","testReIndexingOfElements"));
         printTestPerformance("KeyIndexableGraphTestSuite", this.stopWatch());
     }
 
-    /*public void testTransactionalGraphTestSuite() throws Exception {
+    public void testTransactionalGraphTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new TransactionalGraphTestSuite(this), ImmutableSet.of("testTransactionsForEdges"));
+        doTestSuite(new TransactionalTitanGraphTestSuite(this));
         printTestPerformance("TransactionalTitanGraphTestSuite", this.stopWatch());
-    }*/
+    }
 
     public void testGraphMLReaderTestSuite() throws Exception {
         this.stopWatch();
@@ -111,7 +111,7 @@ public class LocalBlueprintsTest extends GraphTest {
     public void doTestSuite(TestSuite testSuite, Set<String> ignoreTests) throws Exception {
         startUp();
         cleanUp();
-        for (Method method : testSuite.getClass().getDeclaredMethods()) {
+        for (Method method : testSuite.getClass().getMethods()) {
             if (ignoreTests.contains(method.getName())
                     || !method.getName().startsWith("test")) continue;
             try {
