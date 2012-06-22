@@ -163,29 +163,25 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 	public synchronized void commit() {
         Preconditions.checkArgument(isOpen());
         if (!getTxConfiguration().isReadOnly()) {
-            List<InternalRelation> added=addedEdges;
-            Set<InternalRelation> deleted=deletedEdges;
-            addedEdges=null;
-            deletedEdges=null;
             try {
-                graphdb.save(added, deleted, this);
+                graphdb.save(addedEdges, deletedEdges, this);
             } catch (GraphStorageException e) {
                 abort();
                 throw e;
             }
         }
 
-        clear();
         txHandle.commit();
 		super.commit();
+        clear();
 	}
 
 	@Override
 	public synchronized void abort() {
         Preconditions.checkArgument(isOpen());
-		clear();
 		txHandle.abort();
 		super.abort();
+        clear();
 	}
 	
 	@Override
