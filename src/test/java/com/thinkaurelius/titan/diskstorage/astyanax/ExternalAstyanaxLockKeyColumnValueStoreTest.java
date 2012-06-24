@@ -11,7 +11,6 @@ import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
-import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraLocalhostHelper;
@@ -25,7 +24,7 @@ public class ExternalAstyanaxLockKeyColumnValueStoreTest extends LockKeyColumnVa
 	@BeforeClass
 	public static void connectToClusterForCleanup() {
 		AstyanaxContext<Cluster> ctx = new AstyanaxContext.Builder()
-				.forCluster(AstyanaxStorageManager.CLUSTER_NAME)
+				.forCluster(AstyanaxStorageManager.CLUSTER_DEFAULT)
 				.withAstyanaxConfiguration(
 						new AstyanaxConfigurationImpl()
 								.setDiscoveryType(NodeDiscoveryType.RING_DESCRIBE))
@@ -52,7 +51,7 @@ public class ExternalAstyanaxLockKeyColumnValueStoreTest extends LockKeyColumnVa
 	@Override
 	public void cleanUp() {
 		try {
-			cluster.dropKeyspace(AstyanaxStorageManager.KS_NAME);
+			cluster.dropKeyspace(AstyanaxStorageManager.KEYSPACE_DEFAULT);
 			AstyanaxStorageManager.clearKeyspaces();
 		} catch (ConnectionException e) {
 //			throw new RuntimeException(e);
