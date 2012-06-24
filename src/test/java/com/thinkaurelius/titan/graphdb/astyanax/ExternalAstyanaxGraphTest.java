@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.astyanax;
+package com.thinkaurelius.titan.graphdb.astyanax;
 
 import org.junit.BeforeClass;
 
@@ -11,12 +11,16 @@ import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
+import com.thinkaurelius.titan.diskstorage.astyanax.AstyanaxStorageManager;
+import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 
-public class ExternalAstyanaxKeyColumnValueTest extends KeyColumnValueStoreTest {
+public class ExternalAstyanaxGraphTest extends TitanGraphTest {
 
 	private static Cluster cluster;
+	
+	public ExternalAstyanaxGraphTest() {
+		super(StorageSetup.getAstyanaxGraphConfiguration());
+	}
 	
 	@BeforeClass
 	public static void connectToClusterForCleanup() {
@@ -36,11 +40,6 @@ public class ExternalAstyanaxKeyColumnValueTest extends KeyColumnValueStoreTest 
 		ctx.start();
 	}
 	
-    @Override
-    public StorageManager openStorageManager() {
-        return new AstyanaxStorageManager(StorageSetup.getLocalStorageConfiguration());
-    }
-
 	@Override
 	public void cleanUp() {
 		try {
