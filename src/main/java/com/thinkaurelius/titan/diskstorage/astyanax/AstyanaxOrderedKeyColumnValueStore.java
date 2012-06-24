@@ -114,7 +114,10 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 	@Override
 	public boolean containsKey(ByteBuffer key, TransactionHandle txh) {
 		try {
+			// See getSlice() below for a warning suppression justification
+			@SuppressWarnings("rawtypes")
 			RowQuery rq = (RowQuery)keyspace.prepareQuery(cf).getKey(key);
+			@SuppressWarnings("unchecked")
 			OperationResult<ColumnList<ByteBuffer>> r = rq.withColumnRange(EMPTY, EMPTY, false, 1).execute();
 			return 0 < r.getResult().size();
 		} catch (ConnectionException e) {
@@ -162,7 +165,9 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 		
 		OperationResult<ColumnList<ByteBuffer>> r;
 		try {
-			r = (OperationResult<ColumnList<ByteBuffer>>)rq.execute();
+			@SuppressWarnings("unchecked")
+			OperationResult<ColumnList<ByteBuffer>> tmp = (OperationResult<ColumnList<ByteBuffer>>)rq.execute();
+			r = tmp;
 		} catch (ConnectionException e) {
 			throw new GraphStorageException(e);
 		}
