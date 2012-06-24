@@ -212,7 +212,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 
 	@Override
 	public void close() {
-        //Do nothing
+		stores.clear();
 	}
 
 	@Override
