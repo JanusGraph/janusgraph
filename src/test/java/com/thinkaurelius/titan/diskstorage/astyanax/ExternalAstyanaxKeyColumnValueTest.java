@@ -21,7 +21,7 @@ public class ExternalAstyanaxKeyColumnValueTest extends KeyColumnValueStoreTest 
 	@BeforeClass
 	public static void connectToClusterForCleanup() {
 		AstyanaxContext<Cluster> ctx = new AstyanaxContext.Builder()
-				.forCluster(AstyanaxStorageManager.CLUSTER_DEFAULT)
+				.forCluster(AstyanaxStorageManager.CLUSTER_NAME)
 				.withAstyanaxConfiguration(
 						new AstyanaxConfigurationImpl()
 								.setDiscoveryType(NodeDiscoveryType.RING_DESCRIBE))
@@ -44,7 +44,7 @@ public class ExternalAstyanaxKeyColumnValueTest extends KeyColumnValueStoreTest 
 	@Override
 	public void cleanUp() {
 		try {
-			cluster.dropKeyspace(AstyanaxStorageManager.KEYSPACE_DEFAULT);
+			cluster.dropKeyspace(AstyanaxStorageManager.KS_NAME);
 			AstyanaxStorageManager.clearKeyspaces();
 		} catch (ConnectionException e) {
 //			throw new RuntimeException(e);

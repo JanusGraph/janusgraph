@@ -117,6 +117,9 @@ public class CassandraThriftStorageManager implements StorageManager {
      */
     public static final String WRITE_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
     
+
+    public static final String LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT = "cassandra";
+    
     public static final String REPLICATION_FACTOR_KEY = "replication-factor";
     public static final int REPLICATION_FACTOR_DEFAULT  = 1;
 
@@ -160,7 +163,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 		this.llmPrefix =
 				config.getString(
 						LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
-						getClass().getName());
+						LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT);
 		
 		this.replicationFactor = 
 				config.getInt(

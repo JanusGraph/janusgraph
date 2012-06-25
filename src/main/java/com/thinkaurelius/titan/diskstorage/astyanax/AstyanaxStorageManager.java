@@ -21,30 +21,19 @@ import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
-import com.thinkaurelius.titan.diskstorage.util.OrderedKeyColumnValueIDManager;
 import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class AstyanaxStorageManager implements StorageManager {
-	
-    /**
-     * Default name for the Cassandra keyspace
-     * <p>
-     * Value = {@value}
-     */
-    public static final String KEYSPACE_DEFAULT = "titan";
-    public static final String KEYSPACE_KEY = "keyspace";
-    
-    /**
-     * Default name for the Cassandra cluster
-     * <p>
-     * Value = {@value}
-     */
-    public static final String CLUSTER_DEFAULT = "Test Cluster";
-    public static final String CLUSTER_KEY = "cluster";
+
+	public static final String KS_NAME = "titantest"; // TODO destroy
+	public static final String CLUSTER_NAME = "Test Cluster"; // TODO destroy
+	public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local-lock-mediator-prefix"; // TODO destroy (and in CassandraThriftStorageManager too)
+	public static final String LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT = "astyanax"; // keep this but perhaps make it private
 	
 	private static final ConcurrentHashMap<String, AstyanaxContext<Keyspace>> keyspaces =
 			new ConcurrentHashMap<String, AstyanaxContext<Keyspace>>();
@@ -54,22 +43,17 @@ public class AstyanaxStorageManager implements StorageManager {
 	
 	private final AstyanaxContext<Keyspace> ks;
 	private final String ksName;
-	private final String clusterName;
 	
     private final int lockRetryCount;
     private final long lockWaitMS, lockExpireMS;
     private final byte[] rid;
-    
-    private final OrderedKeyColumnValueIDManager idmanager;
 	
 	private final String llmPrefix;
 	
 	public AstyanaxStorageManager(Configuration config) {
-		
-		this.clusterName = config.getString(CLUSTER_KEY, CLUSTER_DEFAULT);
-		
-		this.ksName = config.getString(KEYSPACE_KEY, KEYSPACE_DEFAULT);
-		
+		// TODO
+//		this.ksName = conf.getString("keyspace");
+		this.ksName = KS_NAME;
 		this.ks = getOrCreateKeyspace();
 		
 		this.rid = ConfigHelper.getRid(config);
@@ -77,7 +61,7 @@ public class AstyanaxStorageManager implements StorageManager {
 		this.llmPrefix =
 				config.getString(
 						LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
-						getClass().getName());
+						LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT); // TODO
 		
 		this.lockRetryCount =
 				config.getInt(
@@ -93,14 +77,12 @@ public class AstyanaxStorageManager implements StorageManager {
 				config.getLong(
 						GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
 						GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
-		
-        idmanager = new OrderedKeyColumnValueIDManager(
-        		openDatabase("titan_ids", null), rid, config);
 	}
 	
 	@Override
 	public long[] getIDBlock(int partition) {
-        return idmanager.getIDBlock(partition);
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
@@ -149,7 +131,7 @@ public class AstyanaxStorageManager implements StorageManager {
 	
 	private void ensureColumnFamilyExists(String name) {
 		
-		Cluster cl = clusters.get(clusterName).getEntity();
+		Cluster cl = clusters.get(CLUSTER_NAME).getEntity();
 		
 		try {
 			KeyspaceDefinition ksDef = cl.describeKeyspace(ksName);
@@ -182,7 +164,7 @@ public class AstyanaxStorageManager implements StorageManager {
 		// TODO actual configuration
 		AstyanaxContext.Builder builder = 
 				new AstyanaxContext.Builder()
-				.forCluster(clusterName)
+				.forCluster(CLUSTER_NAME)
 				.forKeyspace(ksName)
 				.withAstyanaxConfiguration(
 						new AstyanaxConfigurationImpl()
@@ -204,9 +186,9 @@ public class AstyanaxStorageManager implements StorageManager {
 			
 			clusterCtx.start();
 			
-			clusters.putIfAbsent(clusterName, clusterCtx);
+			clusters.putIfAbsent(CLUSTER_NAME, clusterCtx);
 			
-			clusterCtx = clusters.get(clusterName);
+			clusterCtx = clusters.get(CLUSTER_NAME);
 			
 			Cluster cl = clusterCtx.getEntity();
 			
