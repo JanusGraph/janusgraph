@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class InternalCassandraLockKeyColumnValueStoreTest extends LockKeyColumnValueStoreTest {
 
+	
 	@BeforeClass
 	public static void startCassandra() {
     	CassandraDaemonWrapper.start(StorageSetup.cassandraYamlPath);
