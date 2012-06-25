@@ -504,6 +504,7 @@ public class AtomicTitanQuery implements InternalTitanQuery {
     }
 
     private VertexListInternal retrieveFromMemory(VertexListInternal vertices) {
+        edgesOnly();
         if (node==null) node = tx.getExistingVertex(nodeid);
         AtomicTitanQuery q = new AtomicTitanQuery(node,this);
         Iterator<TitanEdge> iter = q.edgeIterator();
@@ -515,6 +516,7 @@ public class AtomicTitanQuery implements InternalTitanQuery {
     }
 
     public VertexListInternal getVertexIDs() {
+        edgesOnly();
         Preconditions.checkNotNull(tx);
         Preconditions.checkArgument(node==null || (!node.isNew() && !node.isModified()),
                 "Cannot query for raw neighborhood on new or modified node.");
