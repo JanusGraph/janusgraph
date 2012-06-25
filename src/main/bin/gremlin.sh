@@ -1,7 +1,7 @@
 #!/bin/bash
 
-case `uname -o` in
-  Cygwin)
+case `uname` in
+  CYGWIN*)
     CP=$( echo `dirname $0`/../lib/*.jar . | sed 's/ /;/g')
     ;;
   *)
