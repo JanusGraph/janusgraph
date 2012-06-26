@@ -20,11 +20,6 @@ import java.util.Set;
 public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
-    public void startTransaction() throws IllegalStateException {
-        //Do nothing, transaction already started
-    }
-
-    @Override
     public void stopTransaction(Conclusion conclusion) {
         switch(conclusion) {
             case SUCCESS: commit(); break;

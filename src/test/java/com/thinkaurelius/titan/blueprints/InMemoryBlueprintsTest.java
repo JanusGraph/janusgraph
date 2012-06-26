@@ -67,7 +67,7 @@ public class InMemoryBlueprintsTest extends GraphTest {
 
     public void testKeyIndexableGraphTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new KeyIndexableGraphTestSuite(this));
+        doTestSuite(new KeyIndexableGraphTestSuite(this),ImmutableSet.of("testReIndexingOfElements"));
         printTestPerformance("KeyIndexableGraphTestSuite", this.stopWatch());
     }
 
