@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.util.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -166,7 +167,17 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 		
 	}
 
+    @Override
+    public void clearStorage() {
+        if (!stores.isEmpty()) throw new IllegalStateException("Cannot delete store, since database is open: " + stores.keySet().toString());
 
+        Transaction tx = null;
+        for (String db : environment.getDatabaseNames()) {
+            environment.removeDatabase(tx,db);
+        }
+        close();
+        IOUtils.deleteFromDirectory(directory);
+    }
 
 
 }

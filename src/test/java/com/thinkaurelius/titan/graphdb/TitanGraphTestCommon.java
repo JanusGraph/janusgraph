@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb;
 
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.types.Directionality;
 import org.apache.commons.configuration.Configuration;
 import org.junit.After;
@@ -20,11 +21,10 @@ public abstract class TitanGraphTestCommon {
 		this.config = config;
 	}
 
-    public abstract void cleanUp();
-	
 	@Before
 	public void setUp() throws Exception {
-        cleanUp();
+        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(config);
+        graphconfig.getStorageManager().clearStorage();
 		open();
 	}
 	

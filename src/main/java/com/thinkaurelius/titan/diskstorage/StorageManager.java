@@ -62,8 +62,13 @@ public interface StorageManager extends IDAuthority {
 	 * Closes the Storage Manager and all databases that have been opened.
 	 */
 	public void close();
-	
 
-	
+
+    /**
+     * Deletes and clears all database in this storage manager.
+     *
+     * ATTENTION: Invoking this method will delete ALL your data!!
+     */
+	public void clearStorage();
 	
 }

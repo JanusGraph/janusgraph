@@ -9,12 +9,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class ExternalHBaseLockKeyColumnValueStoreTest
 	extends LockKeyColumnValueStoreTest {
-	
-	@Override
-	public void cleanUp() {
-        HBaseHelper.deleteAll(StorageSetup.getHBaseStorageConfiguration());
-	}
-	
+
     public StorageManager openStorageManager(short idx) {
     	Configuration sc = StorageSetup.getHBaseStorageConfiguration();
     	sc.addProperty(HBaseStorageManager.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, "hbase-" + idx);

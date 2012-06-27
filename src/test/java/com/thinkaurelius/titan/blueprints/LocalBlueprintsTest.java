@@ -1,12 +1,9 @@
 package com.thinkaurelius.titan.blueprints;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEHelper;
-import com.thinkaurelius.titan.testutil.MemoryAssess;
+import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageManager;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.GraphTest;
 import com.tinkerpop.blueprints.util.io.gml.GMLReaderTestSuite;
@@ -15,7 +12,6 @@ import com.tinkerpop.blueprints.util.io.graphson.GraphSONReaderTestSuite;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
 /**
@@ -96,7 +92,9 @@ public class LocalBlueprintsTest extends GraphTest {
     }
 
     public void cleanUp() {
-        BerkeleyJEHelper.clearEnvironment(StorageSetup.getHomeDirFile());
+        BerkeleyJEStorageManager s = new BerkeleyJEStorageManager(
+                StorageSetup.getBerkeleyJEStorageConfiguration());
+        s.clearStorage();
         assertFalse(StorageSetup.getHomeDirFile().exists() && StorageSetup.getHomeDirFile().listFiles().length>0);
     }
 

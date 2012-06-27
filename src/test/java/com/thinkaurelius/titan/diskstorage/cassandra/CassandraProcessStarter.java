@@ -1,15 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
-import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.GraphStorageException;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.thrift.transport.TTransportException;
@@ -22,7 +16,7 @@ import java.net.Socket;
 import java.util.Map;
 import java.util.concurrent.*;
 
-public class CassandraLocalhostHelper {
+public class CassandraProcessStarter {
 	private Process cassandraProcess;
 	private Future<?> cassandraOutputLoggerFuture;
 	private CassandraOutputReader outputReader;
@@ -41,10 +35,10 @@ public class CassandraLocalhostHelper {
 	private static final int port =
             CassandraThriftStorageManager.PORT_DEFAULT;
 	private static final Logger log =
-		LoggerFactory.getLogger(CassandraLocalhostHelper.class);
+		LoggerFactory.getLogger(CassandraProcessStarter.class);
 	private static final long CASSANDRA_STARTUP_TIMEOUT = 10000L;
 	
-	public CassandraLocalhostHelper(String address) {
+	private CassandraProcessStarter(String address) {
 		this.address = address;
 		
 		cassandraDataDir = StringUtils.join(new String[] { "target",
@@ -61,16 +55,16 @@ public class CassandraLocalhostHelper {
 		assert(new File(cassandraInclude).isFile());
 	}
 	
-	public CassandraLocalhostHelper() {
+	public CassandraProcessStarter() {
 		this("127.0.0.1");
 	}
 	
-	public CassandraLocalhostHelper setDelete(boolean delete) {
+	public CassandraProcessStarter setDelete(boolean delete) {
 		this.delete = delete;
 		return this;
 	}
 	
-	public CassandraLocalhostHelper setLogging(boolean logging) {
+	public CassandraProcessStarter setLogging(boolean logging) {
 		logCassandraOutput = logging;
 		return this;
 	}
@@ -208,29 +202,6 @@ public class CassandraLocalhostHelper {
 			throw new GraphStorageException(e);
 		}
 	}
-	
-	public TitanGraph openDatabase() {
-        // Open graph database against the cassandra daemon
-		return TitanFactory.open(getConfiguration());
-	}
-	
-	public Configuration getConfiguration() {
-        Configuration configuration = StorageSetup.getLocalGraphConfiguration();
-        Configuration config = configuration.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE);
-        config.addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,"cassandra");
-        config.addProperty(CassandraThriftStorageManager.HOSTNAME_KEY,address);
-        config.addProperty(CassandraThriftStorageManager.SELF_HOSTNAME_KEY,address);
-        config.addProperty(CassandraThriftStorageManager.THRIFT_TIMEOUT_KEY,5*60000);
-		return configuration;
-	}
-
-    public static Configuration getLocalStorageConfiguration() {
-        Configuration config = new BaseConfiguration();
-        config.addProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, StorageSetup.getHomeDir());
-        config.addProperty(CassandraThriftStorageManager.HOSTNAME_KEY,"127.0.0.1");
-        config.addProperty(CassandraThriftStorageManager.THRIFT_TIMEOUT_KEY,10000);
-        return config;
-    }
 
 	public void waitForClusterSize(int minSize) throws InterruptedException {
 		CTConnectionFactory f = CTConnectionPool.getFactory(address, port, CassandraThriftStorageManager.THRIFT_TIMEOUT_DEFAULT);

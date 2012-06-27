@@ -18,10 +18,5 @@ public class InternalAstyanaxGraphTest extends TitanGraphTest {
 	public InternalAstyanaxGraphTest() {
 		super(StorageSetup.getAstyanaxGraphConfiguration());
 	}
-	
-	@Override
-	public void cleanUp() {
-		CassandraUtil.dropKeyspace(AstyanaxStorageManager.KEYSPACE_DEFAULT);
-	}
 
 }

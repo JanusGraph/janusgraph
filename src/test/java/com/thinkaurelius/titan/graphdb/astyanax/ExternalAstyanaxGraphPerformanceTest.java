@@ -10,10 +10,5 @@ public class ExternalAstyanaxGraphPerformanceTest extends TitanGraphPerformanceT
 	public ExternalAstyanaxGraphPerformanceTest() {
 		super(StorageSetup.getAstyanaxGraphConfiguration(), 0, 1, false);
 	}
-	
-	@Override
-	public void cleanUp() {
-		CassandraUtil.dropKeyspace(AstyanaxStorageManager.KEYSPACE_DEFAULT);
-	}
 
 }

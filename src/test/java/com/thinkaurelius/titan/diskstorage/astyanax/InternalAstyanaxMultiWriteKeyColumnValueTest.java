@@ -17,11 +17,6 @@ public class InternalAstyanaxMultiWriteKeyColumnValueTest extends MultiWriteKeyC
 	
     @Override
     public StorageManager openStorageManager() {
-        return new AstyanaxStorageManager(StorageSetup.getLocalStorageConfiguration());
+        return new AstyanaxStorageManager(StorageSetup.getCassandraStorageConfiguration());
     }
-
-	@Override
-	public void cleanUp() {
-		CassandraUtil.dropKeyspace(AstyanaxStorageManager.KEYSPACE_DEFAULT);
-	}
 }

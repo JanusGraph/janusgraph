@@ -14,17 +14,10 @@ public class InternalCassandraLockKeyColumnValueStoreTest extends LockKeyColumnV
 	public static void startCassandra() {
     	CassandraDaemonWrapper.start(StorageSetup.cassandraYamlPath);
 	}
-	
-    @Override
-    public void cleanUp() {
-        CassandraThriftStorageManager cmanager =
-        		new CassandraThriftStorageManager(CassandraLocalhostHelper.getLocalStorageConfiguration());
-        cmanager.dropKeyspace(CassandraThriftStorageManager.KEYSPACE_DEFAULT);
-    }
     
     @Override
     public StorageManager openStorageManager(short idx) {
-    	Configuration sc = CassandraLocalhostHelper.getLocalStorageConfiguration();
+    	Configuration sc = StorageSetup.getCassandraStorageConfiguration();
     	sc.addProperty(CassandraThriftStorageManager.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, "cassandra-" + idx);
     	sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, idx);
     	

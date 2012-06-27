@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -208,6 +209,35 @@ public class HBaseStorageManager implements StorageManager {
 		//Nothing to do
 	}
 
+    /**
+     * Deletes the specified table with all its columns.
+     * ATTENTION: Invoking this method will delete the table if it exists and therefore causes data loss.
+     *
+     */
+    @Override
+    public void clearStorage() {
+        Configuration conf = HBaseConfiguration.create();
+        try {
+            HBaseAdmin adm = new HBaseAdmin(conf);
+            try {
+                adm.disableTable(tableName);
+            } catch (Exception e) {
+                /*
+                     * Swallow exception.  Disabling a table typically throws
+                     * an exception because the table doesn't exist or is
+                     * already disabled.  If there's a serious problem
+                     * interacting with HBase, then the following remove
+                     * statement will generate an appropriate exception
+                     * (which would propagate up as a RuntimeException).
+                     */
+            }
+            adm.deleteTable(tableName);
+        } catch (TableNotFoundException e) {
+            // Do nothing
+        } catch (IOException e) {
+            throw new GraphStorageException(e);
+        }
+    }
 
 
 }

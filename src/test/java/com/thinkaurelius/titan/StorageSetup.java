@@ -1,5 +1,8 @@
 package com.thinkaurelius.titan;
 
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -52,6 +55,10 @@ public class StorageSetup {
         return getLocalStorageConfiguration();
     }
 
+    public static Configuration getCassandraStorageConfiguration() {
+        Configuration config = getLocalStorageConfiguration();
+        return config;
+    }
 
 
     //------
@@ -79,5 +86,12 @@ public class StorageSetup {
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,"astyanax");
         return config;
     }
+
+    public static Configuration getCassandraGraphConfiguration() {
+        Configuration config = StorageSetup.getLocalGraphConfiguration();
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,"cassandra");
+        return config;
+    }
+
 
 }

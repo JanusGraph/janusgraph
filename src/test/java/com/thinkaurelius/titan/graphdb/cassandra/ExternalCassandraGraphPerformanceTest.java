@@ -1,19 +1,19 @@
 package com.thinkaurelius.titan.graphdb.cassandra;
 
+import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraLocalhostHelper;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceTest;
 
 public class ExternalCassandraGraphPerformanceTest extends TitanGraphPerformanceTest {
 
 
-    public static CassandraLocalhostHelper ch = new CassandraLocalhostHelper();
+    public static CassandraProcessStarter ch = new CassandraProcessStarter();
 
     public ExternalCassandraGraphPerformanceTest() {
-        super(ch.getConfiguration(),0,1,false);
+        super(StorageSetup.getCassandraGraphConfiguration(),0,1,false);
     }
 
     @BeforeClass
@@ -24,13 +24,6 @@ public class ExternalCassandraGraphPerformanceTest extends TitanGraphPerformance
     @AfterClass
     public static void afterClass() throws InterruptedException {
         ch.stopCassandra();
-    }
-
-    public void cleanUp() {
-        CassandraThriftStorageManager.dropKeyspace(
-                CassandraThriftStorageManager.KEYSPACE_DEFAULT,
-                "127.0.0.1",
-                CassandraThriftStorageManager.PORT_DEFAULT);
     }
 
 }

@@ -12,16 +12,9 @@ public class InternalCassandraThriftMultiWriteKeyColumnValueStoreTest extends Mu
 	public static void startCassandra() {
     	CassandraDaemonWrapper.start(StorageSetup.cassandraYamlPath);
 	}
-	
-    @Override
-    public void cleanUp() {
-        CassandraThriftStorageManager cmanager =
-        		new CassandraThriftStorageManager(CassandraLocalhostHelper.getLocalStorageConfiguration());
-        cmanager.dropKeyspace(CassandraThriftStorageManager.KEYSPACE_DEFAULT);
-    }
 
     @Override
     public StorageManager openStorageManager() {
-        return new CassandraThriftStorageManager(CassandraLocalhostHelper.getLocalStorageConfiguration());
+        return new CassandraThriftStorageManager(StorageSetup.getCassandraStorageConfiguration());
     }
 }

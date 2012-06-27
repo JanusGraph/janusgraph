@@ -28,23 +28,16 @@ import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
 import com.thinkaurelius.titan.diskstorage.util.OrderedKeyColumnValueIDManager;
 import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager.*;
 
 public class AstyanaxStorageManager implements StorageManager {
-	
-    /**
-     * Default name for the Cassandra keyspace
-     * <p>
-     * Value = {@value}
-     */
-    public static final String KEYSPACE_DEFAULT = "titan";
-    public static final String KEYSPACE_KEY = "keyspace";
-    
+	    
     /**
      * Default name for the Cassandra cluster
      * <p>
      * Value = {@value}
      */
-    public static final String CLUSTER_DEFAULT = "Test Cluster";
+    public static final String CLUSTER_DEFAULT = "Titan Cluster";
     public static final String CLUSTER_KEY = "cluster";
 	
     private final AstyanaxContext<Keyspace> ksctx;
@@ -135,8 +128,9 @@ public class AstyanaxStorageManager implements StorageManager {
 		ksctx.shutdown();
 		clctx.shutdown();
 	}
-	
-	private SimpleLockConfig.Builder makeLockConfigBuilder(AstyanaxOrderedKeyColumnValueStore lockStore, LocalLockMediator llm) {
+
+
+    private SimpleLockConfig.Builder makeLockConfigBuilder(AstyanaxOrderedKeyColumnValueStore lockStore, LocalLockMediator llm) {
 		return (new SimpleLockConfig.Builder())
 			.localLockMediator(llm)
 			.lockExpireMS(lockExpireMS)
@@ -213,8 +207,10 @@ public class AstyanaxStorageManager implements StorageManager {
 								.setDiscoveryType(NodeDiscoveryType.NONE))
 				.withConnectionPoolConfiguration(
 						new ConnectionPoolConfigurationImpl("MyConnectionPool")
-								.setPort(9160).setMaxConnsPerHost(16)
-								.setSeeds("127.0.0.1:9160"))
+								.setPort(config.getInt(PORT_KEY,PORT_DEFAULT))
+                                .setMaxConnsPerHost(16)
+                                .setConnectTimeout(config.getInt(THRIFT_TIMEOUT_KEY,THRIFT_TIMEOUT_DEFAULT))
+								.setSeeds(config.getString(HOSTNAME_KEY,HOSTNAME_DEFAULT))) //"127.0.0.1:9160"
 				.withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
 		
 		return builder;
@@ -250,6 +246,18 @@ public class AstyanaxStorageManager implements StorageManager {
 			throw new GraphStorageException(e);
 		}
 	}
+
+
+    @Override
+    public void clearStorage() {
+        try {
+            clctx.getEntity().dropKeyspace(ksName);
+        } catch (ConnectionException e) {
+            log.debug("Failed to drop keyspace {}", ksName);
+        } finally {
+            close();
+        }
+    }
 }
 
 

@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.blueprints;
 
+import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraLocalhostHelper;
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Graph;
 
 /**
@@ -11,7 +13,7 @@ import com.tinkerpop.blueprints.Graph;
 
 public class ExternalCassandraBlueprintsTest extends LocalBlueprintsTest {
 
-    public static CassandraLocalhostHelper ch = new CassandraLocalhostHelper();
+    public static CassandraProcessStarter ch = new CassandraProcessStarter();
 
     @Override
     public void startUp() {
@@ -25,16 +27,15 @@ public class ExternalCassandraBlueprintsTest extends LocalBlueprintsTest {
 
     @Override
     public Graph generateGraph() {
-        Graph graph = TitanFactory.open(ch.getConfiguration());
+        Graph graph = TitanFactory.open(StorageSetup.getCassandraGraphConfiguration());
         return graph;
     }
 
     @Override
     public void cleanUp() {
-        CassandraThriftStorageManager.dropKeyspace(
-                CassandraThriftStorageManager.KEYSPACE_DEFAULT,
-                "127.0.0.1",
-                CassandraThriftStorageManager.PORT_DEFAULT);
+        CassandraThriftStorageManager s = new CassandraThriftStorageManager(
+                StorageSetup.getCassandraGraphConfiguration().subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE));
+        s.clearStorage();
     }
 
 

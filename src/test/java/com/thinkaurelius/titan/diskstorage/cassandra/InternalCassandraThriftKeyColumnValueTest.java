@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
+import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 
 import com.thinkaurelius.titan.StorageSetup;
@@ -13,17 +14,14 @@ public class InternalCassandraThriftKeyColumnValueTest extends KeyColumnValueSto
 	public static void startCassandra() {
     	CassandraDaemonWrapper.start(StorageSetup.cassandraYamlPath);
 	}
-	
-    @Override
-    public void cleanUp() {
-        CassandraThriftStorageManager cmanager =
-        		new CassandraThriftStorageManager(CassandraLocalhostHelper.getLocalStorageConfiguration());
-        cmanager.dropKeyspace(CassandraThriftStorageManager.KEYSPACE_DEFAULT);
-    }
 
     @Override
     public StorageManager openStorageManager() {
-        return new CassandraThriftStorageManager(CassandraLocalhostHelper.getLocalStorageConfiguration());
+        return new CassandraThriftStorageManager(getConfiguration());
     }
-    
+
+    private Configuration getConfiguration() {
+        Configuration config = StorageSetup.getCassandraStorageConfiguration();
+        return config;
+    }
 }

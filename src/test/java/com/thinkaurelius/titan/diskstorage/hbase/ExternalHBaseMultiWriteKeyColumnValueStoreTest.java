@@ -11,12 +11,7 @@ public class ExternalHBaseMultiWriteKeyColumnValueStoreTest extends MultiWriteKe
     public StorageManager openStorageManager() {
         return new HBaseStorageManager(getConfig());
     }
-	
-	@Override
-	public void cleanUp() {
-        HBaseHelper.deleteAll(getConfig());
-	}
-	
+
 	private Configuration getConfig() {
 		Configuration c = StorageSetup.getHBaseStorageConfiguration();
 		return c;

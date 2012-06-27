@@ -41,11 +41,9 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 	
 	@Before
 	public void setUp() throws Exception {
-		cleanUp();
+		openStorageManager().clearStorage();
         open();
 	}
-
-    public abstract void cleanUp();
 
     public abstract StorageManager openStorageManager();
 

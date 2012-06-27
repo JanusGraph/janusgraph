@@ -29,7 +29,7 @@ public abstract class LockKeyColumnValueStoreTest {
 	
 	@Before
 	public void setUp() throws Exception {
-        cleanUp();
+        openStorageManager((short)1).clearStorage();
 
 		open();
 		k  = strToByteBuffer("key");
@@ -45,8 +45,6 @@ public abstract class LockKeyColumnValueStoreTest {
 		b.put(raw).rewind();
 		return b;
 	}
-
-    public abstract void cleanUp();
 
     public abstract StorageManager openStorageManager(short hostIndex);
 

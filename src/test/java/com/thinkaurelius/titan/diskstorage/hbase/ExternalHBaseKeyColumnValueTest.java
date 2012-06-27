@@ -12,11 +12,6 @@ public class ExternalHBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
         return new HBaseStorageManager(getConfig());
     }
 	
-	@Override
-	public void cleanUp() {
-        HBaseHelper.deleteAll(getConfig());
-	}
-	
 	private Configuration getConfig() {
 		Configuration c = StorageSetup.getHBaseStorageConfiguration();
 //		c.setProperty("hbase-config.hbase.zookeeper.quorum", "localhost");

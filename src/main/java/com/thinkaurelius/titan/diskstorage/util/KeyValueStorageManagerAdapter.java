@@ -43,7 +43,12 @@ public class KeyValueStorageManagerAdapter implements StorageManager {
 		manager.close();
 	}
 
-	@Override
+    @Override
+    public void clearStorage() {
+        manager.clearStorage();
+    }
+
+    @Override
 	public OrderedKeyColumnValueStore openDatabase(String name)
 			throws GraphStorageException {
         int keyLength = KeyValueStoreAdapter.variableKeyLength;

@@ -20,7 +20,6 @@ public interface KeyValueStorageManager {
      * As defined in {@see com.thinkaurelius.titan.diskstorage.IDAuthority.getIDBlock(int,int)}
      *
      * @param partition Partition for which to request an id block.
-     * @param blockSize The size of the partition block.
      * @return a range of ids for the particular partition
      */
     public long[] getIDBlock(int partition);
@@ -36,8 +35,13 @@ public interface KeyValueStorageManager {
 	 * Closes the Storage Manager and all databases that have been opened.
 	 */
 	public void close();
-	
 
+    /**
+     * Deletes and clears all database in this storage manager.
+     *
+     * ATTENTION: Invoking this method will delete ALL your data!!
+     */
+    public void clearStorage();
 	
 	
 }

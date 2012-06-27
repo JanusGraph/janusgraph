@@ -33,7 +33,7 @@ public abstract class KeyValueStoreTest {
 	
 	@Before
 	public void setUp() throws Exception {
-        cleanUp();
+        openStorageManager().clearStorage();
 		open();
 	}
 	
@@ -42,8 +42,6 @@ public abstract class KeyValueStoreTest {
         tx = manager.beginTransaction();
         store = manager.openDatabase(storeName);
     }
-
-    public abstract void cleanUp();
 
     public abstract KeyValueStorageManager openStorageManager();
 	
