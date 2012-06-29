@@ -15,7 +15,9 @@ import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ColumnList;
+import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.query.RowQuery;
+import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.diskstorage.Entry;
@@ -34,13 +36,20 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 	private final Keyspace keyspace;
 	private final ColumnFamily<ByteBuffer, ByteBuffer> cf;
 	private static final ByteBuffer EMPTY = ByteBuffer.allocate(0);
+	private final ConsistencyLevel readLevel;
+	private final ConsistencyLevel writeLevel;
+	private final RetryPolicy retryPolicy;
 	
 	private final LockConfig lockConfig;
 
 	AstyanaxOrderedKeyColumnValueStore(Keyspace keyspace, String cfName,
-			SimpleLockConfig.Builder lcBuilder) {
+			SimpleLockConfig.Builder lcBuilder, ConsistencyLevel readLevel,
+			ConsistencyLevel writeLevel, RetryPolicy retryPolicy) {
 		this.keyspace = keyspace;
 		this.cfName = cfName;
+		this.readLevel = readLevel;
+		this.writeLevel = writeLevel;
+		this.retryPolicy = retryPolicy;
 
 		cf = new ColumnFamily<ByteBuffer, ByteBuffer>(
 				this.cfName,
@@ -65,7 +74,10 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 			TransactionHandle txh) {
 		try {
 			OperationResult<Column<ByteBuffer>> result = 
-				keyspace.prepareQuery(cf).getKey(key).getColumn(column).execute();
+				keyspace.prepareQuery(cf)
+					.setConsistencyLevel(readLevel)
+					.withRetryPolicy(retryPolicy.duplicate())
+					.getKey(key).getColumn(column).execute();
 			return result.getResult().getByteBufferValue();
 		} catch (NotFoundException e) {
 			return null;
@@ -116,7 +128,10 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 		try {
 			// See getSlice() below for a warning suppression justification
 			@SuppressWarnings("rawtypes")
-			RowQuery rq = (RowQuery)keyspace.prepareQuery(cf).getKey(key);
+			RowQuery rq = (RowQuery)keyspace.prepareQuery(cf)
+								.withRetryPolicy(retryPolicy.duplicate())
+								.setConsistencyLevel(readLevel)
+								.getKey(key);
 			@SuppressWarnings("unchecked")
 			OperationResult<ColumnList<ByteBuffer>> r = rq.withColumnRange(EMPTY, EMPTY, false, 1).execute();
 			return 0 < r.getResult().size();
@@ -159,7 +174,10 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 		 * 
 		 */
 		@SuppressWarnings("rawtypes")
-		RowQuery rq = (RowQuery)keyspace.prepareQuery(cf).getKey(key);
+		RowQuery rq = (RowQuery)keyspace.prepareQuery(cf)
+						.setConsistencyLevel(readLevel)
+						.withRetryPolicy(retryPolicy.duplicate())
+						.getKey(key);
 //		RowQuery<ByteBuffer, ByteBuffer> rq = keyspace.prepareQuery(cf).getKey(key);
 		rq.withColumnRange(columnStart, columnEnd, false, limit + 1);
 		
@@ -214,7 +232,9 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     		}
     	}
 		
-		MutationBatch m = keyspace.prepareMutationBatch();
+		MutationBatch m = keyspace.prepareMutationBatch()
+							.setConsistencyLevel(writeLevel)
+							.withRetryPolicy(retryPolicy.duplicate());
 		
 		final long delTS = TimestampProvider.getApproxNSSinceEpoch(false);
 		final long addTS = TimestampProvider.getApproxNSSinceEpoch(true);
