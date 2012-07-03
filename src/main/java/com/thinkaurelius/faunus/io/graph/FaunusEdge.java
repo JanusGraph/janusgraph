@@ -89,7 +89,7 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
         @Override
         public int compare(final byte[] edge1, final int start1, final int length1, final byte[] edge2, final int start2, final int length2) {
             // 0 byte is the element type
-            // the next 8 bytes are the long id
+            // the next 8 bytes are the edge id
             // the next 8 bytes are the in vertex id
             // the next 8 bytes are the out vertex id
             final ByteBuffer buffer1 = ByteBuffer.wrap(edge1);

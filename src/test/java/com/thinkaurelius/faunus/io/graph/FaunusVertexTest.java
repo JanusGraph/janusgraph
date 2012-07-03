@@ -45,6 +45,7 @@ public class FaunusVertexTest extends TestCase {
         assertEquals(vertex2.compareTo(vertex1), 0);
         assertEquals(vertex2.getId(), 10l);
         assertFalse(vertex2.getEdges(Direction.OUT).iterator().hasNext());
+        assertFalse(vertex2.getEdges(Direction.IN).iterator().hasNext());
 
     }
 
@@ -89,5 +90,58 @@ public class FaunusVertexTest extends TestCase {
         assertFalse(edges.hasNext());
 
     }
+
+    public void testSerialization3() throws IOException {
+
+        FaunusVertex vertex1 = new FaunusVertex(10);
+        vertex1.addOutEdge(new FaunusEdge(vertex1, new FaunusVertex(2), "knows"));
+        vertex1.addInEdge(new FaunusEdge(new FaunusVertex(3), vertex1, "knows"));
+        vertex1.setProperty("name", "marko");
+        vertex1.setProperty("age", 32);
+        vertex1.setProperty("longitude", 10.01d);
+        vertex1.setProperty("latitude", 11.4f);
+        vertex1.setProperty("size", 10l);
+        assertEquals(vertex1.getPropertyKeys().size(), 5);
+        assertEquals(vertex1.getProperty("name"), "marko");
+        assertEquals(vertex1.getProperty("age"), 32);
+        assertEquals(vertex1.getProperty("longitude"), 10.01d);
+        assertEquals(vertex1.getProperty("latitude"), 11.4f);
+        assertEquals(vertex1.getProperty("size"), 10l);
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+
+        vertex1.write(new DataOutputStream(bytes));
+        FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+
+        assertEquals(vertex1, vertex2);
+        assertEquals(vertex1.compareTo(vertex2), 0);
+        assertEquals(vertex2.compareTo(vertex1), 0);
+        assertEquals(vertex2.getId(), 10l);
+        assertEquals(vertex2.getPropertyKeys().size(), 5);
+        assertEquals(vertex2.getProperty("name"), "marko");
+        assertEquals(vertex2.getProperty("age"), 32);
+        assertEquals(vertex2.getProperty("longitude"), 10.01d);
+        assertEquals(vertex2.getProperty("latitude"), 11.4f);
+        assertEquals(vertex1.getProperty("size"), 10l);
+
+        Iterator<Edge> edges = vertex2.getEdges(Direction.OUT).iterator();
+        assertTrue(edges.hasNext());
+        Edge edge = edges.next();
+        assertEquals(edge.getLabel(), "knows");
+        assertEquals(edge.getVertex(Direction.IN).getId(), 2l);
+        assertEquals(edge.getVertex(Direction.OUT).getId(), 10l);
+        assertFalse(edges.hasNext());
+
+        edges = vertex2.getEdges(Direction.IN).iterator();
+        assertTrue(edges.hasNext());
+        edge = edges.next();
+        assertEquals(edge.getLabel(), "knows");
+        assertEquals(edge.getVertex(Direction.IN).getId(), 10l);
+        assertEquals(edge.getVertex(Direction.OUT).getId(), 3l);
+        assertEquals(edge.getLabel(), "knows");
+        assertFalse(edges.hasNext());
+
+    }
+
 
 }

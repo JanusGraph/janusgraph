@@ -86,6 +86,14 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
         return null;
     }
 
+    public void addInEdge(final FaunusEdge edge) {
+        this.inEdges.add(edge);
+    }
+
+    public void setInEdges(final List<Edge> inEdges) {
+        this.inEdges = inEdges;
+    }
+
     public void addOutEdge(final FaunusEdge edge) {
         this.outEdges.add(edge);
     }
@@ -98,6 +106,7 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
     public void write(final DataOutput out) throws IOException {
         out.writeByte(ElementType.VERTEX.val);
         out.writeLong(this.id);
+        EdgeArray.write((List) this.inEdges, out);
         EdgeArray.write((List) this.outEdges, out);
         ElementProperties.write(this.properties, out);
 
@@ -106,6 +115,7 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
     public void readFields(final DataInput in) throws IOException {
         in.readByte();
         this.id = in.readLong();
+        this.inEdges = (List) EdgeArray.readFields(in);
         this.outEdges = (List) EdgeArray.readFields(in);
         this.properties = ElementProperties.readFields(in);
     }

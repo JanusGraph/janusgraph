@@ -43,6 +43,7 @@ public class FaunusJSONParser {
                     vertex.setProperty((String) key, properties.get(key));
                 }
             }
+
             final JSONArray outEdges = (JSONArray) json.get(JSONTokens.OUT_E);
             if (null != outEdges) {
                 final Iterator itty = outEdges.iterator();
@@ -60,6 +61,25 @@ public class FaunusJSONParser {
                     vertex.addOutEdge(edge);
                 }
             }
+
+            final JSONArray inEdges = (JSONArray) json.get(JSONTokens.IN_E);
+            if (null != inEdges) {
+                final Iterator itty = inEdges.iterator();
+                while (itty.hasNext()) {
+                    final JSONObject inEdge = (JSONObject) itty.next();
+                    final long outVertexId = (Long) inEdge.get(JSONTokens.OUT_ID);
+                    final String label = (String) inEdge.get(JSONTokens.LABEL);
+                    final FaunusEdge edge = new FaunusEdge(new FaunusVertex(outVertexId), vertex, label);
+                    final JSONObject edgeProperties = (JSONObject) inEdge.get(JSONTokens.PROPERTIES);
+                    if (null != edgeProperties) {
+                        for (final Object key : edgeProperties.keySet()) {
+                            edge.setProperty((String) key, edgeProperties.get(key));
+                        }
+                    }
+                    vertex.addInEdge(edge);
+                }
+            }
+
             return vertex;
         } catch (Exception e) {
             throw new IOException(e.getMessage(), e);
