@@ -13,6 +13,8 @@ import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
+import static com.tinkerpop.blueprints.Direction.OUT;
+
 import java.io.IOException;
 
 /**
@@ -26,7 +28,7 @@ public class Transpose {
         public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             long counter = 0;
             final Long vertexId = (Long) value.getId();
-            final FaunusVertex vertex = value.cloneIdProperties();
+            final FaunusVertex vertex = value.cloneIdAndProperties();
 
             context.write(new LongWritable(vertexId), new Holder<FaunusVertex>(vertex));
             for (final Edge edge : value.getEdges(Direction.OUT)) {
@@ -48,7 +50,7 @@ public class Transpose {
             for (final Holder holder : values) {
                 final FaunusElement element = holder.get();
                 if (element instanceof FaunusEdge) {
-                    vertex.addOutEdge(WritableUtils.clone((FaunusEdge) element, context.getConfiguration()));
+                    vertex.addEdge(OUT, WritableUtils.clone((FaunusEdge) element, context.getConfiguration()));
                 } else if (element instanceof FaunusVertex) {
                     vertex.setProperties(element.getProperties());
                 } else {

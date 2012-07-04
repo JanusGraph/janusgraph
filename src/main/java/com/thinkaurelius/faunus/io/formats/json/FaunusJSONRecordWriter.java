@@ -21,16 +21,16 @@ import java.util.Set;
 public class FaunusJSONRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
     private static final String UTF8 = "UTF-8";
     private static final byte[] NEWLINE;
+    protected DataOutputStream out;
 
     static {
         try {
             NEWLINE = "\n".getBytes(UTF8);
         } catch (UnsupportedEncodingException uee) {
-            throw new IllegalArgumentException("can't find " + UTF8 + " encoding");
+            throw new IllegalArgumentException("Can not find " + UTF8 + " encoding");
         }
     }
 
-    protected DataOutputStream out;
 
     public FaunusJSONRecordWriter(final DataOutputStream out) {
         this.out = out;

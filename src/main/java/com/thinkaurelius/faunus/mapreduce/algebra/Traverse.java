@@ -15,6 +15,9 @@ import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
+import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -135,7 +138,7 @@ public class Traverse {
                 throw new IOException("Vertex " + key + " not propagated in stream");
             else {
                 for (final FaunusEdge edge : edges) {
-                    vertex.addOutEdge(edge);
+                    vertex.addEdge(OUT, edge);
                 }
                 context.write(NullWritable.get(), vertex);
             }

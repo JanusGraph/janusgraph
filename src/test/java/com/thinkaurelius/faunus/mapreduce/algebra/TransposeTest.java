@@ -15,6 +15,8 @@ import org.apache.hadoop.mrunit.types.Pair;
 import java.io.IOException;
 import java.util.List;
 
+import static com.tinkerpop.blueprints.Direction.OUT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -33,7 +35,7 @@ public class TransposeTest extends TestCase {
         vertex1.setProperty("name", "marko");
         FaunusVertex vertex2 = new FaunusVertex(2);
         vertex2.setProperty("name", "gremlin");
-        vertex1.addOutEdge(new FaunusEdge(vertex1, vertex2, "created"));
+        vertex1.addEdge(OUT, new FaunusEdge(vertex1, vertex2, "created"));
 
         mapReduceDriver.withInput(NullWritable.get(), vertex1).withInput(NullWritable.get(), vertex2);
         List<Pair<NullWritable, FaunusVertex>> list = mapReduceDriver.run();

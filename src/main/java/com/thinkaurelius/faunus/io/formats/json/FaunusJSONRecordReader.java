@@ -1,7 +1,6 @@
 package com.thinkaurelius.faunus.io.formats.json;
 
 
-import com.thinkaurelius.faunus.io.formats.json.util.FaunusJSONParser;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -25,20 +24,21 @@ import java.io.IOException;
 public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
     //private static final Log LOG = LogFactory.getLog(FaunusJSONRecordReader.class);
-
     private long start;
     private long pos;
     private long end;
     private LineReader in;
-    private int maxLineLength;
-    private NullWritable key = NullWritable.get();
+    private final int maxLineLength = Integer.MAX_VALUE;
+
+    private final NullWritable key = NullWritable.get();
     private FaunusVertex value = null;
-    private FaunusJSONParser parser = new FaunusJSONParser();
+
+    private final FaunusJSONParser parser = new FaunusJSONParser();
 
     public void initialize(final InputSplit genericSplit, final TaskAttemptContext context) throws IOException {
         final FileSplit split = (FileSplit) genericSplit;
         final Configuration job = context.getConfiguration();
-        this.maxLineLength = job.getInt("mapred.linerecordreader.maxlength", Integer.MAX_VALUE);
+        //this.maxLineLength = job.getInt("mapred.linerecordreader.maxlength", Integer.MAX_VALUE);
         this.start = split.getStart();
         this.end = this.start + split.getLength();
         final Path file = split.getPath();
@@ -87,7 +87,6 @@ public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVer
             //LOG.info("Skipped line of size " + newSize + " at pos " + (pos - newSize));
         }
         if (newSize == 0) {
-            this.key = null;
             this.value = null;
             return false;
         } else {

@@ -11,6 +11,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
 
+import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -52,8 +55,8 @@ public class FaunusVertexTest extends TestCase {
     public void testSerialization2() throws IOException {
 
         FaunusVertex vertex1 = new FaunusVertex(10);
-        vertex1.addOutEdge(new FaunusEdge(vertex1, new FaunusVertex(2), "knows"));
-        vertex1.addOutEdge(new FaunusEdge(vertex1, new FaunusVertex(3), "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(vertex1, new FaunusVertex(2), "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(vertex1, new FaunusVertex(3), "knows"));
         vertex1.setProperty("name", "marko");
         vertex1.setProperty("age", 32);
         vertex1.setProperty("longitude", 10.01d);
@@ -94,8 +97,8 @@ public class FaunusVertexTest extends TestCase {
     public void testSerialization3() throws IOException {
 
         FaunusVertex vertex1 = new FaunusVertex(10);
-        vertex1.addOutEdge(new FaunusEdge(vertex1, new FaunusVertex(2), "knows"));
-        vertex1.addInEdge(new FaunusEdge(new FaunusVertex(3), vertex1, "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(vertex1, new FaunusVertex(2), "knows"));
+        vertex1.addEdge(IN, new FaunusEdge(new FaunusVertex(3), vertex1, "knows"));
         vertex1.setProperty("name", "marko");
         vertex1.setProperty("age", 32);
         vertex1.setProperty("longitude", 10.01d);

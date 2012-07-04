@@ -7,6 +7,9 @@ import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
+import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,7 +51,7 @@ public class LabelFilter {
                         filteredCounter++;
                     }
                 }
-                value.setOutEdges(newEdges);
+                value.setEdges(Direction.OUT, newEdges);
 
                 if (allowedCounter > 0)
                     context.getCounter(Counters.EDGES_ALLOWED_BY_LABEL).increment(allowedCounter);

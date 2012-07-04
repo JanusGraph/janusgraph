@@ -1,6 +1,7 @@
-package com.thinkaurelius.faunus.io.formats.json.util;
+package com.thinkaurelius.faunus.io.formats.json;
 
 import com.thinkaurelius.faunus.BaseTest;
+import com.thinkaurelius.faunus.io.formats.json.FaunusJSONParser;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;

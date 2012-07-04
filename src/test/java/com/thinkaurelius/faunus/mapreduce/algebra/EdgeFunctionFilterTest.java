@@ -11,6 +11,9 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
+import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -44,8 +47,8 @@ public class EdgeFunctionFilterTest extends TestCase {
         edge1.setProperty("weight", 0.6d);
         FaunusEdge edge2 = new FaunusEdge(vertex1, vertex2, "knows");
         edge2.setProperty("weight", 0.4d);
-        vertex1.addOutEdge(edge1);
-        vertex1.addOutEdge(edge2);
+        vertex1.addEdge(OUT, edge1);
+        vertex1.addEdge(OUT, edge2);
         assertEquals(((List) vertex1.getEdges(Direction.OUT)).size(), 2);
 
         mapDriver.withInput(NullWritable.get(), vertex1);

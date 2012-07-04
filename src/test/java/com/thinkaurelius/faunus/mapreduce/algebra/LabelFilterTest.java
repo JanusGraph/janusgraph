@@ -14,6 +14,8 @@ import org.apache.hadoop.mrunit.types.Pair;
 import java.io.IOException;
 import java.util.List;
 
+import static com.tinkerpop.blueprints.Direction.OUT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -31,8 +33,8 @@ public class LabelFilterTest extends BaseTest {
 
         FaunusVertex vertex1 = new FaunusVertex(1);
         vertex1.setProperty("name", "marko");
-        vertex1.addOutEdge(new FaunusEdge(new FaunusVertex(1), new FaunusVertex(2), "knows"));
-        vertex1.addOutEdge(new FaunusEdge(new FaunusVertex(1), new FaunusVertex(3), "created"));
+        vertex1.addEdge(OUT, new FaunusEdge(new FaunusVertex(1), new FaunusVertex(2), "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(new FaunusVertex(1), new FaunusVertex(3), "created"));
 
         mapDriver.withInput(NullWritable.get(), vertex1);
         List<Pair<NullWritable, FaunusVertex>> list = mapDriver.run();
@@ -57,8 +59,8 @@ public class LabelFilterTest extends BaseTest {
 
         FaunusVertex vertex1 = new FaunusVertex(1);
         vertex1.setProperty("name", "marko");
-        vertex1.addOutEdge(new FaunusEdge(new FaunusVertex(1), new FaunusVertex(2), "knows"));
-        vertex1.addOutEdge(new FaunusEdge(new FaunusVertex(1), new FaunusVertex(3), "created"));
+        vertex1.addEdge(OUT, new FaunusEdge(new FaunusVertex(1), new FaunusVertex(2), "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(new FaunusVertex(1), new FaunusVertex(3), "created"));
 
         mapDriver.withInput(NullWritable.get(), vertex1);
         List<Pair<NullWritable, FaunusVertex>> list = mapDriver.run();

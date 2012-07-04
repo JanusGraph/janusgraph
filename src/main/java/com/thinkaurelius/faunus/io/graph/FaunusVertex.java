@@ -20,6 +20,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -50,7 +53,7 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
     }
 
     public Iterable<Edge> getEdges(final Direction direction, final String... labels) {
-        if (Direction.OUT.equals(direction)) {
+        if (OUT.equals(direction)) {
             if (null != labels && labels.length > 0) {
                 final Set<String> legalLabels = new HashSet<String>(Arrays.asList(labels));
                 final List<Edge> filteredEdges = new ArrayList<Edge>();
@@ -63,7 +66,7 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
             } else {
                 return this.outEdges;
             }
-        } else if (Direction.IN.equals(direction)) {
+        } else if (IN.equals(direction)) {
             if (null != labels && labels.length > 0) {
                 final Set<String> legalLabels = new HashSet<String>(Arrays.asList(labels));
                 final List<Edge> filteredEdges = new ArrayList<Edge>();
@@ -85,22 +88,25 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
         return null;
     }
 
-    public void addInEdge(final FaunusEdge edge) {
-        this.inEdges.add(edge);
+    public FaunusVertex addEdge(final Direction direction, final FaunusEdge edge) {
+        if (OUT.equals(direction))
+            this.outEdges.add(edge);
+        else if (IN.equals(direction))
+            this.inEdges.add(edge);
+        else
+            throw new IllegalArgumentException("Direction of " + direction + " is not supported (must be either IN or OUT)");
+
+        return this;
     }
 
-    public void setInEdges(final List<Edge> inEdges) {
-        this.inEdges = inEdges;
+    public void setEdges(final Direction direction, final List<Edge> edges) {
+        if (OUT.equals(direction))
+            this.outEdges = edges;
+        else if (IN.equals(direction))
+            this.inEdges = edges;
+        else
+            throw new IllegalArgumentException("Direction of " + direction + " is not supported (must be either IN or OUT)");
     }
-
-    public void addOutEdge(final FaunusEdge edge) {
-        this.outEdges.add(edge);
-    }
-
-    public void setOutEdges(final List<Edge> outEdges) {
-        this.outEdges = outEdges;
-    }
-
 
     public void write(final DataOutput out) throws IOException {
         out.writeByte(ElementType.VERTEX.val);
@@ -147,16 +153,26 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
         @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
             if (a instanceof FaunusElement && b instanceof FaunusElement)
-                return ((Long) ((FaunusElement) a).getId()).compareTo((Long) ((FaunusElement) b).getId());
+                return (((FaunusElement) a).getIdAsLong()).compareTo(((FaunusElement) b).getIdAsLong());
             else
                 return super.compare(a, b);
         }
     }
 
-    public FaunusVertex cloneIdProperties() {
-        final FaunusVertex clone = new FaunusVertex((Long) this.getId());
+    public FaunusVertex cloneIdAndProperties() {
+        final FaunusVertex clone = new FaunusVertex(this.getIdAsLong());
         clone.setProperties(this.getProperties());
         return clone;
     }
 
+    public FaunusVertex cloneAll() {
+        final FaunusVertex clone = this.cloneIdAndProperties();
+        for (final Edge edge : this.getEdges(OUT)) {
+            clone.addEdge(OUT, (FaunusEdge) edge);
+        }
+        for (final Edge edge : this.getEdges(IN)) {
+            clone.addEdge(IN, (FaunusEdge) edge);
+        }
+        return clone;
+    }
 }

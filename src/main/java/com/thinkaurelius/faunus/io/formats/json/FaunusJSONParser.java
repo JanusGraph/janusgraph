@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.io.formats.json.util;
+package com.thinkaurelius.faunus.io.formats.json;
 
 import com.thinkaurelius.faunus.io.formats.json.JSONTokens;
 import com.thinkaurelius.faunus.io.graph.FaunusEdge;
@@ -14,6 +14,9 @@ import java.io.InputStreamReader;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
+import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -58,7 +61,7 @@ public class FaunusJSONParser {
                             edge.setProperty((String) key, edgeProperties.get(key));
                         }
                     }
-                    vertex.addOutEdge(edge);
+                    vertex.addEdge(OUT, edge);
                 }
             }
 
@@ -76,7 +79,7 @@ public class FaunusJSONParser {
                             edge.setProperty((String) key, edgeProperties.get(key));
                         }
                     }
-                    vertex.addInEdge(edge);
+                    vertex.addEdge(IN, edge);
                 }
             }
 
