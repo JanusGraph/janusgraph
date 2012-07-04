@@ -118,8 +118,12 @@ public class OrderedKeyColumnValueIDManager {
 				
 				assert 0 != target.remaining();
 				
-				// Read all id allocation claims on this partition
-				blocks = store.getSlice(partitionKey, empty, empty, null);
+				// Read all id allocation claims on this partition, for the counter value we're claiming
+				ByteBuffer nextStartBB = ByteBuffer.allocate(8);
+				ByteBuffer nextEndBB = ByteBuffer.allocate(8);
+				nextStartBB.putLong(nextStart).rewind();
+				nextEndBB.putLong(nextEnd).rewind();
+				blocks = store.getSlice(partitionKey, nextStartBB, nextEndBB, null);
 				
 				/* If our claim is the lexicographically last one, then our claim
 				 * is the most senior one and we own this id block
