@@ -38,6 +38,13 @@
             <artifactId>json-simple</artifactId>
             <version>1.1</version>
         </dependency>
+        <!-- TITAN -->
+        <dependency>
+            <groupId>com.thinkaurelius</groupId>
+            <artifactId>titan</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+        <!-- TESTING -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

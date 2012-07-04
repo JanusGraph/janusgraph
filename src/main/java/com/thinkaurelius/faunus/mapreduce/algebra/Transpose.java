@@ -26,8 +26,8 @@ public class Transpose {
         public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             long counter = 0;
             final Long vertexId = (Long) value.getId();
-            final FaunusVertex vertex = new FaunusVertex(vertexId);
-            vertex.setProperties(value.getProperties());
+            final FaunusVertex vertex = value.cloneIdProperties();
+
             context.write(new LongWritable(vertexId), new Holder<FaunusVertex>(vertex));
             for (final Edge edge : value.getEdges(Direction.OUT)) {
                 final FaunusEdge inverseEdge = new FaunusEdge((FaunusVertex) edge.getVertex(Direction.IN), (FaunusVertex) edge.getVertex(Direction.OUT), edge.getLabel() + "_inv");

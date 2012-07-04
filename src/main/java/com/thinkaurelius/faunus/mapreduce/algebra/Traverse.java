@@ -16,6 +16,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -76,8 +77,8 @@ public class Traverse {
             long counter = 0;
 
             final Configuration configuration = context.getConfiguration();
-            final List<FaunusEdge> edgesA = new LinkedList<FaunusEdge>();
-            final List<FaunusEdge> edgesB = new LinkedList<FaunusEdge>();
+            final List<FaunusEdge> edgesA = new ArrayList<FaunusEdge>();
+            final List<FaunusEdge> edgesB = new ArrayList<FaunusEdge>();
 
             for (final TaggedHolder taggedHolder : values) {
                 final FaunusElement element = taggedHolder.get();

@@ -1,1 +1,0 @@
-This is where Titan specific parsers are written to suck data out of Titan and generate FaunusVertex/FaunusEdge objects.

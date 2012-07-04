@@ -49,10 +49,10 @@ public class FaunusJSONRecordWriter extends RecordWriter<NullWritable, FaunusVer
                 object.put(JSONTokens.PROPERTIES, vertexProperties);
             }
 
-            final List<Edge> outEdges = (List<Edge>) vertex.getEdges(Direction.OUT);
-            if (!outEdges.isEmpty()) {
+            List<Edge> edges = (List<Edge>) vertex.getEdges(Direction.OUT);
+            if (!edges.isEmpty()) {
                 final JSONArray outEdgesArray = new JSONArray();
-                for (final Edge outEdge : outEdges) {
+                for (final Edge outEdge : edges) {
                     final JSONObject edge = new JSONObject();
                     edge.put(JSONTokens.IN_ID, outEdge.getVertex(Direction.IN).getId());
                     edge.put(JSONTokens.LABEL, outEdge.getLabel());
@@ -67,6 +67,26 @@ public class FaunusJSONRecordWriter extends RecordWriter<NullWritable, FaunusVer
                     outEdgesArray.add(edge);
                 }
                 object.put(JSONTokens.OUT_E, outEdgesArray);
+            }
+
+            edges = (List<Edge>) vertex.getEdges(Direction.IN);
+            if (!edges.isEmpty()) {
+                final JSONArray inEdgesArray = new JSONArray();
+                for (final Edge inEdge : edges) {
+                    final JSONObject edge = new JSONObject();
+                    edge.put(JSONTokens.OUT_ID, inEdge.getVertex(Direction.OUT).getId());
+                    edge.put(JSONTokens.LABEL, inEdge.getLabel());
+                    final Set<String> edgeKeys = inEdge.getPropertyKeys();
+                    if (!edgeKeys.isEmpty()) {
+                        final JSONObject edgeProperties = new JSONObject();
+                        for (final String edgeKey : edgeKeys) {
+                            edgeProperties.put(edgeKey, inEdge.getProperty(edgeKey));
+                        }
+                        edge.put(JSONTokens.PROPERTIES, edgeProperties);
+                    }
+                    inEdgesArray.add(edge);
+                }
+                object.put(JSONTokens.IN_E, inEdgesArray);
             }
             this.out.write(object.toString().getBytes(UTF8));
             this.out.write(NEWLINE);

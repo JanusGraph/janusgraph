@@ -1,3 +1,4 @@
 hadoop fs -put ~/Desktop/jsongraph.txt jsongraph.txt
 hadoop jar target/faunus-0.1-job.jar com.thinkaurelius.faunus.drivers.PathAlgebra jsongraph.txt out.txt
 hadoop fs -getmerge out.txt ~/Desktop/out.txt
+hadoop fs -rmr out.txt
