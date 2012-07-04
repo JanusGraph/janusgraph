@@ -8,9 +8,6 @@ import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
 
-import java.io.Serializable;
-import java.nio.ByteBuffer;
-
 public abstract class TitanGraphTestCommon {
 
 	public Configuration config;
@@ -35,7 +32,7 @@ public abstract class TitanGraphTestCommon {
 	
 	public void open() {
 		graphdb = TitanFactory.open(config);
-		tx = graphdb.startThreadTransaction();
+		tx = graphdb.startTransaction();
 	}
 	
 	public void close() {

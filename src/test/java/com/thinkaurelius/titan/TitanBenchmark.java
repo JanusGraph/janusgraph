@@ -32,13 +32,13 @@ public class TitanBenchmark {
         TitanGraph g = TitanFactory.open(configFile);
 
         boolean skipLoading = false;
-        TitanTransaction tx = g.startThreadTransaction();
+        TitanTransaction tx = g.startTransaction();
         if (tx.containsType("pid")) skipLoading=true;
         tx.stopTransaction(TransactionalGraph.Conclusion.FAILURE);
 
         StopWatch watch = new StopWatch();
         if (!skipLoading) {
-            tx = g.startThreadTransaction();
+            tx = g.startTransaction();
             TitanKey vertexid = tx.makeType().name("pid").dataType(Integer.class).
                     functional(false).indexed().unique().makePropertyKey();
             TitanKey time = tx.makeType().name("time").dataType(Integer.class).
@@ -81,7 +81,7 @@ public class TitanBenchmark {
             g = TitanFactory.open(configFile);
         }
 
-        tx = g.startThreadTransaction();
+        tx = g.startTransaction();
         try {
             Vertex v = tx.getVertex("pid", 12);
             Preconditions.checkNotNull(v);

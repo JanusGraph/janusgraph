@@ -112,7 +112,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 	}
 
 	@Override
-	public TitanTransaction startThreadTransaction() {
+	public TitanTransaction startTransaction() {
 		return this;
 	}
 	

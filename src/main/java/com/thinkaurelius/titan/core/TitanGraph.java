@@ -22,7 +22,7 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
      *
      * @return Transaction object representing a transactional context.
      */
-    public TitanTransaction startThreadTransaction();
+    public TitanTransaction startTransaction();
 
 
 	 /**
