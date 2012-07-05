@@ -63,6 +63,17 @@ public class AstyanaxStorageManager implements StorageManager {
     public static final int MAX_CONNECTIONS_PER_HOST_DEFAULT = 32;
     public static final String MAX_CONNECTIONS_PER_HOST_KEY = "max-connections-per-host";
     
+    /**
+     * Maximum pooled "cluster" connections per host.
+     * 
+     * These connections are mostly idle and only used for DDL operations
+     * (like creating keyspaces).  Titan doesn't need many of these connections
+     * in ordinary operation.
+     * 
+     */
+    public static final int MAX_CLUSTER_CONNECTIONS_PER_HOST_DEFAULT = 3;
+    public static final String MAX_CLUSTER_CONNECTIONS_PER_HOST_KEY = "max-cluster-connections-per-host";
+    
 	/**
 	 * How Astyanax discovers Cassandra cluster nodes. This must be one of the
 	 * values of the Astyanax NodeDiscoveryType enum.
@@ -174,9 +185,22 @@ public class AstyanaxStorageManager implements StorageManager {
 		this.writeConsistencyLevel = getConsistency(config,
 				WRITE_CONSISTENCY_LEVEL_KEY, WRITE_CONSISTENCY_LEVEL_DEFAULT);
 
-		this.ctxbuilder = getContextBuilder(config);
+		final int maxConnsPerHost =
+				config.getInt(
+						MAX_CONNECTIONS_PER_HOST_KEY,
+						MAX_CONNECTIONS_PER_HOST_DEFAULT);
 		
-		this.clctx = getOrCreateCluster();
+		final int maxClusterConnsPerHost =
+				config.getInt(
+						MAX_CLUSTER_CONNECTIONS_PER_HOST_KEY,
+						MAX_CLUSTER_CONNECTIONS_PER_HOST_DEFAULT);
+		
+		this.ctxbuilder = getContextBuilder(config, maxConnsPerHost);
+		
+		final AstyanaxContext.Builder clusterCtxBuilder =
+				getContextBuilder(config, maxClusterConnsPerHost);
+		
+		this.clctx = createCluster(clusterCtxBuilder);
 
 		ensureKeyspaceExists(clctx.getEntity());
 		
@@ -275,20 +299,15 @@ public class AstyanaxStorageManager implements StorageManager {
 //		return clusters.get(clusterName);
 //	}
 	
-	private AstyanaxContext<Cluster> getOrCreateCluster() {
+	private static AstyanaxContext<Cluster> createCluster(AstyanaxContext.Builder cb) {
 		AstyanaxContext<Cluster> clusterCtx =
-				ctxbuilder.buildCluster(ThriftFamilyFactory.getInstance());
+				cb.buildCluster(ThriftFamilyFactory.getInstance());
 		clusterCtx.start();
 		
 		return clusterCtx;
 	}
 	
-	private AstyanaxContext.Builder getContextBuilder(Configuration config) {
-		
-		final int maxConnsPerHost =
-				config.getInt(
-						MAX_CONNECTIONS_PER_HOST_KEY,
-						MAX_CONNECTIONS_PER_HOST_DEFAULT);
+	private AstyanaxContext.Builder getContextBuilder(Configuration config, int maxConnsPerHost) {
 		
 		final ConnectionPoolType poolType = ConnectionPoolType.valueOf(
 				config.getString(
