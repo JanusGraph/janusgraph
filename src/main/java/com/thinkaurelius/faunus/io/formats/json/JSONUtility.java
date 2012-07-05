@@ -23,7 +23,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusJSONUtility {
+public class JSONUtility {
 
     private static final JSONParser parser = new JSONParser();
 
@@ -32,7 +32,7 @@ public class FaunusJSONUtility {
         final BufferedReader bfs = new BufferedReader(new InputStreamReader(in));
         String line = "";
         while ((line = bfs.readLine()) != null) {
-            vertices.add(FaunusJSONUtility.fromJSON(line));
+            vertices.add(JSONUtility.fromJSON(line));
         }
         bfs.close();
         return vertices;
@@ -41,7 +41,7 @@ public class FaunusJSONUtility {
 
     public static FaunusVertex fromJSON(final String line) throws IOException {
         try {
-            final JSONObject json = (JSONObject) FaunusJSONUtility.parser.parse(line);
+            final JSONObject json = (JSONObject) JSONUtility.parser.parse(line);
             final FaunusVertex vertex = new FaunusVertex(Long.valueOf(json.get(JSONTokens.ID).toString()));
             final JSONObject properties = (JSONObject) json.get(JSONTokens.PROPERTIES);
             if (null != properties) {

@@ -19,7 +19,7 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusJSONOutputFormat extends FileOutputFormat<NullWritable, FaunusVertex> {
+public class JSONOutputFormat extends FileOutputFormat<NullWritable, FaunusVertex> {
 
     public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
         final Configuration conf = job.getConfiguration();
@@ -35,10 +35,10 @@ public class FaunusJSONOutputFormat extends FileOutputFormat<NullWritable, Faunu
         final FileSystem fs = file.getFileSystem(conf);
         if (!isCompressed) {
             FSDataOutputStream fileOut = fs.create(file, false);
-            return new FaunusJSONRecordWriter(fileOut);
+            return new JSONRecordWriter(fileOut);
         } else {
             FSDataOutputStream fileOut = fs.create(file, false);
-            return new FaunusJSONRecordWriter(new DataOutputStream(codec.createOutputStream(fileOut)));
+            return new JSONRecordWriter(new DataOutputStream(codec.createOutputStream(fileOut)));
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.io.formats.json.FaunusJSONUtility;
+import com.thinkaurelius.faunus.io.formats.json.JSONUtility;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.NullWritable;
@@ -34,9 +34,9 @@ public class BaseTest extends TestCase {
 
     public static List<FaunusVertex> generateToyGraph(final ExampleGraph example) throws IOException {
         if (ExampleGraph.TINKERGRAPH.equals(example))
-            return new FaunusJSONUtility().fromJSON(FaunusJSONUtility.class.getResourceAsStream("graph-example-1.json"));
+            return new JSONUtility().fromJSON(JSONUtility.class.getResourceAsStream("graph-example-1.json"));
         else
-            return new FaunusJSONUtility().fromJSON(FaunusJSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
+            return new JSONUtility().fromJSON(JSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
     }
 
     public static Map<Long, FaunusVertex> indexResults(final List<Pair<NullWritable, FaunusVertex>> pairs) {
@@ -57,11 +57,11 @@ public class BaseTest extends TestCase {
 
     /*public void testConverter() throws IOException {
         //Graph graph = new TinkerGraph();
-        //GraphMLReader.inputGraph(graph, FaunusJSONUtility.class.getResourceAsStream("graph-of-the-gods.xml"));
+        //GraphMLReader.inputGraph(graph, JSONUtility.class.getResourceAsStream("graph-of-the-gods.xml"));
         Graph graph = TinkerGraphFactory.createTinkerGraph();
         BufferedWriter bw = new BufferedWriter(new FileWriter("target/graph-example-1.json"));
         for (final Vertex vertex : graph.getVertices()) {
-            bw.write(FaunusJSONUtility.toJSON(vertex).toJSONString() + "\n");
+            bw.write(JSONUtility.toJSON(vertex).toJSONString() + "\n");
         }
         bw.close();
     }*/

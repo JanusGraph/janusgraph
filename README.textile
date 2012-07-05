@@ -1,17 +1,21 @@
 !https://github.com/thinkaurelius/faunus/raw/master/doc/images/faunus-logo.png!
 
-Faunus is a library for processing graphs using "Hadoop's":http://hadoop.apache.org/ "MapReduce":http://hadoop.apache.org/mapreduce/ framework. Faunus provides operators that implement a "property graph algebra":http://arxiv.org/abs/0806.2274 that can be used to process massive scale graphs.
+Faunus is a framework for processing "property graphs":https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model using "Hadoop":http://hadoop.apache.org/.
+A vertex-centric, adjacency list data model is used whereby every record is a single vertex along with its incoming and outgoing edges.
+This vertex-centric data structure is then processed using map-steps (e.g. filters, mutations) and reduce-steps (e.g. traversals).
+Operators are provided that implement a "property graph algebra":http://arxiv.org/abs/0806.2274.
+Moreover, various simple graph algorithms which can be reasonably executed using Hadoop are provided out of the box.
+Faunus can be extended with new operators and algorithms written using "MapReduce":http://hadoop.apache.org/mapreduce/ and "Blueprints":http://blueprints.tinkerpop.com.
 
 h2. Features
 
-* Support for various data sources
+* Support for various data sources/sinks
 ** "Titan 0.1":http://thinkaurelius.github.com/titan/
 ** "Hadoop File System":http://hadoop.apache.org/hdfs/ (HDFS) 1.0.3
-** "HBase":http://hbase.apache.org/ 0.92.1
+*** A vertex-centric "JSON":http://www.json.org/ representation
 * Natively implements the "Blueprints":http://blueprints.tinkerpop.com graph API
 * Open source with the liberal "Apache 2":http://www.apache.org/licenses/LICENSE-2.0.html license
 
-
 h2. Getting Started
 
-Comprehensive documentation and examples are on the "Faunus wiki":http://github.com/thinkaurelius/faunus/wiki.
+Documentation and examples are provided on the "Faunus wiki":http://github.com/thinkaurelius/faunus/wiki.

@@ -13,11 +13,11 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusJSONInputFormat extends FileInputFormat<NullWritable, FaunusVertex> {
+public class JSONInputFormat extends FileInputFormat<NullWritable, FaunusVertex> {
 
     @Override
     public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit split, final TaskAttemptContext context) {
-        return new FaunusJSONRecordReader();
+        return new JSONRecordReader();
     }
 
     @Override

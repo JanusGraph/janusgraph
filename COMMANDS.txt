@@ -1,4 +1,7 @@
-hadoop fs -put ~/Desktop/jsongraph.txt jsongraph.txt
-hadoop jar target/faunus-0.1-job.jar com.thinkaurelius.faunus.drivers.PathAlgebra jsongraph.txt out.txt
-hadoop fs -getmerge out.txt ~/Desktop/out.txt
-hadoop fs -rmr out.txt
+hadoop fs -put data/graph-of-the-gods.json graph-of-the-gods.json
+
+hadoop jar target/faunus-0.1-SNAPSHOT-job.jar com.thinkaurelius.faunus.drivers.PathAlgebra graph-of-the-gods.json output-graph.json
+hadoop jar target/faunus-0.1-SNAPSHOT-job.jar com.thinkaurelius.faunus.drivers.ElementCount graph-of-the-gods.json true true
+
+hadoop fs -getmerge output-graph.json target/output-graph.json
+hadoop fs -rmr output-graph.json

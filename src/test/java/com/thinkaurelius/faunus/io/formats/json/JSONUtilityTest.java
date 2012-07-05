@@ -14,10 +14,10 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusJSONUtilityTest extends TestCase {
+public class JSONUtilityTest extends TestCase {
 
     public void testParser1() throws IOException {
-        FaunusJSONUtility reader = new FaunusJSONUtility();
+        JSONUtility reader = new JSONUtility();
         FaunusVertex vertex = reader.fromJSON("{\"id\":1}");
         assertEquals(vertex.getId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
@@ -25,7 +25,7 @@ public class FaunusJSONUtilityTest extends TestCase {
     }
 
     public void testParser2() throws IOException {
-        FaunusJSONUtility reader = new FaunusJSONUtility();
+        JSONUtility reader = new JSONUtility();
         FaunusVertex vertex = reader.fromJSON("{\"id\":1, \"properties\":{\"name\":\"marko\",\"age\":32}}");
         assertEquals(vertex.getId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
@@ -36,7 +36,7 @@ public class FaunusJSONUtilityTest extends TestCase {
     }
 
     public void testParser3() throws IOException {
-        FaunusJSONUtility reader = new FaunusJSONUtility();
+        JSONUtility reader = new JSONUtility();
         FaunusVertex vertex = reader.fromJSON("{\"id\":1, \"properties\":{\"name\":\"marko\",\"age\":32}, \"outE\":[{\"inId\":2, \"label\":\"knows\"}, {\"inId\":3, \"label\":\"created\"}]}");
         assertEquals(vertex.getId(), 1l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
@@ -52,7 +52,7 @@ public class FaunusJSONUtilityTest extends TestCase {
     }
 
     public void testParser4() throws IOException {
-        FaunusJSONUtility reader = new FaunusJSONUtility();
+        JSONUtility reader = new JSONUtility();
         FaunusVertex vertex = reader.fromJSON("{\"id\":4, \"properties\":{\"name\":\"josh\", \"age\":32}, \"outE\":[{\"inId\":3, \"label\":\"created\", \"properties\": {\"weight\":0.4}}, {\"inId\":5, \"label\":\"created\", \"properties\":{\"weight\":1.0}}], \"inE\":[{\"outId\":1, \"label\":\"knows\", \"properties\":{\"weight\":1.0}}]}");
         assertEquals(vertex.getId(), 4l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());

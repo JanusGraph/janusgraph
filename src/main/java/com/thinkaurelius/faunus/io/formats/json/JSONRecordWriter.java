@@ -12,7 +12,7 @@ import java.io.UnsupportedEncodingException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusJSONRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
+public class JSONRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
     private static final String UTF8 = "UTF-8";
     private static final byte[] NEWLINE;
     protected DataOutputStream out;
@@ -26,13 +26,13 @@ public class FaunusJSONRecordWriter extends RecordWriter<NullWritable, FaunusVer
     }
 
 
-    public FaunusJSONRecordWriter(final DataOutputStream out) {
+    public JSONRecordWriter(final DataOutputStream out) {
         this.out = out;
     }
 
     public void write(final NullWritable nullKey, final FaunusVertex vertex) throws IOException {
         if (null != vertex) {
-            this.out.write(FaunusJSONUtility.toJSON(vertex).toJSONString().getBytes(UTF8));
+            this.out.write(JSONUtility.toJSON(vertex).toJSONString().getBytes(UTF8));
             this.out.write(NEWLINE);
         }
     }

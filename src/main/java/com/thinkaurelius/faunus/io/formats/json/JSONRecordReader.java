@@ -21,9 +21,9 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
+public class JSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
-    //private static final Log LOG = LogFactory.getLog(FaunusJSONRecordReader.class);
+    //private static final Log LOG = LogFactory.getLog(JSONRecordReader.class);
     private long start;
     private long pos;
     private long end;
@@ -71,7 +71,7 @@ public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVer
         while (this.pos < this.end) {
             final Text text = new Text();
             newSize = this.in.readLine(text, this.maxLineLength, Math.max((int) Math.min(Integer.MAX_VALUE, end - pos), this.maxLineLength));
-            this.value = FaunusJSONUtility.fromJSON(text.toString());
+            this.value = JSONUtility.fromJSON(text.toString());
 
             if (newSize == 0) {
                 break;
