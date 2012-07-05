@@ -180,7 +180,7 @@ public class AstyanaxStorageManager implements StorageManager {
 
 		ensureKeyspaceExists(clctx.getEntity());
 		
-		this.ksctx = getOrCreateKeyspace();
+		this.ksctx = createKeyspace();
 
         idmanager = new OrderedKeyColumnValueIDManager(
         		
@@ -195,8 +195,6 @@ public class AstyanaxStorageManager implements StorageManager {
 	@Override
 	public OrderedKeyColumnValueStore openDatabase(String name)
 			throws GraphStorageException {
-		
-		getOrCreateKeyspace();
 		
 		AstyanaxOrderedKeyColumnValueStore lockStore =
 				openDatabase(name + "_locks", null);
@@ -259,7 +257,7 @@ public class AstyanaxStorageManager implements StorageManager {
 		}
 	}
 	
-	private AstyanaxContext<Keyspace> getOrCreateKeyspace() {
+	private AstyanaxContext<Keyspace> createKeyspace() {
 		AstyanaxContext<Keyspace> ksctx = 
 				ctxbuilder.buildKeyspace(ThriftFamilyFactory.getInstance());
 		ksctx.start();
