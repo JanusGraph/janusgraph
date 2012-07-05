@@ -5,7 +5,7 @@ import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -21,7 +21,7 @@ public class EdgeArray {
     }
 
     public static List<FaunusEdge> readFields(final DataInput in) throws IOException {
-        List<FaunusEdge> edges = new LinkedList<FaunusEdge>();
+        final List<FaunusEdge> edges = new ArrayList<FaunusEdge>();
         final int size = in.readInt();
         for (int i = 0; i < size; i++) {
             edges.add(new FaunusEdge(in));

@@ -33,8 +33,6 @@ public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVer
     private final NullWritable key = NullWritable.get();
     private FaunusVertex value = null;
 
-    private final FaunusJSONParser parser = new FaunusJSONParser();
-
     public void initialize(final InputSplit genericSplit, final TaskAttemptContext context) throws IOException {
         final FileSplit split = (FileSplit) genericSplit;
         final Configuration job = context.getConfiguration();
@@ -73,7 +71,7 @@ public class FaunusJSONRecordReader extends RecordReader<NullWritable, FaunusVer
         while (this.pos < this.end) {
             final Text text = new Text();
             newSize = this.in.readLine(text, this.maxLineLength, Math.max((int) Math.min(Integer.MAX_VALUE, end - pos), this.maxLineLength));
-            this.value = this.parser.parse(text.toString());
+            this.value = FaunusJSONUtility.fromJSON(text.toString());
 
             if (newSize == 0) {
                 break;

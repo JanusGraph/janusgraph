@@ -31,7 +31,7 @@ public class SimpleTraverseTest extends BaseTest {
         config.setStrings(SimpleTraverse.LABELS, "knows", "created");
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithToyGraph(mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, mapReduceDriver);
         assertEquals(results.size(), 6);
 
         assertEquals(asList(results.get(1l).getEdges(OUT)).size(), 5);

@@ -286,7 +286,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
                     return;
                 }
 
-                // prepare for the next slice to be read
+                // prepare for the next slice to be fromJSON
                 KeySlice lastRow = rows.get(rows.size() - 1);
                 ByteBuffer rowkey = lastRow.key;
                 startToken = partitioner.getTokenFactory().toString(partitioner.getToken(rowkey));
@@ -318,7 +318,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
         }
 
         /**
-         * @return total number of rows read by this record reader
+         * @return total number of rows fromJSON by this record reader
          */
         public int rowsRead() {
             return totalRead;
@@ -363,7 +363,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
         }
 
         private IColumn unthriftifyCounter(CounterColumn column) {
-            //CounterColumns read the nodeID from the System table, so need the StorageService running and access
+            //CounterColumns fromJSON the nodeID from the System table, so need the StorageService running and access
             //to cassandra.yaml. To avoid a Hadoop needing access to yaml return a regular Column.
             return new org.apache.cassandra.db.Column(column.name, ByteBufferUtil.bytes(column.value), 0);
         }

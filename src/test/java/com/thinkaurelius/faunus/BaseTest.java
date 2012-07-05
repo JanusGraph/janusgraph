@@ -1,10 +1,9 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.io.formats.json.FaunusJSONParser;
+import com.thinkaurelius.faunus.io.formats.json.FaunusJSONUtility;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mrunit.mapreduce.MapDriver;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
@@ -19,6 +18,8 @@ import java.util.Map;
  */
 public class BaseTest extends TestCase {
 
+    public static enum ExampleGraph {GRAPH_OF_THE_GODS, TINKERGRAPH}
+
     public void testTrue() {
         assertTrue(true);
     }
@@ -31,8 +32,11 @@ public class BaseTest extends TestCase {
         return list;
     }
 
-    public static List<FaunusVertex> generateToyGraph() throws IOException {
-        return new FaunusJSONParser().parse(FaunusJSONParser.class.getResourceAsStream("graph-example-1.json"));
+    public static List<FaunusVertex> generateToyGraph(final ExampleGraph example) throws IOException {
+        if (ExampleGraph.TINKERGRAPH.equals(example))
+            return new FaunusJSONUtility().fromJSON(FaunusJSONUtility.class.getResourceAsStream("graph-example-1.json"));
+        else
+            return new FaunusJSONUtility().fromJSON(FaunusJSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
     }
 
     public static Map<Long, FaunusVertex> indexResults(final List<Pair<NullWritable, FaunusVertex>> pairs) {
@@ -43,19 +47,22 @@ public class BaseTest extends TestCase {
         return map;
     }
 
-    public static Map<Long, FaunusVertex> runWithToyGraph(final MapReduceDriver driver) throws IOException {
+    public static Map<Long, FaunusVertex> runWithToyGraph(final ExampleGraph example, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
-        for (final FaunusVertex vertex : generateToyGraph()) {
+        for (final FaunusVertex vertex : generateToyGraph(example)) {
             driver.withInput(NullWritable.get(), vertex);
         }
         return indexResults(driver.run());
     }
 
-    public static Map<Long, FaunusVertex> runWithToyGraph(final MapDriver driver) throws IOException {
-        driver.resetOutput();
-        for (final FaunusVertex vertex : generateToyGraph()) {
-            driver.withInput(NullWritable.get(), vertex);
+    /*public void testConverter() throws IOException {
+        //Graph graph = new TinkerGraph();
+        //GraphMLReader.inputGraph(graph, FaunusJSONUtility.class.getResourceAsStream("graph-of-the-gods.xml"));
+        Graph graph = TinkerGraphFactory.createTinkerGraph();
+        BufferedWriter bw = new BufferedWriter(new FileWriter("target/graph-example-1.json"));
+        for (final Vertex vertex : graph.getVertices()) {
+            bw.write(FaunusJSONUtility.toJSON(vertex).toJSONString() + "\n");
         }
-        return indexResults(driver.run());
-    }
+        bw.close();
+    }*/
 }

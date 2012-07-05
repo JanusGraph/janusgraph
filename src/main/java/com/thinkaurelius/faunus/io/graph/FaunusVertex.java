@@ -6,6 +6,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
@@ -94,7 +95,7 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
         else if (IN.equals(direction))
             this.inEdges.add(edge);
         else
-            throw new IllegalArgumentException("Direction of " + direction + " is not supported (must be either IN or OUT)");
+            throw ExceptionFactory.bothIsNotSupported();
 
         return this;
     }
@@ -105,7 +106,7 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
         else if (IN.equals(direction))
             this.inEdges = edges;
         else
-            throw new IllegalArgumentException("Direction of " + direction + " is not supported (must be either IN or OUT)");
+            throw ExceptionFactory.bothIsNotSupported();
     }
 
     public void write(final DataOutput out) throws IOException {
@@ -162,17 +163,6 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
     public FaunusVertex cloneIdAndProperties() {
         final FaunusVertex clone = new FaunusVertex(this.getIdAsLong());
         clone.setProperties(this.getProperties());
-        return clone;
-    }
-
-    public FaunusVertex cloneAll() {
-        final FaunusVertex clone = this.cloneIdAndProperties();
-        for (final Edge edge : this.getEdges(OUT)) {
-            clone.addEdge(OUT, (FaunusEdge) edge);
-        }
-        for (final Edge edge : this.getEdges(IN)) {
-            clone.addEdge(IN, (FaunusEdge) edge);
-        }
         return clone;
     }
 }

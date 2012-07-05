@@ -10,6 +10,8 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
 
+import static com.tinkerpop.blueprints.Direction.*;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -20,14 +22,15 @@ import java.nio.ByteBuffer;
  */
 public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
 
+    private static final String DEFAULT = "_default";
+
     private FaunusVertex outVertex;
     private FaunusVertex inVertex;
-    private String label = "_default";
+    private String label = DEFAULT;
 
     static {
         WritableComparator.define(FaunusEdge.class, new Comparator());
     }
-
 
     public FaunusEdge() {
         super(-1l);
@@ -39,16 +42,20 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
     }
 
     public FaunusEdge(final FaunusVertex outVertex, final FaunusVertex inVertex, final String label) {
-        super(-1l);
+        this(-1l, outVertex, inVertex, label);
+    }
+
+    public FaunusEdge(final Long id, final FaunusVertex outVertex, final FaunusVertex inVertex, final String label) {
+        super(id);
         this.outVertex = outVertex;
         this.inVertex = inVertex;
         this.label = label;
     }
 
     public Vertex getVertex(final Direction direction) {
-        if (Direction.OUT.equals(direction)) {
+        if (OUT.equals(direction)) {
             return outVertex;
-        } else if (Direction.IN.equals(direction)) {
+        } else if (IN.equals(direction)) {
             return inVertex;
         } else {
             throw ExceptionFactory.bothIsNotSupported();
@@ -62,8 +69,8 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
     public void write(final DataOutput out) throws IOException {
         out.writeByte(ElementType.EDGE.val);
         out.writeLong(this.id);
-        out.writeLong((Long) this.getVertex(Direction.IN).getId());
-        out.writeLong((Long) this.getVertex(Direction.OUT).getId());
+        out.writeLong((Long) this.getVertex(IN).getId());
+        out.writeLong((Long) this.getVertex(OUT).getId());
         out.writeUTF(this.getLabel());
         ElementProperties.write(this.properties, out);
     }
@@ -118,7 +125,7 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
         @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
             if (a instanceof FaunusElement && b instanceof FaunusElement)
-                return ((Long) ((FaunusElement) a).getId()).compareTo((Long) ((FaunusElement) b).getId());
+                return (((FaunusElement) a).getIdAsLong()).compareTo(((FaunusElement) b).getIdAsLong());
             else
                 return super.compare(a, b);
         }

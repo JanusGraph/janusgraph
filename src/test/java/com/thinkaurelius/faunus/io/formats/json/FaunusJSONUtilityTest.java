@@ -1,9 +1,7 @@
 package com.thinkaurelius.faunus.io.formats.json;
 
 import com.thinkaurelius.faunus.BaseTest;
-import com.thinkaurelius.faunus.io.formats.json.FaunusJSONParser;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import junit.framework.TestCase;
 
@@ -16,19 +14,19 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusJSONParserTest extends TestCase {
+public class FaunusJSONUtilityTest extends TestCase {
 
     public void testParser1() throws IOException {
-        FaunusJSONParser reader = new FaunusJSONParser();
-        FaunusVertex vertex = reader.parse("{\"id\":1}");
+        FaunusJSONUtility reader = new FaunusJSONUtility();
+        FaunusVertex vertex = reader.fromJSON("{\"id\":1}");
         assertEquals(vertex.getId(), 1l);
-        assertFalse(vertex.getEdges(Direction.OUT).iterator().hasNext());
+        assertFalse(vertex.getEdges(OUT).iterator().hasNext());
 
     }
 
     public void testParser2() throws IOException {
-        FaunusJSONParser reader = new FaunusJSONParser();
-        FaunusVertex vertex = reader.parse("{\"id\":1, \"properties\":{\"name\":\"marko\",\"age\":32}}");
+        FaunusJSONUtility reader = new FaunusJSONUtility();
+        FaunusVertex vertex = reader.fromJSON("{\"id\":1, \"properties\":{\"name\":\"marko\",\"age\":32}}");
         assertEquals(vertex.getId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
         assertFalse(vertex.getEdges(IN).iterator().hasNext());
@@ -38,8 +36,8 @@ public class FaunusJSONParserTest extends TestCase {
     }
 
     public void testParser3() throws IOException {
-        FaunusJSONParser reader = new FaunusJSONParser();
-        FaunusVertex vertex = reader.parse("{\"id\":1, \"properties\":{\"name\":\"marko\",\"age\":32}, \"outE\":[{\"inId\":2, \"label\":\"knows\"}, {\"inId\":3, \"label\":\"created\"}]}");
+        FaunusJSONUtility reader = new FaunusJSONUtility();
+        FaunusVertex vertex = reader.fromJSON("{\"id\":1, \"properties\":{\"name\":\"marko\",\"age\":32}, \"outE\":[{\"inId\":2, \"label\":\"knows\"}, {\"inId\":3, \"label\":\"created\"}]}");
         assertEquals(vertex.getId(), 1l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
         assertFalse(vertex.getEdges(IN).iterator().hasNext());
@@ -54,8 +52,8 @@ public class FaunusJSONParserTest extends TestCase {
     }
 
     public void testParser4() throws IOException {
-        FaunusJSONParser reader = new FaunusJSONParser();
-        FaunusVertex vertex = reader.parse("{\"id\":4, \"properties\":{\"name\":\"josh\", \"age\":32}, \"outE\":[{\"inId\":3, \"label\":\"created\", \"properties\": {\"weight\":0.4}}, {\"inId\":5, \"label\":\"created\", \"properties\":{\"weight\":1.0}}], \"inE\":[{\"outId\":1, \"label\":\"knows\", \"properties\":{\"weight\":1.0}}]}");
+        FaunusJSONUtility reader = new FaunusJSONUtility();
+        FaunusVertex vertex = reader.fromJSON("{\"id\":4, \"properties\":{\"name\":\"josh\", \"age\":32}, \"outE\":[{\"inId\":3, \"label\":\"created\", \"properties\": {\"weight\":0.4}}, {\"inId\":5, \"label\":\"created\", \"properties\":{\"weight\":1.0}}], \"inE\":[{\"outId\":1, \"label\":\"knows\", \"properties\":{\"weight\":1.0}}]}");
         assertEquals(vertex.getId(), 4l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
         assertTrue(vertex.getEdges(IN).iterator().hasNext());

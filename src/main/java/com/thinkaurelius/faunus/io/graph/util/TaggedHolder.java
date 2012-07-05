@@ -98,7 +98,7 @@ public class TaggedHolder<T extends FaunusElement> extends Holder<T> {
         @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
             if (a instanceof TaggedHolder && b instanceof TaggedHolder)
-                return ((Long) ((TaggedHolder) a).get().getId()).compareTo((Long) ((TaggedHolder) b).get().getId());
+                return (((TaggedHolder) a).get().getIdAsLong()).compareTo(((TaggedHolder) b).get().getIdAsLong());
             else
                 return super.compare(a, b);
         }

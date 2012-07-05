@@ -1,6 +1,6 @@
-{"id":1, "properties":{"name":"marko", "age":29}, "outE":[{"inId":2, "label":"knows", "properties": {"weight":0.5}}, {"inId":3, "label":"created", "properties":{"weight":0.4}}, {"inId":4, "label":"knows", "properties":{"weight":1.0}}]}
-{"id":2, "properties":{"name":"vadas", "age":27}, "inE":[{"outId":1, "label":"knows", "properties": {"weight":0.5}}]}
-{"id":3, "properties":{"name":"lop","lang":"java"}, "inE":[{"outId":6, "label":"created", "properties": {"weight":0.2}}, {"outId":4, "label":"created", "properties": {"weight":0.4}}, {"outId":1, "label":"created", "properties":{"weight":0.4}}]}
-{"id":4, "properties":{"name":"josh", "age":32}, "outE":[{"inId":3, "label":"created", "properties": {"weight":0.4}}, {"inId":5, "label":"created", "properties":{"weight":1.0}}], "inE":[{"outId":1, "label":"knows", "properties":{"weight":1.0}}]}
-{"id":5, "properties":{"name":"ripple", "lang":"java"}, "inE":[{"outId":4, "label":"created", "properties":{"weight":1.0}}]}
-{"id":6, "properties":{"name":"peter", "age":35}, "outE":[{"inId":3, "label":"created", "properties": {"weight":0.2}}]}
+{"id":"1","outE":[{"id":"7","inId":"2","outId":"1","label":"knows","properties":{"weight":0.5}},{"id":"8","inId":"4","outId":"1","label":"knows","properties":{"weight":1.0}},{"id":"9","inId":"3","outId":"1","label":"created","properties":{"weight":0.4}}],"properties":{"name":"marko","age":29}}
+{"id":"2","inE":[{"id":"7","inId":"2","outId":"1","label":"knows","properties":{"weight":0.5}}],"properties":{"name":"vadas","age":27}}
+{"id":"3","inE":[{"id":"9","inId":"3","outId":"1","label":"created","properties":{"weight":0.4}},{"id":"11","inId":"3","outId":"4","label":"created","properties":{"weight":0.4}},{"id":"12","inId":"3","outId":"6","label":"created","properties":{"weight":0.2}}],"properties":{"name":"lop","lang":"java"}}
+{"id":"4","inE":[{"id":"8","inId":"4","outId":"1","label":"knows","properties":{"weight":1.0}}],"outE":[{"id":"10","inId":"5","outId":"4","label":"created","properties":{"weight":1.0}},{"id":"11","inId":"3","outId":"4","label":"created","properties":{"weight":0.4}}],"properties":{"name":"josh","age":32}}
+{"id":"5","inE":[{"id":"10","inId":"5","outId":"4","label":"created","properties":{"weight":1.0}}],"properties":{"name":"ripple","lang":"java"}}
+{"id":"6","outE":[{"id":"12","inId":"3","outId":"6","label":"created","properties":{"weight":0.2}}],"properties":{"name":"peter","age":35}}

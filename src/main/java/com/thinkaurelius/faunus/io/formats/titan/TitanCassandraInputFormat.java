@@ -44,7 +44,7 @@ import java.util.concurrent.Future;
  * <p/>
  * You can also configure the number of rows per InputSplit with
  * ConfigHelper.setInputSplitSize
- * This should be "as big as possible, but no bigger."  Each InputSplit is read from Cassandra
+ * This should be "as big as possible, but no bigger."  Each InputSplit is fromJSON from Cassandra
  * with multiple get_slice_range queries, and the per-call overhead of get_slice_range is high,
  * so larger split sizes are better -- but if it is too large, you will run out of memory.
  * <p/>
@@ -56,7 +56,7 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
     private static final Logger logger = LoggerFactory.getLogger(ColumnFamilyInputFormat.class);
 
     public static final String MAPRED_TASK_ID = "mapred.task.id";
-    // The simple fact that we need this is because the old Hadoop API wants us to "write"
+    // The simple fact that we need this is because the old Hadoop API wants us to "toJSON"
     // to the key and value whereas the new asks for it.
     // I choose 8kb as the default max key size (instanciated only once), but you can
     // override it in your jobConf with this setting.
