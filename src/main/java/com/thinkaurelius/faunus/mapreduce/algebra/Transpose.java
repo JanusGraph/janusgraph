@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusElement;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.thinkaurelius.faunus.io.graph.util.Holder;
-import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.LongWritable;
@@ -37,8 +36,8 @@ public class Transpose {
                 counter++;
                 context.write(new LongWritable((Long) inverseEdge.getVertex(Direction.OUT).getId()), new Holder<FaunusEdge>(inverseEdge));
             }
-            if (counter > 0)
-                context.getCounter(Counters.EDGES_TRANSPOSED).increment(counter);
+            //if (counter > 0)
+            //    context.getCounter(Counters.EDGES_TRANSPOSED).increment(counter);
         }
     }
 

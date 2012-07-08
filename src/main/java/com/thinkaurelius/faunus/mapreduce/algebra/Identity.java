@@ -11,10 +11,15 @@ import java.io.IOException;
  */
 public class Identity {
 
+    public enum Counters {
+        VERTEX_COUNT
+    }
+
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+            context.getCounter(Counters.VERTEX_COUNT).increment(1);
             context.write(NullWritable.get(), value);
         }
     }

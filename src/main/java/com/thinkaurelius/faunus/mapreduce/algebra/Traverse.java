@@ -1,38 +1,33 @@
 package com.thinkaurelius.faunus.mapreduce.algebra;
 
 import com.thinkaurelius.faunus.io.graph.FaunusEdge;
-import com.thinkaurelius.faunus.io.graph.FaunusElement;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
-import com.thinkaurelius.faunus.io.graph.util.Holder;
 import com.thinkaurelius.faunus.io.graph.util.TaggedHolder;
-import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class Traverse {
 
-    public static final String LABELS = "faunus.algebra.traverse.labels";
+    public static final String LABELS = Tokens.makeNamespace(Traverse.class) + ".labels";
 
-    public static class Map1 extends Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder> {
+
+    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder> {
 
         private String[] labels;
+        private String newLabel;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
@@ -40,108 +35,57 @@ public class Traverse {
             if (this.labels.length != 2) {
                 throw new IOException("Two labels must be provided for traversing");
             }
-        }
-
-
-        @Override
-        public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder>.Context context) throws IOException, InterruptedException {
-
-            final FaunusVertex vertex = new FaunusVertex((Long) value.getId());
-            vertex.setProperties(value.getProperties());
-            context.write(new LongWritable((Long) vertex.getId()), new TaggedHolder<FaunusVertex>('v', vertex));
-
-            for (final Edge edge : value.getEdges(Direction.OUT)) {
-                if (edge.getLabel().equals(this.labels[0])) {
-                    context.write(new LongWritable((Long) edge.getVertex(Direction.IN).getId()), new TaggedHolder<FaunusEdge>('a', (FaunusEdge) edge));
-                } else if (edge.getLabel().equals(this.labels[1])) {
-                    context.write(new LongWritable((Long) edge.getVertex(Direction.OUT).getId()), new TaggedHolder<FaunusEdge>('b', (FaunusEdge) edge));
-                }
-            }
-        }
-    }
-
-    public static class Reduce1 extends Reducer<LongWritable, TaggedHolder, LongWritable, Holder> {
-
-        private String[] labels;
-        private String newLabel;
-
-        @Override
-        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.labels = context.getConfiguration().getStrings(LABELS);
-            if (this.labels.length != 2) {
-                throw new IOException("Two labels must be provided for traversing");
-            }
             this.newLabel = this.labels[0] + "-" + this.labels[1];
         }
 
-
         @Override
-        public void reduce(final LongWritable key, final Iterable<TaggedHolder> values, final org.apache.hadoop.mapreduce.Reducer<LongWritable, TaggedHolder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
-            long counter = 0;
+        public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder>.Context context) throws IOException, InterruptedException {
+            Set<Long> outVertexIds = new HashSet<Long>();
+            Set<Long> inVertexIds = new HashSet<Long>();
 
-            final Configuration configuration = context.getConfiguration();
-            final List<FaunusEdge> edgesA = new ArrayList<FaunusEdge>();
-            final List<FaunusEdge> edgesB = new ArrayList<FaunusEdge>();
-
-            for (final TaggedHolder taggedHolder : values) {
-                final FaunusElement element = taggedHolder.get();
-                final char tag = taggedHolder.getTag();
-                if (tag == 'a')
-                    edgesA.add(WritableUtils.clone((FaunusEdge) element, configuration));
-                else if (tag == 'b')
-                    edgesB.add(WritableUtils.clone((FaunusEdge) element, configuration));
-                else if (tag == 'v')
-                    context.write(key, new Holder<FaunusVertex>((FaunusVertex) element));
-                else
-                    throw new IOException("Tag value " + tag + " is an unknown tag");
-            }
-
-
-            for (final FaunusEdge edgeA : edgesA) {
-                for (final FaunusEdge edgeB : edgesB) {
-                    context.write(new LongWritable((Long) edgeA.getVertex(Direction.OUT).getId()), new Holder<FaunusEdge>(new FaunusEdge((FaunusVertex) edgeA.getVertex(Direction.OUT), (FaunusVertex) edgeB.getVertex(Direction.IN), this.newLabel)));
-                    counter++;
+            for (final Edge edge : value.getEdges(IN)) {
+                context.write(value.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
+                if (edge.getLabel().equals(this.labels[0])) {
+                    outVertexIds.add((Long) edge.getVertex(OUT).getId());
                 }
             }
 
-            if (counter > 0)
-                context.getCounter(Counters.EDGES_TRAVERSED).increment(counter);
+            for (final Edge edge : value.getEdges(OUT)) {
+                context.write(value.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', (FaunusEdge) edge));
+                if (edge.getLabel().equals(this.labels[1])) {
+                    inVertexIds.add((Long) edge.getVertex(IN).getId());
+                }
+            }
+
+            for (final Long outId : outVertexIds) {
+                for (Long inId : inVertexIds) {
+                    final FaunusEdge edge = new FaunusEdge(new FaunusVertex(outId), new FaunusVertex(inId), newLabel);
+                    context.write(new LongWritable(outId), new TaggedHolder<FaunusEdge>('o', edge));
+                    context.write(new LongWritable(inId), new TaggedHolder<FaunusEdge>('i', edge));
+                }
+            }
+
+            context.write(value.getIdAsLongWritable(), new TaggedHolder<FaunusVertex>('v', value.cloneIdAndProperties()));
         }
     }
 
-    public static class Map2 extends Mapper<LongWritable, Holder, LongWritable, Holder> {
-
+    public static class Reduce extends Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex> {
         @Override
-        public void map(final LongWritable key, final Holder value, final org.apache.hadoop.mapreduce.Mapper<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
-            context.write(key, value);
-        }
-    }
-
-    public static class Reduce2 extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
-
-        @Override
-        public void reduce(final LongWritable key, final Iterable<Holder> values, final org.apache.hadoop.mapreduce.Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            final Configuration configuration = context.getConfiguration();
-            final List<FaunusEdge> edges = new LinkedList<FaunusEdge>();
-            FaunusVertex vertex = null;
-
-            for (final Holder holder : values) {
-                final FaunusElement element = holder.get();
-                if (element instanceof FaunusEdge) {
-                    edges.add(WritableUtils.clone((FaunusEdge) element, configuration));
-                } else if (element instanceof FaunusVertex) {
-                    vertex = WritableUtils.clone((FaunusVertex) element, configuration);
+        public void reduce(final LongWritable key, final Iterable<TaggedHolder> values, final org.apache.hadoop.mapreduce.Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+            final FaunusVertex vertex = new FaunusVertex(key.get());
+            for (final TaggedHolder holder : values) {
+                final char tag = holder.getTag();
+                if (tag == 'v') {
+                    vertex.setProperties(holder.get().getProperties());
+                } else if (tag == 'i') {
+                    vertex.addEdge(IN, (FaunusEdge) holder.get());
+                } else if (tag == 'o') {
+                    vertex.addEdge(OUT, (FaunusEdge) holder.get());
+                } else {
+                    throw new IOException("A tag of " + tag + " is not a legal tag for this operation");
                 }
             }
-
-            if (null == vertex)
-                throw new IOException("Vertex " + key + " not propagated in stream");
-            else {
-                for (final FaunusEdge edge : edges) {
-                    vertex.addEdge(OUT, edge);
-                }
-                context.write(NullWritable.get(), vertex);
-            }
+            context.write(NullWritable.get(), vertex);
         }
     }
 }

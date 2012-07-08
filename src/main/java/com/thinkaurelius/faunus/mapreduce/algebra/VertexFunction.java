@@ -1,7 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.algebra;
 
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.algebra.util.Function;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
@@ -12,7 +11,12 @@ import java.io.IOException;
  */
 public class VertexFunction {
 
-    public static final String FUNCTION = "faunus.algebra.vertexfunction.function";
+    public static final String FUNCTION = Tokens.makeNamespace(VertexFunction.class) + ".function";
+
+    public enum Counters {
+        VERTICES_PROCESSED,
+    }
+
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
@@ -33,6 +37,7 @@ public class VertexFunction {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             final FaunusVertex vertex = function.compute(value);
+            context.getCounter(Counters.VERTICES_PROCESSED).increment(1);
             if (null != vertex)
                 context.write(NullWritable.get(), vertex);
         }

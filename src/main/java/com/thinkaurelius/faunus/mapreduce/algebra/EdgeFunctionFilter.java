@@ -2,9 +2,6 @@ package com.thinkaurelius.faunus.mapreduce.algebra;
 
 import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
-import com.thinkaurelius.faunus.mapreduce.algebra.util.Function;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -21,7 +18,12 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class EdgeFunctionFilter {
 
-    public static final String FUNCTION = "faunus.algebra.edgefunctionfilter.function";
+    public static final String FUNCTION = Tokens.makeNamespace(EdgeFunctionFilter.class) + ".function";
+
+    public enum Counters {
+        EDGES_ALLOWED,
+        EDGES_FILTERED
+    }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
@@ -44,8 +46,8 @@ public class EdgeFunctionFilter {
             long filterCounter = 0;
             long allowedCounter = 0;
 
-            final List<Edge> newEdges = new ArrayList<Edge>();
-            for (final Edge edge : value.getEdges(Direction.OUT)) {
+            List<Edge> newEdges = new ArrayList<Edge>();
+            for (final Edge edge : value.getEdges(OUT)) {
                 if (this.function.compute((FaunusEdge) edge)) {
                     newEdges.add(edge);
                     allowedCounter++;
@@ -53,13 +55,22 @@ public class EdgeFunctionFilter {
                     filterCounter++;
                 }
             }
-            value.setEdges(Direction.OUT, newEdges);
-            context.write(NullWritable.get(), value);
+            value.setEdges(OUT, newEdges);
 
-            if (allowedCounter > 0)
-                context.getCounter(Counters.EDGES_ALLOWED_BY_FUNCTION).increment(allowedCounter);
-            if (filterCounter > 0)
-                context.getCounter(Counters.EDGES_FILTERED_BY_FUNCTION).increment(filterCounter);
+            newEdges = new ArrayList<Edge>();
+            for (final Edge edge : value.getEdges(IN)) {
+                if (this.function.compute((FaunusEdge) edge)) {
+                    newEdges.add(edge);
+                    allowedCounter++;
+                } else {
+                    filterCounter++;
+                }
+            }
+            value.setEdges(IN, newEdges);
+
+            context.write(NullWritable.get(), value);
+            context.getCounter(Counters.EDGES_ALLOWED).increment(allowedCounter);
+            context.getCounter(Counters.EDGES_FILTERED).increment(filterCounter);
         }
     }
 }

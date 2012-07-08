@@ -16,26 +16,26 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class SimpleTraverseTest extends BaseTest {
+public class TraverseTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, LongWritable, TaggedHolder, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, TaggedHolder, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new SimpleTraverse.Map());
-        mapReduceDriver.setReducer(new SimpleTraverse.Reduce());
+        mapReduceDriver.setMapper(new Traverse.Map());
+        mapReduceDriver.setReducer(new Traverse.Reduce());
     }
 
     public void testMapReduce1() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(SimpleTraverse.LABELS, "knows", "created");
+        config.setStrings(Traverse.LABELS, "knows", "created");
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, mapReduceDriver);
         assertEquals(results.size(), 6);
 
         assertEquals(asList(results.get(1l).getEdges(OUT)).size(), 5);
-
+        System.out.println(results.get(1l).getEdges(OUT));
 
         /*assertEquals(list.size(), 2);
        for (Pair<NullWritable, FaunusVertex> pair : list) {

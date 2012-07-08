@@ -7,6 +7,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
+import com.tinkerpop.blueprints.util.MultiIterable;
 import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
@@ -54,9 +55,14 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
     }
 
     public Iterable<Edge> getEdges(final Direction direction, final String... labels) {
+        final Set<String> legalLabels;
+        if (null != labels && labels.length > 0)
+            legalLabels = new HashSet<String>(Arrays.asList(labels));
+        else
+            legalLabels = null;
+
         if (OUT.equals(direction)) {
-            if (null != labels && labels.length > 0) {
-                final Set<String> legalLabels = new HashSet<String>(Arrays.asList(labels));
+            if (null != legalLabels) {
                 final List<Edge> filteredEdges = new ArrayList<Edge>();
                 for (final Edge edge : this.outEdges) {
                     if (legalLabels.contains(edge.getLabel())) {
@@ -68,8 +74,7 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
                 return this.outEdges;
             }
         } else if (IN.equals(direction)) {
-            if (null != labels && labels.length > 0) {
-                final Set<String> legalLabels = new HashSet<String>(Arrays.asList(labels));
+            if (null != legalLabels) {
                 final List<Edge> filteredEdges = new ArrayList<Edge>();
                 for (final Edge edge : this.inEdges) {
                     if (legalLabels.contains(edge.getLabel())) {
@@ -81,7 +86,7 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
                 return this.inEdges;
             }
         } else {
-            return null;
+            return new MultiIterable<Edge>(Arrays.asList(this.getEdges(IN, labels), this.getEdges(OUT, labels)));
         }
     }
 

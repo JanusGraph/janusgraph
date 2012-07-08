@@ -2,8 +2,6 @@ package com.thinkaurelius.faunus.mapreduce.algebra;
 
 import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
-import com.thinkaurelius.faunus.mapreduce.algebra.util.Function;
 import com.tinkerpop.blueprints.Direction;
 import junit.framework.TestCase;
 import org.apache.hadoop.conf.Configuration;
@@ -11,11 +9,10 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
-import static com.tinkerpop.blueprints.Direction.IN;
-import static com.tinkerpop.blueprints.Direction.OUT;
-
 import java.io.IOException;
 import java.util.List;
+
+import static com.tinkerpop.blueprints.Direction.OUT;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -59,8 +56,8 @@ public class EdgeFunctionFilterTest extends TestCase {
         assertEquals(list.get(0).getSecond().getEdges(Direction.OUT).iterator().next().getLabel(), "created");
         assertEquals(list.get(0).getSecond().getEdges(Direction.OUT).iterator().next().getProperty("weight"), 0.6d);
 
-        assertEquals(mapDriver.getCounters().findCounter(Counters.EDGES_ALLOWED_BY_FUNCTION).getValue(), 1);
-        assertEquals(mapDriver.getCounters().findCounter(Counters.EDGES_FILTERED_BY_FUNCTION).getValue(), 1);
+        assertEquals(mapDriver.getCounters().findCounter(EdgeFunctionFilter.Counters.EDGES_ALLOWED).getValue(), 1);
+        assertEquals(mapDriver.getCounters().findCounter(EdgeFunctionFilter.Counters.EDGES_FILTERED).getValue(), 1);
 
     }
 

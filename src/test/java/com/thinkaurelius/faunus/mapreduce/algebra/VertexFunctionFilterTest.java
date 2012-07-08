@@ -1,8 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.algebra;
 
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
-import com.thinkaurelius.faunus.mapreduce.algebra.util.Function;
 import junit.framework.TestCase;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -41,17 +39,17 @@ public class VertexFunctionFilterTest extends TestCase {
 
         mapDriver.withInput(NullWritable.get(), vertex1);
         assertEquals(mapDriver.run().size(), 0);
-        assertEquals(mapDriver.getCounters().findCounter(Counters.VERTICES_ALLOWED_BY_FUNCTION).getValue(), 0);
-        assertEquals(mapDriver.getCounters().findCounter(Counters.VERTICES_FILTERED_BY_FUNCTION).getValue(), 1);
-        
+        assertEquals(mapDriver.getCounters().findCounter(VertexFunctionFilter.Counters.VERTICES_ALLOWED).getValue(), 0);
+        assertEquals(mapDriver.getCounters().findCounter(VertexFunctionFilter.Counters.VERTICES_FILTERED).getValue(), 1);
+
         mapDriver.withInput(NullWritable.get(), vertex2);
 
         List<Pair<NullWritable, FaunusVertex>> list = mapDriver.run();
         assertEquals(list.size(), 1);
         assertEquals(list.get(0).getSecond(), vertex2);
 
-        assertEquals(mapDriver.getCounters().findCounter(Counters.VERTICES_ALLOWED_BY_FUNCTION).getValue(), 1);
-        assertEquals(mapDriver.getCounters().findCounter(Counters.VERTICES_FILTERED_BY_FUNCTION).getValue(), 1);
+        assertEquals(mapDriver.getCounters().findCounter(VertexFunctionFilter.Counters.VERTICES_ALLOWED).getValue(), 1);
+        assertEquals(mapDriver.getCounters().findCounter(VertexFunctionFilter.Counters.VERTICES_FILTERED).getValue(), 1);
 
     }
 

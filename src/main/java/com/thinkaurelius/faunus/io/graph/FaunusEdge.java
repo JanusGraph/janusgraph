@@ -10,12 +10,13 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
 
-import static com.tinkerpop.blueprints.Direction.*;
-
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -64,6 +65,10 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge, Writable {
 
     public String getLabel() {
         return label;
+    }
+
+    public void setLabel(final String label) {
+        this.label = label;
     }
 
     public void write(final DataOutput out) throws IOException {

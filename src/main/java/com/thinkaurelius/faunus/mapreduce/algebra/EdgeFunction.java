@@ -2,25 +2,24 @@ package com.thinkaurelius.faunus.mapreduce.algebra;
 
 import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.algebra.util.Function;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.tinkerpop.blueprints.Direction.IN;
-import static com.tinkerpop.blueprints.Direction.OUT;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class EdgeFunction {
 
-    public static final String FUNCTION = "faunus.algebra.edgefunction.function";
+    public static final String FUNCTION = Tokens.makeNamespace(EdgeFunction.class) + ".function";
+
+    public enum Counters {
+        VERTICES_PROCESSED,
+        EDGES_PROCESSED
+    }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
@@ -40,15 +39,14 @@ public class EdgeFunction {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+            long edgeCounter = 0;
+            for (final Edge edge : value.getEdges(Direction.BOTH)) {
+                function.compute((FaunusEdge) edge);
+                edgeCounter++;
 
-            final List<Edge> newEdges = new ArrayList<Edge>();
-            for (final Edge edge : value.getEdges(Direction.OUT)) {
-                final FaunusEdge newEdge = function.compute((FaunusEdge) edge);
-                if (null != newEdge) {
-                    newEdges.add(newEdge);
-                }
             }
-            value.setEdges(OUT, newEdges);
+            context.getCounter(Counters.VERTICES_PROCESSED).increment(1);
+            context.getCounter(Counters.EDGES_PROCESSED).increment(edgeCounter);
             context.write(NullWritable.get(), value);
         }
     }

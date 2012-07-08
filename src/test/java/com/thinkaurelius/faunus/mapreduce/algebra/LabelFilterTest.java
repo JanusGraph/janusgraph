@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.mapreduce.algebra;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.io.graph.FaunusEdge;
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
@@ -46,8 +45,8 @@ public class LabelFilterTest extends BaseTest {
         assertTrue(edges.get(0).getLabel().equals("knows") || edges.get(0).getLabel().equals("created"));
         assertTrue(edges.get(1).getLabel().equals("knows") || edges.get(1).getLabel().equals("created"));
 
-        assertEquals(mapDriver.getCounters().findCounter(Counters.EDGES_ALLOWED_BY_LABEL).getValue(), 2);
-        assertEquals(mapDriver.getCounters().findCounter(Counters.EDGES_FILTERED_BY_LABEL).getValue(), 0);
+        assertEquals(mapDriver.getCounters().findCounter(LabelFilter.Counters.EDGES_ALLOWED).getValue(), 2);
+        assertEquals(mapDriver.getCounters().findCounter(LabelFilter.Counters.EDGES_FILTERED).getValue(), 0);
     }
 
     public void testMap2() throws IOException {
@@ -71,8 +70,8 @@ public class LabelFilterTest extends BaseTest {
         assertEquals(edges.size(), 1);
         assertEquals(edges.get(0).getLabel(), "knows");
 
-        assertEquals(mapDriver.getCounters().findCounter(Counters.EDGES_ALLOWED_BY_LABEL).getValue(), 1);
-        assertEquals(mapDriver.getCounters().findCounter(Counters.EDGES_FILTERED_BY_LABEL).getValue(), 1);
+        assertEquals(mapDriver.getCounters().findCounter(LabelFilter.Counters.EDGES_ALLOWED).getValue(), 1);
+        assertEquals(mapDriver.getCounters().findCounter(LabelFilter.Counters.EDGES_FILTERED).getValue(), 1);
     }
 
 }

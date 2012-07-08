@@ -1,7 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.algebra;
 
 import com.thinkaurelius.faunus.io.graph.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.algebra.util.Counters;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
@@ -12,8 +11,11 @@ import java.io.IOException;
  */
 public class RemoveProperties {
 
-    public static final String KEYS = "faunus.algebra.removeproperties.keys";
+    public static final String KEYS = Tokens.makeNamespace(RemoveProperties.class) + ".properties";
 
+    public enum Counters {
+        PROPERTIES_REMOVED
+    }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
@@ -38,6 +40,7 @@ public class RemoveProperties {
                         counter++;
                 }
             }
+
             if (counter > 0)
                 context.getCounter(Counters.PROPERTIES_REMOVED).increment(counter);
             context.write(NullWritable.get(), value);
