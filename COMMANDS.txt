@@ -7,4 +7,4 @@ hadoop fs -getmerge output-graph.json target/output-graph.json
 hadoop fs -rmr output-graph.json
 
 
-hadoop jar target/faunus-0.1-SNAPSHOT-job.jar com.thinkaurelius.faunus.drivers.Faunus graph-of-the-gods.json output-graph.json 'V._()._()'
+hadoop jar target/faunus-0.1-SNAPSHOT-job.jar com.thinkaurelius.faunus.drivers.Faunus graph-of-the-gods.json output-graph.json 'V.exceptEdgeLabel("father")._()'

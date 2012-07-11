@@ -18,9 +18,9 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class LabelFilter {
+public class ExceptEdgeLabels {
 
-    public static final String LABELS = Tokens.makeNamespace(LabelFilter.class) + ".labels";
+    public static final String LABELS = Tokens.makeNamespace(ExceptEdgeLabels.class) + ".labels";
 
     public enum Counters {
         EDGES_ALLOWED,
@@ -29,26 +29,26 @@ public class LabelFilter {
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
-        protected Set<String> legalLabels;
+        protected Set<String> illegalLabels;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             final String[] temp = context.getConfiguration().getStrings(LABELS);
             if (temp != null && temp.length > 0)
-                this.legalLabels = new HashSet<String>(Arrays.asList(temp));
+                this.illegalLabels = new HashSet<String>(Arrays.asList(temp));
             else
-                this.legalLabels = null;
+                this.illegalLabels = null;
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            if (null != this.legalLabels) {
+            if (null != this.illegalLabels) {
                 long allowedCounter = 0;
                 long filteredCounter = 0;
 
                 List<Edge> newEdges = new ArrayList<Edge>();
                 for (final Edge edge : value.getEdges(OUT)) {
-                    if (this.legalLabels.contains(edge.getLabel())) {
+                    if (!this.illegalLabels.contains(edge.getLabel())) {
                         newEdges.add(edge);
                         allowedCounter++;
                     } else {
@@ -59,7 +59,7 @@ public class LabelFilter {
 
                 newEdges = new ArrayList<Edge>();
                 for (final Edge edge : value.getEdges(IN)) {
-                    if (this.legalLabels.contains(edge.getLabel())) {
+                    if (!this.illegalLabels.contains(edge.getLabel())) {
                         newEdges.add(edge);
                         allowedCounter++;
                     } else {
@@ -78,5 +78,4 @@ public class LabelFilter {
 
         }
     }
-
 }

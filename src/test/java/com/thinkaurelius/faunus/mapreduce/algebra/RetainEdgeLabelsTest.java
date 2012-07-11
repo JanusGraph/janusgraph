@@ -18,13 +18,13 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class LabelFilterTest extends BaseTest {
+public class RetainEdgeLabelsTest extends BaseTest {
 
     MapDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapDriver;
 
     public void setUp() throws Exception {
         mapDriver = new MapDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
-        mapDriver.setMapper(new LabelFilter.Map());
+        mapDriver.setMapper(new RetainEdgeLabels.Map());
     }
 
     public void testMap1() throws IOException {
@@ -45,15 +45,15 @@ public class LabelFilterTest extends BaseTest {
         assertTrue(edges.get(0).getLabel().equals("knows") || edges.get(0).getLabel().equals("created"));
         assertTrue(edges.get(1).getLabel().equals("knows") || edges.get(1).getLabel().equals("created"));
 
-        assertEquals(mapDriver.getCounters().findCounter(LabelFilter.Counters.EDGES_ALLOWED).getValue(), 2);
-        assertEquals(mapDriver.getCounters().findCounter(LabelFilter.Counters.EDGES_FILTERED).getValue(), 0);
+        assertEquals(mapDriver.getCounters().findCounter(RetainEdgeLabels.Counters.EDGES_ALLOWED).getValue(), 2);
+        assertEquals(mapDriver.getCounters().findCounter(RetainEdgeLabels.Counters.EDGES_FILTERED).getValue(), 0);
     }
 
     public void testMap2() throws IOException {
         mapDriver.resetOutput();
 
         Configuration config = new Configuration();
-        config.setStrings(LabelFilter.LABELS, "knows");
+        config.setStrings(RetainEdgeLabels.LABELS, "knows");
         mapDriver.withConfiguration(config);
 
         FaunusVertex vertex1 = new FaunusVertex(1);
@@ -70,8 +70,8 @@ public class LabelFilterTest extends BaseTest {
         assertEquals(edges.size(), 1);
         assertEquals(edges.get(0).getLabel(), "knows");
 
-        assertEquals(mapDriver.getCounters().findCounter(LabelFilter.Counters.EDGES_ALLOWED).getValue(), 1);
-        assertEquals(mapDriver.getCounters().findCounter(LabelFilter.Counters.EDGES_FILTERED).getValue(), 1);
+        assertEquals(mapDriver.getCounters().findCounter(RetainEdgeLabels.Counters.EDGES_ALLOWED).getValue(), 1);
+        assertEquals(mapDriver.getCounters().findCounter(RetainEdgeLabels.Counters.EDGES_FILTERED).getValue(), 1);
     }
 
 }
