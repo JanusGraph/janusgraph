@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.io.graph.util.TaggedHolder;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
@@ -21,21 +22,21 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class Traverse {
 
-    public static final String LABELS = Tokens.makeNamespace(Traverse.class) + ".labels";
-
+    public static final String FIRST_LABEL = Tokens.makeNamespace(Traverse.class) + ".firstLabel";
+    public static final String SECOND_LABEL = Tokens.makeNamespace(Traverse.class) + ".secondLabel";
+    public static final String NEW_LABEL = Tokens.makeNamespace(Traverse.class) + ".newLabel";
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder> {
 
-        private String[] labels;
+        private String firstLabel;
+        private String secondLabel;
         private String newLabel;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.labels = context.getConfiguration().getStrings(LABELS);
-            if (this.labels.length != 2) {
-                throw new IOException("Two labels must be provided for traversing");
-            }
-            this.newLabel = this.labels[0] + "-" + this.labels[1];
+            this.firstLabel = context.getConfiguration().get(FIRST_LABEL);
+            this.secondLabel = context.getConfiguration().get(SECOND_LABEL);
+            this.newLabel = context.getConfiguration().get(NEW_LABEL);
         }
 
         @Override
@@ -45,21 +46,21 @@ public class Traverse {
 
             for (final Edge edge : value.getEdges(IN)) {
                 context.write(value.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
-                if (edge.getLabel().equals(this.labels[0])) {
+                if (edge.getLabel().equals(this.firstLabel)) {
                     outVertexIds.add((Long) edge.getVertex(OUT).getId());
                 }
             }
 
             for (final Edge edge : value.getEdges(OUT)) {
                 context.write(value.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', (FaunusEdge) edge));
-                if (edge.getLabel().equals(this.labels[1])) {
+                if (edge.getLabel().equals(this.secondLabel)) {
                     inVertexIds.add((Long) edge.getVertex(IN).getId());
                 }
             }
 
             for (final Long outId : outVertexIds) {
-                for (Long inId : inVertexIds) {
-                    final FaunusEdge edge = new FaunusEdge(new FaunusVertex(outId), new FaunusVertex(inId), newLabel);
+                for (final Long inId : inVertexIds) {
+                    final FaunusEdge edge = new FaunusEdge(new FaunusVertex(outId), new FaunusVertex(inId), this.newLabel);
                     context.write(new LongWritable(outId), new TaggedHolder<FaunusEdge>('o', edge));
                     context.write(new LongWritable(inId), new TaggedHolder<FaunusEdge>('i', edge));
                 }
@@ -78,9 +79,9 @@ public class Traverse {
                 if (tag == 'v') {
                     vertex.setProperties(holder.get().getProperties());
                 } else if (tag == 'i') {
-                    vertex.addEdge(IN, (FaunusEdge) holder.get());
+                    vertex.addEdge(IN, WritableUtils.clone((FaunusEdge) holder.get(), context.getConfiguration()));
                 } else if (tag == 'o') {
-                    vertex.addEdge(OUT, (FaunusEdge) holder.get());
+                    vertex.addEdge(OUT, WritableUtils.clone((FaunusEdge) holder.get(), context.getConfiguration()));
                 } else {
                     throw new IOException("A tag of " + tag + " is not a legal tag for this operation");
                 }

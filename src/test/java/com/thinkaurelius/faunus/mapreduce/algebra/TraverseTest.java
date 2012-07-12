@@ -28,7 +28,9 @@ public class TraverseTest extends BaseTest {
 
     public void testMapReduce1() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(Traverse.LABELS, "knows", "created");
+        config.set(Traverse.FIRST_LABEL, "knows");
+        config.set(Traverse.SECOND_LABEL, "created");
+        config.set(Traverse.NEW_LABEL, "knows-created");
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, mapReduceDriver);

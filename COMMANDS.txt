@@ -7,4 +7,6 @@ hadoop fs -getmerge output-graph.json target/output-graph.json
 hadoop fs -rmr output-graph.json
 
 
-hadoop jar target/faunus-0.1-SNAPSHOT-job.jar com.thinkaurelius.faunus.drivers.Faunus graph-of-the-gods.json output-graph.json 'V.exceptEdgeLabel("father")._()'
+hadoop jar target/faunus-0.1-SNAPSHOT-job.jar com.thinkaurelius.faunus.drivers.Faunus graph-of-the-gods.json output-graph.json true 'V.retainEdgeLabels("father").traverse("father","father","grandfather").exceptEdgeLabels("father")'
+
+bin/faunus.sh graph-of-the-gods.json output-graph.json true 'V.retainEdgeLabels("father").traverse("father","father","grandfather").exceptEdgeLabels("father")'
