@@ -18,7 +18,7 @@ public class JSONUtilityTest extends TestCase {
 
     public void testParser1() throws IOException {
         JSONUtility reader = new JSONUtility();
-        FaunusVertex vertex = reader.fromJSON("{\"id\":1}");
+        FaunusVertex vertex = reader.fromJSON("{\"_id\":1}");
         assertEquals(vertex.getId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
 
@@ -26,24 +26,24 @@ public class JSONUtilityTest extends TestCase {
 
     public void testParser2() throws IOException {
         JSONUtility reader = new JSONUtility();
-        FaunusVertex vertex = reader.fromJSON("{\"id\":1, \"properties\":{\"name\":\"marko\",\"age\":32}}");
+        FaunusVertex vertex = reader.fromJSON("{\"_id\":1, \"name\":\"marko\",\"age\":32}");
         assertEquals(vertex.getId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
         assertFalse(vertex.getEdges(IN).iterator().hasNext());
         assertEquals(vertex.getPropertyKeys().size(), 2);
         assertEquals(vertex.getProperty("name"), "marko");
-        assertEquals(vertex.getProperty("age"), 32l);
+        assertEquals(vertex.getProperty("age"), 32);
     }
 
     public void testParser3() throws IOException {
         JSONUtility reader = new JSONUtility();
-        FaunusVertex vertex = reader.fromJSON("{\"id\":1, \"properties\":{\"name\":\"marko\",\"age\":32}, \"outE\":[{\"inId\":2, \"label\":\"knows\"}, {\"inId\":3, \"label\":\"created\"}]}");
+        FaunusVertex vertex = reader.fromJSON("{\"_id\":1, \"name\":\"marko\",\"age\":32, \"outE\":[{\"_inV\":2, \"_label\":\"knows\"}, {\"_inV\":3, \"_label\":\"created\"}]}");
         assertEquals(vertex.getId(), 1l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
         assertFalse(vertex.getEdges(IN).iterator().hasNext());
         assertEquals(vertex.getPropertyKeys().size(), 2);
         assertEquals(vertex.getProperty("name"), "marko");
-        assertEquals(vertex.getProperty("age"), 32l);
+        assertEquals(vertex.getProperty("age"), 32);
         List<Edge> edges = BaseTest.asList(vertex.getEdges(OUT));
         for (final Edge edge : edges) {
             assertTrue(edge.getLabel().equals("knows") || edge.getLabel().equals("created"));
@@ -53,13 +53,13 @@ public class JSONUtilityTest extends TestCase {
 
     public void testParser4() throws IOException {
         JSONUtility reader = new JSONUtility();
-        FaunusVertex vertex = reader.fromJSON("{\"id\":4, \"properties\":{\"name\":\"josh\", \"age\":32}, \"outE\":[{\"inId\":3, \"label\":\"created\", \"properties\": {\"weight\":0.4}}, {\"inId\":5, \"label\":\"created\", \"properties\":{\"weight\":1.0}}], \"inE\":[{\"outId\":1, \"label\":\"knows\", \"properties\":{\"weight\":1.0}}]}");
+        FaunusVertex vertex = reader.fromJSON("{\"_id\":4, \"name\":\"josh\", \"age\":32, \"outE\":[{\"_inV\":3, \"_label\":\"created\", \"weight\":0.4}, {\"_inV\":5, \"_label\":\"created\", \"weight\":1.0}], \"inE\":[{\"_outV\":1, \"_label\":\"knows\", \"weight\":1.0}]}");
         assertEquals(vertex.getId(), 4l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
         assertTrue(vertex.getEdges(IN).iterator().hasNext());
         assertEquals(vertex.getPropertyKeys().size(), 2);
         assertEquals(vertex.getProperty("name"), "josh");
-        assertEquals(vertex.getProperty("age"), 32l);
+        assertEquals(vertex.getProperty("age"), 32);
         List<Edge> edges = BaseTest.asList(vertex.getEdges(OUT));
         for (final Edge edge : edges) {
             assertTrue(edge.getLabel().equals("created"));
@@ -68,7 +68,7 @@ public class JSONUtilityTest extends TestCase {
         edges = BaseTest.asList(vertex.getEdges(IN));
         for (final Edge edge : edges) {
             assertTrue(edge.getLabel().equals("knows"));
-            assertEquals(edge.getProperty("weight"), 1.0);
+            assertEquals(edge.getProperty("weight"), 1);
         }
         assertEquals(edges.size(), 1);
     }

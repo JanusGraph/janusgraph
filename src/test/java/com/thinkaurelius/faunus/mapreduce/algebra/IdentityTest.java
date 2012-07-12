@@ -32,7 +32,7 @@ public class IdentityTest extends BaseTest {
         // vertex 1
         FaunusVertex vertex = results.get(1l);
         assertEquals(vertex.getProperty("name"), "marko");
-        assertEquals(vertex.getProperty("age"), 29l);
+        assertEquals(vertex.getProperty("age"), 29);
         assertEquals(vertex.getPropertyKeys().size(), 2);
         assertEquals(asList(vertex.getEdges(OUT)).size(), 3);
         assertEquals(asList(vertex.getEdges(OUT, "knows")).size(), 2);
@@ -45,13 +45,22 @@ public class IdentityTest extends BaseTest {
         //vertex 2
         vertex = results.get(2l);
         assertEquals(vertex.getProperty("name"), "vadas");
-        assertEquals(vertex.getProperty("age"), 27l);
+        assertEquals(vertex.getProperty("age"), 27);
         assertEquals(vertex.getPropertyKeys().size(), 2);
-        assertEquals(vertex.getProperty("name"), "vadas");
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
         assertEquals(asList(vertex.getEdges(IN)).size(), 1);
         assertEquals(asList(vertex.getEdges(IN)).iterator().next().getLabel(), "knows");
         assertEquals(asList(vertex.getEdges(IN)).iterator().next().getVertex(OUT).getId(), 1l);
+        
+        // vertex 6
+        vertex = results.get(6l);
+        assertEquals(vertex.getProperty("name"), "peter");
+        assertEquals(vertex.getProperty("age"), 35);
+        assertEquals(vertex.getPropertyKeys().size(), 2);
+        assertFalse(vertex.getEdges(IN).iterator().hasNext());
+        assertEquals(asList(vertex.getEdges(OUT)).size(), 1);
+        assertEquals(asList(vertex.getEdges(OUT)).iterator().next().getLabel(), "created");
+        assertEquals(asList(vertex.getEdges(OUT)).iterator().next().getVertex(IN).getId(), 3l);
 
     }
 }

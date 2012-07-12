@@ -1,6 +1,6 @@
-{"id":"1","outE":[{"id":"7","inId":"2","outId":"1","label":"knows","properties":{"weight":0.5}},{"id":"8","inId":"4","outId":"1","label":"knows","properties":{"weight":1.0}},{"id":"9","inId":"3","outId":"1","label":"created","properties":{"weight":0.4}}],"properties":{"name":"marko","age":29}}
-{"id":"2","inE":[{"id":"7","inId":"2","outId":"1","label":"knows","properties":{"weight":0.5}}],"properties":{"name":"vadas","age":27}}
-{"id":"3","inE":[{"id":"9","inId":"3","outId":"1","label":"created","properties":{"weight":0.4}},{"id":"11","inId":"3","outId":"4","label":"created","properties":{"weight":0.4}},{"id":"12","inId":"3","outId":"6","label":"created","properties":{"weight":0.2}}],"properties":{"name":"lop","lang":"java"}}
-{"id":"4","inE":[{"id":"8","inId":"4","outId":"1","label":"knows","properties":{"weight":1.0}}],"outE":[{"id":"10","inId":"5","outId":"4","label":"created","properties":{"weight":1.0}},{"id":"11","inId":"3","outId":"4","label":"created","properties":{"weight":0.4}}],"properties":{"name":"josh","age":32}}
-{"id":"5","inE":[{"id":"10","inId":"5","outId":"4","label":"created","properties":{"weight":1.0}}],"properties":{"name":"ripple","lang":"java"}}
-{"id":"6","outE":[{"id":"12","inId":"3","outId":"6","label":"created","properties":{"weight":0.2}}],"properties":{"name":"peter","age":35}}
+{"_id":"1","outE":[{"_id":"7","_inV":"2","_outV":"1","_label":"knows","weight":0.5},{"_id":"8","_inV":"4","_outV":"1","_label":"knows","weight":1.0},{"_id":"9","_inV":"3","_outV":"1","_label":"created","weight":0.4}],"name":"marko","age":29}
+{"_id":"2","inE":[{"_id":"7","_inV":"2","_outV":"1","_label":"knows","weight":0.5}],"name":"vadas","age":27}
+{"_id":"3","inE":[{"_id":"9","_inV":"3","_outV":"1","_label":"created","weight":0.4},{"_id":"11","_inV":"3","_outV":"4","_label":"created","weight":0.4},{"_id":"12","_inV":"3","_outV":"6","_label":"created","weight":0.2}],"name":"lop","lang":"java"}
+{"_id":"4","inE":[{"_id":"8","_inV":"4","_outV":"1","_label":"knows","weight":1.0}],"outE":[{"_id":"10","_inV":"5","_outV":"4","_label":"created","weight":1.0},{"_id":"11","_inV":"3","_outV":"4","_label":"created","weight":0.4}],"name":"josh","age":32}
+{"_id":"5","inE":[{"_id":"10","_inV":"5","_outV":"4","_label":"created","weight":1.0}],"name":"ripple","lang":"java"}
+{"_id":"6","outE":[{"_id":"12","_inV":"3","_outV":"6","_label":"created","weight":0.2}],"name":"peter","age":35}
