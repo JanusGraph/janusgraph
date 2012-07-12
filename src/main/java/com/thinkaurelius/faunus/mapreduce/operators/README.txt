@@ -1,0 +1,1 @@
+This is for finalizing operations that will not emit <NullWritable,FaunusVertex>

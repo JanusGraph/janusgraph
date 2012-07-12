@@ -14,6 +14,6 @@ overwrite=$3
 script=$4
 
 # Deploy job to Hadoop cluster
-$HADOOP jar target/faunus-0.1-SNAPSHOT-job.jar com.thinkaurelius.faunus.io.graph.FaunusGraph $1 $2 $3 $4
+$HADOOP jar target/faunus-*-job.jar com.thinkaurelius.faunus.FaunusGraph $1 $2 $3 $4
 
 exit $?

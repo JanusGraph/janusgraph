@@ -1,7 +1,7 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.io.formats.json.JSONUtility;
-import com.thinkaurelius.faunus.io.graph.FaunusVertex;
+import com.thinkaurelius.faunus.formats.json.JSONUtility;
+import com.thinkaurelius.faunus.formats.json.JSONUtility;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
