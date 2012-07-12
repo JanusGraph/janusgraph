@@ -51,7 +51,7 @@ public class IdentityTest extends BaseTest {
         assertEquals(asList(vertex.getEdges(IN)).size(), 1);
         assertEquals(asList(vertex.getEdges(IN)).iterator().next().getLabel(), "knows");
         assertEquals(asList(vertex.getEdges(IN)).iterator().next().getVertex(OUT).getId(), 1l);
-        
+
         // vertex 6
         vertex = results.get(6l);
         assertEquals(vertex.getProperty("name"), "peter");

@@ -27,7 +27,7 @@ public class RetainEdgeLabelsTest extends BaseTest {
         mapDriver.setMapper(new RetainEdgeLabels.Map());
     }
 
-    public void testMap1() throws IOException {
+    /*public void testMap1() throws IOException {
         mapDriver.resetOutput();
 
         FaunusVertex vertex1 = new FaunusVertex(1);
@@ -47,7 +47,7 @@ public class RetainEdgeLabelsTest extends BaseTest {
 
         assertEquals(mapDriver.getCounters().findCounter(RetainEdgeLabels.Counters.EDGES_ALLOWED).getValue(), 2);
         assertEquals(mapDriver.getCounters().findCounter(RetainEdgeLabels.Counters.EDGES_FILTERED).getValue(), 0);
-    }
+    }*/
 
     public void testMap2() throws IOException {
         mapDriver.resetOutput();

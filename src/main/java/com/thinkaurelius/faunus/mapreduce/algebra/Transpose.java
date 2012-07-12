@@ -42,13 +42,11 @@ public class Transpose {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder>.Context context) throws IOException, InterruptedException {
             long counter = 0;
-            final LongWritable vertexId = value.getIdAsLongWritable();
-
             final FaunusVertex vertex = value.cloneIdAndProperties();
 
-            context.write(vertexId, new TaggedHolder<FaunusVertex>('v', vertex));
+            context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusVertex>('v', vertex));
             for (final Edge edge : value.getEdges(OUT)) {
-                context.write(vertexId, new TaggedHolder<FaunusEdge>('o', (FaunusEdge) edge));
+                context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', (FaunusEdge) edge));
                 if (edge.getLabel().equals(this.label)) {
                     final FaunusEdge inverseEdge = new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel);
                     inverseEdge.setProperties(((FaunusEdge) edge).getProperties());
@@ -58,7 +56,7 @@ public class Transpose {
             }
 
             for (final Edge edge : value.getEdges(IN)) {
-                context.write(vertexId, new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
+                context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
                 if (edge.getLabel().equals(this.label)) {
                     final FaunusEdge inverseEdge = new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel);
                     inverseEdge.setProperties(((FaunusEdge) edge).getProperties());
@@ -80,7 +78,7 @@ public class Transpose {
             for (final TaggedHolder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    vertex.setProperties(holder.get().getProperties());
+                    vertex.setProperties(WritableUtils.clone(holder.get(), context.getConfiguration()).getProperties());
                 } else if (tag == 'o') {
                     vertex.addEdge(OUT, WritableUtils.clone((FaunusEdge) holder.get(), context.getConfiguration()));
                 } else if (tag == 'i') {

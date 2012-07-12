@@ -1,8 +1,7 @@
-package com.thinkaurelius.faunus.drivers;
+package com.thinkaurelius.faunus.io.graph;
 
 import com.thinkaurelius.faunus.io.formats.json.JSONInputFormat;
 import com.thinkaurelius.faunus.io.formats.json.JSONOutputFormat;
-import com.thinkaurelius.faunus.io.graph.FaunusVertex;
 import com.thinkaurelius.faunus.io.graph.util.TaggedHolder;
 import com.thinkaurelius.faunus.mapreduce.algebra.ExceptEdgeLabels;
 import com.thinkaurelius.faunus.mapreduce.algebra.Function;
@@ -36,7 +35,7 @@ import java.util.UUID;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Faunus extends Configured implements Tool {
+public class FaunusGraph extends Configured implements Tool {
 
     private final Class<? extends InputFormat> inputFormat;
     private final Class<? extends OutputFormat> outputFormat;
@@ -44,10 +43,13 @@ public class Faunus extends Configured implements Tool {
     private final Path inputPath;
     private final String jobScript;
 
-    private List<Job> jobs = new ArrayList<Job>();
+    private final List<Job> jobs = new ArrayList<Job>();
+    private final List<Path> intermediateFiles = new ArrayList<Path>();
+
+    public FaunusGraph V = this;
 
 
-    public Faunus(final Class<? extends InputFormat> inputFormat, final Path inputPath, final Class<? extends OutputFormat> outputFormat, final Path outputPath, final String jobScript) {
+    public FaunusGraph(final Class<? extends InputFormat> inputFormat, final Path inputPath, final Class<? extends OutputFormat> outputFormat, final Path outputPath, final String jobScript) {
         this.inputFormat = inputFormat;
         this.outputFormat = outputFormat;
         this.outputPath = outputPath;
@@ -56,16 +58,16 @@ public class Faunus extends Configured implements Tool {
         this.setConf(new Configuration());
     }
 
-    public Faunus _() throws IOException {
-        final Job job = new Job(this.getConf(), this.jobScript);
+    public FaunusGraph _() throws IOException {
+        final Job job = new Job(new Configuration(), this.jobScript);
         job.setMapperClass(Identity.Map.class);
         this.configureMapJob(job);
         this.jobs.add(job);
         return this;
     }
 
-    public Faunus transpose(final String label, final String newLabel) throws IOException {
-        final Configuration conf = this.getConf();
+    public FaunusGraph transpose(final String label, final String newLabel) throws IOException {
+        final Configuration conf = new Configuration();
         conf.set(Transpose.LABEL, label);
         conf.set(Transpose.NEW_LABEL, newLabel);
         final Job job = new Job(conf, this.jobScript);
@@ -76,8 +78,8 @@ public class Faunus extends Configured implements Tool {
         return this;
     }
 
-    public Faunus traverse(final String firstLabel, final String secondLabel, final String newLabel) throws IOException {
-        final Configuration conf = this.getConf();
+    public FaunusGraph traverse(final String firstLabel, final String secondLabel, final String newLabel) throws IOException {
+        final Configuration conf = new Configuration();
         conf.set(Traverse.FIRST_LABEL, firstLabel);
         conf.set(Traverse.SECOND_LABEL, secondLabel);
         conf.set(Traverse.NEW_LABEL, newLabel);
@@ -89,8 +91,8 @@ public class Faunus extends Configured implements Tool {
         return this;
     }
 
-    public Faunus retainEdgeLabels(final String... labels) throws IOException {
-        final Configuration conf = this.getConf();
+    public FaunusGraph retainEdgeLabels(final String... labels) throws IOException {
+        final Configuration conf = new Configuration();
         conf.setStrings(RetainEdgeLabels.LABELS, labels);
         final Job job = new Job(conf, this.jobScript);
         this.configureMapJob(job);
@@ -99,8 +101,8 @@ public class Faunus extends Configured implements Tool {
         return this;
     }
 
-    public Faunus exceptEdgeLabels(final String... labels) throws IOException {
-        final Configuration conf = this.getConf();
+    public FaunusGraph exceptEdgeLabels(final String... labels) throws IOException {
+        final Configuration conf = new Configuration();
         conf.setStrings(ExceptEdgeLabels.LABELS, labels);
         final Job job = new Job(conf, this.jobScript);
         this.configureMapJob(job);
@@ -109,8 +111,12 @@ public class Faunus extends Configured implements Tool {
         return this;
     }
 
+    public FaunusGraph V() {
+        return this;
+    }
+
     private void configureMapJob(final Job job) {
-        job.setJarByClass(Faunus.class);
+        job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(NullWritable.class);
         job.setMapOutputValueClass(FaunusVertex.class);
         job.setOutputKeyClass(NullWritable.class);
@@ -118,7 +124,7 @@ public class Faunus extends Configured implements Tool {
     }
 
     private void configureMapReduceJob(final Job job) {
-        job.setJarByClass(Faunus.class);
+        job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(LongWritable.class);
         job.setMapOutputValueClass(TaggedHolder.class);
         job.setOutputKeyClass(NullWritable.class);
@@ -135,12 +141,15 @@ public class Faunus extends Configured implements Tool {
         }
 
         this.composeJobs();
-        for (final Job job : this.jobs) {
+        for (int i = 0; i < this.jobs.size(); i++) {
+            final Job job = this.jobs.get(i);
             job.waitForCompletion(true);
-            final FileSystem hdfs = FileSystem.get(job.getConfiguration());
-            final String tempFile = job.getConfiguration().get("inputPath");
-            if (null != tempFile)
-                hdfs.delete(new Path(tempFile), true);
+            if (i > 0 && this.intermediateFiles.size() > 0) {
+                final FileSystem hdfs = FileSystem.get(job.getConfiguration());
+                final Path path = this.intermediateFiles.remove(0);
+                if (hdfs.exists(path))
+                    hdfs.delete(path, true);
+            }
         }
         return 0;
     }
@@ -150,16 +159,16 @@ public class Faunus extends Configured implements Tool {
             return;
         }
 
-        final List<Path> intermediateFiles = new ArrayList<Path>();
-        FileSystem hdfs = FileSystem.get(this.getConf());
+        final FileSystem hdfs = FileSystem.get(this.getConf());
         try {
-            String uuid = UUID.randomUUID().toString();
             final Job startJob = this.jobs.get(0);
             startJob.setInputFormatClass(this.inputFormat);
 
             FileInputFormat.setInputPaths(startJob, this.inputPath);
             if (this.jobs.size() > 1) {
-                FileOutputFormat.setOutputPath(startJob, new Path(uuid));
+                final Path path = new Path(UUID.randomUUID().toString());
+                FileOutputFormat.setOutputPath(startJob, path);
+                intermediateFiles.add(path);
                 startJob.setOutputFormatClass(SequenceFileOutputFormat.class);
             } else {
                 FileOutputFormat.setOutputPath(startJob, this.outputPath);
@@ -172,24 +181,21 @@ public class Faunus extends Configured implements Tool {
                     final Job midJob = this.jobs.get(i);
                     midJob.setInputFormatClass(SequenceFileInputFormat.class);
                     midJob.setOutputFormatClass(SequenceFileOutputFormat.class);
-                    FileInputFormat.setInputPaths(midJob, new Path(uuid));
-                    midJob.getConfiguration().set("inputPath", uuid);
-                    uuid = UUID.randomUUID().toString();
-                    final Path intermediateFile = new Path(uuid);
-                    FileOutputFormat.setOutputPath(midJob, intermediateFile);
-                    intermediateFiles.add(intermediateFile);
+                    FileInputFormat.setInputPaths(midJob, intermediateFiles.get(intermediateFiles.size() - 1));
+                    final Path path = new Path(UUID.randomUUID().toString());
+                    FileOutputFormat.setOutputPath(midJob, path);
+                    intermediateFiles.add(path);
                 }
             }
             if (this.jobs.size() > 1) {
                 final Job endJob = this.jobs.get(this.jobs.size() - 1);
                 endJob.setInputFormatClass(SequenceFileInputFormat.class);
                 endJob.setOutputFormatClass(this.outputFormat);
-                endJob.getConfiguration().set("inputPath", uuid);
-                FileInputFormat.setInputPaths(endJob, new Path(uuid));
+                FileInputFormat.setInputPaths(endJob, intermediateFiles.get(intermediateFiles.size() - 1));
                 FileOutputFormat.setOutputPath(endJob, this.outputPath);
             }
         } catch (IOException e) {
-            for (final Path path : intermediateFiles) {
+            for (final Path path : this.intermediateFiles) {
                 try {
                     if (hdfs.exists(path)) {
                         hdfs.delete(path, true);
@@ -204,18 +210,19 @@ public class Faunus extends Configured implements Tool {
     public static void main(String[] args) throws Exception {
         if (args.length != 4) {
             System.out.println("Faunus: A Library of Graph-Based Hadoop Tools");
-            System.out.println("Usage: ");
+            System.out.println("Usage:");
             System.out.println("  arg1: input file (string)");
             System.out.println("  arg2: output file (string)");
             System.out.println("  arg3: overwrite existing output file (boolean)");
             System.out.println("  arg4: faunus script (string)");
+            System.out.println("        g.V.step().step()");
             System.exit(-1);
         }
-        final Faunus faunus = new Faunus(JSONInputFormat.class, new Path(args[0]), JSONOutputFormat.class, new Path(args[1]), args[3]);
+        final FaunusGraph faunusGraph = new FaunusGraph(JSONInputFormat.class, new Path(args[0]), JSONOutputFormat.class, new Path(args[1]), args[3]);
         final GroovyScriptEngineImpl scriptEngine = new GroovyScriptEngineImpl();
-        scriptEngine.put("V", faunus);
+        scriptEngine.put("g", faunusGraph);
         scriptEngine.eval(args[3]);
-        int result = ToolRunner.run(faunus, args);
+        int result = ToolRunner.run(faunusGraph, args);
         System.exit(result);
     }
 

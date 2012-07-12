@@ -49,7 +49,7 @@ public class TransposeTest extends TestCase {
             assertEquals(pair.getFirst(), NullWritable.get());
             FaunusVertex temp = pair.getSecond();
             if (temp.getId().equals(1l)) {
-//                assertFalse(temp.getEdges(Direction.OUT).iterator().hasNext());
+                //assertFalse(temp.getEdges(Direction.OUT).iterator().hasNext());
                 assertEquals(temp.getPropertyKeys().size(), 1);
                 assertEquals(temp.getProperty("name"), "marko");
             } else {

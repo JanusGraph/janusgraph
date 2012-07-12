@@ -26,6 +26,10 @@ public class Traverse {
     public static final String SECOND_LABEL = Tokens.makeNamespace(Traverse.class) + ".secondLabel";
     public static final String NEW_LABEL = Tokens.makeNamespace(Traverse.class) + ".newLabel";
 
+    public enum Counters {
+        EDGES_CREATED
+    }
+
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder> {
 
         private String firstLabel;
@@ -41,8 +45,8 @@ public class Traverse {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder>.Context context) throws IOException, InterruptedException {
-            Set<Long> outVertexIds = new HashSet<Long>();
-            Set<Long> inVertexIds = new HashSet<Long>();
+            final Set<Long> outVertexIds = new HashSet<Long>();
+            final Set<Long> inVertexIds = new HashSet<Long>();
 
             for (final Edge edge : value.getEdges(IN)) {
                 context.write(value.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
@@ -63,6 +67,7 @@ public class Traverse {
                     final FaunusEdge edge = new FaunusEdge(new FaunusVertex(outId), new FaunusVertex(inId), this.newLabel);
                     context.write(new LongWritable(outId), new TaggedHolder<FaunusEdge>('o', edge));
                     context.write(new LongWritable(inId), new TaggedHolder<FaunusEdge>('i', edge));
+                    context.getCounter(Counters.EDGES_CREATED).increment(2);
                 }
             }
 
@@ -77,7 +82,7 @@ public class Traverse {
             for (final TaggedHolder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    vertex.setProperties(holder.get().getProperties());
+                    vertex.setProperties(WritableUtils.clone(holder.get(), context.getConfiguration()).getProperties());
                 } else if (tag == 'i') {
                     vertex.addEdge(IN, WritableUtils.clone((FaunusEdge) holder.get(), context.getConfiguration()));
                 } else if (tag == 'o') {

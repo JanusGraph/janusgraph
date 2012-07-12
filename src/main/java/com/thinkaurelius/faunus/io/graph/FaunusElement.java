@@ -68,7 +68,7 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
     }
 
     public LongWritable getIdAsLongWritable() {
-        return this.writableId;
+        return new LongWritable(this.id);
     }
 
     public int compareTo(final T other) {
