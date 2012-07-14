@@ -1,8 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.steps;
 
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.steps.Function;
-import com.thinkaurelius.faunus.mapreduce.steps.VertexFunctionFilter;
 import junit.framework.TestCase;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;

@@ -38,7 +38,7 @@ public class EdgeFunction {
 
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             long edgeCounter = 0;
             for (final Edge edge : value.getEdges(Direction.BOTH)) {
                 function.compute((FaunusEdge) edge);

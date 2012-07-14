@@ -40,7 +40,7 @@ public class Transpose {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder>.Context context) throws IOException, InterruptedException {
             long counter = 0;
             final FaunusVertex vertex = value.cloneIdAndProperties();
 
@@ -73,7 +73,7 @@ public class Transpose {
     public static class Reduce extends Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex> {
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<TaggedHolder> values, final org.apache.hadoop.mapreduce.Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void reduce(final LongWritable key, final Iterable<TaggedHolder> values, final Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             final FaunusVertex vertex = new FaunusVertex(key.get());
             for (final TaggedHolder holder : values) {
                 final char tag = holder.getTag();

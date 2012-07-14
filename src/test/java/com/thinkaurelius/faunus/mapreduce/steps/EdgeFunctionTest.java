@@ -3,8 +3,6 @@ package com.thinkaurelius.faunus.mapreduce.steps;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.steps.EdgeFunction;
-import com.thinkaurelius.faunus.mapreduce.steps.Function;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;

@@ -51,7 +51,7 @@ public class Traverse {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder>.Context context) throws IOException, InterruptedException {
             final Set<Long> firstVertexIds = new HashSet<Long>();
             final Set<Long> secondVertexIds = new HashSet<Long>();
 
@@ -114,7 +114,7 @@ public class Traverse {
 
     public static class Reduce extends Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex> {
         @Override
-        public void reduce(final LongWritable key, final Iterable<TaggedHolder> values, final org.apache.hadoop.mapreduce.Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void reduce(final LongWritable key, final Iterable<TaggedHolder> values, final Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             final FaunusVertex vertex = new FaunusVertex(key.get());
             for (final TaggedHolder holder : values) {
                 final char tag = holder.getTag();

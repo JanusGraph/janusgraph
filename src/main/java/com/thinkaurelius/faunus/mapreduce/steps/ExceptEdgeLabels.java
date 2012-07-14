@@ -41,7 +41,7 @@ public class ExceptEdgeLabels {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             if (null != this.illegalLabels) {
                 long allowedCounter = 0;
                 long filteredCounter = 0;

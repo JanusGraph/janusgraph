@@ -2,8 +2,6 @@ package com.thinkaurelius.faunus.mapreduce.steps;
 
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.steps.EdgeFunctionFilter;
-import com.thinkaurelius.faunus.mapreduce.steps.Function;
 import com.tinkerpop.blueprints.Direction;
 import junit.framework.TestCase;
 import org.apache.hadoop.conf.Configuration;

@@ -35,7 +35,7 @@ public class VertexFunctionFilter {
 
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final org.apache.hadoop.mapreduce.Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             if (this.function.compute(value)) {
                 context.getCounter(Counters.VERTICES_ALLOWED).increment(1);
                 context.write(NullWritable.get(), value);

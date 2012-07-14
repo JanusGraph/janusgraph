@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.formats.json.JSONOutputFormat;
 import com.thinkaurelius.faunus.mapreduce.steps.ExceptEdgeLabels;
 import com.thinkaurelius.faunus.mapreduce.steps.Function;
 import com.thinkaurelius.faunus.mapreduce.steps.Identity;
+import com.thinkaurelius.faunus.mapreduce.steps.MultipleMapStep;
 import com.thinkaurelius.faunus.mapreduce.steps.RetainEdgeLabels;
 import com.thinkaurelius.faunus.mapreduce.steps.Self;
 import com.thinkaurelius.faunus.mapreduce.steps.Transpose;
@@ -48,8 +49,9 @@ public class FaunusGraph extends Configured implements Tool {
     private final List<Job> jobs = new ArrayList<Job>();
     private final List<Path> intermediateFiles = new ArrayList<Path>();
 
-    public FaunusGraph V = this;
+    private final List<String> mapClasses = new ArrayList<String>();
 
+    public FaunusGraph V = this;
 
     public FaunusGraph(final Class<? extends InputFormat> inputFormat, final Path inputPath, final Class<? extends OutputFormat> outputFormat, final Path outputPath, final String jobScript) {
         this.inputFormat = inputFormat;
@@ -61,12 +63,51 @@ public class FaunusGraph extends Configured implements Tool {
     }
 
     public FaunusGraph _() throws IOException {
+
+        //mapClasses.add(Identity.Map.class.getName());
+
         final Job job = new Job(new Configuration(), this.jobScript);
         job.setMapperClass(Identity.Map.class);
         this.configureMapJob(job);
         this.jobs.add(job);
         return this;
+
     }
+
+    public FaunusGraph retainEdgeLabels(final String... labels) throws IOException {
+
+        //mapClasses.add(RetainEdgeLabels.Map.class.getName());
+        final Configuration conf = new Configuration();
+        conf.setStrings(RetainEdgeLabels.LABELS, labels);
+        final Job job = new Job(conf, this.jobScript);
+        this.configureMapJob(job);
+        job.setMapperClass(RetainEdgeLabels.Map.class);
+        this.jobs.add(job);
+        return this;
+    }
+
+    public FaunusGraph exceptEdgeLabels(final String... labels) throws IOException {
+
+        //mapClasses.add(ExceptEdgeLabels.Map.class.getName());
+        final Configuration conf = new Configuration();
+        conf.setStrings(ExceptEdgeLabels.LABELS, labels);
+        final Job job = new Job(conf, this.jobScript);
+        this.configureMapJob(job);
+        job.setMapperClass(ExceptEdgeLabels.Map.class);
+        this.jobs.add(job);
+        return this;
+    }
+
+    /*public FaunusGraph done() throws IOException {
+        final Configuration conf = new Configuration();
+        conf.setStrings(MultipleMapStep.CLASSES, mapClasses.toArray(new String[mapClasses.size()]));
+
+        final Job job = new Job(conf, this.jobScript);
+        job.setMapperClass(MultipleMapStep.Map.class);
+        this.configureMapJob(job);
+        this.jobs.add(job);
+        return this;
+    }*/
 
     public FaunusGraph self(final boolean allow) throws IOException {
         final Configuration conf = new Configuration();
@@ -105,25 +146,6 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    public FaunusGraph retainEdgeLabels(final String... labels) throws IOException {
-        final Configuration conf = new Configuration();
-        conf.setStrings(RetainEdgeLabels.LABELS, labels);
-        final Job job = new Job(conf, this.jobScript);
-        this.configureMapJob(job);
-        job.setMapperClass(RetainEdgeLabels.Map.class);
-        this.jobs.add(job);
-        return this;
-    }
-
-    public FaunusGraph exceptEdgeLabels(final String... labels) throws IOException {
-        final Configuration conf = new Configuration();
-        conf.setStrings(ExceptEdgeLabels.LABELS, labels);
-        final Job job = new Job(conf, this.jobScript);
-        this.configureMapJob(job);
-        job.setMapperClass(ExceptEdgeLabels.Map.class);
-        this.jobs.add(job);
-        return this;
-    }
 
     public FaunusGraph V() {
         return this;
