@@ -36,6 +36,7 @@ public class TraverseTest extends BaseTest {
         config.set(Traverse.NEW_LABEL, "knowsCreated");
         config.set(Traverse.FIRST_DIRECTION, OUT.toString());
         config.set(Traverse.SECOND_DIRECTION, OUT.toString());
+        config.set(Traverse.ACTION, Tokens.Action.KEEP.toString());
 
         mapReduceDriver.withConfiguration(config);
 
@@ -115,6 +116,7 @@ public class TraverseTest extends BaseTest {
         config.set(Traverse.NEW_LABEL, "collaborator");
         config.set(Traverse.FIRST_DIRECTION, OUT.toString());
         config.set(Traverse.SECOND_DIRECTION, IN.toString());
+        config.set(Traverse.ACTION, Tokens.Action.KEEP.toString());
 
         mapReduceDriver.withConfiguration(config);
 

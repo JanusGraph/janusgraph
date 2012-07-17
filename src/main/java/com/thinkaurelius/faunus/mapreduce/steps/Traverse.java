@@ -28,6 +28,7 @@ public class Traverse {
     public static final String SECOND_DIRECTION = Tokens.makeNamespace(Traverse.class) + ".secondDirection";
     public static final String SECOND_LABEL = Tokens.makeNamespace(Traverse.class) + ".secondLabel";
     public static final String NEW_LABEL = Tokens.makeNamespace(Traverse.class) + ".newLabel";
+    public static final String ACTION = Tokens.makeNamespace(Traverse.class) + ".action";
 
     public enum Counters {
         EDGES_CREATED
@@ -40,6 +41,7 @@ public class Traverse {
         private Direction secondDirection;
         private String secondLabel;
         private String newLabel;
+        private Tokens.Action action;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
@@ -48,6 +50,7 @@ public class Traverse {
             this.secondDirection = Direction.valueOf(context.getConfiguration().get(SECOND_DIRECTION));
             this.secondLabel = context.getConfiguration().get(SECOND_LABEL);
             this.newLabel = context.getConfiguration().get(NEW_LABEL);
+            this.action = Tokens.Action.valueOf(context.getConfiguration().get(ACTION));
         }
 
         @Override
@@ -57,11 +60,19 @@ public class Traverse {
 
             // emit original incoming edges
             for (final Edge edge : value.getEdges(IN)) {
-                context.write(value.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
+                if (this.action.equals(Tokens.Action.KEEP))
+                    context.write(value.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
+                else if (!edge.getLabel().equals(this.firstLabel) && !edge.getLabel().equals(this.secondLabel)) {
+                    context.write(value.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
+                }
             }
             // emit original outgoing edges
             for (final Edge edge : value.getEdges(OUT)) {
-                context.write(value.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', (FaunusEdge) edge));
+                if(this.action.equals(Tokens.Action.KEEP))
+                    context.write(value.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', (FaunusEdge) edge));
+                else if (!edge.getLabel().equals(this.firstLabel) && !edge.getLabel().equals(this.secondLabel)) {
+                    context.write(value.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', (FaunusEdge) edge));
+                }
             }
 
             if (firstDirection.equals(OUT)) {

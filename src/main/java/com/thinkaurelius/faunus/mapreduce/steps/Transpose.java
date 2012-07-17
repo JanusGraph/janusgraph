@@ -26,17 +26,20 @@ public class Transpose {
 
     public static final String LABEL = Tokens.makeNamespace(Traverse.class) + ".label";
     public static final String NEW_LABEL = Tokens.makeNamespace(Traverse.class) + ".newLabel";
+    public static final String ACTION = Tokens.makeNamespace(Traverse.class) + ".action";
 
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder> {
 
         private String label;
         private String newLabel;
+        private Tokens.Action action;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.label = context.getConfiguration().get(LABEL);
             this.newLabel = context.getConfiguration().get(NEW_LABEL);
+            this.action = Tokens.Action.valueOf(context.getConfiguration().get(ACTION));
         }
 
         @Override
@@ -46,22 +49,31 @@ public class Transpose {
 
             context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusVertex>('v', vertex));
             for (final Edge edge : value.getEdges(OUT)) {
-                context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', (FaunusEdge) edge));
                 if (edge.getLabel().equals(this.label)) {
+                    if (this.action.equals(Tokens.Action.KEEP))
+                        context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', (FaunusEdge) edge));
+
                     final FaunusEdge inverseEdge = new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel);
                     inverseEdge.setProperties(((FaunusEdge) edge).getProperties());
                     counter++;
                     context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', inverseEdge));
+                } else {
+                    context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', (FaunusEdge) edge));
                 }
             }
 
             for (final Edge edge : value.getEdges(IN)) {
-                context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
+
                 if (edge.getLabel().equals(this.label)) {
+                    if (this.action.equals(Tokens.Action.KEEP))
+                        context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
+
                     final FaunusEdge inverseEdge = new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel);
                     inverseEdge.setProperties(((FaunusEdge) edge).getProperties());
                     counter++;
                     context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', inverseEdge));
+                } else {
+                    context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
                 }
             }
 

@@ -42,6 +42,7 @@ public class TransposeTest extends BaseTest {
         Configuration config = new Configuration();
         config.set(Transpose.LABEL, "created");
         config.set(Transpose.NEW_LABEL, "createdBy");
+        config.set(Transpose.ACTION, Tokens.Action.KEEP.toString());
         mapReduceDriver.withConfiguration(config);
         mapReduceDriver.withInput(NullWritable.get(), vertex1).withInput(NullWritable.get(), vertex2);
         List<Pair<NullWritable, FaunusVertex>> list = mapReduceDriver.run();
