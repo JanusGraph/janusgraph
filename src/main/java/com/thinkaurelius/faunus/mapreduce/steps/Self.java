@@ -17,7 +17,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class Self {
 
-    public static final String ALLOW = Tokens.makeNamespace(Traverse.class) + ".allow";
+    public static final String ACTION = Tokens.makeNamespace(Self.class) + ".action";
 
     public enum Counters {
         EDGES_ALLOWED,
@@ -25,11 +25,11 @@ public class Self {
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
-        protected Boolean allow;
+        private Tokens.Action action;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.allow = context.getConfiguration().getBoolean(ALLOW, false);
+            this.action = Tokens.Action.valueOf(context.getConfiguration().get(ACTION));
         }
 
         @Override
@@ -39,7 +39,7 @@ public class Self {
 
             List<Edge> newEdges = new ArrayList<Edge>();
             for (final Edge edge : value.getEdges(OUT)) {
-                if (allow) {
+                if (this.action.equals(Tokens.Action.KEEP)) {
                     if (edge.getVertex(OUT).getId().equals(edge.getVertex(IN).getId())) {
                         newEdges.add(edge);
                         allowedCounter++;
@@ -59,7 +59,7 @@ public class Self {
 
             newEdges = new ArrayList<Edge>();
             for (final Edge edge : value.getEdges(IN)) {
-                if (allow) {
+                if (this.action.equals(Tokens.Action.KEEP)) {
                     if (edge.getVertex(OUT).getId().equals(edge.getVertex(IN).getId())) {
                         newEdges.add(edge);
                         allowedCounter++;
