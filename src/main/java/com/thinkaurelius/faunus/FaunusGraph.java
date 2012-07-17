@@ -33,9 +33,7 @@ import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -55,9 +53,9 @@ public class FaunusGraph extends Configured implements Tool {
     private final List<Path> intermediateFiles = new ArrayList<Path>();
 
     private final List<List<String>> mapSequenceClasses = new ArrayList<List<String>>();
-    private Configuration superConf = new Configuration();
-    private int sequence = 0;
-    private int step = 0;
+    private Configuration mapSequenceConfiguration = new Configuration();
+    private int currentSequence = 0;
+    private int currentSequenceStep = 0;
 
     public FaunusGraph V = this;
 
@@ -67,13 +65,12 @@ public class FaunusGraph extends Configured implements Tool {
         this.outputPath = outputPath;
         this.inputPath = inputPath;
         this.jobScript = jobScript;
-        this.setConf(new Configuration());
     }
 
     private void addMapSequenceClass(final String className) {
         List<String> list;
-        if (this.mapSequenceClasses.size() == (this.sequence + 1))
-            list = this.mapSequenceClasses.get(this.sequence);
+        if (this.mapSequenceClasses.size() == (this.currentSequence + 1))
+            list = this.mapSequenceClasses.get(this.currentSequence);
         else {
             list = new ArrayList<String>();
             this.mapSequenceClasses.add(list);
@@ -84,29 +81,29 @@ public class FaunusGraph extends Configured implements Tool {
     public FaunusGraph _() throws IOException {
 
         this.addMapSequenceClass(Identity.Map.class.getName());
-        this.step++;
+        this.currentSequenceStep++;
         return this;
     }
 
     public FaunusGraph retainEdgeLabels(final String... labels) throws IOException {
 
         this.addMapSequenceClass(RetainEdgeLabels.Map.class.getName());
-        this.superConf.setStrings(RetainEdgeLabels.LABELS + "-" + this.step++, labels);
+        this.mapSequenceConfiguration.setStrings(RetainEdgeLabels.LABELS + "-" + this.currentSequenceStep++, labels);
         return this;
     }
 
     public FaunusGraph exceptEdgeLabels(final String... labels) throws IOException {
         this.addMapSequenceClass(ExceptEdgeLabels.Map.class.getName());
-        this.superConf.setStrings(ExceptEdgeLabels.LABELS + "-" + this.step++, labels);
+        this.mapSequenceConfiguration.setStrings(ExceptEdgeLabels.LABELS + "-" + this.currentSequenceStep++, labels);
         return this;
     }
 
     private FaunusGraph completeMapSequence() throws IOException {
-        if (this.mapSequenceClasses.size() == this.sequence + 1) {
-            final List<String> list = this.mapSequenceClasses.get(this.sequence);
+        if (this.mapSequenceClasses.size() == this.currentSequence + 1) {
+            final List<String> list = this.mapSequenceClasses.get(this.currentSequence);
             if (list.size() > 0) {
-                this.superConf.setStrings(MapSequence.CLASSES, list.toArray(new String[list.size()]));
-                final Job job = new Job(this.superConf, list.toString());
+                this.mapSequenceConfiguration.setStrings(MapSequence.CLASSES, list.toArray(new String[list.size()]));
+                final Job job = new Job(this.mapSequenceConfiguration, list.toString());
                 job.setMapperClass(MapSequence.Map.class);
                 this.configureMapJob(job);
                 this.jobs.add(job);
@@ -114,15 +111,15 @@ public class FaunusGraph extends Configured implements Tool {
         } else {
             this.mapSequenceClasses.add(new ArrayList<String>());
         }
-        this.superConf = new Configuration();
-        this.sequence++;
-        this.step = 0;
+        this.mapSequenceConfiguration = new Configuration();
+        this.currentSequence++;
+        this.currentSequenceStep = 0;
         return this;
     }
 
     public FaunusGraph self(final boolean allow) throws IOException {
         this.addMapSequenceClass(Self.Map.class.getName());
-        this.superConf.setBoolean(Self.ALLOW + "-" + this.step++, allow);
+        this.mapSequenceConfiguration.setBoolean(Self.ALLOW + "-" + this.currentSequenceStep++, allow);
         return this;
     }
 
