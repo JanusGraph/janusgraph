@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.formats.json.JSONOutputFormat;
 import com.thinkaurelius.faunus.mapreduce.steps.ExceptEdgeLabels;
 import com.thinkaurelius.faunus.mapreduce.steps.Function;
 import com.thinkaurelius.faunus.mapreduce.steps.Identity;
+import com.thinkaurelius.faunus.mapreduce.steps.MapReduceSequence;
 import com.thinkaurelius.faunus.mapreduce.steps.MapSequence;
 import com.thinkaurelius.faunus.mapreduce.steps.RetainEdgeLabels;
 import com.thinkaurelius.faunus.mapreduce.steps.Self;
@@ -52,10 +53,10 @@ public class FaunusGraph extends Configured implements Tool {
     private final List<Job> jobs = new ArrayList<Job>();
     private final List<Path> intermediateFiles = new ArrayList<Path>();
 
-    private final List<List<String>> mapSequenceClasses = new ArrayList<List<String>>();
     private Configuration mapSequenceConfiguration = new Configuration();
-    private int currentSequence = 0;
-    private int currentSequenceStep = 0;
+    private final List<Class> mapSequenceClasses = new ArrayList<Class>();
+    private Class mapRClass = null;
+    private Class reduceClass = null;
 
     public FaunusGraph V = this;
 
@@ -67,88 +68,99 @@ public class FaunusGraph extends Configured implements Tool {
         this.jobScript = jobScript;
     }
 
-    private void addMapSequenceClass(final String className) {
-        List<String> list;
-        if (this.mapSequenceClasses.size() == (this.currentSequence + 1))
-            list = this.mapSequenceClasses.get(this.currentSequence);
-        else {
-            list = new ArrayList<String>();
-            this.mapSequenceClasses.add(list);
+    private String toStringOfJob(final Class sequenceClass) {
+        final List<String> list = new ArrayList<String>();
+        for (final Class klass : this.mapSequenceClasses) {
+            list.add(klass.getCanonicalName());
         }
-        list.add(className);
+        if (null != mapRClass && null != reduceClass) {
+            list.add(this.mapRClass.getCanonicalName());
+            list.add(this.reduceClass.getCanonicalName());
+        }
+        return sequenceClass.getSimpleName() + list.toString();
+    }
+
+    private String[] toStringMapSequenceClasses() {
+        final List<String> list = new ArrayList<String>();
+        for (final Class klass : this.mapSequenceClasses) {
+            list.add(klass.getName());
+        }
+        return list.toArray(new String[list.size()]);
     }
 
     public FaunusGraph _() throws IOException {
-
-        this.addMapSequenceClass(Identity.Map.class.getName());
-        this.currentSequenceStep++;
+        this.mapSequenceClasses.add(Identity.Map.class);
         return this;
     }
 
     public FaunusGraph retainEdgeLabels(final String... labels) throws IOException {
-
-        this.addMapSequenceClass(RetainEdgeLabels.Map.class.getName());
-        this.mapSequenceConfiguration.setStrings(RetainEdgeLabels.LABELS + "-" + this.currentSequenceStep++, labels);
+        this.mapSequenceConfiguration.setStrings(RetainEdgeLabels.LABELS + "-" + this.mapSequenceClasses.size(), labels);
+        this.mapSequenceClasses.add(RetainEdgeLabels.Map.class);
         return this;
     }
 
     public FaunusGraph exceptEdgeLabels(final String... labels) throws IOException {
-        this.addMapSequenceClass(ExceptEdgeLabels.Map.class.getName());
-        this.mapSequenceConfiguration.setStrings(ExceptEdgeLabels.LABELS + "-" + this.currentSequenceStep++, labels);
+        this.mapSequenceConfiguration.setStrings(ExceptEdgeLabels.LABELS + "-" + this.mapSequenceClasses.size(), labels);
+        this.mapSequenceClasses.add(ExceptEdgeLabels.Map.class);
         return this;
     }
 
-    private FaunusGraph completeMapSequence() throws IOException {
-        if (this.mapSequenceClasses.size() == this.currentSequence + 1) {
-            final List<String> list = this.mapSequenceClasses.get(this.currentSequence);
-            if (list.size() > 0) {
-                this.mapSequenceConfiguration.setStrings(MapSequence.CLASSES, list.toArray(new String[list.size()]));
-                final Job job = new Job(this.mapSequenceConfiguration, list.toString());
+    private FaunusGraph completeSequence() throws IOException {
+        if (this.mapRClass != null && this.reduceClass != null) {
+            this.mapSequenceConfiguration.set(MapReduceSequence.MAPR_CLASS, this.mapRClass.getName());
+            this.mapSequenceConfiguration.set(MapReduceSequence.REDUCE_CLASS, this.reduceClass.getName());
+            if (this.mapSequenceClasses.size() > 0) {
+                this.mapSequenceConfiguration.setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
+            }
+            final Job job = new Job(this.mapSequenceConfiguration, this.toStringOfJob(MapReduceSequence.class));
+            job.setMapperClass(MapReduceSequence.Map.class);
+            job.setReducerClass(MapReduceSequence.Reduce.class);
+            this.configureMapReduceJob(job);
+            this.jobs.add(job);
+
+        } else {
+            if (this.mapSequenceClasses.size() > 0) {
+                this.mapSequenceConfiguration.setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
+                final Job job = new Job(this.mapSequenceConfiguration, this.toStringOfJob(MapSequence.class));
                 job.setMapperClass(MapSequence.Map.class);
                 this.configureMapJob(job);
                 this.jobs.add(job);
             }
-        } else {
-            this.mapSequenceClasses.add(new ArrayList<String>());
         }
+
+        this.mapRClass = null;
+        this.reduceClass = null;
+        this.mapSequenceClasses.clear();
         this.mapSequenceConfiguration = new Configuration();
-        this.currentSequence++;
-        this.currentSequenceStep = 0;
         return this;
     }
 
     public FaunusGraph self(final boolean allow) throws IOException {
-        this.addMapSequenceClass(Self.Map.class.getName());
-        this.mapSequenceConfiguration.setBoolean(Self.ALLOW + "-" + this.currentSequenceStep++, allow);
+        this.mapSequenceConfiguration.setBoolean(Self.ALLOW + "-" + this.mapSequenceClasses.size(), allow);
+        this.mapSequenceClasses.add(Self.Map.class);
         return this;
     }
 
     public FaunusGraph transpose(final String label, final String newLabel) throws IOException {
-        this.completeMapSequence();
-        final Configuration conf = new Configuration();
-        conf.set(Transpose.LABEL, label);
-        conf.set(Transpose.NEW_LABEL, newLabel);
-        final Job job = new Job(conf, Transpose.class.getName());
-        this.configureMapReduceJob(job);
-        job.setMapperClass(Transpose.Map.class);
-        job.setReducerClass(Transpose.Reduce.class);
-        this.jobs.add(job);
+
+        this.mapSequenceConfiguration.set(Transpose.LABEL, label);
+        this.mapSequenceConfiguration.set(Transpose.NEW_LABEL, newLabel);
+        this.mapRClass = Transpose.Map.class;
+        this.reduceClass = Transpose.Reduce.class;
+        this.completeSequence();
         return this;
     }
 
     public FaunusGraph traverse(final Direction firstDirection, final String firstLabel, final Direction secondDirection, final String secondLabel, final String newLabel) throws IOException {
-        this.completeMapSequence();
-        final Configuration conf = new Configuration();
-        conf.set(Traverse.FIRST_DIRECTION, firstDirection.toString());
-        conf.set(Traverse.FIRST_LABEL, firstLabel);
-        conf.set(Traverse.SECOND_DIRECTION, secondDirection.toString());
-        conf.set(Traverse.SECOND_LABEL, secondLabel);
-        conf.set(Traverse.NEW_LABEL, newLabel);
-        final Job job = new Job(conf, Traverse.class.getName());
-        this.configureMapReduceJob(job);
-        job.setMapperClass(Traverse.Map.class);
-        job.setReducerClass(Traverse.Reduce.class);
-        this.jobs.add(job);
+
+        this.mapSequenceConfiguration.set(Traverse.FIRST_DIRECTION, firstDirection.toString());
+        this.mapSequenceConfiguration.set(Traverse.FIRST_LABEL, firstLabel);
+        this.mapSequenceConfiguration.set(Traverse.SECOND_DIRECTION, secondDirection.toString());
+        this.mapSequenceConfiguration.set(Traverse.SECOND_LABEL, secondLabel);
+        this.mapSequenceConfiguration.set(Traverse.NEW_LABEL, newLabel);
+        this.mapRClass = Traverse.Map.class;
+        this.reduceClass = Traverse.Reduce.class;
+        this.completeSequence();
         return this;
     }
 
@@ -278,7 +290,7 @@ public class FaunusGraph extends Configured implements Tool {
         scriptEngine.eval("IN = " + com.tinkerpop.blueprints.Direction.class.getName() + ".IN");
         scriptEngine.eval("OUT =" + com.tinkerpop.blueprints.Direction.class.getName() + ".OUT");
         scriptEngine.put("g", faunusGraph);
-        ((FaunusGraph) scriptEngine.eval(args[3])).completeMapSequence();
+        ((FaunusGraph) scriptEngine.eval(args[3])).completeSequence();
         int result = ToolRunner.run(faunusGraph, args);
         System.exit(result);
     }

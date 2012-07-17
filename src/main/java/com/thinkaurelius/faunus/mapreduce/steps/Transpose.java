@@ -51,7 +51,7 @@ public class Transpose {
                     final FaunusEdge inverseEdge = new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel);
                     inverseEdge.setProperties(((FaunusEdge) edge).getProperties());
                     counter++;
-                    context.write(new LongWritable((Long) inverseEdge.getVertex(OUT).getId()), new TaggedHolder<FaunusEdge>('i', inverseEdge));
+                    context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', inverseEdge));
                 }
             }
 
@@ -61,7 +61,7 @@ public class Transpose {
                     final FaunusEdge inverseEdge = new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel);
                     inverseEdge.setProperties(((FaunusEdge) edge).getProperties());
                     counter++;
-                    context.write(new LongWritable((Long) inverseEdge.getVertex(IN).getId()), new TaggedHolder<FaunusEdge>('o', inverseEdge));
+                    context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', inverseEdge));
                 }
             }
 
