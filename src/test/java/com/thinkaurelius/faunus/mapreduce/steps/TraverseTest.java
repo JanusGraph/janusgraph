@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.steps;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.util.TaggedHolder;
+import com.thinkaurelius.faunus.util.Tokens;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;

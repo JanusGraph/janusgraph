@@ -3,12 +3,12 @@ package com.thinkaurelius.faunus.mapreduce.steps;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.util.TaggedHolder;
+import com.thinkaurelius.faunus.util.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
@@ -23,12 +23,12 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class TransposeTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, LongWritable, TaggedHolder, NullWritable, FaunusVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, TaggedHolder, NullWritable, FaunusVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new Transpose.Map());
-        mapReduceDriver.setReducer(new Transpose.Reduce());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
     public void testMapReduce1() throws IOException {

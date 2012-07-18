@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.steps;
 
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.util.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.NullWritable;

@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.mapreduce.steps;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.util.Tokens;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 

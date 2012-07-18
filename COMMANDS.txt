@@ -1,8 +1,5 @@
 hadoop fs -put data/graph-of-the-gods.json graph-of-the-gods.json
-hadoop fs -getmerge output-graph.json target/output-graph.json
-hadoop fs -rmr output-graph.json
+hadoop fs -getmerge output.txt target/output.txt
 
 
-hadoop jar target/faunus-0.1-SNAPSHOT-job.jar com.thinkaurelius.faunus.FaunusGraph graph-of-the-gods.json output-graph.json true 'g.V.retainEdgeLabels("father").traverse("father","father","grandfather").exceptEdgeLabels("father")'
-
-bin/faunus.sh graph-of-the-gods.json output-graph.json true 'g.V.retainEdgeLabels("father").traverse("father","father","grandfather").exceptEdgeLabels("father")'
+bin/faunus.sh 'g.V.retainEdgeLabels("father").traverse("father","father","grandfather").exceptEdgeLabels("father")'

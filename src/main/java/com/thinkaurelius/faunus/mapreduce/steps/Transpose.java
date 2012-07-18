@@ -2,15 +2,14 @@ package com.thinkaurelius.faunus.mapreduce.steps;
 
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.util.TaggedHolder;
+import com.thinkaurelius.faunus.util.Tokens;
 import com.tinkerpop.blueprints.Edge;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -29,7 +28,7 @@ public class Transpose {
     public static final String ACTION = Tokens.makeNamespace(Traverse.class) + ".action";
 
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         private String label;
         private String newLabel;
@@ -43,63 +42,44 @@ public class Transpose {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             long counter = 0;
-            final FaunusVertex vertex = value.cloneIdAndProperties();
 
-            context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusVertex>('v', vertex));
+            List<Edge> newInEdges = new ArrayList<Edge>();
+            List<Edge> outEdges = new ArrayList<Edge>();
             for (final Edge edge : value.getEdges(OUT)) {
                 if (edge.getLabel().equals(this.label)) {
-                    if (this.action.equals(Tokens.Action.KEEP))
-                        context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', (FaunusEdge) edge));
-
-                    final FaunusEdge inverseEdge = new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel);
-                    inverseEdge.setProperties(((FaunusEdge) edge).getProperties());
+                    newInEdges.add(new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel));
                     counter++;
-                    context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', inverseEdge));
+                    if (this.action.equals(Tokens.Action.KEEP))
+                        outEdges.add(edge);
                 } else {
-                    context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', (FaunusEdge) edge));
+                    outEdges.add(edge);
                 }
+
             }
 
+            List<Edge> newOutEdges = new ArrayList<Edge>();
+            List<Edge> inEdges = new ArrayList<Edge>();
             for (final Edge edge : value.getEdges(IN)) {
-
                 if (edge.getLabel().equals(this.label)) {
-                    if (this.action.equals(Tokens.Action.KEEP))
-                        context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
-
-                    final FaunusEdge inverseEdge = new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel);
-                    inverseEdge.setProperties(((FaunusEdge) edge).getProperties());
+                    newOutEdges.add(new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel));
                     counter++;
-                    context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('o', inverseEdge));
+                    if (this.action.equals(Tokens.Action.KEEP))
+                        inEdges.add(edge);
                 } else {
-                    context.write(vertex.getIdAsLongWritable(), new TaggedHolder<FaunusEdge>('i', (FaunusEdge) edge));
+                    inEdges.add(edge);
                 }
             }
+
+            outEdges.addAll(newOutEdges);
+            inEdges.addAll(newInEdges);
+            value.setEdges(OUT, outEdges);
+            value.setEdges(IN, inEdges);
+            context.write(NullWritable.get(), value);
 
             if (counter > 0)
                 context.getCounter(Counters.EDGES_TRANSPOSED).increment(counter);
-        }
-    }
-
-    public static class Reduce extends Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex> {
-
-        @Override
-        public void reduce(final LongWritable key, final Iterable<TaggedHolder> values, final Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            final FaunusVertex vertex = new FaunusVertex(key.get());
-            for (final TaggedHolder holder : values) {
-                final char tag = holder.getTag();
-                if (tag == 'v') {
-                    vertex.setProperties(WritableUtils.clone(holder.get(), context.getConfiguration()).getProperties());
-                } else if (tag == 'o') {
-                    vertex.addEdge(OUT, WritableUtils.clone((FaunusEdge) holder.get(), context.getConfiguration()));
-                } else if (tag == 'i') {
-                    vertex.addEdge(IN, WritableUtils.clone((FaunusEdge) holder.get(), context.getConfiguration()));
-                } else {
-                    throw new IOException("A tag of " + tag + " is not a legal tag for this operation");
-                }
-            }
-            context.write(NullWritable.get(), vertex);
         }
     }
 }
