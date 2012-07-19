@@ -36,7 +36,11 @@ public class EdgeLabelFilter {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.labels = new HashSet<String>(Arrays.asList(context.getConfiguration().getStrings(LABELS)));
+            final String[] strings = context.getConfiguration().getStrings(LABELS);
+            if (null == strings || strings.length == 0)
+                this.labels = new HashSet<String>();
+            else
+                this.labels = new HashSet<String>(Arrays.asList(strings));
             this.action = Tokens.Action.valueOf(context.getConfiguration().get(ACTION));
         }
 

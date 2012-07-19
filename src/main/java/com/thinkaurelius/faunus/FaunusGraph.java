@@ -1,17 +1,22 @@
 package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.mapreduce.operators.DegreeDistribution;
+import com.thinkaurelius.faunus.mapreduce.operators.EdgeLabelDistribution;
 import com.thinkaurelius.faunus.mapreduce.steps.EdgeLabelFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.Function;
 import com.thinkaurelius.faunus.mapreduce.steps.Identity;
 import com.thinkaurelius.faunus.mapreduce.steps.MapReduceSequence;
 import com.thinkaurelius.faunus.mapreduce.steps.MapSequence;
+import com.thinkaurelius.faunus.mapreduce.steps.PropertyFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.Self;
 import com.thinkaurelius.faunus.mapreduce.steps.Transpose;
 import com.thinkaurelius.faunus.mapreduce.steps.Traverse;
 import com.thinkaurelius.faunus.util.TaggedHolder;
 import com.thinkaurelius.faunus.util.Tokens;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Vertex;
 import groovy.lang.Closure;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -20,6 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.OutputFormat;
@@ -44,11 +50,9 @@ import java.util.UUID;
  */
 public class FaunusGraph extends Configured implements Tool {
 
-
     private final Logger logger = Logger.getLogger(FaunusGraph.class);
 
     private Properties properties;
-
     private final Class<? extends InputFormat> inputFormat;
     private Class<? extends OutputFormat> outputFormat;
     private final Class<? extends OutputFormat> statisticsOutputFormat;
@@ -102,6 +106,14 @@ public class FaunusGraph extends Configured implements Tool {
 
     public FaunusGraph _() throws IOException {
         this.mapSequenceClasses.add(Identity.Map.class);
+        return this;
+    }
+
+    public FaunusGraph propertyFilter(final Tokens.Action action, final Class<? extends Element> klass, final String... keys) {
+        this.mapSequenceConfiguration.set(PropertyFilter.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
+        this.mapSequenceConfiguration.set(PropertyFilter.CLASS + "-" + this.mapSequenceClasses.size(), klass.getName());
+        this.mapSequenceConfiguration.setStrings(PropertyFilter.KEYS + "-" + this.mapSequenceClasses.size(), keys);
+        this.mapSequenceClasses.add(PropertyFilter.Map.class);
         return this;
     }
 
@@ -200,6 +212,23 @@ public class FaunusGraph extends Configured implements Tool {
         job.setMapOutputKeyClass(LongWritable.class);
         job.setMapOutputValueClass(IntWritable.class);
         job.setOutputKeyClass(LongWritable.class);
+        job.setOutputKeyClass(LongWritable.class);
+        this.outputFormat = this.statisticsOutputFormat;
+        this.jobs.add(job);
+        return this;
+    }
+
+    public FaunusGraph edgeLabelDistribution(final Direction direction) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(EdgeLabelDistribution.DIRECTION, direction.name());
+        final Job job = new Job(conf, DegreeDistribution.class.getCanonicalName());
+        job.setMapperClass(EdgeLabelDistribution.Map.class);
+        job.setReducerClass(EdgeLabelDistribution.Reduce.class);
+        job.setJarByClass(FaunusGraph.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(IntWritable.class);
+        job.setOutputKeyClass(Text.class);
         job.setOutputKeyClass(LongWritable.class);
         this.outputFormat = this.statisticsOutputFormat;
         this.jobs.add(job);
@@ -325,9 +354,11 @@ public class FaunusGraph extends Configured implements Tool {
 
         final FaunusGraph faunusGraph = new FaunusGraph(script, properties);
         final GroovyScriptEngineImpl scriptEngine = new GroovyScriptEngineImpl();
-        scriptEngine.eval("IN=" + com.tinkerpop.blueprints.Direction.class.getName() + ".IN");
-        scriptEngine.eval("OUT=" + com.tinkerpop.blueprints.Direction.class.getName() + ".OUT");
-        scriptEngine.eval("BOTH=" + com.tinkerpop.blueprints.Direction.class.getName() + ".BOTH");
+        scriptEngine.eval("Vertex= " + Vertex.class.getName());
+        scriptEngine.eval("Edge= " + Edge.class.getName());
+        scriptEngine.eval("IN=" + Direction.class.getName() + ".IN");
+        scriptEngine.eval("OUT=" + Direction.class.getName() + ".OUT");
+        scriptEngine.eval("BOTH=" + Direction.class.getName() + ".BOTH");
         scriptEngine.eval("KEEP=" + Tokens.Action.class.getName() + ".KEEP");
         scriptEngine.eval("DROP=" + Tokens.Action.class.getName() + ".DROP");
         scriptEngine.put("g", faunusGraph);
