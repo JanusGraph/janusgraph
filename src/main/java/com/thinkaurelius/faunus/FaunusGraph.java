@@ -257,7 +257,7 @@ public class FaunusGraph extends Configured implements Tool {
         logger.info("     `-.__ `\\/\\/\\|");
         logger.info("        / `'/ () \\");
         logger.info("      .'   /\\     )  Faunus: A Library of Graph-Based Hadoop Tools");
-        logger.info("   .-'  .'| \\' \\__");
+        logger.info("   .-'  .'| \\  \\__");
         logger.info(" .'  __(  \\  '`(()");
         logger.info("/_.'`  `.  |    )(");
         logger.info("         \\ |");
