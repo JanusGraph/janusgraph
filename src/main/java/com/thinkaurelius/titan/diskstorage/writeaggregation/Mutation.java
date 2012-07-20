@@ -37,11 +37,20 @@ public class Mutation {
     }
     
     public void merge(Mutation m) {
-        if (additions==null) additions = m.additions;
-        else additions.addAll(m.additions);
-        
-        if (deletions==null) deletions = m.deletions;
-        else deletions.addAll(m.deletions);
+    	
+    	if (null == m) {
+    		return;
+    	}
+    	
+    	if (null != m.additions) {
+    		if (null == additions) additions = m.additions;
+    		else additions.addAll(m.additions);
+    	}
+    	
+        if (null != m.deletions) {
+        	if (null == deletions) deletions = m.deletions;
+        	else deletions.addAll(m.deletions);
+        }
     }
 
 }
