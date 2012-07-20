@@ -1,5 +1,0 @@
-hadoop fs -put data/graph-of-the-gods.json graph-of-the-gods.json
-hadoop fs -getmerge output.txt target/output.txt
-
-
-bin/faunus.sh 'g.V.retainEdgeLabels("father").traverse("father","father","grandfather").exceptEdgeLabels("father")'
