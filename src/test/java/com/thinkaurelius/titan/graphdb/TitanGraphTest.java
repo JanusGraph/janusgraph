@@ -241,6 +241,32 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 	}
 	
 	@Test
+	public void testPropertyIndexPersistence() {
+		final String propName = "favorite_color";
+		final String sharedValue = "blue";
+		
+		makeStringPropertyKey(propName);
+		
+		TitanVertex alice = tx.addVertex();
+		TitanVertex bob = tx.addVertex();
+		
+		alice.addProperty(propName, sharedValue);
+		
+		clopen();
+
+		alice = tx.getVertex(alice.getID());
+		bob = tx.getVertex(bob.getID());
+		
+		assertEquals(sharedValue, alice.getProperty(propName));
+		assertEquals(null, bob.getProperty(propName));
+		
+		alice.removeProperty(propName);
+		bob.addProperty(propName, sharedValue);
+		
+		clopen();
+	}
+	
+	@Test
 	public void testIndexRetrieval() {
 		TitanKey id = makeIntegerUIDPropertyKey("uid");
 		TitanKey name = makeStringPropertyKey("name");
