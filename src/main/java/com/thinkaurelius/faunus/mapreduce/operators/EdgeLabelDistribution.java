@@ -5,7 +5,6 @@ import com.thinkaurelius.faunus.util.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -45,14 +44,14 @@ public class EdgeLabelDistribution {
 
     }
 
-    public static class Reduce extends Reducer<Text, IntWritable, Text, LongWritable> {
+    public static class Reduce extends Reducer<Text, IntWritable, Text, IntWritable> {
         @Override
-        public void reduce(final Text key, final Iterable<IntWritable> values, final Reducer<Text, IntWritable, Text, LongWritable>.Context context) throws IOException, InterruptedException {
-            long totalNumberOfEdges = 0l;
+        public void reduce(final Text key, final Iterable<IntWritable> values, final Reducer<Text, IntWritable, Text, IntWritable>.Context context) throws IOException, InterruptedException {
+            int totalNumberOfEdges = 0;
             for (final IntWritable token : values) {
                 totalNumberOfEdges++;
             }
-            context.write(key, new LongWritable(totalNumberOfEdges));
+            context.write(key, new IntWritable(totalNumberOfEdges));
         }
     }
 }

@@ -15,6 +15,7 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.util.LineReader;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 
@@ -23,31 +24,31 @@ import java.io.IOException;
  */
 public class JSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
-    //private static final Log LOG = LogFactory.getLog(JSONRecordReader.class);
+    private final Logger logger = Logger.getLogger(JSONRecordReader.class);
     private long start;
     private long pos;
     private long end;
     private LineReader in;
-    private final int maxLineLength = Integer.MAX_VALUE;
+    private int maxLineLength = Integer.MAX_VALUE;
 
     private final NullWritable key = NullWritable.get();
     private FaunusVertex value = null;
 
     public void initialize(final InputSplit genericSplit, final TaskAttemptContext context) throws IOException {
         final FileSplit split = (FileSplit) genericSplit;
-        final Configuration job = context.getConfiguration();
-        //this.maxLineLength = job.getInt("mapred.linerecordreader.maxlength", Integer.MAX_VALUE);
+        final Configuration conf = context.getConfiguration();
+        this.maxLineLength = conf.getInt("mapred.linerecordreader.maxlength", Integer.MAX_VALUE);
         this.start = split.getStart();
         this.end = this.start + split.getLength();
         final Path file = split.getPath();
-        final CompressionCodec codec = new CompressionCodecFactory(job).getCodec(file);
+        final CompressionCodec codec = new CompressionCodecFactory(conf).getCodec(file);
 
         // open the file and seek to the start of the split
-        final FileSystem fs = file.getFileSystem(job);
+        final FileSystem fs = file.getFileSystem(conf);
         final FSDataInputStream fileIn = fs.open(split.getPath());
         boolean skipFirstLine = false;
         if (codec != null) {
-            this.in = new LineReader(codec.createInputStream(fileIn), job);
+            this.in = new LineReader(codec.createInputStream(fileIn), conf);
             this.end = Long.MAX_VALUE;
         } else {
             if (this.start != 0) {
@@ -55,7 +56,7 @@ public class JSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
                 --this.start;
                 fileIn.seek(this.start);
             }
-            this.in = new LineReader(fileIn, job);
+            this.in = new LineReader(fileIn, conf);
         }
         if (skipFirstLine) {  // skip first line and re-establish "start".
             this.start += this.in.readLine(new Text(), 0, (int) Math.min((long) Integer.MAX_VALUE, this.end - this.start));
@@ -71,18 +72,17 @@ public class JSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
         while (this.pos < this.end) {
             final Text text = new Text();
             newSize = this.in.readLine(text, this.maxLineLength, Math.max((int) Math.min(Integer.MAX_VALUE, end - pos), this.maxLineLength));
-            this.value = JSONUtility.fromJSON(text.toString());
-
             if (newSize == 0) {
                 break;
             }
             this.pos += newSize;
             if (newSize < this.maxLineLength) {
+                this.value = JSONUtility.fromJSON(text.toString());
                 break;
             }
 
             // line too long. try again
-            //LOG.info("Skipped line of size " + newSize + " at pos " + (pos - newSize));
+            logger.info("Skipped line of size " + newSize + " at pos " + (pos - newSize));
         }
         if (newSize == 0) {
             this.value = null;

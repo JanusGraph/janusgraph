@@ -5,8 +5,9 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility;
+import com.tinkerpop.blueprints.util.io.graphson.ElementFactory;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONTokens;
+import com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -115,6 +116,34 @@ public class JSONUtility {
             return object;
         } catch (JSONException jex) {
             throw new IOException(jex);
+        }
+    }
+
+    private static class FaunusElementFactory implements ElementFactory<FaunusVertex, FaunusEdge> {
+        @Override
+        public FaunusEdge createEdge(final Object id, final FaunusVertex out, final FaunusVertex in, final String label) {
+            if (!(out instanceof FaunusVertex) || !(in instanceof FaunusVertex)) {
+                throw new IllegalArgumentException("Both in and out vertices must be of type Faunus Vertex");
+            }
+
+            return new FaunusEdge(convertIdentifier(id), (FaunusVertex) out, (FaunusVertex) in, label);
+        }
+
+        @Override
+        public FaunusVertex createVertex(Object id) {
+            return new FaunusVertex(convertIdentifier(id));
+        }
+
+        private long convertIdentifier(Object id) {
+            long identifier = -1l;
+            if (id != null) {
+                try {
+                    identifier = Long.parseLong(id.toString());
+                } catch (NumberFormatException nfe) {
+                    identifier = -1l;
+                }
+            }
+            return identifier;
         }
     }
 }

@@ -41,7 +41,9 @@ import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -75,7 +77,7 @@ public class FaunusGraph extends Configured implements Tool {
         this.inputFormat = (Class<? extends InputFormat>) Class.forName(properties.getProperty(Tokens.GRAPH_INPUT_FORMAT_CLASS));
         this.inputPath = new Path(properties.getProperty(Tokens.GRAPH_INPUT_LOCATION));
         this.outputFormat = (Class<? extends OutputFormat>) Class.forName(properties.getProperty(Tokens.GRAPH_OUTPUT_FORMAT_CLASS));
-        this.statisticsOutputFormat = (Class<? extends OutputFormat>) Class.forName(properties.getProperty(Tokens.STATISTICS_OUTPUT_FORMAT_CLASS));
+        this.statisticsOutputFormat = (Class<? extends OutputFormat>) Class.forName(properties.getProperty(Tokens.STATISTIC_OUTPUT_FORMAT_CLASS));
         this.outputPath = new Path(properties.getProperty(Tokens.DATA_OUTPUT_LOCATION));
         this.jobScript = jobScript;
     }
@@ -210,10 +212,10 @@ public class FaunusGraph extends Configured implements Tool {
         job.setReducerClass(DegreeDistribution.Reduce.class);
         job.setCombinerClass(DegreeDistribution.Reduce.class);
         job.setJarByClass(FaunusGraph.class);
-        job.setMapOutputKeyClass(LongWritable.class);
+        job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(IntWritable.class);
-        job.setOutputKeyClass(LongWritable.class);
-        job.setOutputKeyClass(LongWritable.class);
+        job.setOutputKeyClass(IntWritable.class);
+        job.setOutputKeyClass(IntWritable.class);
         this.outputFormat = this.statisticsOutputFormat;
         this.jobs.add(job);
         return this;
@@ -231,19 +233,19 @@ public class FaunusGraph extends Configured implements Tool {
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(IntWritable.class);
         job.setOutputKeyClass(Text.class);
-        job.setOutputKeyClass(LongWritable.class);
+        job.setOutputKeyClass(IntWritable.class);
         this.outputFormat = this.statisticsOutputFormat;
         this.jobs.add(job);
         return this;
     }
 
-    /*private static Map<String, String> configurationToMap(final Configuration configuration) {
+    private static Map<String, String> configurationToMap(final Configuration configuration) {
         final Map<String, String> map = new HashMap<String, String>();
         for (Map.Entry<String, String> entry : configuration) {
             map.put(entry.getKey(), entry.getValue());
         }
         return map;
-    }*/
+    }
 
     public int run(String[] args) throws Exception {
         if (Boolean.valueOf(this.properties.getProperty(Tokens.OVERWRITE_DATA_OUTPUT_LOCATION))) {
@@ -290,6 +292,10 @@ public class FaunusGraph extends Configured implements Tool {
         final FileSystem hdfs = FileSystem.get(this.getConf());
         try {
             final Job startJob = this.jobs.get(0);
+            // add the faunus.properties to the first job (reader filters)
+            for (Map.Entry entry : this.properties.entrySet()) {
+                startJob.getConfiguration().set(entry.getKey().toString(), entry.getValue().toString());
+            }
             startJob.setInputFormatClass(this.inputFormat);
 
             FileInputFormat.setInputPaths(startJob, this.inputPath);
