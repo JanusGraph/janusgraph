@@ -6,8 +6,9 @@ h2. Features
 
 * Support for various data sources/sinks
 ** "Titan 0.1":http://thinkaurelius.github.com/titan/
+** "Rexster 2.x":http://rexster.tinkerpop.com fronted graph database
 ** "Hadoop File System":http://hadoop.apache.org/hdfs/ (HDFS) 1.0.3
-*** A vertex-centric "JSON":http://www.json.org/ representation
+*** A vertex-centric "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library representation
 * Natively implements the "Blueprints":http://blueprints.tinkerpop.com graph API
 * Open source with the liberal "Apache 2":http://www.apache.org/licenses/LICENSE-2.0.html license
 
