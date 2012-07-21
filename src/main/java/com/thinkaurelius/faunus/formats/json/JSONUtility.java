@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.io.graphson.ElementFactory;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONTokens;
@@ -14,9 +15,12 @@ import org.codehaus.jettison.json.JSONObject;
 import org.codehaus.jettison.json.JSONTokener;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -55,13 +59,14 @@ public class JSONUtility {
             final Set<String> ignore = new HashSet<String>();
             ignore.add(OUT_E);
             ignore.add(IN_E);
+            ignore.add(GraphSONTokens._TYPE);
             final FaunusVertex vertex = (FaunusVertex) GraphSONUtility.vertexFromJson(json, elementFactory, false, ignore);
 
             final JSONArray outEdges = json.optJSONArray(OUT_E);
-            writeEdge(vertex, outEdges, OUT);
+            fromJSONEdges(vertex, outEdges, OUT);
 
-            final JSONArray inEdges = (JSONArray) json.optJSONArray(IN_E);
-            writeEdge(vertex, inEdges, IN);
+            final JSONArray inEdges = json.optJSONArray(IN_E);
+            fromJSONEdges(vertex, inEdges, IN);
 
             return vertex;
         } catch (Exception e) {
@@ -69,19 +74,25 @@ public class JSONUtility {
         }
     }
 
-    private static void writeEdge(final FaunusVertex vertex, final JSONArray edges,
-                                  final Direction direction) throws JSONException, IOException {
+    private static void fromJSONEdges(final FaunusVertex vertex, final JSONArray edges, final Direction direction) throws JSONException, IOException {
         if (null != edges) {
             for (int ix = 0; ix < edges.length(); ix++) {
                 final JSONObject edge = edges.optJSONObject(ix);
 
+                final Set<String> ignore = new HashSet<String>();
+                ignore.add(GraphSONTokens._TYPE);
+
                 FaunusEdge faunusEdge = null;
                 if (direction == Direction.IN) {
                     final long outVertexId = edge.optLong(GraphSONTokens._OUT_V);
-                    faunusEdge = (FaunusEdge) GraphSONUtility.edgeFromJSON(edge, new FaunusVertex(outVertexId), vertex, elementFactory, false, null);
+                    ignore.add(GraphSONTokens._IN_V);
+                    faunusEdge = (FaunusEdge) GraphSONUtility.edgeFromJSON(edge, new FaunusVertex(outVertexId), vertex, elementFactory, false, ignore);
+                    ignore.remove(GraphSONTokens._IN_V);
                 } else if (direction == Direction.OUT) {
                     final long inVertexId = edge.optLong(GraphSONTokens._IN_V);
+                    ignore.add(GraphSONTokens._OUT_V);
                     faunusEdge = (FaunusEdge) GraphSONUtility.edgeFromJSON(edge, vertex, new FaunusVertex(inVertexId), elementFactory, false, null);
+                    ignore.remove(GraphSONTokens._OUT_V);
                 }
 
                 if (faunusEdge != null) {
@@ -94,12 +105,20 @@ public class JSONUtility {
     public static JSONObject toJSON(final Vertex vertex) throws IOException {
         try {
             final JSONObject object = GraphSONUtility.jsonFromElement(vertex);
+            object.remove(GraphSONTokens._TYPE);
+            Object id = object.remove(GraphSONTokens._ID);
+            object.put(GraphSONTokens._ID, Long.valueOf(id.toString()));
 
             List<Edge> edges = (List<Edge>) vertex.getEdges(OUT);
             if (!edges.isEmpty()) {
                 final JSONArray outEdgesArray = new JSONArray();
                 for (final Edge outEdge : edges) {
-                    outEdgesArray.put(GraphSONUtility.jsonFromElement(outEdge));
+                    final JSONObject edgeObject = GraphSONUtility.jsonFromElement(outEdge);
+                    id = edgeObject.remove(GraphSONTokens._ID);
+                    edgeObject.put(GraphSONTokens._ID, Long.valueOf(id.toString()));
+                    edgeObject.remove(GraphSONTokens._TYPE);
+                    edgeObject.remove(GraphSONTokens._OUT_V);
+                    outEdgesArray.put(edgeObject);
                 }
                 object.put(OUT_E, outEdgesArray);
             }
@@ -108,7 +127,12 @@ public class JSONUtility {
             if (!edges.isEmpty()) {
                 final JSONArray inEdgesArray = new JSONArray();
                 for (final Edge inEdge : edges) {
-                    inEdgesArray.put(GraphSONUtility.jsonFromElement(inEdge));
+                    final JSONObject edgeObject = GraphSONUtility.jsonFromElement(inEdge);
+                    id = edgeObject.remove(GraphSONTokens._ID);
+                    edgeObject.put(GraphSONTokens._ID, Long.valueOf(id.toString()));
+                    edgeObject.remove(GraphSONTokens._TYPE);
+                    edgeObject.remove(GraphSONTokens._IN_V);
+                    inEdgesArray.put(edgeObject);
                 }
                 object.put(IN_E, inEdgesArray);
             }
@@ -145,5 +169,13 @@ public class JSONUtility {
             }
             return identifier;
         }
+    }
+
+    public static void generateGraphSON(final Graph graph, final OutputStream outputStream) throws IOException {
+        final BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(outputStream));
+        for (final Vertex vertex : graph.getVertices()) {
+            bw.write(JSONUtility.toJSON(vertex) + "\n");
+        }
+        bw.close();
     }
 }

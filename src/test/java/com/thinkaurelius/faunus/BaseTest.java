@@ -1,12 +1,18 @@
 package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.json.JSONUtility;
-import com.thinkaurelius.faunus.formats.json.JSONUtility;
+import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
+import com.tinkerpop.blueprints.impls.tg.TinkerGraphFactory;
+import com.tinkerpop.blueprints.util.io.graphml.GraphMLReader;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -55,14 +61,14 @@ public class BaseTest extends TestCase {
         return indexResults(driver.run());
     }
 
-    /*public void testConverter() throws IOException {
-        //Graph graph = new TinkerGraph();
-        //GraphMLReader.inputGraph(graph, JSONUtility.class.getResourceAsStream("graph-of-the-gods.xml"));
-        Graph graph = TinkerGraphFactory.createTinkerGraph();
+    public void testConverter() throws IOException {
+        Graph graph = new TinkerGraph();
+        GraphMLReader.inputGraph(graph, JSONUtility.class.getResourceAsStream("graph-of-the-gods.xml"));
+        //Graph graph = TinkerGraphFactory.createTinkerGraph();
         BufferedWriter bw = new BufferedWriter(new FileWriter("target/graph-example-1.json"));
         for (final Vertex vertex : graph.getVertices()) {
-            bw.write(JSONUtility.toJSON(vertex).toJSONString() + "\n");
+            bw.write(JSONUtility.toJSON(vertex).toString() + "\n");
         }
         bw.close();
-    }*/
+    }
 }

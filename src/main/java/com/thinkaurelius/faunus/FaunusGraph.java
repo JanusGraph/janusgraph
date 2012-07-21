@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.mapreduce.operators.DegreeDistribution;
 import com.thinkaurelius.faunus.mapreduce.operators.EdgeLabelDistribution;
+import com.thinkaurelius.faunus.mapreduce.operators.VertexDegree;
 import com.thinkaurelius.faunus.mapreduce.steps.EdgeLabelFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.Function;
 import com.thinkaurelius.faunus.mapreduce.steps.Identity;
@@ -201,7 +202,23 @@ public class FaunusGraph extends Configured implements Tool {
     }
 
     ////
-
+        
+    public FaunusGraph vertexDegree(final String property, final Direction direction, final String... labels) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(VertexDegree.PROPERTY, property);
+        conf.set(VertexDegree.DIRECTION, direction.name());
+        conf.setStrings(VertexDegree.LABELS, labels);
+        final Job job = new Job(conf, VertexDegree.class.getCanonicalName());
+        job.setMapperClass(VertexDegree.Map.class);
+        job.setJarByClass(FaunusGraph.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(IntWritable.class);
+        this.outputFormat = this.statisticsOutputFormat;
+        this.jobs.add(job);
+        return this;
+    }
+    
     public FaunusGraph degreeDistribution(final Direction direction, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
@@ -269,6 +286,8 @@ public class FaunusGraph extends Configured implements Tool {
         logger.info("Generating job chain: " + this.jobScript);
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");
+        logger.info("Faunus properties: " + this.properties);
+
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
             logger.info("Executing job " + (i + 1) + " out of " + this.jobs.size() + ": " + job.getJobName());
@@ -292,12 +311,7 @@ public class FaunusGraph extends Configured implements Tool {
         final FileSystem hdfs = FileSystem.get(this.getConf());
         try {
             final Job startJob = this.jobs.get(0);
-            // add the faunus.properties to the first job (reader filters)
-            for (Map.Entry entry : this.properties.entrySet()) {
-                startJob.getConfiguration().set(entry.getKey().toString(), entry.getValue().toString());
-            }
             startJob.setInputFormatClass(this.inputFormat);
-
             FileInputFormat.setInputPaths(startJob, this.inputPath);
             if (this.jobs.size() > 1) {
                 final Path path = new Path(UUID.randomUUID().toString());
@@ -338,6 +352,13 @@ public class FaunusGraph extends Configured implements Tool {
                 }
             }
             throw e;
+        }
+
+        // Add Faunus properties to all the jobs
+        for (final Job job : this.jobs) {
+            for (final Map.Entry entry : this.properties.entrySet()) {
+                job.getConfiguration().set(entry.getKey().toString(), entry.getValue().toString());
+            }
         }
     }
 
