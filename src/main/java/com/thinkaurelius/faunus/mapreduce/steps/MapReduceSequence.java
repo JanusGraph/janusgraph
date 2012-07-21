@@ -1,7 +1,7 @@
 package com.thinkaurelius.faunus.mapreduce.steps;
 
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.util.TaggedHolder;
+import com.thinkaurelius.faunus.util.Holder;
 import com.thinkaurelius.faunus.util.Tokens;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -25,11 +25,11 @@ public class MapReduceSequence {
     public static final String MAPR_CLASS = Tokens.makeNamespace(MapSequence.class) + ".mapRClass";
     public static final String REDUCE_CLASS = Tokens.makeNamespace(MapSequence.class) + ".reduceClass";
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
 
         private List<Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>> mappers = new ArrayList<Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>>();
         private List<Method> mapperMethods = new ArrayList<Method>();
-        private Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder> mapperR;
+        private Mapper<NullWritable, FaunusVertex, LongWritable, Holder> mapperR;
         private Method mapperRMethod;
 
         @Override
@@ -52,7 +52,7 @@ public class MapReduceSequence {
                     }
                 }
                 final String mapRClassName = context.getConfiguration().get(MAPR_CLASS);
-                final Class<Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder>> mapRClass = (Class) Class.forName(mapRClassName);
+                final Class<Mapper<NullWritable, FaunusVertex, LongWritable, Holder>> mapRClass = (Class) Class.forName(mapRClassName);
                 this.mapperR = mapRClass.getConstructor().newInstance();
                 try {
                     mapRClass.getMethod(Tokens.SETUP, Mapper.Context.class).invoke(this.mapperR, memoryContext);
@@ -68,7 +68,7 @@ public class MapReduceSequence {
 
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, TaggedHolder>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             try {
                 FaunusVertex vertex = value;
                 if (this.mappers.size() > 0) {
@@ -169,16 +169,16 @@ public class MapReduceSequence {
         }
     }
 
-    public static class Reduce extends Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex> {
+    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
-        private Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex> reducer;
+        private Reducer<LongWritable, Holder, NullWritable, FaunusVertex> reducer;
         private Method reducerMethod;
 
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
             try {
-                Class<Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex>> reducerClass = (Class) Class.forName(context.getConfiguration().get(REDUCE_CLASS));
+                Class<Reducer<LongWritable, Holder, NullWritable, FaunusVertex>> reducerClass = (Class) Class.forName(context.getConfiguration().get(REDUCE_CLASS));
                 this.reducer = reducerClass.getConstructor().newInstance();
                 try {
                     reducerClass.getMethod(Tokens.SETUP, Reducer.Context.class).invoke(this.reducer, context);
@@ -192,7 +192,7 @@ public class MapReduceSequence {
         }
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<TaggedHolder> values, final Reducer<LongWritable, TaggedHolder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             try {
                 this.reducerMethod.invoke(this.reducer, key, values, context);
             } catch (Exception e) {

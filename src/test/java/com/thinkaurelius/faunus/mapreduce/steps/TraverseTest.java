@@ -2,7 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.steps;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.util.TaggedHolder;
+import com.thinkaurelius.faunus.util.Holder;
 import com.thinkaurelius.faunus.util.Tokens;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
@@ -22,10 +22,10 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class TraverseTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, LongWritable, TaggedHolder, NullWritable, FaunusVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, TaggedHolder, NullWritable, FaunusVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new Traverse.Map());
         mapReduceDriver.setReducer(new Traverse.Reduce());
     }

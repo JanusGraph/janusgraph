@@ -12,7 +12,7 @@ import com.thinkaurelius.faunus.mapreduce.steps.PropertyFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.Self;
 import com.thinkaurelius.faunus.mapreduce.steps.Transpose;
 import com.thinkaurelius.faunus.mapreduce.steps.Traverse;
-import com.thinkaurelius.faunus.util.TaggedHolder;
+import com.thinkaurelius.faunus.util.Holder;
 import com.thinkaurelius.faunus.util.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -196,7 +196,7 @@ public class FaunusGraph extends Configured implements Tool {
     private void configureMapReduceJob(final Job job) {
         job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(LongWritable.class);
-        job.setMapOutputValueClass(TaggedHolder.class);
+        job.setMapOutputValueClass(Holder.class);
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(FaunusVertex.class);
     }

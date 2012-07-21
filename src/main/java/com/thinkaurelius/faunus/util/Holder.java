@@ -15,12 +15,12 @@ import java.nio.ByteBuffer;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TaggedHolder<T extends FaunusElement> extends GenericWritable implements WritableComparable<TaggedHolder<T>> {
+public class Holder<T extends FaunusElement> extends GenericWritable implements WritableComparable<Holder<T>> {
 
     protected char tag;
 
     static {
-        WritableComparator.define(TaggedHolder.class, new Comparator());
+        WritableComparator.define(Holder.class, new Comparator());
     }
 
     private static Class[] CLASSES = {
@@ -33,15 +33,15 @@ public class TaggedHolder<T extends FaunusElement> extends GenericWritable imple
 
     }
 
-    public TaggedHolder() {
+    public Holder() {
         super();
     }
 
-    public TaggedHolder(final DataInput in) throws IOException {
+    public Holder(final DataInput in) throws IOException {
         this.readFields(in);
     }
 
-    public TaggedHolder(final char tag, final T element) {
+    public Holder(final char tag, final T element) {
         this.set(element);
         this.tag = tag;
     }
@@ -69,11 +69,11 @@ public class TaggedHolder<T extends FaunusElement> extends GenericWritable imple
 
     @Override
     public boolean equals(final Object object) {
-        return object.getClass().equals(TaggedHolder.class) && ((TaggedHolder) object).getTag() == this.tag && ((TaggedHolder) object).get().equals(this.get());
+        return object.getClass().equals(Holder.class) && ((Holder) object).getTag() == this.tag && ((Holder) object).get().equals(this.get());
     }
 
     @Override
-    public int compareTo(final TaggedHolder<T> holder) {
+    public int compareTo(final Holder<T> holder) {
         final FaunusElement e1 = holder.get();
         final FaunusElement e2 = this.get();
         if (e1 instanceof FaunusVertex && e2 instanceof FaunusVertex)
@@ -85,7 +85,7 @@ public class TaggedHolder<T extends FaunusElement> extends GenericWritable imple
 
     public static class Comparator extends WritableComparator {
         public Comparator() {
-            super(TaggedHolder.class);
+            super(Holder.class);
         }
 
         @Override
@@ -108,8 +108,8 @@ public class TaggedHolder<T extends FaunusElement> extends GenericWritable imple
 
         @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
-            if (a instanceof TaggedHolder && b instanceof TaggedHolder)
-                return (((TaggedHolder) a).get().getIdAsLong()).compareTo(((TaggedHolder) b).get().getIdAsLong());
+            if (a instanceof Holder && b instanceof Holder)
+                return (((Holder) a).get().getIdAsLong()).compareTo(((Holder) b).get().getIdAsLong());
             else
                 return super.compare(a, b);
         }

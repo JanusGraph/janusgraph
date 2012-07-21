@@ -6,14 +6,10 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
-import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableComparator;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -21,10 +17,9 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusEdge extends FaunusElement<Edge> implements Edge {
+public class FaunusEdge extends FaunusElement implements Edge {
 
     private static final String DEFAULT = "_default";
-
 
     private FaunusVertex outVertex;
     private FaunusVertex inVertex;
@@ -64,14 +59,10 @@ public class FaunusEdge extends FaunusElement<Edge> implements Edge {
         return label;
     }
 
-    public void setLabel(final String label) {
-        this.label = label;
-    }
-
     public void write(final DataOutput out) throws IOException {
         out.writeLong(this.id);
-        out.writeLong((Long) this.getVertex(IN).getId());
-        out.writeLong((Long) this.getVertex(OUT).getId());
+        out.writeLong(this.inVertex.getIdAsLong());
+        out.writeLong(this.outVertex.getIdAsLong());
         out.writeUTF(this.getLabel());
         ElementProperties.write(this.properties, out);
     }

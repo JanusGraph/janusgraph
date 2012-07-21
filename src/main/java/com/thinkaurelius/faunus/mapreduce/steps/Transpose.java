@@ -45,8 +45,8 @@ public class Transpose {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             long counter = 0;
 
-            List<Edge> newInEdges = new ArrayList<Edge>();
-            List<Edge> outEdges = new ArrayList<Edge>();
+            final List<Edge> newInEdges = new ArrayList<Edge>();
+            final List<Edge> outEdges = new ArrayList<Edge>();
             for (final Edge edge : value.getEdges(OUT)) {
                 if (edge.getLabel().equals(this.label)) {
                     newInEdges.add(new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel));
@@ -59,8 +59,8 @@ public class Transpose {
 
             }
 
-            List<Edge> newOutEdges = new ArrayList<Edge>();
-            List<Edge> inEdges = new ArrayList<Edge>();
+            final List<Edge> newOutEdges = new ArrayList<Edge>();
+            final List<Edge> inEdges = new ArrayList<Edge>();
             for (final Edge edge : value.getEdges(IN)) {
                 if (edge.getLabel().equals(this.label)) {
                     newOutEdges.add(new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel));
