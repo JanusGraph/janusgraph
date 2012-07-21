@@ -50,6 +50,8 @@ public class VertexDegree {
 
             if (this.property.equals(Tokens._ID))
                 context.write(new Text(value.getId().toString()), new IntWritable(degree));
+            else if (this.property.equals(Tokens._PROPERTIES))
+                context.write(new Text(value.getProperties().toString()), new IntWritable(degree));
             else {
                 final Object property = value.getProperty(this.property);
                 if (null != property)

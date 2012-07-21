@@ -16,6 +16,7 @@ public class Tokens {
     public static final String MAP = "map";
     public static final String REDUCE = "reduce";
     public static final String _ID = "_id";
+    public static final String _PROPERTIES = "_properties";
 
     public static final String GRAPH_INPUT_FORMAT_CLASS = "faunus.graph.input.format.class";
     public static final String GRAPH_INPUT_LOCATION = "faunus.graph.input.location";
