@@ -30,6 +30,9 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class JSONUtility {
 
+    private static final String OUT_E = "outE";
+    private static final String IN_E = "inE";
+
     private static final FaunusElementFactory elementFactory = new FaunusElementFactory();
 
     public static List<FaunusVertex> fromJSON(final InputStream in) throws IOException {
@@ -49,14 +52,14 @@ public class JSONUtility {
             final JSONObject json = new JSONObject(new JSONTokener(line));
 
             final Set<String> ignore = new HashSet<String>();
-            ignore.add(JSONTokens.OUT_E);
-            ignore.add(JSONTokens.IN_E);
+            ignore.add(OUT_E);
+            ignore.add(IN_E);
             final FaunusVertex vertex = (FaunusVertex) GraphSONUtility.vertexFromJson(json, elementFactory, false, ignore);
 
-            final JSONArray outEdges = json.optJSONArray(JSONTokens.OUT_E);
+            final JSONArray outEdges = json.optJSONArray(OUT_E);
             writeEdge(vertex, outEdges, OUT);
 
-            final JSONArray inEdges = (JSONArray) json.optJSONArray(JSONTokens.IN_E);
+            final JSONArray inEdges = (JSONArray) json.optJSONArray(IN_E);
             writeEdge(vertex, inEdges, IN);
 
             return vertex;
@@ -97,7 +100,7 @@ public class JSONUtility {
                 for (final Edge outEdge : edges) {
                     outEdgesArray.put(GraphSONUtility.jsonFromElement(outEdge));
                 }
-                object.put(JSONTokens.OUT_E, outEdgesArray);
+                object.put(OUT_E, outEdgesArray);
             }
 
             edges = (List<Edge>) vertex.getEdges(IN);
@@ -106,7 +109,7 @@ public class JSONUtility {
                 for (final Edge inEdge : edges) {
                     inEdgesArray.put(GraphSONUtility.jsonFromElement(inEdge));
                 }
-                object.put(JSONTokens.IN_E, inEdgesArray);
+                object.put(IN_E, inEdgesArray);
             }
 
             return object;

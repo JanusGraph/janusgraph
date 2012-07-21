@@ -208,6 +208,7 @@ public class FaunusGraph extends Configured implements Tool {
         final Job job = new Job(conf, DegreeDistribution.class.getCanonicalName());
         job.setMapperClass(DegreeDistribution.Map.class);
         job.setReducerClass(DegreeDistribution.Reduce.class);
+        job.setCombinerClass(DegreeDistribution.Reduce.class);
         job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(LongWritable.class);
         job.setMapOutputValueClass(IntWritable.class);
@@ -222,9 +223,10 @@ public class FaunusGraph extends Configured implements Tool {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(EdgeLabelDistribution.DIRECTION, direction.name());
-        final Job job = new Job(conf, DegreeDistribution.class.getCanonicalName());
+        final Job job = new Job(conf, EdgeLabelDistribution.class.getCanonicalName());
         job.setMapperClass(EdgeLabelDistribution.Map.class);
         job.setReducerClass(EdgeLabelDistribution.Reduce.class);
+        job.setCombinerClass(EdgeLabelDistribution.Reduce.class);
         job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(IntWritable.class);
