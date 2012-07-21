@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus;
 
 import com.tinkerpop.blueprints.Element;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 
 import java.util.HashMap;
@@ -11,21 +12,11 @@ import java.util.Set;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public abstract class FaunusElement<T extends Element> implements Element, WritableComparable<T> {
+public abstract class FaunusElement<T extends Element> implements Element, Writable {
 
     protected Map<String, Object> properties = new HashMap<String, Object>();
     protected long id;
     protected LongWritable writableId;
-
-    public enum ElementType {
-        VERTEX((byte) 0),
-        EDGE((byte) 1);
-        public byte val;
-
-        private ElementType(byte v) {
-            this.val = v;
-        }
-    }
 
     public FaunusElement(final Long id) {
         this.id = id;
@@ -69,10 +60,6 @@ public abstract class FaunusElement<T extends Element> implements Element, Writa
 
     public LongWritable getIdAsLongWritable() {
         return new LongWritable(this.id);
-    }
-
-    public int compareTo(final T other) {
-        return new Long(this.id).compareTo((Long) other.getId());
     }
 
     @Override

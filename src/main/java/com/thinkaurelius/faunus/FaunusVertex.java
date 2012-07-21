@@ -28,7 +28,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
+public class FaunusVertex extends FaunusElement<Vertex> implements Vertex, WritableComparable<FaunusVertex> {
 
     static {
         WritableComparator.define(FaunusVertex.class, new Comparator());
@@ -48,6 +48,10 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
     public FaunusVertex(final DataInput in) throws IOException {
         super(-1l);
         this.readFields(in);
+    }
+
+    public int compareTo(final FaunusVertex other) {
+        return new Long(this.id).compareTo((Long) other.getId());
     }
 
     public Query query() {
@@ -115,7 +119,6 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
     }
 
     public void write(final DataOutput out) throws IOException {
-        out.writeByte(ElementType.VERTEX.val);
         out.writeLong(this.id);
         EdgeArray.write((List) this.inEdges, out);
         EdgeArray.write((List) this.outEdges, out);
@@ -124,7 +127,6 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
     }
 
     public void readFields(final DataInput in) throws IOException {
-        in.readByte();
         this.id = in.readLong();
         this.inEdges = (List) EdgeArray.readFields(in);
         this.outEdges = (List) EdgeArray.readFields(in);
@@ -148,11 +150,6 @@ public class FaunusVertex extends FaunusElement<Vertex> implements Vertex {
             final ByteBuffer buffer1 = ByteBuffer.wrap(vertex1);
             final ByteBuffer buffer2 = ByteBuffer.wrap(vertex2);
 
-            final Byte type1 = buffer1.get();
-            final Byte type2 = buffer2.get();
-            if (!type1.equals(type2)) {
-                return type1.compareTo(type2);
-            }
             return (((Long) buffer1.getLong()).compareTo(buffer2.getLong()));
         }
 

@@ -23,10 +23,8 @@ public class FaunusElementTest extends TestCase {
         ByteArrayOutputStream bytes2 = new ByteArrayOutputStream();
         vertex2.write(new DataOutputStream(bytes2));
 
-        assertEquals(bytes1.toByteArray()[0], FaunusElement.ElementType.VERTEX.val);
-
-        final Long id1 = ByteBuffer.wrap(bytes1.toByteArray(), 1, 9).getLong();
-        final Long id2 = ByteBuffer.wrap(bytes2.toByteArray(), 1, 9).getLong();
+        final Long id1 = ByteBuffer.wrap(bytes1.toByteArray(), 0, 8).getLong();
+        final Long id2 = ByteBuffer.wrap(bytes2.toByteArray(), 0, 8).getLong();
 
         assertEquals(id1, new Long(10l));
         assertEquals(id2, new Long(11l));

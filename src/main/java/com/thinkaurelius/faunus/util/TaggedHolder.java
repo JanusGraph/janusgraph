@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.util;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
+import org.apache.hadoop.io.GenericWritable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
 
@@ -14,7 +15,7 @@ import java.nio.ByteBuffer;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TaggedHolder<T extends FaunusElement> extends Holder<T> {
+public class TaggedHolder<T extends FaunusElement> extends GenericWritable implements WritableComparable<TaggedHolder<T>> {
 
     protected char tag;
 
@@ -27,7 +28,7 @@ public class TaggedHolder<T extends FaunusElement> extends Holder<T> {
             FaunusEdge.class
     };
 
-    protected Class[] getTypes() {
+    protected Class<T>[] getTypes() {
         return CLASSES;
 
     }
@@ -49,10 +50,15 @@ public class TaggedHolder<T extends FaunusElement> extends Holder<T> {
         return this.tag;
     }
 
+    public T get() {
+        return (T) super.get();
+    }
+
     @Override
     public void write(final DataOutput out) throws IOException {
         out.writeChar(this.tag);
         super.write(out);
+
     }
 
     @Override
@@ -66,6 +72,17 @@ public class TaggedHolder<T extends FaunusElement> extends Holder<T> {
         return object.getClass().equals(TaggedHolder.class) && ((TaggedHolder) object).getTag() == this.tag && ((TaggedHolder) object).get().equals(this.get());
     }
 
+    @Override
+    public int compareTo(final TaggedHolder<T> holder) {
+        final FaunusElement e1 = holder.get();
+        final FaunusElement e2 = this.get();
+        if (e1 instanceof FaunusVertex && e2 instanceof FaunusVertex)
+            return ((FaunusVertex) e1).compareTo((FaunusVertex) e2);
+        else
+            return 0;
+    }
+
+
     public static class Comparator extends WritableComparator {
         public Comparator() {
             super(TaggedHolder.class);
@@ -73,9 +90,8 @@ public class TaggedHolder<T extends FaunusElement> extends Holder<T> {
 
         @Override
         public int compare(final byte[] holder1, final int start1, final int length1, final byte[] holder2, final int start2, final int length2) {
-            // 0 byte is the class type
-            // 1 & 2 and third byte are the character
-            // 3 byte is the element type
+            // 1 byte is the class
+            // 2 byte is the character
             // the next 8 bytes are the long id
 
             final ByteBuffer buffer1 = ByteBuffer.wrap(holder1);
@@ -87,11 +103,6 @@ public class TaggedHolder<T extends FaunusElement> extends Holder<T> {
             buffer1.getChar();
             buffer2.getChar();
 
-            final Byte type1 = buffer1.get();
-            final Byte type2 = buffer2.get();
-            if (!type1.equals(type2)) {
-                return type1.compareTo(type2);
-            }
             return (((Long) buffer1.getLong()).compareTo(buffer2.getLong()));
         }
 
