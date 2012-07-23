@@ -38,6 +38,9 @@ public class SelfTest extends BaseTest {
         for (final FaunusVertex vertex : results.values()) {
             assertEquals(asList(vertex.getEdges(Direction.BOTH)).size(), 0);
         }
+        
+        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_KEPT).getValue(), 0);
+        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_DROPPED).getValue(), 12);
     }
 
     public void testMap2() throws IOException {
@@ -70,6 +73,9 @@ public class SelfTest extends BaseTest {
         assertEquals(asList(vertex.getEdges(Direction.IN)).size(), 0);
         assertEquals(asList(vertex.getEdges(Direction.OUT)).size(), 1);
 
+        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_KEPT).getValue(), 12);
+        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_DROPPED).getValue(), 0);
+
     }
     
     public void testMap3() throws IOException {
@@ -98,6 +104,9 @@ public class SelfTest extends BaseTest {
         vertex = results.get(3l);
         assertEquals(asList(vertex.getEdges(Direction.IN)).size(), 1);
         assertEquals(asList(vertex.getEdges(Direction.OUT)).size(), 1);
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_KEPT).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_DROPPED).getValue(), 4);
         
     }
 }
