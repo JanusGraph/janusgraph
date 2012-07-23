@@ -50,8 +50,8 @@ public class EdgeLabelFilterTest extends BaseTest {
         assertEquals(edges.size(), 1);
         assertEquals(edges.get(0).getLabel(), "knows");
 
-        assertEquals(mapDriver.getCounters().findCounter(EdgeLabelFilter.Counters.EDGES_ALLOWED).getValue(), 1);
-        assertEquals(mapDriver.getCounters().findCounter(EdgeLabelFilter.Counters.EDGES_FILTERED).getValue(), 1);
+        assertEquals(mapDriver.getCounters().findCounter(EdgeLabelFilter.Counters.EDGES_KEPT).getValue(), 1);
+        assertEquals(mapDriver.getCounters().findCounter(EdgeLabelFilter.Counters.EDGES_DROPPED).getValue(), 1);
     }
 
 }

@@ -38,8 +38,8 @@ public class PropertyFilter {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            final String[] strings = context.getConfiguration().getStrings(KEYS);
-            if (null == strings || strings.length == 0)
+            final String[] strings = context.getConfiguration().getStrings(KEYS, new String[0]);
+            if (strings.length == 0)
                 this.keys = new HashSet<String>();
             else
                 this.keys = new HashSet<String>(Arrays.asList(strings));

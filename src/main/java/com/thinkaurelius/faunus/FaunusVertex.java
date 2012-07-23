@@ -1,13 +1,13 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.util.EdgeArray;
+import com.thinkaurelius.faunus.util.EdgeMap;
 import com.thinkaurelius.faunus.util.ElementProperties;
+import com.thinkaurelius.faunus.util.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
-import com.tinkerpop.blueprints.util.MultiIterable;
 import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
@@ -16,12 +16,16 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import static com.tinkerpop.blueprints.Direction.BOTH;
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
 
@@ -34,8 +38,8 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         WritableComparator.define(FaunusVertex.class, new Comparator());
     }
 
-    private List<Edge> outEdges = new ArrayList<Edge>();
-    private List<Edge> inEdges = new ArrayList<Edge>();
+    private Map<String, List<Edge>> outEdges = new HashMap<String, List<Edge>>();
+    private Map<String, List<Edge>> inEdges = new HashMap<String, List<Edge>>();
 
     public FaunusVertex() {
         super(-1l);
@@ -54,78 +58,131 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         throw new UnsupportedOperationException();
     }
 
-    public Iterable<Edge> getEdges(final Direction direction, final String... labels) {
-        final Set<String> legalLabels;
-        if (null != labels && labels.length > 0)
-            legalLabels = new HashSet<String>(Arrays.asList(labels));
-        else
-            legalLabels = null;
-
-        if (OUT.equals(direction)) {
-            if (null != legalLabels) {
-                final List<Edge> filteredEdges = new ArrayList<Edge>();
-                for (final Edge edge : this.outEdges) {
-                    if (legalLabels.contains(edge.getLabel())) {
-                        filteredEdges.add(edge);
-                    }
-                }
-                return filteredEdges;
-            } else {
-                return this.outEdges;
-            }
-        } else if (IN.equals(direction)) {
-            if (null != legalLabels) {
-                final List<Edge> filteredEdges = new ArrayList<Edge>();
-                for (final Edge edge : this.inEdges) {
-                    if (legalLabels.contains(edge.getLabel())) {
-                        filteredEdges.add(edge);
-                    }
-                }
-                return filteredEdges;
-            } else {
-                return this.inEdges;
-            }
-        } else {
-            return new MultiIterable<Edge>(Arrays.asList(this.getEdges(IN, labels), this.getEdges(OUT, labels)));
-        }
+    public Iterable<Vertex> getVertices(final Direction direction, final String... labels) {
+        throw new UnsupportedOperationException();
     }
 
-    public Iterable<Vertex> getVertices(final Direction direction, final String... labels) {
-        return null;
+    public Iterable<Edge> getEdges(final Direction direction, final String... labels) {
+        final List<List<Edge>> edges = new ArrayList<List<Edge>>();
+        if (direction.equals(OUT) || direction.equals(BOTH)) {
+            if (labels.length == 0) {
+                for (final List<Edge> temp : this.outEdges.values()) {
+                    edges.add(temp);
+                }
+            } else {
+                for (final String label : labels) {
+                    final List<Edge> temp = this.outEdges.get(label);
+                    if (null != temp)
+                        edges.add(temp);
+                }
+            }
+        }
+
+        if (direction.equals(IN) || direction.equals(BOTH)) {
+            if (labels.length == 0) {
+                for (final List<Edge> temp : this.inEdges.values()) {
+                    edges.add(temp);
+                }
+            } else {
+                for (final String label : labels) {
+                    final List<Edge> temp = this.inEdges.get(label);
+                    if (null != temp)
+                        edges.add(temp);
+                }
+            }
+        }
+        return new EdgeList(edges);
     }
 
     public FaunusVertex addEdge(final Direction direction, final FaunusEdge edge) {
-        if (OUT.equals(direction))
-            this.outEdges.add(edge);
-        else if (IN.equals(direction))
-            this.inEdges.add(edge);
-        else
+        if (OUT.equals(direction)) {
+            List<Edge> edges = this.outEdges.get(edge.getLabel());
+            if (null == edges) {
+                edges = new ArrayList<Edge>();
+                this.outEdges.put(edge.getLabel(), edges);
+            }
+            edges.add(edge);
+        } else if (IN.equals(direction)) {
+            List<Edge> edges = this.inEdges.get(edge.getLabel());
+            if (null == edges) {
+                edges = new ArrayList<Edge>();
+                this.inEdges.put(edge.getLabel(), edges);
+            }
+            edges.add(edge);
+        } else
             throw ExceptionFactory.bothIsNotSupported();
 
         return this;
     }
 
     public void setEdges(final Direction direction, final List<Edge> edges) {
-        if (OUT.equals(direction))
-            this.outEdges = edges;
-        else if (IN.equals(direction))
-            this.inEdges = edges;
+        if (direction.equals(OUT))
+            this.outEdges.clear();
+        else if (direction.equals(IN))
+            this.inEdges.clear();
         else
             throw ExceptionFactory.bothIsNotSupported();
+
+        for (final Edge edge : edges) {
+            this.addEdge(direction, (FaunusEdge) edge);
+        }
+    }
+
+    public void removeEdges(final Tokens.Action action, final Direction direction, final String... labels) {
+        if (action.equals(Tokens.Action.KEEP)) {
+            final Set<String> keep = new HashSet<String>(Arrays.asList(labels));
+            if (direction.equals(OUT) || direction.equals(BOTH)) {
+                if (labels.length == 0) {
+                    this.outEdges.clear();
+                } else {
+                    for (final String label : this.outEdges.keySet()) {
+                        if (!keep.contains(label))
+                            this.outEdges.remove(label);
+                    }
+                }
+            } else if (direction.equals(IN) || direction.equals(BOTH)) {
+                if (labels.length == 0) {
+                    this.inEdges.clear();
+                } else {
+                    for (final String label : this.inEdges.keySet()) {
+                        if (!keep.contains(label))
+                            this.inEdges.remove(label);
+                    }
+                }
+            }
+        } else {
+            if (direction.equals(OUT) || direction.equals(BOTH)) {
+                if (labels.length == 0) {
+                    this.outEdges.clear();
+                } else {
+                    for (final String label : labels) {
+                        this.outEdges.remove(label);
+                    }
+                }
+            } else if (direction.equals(IN) || direction.equals(BOTH)) {
+                if (labels.length == 0) {
+                    this.inEdges.clear();
+                } else {
+                    for (final String label : labels) {
+                        this.inEdges.remove(label);
+                    }
+                }
+            }
+        }
     }
 
     public void write(final DataOutput out) throws IOException {
         out.writeLong(this.id);
-        EdgeArray.write((List) this.inEdges, out);
-        EdgeArray.write((List) this.outEdges, out);
+        EdgeMap.write((Map) this.inEdges, out);
+        EdgeMap.write((Map) this.outEdges, out);
         ElementProperties.write(this.properties, out);
 
     }
 
     public void readFields(final DataInput in) throws IOException {
         this.id = in.readLong();
-        this.inEdges = (List) EdgeArray.readFields(in);
-        this.outEdges = (List) EdgeArray.readFields(in);
+        this.inEdges = (Map) EdgeMap.readFields(in);
+        this.outEdges = (Map) EdgeMap.readFields(in);
         this.properties = ElementProperties.readFields(in);
     }
 
@@ -163,5 +220,39 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
             else
                 return super.compare(a, b);
         }
+    }
+
+    private class EdgeList extends AbstractList<Edge> {
+
+        final List<List<Edge>> edges;
+        final int size;
+
+        public EdgeList(final List<List<Edge>> edgeLists) {
+            this.edges = edgeLists;
+            int counter = 0;
+            for (final List<Edge> temp : this.edges) {
+                counter = counter + temp.size();
+            }
+            this.size = counter;
+        }
+
+        public int size() {
+            return this.size;
+        }
+
+        public Edge get(final int index) {
+            int lowIndex = 0;
+            int highIndex = 0;
+            for (final List<Edge> temp : this.edges) {
+                highIndex = highIndex + temp.size();
+                if (index < highIndex) {
+                    return temp.get(index - lowIndex);
+                }
+                lowIndex = lowIndex + temp.size();
+
+            }
+            throw new ArrayIndexOutOfBoundsException(index);
+        }
+
     }
 }

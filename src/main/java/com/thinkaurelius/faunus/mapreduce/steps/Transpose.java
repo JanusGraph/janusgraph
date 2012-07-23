@@ -8,8 +8,6 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -45,41 +43,26 @@ public class Transpose {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             long counter = 0;
 
-            final List<Edge> newInEdges = new ArrayList<Edge>();
-            final List<Edge> outEdges = new ArrayList<Edge>();
-            for (final Edge edge : value.getEdges(OUT)) {
-                if (edge.getLabel().equals(this.label)) {
-                    newInEdges.add(new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel));
-                    counter++;
-                    if (this.action.equals(Tokens.Action.KEEP))
-                        outEdges.add(edge);
-                } else {
-                    outEdges.add(edge);
-                }
-
+            for (final Edge edge : value.getEdges(OUT, this.label)) {
+                value.addEdge(IN, new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel));
+                counter++;
             }
+            if (action.equals(Tokens.Action.DROP))
+                value.removeEdges(Tokens.Action.DROP, OUT, this.label);
 
-            final List<Edge> newOutEdges = new ArrayList<Edge>();
-            final List<Edge> inEdges = new ArrayList<Edge>();
-            for (final Edge edge : value.getEdges(IN)) {
-                if (edge.getLabel().equals(this.label)) {
-                    newOutEdges.add(new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel));
-                    counter++;
-                    if (this.action.equals(Tokens.Action.KEEP))
-                        inEdges.add(edge);
-                } else {
-                    inEdges.add(edge);
-                }
+
+            for (final Edge edge : value.getEdges(IN, this.label)) {
+                value.addEdge(OUT, new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel));
+                counter++;
             }
+            if (action.equals(Tokens.Action.DROP))
+                value.removeEdges(Tokens.Action.DROP, IN, this.label);
 
-            outEdges.addAll(newOutEdges);
-            inEdges.addAll(newInEdges);
-            value.setEdges(OUT, outEdges);
-            value.setEdges(IN, inEdges);
-            context.write(NullWritable.get(), value);
 
             if (counter > 0)
                 context.getCounter(Counters.EDGES_TRANSPOSED).increment(counter);
+            
+            context.write(NullWritable.get(), value);
         }
     }
 }

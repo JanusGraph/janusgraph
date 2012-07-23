@@ -69,24 +69,20 @@ public class Traverse {
             }
             // emit original outgoing edges
             for (final Edge edge : value.getEdges(OUT)) {
-                if(this.action.equals(Tokens.Action.KEEP))
+                if (this.action.equals(Tokens.Action.KEEP))
                     context.write(value.getIdAsLongWritable(), new Holder<FaunusEdge>('o', (FaunusEdge) edge));
                 else if (!edge.getLabel().equals(this.firstLabel) && !edge.getLabel().equals(this.secondLabel)) {
                     context.write(value.getIdAsLongWritable(), new Holder<FaunusEdge>('o', (FaunusEdge) edge));
                 }
             }
 
-            if (firstDirection.equals(OUT)) {
-                for (final Edge edge : value.getEdges(IN)) {
-                    if (edge.getLabel().equals(this.firstLabel)) {
-                        firstVertexIds.add((Long) edge.getVertex(OUT).getId());
-                    }
+            if (this.firstDirection.equals(OUT)) {
+                for (final Edge edge : value.getEdges(IN, this.firstLabel)) {
+                    firstVertexIds.add((Long) edge.getVertex(OUT).getId());
                 }
-            } else if (firstDirection.equals(IN)) {
-                for (final Edge edge : value.getEdges(OUT)) {
-                    if (edge.getLabel().equals(this.firstLabel)) {
-                        firstVertexIds.add((Long) edge.getVertex(IN).getId());
-                    }
+            } else if (this.firstDirection.equals(IN)) {
+                for (final Edge edge : value.getEdges(OUT, this.firstLabel)) {
+                    firstVertexIds.add((Long) edge.getVertex(IN).getId());
                 }
             } else {
                 throw new IOException("A direction of " + this.firstDirection + " is not a legal direction for this operation");
@@ -94,20 +90,16 @@ public class Traverse {
 
             //////////
 
-            if (secondDirection.equals(OUT)) {
-                for (final Edge edge : value.getEdges(OUT)) {
-                    if (edge.getLabel().equals(this.secondLabel)) {
-                        secondVertexIds.add((Long) edge.getVertex(IN).getId());
-                    }
+            if (this.secondDirection.equals(OUT)) {
+                for (final Edge edge : value.getEdges(OUT, this.secondLabel)) {
+                    secondVertexIds.add((Long) edge.getVertex(IN).getId());
                 }
-            } else if (secondDirection.equals(IN)) {
-                for (final Edge edge : value.getEdges(IN)) {
-                    if (edge.getLabel().equals(this.secondLabel)) {
-                        secondVertexIds.add((Long) edge.getVertex(OUT).getId());
-                    }
+            } else if (this.secondDirection.equals(IN)) {
+                for (final Edge edge : value.getEdges(IN, this.secondLabel)) {
+                    secondVertexIds.add((Long) edge.getVertex(OUT).getId());
                 }
             } else {
-                throw new IOException("A direction of " + this.firstDirection + " is not a legal direction for this operation");
+                throw new IOException("A direction of " + this.secondDirection + " is not a legal direction for this operation");
             }
 
 
