@@ -1,6 +1,10 @@
 package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.json.JSONUtility;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.Vertex;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
@@ -50,6 +54,24 @@ public class BaseTest extends TestCase {
         driver.resetOutput();
         for (final FaunusVertex vertex : generateToyGraph(example)) {
             driver.withInput(NullWritable.get(), vertex);
+        }
+        return indexResults(driver.run());
+    }
+
+    public static Map<Long, FaunusVertex> runWithGraph(final Graph graph, final MapReduceDriver driver) throws IOException {
+        driver.resetOutput();
+        for (final Vertex vertex : graph.getVertices()) {
+            final FaunusVertex temp = new FaunusVertex(Long.valueOf(vertex.getId().toString()));
+            for (final Edge edge : vertex.getEdges(Direction.OUT)) {
+                temp.addEdge(Direction.OUT, new FaunusEdge(temp, new FaunusVertex(Long.valueOf(edge.getVertex(Direction.IN).getId().toString())), edge.getLabel()));
+            }
+            for (final Edge edge : vertex.getEdges(Direction.IN)) {
+                temp.addEdge(Direction.IN, new FaunusEdge(new FaunusVertex(Long.valueOf(edge.getVertex(Direction.OUT).getId().toString())), temp, edge.getLabel()));
+            }
+            for (final String key : vertex.getPropertyKeys()) {
+                temp.setProperty(key, vertex.getProperty(key));
+            }
+            driver.withInput(NullWritable.get(), temp);
         }
         return indexResults(driver.run());
     }

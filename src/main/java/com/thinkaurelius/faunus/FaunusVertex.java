@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -225,7 +226,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
     private class EdgeList extends AbstractList<Edge> {
 
         final List<List<Edge>> edges;
-        final int size;
+        int size;
 
         public EdgeList(final List<List<Edge>> edgeLists) {
             this.edges = edgeLists;
@@ -252,6 +253,43 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
             }
             throw new ArrayIndexOutOfBoundsException(index);
+        }
+
+        private void removeList(final int index) {
+            int lowIndex = 0;
+            int highIndex = 0;
+            for (final List<Edge> temp : this.edges) {
+                highIndex = highIndex + temp.size();
+                if (index < highIndex) {
+                    temp.remove(index - lowIndex);
+                    return;
+                }
+                lowIndex = lowIndex + temp.size();
+
+            }
+            throw new ArrayIndexOutOfBoundsException(index);
+        }
+
+        public Iterator<Edge> iterator() {
+            return new Iterator<Edge>() {
+                private int index = 0;
+
+                @Override
+                public boolean hasNext() {
+                    return this.index < size;
+                }
+
+                @Override
+                public Edge next() {
+                    return get(this.index++);
+                }
+
+                @Override
+                public void remove() {
+                    removeList(--this.index);
+                    size--;
+                }
+            };
         }
 
     }
