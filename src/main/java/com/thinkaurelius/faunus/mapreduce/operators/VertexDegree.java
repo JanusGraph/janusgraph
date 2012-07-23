@@ -23,7 +23,8 @@ public class VertexDegree {
     private static final String NULL = "null";
 
     public enum Counters {
-        EDGES_COUNTED
+        EDGES_COUNTED,
+        VERTICES_COUNTED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, Text, IntWritable> {
@@ -46,6 +47,7 @@ public class VertexDegree {
                 degree++;
             }
 
+            context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(degree);
 
             if (this.property.equals(Tokens._ID))

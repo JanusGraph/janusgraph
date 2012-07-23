@@ -20,6 +20,7 @@ public class DegreeDistribution {
     public static final String DIRECTION = Tokens.makeNamespace(DegreeDistribution.class) + ".direction";
 
     public enum Counters {
+        VERTICES_COUNTED,
         EDGES_COUNTED
     }
 
@@ -41,6 +42,7 @@ public class DegreeDistribution {
                 degree++;
             }
 
+            context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(degree);
             context.write(new IntWritable(degree), new IntWritable(1));
 

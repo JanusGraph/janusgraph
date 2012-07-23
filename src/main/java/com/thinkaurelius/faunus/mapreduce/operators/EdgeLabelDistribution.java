@@ -20,7 +20,8 @@ public class EdgeLabelDistribution {
     public static final String DIRECTION = Tokens.makeNamespace(EdgeLabelDistribution.class) + ".direction";
 
     public enum Counters {
-        EDGES_COUNTED
+        EDGES_COUNTED,
+        VERTICES_COUNTED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, Text, IntWritable> {
@@ -39,6 +40,7 @@ public class EdgeLabelDistribution {
                 counter++;
                 context.write(new Text(edge.getLabel()), new IntWritable(1));
             }
+            context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(counter);
         }
 
