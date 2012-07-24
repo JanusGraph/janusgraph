@@ -51,7 +51,7 @@ public class EdgeLabelDistribution {
         public void reduce(final Text key, final Iterable<IntWritable> values, final Reducer<Text, IntWritable, Text, IntWritable>.Context context) throws IOException, InterruptedException {
             int totalNumberOfEdges = 0;
             for (final IntWritable token : values) {
-                totalNumberOfEdges++;
+                totalNumberOfEdges = totalNumberOfEdges + token.get();
             }
             context.write(key, new IntWritable(totalNumberOfEdges));
         }

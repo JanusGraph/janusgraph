@@ -55,7 +55,7 @@ public class DegreeDistribution {
         public void reduce(final IntWritable key, final Iterable<IntWritable> values, final Reducer<IntWritable, IntWritable, IntWritable, IntWritable>.Context context) throws IOException, InterruptedException {
             int totalDegree = 0;
             for (final IntWritable token : values) {
-                totalDegree++;
+                totalDegree = totalDegree + token.get();
             }
             context.write(key, new IntWritable(totalDegree));
         }

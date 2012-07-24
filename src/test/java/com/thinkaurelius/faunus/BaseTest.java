@@ -5,29 +5,12 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
-import com.tinkerpop.blueprints.impls.tg.TinkerGraphFactory;
-import com.tinkerpop.blueprints.util.io.graphml.GraphMLReader;
-import groovy.lang.Closure;
 import junit.framework.TestCase;
-import org.apache.commons.codec.binary.Base64OutputStream;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
-import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -91,6 +74,14 @@ public class BaseTest extends TestCase {
             driver.withInput(NullWritable.get(), temp);
         }
         return indexResults(driver.run());
+    }
+
+    public static List runWithToyGraphNoFormatting(final ExampleGraph example, final MapReduceDriver driver) throws IOException {
+        driver.resetOutput();
+        for (final FaunusVertex vertex : generateToyGraph(example)) {
+            driver.withInput(NullWritable.get(), vertex);
+        }
+        return driver.run();
     }
 
     /*public void testConverter() throws IOException {
