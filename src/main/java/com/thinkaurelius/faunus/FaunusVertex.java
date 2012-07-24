@@ -112,6 +112,10 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
         return edge;
     }
+    
+   /* public FaunusEdge addEdge(final Direction direction, final Long otherVertexId, final String label) {
+        this.addEdge(direction, new FaunusEdge())
+    }*/
 
     /*public void setEdges(final Direction direction, final List<Edge> edges) {
         if (direction.equals(OUT))
