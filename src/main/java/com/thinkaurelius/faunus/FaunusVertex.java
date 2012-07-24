@@ -129,27 +129,25 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
     public void removeEdges(final Tokens.Action action, final Direction direction, final String... labels) {
         if (action.equals(Tokens.Action.KEEP)) {
             final Set<String> keep = new HashSet<String>(Arrays.asList(labels));
-            if (direction.equals(OUT) || direction.equals(BOTH)) {
-                if (labels.length == 0) {
-                    this.outEdges.clear();
-                } else {
-                    for (final String label : this.outEdges.keySet()) {
+            if (direction.equals(BOTH) || direction.equals(OUT)) {
+                if (labels.length > 0) {
+                    for (final String label : new ArrayList<String>(this.outEdges.keySet())) {
                         if (!keep.contains(label))
                             this.outEdges.remove(label);
                     }
                 }
-            } else if (direction.equals(IN) || direction.equals(BOTH)) {
-                if (labels.length == 0) {
-                    this.inEdges.clear();
-                } else {
-                    for (final String label : this.inEdges.keySet()) {
+            }
+
+            if (direction.equals(BOTH) || direction.equals(IN)) {
+                if (labels.length > 0) {
+                    for (final String label : new ArrayList<String>(this.inEdges.keySet())) {
                         if (!keep.contains(label))
                             this.inEdges.remove(label);
                     }
                 }
             }
         } else {
-            if (direction.equals(OUT) || direction.equals(BOTH)) {
+            if (direction.equals(BOTH) || direction.equals(OUT)) {
                 if (labels.length == 0) {
                     this.outEdges.clear();
                 } else {
@@ -157,7 +155,9 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
                         this.outEdges.remove(label);
                     }
                 }
-            } else if (direction.equals(IN) || direction.equals(BOTH)) {
+            }
+
+            if (direction.equals(BOTH) || direction.equals(IN)) {
                 if (labels.length == 0) {
                     this.inEdges.clear();
                 } else {

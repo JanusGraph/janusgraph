@@ -180,5 +180,41 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(asList(vertex2.getEdges(BOTH)).size(), 1);
     }
 
+    public void testRemovingEdges() {
+        FaunusVertex vertex = new FaunusVertex(1l);
+        vertex.setProperty("name", "marko");
+        vertex.addEdge(OUT, new FaunusEdge(vertex, vertex, "knows"));
+        vertex.addEdge(OUT, new FaunusEdge(vertex, vertex, "created"));
+        assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
+        vertex.removeEdges(Tokens.Action.DROP, OUT, "knows");
+        assertEquals(asList(vertex.getEdges(OUT)).size(), 1);
+        assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "created");
+        assertEquals(vertex.getProperty("name"), "marko");
+
+        vertex = new FaunusVertex(1l);
+        vertex.setProperty("name", "marko");
+        vertex.addEdge(OUT, new FaunusEdge(vertex, vertex, "knows"));
+        vertex.addEdge(OUT, new FaunusEdge(vertex, vertex, "created"));
+        vertex.addEdge(IN, new FaunusEdge(vertex, vertex, "knows"));
+        vertex.addEdge(IN, new FaunusEdge(vertex, vertex, "created"));
+        assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
+        vertex.removeEdges(Tokens.Action.DROP, BOTH, "knows");
+        assertEquals(asList(vertex.getEdges(BOTH)).size(), 2);
+        assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "created");
+        assertEquals(vertex.getProperty("name"), "marko");
+
+        vertex = new FaunusVertex(1l);
+        vertex.setProperty("name", "marko");
+        vertex.addEdge(OUT, new FaunusEdge(vertex, vertex, "knows"));
+        vertex.addEdge(OUT, new FaunusEdge(vertex, vertex, "created"));
+        vertex.addEdge(IN, new FaunusEdge(vertex, vertex, "created"));
+        assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
+        vertex.removeEdges(Tokens.Action.KEEP, BOTH, "knows");
+        assertEquals(asList(vertex.getEdges(OUT)).size(), 1);
+        assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "knows");
+        assertEquals(vertex.getProperty("name"), "marko");
+
+    }
+
 
 }

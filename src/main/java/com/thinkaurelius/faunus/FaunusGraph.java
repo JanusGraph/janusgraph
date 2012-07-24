@@ -1,13 +1,13 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.mapreduce.MapReduceSequence;
+import com.thinkaurelius.faunus.mapreduce.MapSequence;
 import com.thinkaurelius.faunus.mapreduce.operators.DegreeDistribution;
 import com.thinkaurelius.faunus.mapreduce.operators.EdgeLabelDistribution;
 import com.thinkaurelius.faunus.mapreduce.operators.VertexDegree;
 import com.thinkaurelius.faunus.mapreduce.steps.EdgeLabelFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.Function;
 import com.thinkaurelius.faunus.mapreduce.steps.Identity;
-import com.thinkaurelius.faunus.mapreduce.steps.MapReduceSequence;
-import com.thinkaurelius.faunus.mapreduce.steps.MapSequence;
 import com.thinkaurelius.faunus.mapreduce.steps.PropertyFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.Self;
 import com.thinkaurelius.faunus.mapreduce.steps.Transpose;
