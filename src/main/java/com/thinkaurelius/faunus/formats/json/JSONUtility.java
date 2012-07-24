@@ -118,6 +118,7 @@ public class JSONUtility {
                     edgeObject.put(GraphSONTokens._ID, Long.valueOf(id.toString()));
                     edgeObject.remove(GraphSONTokens._TYPE);
                     edgeObject.remove(GraphSONTokens._OUT_V);
+                    edgeObject.put(GraphSONTokens._IN_V, Long.valueOf(edgeObject.get(GraphSONTokens._IN_V).toString()));
                     outEdgesArray.put(edgeObject);
                 }
                 object.put(OUT_E, outEdgesArray);
@@ -132,6 +133,7 @@ public class JSONUtility {
                     edgeObject.put(GraphSONTokens._ID, Long.valueOf(id.toString()));
                     edgeObject.remove(GraphSONTokens._TYPE);
                     edgeObject.remove(GraphSONTokens._IN_V);
+                    edgeObject.put(GraphSONTokens._OUT_V, Long.valueOf(edgeObject.get(GraphSONTokens._OUT_V).toString()));
                     inEdgesArray.put(edgeObject);
                 }
                 object.put(IN_E, inEdgesArray);

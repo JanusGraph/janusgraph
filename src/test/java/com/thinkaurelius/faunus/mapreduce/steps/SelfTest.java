@@ -2,7 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.steps;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.util.Tokens;
+import com.thinkaurelius.faunus.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;

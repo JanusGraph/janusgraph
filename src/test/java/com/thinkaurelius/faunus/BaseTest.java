@@ -5,12 +5,29 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
+import com.tinkerpop.blueprints.impls.tg.TinkerGraphFactory;
+import com.tinkerpop.blueprints.util.io.graphml.GraphMLReader;
+import groovy.lang.Closure;
 import junit.framework.TestCase;
+import org.apache.commons.codec.binary.Base64OutputStream;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
+import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
+import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
 
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -76,14 +93,37 @@ public class BaseTest extends TestCase {
         return indexResults(driver.run());
     }
 
-    /*public void testConverter() throws IOException {
+    public void testConverter() throws IOException {
         Graph graph = new TinkerGraph();
         GraphMLReader.inputGraph(graph, JSONUtility.class.getResourceAsStream("graph-of-the-gods.xml"));
         //Graph graph = TinkerGraphFactory.createTinkerGraph();
-        BufferedWriter bw = new BufferedWriter(new FileWriter("target/graph-example-1.json"));
+        BufferedWriter bw = new BufferedWriter(new FileWriter("target/graph-of-the-gods.json"));
         for (final Vertex vertex : graph.getVertices()) {
             bw.write(JSONUtility.toJSON(vertex).toString() + "\n");
         }
         bw.close();
+    }
+
+    /*public void testClosure() throws Exception {
+        GroovyScriptEngineImpl engine = new GroovyScriptEngineImpl();
+        Closure closure = (Closure) engine.eval("{-> 1+2}");
+        closure = closure.dehydrate();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutput out = new ObjectOutputStream(bos);
+        out.writeObject(closure);
+        out.flush();
+        out.close();
+
+        //Configuration conf = new Configuration();
+        //conf.set("method", bos.toString());
+        BASE64Encoder encoder = new BASE64Encoder();
+        String temp = encoder.encode(bos.toByteArray());
+        System.out.println(temp);
+
+        ByteArrayInputStream bis = new ByteArrayInputStream(new BASE64Decoder().decodeBuffer(temp));
+        ObjectInputStream in = new ObjectInputStream(bis);
+        Closure closure1 = (Closure) in.readObject();
+        in.close();
+        
     }*/
 }

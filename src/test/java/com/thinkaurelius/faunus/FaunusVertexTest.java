@@ -1,10 +1,7 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.FaunusEdge;
-import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import junit.framework.TestCase;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -13,13 +10,14 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
 
+import static com.tinkerpop.blueprints.Direction.BOTH;
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusVertexTest extends TestCase {
+public class FaunusVertexTest extends BaseTest {
 
     public void testRawComparison() throws IOException {
         FaunusVertex vertex1 = new FaunusVertex(10);
@@ -146,6 +144,40 @@ public class FaunusVertexTest extends TestCase {
         assertEquals(edge.getLabel(), "knows");
         assertFalse(edges.hasNext());
 
+    }
+
+    public void testNoProperties() throws IOException {
+        FaunusVertex vertex1 = new FaunusVertex(1l);
+        vertex1.addEdge(OUT, new FaunusEdge(vertex1, vertex1, "knows"));
+
+        assertNull(vertex1.getProperty("name"));
+        assertNull(vertex1.removeProperty("name"));
+        assertEquals(vertex1.getPropertyKeys().size(), 0);
+        assertEquals(vertex1.getProperties().size(), 0);
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        vertex1.write(new DataOutputStream(bytes));
+        FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+
+        assertEquals(vertex1, vertex2);
+        assertEquals(vertex1.getId(), 1l);
+        assertNull(vertex1.getProperty("name"));
+        assertNull(vertex1.removeProperty("name"));
+        assertEquals(vertex1.getPropertyKeys().size(), 0);
+        assertEquals(vertex1.getProperties().size(), 0);
+        assertEquals(asList(vertex1.getEdges(OUT)).size(), 1);
+        assertEquals(asList(vertex1.getEdges(IN)).size(), 0);
+        assertEquals(asList(vertex1.getEdges(BOTH)).size(), 1);
+
+        assertEquals(vertex2, vertex1);
+        assertEquals(vertex2.getId(), 1l);
+        assertNull(vertex2.getProperty("age"));
+        assertNull(vertex2.removeProperty("age"));
+        assertEquals(vertex2.getPropertyKeys().size(), 0);
+        assertEquals(vertex2.getProperties().size(), 0);
+        assertEquals(asList(vertex2.getEdges(OUT)).size(), 1);
+        assertEquals(asList(vertex2.getEdges(IN)).size(), 0);
+        assertEquals(asList(vertex2.getEdges(BOTH)).size(), 1);
     }
 
 

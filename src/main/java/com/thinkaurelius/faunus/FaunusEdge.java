@@ -1,6 +1,5 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.util.ElementProperties;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;

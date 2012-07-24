@@ -1,8 +1,5 @@
-package com.thinkaurelius.faunus.util;
+package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.FaunusEdge;
-import com.thinkaurelius.faunus.FaunusElement;
-import com.thinkaurelius.faunus.FaunusVertex;
 import org.apache.hadoop.io.GenericWritable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
@@ -38,10 +35,12 @@ public class Holder<T extends FaunusElement> extends GenericWritable implements 
     }
 
     public Holder(final DataInput in) throws IOException {
+        this();
         this.readFields(in);
     }
 
     public Holder(final char tag, final T element) {
+        this();
         this.set(element);
         this.tag = tag;
     }

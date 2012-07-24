@@ -1,6 +1,6 @@
 package com.thinkaurelius.faunus.formats;
 
-import com.thinkaurelius.faunus.util.Tokens;
+import com.thinkaurelius.faunus.Tokens;
 import org.apache.hadoop.conf.Configuration;
 
 import java.util.Arrays;

@@ -12,8 +12,6 @@ import com.thinkaurelius.faunus.mapreduce.steps.PropertyFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.Self;
 import com.thinkaurelius.faunus.mapreduce.steps.Transpose;
 import com.thinkaurelius.faunus.mapreduce.steps.Traverse;
-import com.thinkaurelius.faunus.util.Holder;
-import com.thinkaurelius.faunus.util.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;

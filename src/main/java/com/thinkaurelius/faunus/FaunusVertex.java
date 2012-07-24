@@ -1,8 +1,5 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.util.EdgeMap;
-import com.thinkaurelius.faunus.util.ElementProperties;
-import com.thinkaurelius.faunus.util.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
@@ -116,7 +113,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         return this;
     }
 
-    public void setEdges(final Direction direction, final List<Edge> edges) {
+    /*public void setEdges(final Direction direction, final List<Edge> edges) {
         if (direction.equals(OUT))
             this.outEdges.clear();
         else if (direction.equals(IN))
@@ -127,7 +124,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         for (final Edge edge : edges) {
             this.addEdge(direction, (FaunusEdge) edge);
         }
-    }
+    }*/
 
     public void removeEdges(final Tokens.Action action, final Direction direction, final String... labels) {
         if (action.equals(Tokens.Action.KEEP)) {
@@ -292,5 +289,33 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
             };
         }
 
+    }
+
+    private static class EdgeMap {
+        public static Map<String, List<FaunusEdge>> readFields(final DataInput in) throws IOException {
+            final Map<String, List<FaunusEdge>> edges = new HashMap<String, List<FaunusEdge>>();
+            int edgeTypes = in.readShort();
+            for (int i = 0; i < edgeTypes; i++) {
+                final String label = in.readUTF();
+                final int size = in.readInt();
+                final List<FaunusEdge> temp = new ArrayList<FaunusEdge>(size);
+                for (int j = 0; j < size; j++) {
+                    temp.add(new FaunusEdge(in));
+                }
+                edges.put(label, temp);
+            }
+            return edges;
+        }
+
+        public static void write(final Map<String, List<FaunusEdge>> edges, final DataOutput out) throws IOException {
+            out.writeShort(edges.size());
+            for (final Map.Entry<String, List<FaunusEdge>> entry : edges.entrySet()) {
+                out.writeUTF(entry.getKey());
+                out.writeInt(entry.getValue().size());
+                for (final FaunusEdge edge : entry.getValue()) {
+                    edge.write(out);
+                }
+            }
+        }
     }
 }

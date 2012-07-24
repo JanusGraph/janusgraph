@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.util;
+package com.thinkaurelius.faunus;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)

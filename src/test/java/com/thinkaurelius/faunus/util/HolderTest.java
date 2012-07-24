@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.util;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.Holder;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.WritableComparator;
 
