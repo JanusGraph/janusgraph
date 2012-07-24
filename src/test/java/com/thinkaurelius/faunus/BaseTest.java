@@ -93,16 +93,16 @@ public class BaseTest extends TestCase {
         return indexResults(driver.run());
     }
 
-    public void testConverter() throws IOException {
-        Graph graph = new TinkerGraph();
-        GraphMLReader.inputGraph(graph, JSONUtility.class.getResourceAsStream("graph-of-the-gods.xml"));
-        //Graph graph = TinkerGraphFactory.createTinkerGraph();
-        BufferedWriter bw = new BufferedWriter(new FileWriter("target/graph-of-the-gods.json"));
+    /*public void testConverter() throws IOException {
+        //Graph graph = new TinkerGraph();
+        //GraphMLReader.inputGraph(graph, JSONUtility.class.getResourceAsStream("graph-of-the-gods.xml"));
+        Graph graph = TinkerGraphFactory.createTinkerGraph();
+        BufferedWriter bw = new BufferedWriter(new FileWriter("target/graph-example-1.json"));
         for (final Vertex vertex : graph.getVertices()) {
             bw.write(JSONUtility.toJSON(vertex).toString() + "\n");
         }
         bw.close();
-    }
+    }*/
 
     /*public void testClosure() throws Exception {
         GroovyScriptEngineImpl engine = new GroovyScriptEngineImpl();

@@ -281,10 +281,10 @@ public class FaunusGraph extends Configured implements Tool {
         logger.info("/_.'`  `.  |    )(");
         logger.info("         \\ |");
         logger.info("          |/");
+        //logger.info("Faunus configuration: " + this.configuration);
         logger.info("Generating job chain: " + this.jobScript);
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");
-        logger.info("Faunus configuration: " + this.configuration);
 
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);

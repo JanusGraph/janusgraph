@@ -35,8 +35,8 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class JSONUtility {
 
-    private static final String OUT_E = "outE";
-    private static final String IN_E = "inE";
+    private static final String _OUT_E = "_outE";
+    private static final String _IN_E = "_inE";
 
     private static final FaunusElementFactory elementFactory = new FaunusElementFactory();
 
@@ -57,16 +57,13 @@ public class JSONUtility {
             final JSONObject json = new JSONObject(new JSONTokener(line));
 
             final Set<String> ignore = new HashSet<String>();
-            ignore.add(OUT_E);
-            ignore.add(IN_E);
+            ignore.add(_OUT_E);
+            ignore.add(_IN_E);
             ignore.add(GraphSONTokens._TYPE);
             final FaunusVertex vertex = (FaunusVertex) GraphSONUtility.vertexFromJson(json, elementFactory, false, ignore);
 
-            final JSONArray outEdges = json.optJSONArray(OUT_E);
-            fromJSONEdges(vertex, outEdges, OUT);
-
-            final JSONArray inEdges = json.optJSONArray(IN_E);
-            fromJSONEdges(vertex, inEdges, IN);
+            fromJSONEdges(vertex, json.optJSONArray(_OUT_E), OUT);
+            fromJSONEdges(vertex, json.optJSONArray(_IN_E), IN);
 
             return vertex;
         } catch (Exception e) {
@@ -76,23 +73,23 @@ public class JSONUtility {
 
     private static void fromJSONEdges(final FaunusVertex vertex, final JSONArray edges, final Direction direction) throws JSONException, IOException {
         if (null != edges) {
+
+            final Set<String> ignore = new HashSet<String>();
+            ignore.add(GraphSONTokens._TYPE);
+
             for (int ix = 0; ix < edges.length(); ix++) {
                 final JSONObject edge = edges.optJSONObject(ix);
-
-                final Set<String> ignore = new HashSet<String>();
-                ignore.add(GraphSONTokens._TYPE);
-
                 FaunusEdge faunusEdge = null;
                 if (direction == Direction.IN) {
                     final long outVertexId = edge.optLong(GraphSONTokens._OUT_V);
-                    ignore.add(GraphSONTokens._IN_V);
+                    ignore.add(GraphSONTokens._OUT_V);
                     faunusEdge = (FaunusEdge) GraphSONUtility.edgeFromJSON(edge, new FaunusVertex(outVertexId), vertex, elementFactory, false, ignore);
-                    ignore.remove(GraphSONTokens._IN_V);
+                    ignore.remove(GraphSONTokens._OUT_V);
                 } else if (direction == Direction.OUT) {
                     final long inVertexId = edge.optLong(GraphSONTokens._IN_V);
-                    ignore.add(GraphSONTokens._OUT_V);
-                    faunusEdge = (FaunusEdge) GraphSONUtility.edgeFromJSON(edge, vertex, new FaunusVertex(inVertexId), elementFactory, false, null);
-                    ignore.remove(GraphSONTokens._OUT_V);
+                    ignore.add(GraphSONTokens._IN_V);
+                    faunusEdge = (FaunusEdge) GraphSONUtility.edgeFromJSON(edge, vertex, new FaunusVertex(inVertexId), elementFactory, false, ignore);
+                    ignore.remove(GraphSONTokens._IN_V);
                 }
 
                 if (faunusEdge != null) {
@@ -106,22 +103,20 @@ public class JSONUtility {
         try {
             final JSONObject object = GraphSONUtility.jsonFromElement(vertex);
             object.remove(GraphSONTokens._TYPE);
-            Object id = object.remove(GraphSONTokens._ID);
-            object.put(GraphSONTokens._ID, Long.valueOf(id.toString()));
+            object.put(GraphSONTokens._ID, Long.valueOf(object.remove(GraphSONTokens._ID).toString()));
 
             List<Edge> edges = (List<Edge>) vertex.getEdges(OUT);
             if (!edges.isEmpty()) {
                 final JSONArray outEdgesArray = new JSONArray();
                 for (final Edge outEdge : edges) {
                     final JSONObject edgeObject = GraphSONUtility.jsonFromElement(outEdge);
-                    id = edgeObject.remove(GraphSONTokens._ID);
-                    edgeObject.put(GraphSONTokens._ID, Long.valueOf(id.toString()));
+                    edgeObject.put(GraphSONTokens._ID, Long.valueOf(edgeObject.remove(GraphSONTokens._ID).toString()));
                     edgeObject.remove(GraphSONTokens._TYPE);
                     edgeObject.remove(GraphSONTokens._OUT_V);
-                    edgeObject.put(GraphSONTokens._IN_V, Long.valueOf(edgeObject.get(GraphSONTokens._IN_V).toString()));
+                    edgeObject.put(GraphSONTokens._IN_V, Long.valueOf(edgeObject.remove(GraphSONTokens._IN_V).toString()));
                     outEdgesArray.put(edgeObject);
                 }
-                object.put(OUT_E, outEdgesArray);
+                object.put(_OUT_E, outEdgesArray);
             }
 
             edges = (List<Edge>) vertex.getEdges(IN);
@@ -129,30 +124,25 @@ public class JSONUtility {
                 final JSONArray inEdgesArray = new JSONArray();
                 for (final Edge inEdge : edges) {
                     final JSONObject edgeObject = GraphSONUtility.jsonFromElement(inEdge);
-                    id = edgeObject.remove(GraphSONTokens._ID);
-                    edgeObject.put(GraphSONTokens._ID, Long.valueOf(id.toString()));
+                    edgeObject.put(GraphSONTokens._ID, Long.valueOf(edgeObject.remove(GraphSONTokens._ID).toString()));
                     edgeObject.remove(GraphSONTokens._TYPE);
                     edgeObject.remove(GraphSONTokens._IN_V);
-                    edgeObject.put(GraphSONTokens._OUT_V, Long.valueOf(edgeObject.get(GraphSONTokens._OUT_V).toString()));
+                    edgeObject.put(GraphSONTokens._OUT_V, Long.valueOf(edgeObject.remove(GraphSONTokens._OUT_V).toString()));
                     inEdgesArray.put(edgeObject);
                 }
-                object.put(IN_E, inEdgesArray);
+                object.put(_IN_E, inEdgesArray);
             }
 
             return object;
-        } catch (JSONException jex) {
-            throw new IOException(jex);
+        } catch (JSONException e) {
+            throw new IOException(e);
         }
     }
 
     private static class FaunusElementFactory implements ElementFactory<FaunusVertex, FaunusEdge> {
         @Override
         public FaunusEdge createEdge(final Object id, final FaunusVertex out, final FaunusVertex in, final String label) {
-            if (!(out instanceof FaunusVertex) || !(in instanceof FaunusVertex)) {
-                throw new IllegalArgumentException("Both in and out vertices must be of type Faunus Vertex");
-            }
-
-            return new FaunusEdge(convertIdentifier(id), (FaunusVertex) out, (FaunusVertex) in, label);
+            return new FaunusEdge(convertIdentifier(id), out, in, label);
         }
 
         @Override

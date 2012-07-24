@@ -92,7 +92,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         return new EdgeList(edges);
     }
 
-    public FaunusVertex addEdge(final Direction direction, final FaunusEdge edge) {
+    public FaunusEdge addEdge(final Direction direction, final FaunusEdge edge) {
         if (OUT.equals(direction)) {
             List<Edge> edges = this.outEdges.get(edge.getLabel());
             if (null == edges) {
@@ -110,7 +110,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         } else
             throw ExceptionFactory.bothIsNotSupported();
 
-        return this;
+        return edge;
     }
 
     /*public void setEdges(final Direction direction, final List<Edge> edges) {
