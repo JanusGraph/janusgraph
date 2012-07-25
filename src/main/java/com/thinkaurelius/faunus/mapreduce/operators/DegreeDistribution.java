@@ -45,7 +45,6 @@ public class DegreeDistribution {
             context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(degree);
             context.write(new IntWritable(degree), new IntWritable(1));
-
         }
 
     }
