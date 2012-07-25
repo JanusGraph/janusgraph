@@ -125,8 +125,9 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    public FaunusGraph self(final Tokens.Action action) throws IOException {
+    public FaunusGraph self(final Tokens.Action action, final String labels) throws IOException {
         this.mapSequenceConfiguration.set(Self.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
+        this.mapSequenceConfiguration.setStrings(Self.LABELS + "-" + this.mapSequenceClasses.size(), labels);
         this.mapSequenceClasses.add(Self.Map.class);
         return this;
     }

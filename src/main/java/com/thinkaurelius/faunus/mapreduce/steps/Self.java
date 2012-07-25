@@ -19,46 +19,43 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 public class Self {
 
     public static final String ACTION = Tokens.makeNamespace(Self.class) + ".action";
+    public static final String LABELS = Tokens.makeNamespace(Self.class) + ".labels";
 
     public enum Counters {
-        EDGES_KEPT,
         EDGES_DROPPED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
+
+        private String[] labels;
         private Tokens.Action action;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
+            this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
             this.action = Tokens.Action.valueOf(context.getConfiguration().get(ACTION));
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            long keptCounter = 0l;
             long droppedCounter = 0l;
 
-            final Iterator<Edge> itty = value.getEdges(BOTH).iterator();
+            final Iterator<Edge> itty = value.getEdges(BOTH, this.labels).iterator();
             while (itty.hasNext()) {
                 final Edge edge = itty.next();
                 if (action.equals(Tokens.Action.KEEP)) {
-                    if (!edge.getVertex(IN).getId().equals(edge.getVertex(OUT).getId())) {
+                    if (!edge.getVertex(IN).equals(edge.getVertex(OUT))) {
                         itty.remove();
                         droppedCounter++;
-                    } else {
-                        keptCounter++;
                     }
                 } else {
-                    if (edge.getVertex(IN).getId().equals(edge.getVertex(OUT).getId())) {
+                    if (edge.getVertex(IN).equals(edge.getVertex(OUT))) {
                         itty.remove();
                         droppedCounter++;
-                    } else {
-                        keptCounter++;
                     }
                 }
             }
 
-            context.getCounter(Counters.EDGES_KEPT).increment(keptCounter);
             context.getCounter(Counters.EDGES_DROPPED).increment(droppedCounter);
             context.write(NullWritable.get(), value);
         }

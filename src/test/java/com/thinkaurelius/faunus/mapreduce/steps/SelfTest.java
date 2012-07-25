@@ -38,8 +38,7 @@ public class SelfTest extends BaseTest {
         for (final FaunusVertex vertex : results.values()) {
             assertEquals(asList(vertex.getEdges(Direction.BOTH)).size(), 0);
         }
-        
-        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_KEPT).getValue(), 0);
+
         assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_DROPPED).getValue(), 12);
     }
 
@@ -73,7 +72,6 @@ public class SelfTest extends BaseTest {
         assertEquals(asList(vertex.getEdges(Direction.IN)).size(), 0);
         assertEquals(asList(vertex.getEdges(Direction.OUT)).size(), 1);
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_KEPT).getValue(), 12);
         assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_DROPPED).getValue(), 0);
 
     }
@@ -105,8 +103,39 @@ public class SelfTest extends BaseTest {
         assertEquals(asList(vertex.getEdges(Direction.IN)).size(), 1);
         assertEquals(asList(vertex.getEdges(Direction.OUT)).size(), 1);
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_KEPT).getValue(), 6);
         assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_DROPPED).getValue(), 4);
         
+    }
+
+    public void testMap4() throws IOException {
+        Configuration config = new Configuration();
+        config.set(Self.ACTION, Tokens.Action.DROP.name());
+        config.setStrings(Self.LABELS, "knows");
+        mapReduceDriver.withConfiguration(config);
+        Graph graph = new TinkerGraph();
+        Vertex v1 = graph.addVertex(1);
+        Vertex v2 = graph.addVertex(2);
+        Vertex v3 = graph.addVertex(3);
+        graph.addEdge(null, v1, v2, "knows");
+        graph.addEdge(null, v1, v1, "knows");
+        graph.addEdge(null, v3, v2, "created");
+        graph.addEdge(null, v1, v3, "created");
+        graph.addEdge(null, v3, v3, "created");
+
+        Map<Long, FaunusVertex> results =  runWithGraph(graph, mapReduceDriver);
+        Vertex vertex = results.get(1l);
+        assertEquals(asList(vertex.getEdges(Direction.IN)).size(), 0);
+        assertEquals(asList(vertex.getEdges(Direction.OUT)).size(), 2);
+
+        vertex = results.get(2l);
+        assertEquals(asList(vertex.getEdges(Direction.IN)).size(), 2);
+        assertEquals(asList(vertex.getEdges(Direction.OUT)).size(), 0);
+
+        vertex = results.get(3l);
+        assertEquals(asList(vertex.getEdges(Direction.IN)).size(), 2);
+        assertEquals(asList(vertex.getEdges(Direction.OUT)).size(), 2);
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_DROPPED).getValue(), 2);
+
     }
 }

@@ -30,7 +30,7 @@ public class EdgeLabelFilter {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.labels = context.getConfiguration().getStrings(LABELS);
+            this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
             this.action = Tokens.Action.valueOf(context.getConfiguration().get(ACTION));
         }
 
