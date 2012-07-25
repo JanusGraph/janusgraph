@@ -40,6 +40,7 @@ public class EdgeLabelDistribution {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
+            // todo: take advantage of list.size()
             long counter = 0;
             for (final Edge edge : value.getEdges(this.direction)) {
                 counter++;

@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.mapreduce.MapReduceSequence;
 import com.thinkaurelius.faunus.mapreduce.MapSequence;
 import com.thinkaurelius.faunus.mapreduce.operators.DegreeDistribution;
 import com.thinkaurelius.faunus.mapreduce.operators.EdgeLabelDistribution;
+import com.thinkaurelius.faunus.mapreduce.operators.SortedVertexDegree;
 import com.thinkaurelius.faunus.mapreduce.operators.VertexDegree;
 import com.thinkaurelius.faunus.mapreduce.steps.EdgeLabelFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.Function;
@@ -218,6 +219,29 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
+    public FaunusGraph vertexDegree(final String property, final SortedVertexDegree.Order order, final Direction direction, final String... labels) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(SortedVertexDegree.PROPERTY, property);
+        conf.set(SortedVertexDegree.DIRECTION, direction.name());
+        conf.setStrings(SortedVertexDegree.LABELS, labels);
+        conf.set(SortedVertexDegree.ORDER, order.name());
+        final Job job = new Job(conf, SortedVertexDegree.class.getCanonicalName());
+        job.setMapperClass(SortedVertexDegree.Map.class);
+        job.setReducerClass(SortedVertexDegree.Reduce.class);
+        job.setJarByClass(FaunusGraph.class);
+        job.setMapOutputKeyClass(SortedVertexDegree.DegreeHolder.class);
+        job.setMapOutputValueClass(NullWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+        job.setNumReduceTasks(1);
+        job.setGroupingComparatorClass(SortedVertexDegree.DegreeHolder.Comparator.class);
+        job.setSortComparatorClass(SortedVertexDegree.DegreeHolder.Comparator.class);
+        this.outputFormat = this.statisticsOutputFormat;
+        this.jobs.add(job);
+        return this;
+    }
+
     public FaunusGraph degreeDistribution(final Direction direction, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
@@ -353,7 +377,7 @@ public class FaunusGraph extends Configured implements Tool {
             throw e;
         }
 
-        // Add Faunus properties to all the jobs
+        // TODO: should we do this? ---- Add Faunus properties to all the jobs
         for (final Job job : this.jobs) {
             for (final Map.Entry<String, String> entry : this.configuration) {
                 job.getConfiguration().set(entry.getKey(), entry.getValue());
@@ -393,6 +417,8 @@ public class FaunusGraph extends Configured implements Tool {
         scriptEngine.eval("BOTH=" + Direction.class.getName() + ".BOTH");
         scriptEngine.eval("KEEP=" + Tokens.Action.class.getName() + ".KEEP");
         scriptEngine.eval("DROP=" + Tokens.Action.class.getName() + ".DROP");
+        scriptEngine.eval("REVERSE=" + SortedVertexDegree.Order.class.getName() + ".REVERSE");
+        scriptEngine.eval("STANDARD=" + SortedVertexDegree.Order.class.getName() + ".STANDARD");
         scriptEngine.put("g", faunusGraph);
         ((FaunusGraph) scriptEngine.eval(script)).completeSequence();
         int result = ToolRunner.run(faunusGraph, args);

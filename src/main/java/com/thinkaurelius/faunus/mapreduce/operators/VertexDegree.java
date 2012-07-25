@@ -10,6 +10,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -36,17 +37,13 @@ public class VertexDegree {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
-            this.labels = context.getConfiguration().getStrings(LABELS);
+            this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
             this.property = context.getConfiguration().get(PROPERTY);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, IntWritable>.Context context) throws IOException, InterruptedException {
-            int degree = 0;
-            for (final Edge edge : value.getEdges(this.direction, this.labels)) {
-                degree++;
-            }
-
+            int degree = ((List<Edge>) value.getEdges(this.direction, this.labels)).size();
             context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(degree);
 

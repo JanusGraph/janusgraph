@@ -10,6 +10,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -37,11 +38,7 @@ public class DegreeDistribution {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, IntWritable, IntWritable>.Context context) throws IOException, InterruptedException {
-            int degree = 0;
-            for (final Edge edge : value.getEdges(this.direction, this.labels)) {
-                degree++;
-            }
-
+            int degree = ((List<Edge>) value.getEdges(this.direction, this.labels)).size();
             context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(degree);
             context.write(new IntWritable(degree), new IntWritable(1));
