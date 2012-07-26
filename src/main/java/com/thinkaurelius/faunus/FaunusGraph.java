@@ -230,13 +230,10 @@ public class FaunusGraph extends Configured implements Tool {
         job.setMapperClass(SortedVertexDegree.Map.class);
         job.setReducerClass(SortedVertexDegree.Reduce.class);
         job.setJarByClass(FaunusGraph.class);
-        job.setMapOutputKeyClass(SortedVertexDegree.DegreeHolder.class);
-        job.setMapOutputValueClass(NullWritable.class);
+        job.setMapOutputKeyClass(IntWritable.class);
+        job.setMapOutputValueClass(FaunusVertex.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
-        job.setNumReduceTasks(1);
-        job.setGroupingComparatorClass(SortedVertexDegree.DegreeHolder.Comparator.class);
-        job.setSortComparatorClass(SortedVertexDegree.DegreeHolder.Comparator.class);
         this.outputFormat = this.statisticsOutputFormat;
         this.jobs.add(job);
         return this;
