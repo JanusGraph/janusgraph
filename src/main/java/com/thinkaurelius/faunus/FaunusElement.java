@@ -39,15 +39,11 @@ public abstract class FaunusElement implements Element, Writable {
     }
 
     public Set<String> getPropertyKeys() {
-        if (null == this.properties)
-            return Collections.emptySet();
-        return this.properties.keySet();
+        return null == this.properties ? (Set) Collections.emptySet() : this.properties.keySet();
     }
 
     public Map<String, Object> getProperties() {
-        if (null == this.properties)
-            this.properties = new HashMap<String, Object>();
-        return this.properties;
+        return null == this.properties ? this.properties = new HashMap<String, Object>() : this.properties;
     }
 
     public void setProperties(final Map<String, Object> properties) {
