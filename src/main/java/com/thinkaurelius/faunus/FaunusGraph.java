@@ -201,7 +201,7 @@ public class FaunusGraph extends Configured implements Tool {
         job.setOutputValueClass(FaunusVertex.class);
     }
 
-    ////
+    ////  STATISTICS
 
     public FaunusGraph vertexDegree(final String property, final Direction direction, final String... labels) throws IOException {
         this.completeSequence();
