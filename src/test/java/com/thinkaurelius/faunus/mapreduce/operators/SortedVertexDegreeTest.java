@@ -83,7 +83,7 @@ public class SortedVertexDegreeTest extends BaseTest {
         config.setStrings(SortedVertexDegree.ORDER, SortedVertexDegree.Order.STANDARD.name());
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, IntWritable>> results = runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
-        System.out.println(results);
+        //System.out.println(results);
         assertEquals(results.size(), 12);
 
         assertEquals(results.get(11).getFirst().toString(), "hercules");
