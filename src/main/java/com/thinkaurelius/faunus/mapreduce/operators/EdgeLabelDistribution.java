@@ -45,11 +45,11 @@ public class EdgeLabelDistribution {
             for (final Edge edge : value.getEdges(this.direction)) {
                 counter++;
                 final String label = edge.getLabel();
-                final Long count = map.get(label);
+                final Long count = this.map.get(label);
                 if (null == count)
-                    map.put(label, 1l);
+                    this.map.put(label, 1l);
                 else
-                    map.put(label, count + 1l);
+                    this.map.put(label, count + 1l);
             }
             context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(counter);

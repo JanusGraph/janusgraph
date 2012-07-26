@@ -80,7 +80,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
     public Iterable<Edge> getEdges(final Direction direction, final String... labels) {
         final List<List<Edge>> edges = new ArrayList<List<Edge>>();
         if (direction.equals(OUT) || direction.equals(BOTH)) {
-            if (labels.length == 0) {
+            if (null == labels || labels.length == 0) {
                 for (final List<Edge> temp : this.outEdges.values()) {
                     edges.add(temp);
                 }
@@ -94,7 +94,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         }
 
         if (direction.equals(IN) || direction.equals(BOTH)) {
-            if (labels.length == 0) {
+            if (null == labels || labels.length == 0) {
                 for (final List<Edge> temp : this.inEdges.values()) {
                     edges.add(temp);
                 }

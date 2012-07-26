@@ -33,7 +33,7 @@ public class DegreeDistribution {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
-            this.labels = context.getConfiguration().getStrings(LABELS);
+            this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
         }
 
         @Override

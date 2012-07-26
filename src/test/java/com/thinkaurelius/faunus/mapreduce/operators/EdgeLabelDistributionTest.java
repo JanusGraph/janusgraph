@@ -48,11 +48,9 @@ public class EdgeLabelDistributionTest extends BaseTest {
             } else {
                 assertTrue(false);
             }
-
-            assertEquals(17, this.mapReduceDriver.getCounters().findCounter(EdgeLabelDistribution.Counters.EDGES_COUNTED).getValue());
-            assertEquals(12, this.mapReduceDriver.getCounters().findCounter(EdgeLabelDistribution.Counters.VERTICES_COUNTED).getValue());
         }
 
-
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(EdgeLabelDistribution.Counters.EDGES_COUNTED).getValue());
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(EdgeLabelDistribution.Counters.VERTICES_COUNTED).getValue());
     }
 }
