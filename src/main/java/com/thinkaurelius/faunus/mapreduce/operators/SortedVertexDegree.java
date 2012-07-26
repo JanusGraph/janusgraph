@@ -30,23 +30,18 @@ public class SortedVertexDegree {
         VERTICES_COUNTED
     }
 
-    public enum Order {
-        STANDARD,
-        REVERSE
-    }
-
     public static class Map extends Mapper<NullWritable, FaunusVertex, IntWritable, FaunusVertex> {
 
         private Direction direction;
         private String[] labels;
-        private Order order;
+        private Tokens.Order order;
 
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
-            this.order = Order.valueOf(context.getConfiguration().get(ORDER));
+            this.order = Tokens.Order.valueOf(context.getConfiguration().get(ORDER));
         }
 
         @Override
@@ -54,7 +49,7 @@ public class SortedVertexDegree {
             int degree = ((List<Edge>) value.getEdges(this.direction, this.labels)).size();
             context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(degree);
-            if (this.order.equals(Order.REVERSE))
+            if (this.order.equals(Tokens.Order.REVERSE))
                 context.write(new IntWritable(degree * -1), value);
             else
                 context.write(new IntWritable(degree), value);
@@ -65,19 +60,19 @@ public class SortedVertexDegree {
     public static class Reduce extends Reducer<IntWritable, FaunusVertex, Text, IntWritable> {
 
         private String property;
-        private Order order;
+        private Tokens.Order order;
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
             this.property = context.getConfiguration().get(PROPERTY);
-            this.order = Order.valueOf(context.getConfiguration().get(ORDER));
+            this.order = Tokens.Order.valueOf(context.getConfiguration().get(ORDER));
         }
 
         @Override
         public void reduce(final IntWritable key, final Iterable<FaunusVertex> values, final Reducer<IntWritable, FaunusVertex, Text, IntWritable>.Context context) throws IOException, InterruptedException {
 
             final IntWritable finalDegree;
-            if (this.order.equals(Order.REVERSE))
+            if (this.order.equals(Tokens.Order.REVERSE))
                 finalDegree = new IntWritable(key.get() * -1);
             else
                 finalDegree = new IntWritable(key.get());

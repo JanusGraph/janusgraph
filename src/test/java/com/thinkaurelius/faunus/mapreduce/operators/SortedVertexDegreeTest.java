@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.operators;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.Tokens;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -29,7 +30,7 @@ public class SortedVertexDegreeTest extends BaseTest {
         Configuration config = new Configuration();
         config.setStrings(SortedVertexDegree.DIRECTION, "OUT");
         config.setStrings(SortedVertexDegree.PROPERTY, "name");
-        config.setStrings(SortedVertexDegree.ORDER, SortedVertexDegree.Order.REVERSE.name());
+        config.setStrings(SortedVertexDegree.ORDER, Tokens.Order.REVERSE.name());
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, IntWritable>> results = runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -80,7 +81,7 @@ public class SortedVertexDegreeTest extends BaseTest {
         Configuration config = new Configuration();
         config.setStrings(SortedVertexDegree.DIRECTION, "OUT");
         config.setStrings(SortedVertexDegree.PROPERTY, "name");
-        config.setStrings(SortedVertexDegree.ORDER, SortedVertexDegree.Order.STANDARD.name());
+        config.setStrings(SortedVertexDegree.ORDER, Tokens.Order.STANDARD.name());
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, IntWritable>> results = runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);

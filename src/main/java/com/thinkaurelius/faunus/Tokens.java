@@ -4,7 +4,10 @@ package com.thinkaurelius.faunus;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class Tokens {
+
     public enum Action {DROP, KEEP}
+
+    public enum Order {REVERSE, STANDARD}
 
     private static final String NAMESPACE = "faunus.mapreduce";
 

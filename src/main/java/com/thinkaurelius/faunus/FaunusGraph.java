@@ -219,7 +219,7 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    public FaunusGraph vertexDegree(final String property, final SortedVertexDegree.Order order, final Direction direction, final String... labels) throws IOException {
+    public FaunusGraph vertexDegree(final String property, final Tokens.Order order, final Direction direction, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(SortedVertexDegree.PROPERTY, property);
@@ -414,8 +414,8 @@ public class FaunusGraph extends Configured implements Tool {
         scriptEngine.eval("BOTH=" + Direction.class.getName() + ".BOTH");
         scriptEngine.eval("KEEP=" + Tokens.Action.class.getName() + ".KEEP");
         scriptEngine.eval("DROP=" + Tokens.Action.class.getName() + ".DROP");
-        scriptEngine.eval("REVERSE=" + SortedVertexDegree.Order.class.getName() + ".REVERSE");
-        scriptEngine.eval("STANDARD=" + SortedVertexDegree.Order.class.getName() + ".STANDARD");
+        scriptEngine.eval("REVERSE=" + Tokens.Order.class.getName() + ".REVERSE");
+        scriptEngine.eval("STANDARD=" + Tokens.Order.class.getName() + ".STANDARD");
         scriptEngine.put("g", faunusGraph);
         ((FaunusGraph) scriptEngine.eval(script)).completeSequence();
         int result = ToolRunner.run(faunusGraph, args);
