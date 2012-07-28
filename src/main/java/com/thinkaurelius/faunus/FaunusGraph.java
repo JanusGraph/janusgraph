@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.mapreduce.MapReduceSequence;
 import com.thinkaurelius.faunus.mapreduce.MapSequence;
 import com.thinkaurelius.faunus.mapreduce.operators.DegreeDistribution;
 import com.thinkaurelius.faunus.mapreduce.operators.EdgeLabelDistribution;
+import com.thinkaurelius.faunus.mapreduce.operators.PropertyDistribution;
 import com.thinkaurelius.faunus.mapreduce.operators.SortedVertexDegree;
 import com.thinkaurelius.faunus.mapreduce.operators.VertexDegree;
 import com.thinkaurelius.faunus.mapreduce.steps.EdgeLabelFilter;
@@ -268,9 +269,28 @@ public class FaunusGraph extends Configured implements Tool {
         job.setCombinerClass(EdgeLabelDistribution.Reduce.class);
         job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(IntWritable.class);
+        job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(Text.class);
-        job.setOutputKeyClass(IntWritable.class);
+        job.setOutputKeyClass(LongWritable.class);
+        this.outputFormat = this.statisticsOutputFormat;
+        this.jobs.add(job);
+        return this;
+    }
+
+    public FaunusGraph propertyDistribution(final Class<? extends Element> klass, final String property) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(PropertyDistribution.CLASS, klass.getName());
+        conf.set(PropertyDistribution.PROPERTY, property);
+        final Job job = new Job(conf, EdgeLabelDistribution.class.getCanonicalName());
+        job.setMapperClass(PropertyDistribution.Map.class);
+        job.setReducerClass(PropertyDistribution.Reduce.class);
+        job.setCombinerClass(PropertyDistribution.Reduce.class);
+        job.setJarByClass(FaunusGraph.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(LongWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputKeyClass(LongWritable.class);
         this.outputFormat = this.statisticsOutputFormat;
         this.jobs.add(job);
         return this;
@@ -386,7 +406,7 @@ public class FaunusGraph extends Configured implements Tool {
         if (args.length != 1 && args.length != 2) {
             System.out.println("Faunus: A Library of Graph-Based Hadoop Tools");
             System.out.println("Usage:");
-            System.out.println("  arg1: faunus configuration location (optional)");
+            System.out.println("  arg1: faunus configuration location (optional - defaults to bin/faunus.properties)");
             System.out.println("  arg2: faunus script: g.V.step().step()...");
             System.exit(-1);
         }
