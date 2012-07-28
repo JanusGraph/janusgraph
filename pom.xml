@@ -39,10 +39,15 @@
             <version>1.8.6</version>
         </dependency>
         <!-- TITAN -->
-        <dependency>
+        <!--<dependency>
             <groupId>com.thinkaurelius</groupId>
             <artifactId>titan</artifactId>
             <version>0.1-SNAPSHOT</version>
+        </dependency>-->
+        <dependency>
+            <groupId>org.apache.cassandra</groupId>
+            <artifactId>cassandra-all</artifactId>
+            <version>1.0.8</version>
         </dependency>
         <!-- TESTING -->
         <dependency>

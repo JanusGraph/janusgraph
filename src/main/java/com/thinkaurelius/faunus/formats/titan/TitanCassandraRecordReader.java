@@ -1,25 +1,4 @@
 package com.thinkaurelius.faunus.formats.titan;
-/*
- * 
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- * 
- *   http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- * 
- */
-
 
 import com.google.common.collect.AbstractIterator;
 import com.thinkaurelius.faunus.FaunusVertex;
@@ -29,7 +8,6 @@ import org.apache.cassandra.db.IColumn;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.TypeParser;
 import org.apache.cassandra.dht.IPartitioner;
-import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.AuthenticationRequest;
@@ -81,7 +59,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
 
     private ColumnFamilySplit split;
     private RowIterator iter;
-    private Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>> currentRow;
+    private FaunusVertex currentRow;
     private SlicePredicate predicate;
     private boolean isEmptyPredicate;
     private int totalRowCount; // total number of rows to fetch
@@ -94,7 +72,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     private int keyBufferSize = 8192;
 
     public TitanCassandraRecordReader() {
-        this(ColumnFamilyRecordReader.CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT);
+        this(CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT);
     }
 
     public TitanCassandraRecordReader(int keyBufferSize) {
@@ -115,10 +93,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     }
 
     public FaunusVertex getCurrentValue() {
-        ByteBuffer left = currentRow.left;
-        SortedMap<ByteBuffer, IColumn> right = currentRow.right;
-
-        return new FaunusVertex(left.getLong());
+        return currentRow;
     }
 
     public float getProgress() {
@@ -166,7 +141,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
 
             // create connection using thrift
             String location = getLocation();
-            // TODO: socket = new TSocket(location, ConfigHelper.getRpcPort(conf));
+            socket = new TSocket(location, ConfigHelper.getRpcPort(conf));
             TBinaryProtocol binaryProtocol = new TBinaryProtocol(new TFramedTransport(socket));
             client = new Cassandra.Client(binaryProtocol);
             socket.open();
@@ -190,8 +165,19 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     public boolean nextKeyValue() throws IOException {
         if (!iter.hasNext())
             return false;
-        currentRow = iter.next();
+        currentRow = TitanCassandraRecordReader.createFaunusVertex(iter.next());
         return true;
+    }
+
+    private static FaunusVertex createFaunusVertex(final Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>> row) {
+        final FaunusVertex vertex = new FaunusVertex(1l);
+        try {
+            for (final java.util.Map.Entry<ByteBuffer, IColumn> entry : row.right.entrySet()) {
+                vertex.setProperty(ByteBufferUtil.string(entry.getKey()), ByteBufferUtil.string(entry.getValue().value()));
+            }
+        } catch (Exception e) {
+        }
+        return vertex;
     }
 
     // we don't use endpointsnitch since we are trying to support hadoop nodes that are
@@ -256,7 +242,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
         }
 
         private void maybeInit() {
-            // check if we need another batch 
+            // check if we need another batch
             if (rows != null && i >= rows.size())
                 rows = null;
 
@@ -286,7 +272,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
                     return;
                 }
 
-                // prepare for the next slice to be fromJSON
+                // prepare for the next slice to be read
                 KeySlice lastRow = rows.get(rows.size() - 1);
                 ByteBuffer rowkey = lastRow.key;
                 startToken = partitioner.getTokenFactory().toString(partitioner.getToken(rowkey));
@@ -318,7 +304,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
         }
 
         /**
-         * @return total number of rows fromJSON by this record reader
+         * @return total number of rows read by this record reader
          */
         public int rowsRead() {
             return totalRead;
@@ -363,7 +349,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
         }
 
         private IColumn unthriftifyCounter(CounterColumn column) {
-            //CounterColumns fromJSON the nodeID from the System table, so need the StorageService running and access
+            //CounterColumns read the nodeID from the System table, so need the StorageService running and access
             //to cassandra.yaml. To avoid a Hadoop needing access to yaml return a regular Column.
             return new org.apache.cassandra.db.Column(column.name, ByteBufferUtil.bytes(column.value), 0);
         }

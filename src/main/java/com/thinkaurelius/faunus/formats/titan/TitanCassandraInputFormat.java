@@ -1,10 +1,29 @@
 package com.thinkaurelius.faunus.formats.titan;
+/*
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ */
+
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Range;
-import org.apache.cassandra.dht.Token;
-import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.Cassandra;
@@ -17,6 +36,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
@@ -44,19 +64,18 @@ import java.util.concurrent.Future;
  * <p/>
  * You can also configure the number of rows per InputSplit with
  * ConfigHelper.setInputSplitSize
- * This should be "as big as possible, but no bigger."  Each InputSplit is fromJSON from Cassandra
+ * This should be "as big as possible, but no bigger."  Each InputSplit is read from Cassandra
  * with multiple get_slice_range queries, and the per-call overhead of get_slice_range is high,
  * so larger split sizes are better -- but if it is too large, you will run out of memory.
  * <p/>
  * The default split size is 64k rows.
  */
-public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusVertex>
+public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusVertex> {
 
-{
-    private static final Logger logger = LoggerFactory.getLogger(ColumnFamilyInputFormat.class);
+    private static final Logger logger = LoggerFactory.getLogger(TitanCassandraInputFormat.class);
 
     public static final String MAPRED_TASK_ID = "mapred.task.id";
-    // The simple fact that we need this is because the old Hadoop API wants us to "toJSON"
+    // The simple fact that we need this is because the old Hadoop API wants us to "write"
     // to the key and value whereas the new asks for it.
     // I choose 8kb as the default max key size (instanciated only once), but you can
     // override it in your jobConf with this setting.
@@ -94,13 +113,13 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
             List<Future<List<InputSplit>>> splitfutures = new ArrayList<Future<List<InputSplit>>>();
             KeyRange jobKeyRange = ConfigHelper.getInputKeyRange(conf);
             IPartitioner partitioner = null;
-            Range<Token> jobRange = null;
+            Range jobRange = null;
             if (jobKeyRange != null) {
-                partitioner = ConfigHelper.getInputPartitioner(context.getConfiguration());
+                partitioner = ConfigHelper.getPartitioner(context.getConfiguration());
                 assert partitioner.preservesOrder() : "ConfigHelper.setInputKeyRange(..) can only be used with a order preserving paritioner";
                 assert jobKeyRange.start_key == null : "only start_token supported";
                 assert jobKeyRange.end_key == null : "only end_token supported";
-                jobRange = new Range<Token>(partitioner.getTokenFactory().fromString(jobKeyRange.start_token),
+                jobRange = new Range(partitioner.getTokenFactory().fromString(jobKeyRange.start_token),
                         partitioner.getTokenFactory().fromString(jobKeyRange.end_token),
                         partitioner);
             }
@@ -110,12 +129,12 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
                     // for each range, pick a live owner and ask it to compute bite-sized splits
                     splitfutures.add(executor.submit(new SplitCallable(range, conf)));
                 } else {
-                    Range<Token> dhtRange = new Range<Token>(partitioner.getTokenFactory().fromString(range.start_token),
+                    Range dhtRange = new Range(partitioner.getTokenFactory().fromString(range.start_token),
                             partitioner.getTokenFactory().fromString(range.end_token),
                             partitioner);
 
                     if (dhtRange.intersects(jobRange)) {
-                        for (Range<Token> intersection : dhtRange.intersectionWith(jobRange)) {
+                        for (Range intersection : dhtRange.intersectionWith(jobRange)) {
                             range.start_token = partitioner.getTokenFactory().toString(intersection.left);
                             range.end_token = partitioner.getTokenFactory().toString(intersection.right);
                             // for each range, pick a live owner and ask it to compute bite-sized splits
@@ -189,24 +208,23 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
                 host = range.endpoints.get(i);
 
             try {
-                ///// TODO: Cassandra.Client client = ConfigHelper.createConnection(host, ConfigHelper.getRpcPort(conf), true);
-                Cassandra.Client client = null;
+                Cassandra.Client client = ConfigHelper.createConnection(host, ConfigHelper.getRpcPort(conf), true);
                 client.set_keyspace(keyspace);
                 return client.describe_splits(cfName, range.start_token, range.end_token, splitsize);
-            } catch (Exception e) {
+            } catch (IOException e) {
                 logger.debug("failed connect to endpoint " + host, e);
-            } /*catch (TException e) {
+            } catch (TException e) {
                 throw new RuntimeException(e);
             } catch (InvalidRequestException e) {
                 throw new RuntimeException(e);
-            } */
+            }
         }
         throw new IOException("failed connecting to all endpoints " + StringUtils.join(range.endpoints, ","));
     }
 
 
     private List<TokenRange> getRangeMap(Configuration conf) throws IOException {
-        Cassandra.Client client = ConfigHelper.getClientFromInputAddressList(conf);
+        Cassandra.Client client = ConfigHelper.getClientFromAddressList(conf);
 
         List<TokenRange> map;
         try {
@@ -219,9 +237,7 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
         return map;
     }
 
-    public TitanCassandraRecordReader createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+    public RecordReader<NullWritable, FaunusVertex> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         return new TitanCassandraRecordReader();
     }
-
-
 }
