@@ -7,7 +7,7 @@ h2. Features
 * Support for various data sources/sinks
 ** "Titan 0.1":http://thinkaurelius.github.com/titan/ distributed graph database
 ** "Rexster 2.x":http://rexster.tinkerpop.com fronted graph databases that support vertex iteration
-** "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library text format
+** "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library text format stored in "HDFS":http://hadoop.apache.org/hdfs/
 * Support for various MapReduce-based graph algorithms
 ** Numerous graph derivation/transformation steps
 ** Numerous global graph statistics
