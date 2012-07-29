@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.formats.json;
+package com.thinkaurelius.faunus.formats.graphson;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import org.apache.hadoop.fs.Path;
@@ -13,11 +13,11 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class JSONInputFormat extends FileInputFormat<NullWritable, FaunusVertex> {
+public class GraphSONInputFormat extends FileInputFormat<NullWritable, FaunusVertex> {
 
     @Override
     public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit split, final TaskAttemptContext context) {
-        return new JSONRecordReader();
+        return new GraphSONRecordReader();
     }
 
     @Override

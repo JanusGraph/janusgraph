@@ -1,6 +1,10 @@
 package com.thinkaurelius.faunus.formats.titan;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 import com.thinkaurelius.faunus.FaunusVertex;
 import org.apache.cassandra.auth.IAuthenticator;
 import org.apache.cassandra.config.ConfigurationException;
@@ -19,6 +23,7 @@ import org.apache.cassandra.thrift.ColumnParent;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.thrift.CounterColumn;
 import org.apache.cassandra.thrift.CounterSuperColumn;
+import org.apache.cassandra.thrift.IndexExpression;
 import org.apache.cassandra.thrift.KeyRange;
 import org.apache.cassandra.thrift.KeySlice;
 import org.apache.cassandra.thrift.KsDef;
@@ -28,7 +33,6 @@ import org.apache.cassandra.thrift.TBinaryProtocol;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.Pair;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -37,6 +41,8 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -57,19 +63,22 @@ import java.util.TreeMap;
 public class TitanCassandraRecordReader extends RecordReader<NullWritable, FaunusVertex> {
     public static final int CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT = 8192;
 
+    private static final Logger logger = LoggerFactory.getLogger(TitanCassandraRecordReader.class);
+
     private ColumnFamilySplit split;
     private RowIterator iter;
     private FaunusVertex currentRow;
     private SlicePredicate predicate;
     private boolean isEmptyPredicate;
     private int totalRowCount; // total number of rows to fetch
-    private int batchRowCount; // fetch this many per batch
+    private int batchSize; // fetch this many per batch
     private String cfName;
     private String keyspace;
     private TSocket socket;
     private Cassandra.Client client;
     private ConsistencyLevel consistencyLevel;
     private int keyBufferSize = 8192;
+    private List<IndexExpression> filter;
 
     public TitanCassandraRecordReader() {
         this(CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT);
@@ -97,6 +106,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     }
 
     public float getProgress() {
+        // TODO this is totally broken for wide rows
         // the progress is likely to be reported slightly off the actual but close enough
         return ((float) iter.rowsRead()) / totalRowCount;
     }
@@ -112,22 +122,26 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
             return true;
 
         byte[] start = predicate.getSlice_range().getStart();
+        if ((start != null) && (start.length > 0))
+            return false;
+
         byte[] finish = predicate.getSlice_range().getFinish();
-        if ((start == null || start == ArrayUtils.EMPTY_BYTE_ARRAY) &&
-                (finish == null || finish == ArrayUtils.EMPTY_BYTE_ARRAY))
-            return true;
+        if ((finish != null) && (finish.length > 0))
+            return false;
 
-
-        return false;
+        return true;
     }
 
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException {
         this.split = (ColumnFamilySplit) split;
         Configuration conf = context.getConfiguration();
+        KeyRange jobRange = ConfigHelper.getInputKeyRange(conf);
+        filter = jobRange == null ? null : jobRange.row_filter;
         predicate = ConfigHelper.getInputSlicePredicate(conf);
+        boolean widerows = ConfigHelper.getInputIsWide(conf);
         isEmptyPredicate = isEmptyPredicate(predicate);
         totalRowCount = ConfigHelper.getInputSplitSize(conf);
-        batchRowCount = ConfigHelper.getRangeBatchSize(conf);
+        batchSize = ConfigHelper.getRangeBatchSize(conf);
         cfName = ConfigHelper.getInputColumnFamily(conf);
         consistencyLevel = ConsistencyLevel.valueOf(ConfigHelper.getReadConsistencyLevel(conf));
 
@@ -141,7 +155,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
 
             // create connection using thrift
             String location = getLocation();
-            socket = new TSocket(location, ConfigHelper.getRpcPort(conf));
+            socket = new TSocket(location, ConfigHelper.getInputRpcPort(conf));
             TBinaryProtocol binaryProtocol = new TBinaryProtocol(new TFramedTransport(socket));
             client = new Cassandra.Client(binaryProtocol);
             socket.open();
@@ -159,8 +173,10 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
             throw new RuntimeException(e);
         }
 
-        iter = new RowIterator();
+        iter = widerows ? new WideRowIterator() : new StaticRowIterator();
+        logger.debug("created {}", iter);
     }
+
 
     public boolean nextKeyValue() throws IOException {
         if (!iter.hasNext())
@@ -170,7 +186,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     }
 
     private static FaunusVertex createFaunusVertex(final Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>> row) {
-        final FaunusVertex vertex = new FaunusVertex(1l);
+        final FaunusVertex vertex = new FaunusVertex(row.left.hashCode());
         try {
             for (final java.util.Map.Entry<ByteBuffer, IColumn> entry : row.right.entrySet()) {
                 vertex.setProperty(ByteBufferUtil.string(entry.getKey()), ByteBufferUtil.string(entry.getValue().value()));
@@ -180,8 +196,6 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
         return vertex;
     }
 
-    // we don't use endpointsnitch since we are trying to support hadoop nodes that are
-    // not necessarily on Cassandra machines, too.  This should be adequate for single-DC clusters, at least.
     private String getLocation() {
         ArrayList<InetAddress> localAddresses = new ArrayList<InetAddress>();
         try {
@@ -208,14 +222,12 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
         return split.getLocations()[0];
     }
 
-    private class RowIterator extends AbstractIterator<Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>>> {
-        private List<KeySlice> rows;
-        private String startToken;
-        private int totalRead = 0;
-        private int i = 0;
-        private final AbstractType comparator;
-        private final AbstractType subComparator;
-        private final IPartitioner partitioner;
+    private abstract class RowIterator extends AbstractIterator<Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>>> {
+        protected List<KeySlice> rows;
+        protected int totalRead = 0;
+        protected final AbstractType<?> comparator;
+        protected final AbstractType<?> subComparator;
+        protected final IPartitioner partitioner;
 
         private RowIterator() {
             try {
@@ -241,30 +253,77 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
             }
         }
 
+        /**
+         * @return total number of rows read by this record reader
+         */
+        public int rowsRead() {
+            return totalRead;
+        }
+
+        protected IColumn unthriftify(ColumnOrSuperColumn cosc) {
+            if (cosc.counter_column != null)
+                return unthriftifyCounter(cosc.counter_column);
+            if (cosc.counter_super_column != null)
+                return unthriftifySuperCounter(cosc.counter_super_column);
+            if (cosc.super_column != null)
+                return unthriftifySuper(cosc.super_column);
+            assert cosc.column != null;
+            return unthriftifySimple(cosc.column);
+        }
+
+        private IColumn unthriftifySuper(SuperColumn super_column) {
+            org.apache.cassandra.db.SuperColumn sc = new org.apache.cassandra.db.SuperColumn(super_column.name, subComparator);
+            for (Column column : super_column.columns) {
+                sc.addColumn(unthriftifySimple(column));
+            }
+            return sc;
+        }
+
+        protected IColumn unthriftifySimple(Column column) {
+            return new org.apache.cassandra.db.Column(column.name, column.value, column.timestamp);
+        }
+
+        private IColumn unthriftifyCounter(CounterColumn column) {
+            //CounterColumns read the nodeID from the System table, so need the StorageService running and access
+            //to cassandra.yaml. To avoid a Hadoop needing access to yaml return a regular Column.
+            return new org.apache.cassandra.db.Column(column.name, ByteBufferUtil.bytes(column.value), 0);
+        }
+
+        private IColumn unthriftifySuperCounter(CounterSuperColumn superColumn) {
+            org.apache.cassandra.db.SuperColumn sc = new org.apache.cassandra.db.SuperColumn(superColumn.name, subComparator);
+            for (CounterColumn column : superColumn.columns)
+                sc.addColumn(unthriftifyCounter(column));
+            return sc;
+        }
+    }
+
+    private class StaticRowIterator extends RowIterator {
+        protected int i = 0;
+
         private void maybeInit() {
             // check if we need another batch
-            if (rows != null && i >= rows.size())
-                rows = null;
-
-            if (rows != null)
+            if (rows != null && i < rows.size())
                 return;
 
-            if (startToken == null) {
+            String startToken;
+            if (totalRead == 0) {
+                // first request
                 startToken = split.getStartToken();
-            } else if (startToken.equals(split.getEndToken())) {
-                // reached end of the split
-                rows = null;
-                return;
+            } else {
+                startToken = partitioner.getTokenFactory().toString(partitioner.getToken(Iterables.getLast(rows).key));
+                if (startToken.equals(split.getEndToken())) {
+                    // reached end of the split
+                    rows = null;
+                    return;
+                }
             }
 
-            KeyRange keyRange = new KeyRange(batchRowCount)
+            KeyRange keyRange = new KeyRange(batchSize)
                     .setStart_token(startToken)
-                    .setEnd_token(split.getEndToken());
+                    .setEnd_token(split.getEndToken())
+                    .setRow_filter(filter);
             try {
-                rows = client.get_range_slices(new ColumnParent(cfName),
-                        predicate,
-                        keyRange,
-                        consistencyLevel);
+                rows = client.get_range_slices(new ColumnParent(cfName), predicate, keyRange, consistencyLevel);
 
                 // nothing new? reached the end
                 if (rows.isEmpty()) {
@@ -272,18 +331,11 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
                     return;
                 }
 
-                // prepare for the next slice to be read
-                KeySlice lastRow = rows.get(rows.size() - 1);
-                ByteBuffer rowkey = lastRow.key;
-                startToken = partitioner.getTokenFactory().toString(partitioner.getToken(rowkey));
-
                 // remove ghosts when fetching all columns
                 if (isEmptyPredicate) {
                     Iterator<KeySlice> it = rows.iterator();
-
                     while (it.hasNext()) {
                         KeySlice ks = it.next();
-
                         if (ks.getColumnsSize() == 0) {
                             it.remove();
                         }
@@ -303,13 +355,6 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
             }
         }
 
-        /**
-         * @return total number of rows read by this record reader
-         */
-        public int rowsRead() {
-            return totalRead;
-        }
-
         protected Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>> computeNext() {
             maybeInit();
             if (rows == null)
@@ -324,41 +369,94 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
             }
             return new Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>>(ks.key, map);
         }
+    }
 
-        private IColumn unthriftify(ColumnOrSuperColumn cosc) {
-            if (cosc.counter_column != null)
-                return unthriftifyCounter(cosc.counter_column);
-            if (cosc.counter_super_column != null)
-                return unthriftifySuperCounter(cosc.counter_super_column);
-            if (cosc.super_column != null)
-                return unthriftifySuper(cosc.super_column);
-            assert cosc.column != null;
-            return unthriftifySimple(cosc.column);
-        }
+    private class WideRowIterator extends RowIterator {
+        private PeekingIterator<Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>>> wideColumns;
+        private ByteBuffer lastColumn = ByteBufferUtil.EMPTY_BYTE_BUFFER;
 
-        private IColumn unthriftifySuper(SuperColumn super_column) {
-            org.apache.cassandra.db.SuperColumn sc = new org.apache.cassandra.db.SuperColumn(super_column.name, subComparator);
-            for (Column column : super_column.columns) {
-                sc.addColumn(unthriftifySimple(column));
+        private void maybeInit() {
+            if (wideColumns != null && wideColumns.hasNext())
+                return;
+
+            KeyRange keyRange;
+            ByteBuffer startColumn;
+            if (totalRead == 0) {
+                String startToken = split.getStartToken();
+                keyRange = new KeyRange(batchSize)
+                        .setStart_token(startToken)
+                        .setEnd_token(split.getEndToken())
+                        .setRow_filter(filter);
+            } else {
+                KeySlice lastRow = Iterables.getLast(rows);
+                logger.debug("Starting with last-seen row {}", lastRow.key);
+                keyRange = new KeyRange(batchSize)
+                        .setStart_key(lastRow.key)
+                        .setEnd_token(split.getEndToken())
+                        .setRow_filter(filter);
             }
-            return sc;
+
+            try {
+                rows = client.get_paged_slice(cfName, keyRange, lastColumn, consistencyLevel);
+                int n = 0;
+                for (KeySlice row : rows)
+                    n += row.columns.size();
+                logger.debug("read {} columns in {} rows for {} starting with {}",
+                        new Object[]{n, rows.size(), keyRange, lastColumn});
+
+                wideColumns = Iterators.peekingIterator(new WideColumnIterator(rows));
+                if (wideColumns.hasNext() && wideColumns.peek().right.keySet().iterator().next().equals(lastColumn))
+                    wideColumns.next();
+                if (!wideColumns.hasNext())
+                    rows = null;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        private IColumn unthriftifySimple(Column column) {
-            return new org.apache.cassandra.db.Column(column.name, column.value, column.timestamp);
+        protected Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>> computeNext() {
+            maybeInit();
+            if (rows == null)
+                return endOfData();
+
+            totalRead++;
+            Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>> next = wideColumns.next();
+            lastColumn = next.right.values().iterator().next().name();
+            return next;
         }
 
-        private IColumn unthriftifyCounter(CounterColumn column) {
-            //CounterColumns read the nodeID from the System table, so need the StorageService running and access
-            //to cassandra.yaml. To avoid a Hadoop needing access to yaml return a regular Column.
-            return new org.apache.cassandra.db.Column(column.name, ByteBufferUtil.bytes(column.value), 0);
-        }
+        private class WideColumnIterator extends AbstractIterator<Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>>> {
+            private final Iterator<KeySlice> rows;
+            private Iterator<ColumnOrSuperColumn> columns;
+            public KeySlice currentRow;
 
-        private IColumn unthriftifySuperCounter(CounterSuperColumn superColumn) {
-            org.apache.cassandra.db.SuperColumn sc = new org.apache.cassandra.db.SuperColumn(superColumn.name, subComparator);
-            for (CounterColumn column : superColumn.columns)
-                sc.addColumn(unthriftifyCounter(column));
-            return sc;
+            public WideColumnIterator(List<KeySlice> rows) {
+                this.rows = rows.iterator();
+                if (this.rows.hasNext())
+                    nextRow();
+                else
+                    columns = Iterators.emptyIterator();
+            }
+
+            private void nextRow() {
+                currentRow = rows.next();
+                columns = currentRow.columns.iterator();
+            }
+
+            protected Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>> computeNext() {
+                while (true) {
+                    if (columns.hasNext()) {
+                        ColumnOrSuperColumn cosc = columns.next();
+                        ImmutableSortedMap<ByteBuffer, IColumn> map = ImmutableSortedMap.of(cosc.column.name, unthriftifySimple(cosc.column));
+                        return Pair.<ByteBuffer, SortedMap<ByteBuffer, IColumn>>create(currentRow.key, map);
+                    }
+
+                    if (!rows.hasNext())
+                        return endOfData();
+
+                    nextRow();
+                }
+            }
         }
     }
 }

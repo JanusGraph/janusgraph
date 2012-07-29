@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.formats.json;
+package com.thinkaurelius.faunus.formats.graphson;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import org.apache.hadoop.io.NullWritable;
@@ -13,7 +13,7 @@ import java.io.UnsupportedEncodingException;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-public class JSONRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
+public class GraphSONRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
     private static final String UTF8 = "UTF-8";
     private static final byte[] NEWLINE;
     protected DataOutputStream out;
@@ -27,13 +27,13 @@ public class JSONRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
     }
 
 
-    public JSONRecordWriter(final DataOutputStream out) {
+    public GraphSONRecordWriter(final DataOutputStream out) {
         this.out = out;
     }
 
     public void write(final NullWritable nullKey, final FaunusVertex vertex) throws IOException {
         if (null != vertex) {
-            this.out.write(JSONUtility.toJSON(vertex).toString().getBytes(UTF8));
+            this.out.write(GraphSONUtility.toJSON(vertex).toString().getBytes(UTF8));
             this.out.write(NEWLINE);
         }
     }

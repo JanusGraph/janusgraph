@@ -21,9 +21,11 @@ package com.thinkaurelius.faunus.formats.titan;
  */
 
 
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.faunus.FaunusVertex;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Range;
+import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.Cassandra;
@@ -71,7 +73,6 @@ import java.util.concurrent.Future;
  * The default split size is 64k rows.
  */
 public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusVertex> {
-
     private static final Logger logger = LoggerFactory.getLogger(TitanCassandraInputFormat.class);
 
     public static final String MAPRED_TASK_ID = "mapred.task.id";
@@ -84,6 +85,7 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
 
     private String keyspace;
     private String cfName;
+    private IPartitioner partitioner;
 
     private static void validateConfiguration(Configuration conf) {
         if (ConfigHelper.getInputKeyspace(conf) == null || ConfigHelper.getInputColumnFamily(conf) == null) {
@@ -92,6 +94,10 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
         if (ConfigHelper.getInputSlicePredicate(conf) == null) {
             throw new UnsupportedOperationException("you must set the predicate with setPredicate");
         }
+        if (ConfigHelper.getInputInitialAddress(conf) == null)
+            throw new UnsupportedOperationException("You must set the initial output address to a Cassandra node");
+        if (ConfigHelper.getInputPartitioner(conf) == null)
+            throw new UnsupportedOperationException("You must set the Cassandra partitioner class");
     }
 
     public List<InputSplit> getSplits(JobContext context) throws IOException {
@@ -104,6 +110,8 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
 
         keyspace = ConfigHelper.getInputKeyspace(context.getConfiguration());
         cfName = ConfigHelper.getInputColumnFamily(context.getConfiguration());
+        partitioner = ConfigHelper.getInputPartitioner(context.getConfiguration());
+        logger.debug("partitioner is " + partitioner);
 
         // cannonical ranges, split into pieces, fetching the splits in parallel
         ExecutorService executor = Executors.newCachedThreadPool();
@@ -112,14 +120,12 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
         try {
             List<Future<List<InputSplit>>> splitfutures = new ArrayList<Future<List<InputSplit>>>();
             KeyRange jobKeyRange = ConfigHelper.getInputKeyRange(conf);
-            IPartitioner partitioner = null;
-            Range jobRange = null;
-            if (jobKeyRange != null) {
-                partitioner = ConfigHelper.getPartitioner(context.getConfiguration());
+            Range<Token> jobRange = null;
+            if (jobKeyRange != null && jobKeyRange.start_token != null) {
                 assert partitioner.preservesOrder() : "ConfigHelper.setInputKeyRange(..) can only be used with a order preserving paritioner";
                 assert jobKeyRange.start_key == null : "only start_token supported";
                 assert jobKeyRange.end_key == null : "only end_token supported";
-                jobRange = new Range(partitioner.getTokenFactory().fromString(jobKeyRange.start_token),
+                jobRange = new Range<Token>(partitioner.getTokenFactory().fromString(jobKeyRange.start_token),
                         partitioner.getTokenFactory().fromString(jobKeyRange.end_token),
                         partitioner);
             }
@@ -129,12 +135,12 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
                     // for each range, pick a live owner and ask it to compute bite-sized splits
                     splitfutures.add(executor.submit(new SplitCallable(range, conf)));
                 } else {
-                    Range dhtRange = new Range(partitioner.getTokenFactory().fromString(range.start_token),
+                    Range<Token> dhtRange = new Range<Token>(partitioner.getTokenFactory().fromString(range.start_token),
                             partitioner.getTokenFactory().fromString(range.end_token),
                             partitioner);
 
                     if (dhtRange.intersects(jobRange)) {
-                        for (Range intersection : dhtRange.intersectionWith(jobRange)) {
+                        for (Range<Token> intersection : dhtRange.intersectionWith(jobRange)) {
                             range.start_token = partitioner.getTokenFactory().toString(intersection.left);
                             range.end_token = partitioner.getTokenFactory().toString(intersection.right);
                             // for each range, pick a live owner and ask it to compute bite-sized splits
@@ -190,10 +196,17 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
                 endpoints[endpointIndex++] = InetAddress.getByName(endpoint_address).getHostName();
             }
 
+            Token.TokenFactory factory = partitioner.getTokenFactory();
             for (int i = 1; i < tokens.size(); i++) {
-                ColumnFamilySplit split = new ColumnFamilySplit(tokens.get(i - 1), tokens.get(i), endpoints);
-                logger.debug("adding " + split);
-                splits.add(split);
+                Token left = factory.fromString(tokens.get(i - 1));
+                Token right = factory.fromString(tokens.get(i));
+                Range<Token> range = new Range<Token>(left, right, partitioner);
+                List<Range<Token>> ranges = range.isWrapAround() ? range.unwrap() : ImmutableList.of(range);
+                for (Range<Token> subrange : ranges) {
+                    ColumnFamilySplit split = new ColumnFamilySplit(factory.toString(subrange.left), factory.toString(subrange.right), endpoints);
+                    logger.debug("adding " + split);
+                    splits.add(split);
+                }
             }
             return splits;
         }
@@ -208,7 +221,7 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
                 host = range.endpoints.get(i);
 
             try {
-                Cassandra.Client client = ConfigHelper.createConnection(host, ConfigHelper.getRpcPort(conf), true);
+                Cassandra.Client client = ConfigHelper.createConnection(host, ConfigHelper.getInputRpcPort(conf), true);
                 client.set_keyspace(keyspace);
                 return client.describe_splits(cfName, range.start_token, range.end_token, splitsize);
             } catch (IOException e) {
@@ -224,7 +237,7 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
 
 
     private List<TokenRange> getRangeMap(Configuration conf) throws IOException {
-        Cassandra.Client client = ConfigHelper.getClientFromAddressList(conf);
+        Cassandra.Client client = ConfigHelper.getClientFromInputAddressList(conf);
 
         List<TokenRange> map;
         try {

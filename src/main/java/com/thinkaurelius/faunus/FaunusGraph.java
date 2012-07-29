@@ -1,5 +1,7 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat;
+import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
 import com.thinkaurelius.faunus.mapreduce.MapReduceSequence;
 import com.thinkaurelius.faunus.mapreduce.MapSequence;
 import com.thinkaurelius.faunus.mapreduce.operators.DegreeDistribution;
@@ -19,6 +21,9 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import groovy.lang.Closure;
+import org.apache.cassandra.hadoop.ConfigHelper;
+import org.apache.cassandra.thrift.SlicePredicate;
+import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
@@ -42,6 +47,7 @@ import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +66,6 @@ public class FaunusGraph extends Configured implements Tool {
     private Class<? extends OutputFormat> outputFormat;
     private final Class<? extends OutputFormat> statisticsOutputFormat;
     private final Path outputPath;
-    private final Path inputPath;
     private final String jobScript;
 
     private final List<Job> jobs = new ArrayList<Job>();
@@ -76,8 +81,8 @@ public class FaunusGraph extends Configured implements Tool {
     public FaunusGraph(final String jobScript, final Configuration conf) throws ClassNotFoundException {
         this.configuration = conf;
         this.inputFormat = (Class<? extends InputFormat>) Class.forName(this.configuration.get(Tokens.GRAPH_INPUT_FORMAT_CLASS));
-        this.inputPath = new Path(this.configuration.get(Tokens.GRAPH_INPUT_LOCATION));
         this.outputFormat = (Class<? extends OutputFormat>) Class.forName(this.configuration.get(Tokens.GRAPH_OUTPUT_FORMAT_CLASS));
+
         this.statisticsOutputFormat = (Class<? extends OutputFormat>) Class.forName(this.configuration.get(Tokens.STATISTIC_OUTPUT_FORMAT_CLASS));
         this.outputPath = new Path(this.configuration.get(Tokens.DATA_OUTPUT_LOCATION));
         this.jobScript = jobScript;
@@ -143,7 +148,6 @@ public class FaunusGraph extends Configured implements Tool {
     }
 
     public FaunusGraph traverse(final Direction firstDirection, final String firstLabel, final Direction secondDirection, final String secondLabel, final String newLabel, final Tokens.Action action) throws IOException {
-
         this.mapSequenceConfiguration.set(Traverse.FIRST_DIRECTION, firstDirection.toString());
         this.mapSequenceConfiguration.set(Traverse.FIRST_LABEL, firstLabel);
         this.mapSequenceConfiguration.set(Traverse.SECOND_DIRECTION, secondDirection.toString());
@@ -352,7 +356,17 @@ public class FaunusGraph extends Configured implements Tool {
         try {
             final Job startJob = this.jobs.get(0);
             startJob.setInputFormatClass(this.inputFormat);
-            FileInputFormat.setInputPaths(startJob, this.inputPath);
+            // configure input location
+            if (this.inputFormat.equals(GraphSONInputFormat.class)) {
+                FileInputFormat.setInputPaths(startJob, new Path(this.configuration.get(Tokens.GRAPH_INPUT_LOCATION)));
+            } else if (this.inputFormat.equals(TitanCassandraInputFormat.class)) {
+                ConfigHelper.setInputColumnFamily(this.configuration, ConfigHelper.getInputKeyspace(this.configuration), "User");
+                SlicePredicate predicate = new SlicePredicate().setColumn_names(Arrays.asList(ByteBufferUtil.bytes("age"), ByteBufferUtil.bytes("first"), ByteBufferUtil.bytes("last")));
+                ConfigHelper.setInputSlicePredicate(this.configuration, predicate);
+            } else
+                throw new IOException(this.inputFormat.getName() + " is not a supported input format");
+
+
             if (this.jobs.size() > 1) {
                 final Path path = new Path(UUID.randomUUID().toString());
                 FileOutputFormat.setOutputPath(startJob, path);

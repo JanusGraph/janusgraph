@@ -1,6 +1,6 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.formats.json.JSONUtility;
+import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
@@ -37,9 +37,9 @@ public class BaseTest extends TestCase {
 
     public static List<FaunusVertex> generateToyGraph(final ExampleGraph example) throws IOException {
         if (ExampleGraph.TINKERGRAPH.equals(example))
-            return new JSONUtility().fromJSON(JSONUtility.class.getResourceAsStream("graph-example-1.json"));
+            return new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
         else
-            return new JSONUtility().fromJSON(JSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
+            return new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
     }
 
     public static Map<Long, FaunusVertex> indexResults(final List<Pair<NullWritable, FaunusVertex>> pairs) {

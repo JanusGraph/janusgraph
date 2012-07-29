@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.formats.json;
+package com.thinkaurelius.faunus.formats.graphson;
 
 
 import com.thinkaurelius.faunus.FaunusVertex;
@@ -22,9 +22,9 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class JSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
+public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
-    private final Logger logger = Logger.getLogger(JSONRecordReader.class);
+    private final Logger logger = Logger.getLogger(GraphSONRecordReader.class);
     private long start;
     private long pos;
     private long end;
@@ -77,7 +77,7 @@ public class JSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
             }
             this.pos += newSize;
             if (newSize < this.maxLineLength) {
-                this.value = JSONUtility.fromJSON(text.toString());
+                this.value = GraphSONUtility.fromJSON(text.toString());
                 break;
             }
 

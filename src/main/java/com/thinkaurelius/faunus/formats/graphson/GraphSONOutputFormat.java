@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.formats.json;
+package com.thinkaurelius.faunus.formats.graphson;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import org.apache.hadoop.conf.Configuration;
@@ -19,7 +19,7 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class JSONOutputFormat extends FileOutputFormat<NullWritable, FaunusVertex> {
+public class GraphSONOutputFormat extends FileOutputFormat<NullWritable, FaunusVertex> {
 
     public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
         final Configuration conf = job.getConfiguration();
@@ -35,10 +35,10 @@ public class JSONOutputFormat extends FileOutputFormat<NullWritable, FaunusVerte
         final FileSystem fs = file.getFileSystem(conf);
         if (!isCompressed) {
             FSDataOutputStream fileOut = fs.create(file, false);
-            return new JSONRecordWriter(fileOut);
+            return new GraphSONRecordWriter(fileOut);
         } else {
             FSDataOutputStream fileOut = fs.create(file, false);
-            return new JSONRecordWriter(new DataOutputStream(codec.createOutputStream(fileOut)));
+            return new GraphSONRecordWriter(new DataOutputStream(codec.createOutputStream(fileOut)));
         }
     }
 }
