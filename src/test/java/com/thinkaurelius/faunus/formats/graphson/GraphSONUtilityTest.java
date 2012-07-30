@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.formats.graphson;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
 import com.tinkerpop.blueprints.Edge;
 import junit.framework.TestCase;
 import org.codehaus.jettison.json.JSONObject;
@@ -76,7 +75,7 @@ public class GraphSONUtilityTest extends TestCase {
         marko.setProperty("name", "marko");
         FaunusVertex stephen = new FaunusVertex(2l);
         stephen.setProperty("name", "stephen");
-        marko.addEdge(OUT, new FaunusEdge(marko, stephen, "knows")).setProperty("weight", 1);
+        marko.addEdge(OUT, new FaunusEdge(marko.getIdAsLong(), stephen.getIdAsLong(), "knows")).setProperty("weight", 1);
 
         JSONObject m = GraphSONUtility.toJSON(marko);
         JSONObject s = GraphSONUtility.toJSON(stephen);

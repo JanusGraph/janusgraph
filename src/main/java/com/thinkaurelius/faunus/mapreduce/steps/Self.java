@@ -1,8 +1,8 @@
 package com.thinkaurelius.faunus.mapreduce.steps;
 
+import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
@@ -40,16 +40,16 @@ public class Self {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             long droppedCounter = 0l;
 
-            final Iterator<Edge> itty = value.getEdges(BOTH, this.labels).iterator();
+            final Iterator<FaunusEdge> itty = (Iterator) value.getEdges(BOTH, this.labels).iterator();
             while (itty.hasNext()) {
-                final Edge edge = itty.next();
+                final FaunusEdge edge = itty.next();
                 if (action.equals(Tokens.Action.KEEP)) {
-                    if (!edge.getVertex(IN).equals(edge.getVertex(OUT))) {
+                    if (edge.getVertexId(IN) != edge.getVertexId(OUT)) {
                         itty.remove();
                         droppedCounter++;
                     }
                 } else {
-                    if (edge.getVertex(IN).equals(edge.getVertex(OUT))) {
+                    if (edge.getVertexId(IN) == edge.getVertexId(OUT)) {
                         itty.remove();
                         droppedCounter++;
                     }

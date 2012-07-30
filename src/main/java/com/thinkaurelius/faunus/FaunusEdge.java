@@ -20,12 +20,13 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     private static final String DEFAULT = "_default";
 
-    private FaunusVertex outVertex;
-    private FaunusVertex inVertex;
-    private String label = DEFAULT;
+    private long outVertex;
+    private long inVertex;
+    private String label;
 
     public FaunusEdge() {
         super(-1l);
+        this.label = DEFAULT;
     }
 
     public FaunusEdge(final DataInput in) throws IOException {
@@ -33,11 +34,11 @@ public class FaunusEdge extends FaunusElement implements Edge {
         this.readFields(in);
     }
 
-    public FaunusEdge(final FaunusVertex outVertex, final FaunusVertex inVertex, final String label) {
+    public FaunusEdge(final long outVertex, final long inVertex, final String label) {
         this(-1l, outVertex, inVertex, label);
     }
 
-    public FaunusEdge(final Long id, final FaunusVertex outVertex, final FaunusVertex inVertex, final String label) {
+    public FaunusEdge(final long id, final long outVertex, final long inVertex, final String label) {
         super(id);
         this.outVertex = outVertex;
         this.inVertex = inVertex;
@@ -46,30 +47,40 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public Vertex getVertex(final Direction direction) {
         if (OUT.equals(direction)) {
-            return outVertex;
+            return new FaunusVertex(this.outVertex);
         } else if (IN.equals(direction)) {
-            return inVertex;
+            return new FaunusVertex(this.inVertex);
+        } else {
+            throw ExceptionFactory.bothIsNotSupported();
+        }
+    }
+
+    public long getVertexId(final Direction direction) {
+        if (OUT.equals(direction)) {
+            return this.outVertex;
+        } else if (IN.equals(direction)) {
+            return this.inVertex;
         } else {
             throw ExceptionFactory.bothIsNotSupported();
         }
     }
 
     public String getLabel() {
-        return label;
+        return this.label;
     }
 
     public void write(final DataOutput out) throws IOException {
         out.writeLong(this.id);
-        out.writeLong(this.inVertex.getIdAsLong());
-        out.writeLong(this.outVertex.getIdAsLong());
+        out.writeLong(this.inVertex);
+        out.writeLong(this.outVertex);
         out.writeUTF(this.getLabel());
         ElementProperties.write(this.properties, out);
     }
 
     public void readFields(final DataInput in) throws IOException {
         this.id = in.readLong();
-        this.inVertex = new FaunusVertex(in.readLong());
-        this.outVertex = new FaunusVertex(in.readLong());
+        this.inVertex = in.readLong();
+        this.outVertex = in.readLong();
         this.label = in.readUTF();
         this.properties = ElementProperties.readFields(in);
     }

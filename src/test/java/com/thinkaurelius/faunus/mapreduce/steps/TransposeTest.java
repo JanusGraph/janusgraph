@@ -37,8 +37,8 @@ public class TransposeTest extends BaseTest {
         vertex1.setProperty("name", "marko");
         FaunusVertex vertex2 = new FaunusVertex(2);
         vertex2.setProperty("name", "gremlin");
-        vertex1.addEdge(OUT, new FaunusEdge(vertex1, vertex2, "created"));
-        vertex2.addEdge(IN, new FaunusEdge(vertex1, vertex2, "created"));
+        vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), vertex2.getIdAsLong(), "created"));
+        vertex2.addEdge(IN, new FaunusEdge(vertex1.getIdAsLong(), vertex2.getIdAsLong(), "created"));
 
         Configuration config = new Configuration();
         config.set(Transpose.LABEL, "created");

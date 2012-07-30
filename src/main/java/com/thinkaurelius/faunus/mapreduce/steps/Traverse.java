@@ -78,11 +78,11 @@ public class Traverse {
 
             if (this.firstDirection.equals(OUT)) {
                 for (final Edge edge : value.getEdges(IN, this.firstLabel)) {
-                    firstVertexIds.add((Long) edge.getVertex(OUT).getId());
+                    firstVertexIds.add(((FaunusEdge) edge).getVertexId(OUT));
                 }
             } else if (this.firstDirection.equals(IN)) {
                 for (final Edge edge : value.getEdges(OUT, this.firstLabel)) {
-                    firstVertexIds.add((Long) edge.getVertex(IN).getId());
+                    firstVertexIds.add(((FaunusEdge) edge).getVertexId(IN));
                 }
             } else {
                 throw new IOException("A direction of " + this.firstDirection + " is not a legal direction for this operation");
@@ -92,11 +92,11 @@ public class Traverse {
 
             if (this.secondDirection.equals(OUT)) {
                 for (final Edge edge : value.getEdges(OUT, this.secondLabel)) {
-                    secondVertexIds.add((Long) edge.getVertex(IN).getId());
+                    secondVertexIds.add(((FaunusEdge) edge).getVertexId(IN));
                 }
             } else if (this.secondDirection.equals(IN)) {
                 for (final Edge edge : value.getEdges(IN, this.secondLabel)) {
-                    secondVertexIds.add((Long) edge.getVertex(OUT).getId());
+                    secondVertexIds.add(((FaunusEdge) edge).getVertexId(OUT));
                 }
             } else {
                 throw new IOException("A direction of " + this.secondDirection + " is not a legal direction for this operation");
@@ -105,7 +105,7 @@ public class Traverse {
 
             for (final Long firstId : firstVertexIds) {
                 for (final Long secondId : secondVertexIds) {
-                    final FaunusEdge edge = new FaunusEdge(new FaunusVertex(firstId), new FaunusVertex(secondId), this.newLabel);
+                    final FaunusEdge edge = new FaunusEdge(firstId, secondId, this.newLabel);
                     context.write(new LongWritable(firstId), new Holder<FaunusEdge>('o', edge));
                     context.write(new LongWritable(secondId), new Holder<FaunusEdge>('i', edge));
                     context.getCounter(Counters.EDGES_CREATED).increment(2);

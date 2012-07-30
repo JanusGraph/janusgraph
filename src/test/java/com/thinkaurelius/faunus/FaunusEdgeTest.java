@@ -20,7 +20,7 @@ public class FaunusEdgeTest extends TestCase {
 
     public void testSerialization1() throws IOException {
 
-        FaunusEdge edge1 = new FaunusEdge(new FaunusVertex(1), new FaunusVertex(2), "knows");
+        FaunusEdge edge1 = new FaunusEdge(1, 2, "knows");
         assertEquals(edge1.getLabel(), "knows");
         assertEquals(edge1.getVertex(Direction.OUT).getId(), 1l);
         assertEquals(edge1.getVertex(Direction.IN).getId(), 2l);
@@ -41,7 +41,7 @@ public class FaunusEdgeTest extends TestCase {
 
     public void testSerialization2() throws IOException {
 
-        FaunusEdge edge1 = new FaunusEdge(new FaunusVertex(1), new FaunusVertex(2), "knows");
+        FaunusEdge edge1 = new FaunusEdge(1, 2, "knows");
         edge1.setProperty("weight", 0.5f);
         assertEquals(edge1.getLabel(), "knows");
         assertEquals(edge1.getVertex(Direction.OUT).getId(), 1l);

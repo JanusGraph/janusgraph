@@ -108,7 +108,7 @@ public class Holder<T extends FaunusElement> extends GenericWritable implements 
         @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
             if (a instanceof Holder && b instanceof Holder)
-                return (((Holder) a).get().getIdAsLong()).compareTo(((Holder) b).get().getIdAsLong());
+                return ((Long) (((Holder) a).get().getIdAsLong())).compareTo(((Holder) b).get().getIdAsLong());
             else
                 return super.compare(a, b);
         }

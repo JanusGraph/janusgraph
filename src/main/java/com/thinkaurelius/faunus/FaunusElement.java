@@ -20,7 +20,7 @@ public abstract class FaunusElement implements Element, Writable {
     protected Map<String, Object> properties = null;
     protected long id;
 
-    public FaunusElement(final Long id) {
+    public FaunusElement(final long id) {
         this.id = id;
     }
 
@@ -60,7 +60,7 @@ public abstract class FaunusElement implements Element, Writable {
         return this.id;
     }
 
-    public Long getIdAsLong() {
+    public long getIdAsLong() {
         return this.id;
     }
 
@@ -70,7 +70,7 @@ public abstract class FaunusElement implements Element, Writable {
 
     @Override
     public boolean equals(final Object other) {
-        return this.getClass().equals(other.getClass()) && this.id == (Long) ((FaunusElement) other).getId();
+        return this.getClass().equals(other.getClass()) && this.id == ((FaunusElement) other).getIdAsLong();
     }
 
     @Override

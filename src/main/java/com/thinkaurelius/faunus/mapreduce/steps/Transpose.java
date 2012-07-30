@@ -47,7 +47,7 @@ public class Transpose {
             Iterator<FaunusEdge> itty = (Iterator) value.getEdges(OUT, this.label).iterator();
             while (itty.hasNext()) {
                 final FaunusEdge edge = itty.next();
-                value.addEdge(IN, new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel)).setProperties(edge.getProperties());
+                value.addEdge(IN, new FaunusEdge(edge.getVertexId(IN), edge.getVertexId(OUT), this.newLabel)).setProperties(edge.getProperties());
                 counter++;
 
                 if (action.equals(Tokens.Action.DROP))
@@ -57,7 +57,7 @@ public class Transpose {
             itty = (Iterator) value.getEdges(IN, this.label).iterator();
             while (itty.hasNext()) {
                 final FaunusEdge edge = itty.next();
-                value.addEdge(OUT, new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel)).setProperties(edge.getProperties());
+                value.addEdge(OUT, new FaunusEdge(edge.getVertexId(IN), edge.getVertexId(OUT), this.newLabel)).setProperties(edge.getProperties());
                 counter++;
 
                 if (action.equals(Tokens.Action.DROP))

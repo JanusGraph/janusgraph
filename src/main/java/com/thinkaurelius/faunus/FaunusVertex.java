@@ -235,7 +235,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
             if (a instanceof FaunusVertex && b instanceof FaunusVertex)
-                return (((FaunusVertex) a).getIdAsLong()).compareTo(((FaunusVertex) b).getIdAsLong());
+                return  ((Long)(((FaunusVertex) a).getIdAsLong())).compareTo(((FaunusVertex) b).getIdAsLong());
             else
                 return super.compare(a, b);
         }

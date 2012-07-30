@@ -55,8 +55,8 @@ public class FaunusVertexTest extends BaseTest {
     public void testSerialization2() throws IOException {
 
         FaunusVertex vertex1 = new FaunusVertex(10);
-        vertex1.addEdge(OUT, new FaunusEdge(vertex1, new FaunusVertex(2), "knows"));
-        vertex1.addEdge(OUT, new FaunusEdge(vertex1, new FaunusVertex(3), "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), 2, "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), 3, "knows"));
         vertex1.setProperty("name", "marko");
         vertex1.setProperty("age", 32);
         vertex1.setProperty("longitude", 10.01d);
@@ -97,8 +97,8 @@ public class FaunusVertexTest extends BaseTest {
     public void testSerialization3() throws IOException {
 
         FaunusVertex vertex1 = new FaunusVertex(10);
-        vertex1.addEdge(OUT, new FaunusEdge(vertex1, new FaunusVertex(2), "knows"));
-        vertex1.addEdge(IN, new FaunusEdge(new FaunusVertex(3), vertex1, "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), 2, "knows"));
+        vertex1.addEdge(IN, new FaunusEdge(3, vertex1.getIdAsLong(), "knows"));
         vertex1.setProperty("name", "marko");
         vertex1.setProperty("age", 32);
         vertex1.setProperty("longitude", 10.01d);
@@ -148,7 +148,7 @@ public class FaunusVertexTest extends BaseTest {
 
     public void testNoProperties() throws IOException {
         FaunusVertex vertex1 = new FaunusVertex(1l);
-        vertex1.addEdge(OUT, new FaunusEdge(vertex1, vertex1, "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), vertex1.getIdAsLong(), "knows"));
 
         assertNull(vertex1.getProperty("name"));
         assertNull(vertex1.removeProperty("name"));
@@ -183,8 +183,8 @@ public class FaunusVertexTest extends BaseTest {
     public void testRemovingEdges() {
         FaunusVertex vertex = new FaunusVertex(1l);
         vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new FaunusEdge(vertex, vertex, "knows"));
-        vertex.addEdge(OUT, new FaunusEdge(vertex, vertex, "created"));
+        vertex.addEdge(OUT, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
+        vertex.addEdge(OUT, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.DROP, OUT, "knows");
         assertEquals(asList(vertex.getEdges(OUT)).size(), 1);
@@ -193,10 +193,10 @@ public class FaunusVertexTest extends BaseTest {
 
         vertex = new FaunusVertex(1l);
         vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new FaunusEdge(vertex, vertex, "knows"));
-        vertex.addEdge(OUT, new FaunusEdge(vertex, vertex, "created"));
-        vertex.addEdge(IN, new FaunusEdge(vertex, vertex, "knows"));
-        vertex.addEdge(IN, new FaunusEdge(vertex, vertex, "created"));
+        vertex.addEdge(OUT, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
+        vertex.addEdge(OUT, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(IN, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
+        vertex.addEdge(IN, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.DROP, BOTH, "knows");
         assertEquals(asList(vertex.getEdges(BOTH)).size(), 2);
@@ -205,9 +205,9 @@ public class FaunusVertexTest extends BaseTest {
 
         vertex = new FaunusVertex(1l);
         vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new FaunusEdge(vertex, vertex, "knows"));
-        vertex.addEdge(OUT, new FaunusEdge(vertex, vertex, "created"));
-        vertex.addEdge(IN, new FaunusEdge(vertex, vertex, "created"));
+        vertex.addEdge(OUT, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
+        vertex.addEdge(OUT, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(IN, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.KEEP, BOTH, "knows");
         assertEquals(asList(vertex.getEdges(OUT)).size(), 1);

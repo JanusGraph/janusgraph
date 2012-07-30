@@ -63,10 +63,10 @@ public class BaseTest extends TestCase {
         for (final Vertex vertex : graph.getVertices()) {
             final FaunusVertex temp = new FaunusVertex(Long.valueOf(vertex.getId().toString()));
             for (final Edge edge : vertex.getEdges(Direction.OUT)) {
-                temp.addEdge(Direction.OUT, new FaunusEdge(temp, new FaunusVertex(Long.valueOf(edge.getVertex(Direction.IN).getId().toString())), edge.getLabel()));
+                temp.addEdge(Direction.OUT, new FaunusEdge(temp.getIdAsLong(), Long.valueOf(edge.getVertex(Direction.IN).getId().toString()), edge.getLabel()));
             }
             for (final Edge edge : vertex.getEdges(Direction.IN)) {
-                temp.addEdge(Direction.IN, new FaunusEdge(new FaunusVertex(Long.valueOf(edge.getVertex(Direction.OUT).getId().toString())), temp, edge.getLabel()));
+                temp.addEdge(Direction.IN, new FaunusEdge(Long.valueOf(edge.getVertex(Direction.OUT).getId().toString()), temp.getIdAsLong(), edge.getLabel()));
             }
             for (final String key : vertex.getPropertyKeys()) {
                 temp.setProperty(key, vertex.getProperty(key));

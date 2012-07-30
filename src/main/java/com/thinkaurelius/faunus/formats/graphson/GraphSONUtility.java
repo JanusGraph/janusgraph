@@ -141,7 +141,7 @@ public class GraphSONUtility {
     private static class FaunusElementFactory implements ElementFactory<FaunusVertex, FaunusEdge> {
         @Override
         public FaunusEdge createEdge(final Object id, final FaunusVertex out, final FaunusVertex in, final String label) {
-            return new FaunusEdge(convertIdentifier(id), out, in, label);
+            return new FaunusEdge(convertIdentifier(id), out.getIdAsLong(), in.getIdAsLong(), label);
         }
 
         @Override
