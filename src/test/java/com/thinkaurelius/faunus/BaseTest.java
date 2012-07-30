@@ -84,6 +84,14 @@ public class BaseTest extends TestCase {
         return driver.run();
     }
 
+    public static List<Vertex> getVertices(final Iterable<Edge> edges, final Direction direction) {
+        final List<Vertex> list = new ArrayList<Vertex>();
+        for (final Edge edge : edges) {
+            list.add(edge.getVertex(direction));
+        }
+        return list;
+    }
+
     /*public void testConverter() throws IOException {
         //Graph graph = new TinkerGraph();
         //GraphMLReader.inputGraph(graph, JSONUtility.class.getResourceAsStream("graph-of-the-gods.xml"));

@@ -8,6 +8,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -43,25 +44,29 @@ public class Transpose {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             long counter = 0;
 
-            for (final Edge edge : value.getEdges(OUT, this.label)) {
-                value.addEdge(IN, new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel));
+            Iterator<FaunusEdge> itty = (Iterator) value.getEdges(OUT, this.label).iterator();
+            while (itty.hasNext()) {
+                final FaunusEdge edge = itty.next();
+                value.addEdge(IN, new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel)).setProperties(edge.getProperties());
                 counter++;
+
+                if (action.equals(Tokens.Action.DROP))
+                    itty.remove();
             }
-            if (action.equals(Tokens.Action.DROP))
-                value.removeEdges(Tokens.Action.DROP, OUT, this.label);
 
-
-            for (final Edge edge : value.getEdges(IN, this.label)) {
-                value.addEdge(OUT, new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel));
+            itty = (Iterator) value.getEdges(IN, this.label).iterator();
+            while (itty.hasNext()) {
+                final FaunusEdge edge = itty.next();
+                value.addEdge(OUT, new FaunusEdge((FaunusVertex) edge.getVertex(IN), (FaunusVertex) edge.getVertex(OUT), this.newLabel)).setProperties(edge.getProperties());
                 counter++;
-            }
-            if (action.equals(Tokens.Action.DROP))
-                value.removeEdges(Tokens.Action.DROP, IN, this.label);
 
+                if (action.equals(Tokens.Action.DROP))
+                    itty.remove();
+            }
 
             if (counter > 0)
                 context.getCounter(Counters.EDGES_TRANSPOSED).increment(counter);
-            
+
             context.write(NullWritable.get(), value);
         }
     }

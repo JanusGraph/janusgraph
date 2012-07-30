@@ -14,6 +14,7 @@ It also includes software from other open source projects including, but not lim
  * TinkerPop Blueprints [http://blueprints.tinkerpop.com]
  * Apache Hadoop [http://hadoop.apache.org/]
  * Aurelius Titan [http://thinkaurelius.github.com/titan/]
+ * Apache Cassandra [http://cassandra.apache.org/]
  * Codehaus Groovy [http://groovy.codehaus.org/]
  * Apache MRUnit [http://mrunit.apache.org/]
  * JUnit [http://www.junit.org/]

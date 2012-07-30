@@ -8,6 +8,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -54,7 +55,6 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
         }
 
         public void reset() {
-
             this.locked = false;
         }
 
@@ -78,8 +78,8 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
         }
 
         public void stageConfiguration(final int step) {
-            final java.util.Map<String, String> temp = new HashMap<String, String>();
-            for (final java.util.Map.Entry<String, String> entry : this.configuration) {
+            final Map<String, String> temp = new HashMap<String, String>();
+            for (final Map.Entry<String, String> entry : this.configuration) {
                 final String key = entry.getKey();
                 if (key.endsWith("-" + step)) {
                     temp.put(key.replace("-" + step, ""), entry.getValue());

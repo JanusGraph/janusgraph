@@ -14,6 +14,7 @@ import org.apache.hadoop.mrunit.types.Pair;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -80,6 +81,43 @@ public class TransposeTest extends BaseTest {
         }
 
         //assertEquals(mapReduceDriver.getCounters().findCounter(Counters.EDGES_TRANSPOSED).getValue(), 1);
+    }
+
+    public void testMapReduce2() throws IOException {
+        Configuration config = new Configuration();
+        config.set(Transpose.ACTION, Tokens.Action.DROP.name());
+        config.set(Transpose.LABEL, "created");
+        config.set(Transpose.NEW_LABEL, "createdBy");
+        mapReduceDriver.withConfiguration(config);
+
+        Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
+        assertEquals(results.size(), 6);
+
+        FaunusVertex marko = results.get(1l);
+        assertEquals(marko.getProperty("name"), "marko");
+        assertEquals(asList(marko.getEdges(OUT)).size(), 2);
+        assertTrue(getVertices(marko.getEdges(OUT), IN).contains(results.get(2l)));
+        assertTrue(getVertices(marko.getEdges(OUT), IN).contains(results.get(4l)));
+        assertEquals(asList(marko.getEdges(IN)).size(), 1);
+
+        FaunusVertex ripple = results.get(5l);
+        assertEquals(ripple.getProperty("name"), "ripple");
+        assertEquals(asList(ripple.getEdges(OUT)).size(), 1);
+        assertEquals(asList(ripple.getEdges(IN)).size(), 0);
+        assertEquals(ripple.getEdges(OUT).iterator().next().getProperty("weight"), 1);
+        assertEquals(ripple.getEdges(OUT).iterator().next().getLabel(), "createdBy");
+
+        FaunusVertex lop = results.get(3l);
+        assertEquals(lop.getProperty("name"), "lop");
+        assertEquals(asList(lop.getEdges(OUT)).size(), 3);
+        assertEquals(asList(lop.getEdges(OUT, "createdBy")).size(), 3);
+        assertEquals(asList(lop.getEdges(IN)).size(), 0);
+
+        assertTrue(getVertices(lop.getEdges(OUT), IN).contains(results.get(1l)));
+        assertTrue(getVertices(lop.getEdges(OUT), IN).contains(results.get(4l)));
+        assertTrue(getVertices(lop.getEdges(OUT), IN).contains(results.get(6l)));
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(Transpose.Counters.EDGES_TRANSPOSED).getValue(), 8);
     }
 
 }
