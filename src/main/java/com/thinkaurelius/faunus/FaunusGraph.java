@@ -9,6 +9,7 @@ import com.thinkaurelius.faunus.mapreduce.operators.EdgeLabelDistribution;
 import com.thinkaurelius.faunus.mapreduce.operators.PropertyDistribution;
 import com.thinkaurelius.faunus.mapreduce.operators.SortedVertexDegree;
 import com.thinkaurelius.faunus.mapreduce.operators.VertexDegree;
+import com.thinkaurelius.faunus.mapreduce.steps.EdgeDirectionFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.EdgeLabelFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.Function;
 import com.thinkaurelius.faunus.mapreduce.steps.Identity;
@@ -129,6 +130,12 @@ public class FaunusGraph extends Configured implements Tool {
         this.mapSequenceConfiguration.setStrings(EdgeLabelFilter.LABELS + "-" + this.mapSequenceClasses.size(), labels);
         this.mapSequenceConfiguration.set(EdgeLabelFilter.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
         this.mapSequenceClasses.add(EdgeLabelFilter.Map.class);
+        return this;
+    }
+
+    public FaunusGraph edgeDirectionFilter(final Direction direction) throws IOException {
+        this.mapSequenceConfiguration.set(EdgeDirectionFilter.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
+        this.mapSequenceClasses.add(EdgeDirectionFilter.Map.class);
         return this;
     }
 
