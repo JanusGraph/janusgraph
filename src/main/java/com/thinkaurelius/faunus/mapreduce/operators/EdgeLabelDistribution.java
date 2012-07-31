@@ -64,7 +64,7 @@ public class EdgeLabelDistribution {
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             super.cleanup(context);
-            for (final java.util.Map.Entry<String, Long> entry : map.entrySet()) {
+            for (final java.util.Map.Entry<String, Long> entry : this.map.entrySet()) {
                 context.write(new Text(entry.getKey()), new LongWritable(entry.getValue()));
             }
         }

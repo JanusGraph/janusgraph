@@ -3,6 +3,10 @@ package com.thinkaurelius.faunus.formats;
 import com.thinkaurelius.faunus.Tokens;
 import org.apache.hadoop.conf.Configuration;
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;

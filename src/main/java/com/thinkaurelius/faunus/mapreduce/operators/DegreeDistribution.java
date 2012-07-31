@@ -10,6 +10,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -29,19 +30,42 @@ public class DegreeDistribution {
 
         private Direction direction;
         private String[] labels;
+        private java.util.Map<Integer, Integer> map;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
+            this.map = new HashMap<Integer, Integer>();
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, IntWritable, IntWritable>.Context context) throws IOException, InterruptedException {
             int degree = ((List<Edge>) value.getEdges(this.direction, this.labels)).size();
+
+            final Integer count = this.map.get(degree);
+            if (null == count)
+                this.map.put(degree, 1);
+            else
+                this.map.put(degree, count + 1);
+
+
             context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(degree);
-            context.write(new IntWritable(degree), new IntWritable(1));
+
+            // protected against memory explosion
+            if (this.map.size() > 10000) {
+                this.cleanup(context);
+                this.map.clear();
+            }
+        }
+
+        @Override
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, IntWritable, IntWritable>.Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
+            for (final java.util.Map.Entry<Integer, Integer> entry : this.map.entrySet()) {
+                context.write(new IntWritable(entry.getKey()), new IntWritable(entry.getValue()));
+            }
         }
 
     }
