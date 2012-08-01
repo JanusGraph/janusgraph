@@ -1,16 +1,28 @@
 package com.thinkaurelius.faunus;
 
+import com.sun.corba.se.spi.orbutil.closure.ClosureFactory;
 import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
+import groovy.lang.Closure;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
+import org.codehaus.groovy.control.CompilationUnit;
+import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
+import org.codehaus.groovy.runtime.MethodClosure;
+import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -104,9 +116,8 @@ public class BaseTest extends TestCase {
     }*/
 
     /*public void testClosure() throws Exception {
-        GroovyScriptEngineImpl engine = new GroovyScriptEngineImpl();
-        Closure closure = (Closure) engine.eval("{-> 1+2}");
-        closure = closure.dehydrate();
+        //GroovyScriptEngineImpl engine = new GroovyScriptEngineImpl();
+        MethodClosure closure = new MethodClosure("string", "{-> 1+2}");
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutput out = new ObjectOutputStream(bos);
         out.writeObject(closure);
@@ -123,6 +134,7 @@ public class BaseTest extends TestCase {
         ObjectInputStream in = new ObjectInputStream(bis);
         Closure closure1 = (Closure) in.readObject();
         in.close();
+        System.out.println(closure1.call());
         
     }*/
 }

@@ -105,12 +105,12 @@ public class Holder<T extends FaunusElement> extends GenericWritable implements 
             return (((Long) buffer1.getLong()).compareTo(buffer2.getLong()));
         }
 
-        @Override
+        /*@Override
         public int compare(final WritableComparable a, final WritableComparable b) {
             if (a instanceof Holder && b instanceof Holder)
                 return ((Long) (((Holder) a).get().getIdAsLong())).compareTo(((Holder) b).get().getIdAsLong());
             else
                 return super.compare(a, b);
-        }
+        }*/
     }
 }

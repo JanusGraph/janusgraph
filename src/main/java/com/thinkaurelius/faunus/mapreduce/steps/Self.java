@@ -22,7 +22,8 @@ public class Self {
     public static final String LABELS = Tokens.makeNamespace(Self.class) + ".labels";
 
     public enum Counters {
-        EDGES_DROPPED
+        EDGES_DROPPED,
+        EDGES_KEPT
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
@@ -39,6 +40,7 @@ public class Self {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             long droppedCounter = 0l;
+            long keptCounter = 0l;
 
             final Iterator<FaunusEdge> itty = (Iterator) value.getEdges(BOTH, this.labels).iterator();
             while (itty.hasNext()) {
@@ -47,16 +49,21 @@ public class Self {
                     if (edge.getVertexId(IN) != edge.getVertexId(OUT)) {
                         itty.remove();
                         droppedCounter++;
+                    } else {
+                        keptCounter++;
                     }
                 } else {
                     if (edge.getVertexId(IN) == edge.getVertexId(OUT)) {
                         itty.remove();
                         droppedCounter++;
+                    } else {
+                        keptCounter++;
                     }
                 }
             }
 
             context.getCounter(Counters.EDGES_DROPPED).increment(droppedCounter);
+            context.getCounter(Counters.EDGES_KEPT).increment(keptCounter);
             context.write(NullWritable.get(), value);
         }
 

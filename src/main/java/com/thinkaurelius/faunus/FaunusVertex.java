@@ -232,13 +232,13 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
             return (((Long) buffer1.getLong()).compareTo(buffer2.getLong()));
         }
 
-        @Override
+       /* @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
             if (a instanceof FaunusVertex && b instanceof FaunusVertex)
                 return  ((Long)(((FaunusVertex) a).getIdAsLong())).compareTo(((FaunusVertex) b).getIdAsLong());
             else
                 return super.compare(a, b);
-        }
+        } */
     }
 
     private class EdgeList extends AbstractList<Edge> {
