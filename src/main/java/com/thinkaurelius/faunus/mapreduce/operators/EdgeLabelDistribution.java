@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.operators;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.CounterMap;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.LongWritable;
@@ -29,13 +30,13 @@ public class EdgeLabelDistribution {
 
         private Direction direction;
         // making use of in-map aggregation/combiner
-        private java.util.Map<String, Long> map;
+        private CounterMap<String> map;
 
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
-            this.map = new HashMap<String, Long>();
+            this.map = new CounterMap<String>();
         }
 
         @Override
@@ -44,12 +45,7 @@ public class EdgeLabelDistribution {
             long counter = 0;
             for (final Edge edge : value.getEdges(this.direction)) {
                 counter++;
-                final String label = edge.getLabel();
-                final Long count = this.map.get(label);
-                if (null == count)
-                    this.map.put(label, 1l);
-                else
-                    this.map.put(label, count + 1l);
+                this.map.incr(edge.getLabel(), 1l);
             }
             context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(counter);

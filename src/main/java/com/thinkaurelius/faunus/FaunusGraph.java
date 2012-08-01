@@ -2,16 +2,17 @@ package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
+import com.thinkaurelius.faunus.mapreduce.Function;
 import com.thinkaurelius.faunus.mapreduce.MapReduceSequence;
 import com.thinkaurelius.faunus.mapreduce.MapSequence;
 import com.thinkaurelius.faunus.mapreduce.operators.DegreeDistribution;
 import com.thinkaurelius.faunus.mapreduce.operators.EdgeLabelDistribution;
+import com.thinkaurelius.faunus.mapreduce.operators.AdjacentVertexProperties;
 import com.thinkaurelius.faunus.mapreduce.operators.PropertyDistribution;
 import com.thinkaurelius.faunus.mapreduce.operators.SortedVertexDegree;
 import com.thinkaurelius.faunus.mapreduce.operators.VertexDegree;
 import com.thinkaurelius.faunus.mapreduce.steps.EdgeDirectionFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.EdgeLabelFilter;
-import com.thinkaurelius.faunus.mapreduce.steps.Function;
 import com.thinkaurelius.faunus.mapreduce.steps.Identity;
 import com.thinkaurelius.faunus.mapreduce.steps.PropertyFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.Self;
@@ -49,7 +50,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -215,6 +215,39 @@ public class FaunusGraph extends Configured implements Tool {
 
     ////  STATISTICS
 
+    public FaunusGraph adjacentVertexProperties(final String property) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(AdjacentVertexProperties.PROPERTY, property);
+        final Job job1 = new Job(conf, AdjacentVertexProperties.class.getCanonicalName() + ":part-1");
+        job1.setMapperClass(AdjacentVertexProperties.Map.class);
+        job1.setReducerClass(AdjacentVertexProperties.Reduce.class);
+        job1.setJarByClass(FaunusGraph.class);
+        job1.setMapOutputKeyClass(LongWritable.class);
+        job1.setMapOutputValueClass(Holder.class);
+        job1.setOutputKeyClass(Text.class);
+        job1.setOutputValueClass(Text.class);
+        this.jobs.add(job1);
+
+        // todo: aggregate or not?
+
+        final Job job2 = new Job(new Configuration(), AdjacentVertexProperties.class.getCanonicalName() + ":part-2");
+        job2.setMapperClass(AdjacentVertexProperties.Map2.class);
+        job2.setCombinerClass(AdjacentVertexProperties.Reduce2.class);
+        job2.setReducerClass(AdjacentVertexProperties.Reduce2.class);
+        job2.setJarByClass(FaunusGraph.class);
+        job2.setMapOutputKeyClass(Text.class);
+        job2.setMapOutputValueClass(LongWritable.class);
+        job2.setOutputKeyClass(Text.class);
+        job2.setOutputValueClass(LongWritable.class);
+        this.jobs.add(job2);
+
+        this.outputFormat = this.statisticsOutputFormat;
+        return this;
+
+
+    }
+
     public FaunusGraph vertexDegree(final String property, final Direction direction, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
@@ -307,13 +340,14 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    private static Map<String, String> configurationToMap(final Configuration configuration) {
+/*    private static Map<String, String> configurationToMap(final Configuration configuration) {
         final Map<String, String> map = new HashMap<String, String>();
         for (Map.Entry<String, String> entry : configuration) {
             map.put(entry.getKey(), entry.getValue());
         }
         return map;
     }
+*/
 
     public int run(String[] args) throws Exception {
         if (this.configuration.getBoolean(Tokens.OVERWRITE_DATA_OUTPUT_LOCATION, false)) {
@@ -328,7 +362,7 @@ public class FaunusGraph extends Configured implements Tool {
         logger.info("    \\ `-.:.     `\\");
         logger.info("     `-.__ `\\/\\/\\|");
         logger.info("        / `'/ () \\");
-        logger.info("      .'   /\\     )  Faunus: A Library of Graph-Based Hadoop Tools");
+        logger.info("      .'   /\\     )  Faunus: A Library of Hadoop-Based Graph Tools");
         logger.info("   .-'  .'| \\  \\__");
         logger.info(" .'  __(  \\  '`(()");
         logger.info("/_.'`  `.  |    )(");

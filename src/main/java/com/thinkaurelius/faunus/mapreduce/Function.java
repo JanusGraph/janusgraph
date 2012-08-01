@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.mapreduce.steps;
+package com.thinkaurelius.faunus.mapreduce;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)

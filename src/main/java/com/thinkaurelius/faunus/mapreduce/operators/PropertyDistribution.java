@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.operators;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.CounterMap;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -13,7 +14,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
-import java.util.HashMap;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -33,12 +33,12 @@ public class PropertyDistribution {
         private String property;
         private Class<? extends Element> klass;
         // making use of in-map aggregation/combiner
-        private java.util.Map<String, Long> map;
+        private CounterMap<String> map;
 
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.map = new HashMap<String, Long>();
+            this.map = new CounterMap<String>();
             this.property = context.getConfiguration().get(PROPERTY);
             try {
                 this.klass = (Class<? extends Element>) Class.forName(context.getConfiguration().get(CLASS));
@@ -52,24 +52,13 @@ public class PropertyDistribution {
 
             if (this.klass.equals(Vertex.class)) {
                 final Object temp = value.getProperty(this.property);
-                final String propertyValue = null == temp ? NULL : temp.toString();
-                final Long count = this.map.get(propertyValue);
-                if (null == count)
-                    this.map.put(propertyValue, 1l);
-                else
-                    this.map.put(propertyValue, count + 1l);
+                this.map.incr(null == temp ? NULL : temp.toString(), 1l);
 
                 context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
             } else {
-                for(final Edge edge : value.getEdges(Direction.OUT)) {
+                for (final Edge edge : value.getEdges(Direction.OUT)) {
                     final Object temp = edge.getProperty(this.property);
-                    final String propertyValue = null == temp ? NULL : temp.toString();
-                    final Long count = this.map.get(propertyValue);
-                    if (null == count)
-                        this.map.put(propertyValue, 1l);
-                    else
-                        this.map.put(propertyValue, count + 1l);
-
+                    this.map.incr(null == temp ? NULL : temp.toString(), 1l);
                     context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
                 }
             }
