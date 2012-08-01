@@ -28,7 +28,7 @@ public class PropertyDistributionTest extends BaseTest {
         mapReduceDriver.setReducer(new PropertyDistribution.Reduce());
     }
 
-    public void testMapReduce1() throws IOException {
+    public void testVertexTypeProperty() throws IOException {
         Configuration config = new Configuration();
         config.set(PropertyDistribution.CLASS, Vertex.class.getName());
         config.set(PropertyDistribution.PROPERTY, "type");
@@ -57,7 +57,7 @@ public class PropertyDistributionTest extends BaseTest {
         assertEquals(12, this.mapReduceDriver.getCounters().findCounter(PropertyDistribution.Counters.PROPERTIES_COUNTED).getValue());
     }
 
-    public void testMapReduce2() throws IOException {
+    public void testVertexNoProperty() throws IOException {
         Configuration config = new Configuration();
         config.set(PropertyDistribution.CLASS, Vertex.class.getName());
         config.set(PropertyDistribution.PROPERTY, "nothing property");
@@ -76,7 +76,7 @@ public class PropertyDistributionTest extends BaseTest {
         assertEquals(12, this.mapReduceDriver.getCounters().findCounter(PropertyDistribution.Counters.PROPERTIES_COUNTED).getValue());
     }
 
-    public void testMapReduce3() throws IOException {
+    public void testEdgeTimeProperty() throws IOException {
         Configuration config = new Configuration();
         config.set(PropertyDistribution.CLASS, Edge.class.getName());
         config.set(PropertyDistribution.PROPERTY, "time");

@@ -28,7 +28,7 @@ public class SelfTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testMap1() throws IOException {
+    public void testKeepSelf() throws IOException {
         Configuration config = new Configuration();
         config.set(Self.ACTION, Tokens.Action.KEEP.name());
         mapReduceDriver.withConfiguration(config);
@@ -42,7 +42,7 @@ public class SelfTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_DROPPED).getValue(), 12);
     }
 
-    public void testMap2() throws IOException {
+    public void testDropSelf() throws IOException {
         Configuration config = new Configuration();
         config.set(Self.ACTION, Tokens.Action.DROP.name());
         mapReduceDriver.withConfiguration(config);
@@ -76,7 +76,7 @@ public class SelfTest extends BaseTest {
 
     }
     
-    public void testMap3() throws IOException {
+    public void testDropSelf2() throws IOException {
         Configuration config = new Configuration();
         config.set(Self.ACTION, Tokens.Action.DROP.name());
         mapReduceDriver.withConfiguration(config);
@@ -107,7 +107,7 @@ public class SelfTest extends BaseTest {
         
     }
 
-    public void testMap4() throws IOException {
+    public void testDropSelf3() throws IOException {
         Configuration config = new Configuration();
         config.set(Self.ACTION, Tokens.Action.DROP.name());
         config.setStrings(Self.LABELS, "knows");

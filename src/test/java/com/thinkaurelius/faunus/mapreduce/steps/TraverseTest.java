@@ -30,7 +30,7 @@ public class TraverseTest extends BaseTest {
         mapReduceDriver.setReducer(new Traverse.Reduce());
     }
 
-    public void testMapReduce1() throws IOException {
+    public void testKnowsCreatedTraversal() throws IOException {
         Configuration config = new Configuration();
         config.set(Traverse.FIRST_LABEL, "knows");
         config.set(Traverse.SECOND_LABEL, "created");
@@ -110,7 +110,7 @@ public class TraverseTest extends BaseTest {
 
     }
 
-    public void testMapReduce2() throws IOException {
+    public void testCreatedCreatedCollaborator() throws IOException {
         Configuration config = new Configuration();
         config.set(Traverse.FIRST_LABEL, "created");
         config.set(Traverse.SECOND_LABEL, "created");

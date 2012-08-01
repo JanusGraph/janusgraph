@@ -25,7 +25,7 @@ public class DegreeDistributionTest extends BaseTest {
         mapReduceDriver.setReducer(new DegreeDistribution.Reduce());
     }
 
-    public void testMapReduce1() throws IOException {
+    public void testOutDegree() throws IOException {
         Configuration config = new Configuration();
         config.setStrings(DegreeDistribution.DIRECTION, "OUT");
         this.mapReduceDriver.withConfiguration(config);
@@ -53,7 +53,7 @@ public class DegreeDistributionTest extends BaseTest {
         assertEquals(12, this.mapReduceDriver.getCounters().findCounter(DegreeDistribution.Counters.VERTICES_COUNTED).getValue());
     }
 
-    public void testMapReduce2() throws IOException {
+    public void testInDegree() throws IOException {
         Configuration config = new Configuration();
         config.setStrings(DegreeDistribution.DIRECTION, "IN");
         this.mapReduceDriver.withConfiguration(config);
@@ -78,7 +78,7 @@ public class DegreeDistributionTest extends BaseTest {
         assertEquals(12, this.mapReduceDriver.getCounters().findCounter(DegreeDistribution.Counters.VERTICES_COUNTED).getValue());
     }
 
-    public void testMapReduce3() throws IOException {
+    public void testBothDegree() throws IOException {
         Configuration config = new Configuration();
         config.setStrings(DegreeDistribution.DIRECTION, "BOTH");
         this.mapReduceDriver.withConfiguration(config);

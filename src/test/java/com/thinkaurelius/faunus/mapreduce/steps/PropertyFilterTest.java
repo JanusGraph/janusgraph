@@ -28,7 +28,7 @@ public class PropertyFilterTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testMap1() throws IOException {
+    public void testDropNameProperty() throws IOException {
         Configuration config = new Configuration();
         config.setStrings(PropertyFilter.KEYS, "name");
         config.set(PropertyFilter.ACTION, Tokens.Action.DROP.name());

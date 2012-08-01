@@ -26,7 +26,7 @@ public class IdentityTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testMap1() throws IOException {
+    public void testIdentity() throws IOException {
         Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
         assertEquals(results.size(), 6);
 

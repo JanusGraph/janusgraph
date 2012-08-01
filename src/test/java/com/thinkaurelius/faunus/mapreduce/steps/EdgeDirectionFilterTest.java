@@ -28,7 +28,7 @@ public class EdgeDirectionFilterTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testMap1() throws IOException {
+    public void testDropBoth() throws IOException {
         Configuration config = new Configuration();
         config.set(EdgeDirectionFilter.ACTION, Tokens.Action.DROP.name());
         config.set(EdgeDirectionFilter.DIRECTION, Direction.BOTH.name());
@@ -44,7 +44,7 @@ public class EdgeDirectionFilterTest extends BaseTest {
         assertEquals(0, this.mapReduceDriver.getCounters().findCounter(EdgeDirectionFilter.Counters.EDGES_KEPT).getValue());
     }
 
-    public void testMap2() throws IOException {
+    public void testDropOut() throws IOException {
         Configuration config = new Configuration();
         config.set(EdgeDirectionFilter.ACTION, Tokens.Action.DROP.name());
         config.set(EdgeDirectionFilter.DIRECTION, Direction.OUT.name());
@@ -61,7 +61,7 @@ public class EdgeDirectionFilterTest extends BaseTest {
         assertEquals(6, this.mapReduceDriver.getCounters().findCounter(EdgeDirectionFilter.Counters.EDGES_KEPT).getValue());
     }
 
-    public void testMap3() throws IOException {
+    public void testDropIn() throws IOException {
         Configuration config = new Configuration();
         config.set(EdgeDirectionFilter.ACTION, Tokens.Action.DROP.name());
         config.set(EdgeDirectionFilter.DIRECTION, Direction.IN.name());

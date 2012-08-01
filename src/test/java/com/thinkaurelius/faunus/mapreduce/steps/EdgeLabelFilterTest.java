@@ -28,7 +28,7 @@ public class EdgeLabelFilterTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testMap1() throws IOException {
+    public void testDropCreated() throws IOException {
         Configuration config = new Configuration();
         config.set(EdgeLabelFilter.ACTION, Tokens.Action.DROP.name());
         config.setStrings(EdgeLabelFilter.LABELS, "created");

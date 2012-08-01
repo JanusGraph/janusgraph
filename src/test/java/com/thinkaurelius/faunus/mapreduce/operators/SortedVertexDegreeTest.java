@@ -26,7 +26,7 @@ public class SortedVertexDegreeTest extends BaseTest {
         mapReduceDriver.setReducer(new SortedVertexDegree.Reduce());
     }
 
-    public void testMapReduce1() throws IOException {
+    public void testOutDegreeReverseSort() throws IOException {
         Configuration config = new Configuration();
         config.setStrings(SortedVertexDegree.DIRECTION, "OUT");
         config.setStrings(SortedVertexDegree.PROPERTY, "name");
@@ -77,7 +77,7 @@ public class SortedVertexDegreeTest extends BaseTest {
         assertEquals(12, this.mapReduceDriver.getCounters().findCounter(SortedVertexDegree.Counters.VERTICES_COUNTED).getValue());
     }
 
-    public void testMapReduce2() throws IOException {
+    public void testOutDegreeStandardSort() throws IOException {
         Configuration config = new Configuration();
         config.setStrings(SortedVertexDegree.DIRECTION, "OUT");
         config.setStrings(SortedVertexDegree.PROPERTY, "name");
