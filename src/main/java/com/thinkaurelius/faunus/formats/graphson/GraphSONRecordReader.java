@@ -77,12 +77,12 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
             }
             this.pos += newSize;
             if (newSize < this.maxLineLength) {
-                try {
+                //try {
                     this.value = GraphSONUtility.fromJSON(text.toString());
                     break;
-                } catch (IOException e) {
-                    logger.warn("Malformed GraphSON: " + e.getMessage());
-                }
+                //} catch (IOException e) {
+                //    logger.warn("Malformed GraphSON: " + e.getMessage());
+                //}
 
             }
 
