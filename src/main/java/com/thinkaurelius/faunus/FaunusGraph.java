@@ -398,7 +398,7 @@ public class FaunusGraph extends Configured implements Tool {
             final Job startJob = this.jobs.get(0);
             startJob.setInputFormatClass(this.inputFormat);
             // configure input location
-            if (this.inputFormat.equals(GraphSONInputFormat.class)) {
+            if (this.inputFormat.equals(GraphSONInputFormat.class) || this.inputFormat.equals(SequenceFileInputFormat.class)) {
                 FileInputFormat.setInputPaths(startJob, new Path(this.configuration.get(Tokens.GRAPH_INPUT_LOCATION)));
             } else if (this.inputFormat.equals(TitanCassandraInputFormat.class)) {
                 ConfigHelper.setInputColumnFamily(this.configuration, ConfigHelper.getInputKeyspace(this.configuration), "User");
