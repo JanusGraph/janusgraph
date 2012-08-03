@@ -54,7 +54,7 @@ public class DegreeDistribution {
             context.getCounter(Counters.EDGES_COUNTED).increment(degree);
 
             // protected against memory explosion
-            if (this.map.size() > 10000) {
+            if (this.map.size() > 1000) {
                 this.cleanup(context);
                 this.map.clear();
             }

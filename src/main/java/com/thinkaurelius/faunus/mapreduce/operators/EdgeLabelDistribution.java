@@ -12,7 +12,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
-import java.util.HashMap;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -45,25 +44,27 @@ public class EdgeLabelDistribution {
             long counter = 0;
             for (final Edge edge : value.getEdges(this.direction)) {
                 counter++;
-                this.map.incr(edge.getLabel(), 1l);
+                //this.map.incr(edge.getLabel(), 1l);
+                context.write(new Text(edge.getLabel()), new LongWritable(1l));
             }
             context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(counter);
 
+
             // protected against memory explosion
-            if (this.map.size() > 10000) {
+            /*if (this.map.size() > 1000) {
                 this.cleanup(context);
                 this.map.clear();
-            }
+            }*/
         }
 
-        @Override
+        /*@Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             super.cleanup(context);
             for (final java.util.Map.Entry<String, Long> entry : this.map.entrySet()) {
                 context.write(new Text(entry.getKey()), new LongWritable(entry.getValue()));
             }
-        }
+        }*/
     }
 
     public static class Reduce extends Reducer<Text, LongWritable, Text, LongWritable> {
