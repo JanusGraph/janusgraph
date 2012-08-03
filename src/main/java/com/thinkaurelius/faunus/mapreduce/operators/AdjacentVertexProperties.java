@@ -33,13 +33,17 @@ public class AdjacentVertexProperties {
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
 
+        private final LongWritable longWritable = new LongWritable();
+
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
             long counter = 0;
-            context.write(value.getIdAsLongWritable(), new Holder<FaunusVertex>('f', value));
+            this.longWritable.set(value.getIdAsLong());
+            context.write(this.longWritable, new Holder<FaunusVertex>('f', value));
             for (final Edge edge : value.getEdges(OUT)) {
                 final FaunusVertex vertexB = (FaunusVertex) edge.getVertex(IN);
-                context.write(vertexB.getIdAsLongWritable(), new Holder<FaunusVertex>('r', value));
+                this.longWritable.set(vertexB.getIdAsLong());
+                context.write(this.longWritable, new Holder<FaunusVertex>('r', value));
                 counter++;
             }
             context.getCounter(Counters.EDGES_COUNTED).increment(counter);
@@ -56,24 +60,28 @@ public class AdjacentVertexProperties {
             this.property = context.getConfiguration().get(PROPERTY);
         }
 
+        private final Text fText = new Text();
+        private final Text rText = new Text();
+
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, Text, Text>.Context context) throws IOException, InterruptedException {
-            final Text fText = new Text();
-            final List<Text> thusFar = new ArrayList<Text>();
+            final List<String> thusFar = new ArrayList<String>();
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 'f') {
-                    fText.set(toStringProperty(holder.get().getProperty(this.property)));
+                    this.fText.set(toStringProperty(holder.get().getProperty(this.property)));
                     break;
                 } else {
-                    thusFar.add(new Text(toStringProperty(holder.get().getProperty(this.property))));
+                    thusFar.add(toStringProperty(holder.get().getProperty(this.property)));
                 }
             }
-            for (final Text rText : thusFar) {
-                context.write(rText, fText);
+            for (final String text : thusFar) {
+                this.rText.set(text);
+                context.write(this.rText, this.fText);
             }
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 'r') {
-                    context.write(new Text(toStringProperty(holder.get().getProperty(this.property))), fText);
+                    this.rText.set(toStringProperty(holder.get().getProperty(this.property)));
+                    context.write(this.rText, this.fText);
                 }
             }
         }
@@ -103,11 +111,16 @@ public class AdjacentVertexProperties {
             }
         }
 
+        private final LongWritable longWritable = new LongWritable();
+        private final Text textWritable = new Text();
+
         @Override
         public void cleanup(final Mapper<Text, Text, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             super.cleanup(context);
             for (final java.util.Map.Entry<String, Long> entry : this.map.entrySet()) {
-                context.write(new Text(entry.getKey()), new LongWritable(entry.getValue()));
+                this.textWritable.set(entry.getKey());
+                this.longWritable.set(entry.getValue());
+                context.write(this.textWritable, this.longWritable);
             }
         }
 
@@ -115,13 +128,16 @@ public class AdjacentVertexProperties {
 
     public static class Reduce2 extends Reducer<Text, LongWritable, Text, LongWritable> {
 
+        private final LongWritable longWritable = new LongWritable();
+
         @Override
         public void reduce(final Text key, final Iterable<LongWritable> values, final Reducer<Text, LongWritable, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             long counter = 0;
             for (final LongWritable value : values) {
                 counter = counter + value.get();
             }
-            context.write(key, new LongWritable(counter));
+            this.longWritable.set(counter);
+            context.write(key, this.longWritable);
         }
     }
 }

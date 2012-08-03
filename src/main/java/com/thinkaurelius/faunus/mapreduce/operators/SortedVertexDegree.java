@@ -44,15 +44,18 @@ public class SortedVertexDegree {
             this.order = Tokens.Order.valueOf(context.getConfiguration().get(ORDER));
         }
 
+        private final IntWritable intWritable = new IntWritable();
+
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, IntWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             int degree = ((List<Edge>) value.getEdges(this.direction, this.labels)).size();
             context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(degree);
             if (this.order.equals(Tokens.Order.REVERSE))
-                context.write(new IntWritable(degree * -1), value);
+                this.intWritable.set(degree * -1);
             else
-                context.write(new IntWritable(degree), value);
+                this.intWritable.set(degree);
+            context.write(this.intWritable, value);
         }
 
     }
@@ -68,27 +71,30 @@ public class SortedVertexDegree {
             this.order = Tokens.Order.valueOf(context.getConfiguration().get(ORDER));
         }
 
+        private final IntWritable intWritable = new IntWritable();
+        private final Text textWritable = new Text();
+
         @Override
         public void reduce(final IntWritable key, final Iterable<FaunusVertex> values, final Reducer<IntWritable, FaunusVertex, Text, IntWritable>.Context context) throws IOException, InterruptedException {
 
-            final IntWritable finalDegree;
             if (this.order.equals(Tokens.Order.REVERSE))
-                finalDegree = new IntWritable(key.get() * -1);
+                this.intWritable.set(key.get() * -1);
             else
-                finalDegree = new IntWritable(key.get());
+                this.intWritable.set(key.get());
 
             for (final FaunusVertex vertex : values) {
                 if (this.property.equals(Tokens._ID))
-                    context.write(new Text(vertex.getId().toString()), finalDegree);
+                    this.textWritable.set(vertex.getId().toString());
                 else if (this.property.equals(Tokens._PROPERTIES))
-                    context.write(new Text(vertex.getProperties().toString()), finalDegree);
+                    this.textWritable.set(vertex.getProperties().toString());
                 else {
                     final Object property = vertex.getProperty(this.property);
                     if (null != property)
-                        context.write(new Text(property.toString()), finalDegree);
+                        this.textWritable.set(property.toString());
                     else
-                        context.write(new Text(NULL), finalDegree);
+                        this.textWritable.set(NULL);
                 }
+                context.write(this.textWritable, this.intWritable);
             }
         }
     }

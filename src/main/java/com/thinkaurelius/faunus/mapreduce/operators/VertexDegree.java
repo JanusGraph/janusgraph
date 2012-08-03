@@ -34,6 +34,9 @@ public class VertexDegree {
         private String[] labels;
         private String property;
 
+        private final IntWritable intWritable = new IntWritable();
+        private final Text textWritable = new Text();
+
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
@@ -48,16 +51,19 @@ public class VertexDegree {
             context.getCounter(Counters.EDGES_COUNTED).increment(degree);
 
             if (this.property.equals(Tokens._ID))
-                context.write(new Text(value.getId().toString()), new IntWritable(degree));
+                this.textWritable.set(value.getId().toString());
             else if (this.property.equals(Tokens._PROPERTIES))
-                context.write(new Text(value.getProperties().toString()), new IntWritable(degree));
+                this.textWritable.set(value.getProperties().toString());
             else {
                 final Object property = value.getProperty(this.property);
                 if (null != property)
-                    context.write(new Text(property.toString()), new IntWritable(degree));
+                    this.textWritable.set(property.toString());
                 else
-                    context.write(new Text(NULL), new IntWritable(degree));
+                    this.textWritable.set(NULL);
             }
+
+            this.intWritable.set(degree);
+            context.write(this.textWritable, this.intWritable);
 
         }
 
