@@ -53,7 +53,6 @@ public class PropertyDistribution {
             if (this.klass.equals(Vertex.class)) {
                 final Object temp = value.getProperty(this.property);
                 this.map.incr(null == temp ? NULL : temp.toString(), 1l);
-
                 context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
             } else {
                 for (final Edge edge : value.getEdges(Direction.OUT)) {
@@ -71,23 +70,32 @@ public class PropertyDistribution {
 
         }
 
+        private final LongWritable longWritable = new LongWritable();
+        private final Text textWritable = new Text();
+
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             super.cleanup(context);
             for (final java.util.Map.Entry<String, Long> entry : map.entrySet()) {
-                context.write(new Text(entry.getKey()), new LongWritable(entry.getValue()));
+                this.textWritable.set(entry.getKey());
+                this.longWritable.set(entry.getValue());
+                context.write(this.textWritable, this.longWritable);
             }
         }
     }
 
     public static class Reduce extends Reducer<Text, LongWritable, Text, LongWritable> {
+
+        private final LongWritable longWritable = new LongWritable();
+
         @Override
         public void reduce(final Text key, final Iterable<LongWritable> values, final Reducer<Text, LongWritable, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             long totalNumberOfEdges = 0;
             for (final LongWritable token : values) {
                 totalNumberOfEdges = totalNumberOfEdges + token.get();
             }
-            context.write(key, new LongWritable(totalNumberOfEdges));
+            this.longWritable.set(totalNumberOfEdges);
+            context.write(key, this.longWritable);
         }
     }
 }

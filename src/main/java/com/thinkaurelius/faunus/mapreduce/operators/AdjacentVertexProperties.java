@@ -97,7 +97,7 @@ public class AdjacentVertexProperties {
             final String newKey = "(" + key.toString() + "," + value.toString() + ")";
             this.map.incr(newKey, 1l);
 
-            if (this.map.size() > 10000) {
+            if (this.map.size() > 1000) {
                 this.cleanup(context);
                 this.map.clear();
             }

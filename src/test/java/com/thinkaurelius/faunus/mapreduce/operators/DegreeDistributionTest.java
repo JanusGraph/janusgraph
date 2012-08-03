@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
@@ -16,10 +17,10 @@ import java.util.List;
  */
 public class DegreeDistributionTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, IntWritable, IntWritable, IntWritable, IntWritable> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, IntWritable, LongWritable, IntWritable, LongWritable> mapReduceDriver;
 
     public void setUp() throws Exception {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, IntWritable, IntWritable, IntWritable, IntWritable>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, IntWritable, LongWritable, IntWritable, LongWritable>();
         mapReduceDriver.setMapper(new DegreeDistribution.Map());
         mapReduceDriver.setCombiner(new DegreeDistribution.Reduce());
         mapReduceDriver.setReducer(new DegreeDistribution.Reduce());
@@ -29,10 +30,10 @@ public class DegreeDistributionTest extends BaseTest {
         Configuration config = new Configuration();
         config.setStrings(DegreeDistribution.DIRECTION, "OUT");
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<IntWritable, IntWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
+        final List<Pair<IntWritable, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 5);
-        for (final Pair<IntWritable, IntWritable> result : results) {
+        for (final Pair<IntWritable, LongWritable> result : results) {
             if (result.getFirst().get() == 0) {
                 assertEquals(result.getSecond().get(), 7);
             } else if (result.getFirst().get() == 1) {
@@ -57,10 +58,10 @@ public class DegreeDistributionTest extends BaseTest {
         Configuration config = new Configuration();
         config.setStrings(DegreeDistribution.DIRECTION, "IN");
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<IntWritable, IntWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
+        final List<Pair<IntWritable, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 4);
-        for (final Pair<IntWritable, IntWritable> result : results) {
+        for (final Pair<IntWritable, LongWritable> result : results) {
             if (result.getFirst().get() == 0) {
                 assertEquals(result.getSecond().get(), 1);
             } else if (result.getFirst().get() == 1) {

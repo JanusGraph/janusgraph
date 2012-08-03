@@ -73,6 +73,19 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         };
     }
 
+    public Set<String> getEdgeLabels(final Direction direction) {
+        if (direction.equals(Direction.OUT))
+            return this.outEdges.keySet();
+        else if (direction.equals(Direction.IN))
+            return this.inEdges.keySet();
+        else {
+            final Set<String> labels = new HashSet<String>();
+            labels.addAll(this.outEdges.keySet());
+            labels.addAll(this.inEdges.keySet());
+            return labels;
+        }
+    }
+
     public Iterable<Vertex> getVertices(final Direction direction, final String... labels) {
         throw new UnsupportedOperationException();
     }
@@ -232,13 +245,13 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
             return (((Long) buffer1.getLong()).compareTo(buffer2.getLong()));
         }
 
-       /* @Override
-        public int compare(final WritableComparable a, final WritableComparable b) {
-            if (a instanceof FaunusVertex && b instanceof FaunusVertex)
-                return  ((Long)(((FaunusVertex) a).getIdAsLong())).compareTo(((FaunusVertex) b).getIdAsLong());
-            else
-                return super.compare(a, b);
-        } */
+        /* @Override
+       public int compare(final WritableComparable a, final WritableComparable b) {
+           if (a instanceof FaunusVertex && b instanceof FaunusVertex)
+               return  ((Long)(((FaunusVertex) a).getIdAsLong())).compareTo(((FaunusVertex) b).getIdAsLong());
+           else
+               return super.compare(a, b);
+       } */
     }
 
     private class EdgeList extends AbstractList<Edge> {

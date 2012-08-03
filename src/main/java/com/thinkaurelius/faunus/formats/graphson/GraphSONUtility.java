@@ -35,7 +35,7 @@ public class GraphSONUtility {
     private static final String _IN_E = "_inE";
     private static final String EMPTY_STRING = "";
 
-    private static final Set<String> VERTEX_IGNORE = new HashSet<String>(Arrays.asList(_OUT_E, _IN_E, GraphSONTokens._TYPE));
+    private static final Set<String> VERTEX_IGNORE = new HashSet<String>(Arrays.asList(GraphSONTokens._TYPE, _OUT_E, _IN_E));
     private static final Set<String> EDGE_OUT_IGNORE = new HashSet<String>(Arrays.asList(GraphSONTokens._TYPE, GraphSONTokens._IN_V));
     private static final Set<String> EDGE_IN_IGNORE = new HashSet<String>(Arrays.asList(GraphSONTokens._TYPE, GraphSONTokens._OUT_V));
 

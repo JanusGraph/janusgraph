@@ -295,9 +295,9 @@ public class FaunusGraph extends Configured implements Tool {
         job.setCombinerClass(DegreeDistribution.Reduce.class);
         job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(IntWritable.class);
-        job.setMapOutputValueClass(IntWritable.class);
+        job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(IntWritable.class);
-        job.setOutputKeyClass(IntWritable.class);
+        job.setOutputKeyClass(LongWritable.class);
         this.outputFormat = this.statisticsOutputFormat;
         this.jobs.add(job);
         return this;
