@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.io.graphson.ElementFactory;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONTokens;
@@ -14,12 +13,10 @@ import org.codehaus.jettison.json.JSONObject;
 import org.codehaus.jettison.json.JSONTokener;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,6 +33,11 @@ public class GraphSONUtility {
 
     private static final String _OUT_E = "_outE";
     private static final String _IN_E = "_inE";
+    private static final String EMPTY_STRING = "";
+
+    private static final Set<String> VERTEX_IGNORE = new HashSet<String>(Arrays.asList(_OUT_E, _IN_E, GraphSONTokens._TYPE));
+    private static final Set<String> EDGE_OUT_IGNORE = new HashSet<String>(Arrays.asList(GraphSONTokens._TYPE, GraphSONTokens._IN_V));
+    private static final Set<String> EDGE_IN_IGNORE = new HashSet<String>(Arrays.asList(GraphSONTokens._TYPE, GraphSONTokens._OUT_V));
 
     private static final FaunusElementFactory elementFactory = new FaunusElementFactory();
 
@@ -51,18 +53,17 @@ public class GraphSONUtility {
 
     }
 
-    public static FaunusVertex fromJSON(final String line) throws IOException {
+    public static FaunusVertex fromJSON(String line) throws IOException {
         try {
             final JSONObject json = new JSONObject(new JSONTokener(line));
+            line = EMPTY_STRING; // clear up some memory
 
-            final Set<String> ignore = new HashSet<String>();
-            ignore.add(_OUT_E);
-            ignore.add(_IN_E);
-            ignore.add(GraphSONTokens._TYPE);
-            final FaunusVertex vertex = (FaunusVertex) com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.vertexFromJson(json, elementFactory, false, ignore);
+            final FaunusVertex vertex = (FaunusVertex) com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.vertexFromJson(json, elementFactory, false, VERTEX_IGNORE);
 
             fromJSONEdges(vertex, json.optJSONArray(_OUT_E), OUT);
+            json.remove(_OUT_E); // clear up some memory
             fromJSONEdges(vertex, json.optJSONArray(_IN_E), IN);
+            json.remove(_IN_E); // clear up some memory
 
             return vertex;
         } catch (Exception e) {
@@ -72,23 +73,13 @@ public class GraphSONUtility {
 
     private static void fromJSONEdges(final FaunusVertex vertex, final JSONArray edges, final Direction direction) throws JSONException, IOException {
         if (null != edges) {
-
-            final Set<String> ignore = new HashSet<String>();
-            ignore.add(GraphSONTokens._TYPE);
-
-            for (int ix = 0; ix < edges.length(); ix++) {
-                final JSONObject edge = edges.optJSONObject(ix);
+            for (int i = 0; i < edges.length(); i++) {
+                final JSONObject edge = edges.optJSONObject(i);
                 FaunusEdge faunusEdge = null;
-                if (direction == Direction.IN) {
-                    final long outVertexId = edge.optLong(GraphSONTokens._OUT_V);
-                    ignore.add(GraphSONTokens._OUT_V);
-                    faunusEdge = (FaunusEdge) com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.edgeFromJSON(edge, new FaunusVertex(outVertexId), vertex, elementFactory, false, ignore);
-                    ignore.remove(GraphSONTokens._OUT_V);
-                } else if (direction == Direction.OUT) {
-                    final long inVertexId = edge.optLong(GraphSONTokens._IN_V);
-                    ignore.add(GraphSONTokens._IN_V);
-                    faunusEdge = (FaunusEdge) com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.edgeFromJSON(edge, vertex, new FaunusVertex(inVertexId), elementFactory, false, ignore);
-                    ignore.remove(GraphSONTokens._IN_V);
+                if (direction.equals(Direction.IN)) {
+                    faunusEdge = (FaunusEdge) com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.edgeFromJSON(edge, new FaunusVertex(edge.optLong(GraphSONTokens._OUT_V)), vertex, elementFactory, false, EDGE_IN_IGNORE);
+                } else if (direction.equals(Direction.OUT)) {
+                    faunusEdge = (FaunusEdge) com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.edgeFromJSON(edge, vertex, new FaunusVertex(edge.optLong(GraphSONTokens._IN_V)), elementFactory, false, EDGE_OUT_IGNORE);
                 }
 
                 if (faunusEdge != null) {
@@ -145,16 +136,19 @@ public class GraphSONUtility {
         }
 
         @Override
-        public FaunusVertex createVertex(Object id) {
+        public FaunusVertex createVertex(final Object id) {
             return new FaunusVertex(convertIdentifier(id));
         }
 
-        private long convertIdentifier(Object id) {
+        private long convertIdentifier(final Object id) {
+            if (id instanceof Long)
+                return (Long) id;
+
             long identifier = -1l;
             if (id != null) {
                 try {
                     identifier = Long.parseLong(id.toString());
-                } catch (NumberFormatException nfe) {
+                } catch (final NumberFormatException e) {
                     identifier = -1l;
                 }
             }
@@ -162,11 +156,11 @@ public class GraphSONUtility {
         }
     }
 
-    public static void generateGraphSON(final Graph graph, final OutputStream outputStream) throws IOException {
+    /*public static void generateGraphSON(final Graph graph, final OutputStream outputStream) throws IOException {
         final BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(outputStream));
         for (final Vertex vertex : graph.getVertices()) {
             bw.write(GraphSONUtility.toJSON(vertex) + "\n");
         }
         bw.close();
-    }
+    }*/
 }

@@ -310,7 +310,7 @@ public class FaunusGraph extends Configured implements Tool {
         final Job job = new Job(conf, EdgeLabelDistribution.class.getCanonicalName());
         job.setMapperClass(EdgeLabelDistribution.Map.class);
         job.setReducerClass(EdgeLabelDistribution.Reduce.class);
-        job.setCombinerClass(EdgeLabelDistribution.Reduce.class);
+        // TODO: job.setCombinerClass(EdgeLabelDistribution.Reduce.class);
         job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(LongWritable.class);
