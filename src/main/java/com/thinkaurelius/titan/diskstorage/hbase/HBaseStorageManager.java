@@ -10,7 +10,12 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableExistsException;
 import org.apache.hadoop.hbase.TableNotFoundException;
+import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -207,27 +212,35 @@ public class HBaseStorageManager implements StorageManager {
      */
     @Override
     public void clearStorage() {
-        try {
-            HBaseAdmin adm = new HBaseAdmin(hconf);
-            try {
-                adm.disableTable(tableName);
-            } catch (Exception e) {
-                /*
-                     * Swallow exception.  Disabling a table typically throws
-                     * an exception because the table doesn't exist or is
-                     * already disabled.  If there's a serious problem
-                     * interacting with HBase, then the following remove
-                     * statement will generate an appropriate exception
-                     * (which would propagate up as a RuntimeException).
-                     */
-            }
-            adm.deleteTable(tableName);
-        } catch (TableNotFoundException e) {
-            // Do nothing
-        } catch (IOException e) {
-            throw new GraphStorageException(e);
-        }
+		HTable table = null;
+		try {
+			table = new HTable(hconf, tableName);
+		    Scan scan = new Scan();
+		    scan.setBatch(100);
+		    scan.setCacheBlocks(false);
+		    scan.setCaching(2000);
+		    ResultScanner resScan = null;
+		    try {
+		    	resScan = table.getScanner(scan);
+
+		    	for(Result res : resScan) {
+					Delete del = new Delete(res.getRow());
+					table.delete(del);
+			    }
+		    } finally {
+		    	if(resScan != null) {
+		    		resScan.close();
+		    	}
+		    }
+		} catch (IOException e) {
+			throw new GraphStorageException(e);
+		} finally {
+			if(table != null) {
+				try {
+					table.close();
+				} catch (IOException e) {
+				}
+			}
+		}
     }
-
-
 }
