@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -134,7 +133,7 @@ public class HBaseStorageManager implements StorageManager {
 		
 		return dataStore;
 	}
-	
+
 	private OrderedKeyColumnValueStore openDatabase(String name, LocalLockMediator llm, OrderedKeyColumnValueStore lockStore)
 			throws GraphStorageException {
 		
@@ -170,7 +169,7 @@ public class HBaseStorageManager implements StorageManager {
 				adm.modifyTable(tableName.getBytes(), desc);
 				log.debug("Added HBase column family {}", name);
 				try {
-					Thread.sleep(5000L);
+					Thread.sleep(1000L);
 				} catch (InterruptedException ie) {
 					throw new GraphStorageException(ie);
 				}
@@ -186,14 +185,6 @@ public class HBaseStorageManager implements StorageManager {
 		}
 			
 		assert null != desc;
-		
-		// Retrieve an object to interact with our now-initialized table
-//		HTable table;
-//		try {
-//			table = new HTable(conf, tableName);
-//		} catch (IOException e) {
-//			throw new GraphStorageException(e);
-//		}
 		
 		return new HBaseOrderedKeyColumnValueStore(hconf, tableName, name, lockStore,
 				llm, rid, lockRetryCount, lockWaitMS, lockExpireMS);
@@ -216,9 +207,8 @@ public class HBaseStorageManager implements StorageManager {
      */
     @Override
     public void clearStorage() {
-        Configuration conf = HBaseConfiguration.create();
         try {
-            HBaseAdmin adm = new HBaseAdmin(conf);
+            HBaseAdmin adm = new HBaseAdmin(hconf);
             try {
                 adm.disableTable(tableName);
             } catch (Exception e) {
