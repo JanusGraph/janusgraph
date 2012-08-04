@@ -55,6 +55,8 @@ public class Traverse {
         }
 
         private final LongWritable longWritable = new LongWritable();
+        private final Holder<FaunusEdge> edgeHolder = new Holder<FaunusEdge>();
+        private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
@@ -62,22 +64,22 @@ public class Traverse {
             final Set<Long> secondVertexIds = new HashSet<Long>();
 
             this.longWritable.set(value.getIdAsLong());
-            context.write(this.longWritable, new Holder<FaunusVertex>('v', value.cloneIdAndProperties()));
+            context.write(this.longWritable, this.vertexHolder.set('v',value.cloneIdAndProperties()));
 
             // emit original incoming edges
             for (final Edge edge : value.getEdges(IN)) {
                 if (this.action.equals(Tokens.Action.KEEP)) {
-                    context.write(this.longWritable, new Holder<FaunusEdge>('i', (FaunusEdge) edge));
+                    context.write(this.longWritable, this.edgeHolder.set('i', (FaunusEdge) edge));
                 } else if (!edge.getLabel().equals(this.firstLabel) && !edge.getLabel().equals(this.secondLabel)) {
-                    context.write(this.longWritable, new Holder<FaunusEdge>('i', (FaunusEdge) edge));
+                    context.write(this.longWritable, this.edgeHolder.set('i', (FaunusEdge) edge));
                 }
             }
             // emit original outgoing edges
             for (final Edge edge : value.getEdges(OUT)) {
                 if (this.action.equals(Tokens.Action.KEEP))
-                    context.write(this.longWritable, new Holder<FaunusEdge>('o', (FaunusEdge) edge));
+                    context.write(this.longWritable, this.edgeHolder.set('o', (FaunusEdge) edge));
                 else if (!edge.getLabel().equals(this.firstLabel) && !edge.getLabel().equals(this.secondLabel)) {
-                    context.write(this.longWritable, new Holder<FaunusEdge>('o', (FaunusEdge) edge));
+                    context.write(this.longWritable, this.edgeHolder.set('o', (FaunusEdge) edge));
                 }
             }
 
@@ -112,9 +114,9 @@ public class Traverse {
                 for (final Long secondId : secondVertexIds) {
                     final FaunusEdge edge = new FaunusEdge(firstId, secondId, this.newLabel);
                     this.longWritable.set(firstId);
-                    context.write(this.longWritable, new Holder<FaunusEdge>('o', edge));
+                    context.write(this.longWritable, this.edgeHolder.set('o', edge));
                     this.longWritable.set(secondId);
-                    context.write(this.longWritable, new Holder<FaunusEdge>('i', edge));
+                    context.write(this.longWritable, this.edgeHolder.set('i', edge));
                     context.getCounter(Counters.EDGES_CREATED).increment(2);
                 }
             }

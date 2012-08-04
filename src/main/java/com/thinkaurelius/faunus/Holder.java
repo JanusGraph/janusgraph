@@ -53,6 +53,12 @@ public class Holder<T extends FaunusElement> extends GenericWritable implements 
         return (T) super.get();
     }
 
+    public Holder<T> set(final char tag, final T element) {
+        this.set(element);
+        this.tag = tag;
+        return this;
+    }
+
     @Override
     public void write(final DataOutput out) throws IOException {
         out.writeChar(this.tag);

@@ -39,9 +39,19 @@ public class AdjacentVertexPropertiesTest extends BaseTest {
         config.setStrings(AdjacentVertexProperties.PROPERTY, "type");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, Text>> results = runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
-        System.out.println(results);
+        // System.out.println(results);
         assertEquals(results.size(), 17);
+        for (Pair<Text, Text> result : results) {
+            if (result.getFirst().toString().equals("god"))
+                assertTrue(result.getSecond().toString().equals("god") || result.getSecond().toString().equals("titan") || result.getSecond().toString().equals("location") || result.getSecond().toString().equals("monster"));
+            else if (result.getFirst().toString().equals("demigod"))
+                assertTrue(result.getSecond().toString().equals("god") || result.getSecond().toString().equals("human") || result.getSecond().toString().equals("monster"));
+            else if (result.getFirst().toString().equals("monster"))
+                assertTrue(result.getSecond().toString().equals("location"));
+            else
+                assertTrue(false);
 
+        }
         assertEquals(17, this.mapReduceDriver.getCounters().findCounter(AdjacentVertexProperties.Counters.EDGES_COUNTED).getValue());
         assertEquals(12, this.mapReduceDriver.getCounters().findCounter(AdjacentVertexProperties.Counters.VERTICES_COUNTED).getValue());
     }
@@ -54,11 +64,30 @@ public class AdjacentVertexPropertiesTest extends BaseTest {
             this.mapReduceDriver2.withInput(result);
         }
         List<Pair<Text, LongWritable>> results = this.mapReduceDriver2.run();
+        // System.out.println(results);
+        for (Pair<Text, LongWritable> result : results) {
+            if (result.getFirst().toString().equals("(demigod,god)"))
+                assertEquals(result.getSecond().get(), 1);
+            else if (result.getFirst().toString().equals("(demigod,human)"))
+                assertEquals(result.getSecond().get(), 1);
+            else if (result.getFirst().toString().equals("(demigod,monster)"))
+                assertEquals(result.getSecond().get(), 3);
+            else if (result.getFirst().toString().equals("(god,god)"))
+                assertEquals(result.getSecond().get(), 6);
+            else if (result.getFirst().toString().equals("(god,location)"))
+                assertEquals(result.getSecond().get(), 3);
+            else if (result.getFirst().toString().equals("(god,monster)"))
+                assertEquals(result.getSecond().get(), 1);
+            else if (result.getFirst().toString().equals("(god,titan)"))
+                assertEquals(result.getSecond().get(), 1);
+            else if (result.getFirst().toString().equals("(monster,location)"))
+                assertEquals(result.getSecond().get(), 1);
+            else
+                assertTrue(false);
 
-        System.out.println(results);
-        //assertEquals(results.size(), 17);
-        //
-        //assertEquals(17, this.mapReduceDriver.getCounters().findCounter(EdgeVertexProperties.Counters.EDGES_COUNTED).getValue());
-        //assertEquals(12, this.mapReduceDriver.getCounters().findCounter(EdgeVertexProperties.Counters.VERTICES_COUNTED).getValue());
+        }
+
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(AdjacentVertexProperties.Counters.EDGES_COUNTED).getValue());
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(AdjacentVertexProperties.Counters.VERTICES_COUNTED).getValue());
     }
 }

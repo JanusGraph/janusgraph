@@ -34,16 +34,17 @@ public class AdjacentVertexProperties {
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
 
         private final LongWritable longWritable = new LongWritable();
-
+        private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
+        
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
             long counter = 0;
             this.longWritable.set(value.getIdAsLong());
-            context.write(this.longWritable, new Holder<FaunusVertex>('f', value));
+            context.write(this.longWritable, this.vertexHolder.set('f', value));
             for (final Edge edge : value.getEdges(OUT)) {
                 final FaunusVertex vertexB = (FaunusVertex) edge.getVertex(IN);
                 this.longWritable.set(vertexB.getIdAsLong());
-                context.write(this.longWritable, new Holder<FaunusVertex>('r', value));
+                context.write(this.longWritable, this.vertexHolder.set('r', value));
                 counter++;
             }
             context.getCounter(Counters.EDGES_COUNTED).increment(counter);
