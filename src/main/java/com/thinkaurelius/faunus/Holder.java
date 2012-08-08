@@ -45,6 +45,11 @@ public class Holder<T extends FaunusElement> extends GenericWritable implements 
         this.tag = tag;
     }
 
+    @Override
+    public int hashCode() {
+        return this.get().hashCode();
+    }
+
     public char getTag() {
         return this.tag;
     }

@@ -50,6 +50,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -76,6 +77,9 @@ public class FaunusGraph extends Configured implements Tool {
     private final List<Class> mapSequenceClasses = new ArrayList<Class>();
     private Class mapRClass = null;
     private Class reduceClass = null;
+
+    private static final Class<? extends InputFormat> intermediateInputFormat = SequenceFileInputFormat.class;
+    private static final Class<? extends OutputFormat> intermediateOutputFormat = SequenceFileOutputFormat.class;
 
     public FaunusGraph V = this;
 
@@ -340,14 +344,14 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-/*    private static Map<String, String> configurationToMap(final Configuration configuration) {
+    /*private static Map<String, String> configurationToMap(final Configuration configuration) {
         final Map<String, String> map = new HashMap<String, String>();
         for (Map.Entry<String, String> entry : configuration) {
             map.put(entry.getKey(), entry.getValue());
         }
         return map;
-    }
-*/
+    }*/
+
 
     public int run(String[] args) throws Exception {
         if (this.configuration.getBoolean(Tokens.OVERWRITE_DATA_OUTPUT_LOCATION, false)) {
@@ -368,7 +372,7 @@ public class FaunusGraph extends Configured implements Tool {
         logger.info("/_.'`  `.  |    )(");
         logger.info("         \\ |");
         logger.info("          |/");
-        //logger.info("Faunus configuration: " + this.configuration);
+        //logger.info("Faunus configuration: " + configurationToMap(this.configuration));
         logger.info("Generating job chain: " + this.jobScript);
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");
@@ -412,7 +416,7 @@ public class FaunusGraph extends Configured implements Tool {
                 final Path path = new Path(UUID.randomUUID().toString());
                 FileOutputFormat.setOutputPath(startJob, path);
                 this.intermediateFiles.add(path);
-                startJob.setOutputFormatClass(SequenceFileOutputFormat.class);
+                startJob.setOutputFormatClass(intermediateOutputFormat);
             } else {
                 FileOutputFormat.setOutputPath(startJob, this.outputPath);
                 startJob.setOutputFormatClass(this.outputFormat);
@@ -422,8 +426,8 @@ public class FaunusGraph extends Configured implements Tool {
             if (this.jobs.size() > 2) {
                 for (int i = 1; i < this.jobs.size() - 1; i++) {
                     final Job midJob = this.jobs.get(i);
-                    midJob.setInputFormatClass(SequenceFileInputFormat.class);
-                    midJob.setOutputFormatClass(SequenceFileOutputFormat.class);
+                    midJob.setInputFormatClass(intermediateInputFormat);
+                    midJob.setOutputFormatClass(intermediateOutputFormat);
                     FileInputFormat.setInputPaths(midJob, this.intermediateFiles.get(this.intermediateFiles.size() - 1));
                     final Path path = new Path(UUID.randomUUID().toString());
                     FileOutputFormat.setOutputPath(midJob, path);
@@ -432,7 +436,7 @@ public class FaunusGraph extends Configured implements Tool {
             }
             if (this.jobs.size() > 1) {
                 final Job endJob = this.jobs.get(this.jobs.size() - 1);
-                endJob.setInputFormatClass(SequenceFileInputFormat.class);
+                endJob.setInputFormatClass(intermediateInputFormat);
                 endJob.setOutputFormatClass(this.outputFormat);
                 FileInputFormat.setInputPaths(endJob, this.intermediateFiles.get(this.intermediateFiles.size() - 1));
                 FileOutputFormat.setOutputPath(endJob, this.outputPath);
