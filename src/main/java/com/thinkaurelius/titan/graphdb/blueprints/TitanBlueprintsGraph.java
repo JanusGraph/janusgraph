@@ -33,9 +33,12 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
         TitanTransaction tx = txs.get();
         if (tx!=null) {
             assert tx.isOpen();
-            tx.stopTransaction(conclusion);
-            txs.remove();
-            openTx.remove(tx);
+            try {
+                tx.stopTransaction(conclusion);
+            } finally {
+                txs.remove();
+                openTx.remove(tx);
+            }
         }
     }
 
