@@ -13,12 +13,12 @@ import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import java.io.IOException;
 import java.util.Map;
 
+import static com.tinkerpop.blueprints.Direction.BOTH;
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
- *         // TODO support traverse(OUT,"father",IN,"employees")
  */
 public class TraverseTest extends BaseTest {
 
@@ -179,6 +179,39 @@ public class TraverseTest extends BaseTest {
         assertEquals(results.get(1l).getProperty("name"), "marko");
         assertEquals(results.get(1l).getProperty("age"), 29);
         assertEquals(results.get(1l).getPropertyKeys().size(), 2);
+
+    }
+
+    public void testFatherFatherGrandfather() throws IOException {
+
+        Configuration config = new Configuration();
+        config.set(Traverse.FIRST_LABEL, "father");
+        config.set(Traverse.SECOND_LABEL, "father");
+        config.set(Traverse.NEW_LABEL, "grandfather");
+        config.set(Traverse.FIRST_DIRECTION, OUT.toString());
+        config.set(Traverse.SECOND_DIRECTION, OUT.toString());
+        config.set(Traverse.ACTION, Tokens.Action.DROP.toString());
+
+        mapReduceDriver.withConfiguration(config);
+
+        Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.GRAPH_OF_THE_GODS, mapReduceDriver);
+        assertEquals(results.size(), 12);
+
+        for (final FaunusVertex vertex : results.values()) {
+            assertEquals(asList(vertex.getEdges(BOTH, "father")).size(), 0);
+            if (vertex.getProperty("name").equals("hercules")) {
+                assertEquals(asList(vertex.getEdges(IN, "grandfather")).size(), 0);
+                assertEquals(asList(vertex.getEdges(OUT, "grandfather")).size(), 1);
+                assertEquals(vertex.getEdges(OUT, "grandfather").iterator().next().getVertex(IN).getId(), 0l);
+            } else if (vertex.getProperty("name").equals("saturn")) {
+                assertEquals(asList(vertex.getEdges(IN, "grandfather")).size(), 1);
+                assertEquals(asList(vertex.getEdges(OUT, "grandfather")).size(), 0);
+                assertEquals(vertex.getEdges(IN, "grandfather").iterator().next().getVertex(OUT).getId(), 7l);
+            } else {
+                assertEquals(asList(vertex.getEdges(OUT, "grandfather")).size(), 0);
+                assertEquals(asList(vertex.getEdges(IN, "grandfather")).size(), 0);
+            }
+        }
 
     }
 }

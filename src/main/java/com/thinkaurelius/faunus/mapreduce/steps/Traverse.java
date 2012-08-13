@@ -8,7 +8,6 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
@@ -63,26 +62,6 @@ public class Traverse {
             final Set<Long> firstVertexIds = new HashSet<Long>();
             final Set<Long> secondVertexIds = new HashSet<Long>();
 
-            this.longWritable.set(value.getIdAsLong());
-            context.write(this.longWritable, this.vertexHolder.set('v',value.cloneIdAndProperties()));
-
-            // emit original incoming edges
-            for (final Edge edge : value.getEdges(IN)) {
-                if (this.action.equals(Tokens.Action.KEEP)) {
-                    context.write(this.longWritable, this.edgeHolder.set('i', (FaunusEdge) edge));
-                } else if (!edge.getLabel().equals(this.firstLabel) && !edge.getLabel().equals(this.secondLabel)) {
-                    context.write(this.longWritable, this.edgeHolder.set('i', (FaunusEdge) edge));
-                }
-            }
-            // emit original outgoing edges
-            for (final Edge edge : value.getEdges(OUT)) {
-                if (this.action.equals(Tokens.Action.KEEP))
-                    context.write(this.longWritable, this.edgeHolder.set('o', (FaunusEdge) edge));
-                else if (!edge.getLabel().equals(this.firstLabel) && !edge.getLabel().equals(this.secondLabel)) {
-                    context.write(this.longWritable, this.edgeHolder.set('o', (FaunusEdge) edge));
-                }
-            }
-
             if (this.firstDirection.equals(OUT)) {
                 for (final Edge edge : value.getEdges(IN, this.firstLabel)) {
                     firstVertexIds.add(((FaunusEdge) edge).getVertexId(OUT));
@@ -94,8 +73,6 @@ public class Traverse {
             } else {
                 throw new IOException("A direction of " + this.firstDirection + " is not a legal direction for this operation");
             }
-
-            //////////
 
             if (this.secondDirection.equals(OUT)) {
                 for (final Edge edge : value.getEdges(OUT, this.secondLabel)) {
@@ -109,6 +86,13 @@ public class Traverse {
                 throw new IOException("A direction of " + this.secondDirection + " is not a legal direction for this operation");
             }
 
+
+            this.longWritable.set(value.getIdAsLong());
+            if (this.action.equals(Tokens.Action.DROP)) {
+                value.removeEdges(Tokens.Action.DROP, Direction.BOTH, this.firstLabel);
+                value.removeEdges(Tokens.Action.DROP, Direction.BOTH, this.secondLabel);
+            }
+            context.write(this.longWritable, this.vertexHolder.set('v', value));
 
             for (final Long firstId : firstVertexIds) {
                 for (final Long secondId : secondVertexIds) {
@@ -130,11 +114,19 @@ public class Traverse {
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    vertex.setProperties(WritableUtils.clone(holder.get(), context.getConfiguration()).getProperties());
+                    final FaunusVertex vertex2 = (FaunusVertex) holder.get();
+                    vertex.setProperties(vertex2.getProperties());
+                    // TODO: make this more efficient
+                    for (final Edge edge : vertex2.getEdges(OUT)) {
+                        vertex.addEdge(OUT, (FaunusEdge) edge);
+                    }
+                    for (final Edge edge : vertex2.getEdges(IN)) {
+                        vertex.addEdge(IN, (FaunusEdge) edge);
+                    }
                 } else if (tag == 'i') {
-                    vertex.addEdge(IN, WritableUtils.clone((FaunusEdge) holder.get(), context.getConfiguration()));
+                    vertex.addEdge(IN, (FaunusEdge) holder.get());
                 } else if (tag == 'o') {
-                    vertex.addEdge(OUT, WritableUtils.clone((FaunusEdge) holder.get(), context.getConfiguration()));
+                    vertex.addEdge(OUT, (FaunusEdge) holder.get());
                 } else {
                     throw new IOException("A tag of " + tag + " is not a legal tag for this operation");
                 }
