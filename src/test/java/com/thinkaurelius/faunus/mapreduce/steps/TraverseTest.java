@@ -210,8 +210,8 @@ public class TraverseTest extends BaseTest {
             } else {
                 assertEquals(asList(vertex.getEdges(OUT, "grandfather")).size(), 0);
                 assertEquals(asList(vertex.getEdges(IN, "grandfather")).size(), 0);
+                assertFalse(vertex.getProperty("name").equals("hercules") || vertex.getProperty("name").equals("saturn"));
             }
         }
-
     }
 }

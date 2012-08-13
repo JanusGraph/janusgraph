@@ -70,13 +70,16 @@ public class MapReduceSequence {
                 FaunusVertex vertex = value;
                 if (this.mappers.size() > 0) {
                     final MemoryMapContext memoryContext = new MemoryMapContext(context);
-                    memoryContext.setCurrentValue(value);
+                    memoryContext.setCurrentValue(vertex);
                     for (int i = 0; i < this.mappers.size(); i++) {
-                        final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapper = this.mappers.get(i);
-                        this.mapperMethods.get(i).invoke(mapper, key, vertex, memoryContext);
-                        vertex = memoryContext.getCurrentValue();
-                        if (null == vertex)
+                        memoryContext.setWasWritten(false);
+                        this.mapperMethods.get(i).invoke(this.mappers.get(i), key, vertex, memoryContext);
+                        if (!memoryContext.wasWritten()) {
+                            vertex = null;
                             break;
+                        } else {
+                            vertex = memoryContext.getCurrentValue();
+                        }
                         memoryContext.reset();
                     }
                 }

@@ -21,6 +21,7 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
         private Mapper.Context context;
         private boolean locked = false;
         private Configuration configuration;
+        private boolean wasWritten = false;
 
 
         public MemoryMapContext(final Mapper.Context context) throws IOException, InterruptedException {
@@ -32,6 +33,7 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
         @Override
         public void write(final Object key, final Object value) throws IOException, InterruptedException {
             this.value = (FaunusVertex) value;
+            this.wasWritten = true;
         }
 
         @Override
@@ -52,6 +54,14 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
                 this.locked = true;
                 return true;
             }
+        }
+
+        public boolean wasWritten() {
+            return this.wasWritten;
+        }
+
+        public void setWasWritten(final boolean wasWritten) {
+            this.wasWritten = wasWritten;
         }
 
         public void reset() {

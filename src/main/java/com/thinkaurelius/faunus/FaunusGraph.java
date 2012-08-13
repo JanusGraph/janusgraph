@@ -15,12 +15,14 @@ import com.thinkaurelius.faunus.mapreduce.steps.EdgeDirectionFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.EdgeLabelFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.Identity;
 import com.thinkaurelius.faunus.mapreduce.steps.PropertyFilter;
+import com.thinkaurelius.faunus.mapreduce.steps.PropertyValueFilter;
 import com.thinkaurelius.faunus.mapreduce.steps.Self;
 import com.thinkaurelius.faunus.mapreduce.steps.Transpose;
 import com.thinkaurelius.faunus.mapreduce.steps.Traverse;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import groovy.lang.Closure;
 import org.apache.cassandra.hadoop.ConfigHelper;
@@ -50,7 +52,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -127,6 +128,26 @@ public class FaunusGraph extends Configured implements Tool {
         this.mapSequenceConfiguration.set(PropertyFilter.CLASS + "-" + this.mapSequenceClasses.size(), klass.getName());
         this.mapSequenceConfiguration.setStrings(PropertyFilter.KEYS + "-" + this.mapSequenceClasses.size(), keys);
         this.mapSequenceClasses.add(PropertyFilter.Map.class);
+        return this;
+    }
+
+    public FaunusGraph propertyValueFilter(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object value) {
+
+        this.mapSequenceConfiguration.setClass(PropertyValueFilter.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceConfiguration.set(PropertyValueFilter.KEY + "-" + this.mapSequenceClasses.size(), key);
+        this.mapSequenceConfiguration.set(PropertyValueFilter.COMPARE + "-" + this.mapSequenceClasses.size(), compare.name());
+        this.mapSequenceConfiguration.set(PropertyValueFilter.VALUE + "-" + this.mapSequenceClasses.size(), value.toString());
+        if (value instanceof String) {
+            //this.mapSequenceConfiguration.set(PropertyValueFilter.VALUE + "-" + this.mapSequenceClasses.size(), (String) value);
+            this.mapSequenceConfiguration.setClass(PropertyValueFilter.VALUE_CLASS, String.class, String.class);
+        } else if (value instanceof Boolean) {
+            //this.mapSequenceConfiguration.setBoolean(PropertyValueFilter.VALUE + "-" + this.mapSequenceClasses.size(), (Boolean) value);
+            this.mapSequenceConfiguration.setClass(PropertyValueFilter.VALUE_CLASS, Boolean.class, Boolean.class);
+        } else if (value instanceof Number) {
+            //this.mapSequenceConfiguration.setFloat(PropertyValueFilter.VALUE + "-" + this.mapSequenceClasses.size(), ((Number) value).floatValue());
+            this.mapSequenceConfiguration.setClass(PropertyValueFilter.VALUE_CLASS, Number.class, Number.class);
+        }
+        this.mapSequenceClasses.add(PropertyValueFilter.Map.class);
         return this;
     }
 
@@ -495,6 +516,14 @@ public class FaunusGraph extends Configured implements Tool {
         scriptEngine.eval("DROP=" + Tokens.Action.class.getName() + ".DROP");
         scriptEngine.eval("REVERSE=" + Tokens.Order.class.getName() + ".REVERSE");
         scriptEngine.eval("STANDARD=" + Tokens.Order.class.getName() + ".STANDARD");
+        scriptEngine.eval("EQUAL=" + Query.Compare.class.getName() + ".EQUAL");
+        scriptEngine.eval("NOT_EQUAL=" + Query.Compare.class.getName() + ".NOT_EQUAL");
+        scriptEngine.eval("LESS_THAN=" + Query.Compare.class.getName() + ".LESS_THAN");
+        scriptEngine.eval("LESS_THAN_EQUAL=" + Query.Compare.class.getName() + ".LESS_THAN_EQUAL");
+        scriptEngine.eval("GREATER_THAN=" + Query.Compare.class.getName() + ".GREATER_THAN");
+        scriptEngine.eval("GREATER_THAN_EQUAL=" + Query.Compare.class.getName() + ".GREATER_THAN_EQUAL");
+
+
         scriptEngine.put("g", faunusGraph);
         ((FaunusGraph) scriptEngine.eval(script)).completeSequence();
         int result = ToolRunner.run(faunusGraph, args);

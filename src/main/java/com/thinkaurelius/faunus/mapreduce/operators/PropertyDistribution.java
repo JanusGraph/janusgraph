@@ -40,11 +40,7 @@ public class PropertyDistribution {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.map = new CounterMap<String>();
             this.property = context.getConfiguration().get(PROPERTY);
-            try {
-                this.klass = (Class<? extends Element>) Class.forName(context.getConfiguration().get(CLASS));
-            } catch (ClassNotFoundException e) {
-                throw new IOException(e.getMessage(), e);
-            }
+            this.klass = context.getConfiguration().getClass(CLASS, Element.class, Element.class);
         }
 
         @Override

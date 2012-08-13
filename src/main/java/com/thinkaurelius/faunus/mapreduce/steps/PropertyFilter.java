@@ -44,11 +44,7 @@ public class PropertyFilter {
             else
                 this.keys = new HashSet<String>(Arrays.asList(strings));
             this.action = Tokens.Action.valueOf(context.getConfiguration().get(ACTION));
-            try {
-                this.klass = (Class<? extends Element>) Class.forName(context.getConfiguration().get(CLASS));
-            } catch (ClassNotFoundException e) {
-                throw new IOException(e.getMessage(), e);
-            }
+            this.klass = context.getConfiguration().getClass(CLASS, Element.class, Element.class);
         }
 
         @Override

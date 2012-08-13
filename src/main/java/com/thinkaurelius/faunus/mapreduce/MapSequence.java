@@ -51,15 +51,16 @@ public class MapSequence {
                 final MemoryMapContext memoryContext = new MemoryMapContext(context);
                 memoryContext.setCurrentValue(value);
                 for (int i = 0; i < this.mappers.size(); i++) {
+                    memoryContext.setWasWritten(false);
                     this.mapperMethods.get(i).invoke(this.mappers.get(i), key, memoryContext.getCurrentValue(), memoryContext);
-                    if (null == memoryContext.getCurrentValue())
+                    if (!memoryContext.wasWritten())
                         break;
                     memoryContext.reset();
                 }
 
-                final FaunusVertex vertex = memoryContext.getCurrentValue();
-                if (null != vertex)
-                    context.write(NullWritable.get(), vertex);
+                if (memoryContext.wasWritten())
+                    context.write(NullWritable.get(), memoryContext.getCurrentValue());
+
             } catch (Exception e) {
                 throw new IOException(e.getMessage(), e);
             }
