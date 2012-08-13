@@ -261,7 +261,10 @@ public abstract class LockingTransaction implements TransactionHandle {
 			byte rid[] = backer.getRid();
 			if (! Arrays.equals(earliestRid, rid)) {
                 log.trace("My rid={} lost to earlier rid={},ts={}",
-                		new Object[] { Hex.encodeHexString(rid), Hex.encodeHexString(earliestRid), earliestTS });
+                		new Object[] {
+                		Hex.encodeHexString(rid),
+                		null != earliestRid ? Hex.encodeHexString(earliestRid) : "null",
+                		earliestTS });
 				throwLockFailure("A remote transaction holds " + lc);
 			}
 			

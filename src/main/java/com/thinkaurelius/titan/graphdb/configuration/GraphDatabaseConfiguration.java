@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.astyanax.AstyanaxStorageManager;
 import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageAdapter;
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraEmbeddedStorageManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStorageManager;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
@@ -55,6 +56,7 @@ public class GraphDatabaseConfiguration {
         put("cassandra", CassandraThriftStorageManager.class);
         put("hbase", HBaseStorageManager.class);
         put("astyanax", AstyanaxStorageManager.class);
+        put("embeddedcassandra", CassandraEmbeddedStorageManager.class);
     }};
 
     private static final Map<String,DefaultTypeMaker> preregisteredAutoType = new HashMap<String,DefaultTypeMaker>() {{
