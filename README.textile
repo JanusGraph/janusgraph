@@ -1,6 +1,6 @@
 !https://github.com/thinkaurelius/faunus/raw/master/doc/images/faunus-logo.png!
 
-Faunus is a framework for processing "property graphs":https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model using "Hadoop":http://hadoop.apache.org/. A vertex-centric, "adjacency list":http://en.wikipedia.org/wiki/Adjacency_list data structure is used whereby every record is a single vertex along with its incident edges. This vertex-centric data structure is then processed using map-steps (e.g. filters, mutations) and reduce-steps (e.g. traversals). MapReduce operations are provided that implement a "property graph algebra":http://arxiv.org/abs/0806.2274 for doing graph derivations and basic graph statistics. Faunus can be extended with new operations written using "MapReduce":http://hadoop.apache.org/mapreduce/ and "Blueprints":http://blueprints.tinkerpop.com.
+Faunus is a framework for processing "property graphs":https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model using "Hadoop":http://hadoop.apache.org/. A "vertex-centric":http://en.wikipedia.org/wiki/Adjacency_list data structure is then processed using MapReduce jobs that implement a "property graph algebra":http://arxiv.org/abs/0806.2274 for yielding graph derivations and basic graph statistics. Faunus can be extended with new operations written using "MapReduce":http://hadoop.apache.org/mapreduce/ and "Blueprints":http://blueprints.tinkerpop.com.
 
 h2. Features
 
