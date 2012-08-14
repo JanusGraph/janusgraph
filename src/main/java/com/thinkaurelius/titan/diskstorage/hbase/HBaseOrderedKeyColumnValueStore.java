@@ -17,8 +17,10 @@ import org.apache.hadoop.hbase.client.HTablePool;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Row;
+import org.apache.hadoop.hbase.filter.ColumnPaginationFilter;
 import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
 import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.FilterList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +31,6 @@ import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
 
 /**
@@ -180,36 +181,13 @@ public class HBaseOrderedKeyColumnValueStore implements
 		byte[] colStartBytes = columnEnd.hasRemaining() ? toArray(columnStart) : null;
 		byte[] colEndBytes = columnEnd.hasRemaining() ? toArray(columnEnd) : null;
 		
-		// Once ColumnCountGetFilter reaches its configured column limit,
-		// it drops the entire row on which the limit was reached.  This
-		// makes it useless for slicing columns under a single key.
-		
-//		Filter colRangeFilter = new ColumnRangeFilter(colStartBytes, startInclusive, colEndBytes, endInclusive);
-//		Filter limitFilter = new ColumnCountGetFilter(limit);
-//		
-//		FilterList bothFilters = new FilterList(FilterList.Operator.MUST_PASS_ALL,
-//			limitFilter, colRangeFilter);
-//		
-//		return getHelper(key, bothFilters);
-		
-		
-		// Here, I'm falling back to retrieving the whole row and
-		// cutting it down to the limit on the client.  This is obviously
-		// not going to scale.  The long-term solution is probably to
-		// reimplement ColumnCountGetFilter in such a way that it won't
-		// drop the final row.
 		Filter colRangeFilter = new ColumnRangeFilter(colStartBytes, true, colEndBytes, false);
-		List<Entry> ents = getHelper(key, colRangeFilter);
+		Filter limitFilter = new ColumnPaginationFilter(limit, 0);
 		
-		if (ents.size() <= limit)
-			return ents;
+		FilterList bothFilters = new FilterList(FilterList.Operator.MUST_PASS_ALL, colRangeFilter,
+			limitFilter);
 		
-		List<Entry> result = new ArrayList<Entry>(limit);
-		for (int i = 0; i < limit; i++) {
-			result.add(ents.get(i));
-		}
-		
-		return result;
+		return getHelper(key, bothFilters);
 	}
 
 	@Override
