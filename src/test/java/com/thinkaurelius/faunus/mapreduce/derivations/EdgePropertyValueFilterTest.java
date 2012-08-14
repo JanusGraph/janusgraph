@@ -16,22 +16,22 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class PropertyValueEdgeFilterTest extends BaseTest {
+public class EdgePropertyValueFilterTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new PropertyValueEdgeFilter.Map());
+        mapReduceDriver.setMapper(new EdgePropertyValueFilter.Map());
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
     public void testLowWeightedEdgesFiltered() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(PropertyValueEdgeFilter.KEY, "weight");
-        config.setClass(PropertyValueEdgeFilter.VALUE_CLASS, Double.class, Double.class);
-        config.setFloat(PropertyValueEdgeFilter.VALUE, 0.5f);
-        config.set(PropertyValueEdgeFilter.COMPARE, Query.Compare.LESS_THAN_EQUAL.name());
+        config.setStrings(EdgePropertyValueFilter.KEY, "weight");
+        config.setClass(EdgePropertyValueFilter.VALUE_CLASS, Double.class, Double.class);
+        config.setFloat(EdgePropertyValueFilter.VALUE, 0.5f);
+        config.set(EdgePropertyValueFilter.COMPARE, Query.Compare.LESS_THAN_EQUAL.name());
 
         this.mapReduceDriver.withConfiguration(config);
         Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -45,7 +45,7 @@ public class PropertyValueEdgeFilterTest extends BaseTest {
         }
 
         assertEquals(numberOfEdges, 8l);
-        assertEquals(4l, this.mapReduceDriver.getCounters().findCounter(PropertyValueEdgeFilter.Counters.EDGES_DROPPED).getValue());
-        assertEquals(8l, this.mapReduceDriver.getCounters().findCounter(PropertyValueEdgeFilter.Counters.EDGES_KEPT).getValue());
+        assertEquals(4l, this.mapReduceDriver.getCounters().findCounter(EdgePropertyValueFilter.Counters.EDGES_DROPPED).getValue());
+        assertEquals(8l, this.mapReduceDriver.getCounters().findCounter(EdgePropertyValueFilter.Counters.EDGES_KEPT).getValue());
     }
 }

@@ -129,10 +129,12 @@ public class BaseTest extends TestCase {
 
     /*public void testClosure() throws Exception {
         //GroovyScriptEngineImpl engine = new GroovyScriptEngineImpl();
-        MethodClosure closure = new MethodClosure("string", "{-> 1+2}");
+        MethodClosure closure = new MethodClosure("test","{s -> 1+2}");
+        System.out.println(closure.call());
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutput out = new ObjectOutputStream(bos);
         out.writeObject(closure);
+        
         out.flush();
         out.close();
 
@@ -146,7 +148,6 @@ public class BaseTest extends TestCase {
         ObjectInputStream in = new ObjectInputStream(bis);
         Closure closure1 = (Closure) in.readObject();
         in.close();
-        System.out.println(closure1.call());
-        
+        System.out.println(closure1.call("test"));
     }*/
 }

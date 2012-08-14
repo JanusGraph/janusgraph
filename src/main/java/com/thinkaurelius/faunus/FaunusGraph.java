@@ -9,8 +9,8 @@ import com.thinkaurelius.faunus.mapreduce.derivations.EdgeDirectionFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.EdgeLabelFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.Identity;
 import com.thinkaurelius.faunus.mapreduce.derivations.PropertyFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.PropertyValueEdgeFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.PropertyValueVertexFilter;
+import com.thinkaurelius.faunus.mapreduce.derivations.EdgePropertyValueFilter;
+import com.thinkaurelius.faunus.mapreduce.derivations.VertexPropertyValueFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.Self;
 import com.thinkaurelius.faunus.mapreduce.derivations.Transpose;
 import com.thinkaurelius.faunus.mapreduce.derivations.Traverse;
@@ -134,31 +134,31 @@ public class FaunusGraph extends Configured implements Tool {
 
     public FaunusGraph propertyValueFilter(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object value) throws IOException {
         if (klass.equals(Vertex.class)) {
-            this.mapSequenceConfiguration.set(PropertyValueVertexFilter.KEY, key);
-            this.mapSequenceConfiguration.set(PropertyValueVertexFilter.COMPARE, compare.name());
-            this.mapSequenceConfiguration.set(PropertyValueVertexFilter.VALUE, value.toString());
+            this.mapSequenceConfiguration.set(VertexPropertyValueFilter.KEY, key);
+            this.mapSequenceConfiguration.set(VertexPropertyValueFilter.COMPARE, compare.name());
+            this.mapSequenceConfiguration.set(VertexPropertyValueFilter.VALUE, value.toString());
             if (value instanceof String) {
-                this.mapSequenceConfiguration.setClass(PropertyValueVertexFilter.VALUE_CLASS, String.class, String.class);
+                this.mapSequenceConfiguration.setClass(VertexPropertyValueFilter.VALUE_CLASS, String.class, String.class);
             } else if (value instanceof Boolean) {
-                this.mapSequenceConfiguration.setClass(PropertyValueVertexFilter.VALUE_CLASS, Boolean.class, Boolean.class);
+                this.mapSequenceConfiguration.setClass(VertexPropertyValueFilter.VALUE_CLASS, Boolean.class, Boolean.class);
             } else if (value instanceof Number) {
-                this.mapSequenceConfiguration.setClass(PropertyValueVertexFilter.VALUE_CLASS, Number.class, Number.class);
+                this.mapSequenceConfiguration.setClass(VertexPropertyValueFilter.VALUE_CLASS, Number.class, Number.class);
             }
-            this.mapRClass = PropertyValueVertexFilter.Map.class;
-            this.reduceClass = PropertyValueVertexFilter.Reduce.class;
+            this.mapRClass = VertexPropertyValueFilter.Map.class;
+            this.reduceClass = VertexPropertyValueFilter.Reduce.class;
             this.completeSequence();
         } else {
-            this.mapSequenceConfiguration.set(PropertyValueEdgeFilter.KEY + "-" + this.mapSequenceClasses.size(), key);
-            this.mapSequenceConfiguration.set(PropertyValueEdgeFilter.COMPARE + "-" + this.mapSequenceClasses.size(), compare.name());
-            this.mapSequenceConfiguration.set(PropertyValueEdgeFilter.VALUE + "-" + this.mapSequenceClasses.size(), value.toString());
+            this.mapSequenceConfiguration.set(EdgePropertyValueFilter.KEY + "-" + this.mapSequenceClasses.size(), key);
+            this.mapSequenceConfiguration.set(EdgePropertyValueFilter.COMPARE + "-" + this.mapSequenceClasses.size(), compare.name());
+            this.mapSequenceConfiguration.set(EdgePropertyValueFilter.VALUE + "-" + this.mapSequenceClasses.size(), value.toString());
             if (value instanceof String) {
-                this.mapSequenceConfiguration.setClass(PropertyValueEdgeFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), String.class, String.class);
+                this.mapSequenceConfiguration.setClass(EdgePropertyValueFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), String.class, String.class);
             } else if (value instanceof Boolean) {
-                this.mapSequenceConfiguration.setClass(PropertyValueEdgeFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Boolean.class, Boolean.class);
+                this.mapSequenceConfiguration.setClass(EdgePropertyValueFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Boolean.class, Boolean.class);
             } else if (value instanceof Number) {
-                this.mapSequenceConfiguration.setClass(PropertyValueEdgeFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Number.class, Number.class);
+                this.mapSequenceConfiguration.setClass(EdgePropertyValueFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Number.class, Number.class);
             }
-            this.mapSequenceClasses.add(PropertyValueEdgeFilter.Map.class);
+            this.mapSequenceClasses.add(EdgePropertyValueFilter.Map.class);
         }
         return this;
     }

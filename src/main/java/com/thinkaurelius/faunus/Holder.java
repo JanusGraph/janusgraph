@@ -47,7 +47,7 @@ public class Holder<T extends FaunusElement> extends GenericWritable implements 
 
     @Override
     public int hashCode() {
-        return this.get().hashCode();
+        return super.get().hashCode();
     }
 
     public char getTag() {

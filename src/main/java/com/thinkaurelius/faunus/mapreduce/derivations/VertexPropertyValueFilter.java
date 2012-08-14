@@ -21,12 +21,12 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class PropertyValueVertexFilter {
+public class VertexPropertyValueFilter {
 
-    public static final String KEY = Tokens.makeNamespace(PropertyValueVertexFilter.class) + ".key";
-    public static final String VALUE = Tokens.makeNamespace(PropertyValueVertexFilter.class) + ".value";
-    public static final String VALUE_CLASS = Tokens.makeNamespace(PropertyValueVertexFilter.class) + ".valueClass";
-    public static final String COMPARE = Tokens.makeNamespace(PropertyValueVertexFilter.class) + ".compare";
+    public static final String KEY = Tokens.makeNamespace(VertexPropertyValueFilter.class) + ".key";
+    public static final String VALUE = Tokens.makeNamespace(VertexPropertyValueFilter.class) + ".value";
+    public static final String VALUE_CLASS = Tokens.makeNamespace(VertexPropertyValueFilter.class) + ".valueClass";
+    public static final String COMPARE = Tokens.makeNamespace(VertexPropertyValueFilter.class) + ".compare";
 
     public enum Counters {
         VERTICES_KEPT,

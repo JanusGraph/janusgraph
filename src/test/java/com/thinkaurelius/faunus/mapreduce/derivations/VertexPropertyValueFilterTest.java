@@ -17,22 +17,22 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class PropertyValueVertexFilterTest extends BaseTest {
+public class VertexPropertyValueFilterTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new PropertyValueVertexFilter.Map());
-        mapReduceDriver.setReducer(new PropertyValueVertexFilter.Reduce());
+        mapReduceDriver.setMapper(new VertexPropertyValueFilter.Map());
+        mapReduceDriver.setReducer(new VertexPropertyValueFilter.Reduce());
     }
 
     public void testOldVerticesFiltered() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(PropertyValueVertexFilter.KEY, "age");
-        config.setClass(PropertyValueVertexFilter.VALUE_CLASS, Integer.class, Integer.class);
-        config.set(PropertyValueVertexFilter.VALUE, "35");
-        config.set(PropertyValueVertexFilter.COMPARE, Query.Compare.LESS_THAN.name());
+        config.setStrings(VertexPropertyValueFilter.KEY, "age");
+        config.setClass(VertexPropertyValueFilter.VALUE_CLASS, Integer.class, Integer.class);
+        config.set(VertexPropertyValueFilter.VALUE, "35");
+        config.set(VertexPropertyValueFilter.COMPARE, Query.Compare.LESS_THAN.name());
 
         this.mapReduceDriver.withConfiguration(config);
         Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -56,7 +56,7 @@ public class PropertyValueVertexFilterTest extends BaseTest {
             }
         }
 
-        assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(PropertyValueVertexFilter.Counters.VERTICES_DROPPED).getValue());
-        assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(PropertyValueVertexFilter.Counters.VERTICES_KEPT).getValue());
+        assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyValueFilter.Counters.VERTICES_DROPPED).getValue());
+        assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyValueFilter.Counters.VERTICES_KEPT).getValue());
     }
 }

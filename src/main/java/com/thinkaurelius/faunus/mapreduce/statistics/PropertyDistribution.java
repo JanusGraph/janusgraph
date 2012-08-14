@@ -72,7 +72,7 @@ public class PropertyDistribution {
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             super.cleanup(context);
-            for (final java.util.Map.Entry<String, Long> entry : map.entrySet()) {
+            for (final java.util.Map.Entry<String, Long> entry : this.map.entrySet()) {
                 this.textWritable.set(entry.getKey());
                 this.longWritable.set(entry.getValue());
                 context.write(this.textWritable, this.longWritable);
