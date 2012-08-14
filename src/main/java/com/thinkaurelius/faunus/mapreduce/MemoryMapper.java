@@ -23,7 +23,6 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
         private Configuration configuration;
         private boolean wasWritten = false;
 
-
         public MemoryMapContext(final Mapper.Context context) throws IOException, InterruptedException {
             super(context.getConfiguration(), context.getTaskAttemptID(), null, null, context.getOutputCommitter(), null, context.getInputSplit());
             this.context = context;
