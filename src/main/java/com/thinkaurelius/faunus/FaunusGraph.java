@@ -9,7 +9,8 @@ import com.thinkaurelius.faunus.mapreduce.derivations.EdgeDirectionFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.EdgeLabelFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.Identity;
 import com.thinkaurelius.faunus.mapreduce.derivations.PropertyFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.PropertyValueFilter;
+import com.thinkaurelius.faunus.mapreduce.derivations.PropertyValueEdgeFilter;
+import com.thinkaurelius.faunus.mapreduce.derivations.PropertyValueVertexFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.Self;
 import com.thinkaurelius.faunus.mapreduce.derivations.Transpose;
 import com.thinkaurelius.faunus.mapreduce.derivations.Traverse;
@@ -131,50 +132,61 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    public FaunusGraph propertyValueFilter(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object value) {
-
-        this.mapSequenceConfiguration.setClass(PropertyValueFilter.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(PropertyValueFilter.KEY + "-" + this.mapSequenceClasses.size(), key);
-        this.mapSequenceConfiguration.set(PropertyValueFilter.COMPARE + "-" + this.mapSequenceClasses.size(), compare.name());
-        this.mapSequenceConfiguration.set(PropertyValueFilter.VALUE + "-" + this.mapSequenceClasses.size(), value.toString());
-        if (value instanceof String) {
-            //this.mapSequenceConfiguration.set(PropertyValueFilter.VALUE + "-" + this.mapSequenceClasses.size(), (String) value);
-            this.mapSequenceConfiguration.setClass(PropertyValueFilter.VALUE_CLASS, String.class, String.class);
-        } else if (value instanceof Boolean) {
-            //this.mapSequenceConfiguration.setBoolean(PropertyValueFilter.VALUE + "-" + this.mapSequenceClasses.size(), (Boolean) value);
-            this.mapSequenceConfiguration.setClass(PropertyValueFilter.VALUE_CLASS, Boolean.class, Boolean.class);
-        } else if (value instanceof Number) {
-            //this.mapSequenceConfiguration.setFloat(PropertyValueFilter.VALUE + "-" + this.mapSequenceClasses.size(), ((Number) value).floatValue());
-            this.mapSequenceConfiguration.setClass(PropertyValueFilter.VALUE_CLASS, Number.class, Number.class);
+    public FaunusGraph propertyValueFilter(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object value) throws IOException {
+        if (klass.equals(Vertex.class)) {
+            this.mapSequenceConfiguration.set(PropertyValueVertexFilter.KEY, key);
+            this.mapSequenceConfiguration.set(PropertyValueVertexFilter.COMPARE, compare.name());
+            this.mapSequenceConfiguration.set(PropertyValueVertexFilter.VALUE, value.toString());
+            if (value instanceof String) {
+                this.mapSequenceConfiguration.setClass(PropertyValueVertexFilter.VALUE_CLASS, String.class, String.class);
+            } else if (value instanceof Boolean) {
+                this.mapSequenceConfiguration.setClass(PropertyValueVertexFilter.VALUE_CLASS, Boolean.class, Boolean.class);
+            } else if (value instanceof Number) {
+                this.mapSequenceConfiguration.setClass(PropertyValueVertexFilter.VALUE_CLASS, Number.class, Number.class);
+            }
+            this.mapRClass = PropertyValueVertexFilter.Map.class;
+            this.reduceClass = PropertyValueVertexFilter.Reduce.class;
+            this.completeSequence();
+        } else {
+            this.mapSequenceConfiguration.set(PropertyValueEdgeFilter.KEY + "-" + this.mapSequenceClasses.size(), key);
+            this.mapSequenceConfiguration.set(PropertyValueEdgeFilter.COMPARE + "-" + this.mapSequenceClasses.size(), compare.name());
+            this.mapSequenceConfiguration.set(PropertyValueEdgeFilter.VALUE + "-" + this.mapSequenceClasses.size(), value.toString());
+            if (value instanceof String) {
+                this.mapSequenceConfiguration.setClass(PropertyValueEdgeFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), String.class, String.class);
+            } else if (value instanceof Boolean) {
+                this.mapSequenceConfiguration.setClass(PropertyValueEdgeFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Boolean.class, Boolean.class);
+            } else if (value instanceof Number) {
+                this.mapSequenceConfiguration.setClass(PropertyValueEdgeFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Number.class, Number.class);
+            }
+            this.mapSequenceClasses.add(PropertyValueEdgeFilter.Map.class);
         }
-        this.mapSequenceClasses.add(PropertyValueFilter.Map.class);
         return this;
     }
 
-    public FaunusGraph edgeLabelFilter(final Tokens.Action action, final String... labels) throws IOException {
+    public FaunusGraph edgeLabelFilter(final Tokens.Action action, final String... labels) {
         this.mapSequenceConfiguration.setStrings(EdgeLabelFilter.LABELS + "-" + this.mapSequenceClasses.size(), labels);
         this.mapSequenceConfiguration.set(EdgeLabelFilter.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
         this.mapSequenceClasses.add(EdgeLabelFilter.Map.class);
         return this;
     }
 
-    public FaunusGraph edgeDirectionFilter(final Direction direction) throws IOException {
+    public FaunusGraph edgeDirectionFilter(final Direction direction) {
         this.mapSequenceConfiguration.set(EdgeDirectionFilter.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
         this.mapSequenceClasses.add(EdgeDirectionFilter.Map.class);
         return this;
     }
 
-    public FaunusGraph self(final Tokens.Action action, final String labels) throws IOException {
+    public FaunusGraph self(final Tokens.Action action, final String labels) {
         this.mapSequenceConfiguration.set(Self.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
         this.mapSequenceConfiguration.setStrings(Self.LABELS + "-" + this.mapSequenceClasses.size(), labels);
         this.mapSequenceClasses.add(Self.Map.class);
         return this;
     }
 
-    public FaunusGraph transpose(final String label, final String newLabel, final Tokens.Action action) throws IOException {
-        this.mapSequenceConfiguration.set(Transpose.LABEL, label);
-        this.mapSequenceConfiguration.set(Transpose.NEW_LABEL, newLabel);
-        this.mapSequenceConfiguration.set(Transpose.ACTION, action.name());
+    public FaunusGraph transpose(final String label, final String newLabel, final Tokens.Action action) {
+        this.mapSequenceConfiguration.set(Transpose.LABEL + "-" + this.mapSequenceClasses.size(), label);
+        this.mapSequenceConfiguration.set(Transpose.NEW_LABEL + "-" + this.mapSequenceClasses.size(), newLabel);
+        this.mapSequenceConfiguration.set(Transpose.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
         this.mapSequenceClasses.add(Transpose.Map.class);
         return this;
     }

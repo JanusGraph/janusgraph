@@ -126,6 +126,22 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         return edge;
     }
 
+    public void removeEdgesToFrom(final Set<Long> ids) {
+        Iterator<Edge> itty = this.getEdges(OUT).iterator();
+        while (itty.hasNext()) {
+            final Long id = (Long) itty.next().getVertex(IN).getId();
+            if (ids.contains(id))
+                itty.remove();
+        }
+
+        itty = this.getEdges(IN).iterator();
+        while (itty.hasNext()) {
+            final Long id = (Long) itty.next().getVertex(OUT).getId();
+            if (ids.contains(id))
+                itty.remove();
+        }
+    }
+
     public void removeEdges(final Tokens.Action action, final Direction direction, final String... labels) {
         if (action.equals(Tokens.Action.KEEP)) {
             final Set<String> keep = new HashSet<String>(Arrays.asList(labels));
@@ -196,6 +212,10 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         final FaunusVertex clone = new FaunusVertex(this.getIdAsLong());
         clone.setProperties(this.getProperties());
         return clone;
+    }
+
+    public FaunusVertex cloneId() {
+        return new FaunusVertex(this.getIdAsLong());
     }
 
     public static class Comparator extends WritableComparator {

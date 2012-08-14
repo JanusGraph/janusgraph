@@ -103,6 +103,18 @@ public class BaseTest extends TestCase {
         }
         return list;
     }
+    
+    public static String getFullString(final Vertex vertex) {
+        String string = vertex.toString() + "[";
+        for(Edge edge : vertex.getEdges(Direction.IN)) {
+            string = string + edge.toString();
+        }
+        string = string + "][";
+        for(Edge edge : vertex.getEdges(Direction.OUT)) {
+            string = string + edge.toString();
+        }
+        return string + "]";
+    }
 
     /*public void testConverter() throws IOException {
         //Graph graph = new TinkerGraph();
