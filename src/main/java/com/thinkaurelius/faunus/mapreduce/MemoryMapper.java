@@ -8,7 +8,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -18,16 +17,21 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
 
     public class MemoryMapContext extends Mapper.Context {
 
+        private static final String DASH = "-";
+        private static final String EMPTY = "";
+
+        private final Configuration currentConfiguration = new Configuration();
+
         private FaunusVertex value;
         private Mapper.Context context;
         private boolean locked = false;
-        private Configuration configuration;
+        private Configuration globalConfiguration;
         private boolean wasWritten = false;
 
         public MemoryMapContext(final Mapper.Context context) throws IOException, InterruptedException {
             super(context.getConfiguration(), context.getTaskAttemptID() == null ? new TaskAttemptID() : context.getTaskAttemptID(), null, null, context.getOutputCommitter(), null, context.getInputSplit());
             this.context = context;
-            this.configuration = context.getConfiguration();
+            this.globalConfiguration = context.getConfiguration();
         }
 
         @Override
@@ -84,21 +88,18 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
 
         @Override
         public Configuration getConfiguration() {
-            return this.configuration;
+            return this.currentConfiguration;
         }
 
         public void stageConfiguration(final int step) {
-            final String dash = "-";
-            final String empty = "";
-            final Map<String, String> temp = new HashMap<String, String>();
-            for (final Map.Entry<String, String> entry : this.configuration) {
+            this.currentConfiguration.clear();
+            for (final Map.Entry<String, String> entry : this.globalConfiguration) {
                 final String key = entry.getKey();
-                if (key.endsWith(dash + step)) {
-                    temp.put(key.replace(dash + step, empty), entry.getValue());
+                if (key.endsWith(DASH + step)) {
+                    this.currentConfiguration.set(key.replace(DASH + step, EMPTY), entry.getValue());
+                } else if (!key.matches(".*-[0-9]+")) {
+                    this.currentConfiguration.set(key, entry.getValue());
                 }
-            }
-            for (final java.util.Map.Entry<String, String> entry : temp.entrySet()) {
-                this.configuration.set(entry.getKey(), entry.getValue());
             }
         }
     }

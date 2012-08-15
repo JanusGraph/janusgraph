@@ -38,8 +38,8 @@ public class VertexPropertyValueFilterTest extends BaseTest {
         Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
         assertEquals(results.size(), 3);
         assertNotNull(results.get(1l));
-        assertNotNull(results.get(4l));
         assertNotNull(results.get(2l));
+        assertNotNull(results.get(4l));
         assertNull(results.get(6l));
 
         for (final FaunusVertex vertex : results.values()) {
@@ -58,5 +58,41 @@ public class VertexPropertyValueFilterTest extends BaseTest {
 
         assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyValueFilter.Counters.VERTICES_DROPPED).getValue());
         assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyValueFilter.Counters.VERTICES_KEPT).getValue());
+    }
+
+    public void testOldVerticesFilteredWildCardNull() throws IOException {
+        Configuration config = new Configuration();
+        config.setStrings(VertexPropertyValueFilter.KEY, "age");
+        config.setClass(VertexPropertyValueFilter.VALUE_CLASS, Integer.class, Integer.class);
+        config.set(VertexPropertyValueFilter.VALUE, "35");
+        config.set(VertexPropertyValueFilter.COMPARE, Query.Compare.LESS_THAN.name());
+        config.set(VertexPropertyValueFilter.NULL_WILDCARD, "true");
+
+        this.mapReduceDriver.withConfiguration(config);
+        Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
+        assertEquals(results.size(), 5);
+        assertNotNull(results.get(1l));
+        assertNotNull(results.get(2l));
+        assertNotNull(results.get(3l));
+        assertNotNull(results.get(4l));
+        assertNotNull(results.get(5l));
+        assertNull(results.get(6l));
+
+        for (final FaunusVertex vertex : results.values()) {
+            for (final Edge edge : vertex.getEdges(Direction.OUT)) {
+                assertEquals(edge.getVertex(Direction.OUT).getId(), vertex.getId());
+                Long id = (Long) edge.getVertex(Direction.IN).getId();
+                assertTrue(id.equals(1l) || id.equals(2l) || id.equals(3l) || id.equals(4l) || id.equals(5l));
+            }
+
+            for (final Edge edge : vertex.getEdges(Direction.IN)) {
+                assertEquals(edge.getVertex(Direction.IN).getId(), vertex.getId());
+                Long id = (Long) edge.getVertex(Direction.OUT).getId();
+                assertTrue(id.equals(1l) || id.equals(2l) || id.equals(3l) || id.equals(4l) || id.equals(5l));
+            }
+        }
+
+        assertEquals(1l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyValueFilter.Counters.VERTICES_DROPPED).getValue());
+        assertEquals(5l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyValueFilter.Counters.VERTICES_KEPT).getValue());
     }
 }

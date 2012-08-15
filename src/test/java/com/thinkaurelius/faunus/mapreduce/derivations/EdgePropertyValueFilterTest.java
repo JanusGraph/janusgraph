@@ -48,4 +48,27 @@ public class EdgePropertyValueFilterTest extends BaseTest {
         assertEquals(4l, this.mapReduceDriver.getCounters().findCounter(EdgePropertyValueFilter.Counters.EDGES_DROPPED).getValue());
         assertEquals(8l, this.mapReduceDriver.getCounters().findCounter(EdgePropertyValueFilter.Counters.EDGES_KEPT).getValue());
     }
+
+    public void testEdgesFilteredWithNullWildcard() throws IOException {
+        Configuration config = new Configuration();
+        config.setStrings(EdgePropertyValueFilter.KEY, "nothing");
+        config.setClass(EdgePropertyValueFilter.VALUE_CLASS, Double.class, Double.class);
+        config.setFloat(EdgePropertyValueFilter.VALUE, 0.5f);
+        config.set(EdgePropertyValueFilter.COMPARE, Query.Compare.LESS_THAN_EQUAL.name());
+        config.setBoolean(EdgePropertyValueFilter.NULL_WILDCARD, true);
+
+        this.mapReduceDriver.withConfiguration(config);
+        Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
+        assertEquals(results.size(), 6);
+        int numberOfEdges = 0;
+        for (final FaunusVertex vertex : results.values()) {
+            for (final Edge edge : vertex.getEdges(Direction.BOTH)) {
+                numberOfEdges++;
+            }
+        }
+
+        assertEquals(numberOfEdges, 12l);
+        assertEquals(0l, this.mapReduceDriver.getCounters().findCounter(EdgePropertyValueFilter.Counters.EDGES_DROPPED).getValue());
+        assertEquals(12l, this.mapReduceDriver.getCounters().findCounter(EdgePropertyValueFilter.Counters.EDGES_KEPT).getValue());
+    }
 }

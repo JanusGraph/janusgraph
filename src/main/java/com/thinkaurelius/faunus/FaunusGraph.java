@@ -7,13 +7,13 @@ import com.thinkaurelius.faunus.mapreduce.MapReduceSequence;
 import com.thinkaurelius.faunus.mapreduce.MapSequence;
 import com.thinkaurelius.faunus.mapreduce.derivations.EdgeDirectionFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.EdgeLabelFilter;
+import com.thinkaurelius.faunus.mapreduce.derivations.EdgePropertyValueFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.Identity;
 import com.thinkaurelius.faunus.mapreduce.derivations.PropertyFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.EdgePropertyValueFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.VertexPropertyValueFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.Self;
 import com.thinkaurelius.faunus.mapreduce.derivations.Transpose;
 import com.thinkaurelius.faunus.mapreduce.derivations.Traverse;
+import com.thinkaurelius.faunus.mapreduce.derivations.VertexPropertyValueFilter;
 import com.thinkaurelius.faunus.mapreduce.statistics.AdjacentVertexProperties;
 import com.thinkaurelius.faunus.mapreduce.statistics.DegreeDistribution;
 import com.thinkaurelius.faunus.mapreduce.statistics.EdgeLabelDistribution;
@@ -133,10 +133,16 @@ public class FaunusGraph extends Configured implements Tool {
     }
 
     public FaunusGraph propertyValueFilter(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object value) throws IOException {
+        return this.propertyValueFilter(klass, key, compare, value, false);
+    }
+
+    public FaunusGraph propertyValueFilter(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object value, final Boolean nullIsWildcard) throws IOException {
+
         if (klass.equals(Vertex.class)) {
             this.mapSequenceConfiguration.set(VertexPropertyValueFilter.KEY, key);
             this.mapSequenceConfiguration.set(VertexPropertyValueFilter.COMPARE, compare.name());
             this.mapSequenceConfiguration.set(VertexPropertyValueFilter.VALUE, value.toString());
+            this.mapSequenceConfiguration.setBoolean(VertexPropertyValueFilter.NULL_WILDCARD, nullIsWildcard);
             if (value instanceof String) {
                 this.mapSequenceConfiguration.setClass(VertexPropertyValueFilter.VALUE_CLASS, String.class, String.class);
             } else if (value instanceof Boolean) {
@@ -151,6 +157,7 @@ public class FaunusGraph extends Configured implements Tool {
             this.mapSequenceConfiguration.set(EdgePropertyValueFilter.KEY + "-" + this.mapSequenceClasses.size(), key);
             this.mapSequenceConfiguration.set(EdgePropertyValueFilter.COMPARE + "-" + this.mapSequenceClasses.size(), compare.name());
             this.mapSequenceConfiguration.set(EdgePropertyValueFilter.VALUE + "-" + this.mapSequenceClasses.size(), value.toString());
+            this.mapSequenceConfiguration.setBoolean(EdgePropertyValueFilter.NULL_WILDCARD, nullIsWildcard);
             if (value instanceof String) {
                 this.mapSequenceConfiguration.setClass(EdgePropertyValueFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), String.class, String.class);
             } else if (value instanceof Boolean) {
@@ -377,15 +384,6 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    /*private static Map<String, String> configurationToMap(final Configuration configuration) {
-        final Map<String, String> map = new HashMap<String, String>();
-        for (Map.Entry<String, String> entry : configuration) {
-            map.put(entry.getKey(), entry.getValue());
-        }
-        return map;
-    }*/
-
-
     public int run(String[] args) throws Exception {
         if (this.configuration.getBoolean(Tokens.OVERWRITE_DATA_OUTPUT_LOCATION, false)) {
             final FileSystem hdfs = FileSystem.get(this.getConf());
@@ -413,7 +411,6 @@ public class FaunusGraph extends Configured implements Tool {
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
             logger.info("Executing job " + (i + 1) + " out of " + this.jobs.size() + ": " + job.getJobName());
-            //logger.info("\tJob configuration: " + FaunusGraph.configurationToMap(job.getConfiguration()));
             job.waitForCompletion(true);
             if (i > 0 && this.intermediateFiles.size() > 0) {
                 final FileSystem hdfs = FileSystem.get(job.getConfiguration());

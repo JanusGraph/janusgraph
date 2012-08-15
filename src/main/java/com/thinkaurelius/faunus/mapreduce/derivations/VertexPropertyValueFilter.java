@@ -3,8 +3,8 @@ package com.thinkaurelius.faunus.mapreduce.derivations;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.ElementChecker;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -27,6 +27,7 @@ public class VertexPropertyValueFilter {
     public static final String VALUE = Tokens.makeNamespace(VertexPropertyValueFilter.class) + ".value";
     public static final String VALUE_CLASS = Tokens.makeNamespace(VertexPropertyValueFilter.class) + ".valueClass";
     public static final String COMPARE = Tokens.makeNamespace(VertexPropertyValueFilter.class) + ".compare";
+    public static final String NULL_WILDCARD = Tokens.makeNamespace(VertexPropertyValueFilter.class) + ".nullWildcard";
 
     public enum Counters {
         VERTICES_KEPT,
@@ -35,34 +36,35 @@ public class VertexPropertyValueFilter {
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
 
-        private String key;
-        private Object value;
-        private Query.Compare compare;
-
+        private ElementChecker elementChecker;
         private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.key = context.getConfiguration().get(KEY);
+            final String key = context.getConfiguration().get(KEY);
             final Class valueClass = context.getConfiguration().getClass(VALUE_CLASS, String.class);
+            final Object value;
             if (valueClass.equals(String.class)) {
-                this.value = context.getConfiguration().get(VALUE);
+                value = context.getConfiguration().get(VALUE);
             } else if (Number.class.isAssignableFrom((valueClass))) {
-                this.value = context.getConfiguration().getFloat(VALUE, 0.0f);
+                value = context.getConfiguration().getFloat(VALUE, 0.0f);
             } else if (valueClass.equals(Boolean.class)) {
-                this.value = context.getConfiguration().getBoolean(VALUE, false);
+                value = context.getConfiguration().getBoolean(VALUE, false);
             } else {
                 throw new IOException("Class " + valueClass + " is an unsupported value class");
             }
 
-            this.compare = Query.Compare.valueOf(context.getConfiguration().get(COMPARE));
+            final Query.Compare compare = Query.Compare.valueOf(context.getConfiguration().get(COMPARE));
+            final Boolean nullIsWildcard = context.getConfiguration().getBoolean(NULL_WILDCARD, false);
+
+            this.elementChecker = new ElementChecker(key, compare, value, nullIsWildcard);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
 
-            if (this.isLegal(value)) {
+            if (this.elementChecker.isLegal(value)) {
                 this.longWritable.set(value.getIdAsLong());
                 context.write(this.longWritable, this.holder.set('v', value));
                 context.getCounter(Counters.VERTICES_KEPT).increment(1l);
@@ -83,41 +85,6 @@ public class VertexPropertyValueFilter {
                         context.write(this.longWritable, this.holder);
                     }
                 }
-            }
-        }
-
-        private boolean isLegal(final Element element) {
-            Object elementValue = element.getProperty(this.key);
-            if (elementValue instanceof Number)
-                elementValue = ((Number) elementValue).floatValue();
-
-            switch (this.compare) {
-                case EQUAL:
-                    if (null == elementValue)
-                        return this.value == null;
-                    return elementValue.equals(this.value);
-                case NOT_EQUAL:
-                    if (null == elementValue)
-                        return this.value != null;
-                    return !elementValue.equals(this.value);
-                case GREATER_THAN:
-                    if (null == elementValue || this.value == null)
-                        return false;
-                    return ((Comparable) elementValue).compareTo(this.value) >= 1;
-                case LESS_THAN:
-                    if (null == elementValue || this.value == null)
-                        return false;
-                    return ((Comparable) elementValue).compareTo(this.value) <= -1;
-                case GREATER_THAN_EQUAL:
-                    if (null == elementValue || this.value == null)
-                        return false;
-                    return ((Comparable) elementValue).compareTo(this.value) >= 0;
-                case LESS_THAN_EQUAL:
-                    if (null == elementValue || this.value == null)
-                        return false;
-                    return ((Comparable) elementValue).compareTo(this.value) <= 0;
-                default:
-                    throw new IllegalArgumentException("Invalid state as no valid filter was provided");
             }
         }
     }
