@@ -2,6 +2,7 @@ package com.thinkaurelius.titan;
 
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraEmbeddedStorageManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
@@ -59,6 +60,14 @@ public class StorageSetup {
         Configuration config = getLocalStorageConfiguration();
         return config;
     }
+    
+    public static Configuration getEmbeddedCassandraStorageConfiguration() {
+        Configuration config = getLocalStorageConfiguration();
+        config.addProperty(
+        		CassandraEmbeddedStorageManager.CASSANDRA_CONFIG_DIR_KEY,
+        		cassandraYamlPath);
+        return config;
+    }
 
 
     //------
@@ -96,6 +105,9 @@ public class StorageSetup {
     public static Configuration getEmbeddedCassandraGraphConfiguration() {
         Configuration config = StorageSetup.getLocalGraphConfiguration();
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,"embeddedcassandra");
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(
+        		CassandraEmbeddedStorageManager.CASSANDRA_CONFIG_DIR_KEY,
+        		cassandraYamlPath);
         return config;
     }
 }
