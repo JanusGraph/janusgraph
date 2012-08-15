@@ -64,10 +64,6 @@ public abstract class FaunusElement implements Element, Writable {
         return this.id;
     }
 
-    public LongWritable getIdAsLongWritable() {
-        return new LongWritable(this.id);
-    }
-
     @Override
     public boolean equals(final Object other) {
         return this.getClass().equals(other.getClass()) && this.id == ((FaunusElement) other).getIdAsLong();

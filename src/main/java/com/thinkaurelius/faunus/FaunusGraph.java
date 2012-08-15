@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.mapreduce.Function;
 import com.thinkaurelius.faunus.mapreduce.MapReduceSequence;
 import com.thinkaurelius.faunus.mapreduce.MapSequence;
 import com.thinkaurelius.faunus.mapreduce.derivations.EdgeDirectionFilter;
+import com.thinkaurelius.faunus.mapreduce.derivations.EdgeFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.EdgeLabelFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.EdgePropertyValueFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.Identity;
@@ -13,6 +14,7 @@ import com.thinkaurelius.faunus.mapreduce.derivations.PropertyFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.Self;
 import com.thinkaurelius.faunus.mapreduce.derivations.Transpose;
 import com.thinkaurelius.faunus.mapreduce.derivations.Traverse;
+import com.thinkaurelius.faunus.mapreduce.derivations.VertexFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.VertexPropertyValueFilter;
 import com.thinkaurelius.faunus.mapreduce.statistics.AdjacentVertexProperties;
 import com.thinkaurelius.faunus.mapreduce.statistics.DegreeDistribution;
@@ -39,6 +41,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
@@ -75,8 +78,8 @@ public class FaunusGraph extends Configured implements Tool {
     private final List<Job> jobs = new ArrayList<Job>();
     private final List<Path> intermediateFiles = new ArrayList<Path>();
 
-    private Configuration mapSequenceConfiguration = new Configuration();
-    private final List<Class> mapSequenceClasses = new ArrayList<Class>();
+    private final Configuration mapSequenceConfiguration = new Configuration();
+    private final List<Class<? extends Mapper>> mapSequenceClasses = new ArrayList<Class<? extends Mapper>>();
     private Class mapRClass = null;
     private Class reduceClass = null;
 
@@ -153,7 +156,7 @@ public class FaunusGraph extends Configured implements Tool {
             this.mapRClass = VertexPropertyValueFilter.Map.class;
             this.reduceClass = VertexPropertyValueFilter.Reduce.class;
             this.completeSequence();
-        } else {
+        } else if (klass.equals(Edge.class)) {
             this.mapSequenceConfiguration.set(EdgePropertyValueFilter.KEY + "-" + this.mapSequenceClasses.size(), key);
             this.mapSequenceConfiguration.set(EdgePropertyValueFilter.COMPARE + "-" + this.mapSequenceClasses.size(), compare.name());
             this.mapSequenceConfiguration.set(EdgePropertyValueFilter.VALUE + "-" + this.mapSequenceClasses.size(), value.toString());
@@ -166,6 +169,23 @@ public class FaunusGraph extends Configured implements Tool {
                 this.mapSequenceConfiguration.setClass(EdgePropertyValueFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Number.class, Number.class);
             }
             this.mapSequenceClasses.add(EdgePropertyValueFilter.Map.class);
+        } else {
+            throw new IOException("Unsupported element class: " + klass.getName());
+        }
+        return this;
+    }
+
+    public FaunusGraph filter(final Class<? extends Element> klass, final String function) throws IOException {
+        if (klass.equals(Vertex.class)) {
+            this.mapSequenceConfiguration.set(VertexFilter.FUNCTION, function);
+            this.mapRClass = VertexFilter.Map.class;
+            this.reduceClass = VertexFilter.Reduce.class;
+            this.completeSequence();
+        } else if (klass.equals(Edge.class)) {
+            this.mapSequenceConfiguration.set(EdgeFilter.FUNCTION + "-" + this.mapSequenceClasses.size(), function);
+            this.mapSequenceClasses.add(EdgeFilter.Map.class);
+        } else {
+            throw new IOException("Unsupported element class: " + klass.getName());
         }
         return this;
     }
@@ -237,7 +257,7 @@ public class FaunusGraph extends Configured implements Tool {
         this.mapRClass = null;
         this.reduceClass = null;
         this.mapSequenceClasses.clear();
-        this.mapSequenceConfiguration = new Configuration();
+        this.mapSequenceConfiguration.clear();
         return this;
     }
 
@@ -483,7 +503,6 @@ public class FaunusGraph extends Configured implements Tool {
             throw e;
         }
 
-        // TODO: should we do this? ---- Add Faunus properties to all the jobs
         for (final Job job : this.jobs) {
             for (final Map.Entry<String, String> entry : this.configuration) {
                 job.getConfiguration().set(entry.getKey(), entry.getValue());
@@ -501,14 +520,18 @@ public class FaunusGraph extends Configured implements Tool {
         }
 
         final String script;
+        final String file;
         final Properties properties = new Properties();
         if (args.length == 1) {
             script = args[0];
-            properties.load(new FileInputStream("bin/faunus.properties"));
+            file = "bin/faunus.properties";
         } else {
+            file = args[0];
             script = args[1];
-            properties.load(new FileInputStream(args[0]));
         }
+        properties.load(new FileInputStream(file));
+
+
         final Configuration conf = new Configuration();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             conf.set(entry.getKey().toString(), entry.getValue().toString());

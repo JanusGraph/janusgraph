@@ -48,6 +48,7 @@ public class MapReduceSequence {
                         this.mapperMethods.add(mapClass.getMethod(Tokens.MAP, NullWritable.class, FaunusVertex.class, Mapper.Context.class));
                     }
                 }
+                memoryContext.stageConfiguration();
                 final String mapRClassName = context.getConfiguration().get(MAPR_CLASS);
                 final Class<Mapper<NullWritable, FaunusVertex, LongWritable, Holder>> mapRClass = (Class) Class.forName(mapRClassName);
                 this.mapperR = mapRClass.getConstructor().newInstance();
