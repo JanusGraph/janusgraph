@@ -180,23 +180,29 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         assert removed;
     }
 
-
-	@Override
-	public TitanProperty addProperty(TitanVertex vertex, TitanKey key, Object attribute) {
+    @Override
+    public TitanProperty addProperty(TitanVertex vertex, TitanKey key, Object attribute) {
         verifyWriteAccess();
-		//Check that attribute of keyed propertyType is unique
-		if (key.isUnique()) {
-			keyedPropertyCreateLock.lock();
-			if (config.doVerifyKeyUniqueness() && getVertex(key, attribute)!=null)
-				throw new InvalidElementException("The specified attribute is already used for the given property key: " + attribute,vertex);
-		}
-			
-		InternalRelation e = edgeFactory.createNewProperty(key, (InternalTitanVertex)vertex, attribute);
-		addedRelation(e);
-		if (key.isUnique()) keyedPropertyCreateLock.unlock();
-		return (TitanProperty)e;
-	}
-
+        // Check that attribute of keyed propertyType is unique and lock if so
+        if (key.isUnique()) {
+            keyedPropertyCreateLock.lock();
+        }
+        InternalRelation e = null;
+        try {
+            if (key.isUnique() && config.doVerifyKeyUniqueness() && getVertex(key, attribute) != null) {
+                throw new InvalidElementException(
+                        "The specified attribute is already used for the given property key: " + attribute, vertex);
+            }
+            e = edgeFactory.createNewProperty(key, (InternalTitanVertex) vertex, attribute);
+            addedRelation(e);
+        } finally {
+            if (key.isUnique()) {
+                keyedPropertyCreateLock.unlock();
+            }
+        }
+        assert(e != null);
+        return (TitanProperty) e;
+    }
 
 	@Override
 	public TitanProperty addProperty(TitanVertex vertex, String key, Object attribute) {
