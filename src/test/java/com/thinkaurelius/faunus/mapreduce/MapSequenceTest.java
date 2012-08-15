@@ -3,19 +3,21 @@ package com.thinkaurelius.faunus.mapreduce;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.derivations.EdgeLabelFilter;
+import com.thinkaurelius.faunus.mapreduce.derivations.Identity;
+import com.thinkaurelius.faunus.mapreduce.derivations.PropertyFilter;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class MapSequenceTest extends BaseTest {
-
     MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() throws Exception {
@@ -24,15 +26,35 @@ public class MapSequenceTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testTest() throws IOException {
+    public void testLongSequence() throws Exception {
 
         Configuration config = new Configuration();
-        config.set("1-" + EdgeLabelFilter.ACTION, Tokens.Action.DROP.name());
-        config.setStrings("1-" + EdgeLabelFilter.LABELS, "created");
-        config.setStrings(MapSequence.MAP_CLASSES, EdgeLabelFilter.Map.class.getName());
+        config.setStrings(PropertyFilter.KEYS + "-2", "name");
+        config.set(PropertyFilter.ACTION + "-2", Tokens.Action.DROP.name());
+        config.set(PropertyFilter.CLASS + "-2", Vertex.class.getName());
+        config.setStrings(MapReduceSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), PropertyFilter.Map.class.getName());
         this.mapReduceDriver.withConfiguration(config);
-        // TODO: How to get into the Mokito Context provided by MRUnit
-        //final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
-        //System.out.println(results);
+        final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
+        assertEquals(results.size(), 6);
+        for (FaunusVertex vertex : results.values()) {
+            assertNull(vertex.getProperty("name"));
+            assertFalse(vertex.getPropertyKeys().contains("name"));
+            assertEquals(vertex.getPropertyKeys().size(), 1);
+        }
+    }
+
+    public void testBadSequenceId() throws Exception {
+        Configuration config = new Configuration();
+        config.setStrings(PropertyFilter.KEYS + "-3", "name");
+        config.set(PropertyFilter.ACTION + "-3", Tokens.Action.DROP.name());
+        config.set(PropertyFilter.CLASS + "-3", Vertex.class.getName());
+        config.setStrings(MapReduceSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), PropertyFilter.Map.class.getName());
+        this.mapReduceDriver.withConfiguration(config);
+        try {
+            final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
+            assertFalse(true);
+        } catch (IOException e) {
+            assertTrue(true);
+        }
     }
 }

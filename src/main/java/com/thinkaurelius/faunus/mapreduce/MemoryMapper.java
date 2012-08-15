@@ -5,6 +5,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.TaskAttemptID;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -24,7 +25,7 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
         private boolean wasWritten = false;
 
         public MemoryMapContext(final Mapper.Context context) throws IOException, InterruptedException {
-            super(context.getConfiguration(), context.getTaskAttemptID(), null, null, context.getOutputCommitter(), null, context.getInputSplit());
+            super(context.getConfiguration(), context.getTaskAttemptID() == null ? new TaskAttemptID() : context.getTaskAttemptID(), null, null, context.getOutputCommitter(), null, context.getInputSplit());
             this.context = context;
             this.configuration = context.getConfiguration();
         }
@@ -87,11 +88,13 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
         }
 
         public void stageConfiguration(final int step) {
+            final String dash = "-";
+            final String empty = "";
             final Map<String, String> temp = new HashMap<String, String>();
             for (final Map.Entry<String, String> entry : this.configuration) {
                 final String key = entry.getKey();
-                if (key.endsWith("-" + step)) {
-                    temp.put(key.replace("-" + step, ""), entry.getValue());
+                if (key.endsWith(dash + step)) {
+                    temp.put(key.replace(dash + step, empty), entry.getValue());
                 }
             }
             for (final java.util.Map.Entry<String, String> entry : temp.entrySet()) {
