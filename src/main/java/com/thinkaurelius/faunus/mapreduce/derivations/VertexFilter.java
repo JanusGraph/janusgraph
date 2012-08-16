@@ -35,14 +35,14 @@ public class VertexFilter {
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
 
-        private Closure closure;
+        private Closure<Boolean> closure;
         private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             try {
-                this.closure = (Closure) engine.eval(context.getConfiguration().get(FUNCTION));
+                this.closure = (Closure<Boolean>) engine.eval(context.getConfiguration().get(FUNCTION));
             } catch (final ScriptException e) {
                 throw new IOException(e.getMessage(), e);
             }
@@ -50,7 +50,7 @@ public class VertexFilter {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
-            if ((Boolean) this.closure.call(value)) {
+            if (this.closure.call(value)) {
                 this.longWritable.set(value.getIdAsLong());
                 context.write(this.longWritable, this.holder.set('v', value));
                 context.getCounter(Counters.VERTICES_KEPT).increment(1l);

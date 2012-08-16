@@ -18,12 +18,13 @@ import com.thinkaurelius.faunus.mapreduce.derivations.Traverse;
 import com.thinkaurelius.faunus.mapreduce.derivations.VertexFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.VertexPropertyFilter;
 import com.thinkaurelius.faunus.mapreduce.statistics.AdjacentProperties;
+import com.thinkaurelius.faunus.mapreduce.statistics.Degree;
 import com.thinkaurelius.faunus.mapreduce.statistics.DegreeDistribution;
+import com.thinkaurelius.faunus.mapreduce.statistics.Distribution;
 import com.thinkaurelius.faunus.mapreduce.statistics.LabelDistribution;
 import com.thinkaurelius.faunus.mapreduce.statistics.PropertyDistribution;
 import com.thinkaurelius.faunus.mapreduce.statistics.PropertyValueDistribution;
 import com.thinkaurelius.faunus.mapreduce.statistics.SortedDegree;
-import com.thinkaurelius.faunus.mapreduce.statistics.Degree;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -360,6 +361,25 @@ public class FaunusGraph extends Configured implements Tool {
         job.setMapOutputValueClass(FaunusVertex.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
+        this.outputFormat = this.statisticsOutputFormat;
+        this.jobs.add(job);
+        return this;
+    }
+
+    public FaunusGraph distribution(final Class<? extends Element> klass, final String function) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(Distribution.CLASS, klass.getName());
+        conf.set(Distribution.FUNCTION, function);
+        final Job job = new Job(conf, Distribution.class.getCanonicalName());
+        job.setMapperClass(Distribution.Map.class);
+        job.setReducerClass(Distribution.Reduce.class);
+        job.setCombinerClass(Distribution.Reduce.class);
+        job.setJarByClass(FaunusGraph.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(LongWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputKeyClass(LongWritable.class);
         this.outputFormat = this.statisticsOutputFormat;
         this.jobs.add(job);
         return this;

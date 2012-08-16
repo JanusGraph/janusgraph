@@ -29,12 +29,12 @@ public class EdgeFilter {
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
-        private Closure closure;
+        private Closure<Boolean> closure;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             try {
-                this.closure = (Closure) engine.eval(context.getConfiguration().get(FUNCTION));
+                this.closure = (Closure<Boolean>) engine.eval(context.getConfiguration().get(FUNCTION));
             } catch (final ScriptException e) {
                 throw new IOException(e.getMessage(), e);
             }
@@ -45,7 +45,7 @@ public class EdgeFilter {
             final Iterator<Edge> itty = value.getEdges(Direction.BOTH).iterator();
             while (itty.hasNext()) {
                 final Edge edge = itty.next();
-                if ((Boolean) this.closure.call(edge))
+                if (this.closure.call(edge))
                     context.getCounter(Counters.EDGES_KEPT).increment(1l);
                 else {
                     itty.remove();
