@@ -297,10 +297,11 @@ public class FaunusGraph extends Configured implements Tool {
     ///////////////////////// STATISTICS /////////////////////////
     //////////////////////////////////////////////////////////////
 
-    public FaunusGraph adjacentProperties(final String property) throws IOException {
+    public FaunusGraph adjacentProperties(final String property, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(AdjacentProperties.PROPERTY, property);
+        conf.setStrings(AdjacentProperties.LABELS, labels);
         final Job job1 = new Job(conf, AdjacentProperties.class.getCanonicalName() + ":part-1");
         job1.setMapperClass(AdjacentProperties.Map.class);
         job1.setReducerClass(AdjacentProperties.Reduce.class);

@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.CounterMap;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -24,6 +25,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 public class AdjacentProperties {
 
     public static final String PROPERTY = Tokens.makeNamespace(AdjacentProperties.class) + ".property";
+    public static final String LABELS = Tokens.makeNamespace(AdjacentProperties.class) + ".labels";
 
     public enum Counters {
         EDGES_COUNTED,
@@ -34,13 +36,19 @@ public class AdjacentProperties {
 
         private final LongWritable longWritable = new LongWritable();
         private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
+        private String[] labels;
+
+        @Override
+        public void setup(final Mapper.Context context) throws IOException, InterruptedException {
+            this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
+        }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
             long counter = 0;
             this.longWritable.set(value.getIdAsLong());
             context.write(this.longWritable, this.vertexHolder.set('f', value));
-            for (final Edge edge : value.getEdges(OUT)) {
+            for (final Edge edge : value.getEdges(OUT, this.labels)) {
                 final FaunusVertex vertexB = (FaunusVertex) edge.getVertex(IN);
                 this.longWritable.set(vertexB.getIdAsLong());
                 context.write(this.longWritable, this.vertexHolder.set('r', value));

@@ -29,7 +29,7 @@ public class DegreeDistributionTest extends BaseTest {
 
     public void testOutDegree() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(DegreeDistribution.DIRECTION, "OUT");
+        config.set(DegreeDistribution.DIRECTION, "OUT");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<IntWritable, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -57,7 +57,7 @@ public class DegreeDistributionTest extends BaseTest {
 
     public void testInDegree() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(DegreeDistribution.DIRECTION, "IN");
+        config.set(DegreeDistribution.DIRECTION, "IN");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<IntWritable, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -82,7 +82,7 @@ public class DegreeDistributionTest extends BaseTest {
 
     public void testBothDegree() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(DegreeDistribution.DIRECTION, "BOTH");
+        config.set(DegreeDistribution.DIRECTION, "BOTH");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<IntWritable, IntWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);

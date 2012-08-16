@@ -28,7 +28,7 @@ public class LabelDistributionTest extends BaseTest {
 
     public void testOutLabelDistribution() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(LabelDistribution.DIRECTION, "OUT");
+        config.set(LabelDistribution.DIRECTION, "OUT");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         assertEquals(results.size(), 6);
@@ -56,7 +56,7 @@ public class LabelDistributionTest extends BaseTest {
 
     public void testInLabelDistribution() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(LabelDistribution.DIRECTION, "IN");
+        config.set(LabelDistribution.DIRECTION, "IN");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         assertEquals(results.size(), 6);
@@ -84,7 +84,7 @@ public class LabelDistributionTest extends BaseTest {
 
     public void testBothLabelDistribution() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(LabelDistribution.DIRECTION, "BOTH");
+        config.set(LabelDistribution.DIRECTION, "BOTH");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         assertEquals(results.size(), 6);

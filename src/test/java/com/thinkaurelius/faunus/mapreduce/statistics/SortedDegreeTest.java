@@ -28,9 +28,9 @@ public class SortedDegreeTest extends BaseTest {
 
     public void testOutDegreeReverseSort() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(SortedDegree.DIRECTION, "OUT");
-        config.setStrings(SortedDegree.PROPERTY, "name");
-        config.setStrings(SortedDegree.ORDER, Tokens.Order.REVERSE.name());
+        config.set(SortedDegree.DIRECTION, "OUT");
+        config.set(SortedDegree.PROPERTY, "name");
+        config.set(SortedDegree.ORDER, Tokens.Order.REVERSE.name());
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, IntWritable>> results = runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -79,9 +79,9 @@ public class SortedDegreeTest extends BaseTest {
 
     public void testOutDegreeStandardSort() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(SortedDegree.DIRECTION, "OUT");
-        config.setStrings(SortedDegree.PROPERTY, "name");
-        config.setStrings(SortedDegree.ORDER, Tokens.Order.STANDARD.name());
+        config.set(SortedDegree.DIRECTION, "OUT");
+        config.set(SortedDegree.PROPERTY, "name");
+        config.set(SortedDegree.ORDER, Tokens.Order.STANDARD.name());
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, IntWritable>> results = runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);

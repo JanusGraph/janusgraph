@@ -36,7 +36,7 @@ public class AdjacentPropertiesTest extends BaseTest {
 
     public void testTypeProperty() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(AdjacentProperties.PROPERTY, "type");
+        config.set(AdjacentProperties.PROPERTY, "type");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, Text>> results = runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         // System.out.println(results);
@@ -58,7 +58,7 @@ public class AdjacentPropertiesTest extends BaseTest {
 
     public void testTypeProperty2() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(AdjacentProperties.PROPERTY, "type");
+        config.set(AdjacentProperties.PROPERTY, "type");
         this.mapReduceDriver.withConfiguration(config);
         for (Pair<Text, Text> result : (List<Pair>) runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver)) {
             this.mapReduceDriver2.withInput(result);
@@ -88,6 +88,28 @@ public class AdjacentPropertiesTest extends BaseTest {
         }
 
         assertEquals(17, this.mapReduceDriver.getCounters().findCounter(AdjacentProperties.Counters.EDGES_COUNTED).getValue());
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(AdjacentProperties.Counters.VERTICES_COUNTED).getValue());
+    }
+
+    public void testTypeProperty3BattledEdge() throws IOException {
+        Configuration config = new Configuration();
+        config.set(AdjacentProperties.PROPERTY, "type");
+        config.setStrings(AdjacentProperties.LABELS, "battled");
+        this.mapReduceDriver.withConfiguration(config);
+        for (Pair<Text, Text> result : (List<Pair>) runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver)) {
+            this.mapReduceDriver2.withInput(result);
+        }
+        List<Pair<Text, LongWritable>> results = this.mapReduceDriver2.run();
+        // System.out.println(results);
+        for (Pair<Text, LongWritable> result : results) {
+            if (result.getFirst().toString().equals("(demigod,monster)"))
+                assertEquals(result.getSecond().get(), 3);
+            else
+                assertTrue(false);
+
+        }
+
+        assertEquals(3, this.mapReduceDriver.getCounters().findCounter(AdjacentProperties.Counters.EDGES_COUNTED).getValue());
         assertEquals(12, this.mapReduceDriver.getCounters().findCounter(AdjacentProperties.Counters.VERTICES_COUNTED).getValue());
     }
 }
