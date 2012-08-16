@@ -255,8 +255,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	public TitanKey getPropertyKey(String name) {
 		TitanType et = getType(name);
 		if (et==null) {
-            if (config.doAutoCreateEdgeTypes()) return config.getAutoEdgeTypeMaker().makeKey(name, makeType());
-			else throw new IllegalArgumentException("Key with given name does not exist: " + name);
+            return config.getAutoEdgeTypeMaker().makeKey(name, makeType());
         } else if (et.isPropertyKey()) {
 			return (TitanKey)et;
 		} else throw new IllegalArgumentException("The type of given name is not a key: " + name);
@@ -268,8 +267,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	public TitanLabel getEdgeLabel(String name) {
 		TitanType et = getType(name);
 		if (et==null) {
-            if (config.doAutoCreateEdgeTypes()) return config.getAutoEdgeTypeMaker().makeLabel(name, makeType());
-            throw new IllegalArgumentException("Type with given name does not exist: " + name);
+            return config.getAutoEdgeTypeMaker().makeLabel(name, makeType());
         } else if (et.isEdgeLabel()) {
 			return (TitanLabel)et;
 		} else throw new IllegalArgumentException("The type of given name is not a label: " + name);

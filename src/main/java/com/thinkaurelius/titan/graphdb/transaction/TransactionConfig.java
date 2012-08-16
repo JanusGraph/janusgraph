@@ -76,15 +76,6 @@ public class TransactionConfig {
 		return verifyNodeExistence;
 	}
 
-
-    /**
-     * Whether the graph transaction is configured to automatically create not yet existing edge types.
-     * @return True, if edge types are created automatically, else false.
-     */
-    public boolean doAutoCreateEdgeTypes() {
-        return defaultTypeMaker!=null;
-    }
-
     /**
      * Whether the persistence layer should acquire locks for this transaction during persistence.
      *
@@ -97,10 +88,8 @@ public class TransactionConfig {
     /**
      *
      * @return The default edge type maker used to automatically create not yet existing edge types.
-     * @throws UnsupportedOperationException when automatically creating edge types is not supported
      */
     public DefaultTypeMaker getAutoEdgeTypeMaker() {
-        if (!doAutoCreateEdgeTypes()) throw new UnsupportedOperationException("Auto edge type creation not supported in this configuration");
         return defaultTypeMaker;
     }
 	

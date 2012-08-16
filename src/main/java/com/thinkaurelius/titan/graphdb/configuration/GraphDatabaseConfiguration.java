@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.SimpleVertexIDAssigne
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.types.DisableDefaultTypeMaker;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -60,6 +61,7 @@ public class GraphDatabaseConfiguration {
     }};
 
     private static final Map<String,DefaultTypeMaker> preregisteredAutoType = new HashMap<String,DefaultTypeMaker>() {{
+        put("none", DisableDefaultTypeMaker.INSTANCE);
         put("blueprints", BlueprintsDefaultTypeMaker.INSTANCE);
     }};
 
@@ -232,6 +234,7 @@ public class GraphDatabaseConfiguration {
         flushIDs = configuration.getBoolean(FLUSH_IDS_KEY,FLUSH_IDS_DEFAULT);
         batchLoading = storageConfig.getBoolean(STORAGE_BATCH_KEY,STORAGE_BATCH_DEFAULT);
         defaultTypeMaker = preregisteredAutoType.get(configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
+        Preconditions.checkNotNull(defaultTypeMaker,"Invalid "+AUTO_TYPE_KEY+" option: " + configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
     }
 
     public boolean isReadOnly() {
