@@ -13,10 +13,10 @@ import static com.tinkerpop.blueprints.Direction.BOTH;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class EdgeLabelFilter {
+public class LabelFilter {
 
-    public static final String LABELS = Tokens.makeNamespace(EdgeLabelFilter.class) + ".labels";
-    public static final String ACTION = Tokens.makeNamespace(EdgeLabelFilter.class) + ".action";
+    public static final String LABELS = Tokens.makeNamespace(LabelFilter.class) + ".labels";
+    public static final String ACTION = Tokens.makeNamespace(LabelFilter.class) + ".action";
 
     public enum Counters {
         EDGES_KEPT,

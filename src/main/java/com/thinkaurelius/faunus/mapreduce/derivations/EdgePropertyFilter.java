@@ -15,13 +15,13 @@ import java.util.Iterator;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class EdgePropertyValueFilter {
+public class EdgePropertyFilter {
 
-    public static final String KEY = Tokens.makeNamespace(EdgePropertyValueFilter.class) + ".key";
-    public static final String VALUE = Tokens.makeNamespace(EdgePropertyValueFilter.class) + ".value";
-    public static final String VALUE_CLASS = Tokens.makeNamespace(EdgePropertyValueFilter.class) + ".valueClass";
-    public static final String COMPARE = Tokens.makeNamespace(EdgePropertyValueFilter.class) + ".compare";
-    public static final String NULL_WILDCARD = Tokens.makeNamespace(EdgePropertyValueFilter.class) + ".nullWildcard";
+    public static final String KEY = Tokens.makeNamespace(EdgePropertyFilter.class) + ".key";
+    public static final String VALUE = Tokens.makeNamespace(EdgePropertyFilter.class) + ".value";
+    public static final String VALUE_CLASS = Tokens.makeNamespace(EdgePropertyFilter.class) + ".valueClass";
+    public static final String COMPARE = Tokens.makeNamespace(EdgePropertyFilter.class) + ".compare";
+    public static final String NULL_WILDCARD = Tokens.makeNamespace(EdgePropertyFilter.class) + ".nullWildcard";
 
     public enum Counters {
         EDGES_KEPT,

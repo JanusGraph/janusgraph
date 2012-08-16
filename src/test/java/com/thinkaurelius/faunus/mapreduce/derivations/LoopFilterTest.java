@@ -3,7 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.derivations;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.derivations.Self;
+import com.thinkaurelius.faunus.mapreduce.derivations.LoopFilter;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
@@ -19,19 +19,19 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class SelfTest extends BaseTest {
+public class LoopFilterTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new Self.Map());
+        mapReduceDriver.setMapper(new LoopFilter.Map());
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
     public void testKeepSelf() throws IOException {
         Configuration config = new Configuration();
-        config.set(Self.ACTION, Tokens.Action.KEEP.name());
+        config.set(LoopFilter.ACTION, Tokens.Action.KEEP.name());
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -40,12 +40,12 @@ public class SelfTest extends BaseTest {
             assertEquals(asList(vertex.getEdges(Direction.BOTH)).size(), 0);
         }
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_DROPPED).getValue(), 12);
+        assertEquals(mapReduceDriver.getCounters().findCounter(LoopFilter.Counters.EDGES_DROPPED).getValue(), 12);
     }
 
     public void testDropSelf() throws IOException {
         Configuration config = new Configuration();
-        config.set(Self.ACTION, Tokens.Action.DROP.name());
+        config.set(LoopFilter.ACTION, Tokens.Action.DROP.name());
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -73,13 +73,13 @@ public class SelfTest extends BaseTest {
         assertEquals(asList(vertex.getEdges(Direction.IN)).size(), 0);
         assertEquals(asList(vertex.getEdges(Direction.OUT)).size(), 1);
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_DROPPED).getValue(), 0);
+        assertEquals(mapReduceDriver.getCounters().findCounter(LoopFilter.Counters.EDGES_DROPPED).getValue(), 0);
 
     }
     
     public void testDropSelf2() throws IOException {
         Configuration config = new Configuration();
-        config.set(Self.ACTION, Tokens.Action.DROP.name());
+        config.set(LoopFilter.ACTION, Tokens.Action.DROP.name());
         mapReduceDriver.withConfiguration(config);
         Graph graph = new TinkerGraph();
         Vertex v1 = graph.addVertex(1);
@@ -104,14 +104,14 @@ public class SelfTest extends BaseTest {
         assertEquals(asList(vertex.getEdges(Direction.IN)).size(), 1);
         assertEquals(asList(vertex.getEdges(Direction.OUT)).size(), 1);
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_DROPPED).getValue(), 4);
+        assertEquals(mapReduceDriver.getCounters().findCounter(LoopFilter.Counters.EDGES_DROPPED).getValue(), 4);
         
     }
 
     public void testDropSelf3() throws IOException {
         Configuration config = new Configuration();
-        config.set(Self.ACTION, Tokens.Action.DROP.name());
-        config.setStrings(Self.LABELS, "knows");
+        config.set(LoopFilter.ACTION, Tokens.Action.DROP.name());
+        config.setStrings(LoopFilter.LABELS, "knows");
         mapReduceDriver.withConfiguration(config);
         Graph graph = new TinkerGraph();
         Vertex v1 = graph.addVertex(1);
@@ -136,7 +136,7 @@ public class SelfTest extends BaseTest {
         assertEquals(asList(vertex.getEdges(Direction.IN)).size(), 2);
         assertEquals(asList(vertex.getEdges(Direction.OUT)).size(), 2);
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(Self.Counters.EDGES_DROPPED).getValue(), 2);
+        assertEquals(mapReduceDriver.getCounters().findCounter(LoopFilter.Counters.EDGES_DROPPED).getValue(), 2);
 
     }
 }

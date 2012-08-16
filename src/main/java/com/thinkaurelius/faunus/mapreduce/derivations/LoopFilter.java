@@ -16,10 +16,10 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Self {
+public class LoopFilter {
 
-    public static final String ACTION = Tokens.makeNamespace(Self.class) + ".action";
-    public static final String LABELS = Tokens.makeNamespace(Self.class) + ".labels";
+    public static final String ACTION = Tokens.makeNamespace(LoopFilter.class) + ".action";
+    public static final String LABELS = Tokens.makeNamespace(LoopFilter.class) + ".labels";
 
     public enum Counters {
         EDGES_DROPPED,

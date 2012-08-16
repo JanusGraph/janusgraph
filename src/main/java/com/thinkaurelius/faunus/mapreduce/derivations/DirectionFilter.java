@@ -14,9 +14,9 @@ import static com.tinkerpop.blueprints.Direction.BOTH;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class EdgeDirectionFilter {
-    public static final String DIRECTION = Tokens.makeNamespace(EdgeDirectionFilter.class) + ".direction";
-    public static final String ACTION = Tokens.makeNamespace(EdgeDirectionFilter.class) + ".action";
+public class DirectionFilter {
+    public static final String DIRECTION = Tokens.makeNamespace(DirectionFilter.class) + ".direction";
+    public static final String ACTION = Tokens.makeNamespace(DirectionFilter.class) + ".action";
 
     public enum Counters {
         EDGES_KEPT,

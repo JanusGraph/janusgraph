@@ -89,11 +89,11 @@ public abstract class BaseTest extends TestCase {
     }
 
     public static String getFullString(final Vertex vertex) {
-        String string = vertex.toString() + "[";
+        String string = vertex.toString() + "IN[";
         for (Edge edge : vertex.getEdges(Direction.IN)) {
             string = string + edge.toString();
         }
-        string = string + "][";
+        string = string + "]OUT[";
         for (Edge edge : vertex.getEdges(Direction.OUT)) {
             string = string + edge.toString();
         }

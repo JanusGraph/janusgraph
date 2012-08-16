@@ -17,22 +17,22 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class VertexPropertyValueFilterTest extends BaseTest {
+public class VertexPropertyFilterTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new VertexPropertyValueFilter.Map());
-        mapReduceDriver.setReducer(new VertexPropertyValueFilter.Reduce());
+        mapReduceDriver.setMapper(new VertexPropertyFilter.Map());
+        mapReduceDriver.setReducer(new VertexPropertyFilter.Reduce());
     }
 
     public void testOldVerticesFiltered() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(VertexPropertyValueFilter.KEY, "age");
-        config.setClass(VertexPropertyValueFilter.VALUE_CLASS, Integer.class, Integer.class);
-        config.set(VertexPropertyValueFilter.VALUE, "35");
-        config.set(VertexPropertyValueFilter.COMPARE, Query.Compare.LESS_THAN.name());
+        config.setStrings(VertexPropertyFilter.KEY, "age");
+        config.setClass(VertexPropertyFilter.VALUE_CLASS, Integer.class, Integer.class);
+        config.set(VertexPropertyFilter.VALUE, "35");
+        config.set(VertexPropertyFilter.COMPARE, Query.Compare.LESS_THAN.name());
 
         this.mapReduceDriver.withConfiguration(config);
         Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -56,17 +56,17 @@ public class VertexPropertyValueFilterTest extends BaseTest {
             }
         }
 
-        assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyValueFilter.Counters.VERTICES_DROPPED).getValue());
-        assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyValueFilter.Counters.VERTICES_KEPT).getValue());
+        assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyFilter.Counters.VERTICES_DROPPED).getValue());
+        assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyFilter.Counters.VERTICES_KEPT).getValue());
     }
 
     public void testOldVerticesFilteredWildCardNull() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(VertexPropertyValueFilter.KEY, "age");
-        config.setClass(VertexPropertyValueFilter.VALUE_CLASS, Integer.class, Integer.class);
-        config.set(VertexPropertyValueFilter.VALUE, "35");
-        config.set(VertexPropertyValueFilter.COMPARE, Query.Compare.LESS_THAN.name());
-        config.set(VertexPropertyValueFilter.NULL_WILDCARD, "true");
+        config.setStrings(VertexPropertyFilter.KEY, "age");
+        config.setClass(VertexPropertyFilter.VALUE_CLASS, Integer.class, Integer.class);
+        config.set(VertexPropertyFilter.VALUE, "35");
+        config.set(VertexPropertyFilter.COMPARE, Query.Compare.LESS_THAN.name());
+        config.set(VertexPropertyFilter.NULL_WILDCARD, "true");
 
         this.mapReduceDriver.withConfiguration(config);
         Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -92,7 +92,7 @@ public class VertexPropertyValueFilterTest extends BaseTest {
             }
         }
 
-        assertEquals(1l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyValueFilter.Counters.VERTICES_DROPPED).getValue());
-        assertEquals(5l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyValueFilter.Counters.VERTICES_KEPT).getValue());
+        assertEquals(1l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyFilter.Counters.VERTICES_DROPPED).getValue());
+        assertEquals(5l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyFilter.Counters.VERTICES_KEPT).getValue());
     }
 }
