@@ -18,9 +18,9 @@ import java.util.List;
  */
 public class MapReduceSequence {
 
-    public static final String MAP_CLASSES = Tokens.makeNamespace(MapSequence.class) + ".mapClasses";
-    public static final String MAPR_CLASS = Tokens.makeNamespace(MapSequence.class) + ".mapRClass";
-    public static final String REDUCE_CLASS = Tokens.makeNamespace(MapSequence.class) + ".reduceClass";
+    public static final String MAP_CLASSES = Tokens.makeNamespace(MapReduceSequence.class) + ".mapClasses";
+    public static final String MAPR_CLASS = Tokens.makeNamespace(MapReduceSequence.class) + ".mapRClass";
+    public static final String REDUCE_CLASS = Tokens.makeNamespace(MapReduceSequence.class) + ".reduceClass";
 
     public static class Map extends MemoryMapper<NullWritable, FaunusVertex, LongWritable, Holder> {
 

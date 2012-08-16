@@ -1,28 +1,16 @@
 package com.thinkaurelius.faunus;
 
-import com.sun.corba.se.spi.orbutil.closure.ClosureFactory;
 import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
-import groovy.lang.Closure;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
-import org.codehaus.groovy.control.CompilationUnit;
-import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
-import org.codehaus.groovy.runtime.MethodClosure;
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,13 +19,9 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class BaseTest extends TestCase {
+public abstract class BaseTest extends TestCase {
 
     public static enum ExampleGraph {GRAPH_OF_THE_GODS, TINKERGRAPH}
-
-    public void testTrue() {
-        assertTrue(true);
-    }
 
     public static <T> List<T> asList(final Iterable<T> iterable) {
         final List<T> list = new ArrayList<T>();
@@ -103,14 +87,14 @@ public class BaseTest extends TestCase {
         }
         return list;
     }
-    
+
     public static String getFullString(final Vertex vertex) {
         String string = vertex.toString() + "[";
-        for(Edge edge : vertex.getEdges(Direction.IN)) {
+        for (Edge edge : vertex.getEdges(Direction.IN)) {
             string = string + edge.toString();
         }
         string = string + "][";
-        for(Edge edge : vertex.getEdges(Direction.OUT)) {
+        for (Edge edge : vertex.getEdges(Direction.OUT)) {
             string = string + edge.toString();
         }
         return string + "]";
@@ -128,26 +112,27 @@ public class BaseTest extends TestCase {
     }*/
 
     /*public void testClosure() throws Exception {
-        //GroovyScriptEngineImpl engine = new GroovyScriptEngineImpl();
-        MethodClosure closure = new MethodClosure("test","{s -> 1+2}");
-        System.out.println(closure.call());
+        ScriptEngine engine = new GroovyScriptEngineImpl();
+        Closure closure = (Closure) engine.eval("{-> 1+2}");
+        closure = closure.dehydrate();
+
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutput out = new ObjectOutputStream(bos);
         out.writeObject(closure);
-        
         out.flush();
         out.close();
 
-        //Configuration conf = new Configuration();
-        //conf.set("method", bos.toString());
         BASE64Encoder encoder = new BASE64Encoder();
-        String temp = encoder.encode(bos.toByteArray());
-        System.out.println(temp);
+        String closureString = encoder.encode(bos.toByteArray());
+        System.out.println(closureString);
 
-        ByteArrayInputStream bis = new ByteArrayInputStream(new BASE64Decoder().decodeBuffer(temp));
+        ByteArrayInputStream bis = new ByteArrayInputStream(new BASE64Decoder().decodeBuffer(closureString));
         ObjectInputStream in = new ObjectInputStream(bis);
+
         Closure closure1 = (Closure) in.readObject();
         in.close();
-        System.out.println(closure1.call("test"));
+
+        System.out.println(closure1.call());
     }*/
+
 }

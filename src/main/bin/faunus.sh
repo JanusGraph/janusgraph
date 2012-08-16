@@ -8,6 +8,6 @@ else
 fi
 
 # Deploy job to Hadoop cluster
-$HADOOP jar lib/faunus-*-job.jar com.thinkaurelius.faunus.FaunusGraph $1 $2
+$HADOOP jar lib/faunus-*-job.jar com.thinkaurelius.faunus.FaunusGraph ${1+"$@"}
 
 exit $?

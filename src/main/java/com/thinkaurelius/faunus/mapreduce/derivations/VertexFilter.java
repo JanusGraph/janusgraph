@@ -43,7 +43,7 @@ public class VertexFilter {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             try {
                 this.closure = (Closure) engine.eval(context.getConfiguration().get(FUNCTION));
-            } catch (ScriptException e) {
+            } catch (final ScriptException e) {
                 throw new IOException(e.getMessage(), e);
             }
         }

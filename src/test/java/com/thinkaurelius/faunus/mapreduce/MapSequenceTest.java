@@ -32,7 +32,7 @@ public class MapSequenceTest extends BaseTest {
         config.setStrings(PropertyFilter.KEYS + "-2", "name");
         config.set(PropertyFilter.ACTION + "-2", Tokens.Action.DROP.name());
         config.set(PropertyFilter.CLASS + "-2", Vertex.class.getName());
-        config.setStrings(MapReduceSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), PropertyFilter.Map.class.getName());
+        config.setStrings(MapSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), PropertyFilter.Map.class.getName());
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
         assertEquals(results.size(), 6);
@@ -45,10 +45,10 @@ public class MapSequenceTest extends BaseTest {
 
     public void testBadSequenceId() throws Exception {
         Configuration config = new Configuration();
-        config.setStrings(PropertyFilter.KEYS + "-3", "name");
+        config.setStrings(PropertyFilter.KEYS + "-3", "name"); // should be 2
         config.set(PropertyFilter.ACTION + "-3", Tokens.Action.DROP.name());
         config.set(PropertyFilter.CLASS + "-3", Vertex.class.getName());
-        config.setStrings(MapReduceSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), PropertyFilter.Map.class.getName());
+        config.setStrings(MapSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), PropertyFilter.Map.class.getName());
         this.mapReduceDriver.withConfiguration(config);
         try {
             final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);

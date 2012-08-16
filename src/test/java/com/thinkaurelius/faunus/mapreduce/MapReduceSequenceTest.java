@@ -42,4 +42,19 @@ public class MapReduceSequenceTest extends BaseTest {
         assertTrue(results.containsKey(1l));
         assertTrue(results.containsKey(2l));
     }
+
+    public void testMapReduceOneJob() throws IOException {
+        Configuration config = new Configuration();
+        config.set(VertexPropertyValueFilter.KEY, "age");
+        config.set(VertexPropertyValueFilter.COMPARE , Query.Compare.LESS_THAN.name());
+        config.set(VertexPropertyValueFilter.VALUE, "30");
+        config.set(VertexPropertyValueFilter.VALUE_CLASS , Float.class.getName());
+        config.set(MapReduceSequence.MAPR_CLASS, VertexPropertyValueFilter.Map.class.getName());
+        config.set(MapReduceSequence.REDUCE_CLASS, VertexPropertyValueFilter.Reduce.class.getName());
+        this.mapReduceDriver.withConfiguration(config);
+        final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
+        assertEquals(results.size(), 2);
+        assertTrue(results.containsKey(1l));
+        assertTrue(results.containsKey(2l));
+    }
 }
