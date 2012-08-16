@@ -25,43 +25,55 @@ public class StandardVertexCache extends OpenLongObjectHashMap implements Vertex
 	@Override
 	public boolean contains(long id) {
 		readLock.lock();
-		boolean contains = super.containsKey(id);
-		readLock.unlock();
-		return contains;
+        try {
+    		return super.containsKey(id);
+        } finally {
+		    readLock.unlock();
+        }
 	}
 	
 	@Override
 	public InternalTitanVertex get(long id) {
 		readLock.lock();
-		InternalTitanVertex node = (InternalTitanVertex)super.get(Long.valueOf(id));
-		readLock.unlock();
-		return node;
+        try {
+		    return (InternalTitanVertex)super.get(Long.valueOf(id));
+        } finally {
+		    readLock.unlock();
+        }
 	}
 	
 	@Override
 	public void add(InternalTitanVertex vertex, long id) {
 		writeLock.lock();
-		assert !containsKey(Long.valueOf(id));
-		put(id, vertex);
-		writeLock.unlock();
+        try {
+            assert !containsKey(Long.valueOf(id));
+            put(id, vertex);
+        } finally {
+		    writeLock.unlock();
+        }
 	}
 
     @Override
     public Iterable<InternalTitanVertex> getAll() {
         ArrayList<InternalTitanVertex> vertices = new ArrayList<InternalTitanVertex>(super.size()+2);
         readLock.lock();
-        ObjectArrayList all = super.values();
-        for (int i=0;i<all.size();i++) vertices.add((InternalTitanVertex)all.get(i));
-        readLock.unlock();
+        try {
+            ObjectArrayList all = super.values();
+            for (int i=0;i<all.size();i++) vertices.add((InternalTitanVertex)all.get(i));
+        } finally {
+            readLock.unlock();
+        }
         return vertices;
     }
     
     @Override
     public boolean remove(long vertexid) {
         writeLock.lock();
-        boolean removed = super.removeKey(vertexid);
-        writeLock.unlock();
-        return removed;
+        try {
+            return super.removeKey(vertexid);
+        } finally {
+            writeLock.unlock();
+        }
     }
 
 
