@@ -146,7 +146,10 @@ public class AtomicTitanQuery implements InternalTitanQuery {
             return withPropertyConstraint(etype,value);
         } else {
             assert etype.isPropertyKey();
-            Preconditions.checkArgument(((TitanKey) etype).getDataType().isInstance(value), "Value is not an instance of the property key's data type.");
+            Class<?> dataType = ((TitanKey) etype).getDataType();
+            Preconditions.checkArgument(dataType.isInstance(value),
+                    "Value [%s] is not an instance of the expected data type for property key [%s]. Expected: %s, found: %s", value,
+                    etype.getName(), dataType, value.getClass());
             return withPropertyConstraint(etype,new PointInterval(value));
         }
     }
