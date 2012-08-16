@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.blueprints;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.tinkerpop.blueprints.*;
@@ -86,7 +87,14 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     @Override
     public Edge getEdge(Object id) {
         if (id==null) throw ExceptionFactory.edgeIdCanNotBeNull();
-        throw new UnsupportedOperationException("Titan does not support direct edge retrieval");
+        RelationIdentifier rid = null;
+        if (id instanceof RelationIdentifier) rid = (RelationIdentifier)id;
+        else if (id instanceof String) rid = RelationIdentifier.parse((String)id);
+        else if (id instanceof long[]) rid = RelationIdentifier.get((long[])id);
+        else if (id instanceof int[]) rid = RelationIdentifier.get((int[])id);
+
+        if (rid!=null) return rid.findEdge(this);
+        else return null;
     }
 
     @Override

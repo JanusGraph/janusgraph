@@ -60,6 +60,11 @@ public class SimpleTitanEdge extends AbstractTypedRelation implements TitanEdge 
     public String getLabel() {
         return type.getName();
     }
+
+    @Override
+    public Object getId() {
+        return RelationIdentifier.get(this);
+    }
     
     
 	@Override

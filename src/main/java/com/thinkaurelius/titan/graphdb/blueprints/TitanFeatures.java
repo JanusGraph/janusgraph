@@ -38,7 +38,7 @@ public class TitanFeatures {
         features.supportsVertexIteration = false;
         features.supportsVertexProperties = true;
         features.supportsEdgeProperties = true;
-        features.supportsEdgeRetrieval = false;
+        features.supportsEdgeRetrieval = true;
         features.supportsTransactions = true;
         features.supportsThreadedTransactions = true;
         features.checkCompliance();
