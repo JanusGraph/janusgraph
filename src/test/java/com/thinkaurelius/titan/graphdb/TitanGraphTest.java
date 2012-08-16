@@ -79,10 +79,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
                 .setProperty("serializer10", SpecialIntSerializer.class.getCanonicalName());
 
         clopen();
-        
+
         TitanLabel friend = tx.makeType().name("friend").directed().functional().
                 group(TypeGroup.of(5, "group1")).makeEdgeLabel();
-        
+
         TitanKey id = tx.makeType().name("uid").functional().indexed().unique().
                 dataType(String.class).makePropertyKey();
 
@@ -98,18 +98,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         TitanLabel connect = tx.makeType().name("connect").undirected().primaryKey(id).signature(weight).
                 functional(false).makeEdgeLabel();
-        
-        TitanVertex v1 = tx.addVertex();
-        v1.setProperty("uid","v1");
-        v1.setProperty("someid",100l);
-        try {
-            v1.addProperty(number,10.5);
-            fail();
-        } catch (IllegalArgumentException e) {}
-        v1.setProperty("int",new SpecialInt(77));
 
         clopen();
-                
+
         id = tx.getPropertyKey("uid");
         assertEquals(TypeGroup.DEFAULT_GROUP,id.getGroup());
         assertTrue(id.isUnique());
@@ -117,9 +108,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertTrue(id.isFunctional());
         assertEquals(String.class,id.getDataType());
         assertTrue(id.isSimple());
-        
+
         //Basic properties
-        
+
         friend = tx.getEdgeLabel("friend");
         assertEquals(TypeGroup.of(5,"group1"),friend.getGroup());
         assertEquals("friend",friend.getName());
@@ -144,7 +135,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertTrue(connect.isFunctional());
         assertFalse(((InternalTitanType)connect).isFunctionalLocking());
         assertFalse(((InternalTitanType) connect).isHidden());
-        
+
         link = tx.getEdgeLabel("link");
         assertTrue(link.isUnidirected());
         assertFalse(link.isFunctional());
@@ -180,21 +171,47 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         } catch (IllegalArgumentException e) {}
         tx.makeType().name("link2").unidirected().
                 primaryKey(id,weight).makeEdgeLabel();
-        
-        //Data types and serialization
+
+        // Data types and serialization
         TitanVertex v = tx.addVertex();
-        v.addProperty(id,"Hello");
-        v.addProperty(weight,0.5);
+        v.addProperty(id, "Hello");
+        v.addProperty(weight, 0.5);
         try {
-            v.addProperty(weight,"0.5");
+            v.addProperty(weight, "0.5");
             fail();
         } catch (IllegalArgumentException e) {}
 
+        // Verify vertex in new transaction
+        TitanVertex v1 = tx.addVertex();
+        v1.setProperty("uid", "v1");
+        v1.setProperty("someid", 100l);
+        try {
+            v1.addProperty(number, 10.5);
+            fail();
+        } catch (IllegalArgumentException e) {}
+        v1.setProperty("int", new SpecialInt(77));
 
+        clopen();
 
-        v1 = tx.getVertex(id,"v1");
+        v1 = tx.getVertex(id, "v1");
         assertEquals(77, ((SpecialInt) v1.getProperty("int")).getValue());
-        assertEquals(v1,Iterables.getOnlyElement(tx.getVertices("someid",100l)));
+        assertEquals(v1, Iterables.getOnlyElement(tx.getVertices("someid", 100l)));
+        assertEquals(v1, Iterables.getOnlyElement(tx.getVertices(id, "v1")));
+
+        // Verify vertex in current transaction
+        TitanVertex v2 = tx.addVertex();
+        v2.setProperty("uid", "v2");
+        v2.setProperty("someid", 200l);
+        try {
+            v2.addProperty(number, 10.5);
+            fail();
+        } catch (IllegalArgumentException e) {}
+        v2.setProperty("int", new SpecialInt(154));
+
+        v2 = tx.getVertex(id, "v2");
+        assertEquals(154, ((SpecialInt) v2.getProperty("int")).getValue());
+        assertEquals(v2, Iterables.getOnlyElement(tx.getVertices("someid", 200l)));
+        assertEquals(v2, Iterables.getOnlyElement(tx.getVertices(id, "v2")));
     }
 
     @Test
