@@ -8,6 +8,7 @@ import com.thinkaurelius.faunus.mapreduce.derivations.Identity;
 import com.thinkaurelius.faunus.mapreduce.derivations.LabelFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.Traverse;
 import com.thinkaurelius.faunus.mapreduce.derivations.VertexPropertyFilter;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
@@ -82,8 +83,13 @@ public class MapReduceSequenceTest extends BaseTest {
 
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
+        int count = 0;
         for (Vertex vertex : results.values()) {
-            System.out.println(getFullString(vertex));
+            if (vertex.getEdges(Direction.BOTH).iterator().hasNext()) {
+                count++;
+                assertEquals(vertex.getEdges(Direction.BOTH).iterator().next().getLabel(), "grandfather");
+            }
         }
+        assertEquals(count, 2);
     }
 }

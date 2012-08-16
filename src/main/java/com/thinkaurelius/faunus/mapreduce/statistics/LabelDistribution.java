@@ -17,9 +17,9 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class EdgeLabelDistribution {
+public class LabelDistribution {
 
-    public static final String DIRECTION = Tokens.makeNamespace(EdgeLabelDistribution.class) + ".direction";
+    public static final String DIRECTION = Tokens.makeNamespace(LabelDistribution.class) + ".direction";
 
     public enum Counters {
         EDGES_COUNTED,

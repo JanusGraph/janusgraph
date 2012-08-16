@@ -21,9 +21,9 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class AdjacentVertexProperties {
+public class AdjacentProperties {
 
-    public static final String PROPERTY = Tokens.makeNamespace(AdjacentVertexProperties.class) + ".property";
+    public static final String PROPERTY = Tokens.makeNamespace(AdjacentProperties.class) + ".property";
     private static final String NULL = "null";
 
     public enum Counters {
