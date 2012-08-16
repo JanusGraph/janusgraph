@@ -467,8 +467,9 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
                 vertices.addAll(attrSubindex.get(attribute));
             }
             Map<Object, TitanVertex> keySubindex = keyIndex.get(key);
-            if (keySubindex != null) {
-                vertices.add(keySubindex.get(attribute));
+            TitanVertex vertex = keySubindex.get(attribute);
+            if (keySubindex != null && vertex != null) {
+                vertices.add(vertex);
             }
             return vertices;
         } else {
