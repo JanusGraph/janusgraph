@@ -12,6 +12,7 @@ import com.thinkaurelius.faunus.mapreduce.derivations.EdgePropertyValueFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.Identity;
 import com.thinkaurelius.faunus.mapreduce.derivations.PropertyFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.Self;
+import com.thinkaurelius.faunus.mapreduce.derivations.Transform;
 import com.thinkaurelius.faunus.mapreduce.derivations.Transpose;
 import com.thinkaurelius.faunus.mapreduce.derivations.Traverse;
 import com.thinkaurelius.faunus.mapreduce.derivations.VertexFilter;
@@ -207,6 +208,13 @@ public class FaunusGraph extends Configured implements Tool {
         this.mapSequenceConfiguration.set(Self.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
         this.mapSequenceConfiguration.setStrings(Self.LABELS + "-" + this.mapSequenceClasses.size(), labels);
         this.mapSequenceClasses.add(Self.Map.class);
+        return this;
+    }
+
+    public FaunusGraph transform(final Class<? extends Element> klass, final String function) {
+        this.mapSequenceConfiguration.set(Transform.CLASS + "-" + this.mapSequenceClasses.size(), klass.getName());
+        this.mapSequenceConfiguration.set(Transform.FUNCTION + "-" + this.mapSequenceClasses.size(), function);
+        this.mapSequenceClasses.add(Transform.Map.class);
         return this;
     }
 
