@@ -219,6 +219,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		TitanVertex n1 = tx.addVertex(), n3 = tx.addVertex();
 		TitanEdge e=n3.addEdge(knows, n1);
 		e.addProperty(id, 111);
+        Object eid = e.getId();
 		n3.addProperty(id, 445);
 		assertEquals(111,e.getProperty(id));
 		clopen();
@@ -228,6 +229,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		assertEquals(445,n3.getProperty("uid"));
 		e=Iterables.getOnlyElement(n3.getTitanEdges(Direction.OUT, tx.getEdgeLabel("knows")));
 		assertEquals(111,e.getProperty(id));
+        assertEquals(e,tx.getEdge(eid));
+        assertEquals(e,tx.getEdge(eid.toString()));
 		TitanProperty p = Iterables.getOnlyElement(n3.getProperties("uid"));
 		p.remove();
 		n3.addProperty("uid", 353);
