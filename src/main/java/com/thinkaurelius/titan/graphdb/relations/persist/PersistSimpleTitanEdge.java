@@ -58,8 +58,6 @@ public class PersistSimpleTitanEdge extends SimpleTitanEdge {
 		return entity.getID();
 	}
 
-
-
 	@Override
 	public boolean hasID() {
 		return entity.hasID();
