@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.query.ComplexTitanQuery;
@@ -455,15 +454,24 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         Preconditions.checkNotNull(key);
         attribute = AttributeUtil.prepareAttribute(attribute,key.getDataType());
         if (key.hasIndex()) {
-            //First, get stuff from disk
+            // First, get stuff from disk
             long[] nodeids = getVertexIDsFromDisk(key, attribute);
             Set<TitanVertex> vertices = new HashSet<TitanVertex>(nodeids.length);
-            for (int i=0;i<nodeids.length;i++)
+            for (int i = 0; i < nodeids.length; i++) {
                 vertices.add(getExistingVertex(nodeids[i]));
-            //Next, the in-memory stuff
-            Multimap<Object,TitanVertex> subindex = attributeIndex.get(key);
-            if (subindex!=null) {
-                vertices.addAll(subindex.get(attribute));
+            }
+
+            // Next, the in-memory stuff
+            Multimap<Object, TitanVertex> attrSubindex = attributeIndex.get(key);
+            if (attrSubindex != null) {
+                vertices.addAll(attrSubindex.get(attribute));
+            }
+            Map<Object, TitanVertex> keySubindex = keyIndex.get(key);
+            if (keySubindex != null) {
+                TitanVertex vertex = keySubindex.get(attribute);
+                if (vertex != null) {
+                    vertices.add(vertex);
+                }
             }
             return vertices;
         } else {
