@@ -33,9 +33,8 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 		
 	private Set<InternalRelation> deletedEdges;
 	private List<InternalRelation> addedEdges;
-	
 
-	
+
 	public StandardPersistTitanTx(InternalTitanGraph g, TypeManager etManage, TransactionConfig config,
                                   TransactionHandle tx) {
 		super(g, StandardVertexFactories.DefaultPersisted,new StandardPersistedRelationFactory(),
@@ -57,7 +56,7 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 	 * TitanVertex and TitanRelation creation
 	 * ---------------------------------------------------------------
 	 */
-	
+
 	@Override
 	public boolean isDeletedRelation(InternalRelation relation) {
 		if (relation.isRemoved()) return true;
@@ -161,7 +160,7 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 
 	@Override
 	public synchronized void commit() {
-        Preconditions.checkArgument(isOpen());
+        Preconditions.checkArgument(isOpen(),"The transaction has already been closed");
         if (!getTxConfiguration().isReadOnly()) {
             try {
                 graphdb.save(addedEdges, deletedEdges, this);
@@ -178,7 +177,7 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 
 	@Override
 	public synchronized void abort() {
-        Preconditions.checkArgument(isOpen());
+        Preconditions.checkArgument(isOpen(),"The transaction has already been closed");
 		txHandle.abort();
 		super.abort();
         clear();
@@ -194,18 +193,4 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 		return !getTxConfiguration().isReadOnly() && (!deletedEdges.isEmpty() || !addedEdges.isEmpty());
 	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-	
 }
