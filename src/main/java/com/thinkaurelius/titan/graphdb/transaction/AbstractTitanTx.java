@@ -1,11 +1,8 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
@@ -21,12 +18,10 @@ import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.factory.VertexFactory;
-import com.thinkaurelius.titan.util.traversal.AllEdgesIterable;
 import com.thinkaurelius.titan.util.datastructures.Factory;
 import com.thinkaurelius.titan.util.datastructures.Maps;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.util.PropertyFilteredIterable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +37,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class AbstractTitanTx extends TitanBlueprintsTransaction implements InternalTitanTransaction {
 
 	private static final Logger log = LoggerFactory.getLogger(AbstractTitanTx.class);
+    
+    private static final Set<InternalTitanVertex> NO_NODES = ImmutableSet.of();
 
     protected InternalTitanGraph graphdb;
 
@@ -75,7 +72,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 		if (!config.isReadOnly()) { //TODO: don't maintain newNodes for batch loading transactions
             newNodes = Collections.newSetFromMap(new ConcurrentHashMap<InternalTitanVertex,Boolean>(10,0.75f,2));
         } else {
-            newNodes=null;
+            newNodes= NO_NODES;
         }
         vertexCache = new StandardVertexCache();
 
@@ -109,7 +106,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         if (config.assignIDsImmediately()) {
             graphdb.assignID(n);           
             if (isNode) vertexCache.add(n,n.getID());
-        } else if (newNodes!=null) {
+        } else if (newNodes!= NO_NODES) {
             if (isNode) {
                 newNodes.add(n);
             }
@@ -173,7 +170,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         if (n.hasID()) {
             removed = vertexCache.remove(n.getID());
         } else {
-            if (newNodes!=null) removed = newNodes.remove(n);
+            if (newNodes!=NO_NODES) removed = newNodes.remove(n);
             else removed=true;
         }
         assert removed;
@@ -511,7 +508,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
 	@Override
 	public boolean hasModifications() {
-		return !config.isReadOnly() && newNodes!=null && !newNodes.isEmpty();
+		return !config.isReadOnly() && !newNodes.isEmpty();
 	}
 
 
