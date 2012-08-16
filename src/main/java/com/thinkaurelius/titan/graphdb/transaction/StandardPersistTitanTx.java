@@ -70,13 +70,6 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 	}
 
 	@Override
-	public Iterable<Vertex> getVertices() {
-		//return Iterables.concat(super.getVertices(),this.getAllExistingNodes());
-        return super.getVertices();
-	}
-
-
-	@Override
 	public void deletedRelation(InternalRelation relation) {
 		super.deletedRelation(relation);
 		if (relation.isLoaded() && !relation.isInline()) {

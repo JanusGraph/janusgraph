@@ -183,31 +183,6 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
 	public Iterable<Vertex> getVertices(String key, Object attribute);
 
 	/**
-	 * Returns an iterable over all vertices loaded in the current transaction.
-	 * 
-	 * The order in which the vertices are returned is arbitrary. Note, that this method only returns those
-     * vertices that have been PREVIOUSLY loaded to avoid excessive memory loads. Hence, this method violates
-     * the contract of {@link com.tinkerpop.blueprints.Graph#getVertices()} unless all vertices are currently
-     * loaded in the transaction.
-	 * 
-	 * @return An iterable over all vertices in the transaction
-	 */
-	public Iterable<Vertex> getVertices();
-	
-	/**
-	 * Returns an iterable over all edges incident on the vertices loaded in the current transaction.
-	 * 
-	 * The order in which the edges are returned is arbitrary. Note, that this method only returns those
-     * edges for which at least one vertex that have been previously loaded to avoid excessive memory loads.
-     * This method might still require significant disk access to retrieve all of these edges. Hence, this method violates
-     * the contract of {@link com.tinkerpop.blueprints.Graph#getEdges()}} unless all edges are connected to a vertex
-     * currently loaded in this transaction.
-     *
-	 * @return An iterable over all edges in the transaction
-	 */
-	public Iterable<Edge> getEdges();
-
-	/**
 	 * Checks whether a type with the specified name exists.
 	 * 
 	 * @param name name of the type

@@ -319,27 +319,13 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
 	@Override
 	public Iterable<Vertex> getVertices() {
-        verifyOpen();
-        Iterable<InternalTitanVertex> iter = null;
-        if (newNodes!=null) 
-            iter = Iterables.concat(vertexCache.getAll(),newNodes);
-        else iter = vertexCache.getAll();
-        
-        iter = Iterables.filter(iter,new Predicate<InternalTitanVertex>() {
-            @Override
-            public boolean apply( InternalTitanVertex input) {
-                assert !(input instanceof TitanRelation);
-                if (input instanceof TitanType) return false;
-                else return true;
-            }
-        });
-        return (Iterable)iter;
+        throw new UnsupportedOperationException("Titan does not support global vertex operations - use Faunus instead");
 	}
 
 
 	@Override
 	public Iterable<Edge> getEdges() {
-		return AllEdgesIterable.of(getVertices());
+        throw new UnsupportedOperationException("Titan does not support global edge operations - use Faunus instead");
 	}
 
 	
@@ -475,7 +461,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
             }
             return vertices;
         } else {
-            throw new UnsupportedOperationException("getVertices only supports indexed keys since TitanGraph does not support vertex iteration outside the transaction");
+            throw new UnsupportedOperationException("getVertices only supports indexed keys since Titan does not support global vertex operations");
         }
 	}
 
