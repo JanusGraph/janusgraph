@@ -2,7 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.statistics;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.statistics.VertexDegree;
+import com.thinkaurelius.faunus.mapreduce.statistics.Degree;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -17,20 +17,20 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class VertexDegreeTest extends BaseTest {
+public class DegreeTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, Text, IntWritable, Text, IntWritable> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, Text, IntWritable, Text, IntWritable>();
-        mapReduceDriver.setMapper(new VertexDegree.Map());
+        mapReduceDriver.setMapper(new Degree.Map());
         mapReduceDriver.setReducer(new Reducer<Text, IntWritable, Text, IntWritable>());
     }
 
     public void testOutDegree() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(VertexDegree.DIRECTION, "OUT");
-        config.setStrings(VertexDegree.PROPERTY, "name");
+        config.setStrings(Degree.DIRECTION, "OUT");
+        config.setStrings(Degree.PROPERTY, "name");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, IntWritable>> results = runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -67,14 +67,14 @@ public class VertexDegreeTest extends BaseTest {
             }
         }
 
-        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(VertexDegree.Counters.EDGES_COUNTED).getValue());
-        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(VertexDegree.Counters.VERTICES_COUNTED).getValue());
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(Degree.Counters.EDGES_COUNTED).getValue());
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(Degree.Counters.VERTICES_COUNTED).getValue());
     }
 
     public void testInDegree() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(VertexDegree.DIRECTION, "IN");
-        config.setStrings(VertexDegree.PROPERTY, "name");
+        config.setStrings(Degree.DIRECTION, "IN");
+        config.setStrings(Degree.PROPERTY, "name");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, IntWritable>> results = runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -111,14 +111,14 @@ public class VertexDegreeTest extends BaseTest {
             }
         }
 
-        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(VertexDegree.Counters.EDGES_COUNTED).getValue());
-        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(VertexDegree.Counters.VERTICES_COUNTED).getValue());
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(Degree.Counters.EDGES_COUNTED).getValue());
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(Degree.Counters.VERTICES_COUNTED).getValue());
     }
 
     public void testBothDegree() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(VertexDegree.DIRECTION, "BOTH");
-        config.setStrings(VertexDegree.PROPERTY, "name");
+        config.setStrings(Degree.DIRECTION, "BOTH");
+        config.setStrings(Degree.PROPERTY, "name");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, IntWritable>> results = runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -155,7 +155,7 @@ public class VertexDegreeTest extends BaseTest {
             }
         }
 
-        assertEquals(34, this.mapReduceDriver.getCounters().findCounter(VertexDegree.Counters.EDGES_COUNTED).getValue());
-        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(VertexDegree.Counters.VERTICES_COUNTED).getValue());
+        assertEquals(34, this.mapReduceDriver.getCounters().findCounter(Degree.Counters.EDGES_COUNTED).getValue());
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(Degree.Counters.VERTICES_COUNTED).getValue());
     }
 }

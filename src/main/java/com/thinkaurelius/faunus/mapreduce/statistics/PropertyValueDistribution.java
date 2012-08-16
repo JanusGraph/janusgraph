@@ -14,14 +14,14 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
-import java.util.Set;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class PropertyDistribution {
+public class PropertyValueDistribution {
 
-    public static final String CLASS = Tokens.makeNamespace(PropertyDistribution.class) + ".class";
+    public static final String PROPERTY = Tokens.makeNamespace(PropertyValueDistribution.class) + ".property";
+    public static final String CLASS = Tokens.makeNamespace(PropertyValueDistribution.class) + ".class";
 
     public enum Counters {
         PROPERTIES_COUNTED
@@ -38,6 +38,7 @@ public class PropertyDistribution {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.map = new CounterMap<String>();
+            this.property = context.getConfiguration().get(PROPERTY);
             this.klass = context.getConfiguration().getClass(CLASS, Element.class, Element.class);
         }
 
@@ -45,18 +46,14 @@ public class PropertyDistribution {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
 
             if (this.klass.equals(Vertex.class)) {
-                final Set<String> keys = value.getPropertyKeys();
-                for (final String temp : keys) {
-                    this.map.incr(temp, 1l);
-                }
-                context.getCounter(Counters.PROPERTIES_COUNTED).increment(keys.size());
+                final Object temp = value.getProperty(this.property);
+                this.map.incr(null == temp ? Tokens.NULL : temp.toString(), 1l);
+                context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
             } else {
                 for (final Edge edge : value.getEdges(Direction.OUT)) {
-                    final Set<String> keys = edge.getPropertyKeys();
-                    for (final String temp : keys) {
-                        this.map.incr(temp, 1l);
-                    }
-                    context.getCounter(Counters.PROPERTIES_COUNTED).increment(keys.size());
+                    final Object temp = edge.getProperty(this.property);
+                    this.map.incr(null == temp ? Tokens.NULL : temp.toString(), 1l);
+                    context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
                 }
             }
 

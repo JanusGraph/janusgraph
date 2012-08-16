@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.mapreduce.statistics;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.statistics.SortedVertexDegree;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -17,21 +16,21 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class SortedVertexDegreeTest extends BaseTest {
+public class SortedDegreeTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, IntWritable, FaunusVertex, Text, IntWritable> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, IntWritable, FaunusVertex, Text, IntWritable>();
-        mapReduceDriver.setMapper(new SortedVertexDegree.Map());
-        mapReduceDriver.setReducer(new SortedVertexDegree.Reduce());
+        mapReduceDriver.setMapper(new SortedDegree.Map());
+        mapReduceDriver.setReducer(new SortedDegree.Reduce());
     }
 
     public void testOutDegreeReverseSort() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(SortedVertexDegree.DIRECTION, "OUT");
-        config.setStrings(SortedVertexDegree.PROPERTY, "name");
-        config.setStrings(SortedVertexDegree.ORDER, Tokens.Order.REVERSE.name());
+        config.setStrings(SortedDegree.DIRECTION, "OUT");
+        config.setStrings(SortedDegree.PROPERTY, "name");
+        config.setStrings(SortedDegree.ORDER, Tokens.Order.REVERSE.name());
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, IntWritable>> results = runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -74,15 +73,15 @@ public class SortedVertexDegreeTest extends BaseTest {
         assertEquals(results.get(11).getSecond().get(), 0);
 
 
-        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(SortedVertexDegree.Counters.EDGES_COUNTED).getValue());
-        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(SortedVertexDegree.Counters.VERTICES_COUNTED).getValue());
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(SortedDegree.Counters.EDGES_COUNTED).getValue());
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(SortedDegree.Counters.VERTICES_COUNTED).getValue());
     }
 
     public void testOutDegreeStandardSort() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(SortedVertexDegree.DIRECTION, "OUT");
-        config.setStrings(SortedVertexDegree.PROPERTY, "name");
-        config.setStrings(SortedVertexDegree.ORDER, Tokens.Order.STANDARD.name());
+        config.setStrings(SortedDegree.DIRECTION, "OUT");
+        config.setStrings(SortedDegree.PROPERTY, "name");
+        config.setStrings(SortedDegree.ORDER, Tokens.Order.STANDARD.name());
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, IntWritable>> results = runWithToyGraphNoFormatting(BaseTest.ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -125,8 +124,8 @@ public class SortedVertexDegreeTest extends BaseTest {
         assertEquals(results.get(0).getSecond().get(), 0);
 
 
-        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(SortedVertexDegree.Counters.EDGES_COUNTED).getValue());
-        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(SortedVertexDegree.Counters.VERTICES_COUNTED).getValue());
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(SortedDegree.Counters.EDGES_COUNTED).getValue());
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(SortedDegree.Counters.VERTICES_COUNTED).getValue());
 
 
     }

@@ -15,13 +15,11 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class VertexDegree {
+public class Degree {
 
-    public static final String LABELS = Tokens.makeNamespace(VertexDegree.class) + ".labels";
-    public static final String DIRECTION = Tokens.makeNamespace(VertexDegree.class) + ".direction";
-    public static final String PROPERTY = Tokens.makeNamespace(VertexDegree.class) + ".property";
-
-    private static final String NULL = "null";
+    public static final String LABELS = Tokens.makeNamespace(Degree.class) + ".labels";
+    public static final String DIRECTION = Tokens.makeNamespace(Degree.class) + ".direction";
+    public static final String PROPERTY = Tokens.makeNamespace(Degree.class) + ".property";
 
     public enum Counters {
         EDGES_COUNTED,
@@ -59,7 +57,7 @@ public class VertexDegree {
                 if (null != property)
                     this.textWritable.set(property.toString());
                 else
-                    this.textWritable.set(NULL);
+                    this.textWritable.set(Tokens.NULL);
             }
 
             this.intWritable.set(degree);

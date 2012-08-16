@@ -16,14 +16,12 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class SortedVertexDegree {
+public class SortedDegree {
 
-    public static final String LABELS = Tokens.makeNamespace(SortedVertexDegree.class) + ".labels";
-    public static final String DIRECTION = Tokens.makeNamespace(SortedVertexDegree.class) + ".direction";
-    public static final String PROPERTY = Tokens.makeNamespace(SortedVertexDegree.class) + ".property";
-    public static final String ORDER = Tokens.makeNamespace(SortedVertexDegree.class) + ".order";
-
-    private static final String NULL = "null";
+    public static final String LABELS = Tokens.makeNamespace(SortedDegree.class) + ".labels";
+    public static final String DIRECTION = Tokens.makeNamespace(SortedDegree.class) + ".direction";
+    public static final String PROPERTY = Tokens.makeNamespace(SortedDegree.class) + ".property";
+    public static final String ORDER = Tokens.makeNamespace(SortedDegree.class) + ".order";
 
     public enum Counters {
         EDGES_COUNTED,
@@ -92,7 +90,7 @@ public class SortedVertexDegree {
                     if (null != property)
                         this.textWritable.set(property.toString());
                     else
-                        this.textWritable.set(NULL);
+                        this.textWritable.set(Tokens.NULL);
                 }
                 context.write(this.textWritable, this.intWritable);
             }

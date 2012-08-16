@@ -24,7 +24,6 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 public class AdjacentProperties {
 
     public static final String PROPERTY = Tokens.makeNamespace(AdjacentProperties.class) + ".property";
-    private static final String NULL = "null";
 
     public enum Counters {
         EDGES_COUNTED,
@@ -35,7 +34,7 @@ public class AdjacentProperties {
 
         private final LongWritable longWritable = new LongWritable();
         private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
-        
+
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
             long counter = 0;
@@ -88,7 +87,7 @@ public class AdjacentProperties {
         }
 
         private String toStringProperty(final Object propertyValue) {
-            return null == propertyValue ? NULL : propertyValue.toString();
+            return null == propertyValue ? Tokens.NULL : propertyValue.toString();
         }
     }
 

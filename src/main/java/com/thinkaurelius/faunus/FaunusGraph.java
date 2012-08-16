@@ -21,8 +21,9 @@ import com.thinkaurelius.faunus.mapreduce.statistics.AdjacentProperties;
 import com.thinkaurelius.faunus.mapreduce.statistics.DegreeDistribution;
 import com.thinkaurelius.faunus.mapreduce.statistics.LabelDistribution;
 import com.thinkaurelius.faunus.mapreduce.statistics.PropertyDistribution;
-import com.thinkaurelius.faunus.mapreduce.statistics.SortedVertexDegree;
-import com.thinkaurelius.faunus.mapreduce.statistics.VertexDegree;
+import com.thinkaurelius.faunus.mapreduce.statistics.PropertyValueDistribution;
+import com.thinkaurelius.faunus.mapreduce.statistics.SortedDegree;
+import com.thinkaurelius.faunus.mapreduce.statistics.Degree;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -295,7 +296,7 @@ public class FaunusGraph extends Configured implements Tool {
     ///////////////////////// STATISTICS /////////////////////////
     //////////////////////////////////////////////////////////////
 
-    public FaunusGraph adjacentVertexProperties(final String property) throws IOException {
+    public FaunusGraph adjacentProperties(final String property) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(AdjacentProperties.PROPERTY, property);
@@ -328,14 +329,14 @@ public class FaunusGraph extends Configured implements Tool {
 
     }
 
-    public FaunusGraph vertexDegree(final String property, final Direction direction, final String... labels) throws IOException {
+    public FaunusGraph degree(final String property, final Direction direction, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
-        conf.set(VertexDegree.PROPERTY, property);
-        conf.set(VertexDegree.DIRECTION, direction.name());
-        conf.setStrings(VertexDegree.LABELS, labels);
-        final Job job = new Job(conf, VertexDegree.class.getCanonicalName());
-        job.setMapperClass(VertexDegree.Map.class);
+        conf.set(Degree.PROPERTY, property);
+        conf.set(Degree.DIRECTION, direction.name());
+        conf.setStrings(Degree.LABELS, labels);
+        final Job job = new Job(conf, Degree.class.getCanonicalName());
+        job.setMapperClass(Degree.Map.class);
         job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(IntWritable.class);
@@ -344,16 +345,16 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    public FaunusGraph vertexDegree(final String property, final Tokens.Order order, final Direction direction, final String... labels) throws IOException {
+    public FaunusGraph degree(final String property, final Tokens.Order order, final Direction direction, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
-        conf.set(SortedVertexDegree.PROPERTY, property);
-        conf.set(SortedVertexDegree.DIRECTION, direction.name());
-        conf.setStrings(SortedVertexDegree.LABELS, labels);
-        conf.set(SortedVertexDegree.ORDER, order.name());
-        final Job job = new Job(conf, SortedVertexDegree.class.getCanonicalName());
-        job.setMapperClass(SortedVertexDegree.Map.class);
-        job.setReducerClass(SortedVertexDegree.Reduce.class);
+        conf.set(SortedDegree.PROPERTY, property);
+        conf.set(SortedDegree.DIRECTION, direction.name());
+        conf.setStrings(SortedDegree.LABELS, labels);
+        conf.set(SortedDegree.ORDER, order.name());
+        final Job job = new Job(conf, SortedDegree.class.getCanonicalName());
+        job.setMapperClass(SortedDegree.Map.class);
+        job.setReducerClass(SortedDegree.Reduce.class);
         job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(FaunusVertex.class);
@@ -383,7 +384,7 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    public FaunusGraph edgeLabelDistribution(final Direction direction) throws IOException {
+    public FaunusGraph labelDistribution(final Direction direction) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(LabelDistribution.DIRECTION, direction.name());
@@ -401,12 +402,30 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    public FaunusGraph propertyDistribution(final Class<? extends Element> klass, final String property) throws IOException {
+    public FaunusGraph propertyValueDistribution(final Class<? extends Element> klass, final String property) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(PropertyValueDistribution.CLASS, klass.getName());
+        conf.set(PropertyValueDistribution.PROPERTY, property);
+        final Job job = new Job(conf, PropertyValueDistribution.class.getCanonicalName());
+        job.setMapperClass(PropertyValueDistribution.Map.class);
+        job.setReducerClass(PropertyValueDistribution.Reduce.class);
+        job.setCombinerClass(PropertyValueDistribution.Reduce.class);
+        job.setJarByClass(FaunusGraph.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(LongWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputKeyClass(LongWritable.class);
+        this.outputFormat = this.statisticsOutputFormat;
+        this.jobs.add(job);
+        return this;
+    }
+
+    public FaunusGraph propertyDistribution(final Class<? extends Element> klass) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(PropertyDistribution.CLASS, klass.getName());
-        conf.set(PropertyDistribution.PROPERTY, property);
-        final Job job = new Job(conf, LabelDistribution.class.getCanonicalName());
+        final Job job = new Job(conf, PropertyDistribution.class.getCanonicalName());
         job.setMapperClass(PropertyDistribution.Map.class);
         job.setReducerClass(PropertyDistribution.Reduce.class);
         job.setCombinerClass(PropertyDistribution.Reduce.class);
