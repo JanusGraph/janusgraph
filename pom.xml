@@ -39,10 +39,15 @@
             <scope>provided</scope>
         </dependency>
         <!-- TITAN -->
-        <dependency>
+        <!--<dependency>
             <groupId>com.thinkaurelius</groupId>
             <artifactId>titan</artifactId>
             <version>0.1-SNAPSHOT</version>
+        </dependency>-->
+        <dependency>
+            <groupId>org.apache.cassandra</groupId>
+            <artifactId>cassandra-all</artifactId>
+            <version>1.1.0</version>
         </dependency>
         <!-- TESTING -->
         <dependency>
