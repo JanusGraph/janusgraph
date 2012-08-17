@@ -63,7 +63,7 @@ public class VertexPropertyFilterTest extends BaseTest {
     public void testOldVerticesFilteredWildCardNull() throws IOException {
         Configuration config = new Configuration();
         config.set(VertexPropertyFilter.KEY, "age");
-        config.setClass(VertexPropertyFilter.VALUE_CLASS, Integer.class, Integer.class);
+        config.set(VertexPropertyFilter.VALUE_CLASS, Integer.class.getName());
         config.set(VertexPropertyFilter.VALUE, "35");
         config.set(VertexPropertyFilter.COMPARE, Query.Compare.LESS_THAN.name());
         config.set(VertexPropertyFilter.NULL_WILDCARD, "true");

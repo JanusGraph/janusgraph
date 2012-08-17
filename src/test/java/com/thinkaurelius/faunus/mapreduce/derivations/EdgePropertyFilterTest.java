@@ -28,8 +28,8 @@ public class EdgePropertyFilterTest extends BaseTest {
 
     public void testLowWeightedEdgesFiltered() throws IOException {
         Configuration config = new Configuration();
-        config.set(EdgePropertyFilter.KEY, "weight");
-        config.setClass(EdgePropertyFilter.VALUE_CLASS, Double.class, Double.class);
+        config.setStrings(EdgePropertyFilter.KEY, "weight");
+        config.set(EdgePropertyFilter.VALUE_CLASS, Double.class.getName());
         config.setFloat(EdgePropertyFilter.VALUE, 0.5f);
         config.set(EdgePropertyFilter.COMPARE, Query.Compare.LESS_THAN_EQUAL.name());
 
@@ -51,7 +51,7 @@ public class EdgePropertyFilterTest extends BaseTest {
 
     public void testEdgesFilteredWithNullWildcard() throws IOException {
         Configuration config = new Configuration();
-        config.set(EdgePropertyFilter.KEY, "nothing");
+        config.setStrings(EdgePropertyFilter.KEY, "nothing");
         config.setClass(EdgePropertyFilter.VALUE_CLASS, Double.class, Double.class);
         config.setFloat(EdgePropertyFilter.VALUE, 0.5f);
         config.set(EdgePropertyFilter.COMPARE, Query.Compare.LESS_THAN_EQUAL.name());
