@@ -121,6 +121,18 @@ public class FaunusGraph extends Configured implements Tool {
         return list.toArray(new String[list.size()]);
     }
 
+    /**
+     * Will return the MapReduce job sequence compiled by the FaunusGraph fluent method chaining.
+     * The jobs are <b>not</b> composed such the prior job's output is the latter job's input.
+     *
+     * @return the MapReduce job sequence representing the FaunusGraph
+     * @throws IOException any issues concerned with this composition
+     */
+    public List<Job> getJobSequence() throws IOException {
+        this.completeSequence();
+        return this.jobs;
+    }
+
     public FaunusGraph V() {
         return this;
     }
@@ -298,6 +310,39 @@ public class FaunusGraph extends Configured implements Tool {
     ///////////////////////// STATISTICS /////////////////////////
     //////////////////////////////////////////////////////////////
 
+    public FaunusGraph transform(final String function) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(Transform.FUNCTION, function);
+        final Job job = new Job(conf, Transform.class.getCanonicalName());
+        job.setMapperClass(Transform.Map.class);
+        job.setJarByClass(FaunusGraph.class);
+        job.setMapOutputKeyClass(FaunusVertex.class);
+        job.setMapOutputValueClass(Text.class);
+        this.outputFormat = this.statisticsOutputFormat;
+        this.jobs.add(job);
+        return this;
+    }
+
+    public FaunusGraph distribution(final Class<? extends Element> klass, final String function) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(Distribution.CLASS, klass.getName());
+        conf.set(Distribution.FUNCTION, function);
+        final Job job = new Job(conf, Distribution.class.getCanonicalName());
+        job.setMapperClass(Distribution.Map.class);
+        job.setReducerClass(Distribution.Reduce.class);
+        job.setCombinerClass(Distribution.Reduce.class);
+        job.setJarByClass(FaunusGraph.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(LongWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputKeyClass(LongWritable.class);
+        this.outputFormat = this.statisticsOutputFormat;
+        this.jobs.add(job);
+        return this;
+    }
+
     public FaunusGraph adjacentProperties(final String property, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
@@ -332,20 +377,6 @@ public class FaunusGraph extends Configured implements Tool {
 
     }
 
-    public FaunusGraph transform(final String function) throws IOException {
-        this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.set(Transform.FUNCTION, function);
-        final Job job = new Job(conf, Transform.class.getCanonicalName());
-        job.setMapperClass(Transform.Map.class);
-        job.setJarByClass(FaunusGraph.class);
-        job.setMapOutputKeyClass(FaunusVertex.class);
-        job.setMapOutputValueClass(Transform.class);
-        this.outputFormat = this.statisticsOutputFormat;
-        this.jobs.add(job);
-        return this;
-    }
-
     public FaunusGraph degree(final String property, final Direction direction, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
@@ -377,25 +408,6 @@ public class FaunusGraph extends Configured implements Tool {
         job.setMapOutputValueClass(FaunusVertex.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
-        this.outputFormat = this.statisticsOutputFormat;
-        this.jobs.add(job);
-        return this;
-    }
-
-    public FaunusGraph distribution(final Class<? extends Element> klass, final String function) throws IOException {
-        this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.set(Distribution.CLASS, klass.getName());
-        conf.set(Distribution.FUNCTION, function);
-        final Job job = new Job(conf, Distribution.class.getCanonicalName());
-        job.setMapperClass(Distribution.Map.class);
-        job.setReducerClass(Distribution.Reduce.class);
-        job.setCombinerClass(Distribution.Reduce.class);
-        job.setJarByClass(FaunusGraph.class);
-        job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(LongWritable.class);
-        job.setOutputKeyClass(Text.class);
-        job.setOutputKeyClass(LongWritable.class);
         this.outputFormat = this.statisticsOutputFormat;
         this.jobs.add(job);
         return this;
@@ -494,7 +506,6 @@ public class FaunusGraph extends Configured implements Tool {
         logger.info("/_.'`  `.  |    )(");
         logger.info("         \\ |");
         logger.info("          |/");
-        //logger.info("Faunus configuration: " + configurationToMap(this.configuration));
         logger.info("Generating job chain: " + this.jobScript);
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");

@@ -2,7 +2,6 @@ package com.thinkaurelius.faunus.mapreduce.statistics;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import groovy.lang.Closure;
 import org.apache.hadoop.io.NullWritable;
@@ -28,7 +27,6 @@ public class Transform {
     public static class Map extends Mapper<NullWritable, FaunusVertex, FaunusVertex, Text> {
 
         private Closure closure;
-        private Class<? extends Element> klass;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
