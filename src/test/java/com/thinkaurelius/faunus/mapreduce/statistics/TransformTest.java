@@ -1,0 +1,40 @@
+package com.thinkaurelius.faunus.mapreduce.statistics;
+
+import com.thinkaurelius.faunus.BaseTest;
+import com.thinkaurelius.faunus.FaunusVertex;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
+import org.apache.hadoop.mrunit.types.Pair;
+
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * @author Marko A. Rodriguez (http://markorodriguez.com)
+ */
+public class TransformTest extends BaseTest {
+
+    MapReduceDriver<NullWritable, FaunusVertex, FaunusVertex, Text, FaunusVertex, Text> mapReduceDriver;
+
+    public void setUp() throws Exception {
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, FaunusVertex, Text, FaunusVertex, Text>();
+        mapReduceDriver.setMapper(new Transform.Map());
+        mapReduceDriver.setReducer(new Reducer<FaunusVertex, Text, FaunusVertex, Text>());
+    }
+
+    public void testTransformToPropertyKeySize() throws IOException {
+        Configuration config = new Configuration();
+        config.set(Transform.FUNCTION, "{it -> it.propertyKeys.size()}");
+        mapReduceDriver.withConfiguration(config);
+
+        final List<Pair<FaunusVertex, Text>> results = runWithToyGraphNoFormatting(ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
+        assertEquals(results.size(), 6);
+        for (final Pair<FaunusVertex, Text> result : results) {
+            assertEquals(result.getSecond().toString(), "2");
+        }
+        assertEquals(mapReduceDriver.getCounters().findCounter(Transform.Counters.VERTICES_PROCESSED).getValue(), 6);
+    }
+}

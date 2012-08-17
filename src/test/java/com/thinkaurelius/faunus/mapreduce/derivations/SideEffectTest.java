@@ -16,20 +16,20 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TransformTest extends BaseTest {
+public class SideEffectTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new Transform.Map());
+        mapReduceDriver.setMapper(new SideEffect.Map());
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
     public void testVertexPropertyUpdate() throws IOException {
         Configuration config = new Configuration();
-        config.set(Transform.CLASS, Vertex.class.getName());
-        config.set(Transform.FUNCTION, "{it -> it.location = 'santa fe'}");
+        config.set(SideEffect.CLASS, Vertex.class.getName());
+        config.set(SideEffect.FUNCTION, "{it -> it.location = 'santa fe'}");
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -41,14 +41,14 @@ public class TransformTest extends BaseTest {
             }
         }
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(Transform.Counters.EDGES_TRANSFORMED).getValue(), 0);
-        assertEquals(mapReduceDriver.getCounters().findCounter(Transform.Counters.VERTICES_TRANSFORMED).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffect.Counters.EDGES_MUTATED).getValue(), 0);
+        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffect.Counters.VERTICES_MUTATED).getValue(), 6);
     }
 
     public void testEdgePropertyUpdate() throws IOException {
         Configuration config = new Configuration();
-        config.set(Transform.CLASS, Edge.class.getName());
-        config.set(Transform.FUNCTION, "{it -> it.time = 'now'}");
+        config.set(SideEffect.CLASS, Edge.class.getName());
+        config.set(SideEffect.FUNCTION, "{it -> it.time = 'now'}");
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -60,8 +60,8 @@ public class TransformTest extends BaseTest {
             }
         }
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(Transform.Counters.EDGES_TRANSFORMED).getValue(), 12);
-        assertEquals(mapReduceDriver.getCounters().findCounter(Transform.Counters.VERTICES_TRANSFORMED).getValue(), 0);
+        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffect.Counters.EDGES_MUTATED).getValue(), 12);
+        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffect.Counters.VERTICES_MUTATED).getValue(), 0);
     }
 
 }

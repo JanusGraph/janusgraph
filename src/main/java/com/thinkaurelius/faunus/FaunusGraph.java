@@ -12,7 +12,7 @@ import com.thinkaurelius.faunus.mapreduce.derivations.Identity;
 import com.thinkaurelius.faunus.mapreduce.derivations.LabelFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.LoopFilter;
 import com.thinkaurelius.faunus.mapreduce.derivations.Properties;
-import com.thinkaurelius.faunus.mapreduce.derivations.Transform;
+import com.thinkaurelius.faunus.mapreduce.derivations.SideEffect;
 import com.thinkaurelius.faunus.mapreduce.derivations.Transpose;
 import com.thinkaurelius.faunus.mapreduce.derivations.Traverse;
 import com.thinkaurelius.faunus.mapreduce.derivations.VertexFilter;
@@ -25,6 +25,7 @@ import com.thinkaurelius.faunus.mapreduce.statistics.LabelDistribution;
 import com.thinkaurelius.faunus.mapreduce.statistics.PropertyDistribution;
 import com.thinkaurelius.faunus.mapreduce.statistics.PropertyValueDistribution;
 import com.thinkaurelius.faunus.mapreduce.statistics.SortedDegree;
+import com.thinkaurelius.faunus.mapreduce.statistics.Transform;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -209,12 +210,12 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    // TRANSFORMS
+    // SIDEEFFECT
 
-    public FaunusGraph transform(final Class<? extends Element> klass, final String function) {
-        this.mapSequenceConfiguration.set(Transform.CLASS + "-" + this.mapSequenceClasses.size(), klass.getName());
-        this.mapSequenceConfiguration.set(Transform.FUNCTION + "-" + this.mapSequenceClasses.size(), function);
-        this.mapSequenceClasses.add(Transform.Map.class);
+    public FaunusGraph sideEffect(final Class<? extends Element> klass, final String function) {
+        this.mapSequenceConfiguration.set(SideEffect.CLASS + "-" + this.mapSequenceClasses.size(), klass.getName());
+        this.mapSequenceConfiguration.set(SideEffect.FUNCTION + "-" + this.mapSequenceClasses.size(), function);
+        this.mapSequenceClasses.add(SideEffect.Map.class);
         return this;
     }
 
@@ -329,6 +330,20 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
 
 
+    }
+
+    public FaunusGraph transform(final String function) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(Transform.FUNCTION, function);
+        final Job job = new Job(conf, Transform.class.getCanonicalName());
+        job.setMapperClass(Transform.Map.class);
+        job.setJarByClass(FaunusGraph.class);
+        job.setMapOutputKeyClass(FaunusVertex.class);
+        job.setMapOutputValueClass(Transform.class);
+        this.outputFormat = this.statisticsOutputFormat;
+        this.jobs.add(job);
+        return this;
     }
 
     public FaunusGraph degree(final String property, final Direction direction, final String... labels) throws IOException {

@@ -18,15 +18,15 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Transform {
+public class SideEffect {
 
-    public static final String CLASS = Tokens.makeNamespace(Transform.class) + ".class";
-    public static final String FUNCTION = Tokens.makeNamespace(Transform.class) + ".function";
+    public static final String CLASS = Tokens.makeNamespace(SideEffect.class) + ".class";
+    public static final String FUNCTION = Tokens.makeNamespace(SideEffect.class) + ".function";
     private static final ScriptEngine engine = new GremlinGroovyScriptEngine();
 
     public enum Counters {
-        EDGES_TRANSFORMED,
-        VERTICES_TRANSFORMED
+        EDGES_MUTATED,
+        VERTICES_MUTATED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
@@ -48,11 +48,11 @@ public class Transform {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             if (this.klass.equals(Vertex.class)) {
                 this.closure.call(value);
-                context.getCounter(Counters.VERTICES_TRANSFORMED).increment(1l);
+                context.getCounter(Counters.VERTICES_MUTATED).increment(1l);
             } else if (this.klass.equals(Edge.class)) {
                 for (final Edge edge : value.getEdges(Direction.BOTH)) {
                     this.closure.call(edge);
-                    context.getCounter(Counters.EDGES_TRANSFORMED).increment(1l);
+                    context.getCounter(Counters.EDGES_MUTATED).increment(1l);
                 }
             } else {
                 throw new IOException("Unsupported element class: " + this.klass);
