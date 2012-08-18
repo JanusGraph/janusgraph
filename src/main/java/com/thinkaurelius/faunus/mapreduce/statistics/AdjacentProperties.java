@@ -47,11 +47,12 @@ public class AdjacentProperties {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
             long counter = 0;
             this.longWritable.set(value.getIdAsLong());
-            context.write(this.longWritable, this.vertexHolder.set('f', value));
+            final FaunusVertex vertex = value.cloneIdAndProperties();
+            context.write(this.longWritable, this.vertexHolder.set('f', vertex));
             for (final Edge edge : value.getEdges(OUT, this.labels)) {
                 final FaunusVertex vertexB = (FaunusVertex) edge.getVertex(IN);
                 this.longWritable.set(vertexB.getIdAsLong());
-                context.write(this.longWritable, this.vertexHolder.set('r', value));
+                context.write(this.longWritable, this.vertexHolder.set('r', vertex));
                 counter++;
             }
             context.getCounter(Counters.EDGES_COUNTED).increment(counter);
