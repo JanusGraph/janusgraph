@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.CounterMap;
+import com.thinkaurelius.faunus.mapreduce.ElementPicker;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -76,10 +77,10 @@ public class AdjacentProperties {
             final List<String> thusFar = new ArrayList<String>();
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 'f') {
-                    this.fText.set(toStringProperty(holder.get().getProperty(this.property)));
+                    this.fText.set(ElementPicker.getProperty(holder.get(), this.property));
                     break;
                 } else {
-                    thusFar.add(toStringProperty(holder.get().getProperty(this.property)));
+                    thusFar.add(ElementPicker.getProperty(holder.get(), this.property));
                 }
             }
             for (final String text : thusFar) {
@@ -88,14 +89,10 @@ public class AdjacentProperties {
             }
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 'r') {
-                    this.rText.set(toStringProperty(holder.get().getProperty(this.property)));
+                    this.rText.set(ElementPicker.getProperty(holder.get(), this.property));
                     context.write(this.rText, this.fText);
                 }
             }
-        }
-
-        private String toStringProperty(final Object propertyValue) {
-            return null == propertyValue ? Tokens.NULL : propertyValue.toString();
         }
     }
 

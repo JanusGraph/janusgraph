@@ -2,7 +2,6 @@ package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
-import com.thinkaurelius.faunus.mapreduce.Function;
 import com.thinkaurelius.faunus.mapreduce.MapReduceSequence;
 import com.thinkaurelius.faunus.mapreduce.MapSequence;
 import com.thinkaurelius.faunus.mapreduce.derivations.DirectionFilter;
@@ -31,7 +30,6 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
-import groovy.lang.Closure;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.utils.ByteBufferUtil;
@@ -643,17 +641,4 @@ public class FaunusGraph extends Configured implements Tool {
         int result = ToolRunner.run(faunusGraph, args);
         System.exit(result);
     }
-
-    public class GroovyFunction<A, B> implements Function<A, B> {
-        private final Closure closure;
-
-        public GroovyFunction(Closure closure) {
-            this.closure = closure;
-        }
-
-        public B compute(A a) {
-            return (B) this.closure.call(a);
-        }
-    }
-
 }

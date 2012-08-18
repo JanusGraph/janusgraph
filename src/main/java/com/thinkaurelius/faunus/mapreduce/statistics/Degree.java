@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.statistics;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.ElementPicker;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.IntWritable;
@@ -48,18 +49,7 @@ public class Degree {
             context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(degree);
 
-            if (this.property.equals(Tokens._ID))
-                this.textWritable.set(value.getId().toString());
-            else if (this.property.equals(Tokens._PROPERTIES))
-                this.textWritable.set(value.getProperties().toString());
-            else {
-                final Object property = value.getProperty(this.property);
-                if (null != property)
-                    this.textWritable.set(property.toString());
-                else
-                    this.textWritable.set(Tokens.NULL);
-            }
-
+            this.textWritable.set(ElementPicker.getProperty(value, this.property));
             this.intWritable.set(degree);
             context.write(this.textWritable, this.intWritable);
 
