@@ -55,4 +55,29 @@ public class FaunusGraphTest extends BaseTest {
             assertTrue(true);
         }
     }
+
+    /* public void testClosure() throws Exception {
+       ScriptEngine engine = new GroovyScriptEngineImpl();
+       Closure closure = (Closure) engine.eval("{-> 1+2}");
+       closure = closure.dehydrate();
+
+       ByteArrayOutputStream bos = new ByteArrayOutputStream();
+       ObjectOutput out = new ObjectOutputStream(bos);
+       out.writeObject(closure);
+       out.flush();
+       out.close();
+
+       BASE64Encoder encoder = new BASE64Encoder();
+       String closureString = encoder.encode(bos.toByteArray());
+       System.out.println(closureString);
+
+       ByteArrayInputStream bis = new ByteArrayInputStream(new BASE64Decoder().decodeBuffer(closureString));
+       ObjectInputStream in = new ObjectInputStream(bis);
+
+       Closure closure1 = (Closure) in.readObject();
+       in.close();
+
+       System.out.println(closure1.call());
+   } */
+
 }
