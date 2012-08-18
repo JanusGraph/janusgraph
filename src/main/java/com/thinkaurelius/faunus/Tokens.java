@@ -22,6 +22,7 @@ public class Tokens {
     public static final String _PROPERTIES = "_properties";
     public static final String NULL = "null";
     public static final String TAB = "\t";
+    public static final String NEWLINE = "\n";
 
     public static final String GRAPH_INPUT_FORMAT_CLASS = "faunus.graph.input.format.class";
     public static final String GRAPH_INPUT_LOCATION = "faunus.graph.input.location";
