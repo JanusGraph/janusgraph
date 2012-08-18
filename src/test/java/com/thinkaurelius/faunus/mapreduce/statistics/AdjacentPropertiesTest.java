@@ -66,21 +66,21 @@ public class AdjacentPropertiesTest extends BaseTest {
         List<Pair<Text, LongWritable>> results = this.mapReduceDriver2.run();
         // System.out.println(results);
         for (Pair<Text, LongWritable> result : results) {
-            if (result.getFirst().toString().equals("(demigod,god)"))
+            if (result.getFirst().toString().equals("demigod\tgod"))
                 assertEquals(result.getSecond().get(), 1);
-            else if (result.getFirst().toString().equals("(demigod,human)"))
+            else if (result.getFirst().toString().equals("demigod\thuman"))
                 assertEquals(result.getSecond().get(), 1);
-            else if (result.getFirst().toString().equals("(demigod,monster)"))
+            else if (result.getFirst().toString().equals("demigod\tmonster"))
                 assertEquals(result.getSecond().get(), 3);
-            else if (result.getFirst().toString().equals("(god,god)"))
+            else if (result.getFirst().toString().equals("god\tgod"))
                 assertEquals(result.getSecond().get(), 6);
-            else if (result.getFirst().toString().equals("(god,location)"))
+            else if (result.getFirst().toString().equals("god\tlocation"))
                 assertEquals(result.getSecond().get(), 3);
-            else if (result.getFirst().toString().equals("(god,monster)"))
+            else if (result.getFirst().toString().equals("god\tmonster"))
                 assertEquals(result.getSecond().get(), 1);
-            else if (result.getFirst().toString().equals("(god,titan)"))
+            else if (result.getFirst().toString().equals("god\ttitan"))
                 assertEquals(result.getSecond().get(), 1);
-            else if (result.getFirst().toString().equals("(monster,location)"))
+            else if (result.getFirst().toString().equals("monster\tlocation"))
                 assertEquals(result.getSecond().get(), 1);
             else
                 assertTrue(false);
@@ -102,7 +102,7 @@ public class AdjacentPropertiesTest extends BaseTest {
         List<Pair<Text, LongWritable>> results = this.mapReduceDriver2.run();
         // System.out.println(results);
         for (Pair<Text, LongWritable> result : results) {
-            if (result.getFirst().toString().equals("(demigod,monster)"))
+            if (result.getFirst().toString().equals("demigod\tmonster"))
                 assertEquals(result.getSecond().get(), 3);
             else
                 assertTrue(false);

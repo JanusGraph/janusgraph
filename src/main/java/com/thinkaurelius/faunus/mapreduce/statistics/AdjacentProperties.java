@@ -111,7 +111,7 @@ public class AdjacentProperties {
 
         @Override
         public void map(final Text key, final Text value, final Mapper<Text, Text, Text, LongWritable>.Context context) throws IOException, InterruptedException {
-            final String newKey = "(" + key.toString() + "," + value.toString() + ")";
+            final String newKey = key.toString() + "\t" + value.toString();
             this.map.incr(newKey, 1l);
 
             if (this.map.size() > 1000) {
