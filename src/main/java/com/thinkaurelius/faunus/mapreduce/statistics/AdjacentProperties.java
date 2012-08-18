@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.CounterMap;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -111,7 +110,7 @@ public class AdjacentProperties {
 
         @Override
         public void map(final Text key, final Text value, final Mapper<Text, Text, Text, LongWritable>.Context context) throws IOException, InterruptedException {
-            final String newKey = key.toString() + "\t" + value.toString();
+            final String newKey = key.toString() + Tokens.TAB + value.toString();
             this.map.incr(newKey, 1l);
 
             if (this.map.size() > 1000) {
