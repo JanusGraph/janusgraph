@@ -21,4 +21,9 @@ public class BlueprintsDefaultTypeMaker implements DefaultTypeMaker {
         return factory.name(name).functional(false).
                 dataType(Object.class).makePropertyKey();
     }
+
+    @Override
+    public boolean ignoreUndefinedQueryTypes() {
+        return true;
+    }
 }

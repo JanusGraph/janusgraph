@@ -7,14 +7,13 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.StandardPersistedRelationFactory;
 import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.factory.StandardVertexFactories;
-import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,12 +136,12 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 
 	
 	@Override
-	public void loadRelations(InternalTitanQuery query) {
+	public void loadRelations(AtomicQuery query) {
 		graphdb.loadRelations(query, this);
 	}
 	
 	@Override
-	public AbstractLongList getRawNeighborhood(InternalTitanQuery query) {
+	public AbstractLongList getRawNeighborhood(AtomicQuery query) {
 		return graphdb.getRawNeighborhood(query, this);
 	}
 	

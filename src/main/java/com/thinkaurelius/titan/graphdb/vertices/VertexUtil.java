@@ -2,20 +2,24 @@ package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.QueryException;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
-import com.thinkaurelius.titan.graphdb.query.AtomicTitanQuery;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
+import com.thinkaurelius.titan.graphdb.query.SimpleAtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.util.interval.AtomicInterval;
+import com.thinkaurelius.titan.util.interval.DoesNotExist;
 import com.tinkerpop.blueprints.Direction;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class VertexUtil {
 
@@ -28,13 +32,13 @@ public class VertexUtil {
 	}
     
     public static void prepareForRemoval(InternalTitanVertex v) {
-        for (TitanRelation r : AtomicTitanQuery.queryAll(v).relations()) {
+        for (TitanRelation r : SimpleAtomicQuery.queryAll(v).relations()) {
             if (r.getType().equals(SystemKey.VertexState)) r.remove();
             else throw new IllegalStateException("Cannot remove node since it is still connected");
         }
     }
 	
-	public static Iterable<InternalRelation> filterByQuery(final InternalTitanQuery query, Iterable<InternalRelation> iter) {
+	public static Iterable<InternalRelation> filterByQuery(final AtomicQuery query, Iterable<InternalRelation> iter) {
 		if (iter==AdjacencyList.Empty) return iter;
 		
 		if (query.queryHidden() && query.queryUnmodifiable() && query.queryProperties()
@@ -45,7 +49,10 @@ public class VertexUtil {
 		
 		return Iterables.filter(iter,  new Predicate<InternalRelation>(){
 
-                int counter = 0;
+                private int counter = 0;
+            
+                private Map<String,Integer> typeLookup = null;
+                private int checkValue = -1;
             
 				@Override
 				public boolean apply(InternalRelation e) {
@@ -56,26 +63,44 @@ public class VertexUtil {
 					if (!query.queryUnmodifiable() && !e.isModifiable()) return false;
                     if (query.hasConstraints()) {
 
-                        int count = 0;
                         Map<String,Object> constraints = query.getConstraints();
+                        
+                        if (typeLookup==null) {
+                            ImmutableMap.Builder<String,Integer> b = ImmutableMap.builder();
+                            int count = 0;
+                            for (Map.Entry<String,Object> entry : constraints.entrySet()) {
+                                Object constraint = entry.getValue();
+                                if (constraint!=null && constraint!= DoesNotExist.INSTANCE) {
+                                    b.put(entry.getKey(),count);
+                                    count++;
+                                }
+                            }
+                            typeLookup=b.build();
+                            checkValue = (1<<count) - 1;
+                        }
+
+                        int bitcode = 0;
                         for (TitanRelation ie : e.getRelations()) {
-                            if (constraints.containsKey(ie.getType().getName())) {
-                                Object o = constraints.get(ie.getType().getName());
-                                if (o==null) return false;
+                            String typename = ie.getType().getName();
+                            if (constraints.containsKey(typename)) {
+                                Object o = constraints.get(typename);
                                 if (ie.isEdge()) {
-                                    if (o.equals(((TitanEdge) ie).getVertex(Direction.IN))) count++;
+                                    if (o==null) return false;
+                                    if (o.equals(((TitanEdge) ie).getVertex(Direction.IN))) bitcode = bitcode | (1<<typeLookup.get(typename));
+                                    else return false;
                                 } else {
+                                    assert o!=null;
                                     assert ie.isProperty();
                                     Object attribute = ((TitanProperty)ie).getAttribute();
                                     assert attribute!=null;
                                     assert o instanceof AtomicInterval;
                                     AtomicInterval iv = (AtomicInterval)o;
-                                    if (iv.inInterval(attribute)) count++;
+                                    if (iv.inInterval(attribute)) bitcode = bitcode | (1<<typeLookup.get(typename));
+                                    else return false;
                                 }
                             }
                         }
-                        //TODO: There is a potential issue with double counting. Is this realistic for labeled edges (i.e. do we need to consider this)?
-                        if (count<constraints.size()) return false;
+                        if (bitcode!=checkValue) return false;
                     }
                     counter++;
 					return true;
@@ -100,8 +125,7 @@ public class VertexUtil {
 	}
 
 
-    public static final Iterable<InternalRelation> getQuerySpecificIterable(AdjacencyList edges, InternalTitanQuery query) {
-        assert query.isAtomic();
+    public static final Iterable<InternalRelation> getQuerySpecificIterable(AdjacencyList edges, AtomicQuery query) {
         if (query.hasEdgeTypeCondition()) {
             assert query.getTypeCondition()!=null;
             return edges.getEdges(query.getTypeCondition());

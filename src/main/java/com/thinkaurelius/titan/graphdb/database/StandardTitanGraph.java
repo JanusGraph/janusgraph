@@ -24,9 +24,9 @@ import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.statistics.TransactionStatistics;
 import com.thinkaurelius.titan.graphdb.database.util.TypeSignature;
 import com.thinkaurelius.titan.graphdb.database.util.LimitTracker;
-import com.thinkaurelius.titan.graphdb.query.AtomicTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
+import com.thinkaurelius.titan.graphdb.query.SimpleAtomicQuery;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.RelationLoader;
 import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
@@ -181,7 +181,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     }
 
 	@Override
-	public AbstractLongList getRawNeighborhood(InternalTitanQuery query, InternalTitanTransaction tx) {
+	public AbstractLongList getRawNeighborhood(AtomicQuery query, InternalTitanTransaction tx) {
         Preconditions.checkArgument(QueryUtil.queryCoveredByDiskIndexes(query),
                 "Raw retrieval is currently does not support in-memory filtering");
 		List<Entry> entries = queryForEntries(query,tx.getTxHandle());
@@ -213,7 +213,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	}
 
 	@Override
-	public void loadRelations(InternalTitanQuery query, InternalTitanTransaction tx) {
+	public void loadRelations(AtomicQuery query, InternalTitanTransaction tx) {
 		List<Entry> entries = queryForEntries(query,tx.getTxHandle());
 
 		TitanType titanType = null;
@@ -341,7 +341,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         return et;
     }
 	
-    private static boolean[] getAllowedDirections(InternalTitanQuery query) {
+    private static boolean[] getAllowedDirections(AtomicQuery query) {
         boolean[] dirs = new boolean[4];
         if (query.queryProperties()) {
             assert query.isAllowedDirection(EdgeDirection.OUT);
@@ -361,8 +361,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         return dirs;
     }
 
-	private List<Entry> queryForEntries(InternalTitanQuery query, TransactionHandle txh) {
-        Preconditions.checkArgument(query.isAtomic());
+	private List<Entry> queryForEntries(AtomicQuery query, TransactionHandle txh) {
 		ByteBuffer key = IDHandler.getKey(query.getVertexID());
 		List<Entry> entries = null;
 		LimitTracker limit = new LimitTracker(query);
@@ -441,7 +440,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                                         break; //redundant, this must be the last iteration because its a range
                                     }
                                 } else {
-                                    assert iv instanceof TitanVertex;
+                                    assert iv==null || (iv instanceof TitanVertex);
                                     long id = 0;
                                     if (iv!=null) id = ((TitanVertex)iv).getID();
                                     VariableLong.writePositive(start,id);
@@ -763,7 +762,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 			InternalRelation[] keys = new InternalRelation[ets.keyLength()],
 						   values = new InternalRelation[ets.valueLength()];
 			List<InternalRelation> rest = new ArrayList<InternalRelation>();
-			ets.sort(edge.getRelations(AtomicTitanQuery.queryAll(edge), false),keys,values,rest);
+			ets.sort(edge.getRelations(SimpleAtomicQuery.queryAll(edge), false),keys,values,rest);
 			
 			DataOutput out = serializer.getDataOutput(defaultOutputCapacity, true);
             IDHandler.writeEdgeType(out,etid,dirID,idManager);

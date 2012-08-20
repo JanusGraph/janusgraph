@@ -1,18 +1,17 @@
 package com.thinkaurelius.titan.graphdb.query;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableRelationIterable;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableRelationIterator;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
-import com.thinkaurelius.titan.util.interval.AtomicInterval;
-import com.thinkaurelius.titan.util.interval.IntervalUtil;
-import com.thinkaurelius.titan.util.interval.PointInterval;
-import com.thinkaurelius.titan.util.interval.Range;
+import com.thinkaurelius.titan.util.interval.*;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
@@ -22,7 +21,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class AtomicTitanQuery implements InternalTitanQuery {
+public class SimpleAtomicQuery implements AtomicQuery {
+
+    private static final Map<String,Object> NO_CONSTRAINTS = ImmutableMap.of();
 
     protected final InternalTitanTransaction tx;
 	private InternalTitanVertex node;
@@ -31,7 +32,7 @@ public class AtomicTitanQuery implements InternalTitanQuery {
     private boolean inMemoryRetrieval=false;
     
     private Direction dir;
-    protected TitanType[] types;
+    protected TitanType type;
     private TypeGroup group;
     private Map<String,Object> constraints;
 
@@ -43,23 +44,23 @@ public class AtomicTitanQuery implements InternalTitanQuery {
     private long limit = Long.MAX_VALUE;
     
 
-    public AtomicTitanQuery(InternalTitanTransaction tx) {
+    public SimpleAtomicQuery(InternalTitanTransaction tx) {
+        Preconditions.checkNotNull(tx);
         this.tx=tx;
         if (tx!=null && tx.isClosed()) throw GraphDatabaseException.transactionNotOpenException();
 
         dir = null;
-        types = null;
+        type = null;
         group = null;
         queryProps=true;
         queryRelships=true;
         queryHidden=false;
         queryUnmodifiable=true;
-        constraints = null;
+        constraints = NO_CONSTRAINTS;
     }
     
-    public AtomicTitanQuery(InternalTitanVertex n) {
+    public SimpleAtomicQuery(InternalTitanVertex n) {
         this(n.getTransaction());
-        Preconditions.checkNotNull(n);
 
 
         node = n;
@@ -67,7 +68,7 @@ public class AtomicTitanQuery implements InternalTitanQuery {
         else nodeid = -1;   
     }
     
-    public AtomicTitanQuery(InternalTitanTransaction tx, long nodeid) {
+    public SimpleAtomicQuery(InternalTitanTransaction tx, long nodeid) {
         this(tx);
 
         Preconditions.checkArgument(nodeid>0);
@@ -76,10 +77,9 @@ public class AtomicTitanQuery implements InternalTitanQuery {
         this.nodeid = nodeid;
     }
 
-    AtomicTitanQuery(AtomicTitanQuery q) {
+    SimpleAtomicQuery(SimpleAtomicQuery q) {
         dir = q.dir;
-        if (q.types==null) types=null;
-        else types = q.types.clone();
+        type= q.type;
         group = q.group;
         queryProps=q.queryProps;
         queryRelships=q.queryRelships;
@@ -92,27 +92,37 @@ public class AtomicTitanQuery implements InternalTitanQuery {
         
         inMemoryRetrieval=q.inMemoryRetrieval;
         limit = q.limit;
-        if (q.constraints ==null) constraints =null;
+        if (q.constraints==NO_CONSTRAINTS) constraints = NO_CONSTRAINTS;
         else constraints = new HashMap<String,Object>(q.constraints);
     }
 
-	AtomicTitanQuery(InternalTitanVertex node, AtomicTitanQuery q) {
+	SimpleAtomicQuery(InternalTitanVertex node, SimpleAtomicQuery q) {
 		this(q);
 		this.node=node;
 	}
 	
 	@Override
-	public AtomicTitanQuery copy() {
-		AtomicTitanQuery q = new AtomicTitanQuery(this);
+	public SimpleAtomicQuery clone() {
+		SimpleAtomicQuery q = new SimpleAtomicQuery(this);
 		return q;
 	}
 
-	public static final AtomicTitanQuery queryAll(InternalTitanVertex node) {
-		return new AtomicTitanQuery(node).includeHidden();
+	public static final SimpleAtomicQuery queryAll(InternalTitanVertex node) {
+		return new SimpleAtomicQuery(node).includeHidden();
 	}
-
-    public boolean isAtomic() {
-        return true;
+    
+    protected final TitanType getType(String typeName) {
+        TitanType t = tx.getType(typeName);
+        if (t==null && !tx.getTxConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
+            throw new IllegalArgumentException("Undefined type used in query: " + typeName);
+        }
+        return t;
+    }
+    
+    private final TitanKey getKey(String keyName) {
+        TitanType t = getType(keyName);
+        if (t instanceof TitanKey) return (TitanKey)t;
+        else throw new IllegalArgumentException("Provided name does not represent a key: " + keyName);
     }
 
 	/* ---------------------------------------------------------------
@@ -121,171 +131,186 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 	 */
 
     public void removeConstraint(TitanType ptype) {
-        if (constraints==null) return;
-        constraints.remove(ptype.getName());
+        removeConstraint(ptype.getName());
     }
 
     public void removeConstraint(String ptype) {
-        removeConstraint(tx.getType(ptype));
+        if (constraints.containsKey(ptype))
+            constraints.remove(ptype);
     }
 
-    private<T> AtomicTitanQuery withPropertyConstraint(TitanType ptype,Object value) {
-        Preconditions.checkNotNull(ptype);
-        if (constraints == null) constraints = new HashMap<String,Object>(5);
-        Preconditions.checkArgument(!constraints.containsKey(ptype.getName()),"Conflicting constraint already exists for property.");
-        constraints.put(ptype.getName(), value);
+    private<T> AtomicQuery withPropertyConstraint(TitanType type,Object value) {
+        Preconditions.checkNotNull(type);
+        if (constraints == NO_CONSTRAINTS) constraints = new HashMap<String,Object>(5);
+        String typeName = type.getName();
+        if (constraints.containsKey(typeName)) {
+            if (!constraints.get(typeName).equals(value))
+                throw new IllegalArgumentException("Conflicting constraints set for property: " + type);
+        } else constraints.put(type.getName(), value);
         return this;
     }
 
 	
     @Override
-    public AtomicTitanQuery has(TitanType etype, Object value) {
-        if (etype.isEdgeLabel()) {
-            Preconditions.checkArgument(((TitanLabel)etype).isUnidirected(),"Only unidirectional edges supported inline.");
-            Preconditions.checkArgument(value instanceof TitanVertex,"Value needs to be a vertex.");
-            return withPropertyConstraint(etype,value);
+    public AtomicQuery has(TitanType type, Object value) {
+        if (type.isEdgeLabel()) {
+            Preconditions.checkArgument(((TitanLabel)type).isUnidirected(),"Only unidirectional edges supported in query constraint.");
+            if (value!=null) {
+                Preconditions.checkArgument(value instanceof TitanVertex,"Value needs to be a vertex.");
+            }
+            return withPropertyConstraint(type,value);
         } else {
-            assert etype.isPropertyKey();
-            Class<?> dataType = ((TitanKey) etype).getDataType();
-            Preconditions.checkArgument(dataType.isInstance(value),
-                    "Value [%s] is not an instance of the expected data type for property key [%s]. Expected: %s, found: %s", value,
-                    etype.getName(), dataType, value.getClass());
-            return withPropertyConstraint(etype,new PointInterval(value));
+            assert type.isPropertyKey();
+            if (value!=null) {
+                value = AttributeUtil.verifyAttribute((TitanKey)type,value);
+                return withPropertyConstraint(type,new PointInterval(value));
+            } else {
+                return withPropertyConstraint(type,DoesNotExist.INSTANCE);
+            }
         }
     }
 
 
     @Override
-    public AtomicTitanQuery has(String ptype, Object value) {
-        if (!tx.containsType(ptype)) throw new IllegalArgumentException("Unknown property key: " + ptype);
-        return has(tx.getType(ptype), value);
+    public AtomicQuery has(String type, Object value) {
+        TitanType t = getType(type);
+        if (t==null) {
+            if (value==null) return this;
+            else return EmptyAtomicQuery.INSTANCE;
+        } else return has(t, value);
     }
 
     @Override
-    public<T extends Comparable<T>> TitanQuery interval(TitanKey key, T start, T end) {
+    public<T extends Comparable<T>> AtomicQuery interval(TitanKey key, T start, T end) {
         Preconditions.checkNotNull(start);
         Preconditions.checkNotNull(end);
         Preconditions.checkNotNull(key);
+        Object s = start, e = end;  //stupid javac workaround
+        if (key.getDataType().equals(Long.class) && ((s instanceof Integer) || (e instanceof Integer)) ) {
+            //Automatic cast in case of correctable type mismatch
+            return interval(key,Long.valueOf(((Number)s).longValue()),Long.valueOf(((Number)e).longValue()));
+        }
+        AttributeUtil.checkAttributeType(key,start);
+        AttributeUtil.checkAttributeType(key,end);
         return withPropertyConstraint(key, new Range(start, end));
     }
 
     @Override
-    public<T extends Comparable<T>> TitanQuery interval(String key, T start, T end) {
-        if (!tx.containsType(key)) throw new IllegalArgumentException("Unknown property key: " + key);
-        return interval(tx.getPropertyKey(key), start, end);
+    public<T extends Comparable<T>> AtomicQuery interval(String key, T start, T end) {
+        TitanKey k = getKey(key);
+        if (k==null) return EmptyAtomicQuery.INSTANCE;
+        else return interval(k, start, end);
     }
     
     @Override
-    public<T extends Comparable<T>> TitanQuery has(String ptype, T value, Query.Compare compare) {
-        if (!tx.containsType(ptype)) throw new IllegalArgumentException("Unknown property key: " + ptype);
-        return has(tx.getPropertyKey(ptype),value,compare);
+    public<T extends Comparable<T>> AtomicQuery has(String key, T value, Query.Compare compare) {
+        TitanKey k = getKey(key);
+        if (k==null) return EmptyAtomicQuery.INSTANCE;
+        else return has(k, value, compare);
     }
 
-    public<T extends Comparable<T>> TitanQuery has(TitanKey ptype, T value, Query.Compare compare) {
-        Preconditions.checkNotNull(value);
+    public<T extends Comparable<T>> AtomicQuery has(TitanKey key, T value, Query.Compare compare) {
         Preconditions.checkNotNull(compare);
-        Preconditions.checkNotNull(ptype);
-        AtomicInterval<T> interval = IntervalUtil.getInterval(value,compare);
-
-        if (constraints == null) constraints = new HashMap<String,Object>(5);
-        if (constraints.containsKey(ptype.getName())) {
-            Object o = constraints.get(ptype.getName());
-            assert (o instanceof AtomicInterval);
-            interval = ((AtomicInterval<T>)o).intersect(interval);
-            Preconditions.checkNotNull(interval,"Additional constraint leads to empty intersection and is therefore infeasible!");
-        }
-        constraints.put(ptype.getName(), interval);
-        return this;
-    }
-
-    @Override
-    public AtomicTitanQuery labels(String... type) {
-        Preconditions.checkNotNull(type);
-        TitanType[] ttype = new TitanType[type.length];
-        Preconditions.checkNotNull(tx);
-        for (int i=0;i<type.length;i++) {
-            ttype[i] = tx.getType(type[i]);
-        }
-        return types(ttype);
-    }
-
-    @Override
-    public AtomicTitanQuery keys(String... type) {
-        return labels(type);
-    }
-    
-    @Override
-    public AtomicTitanQuery types(TitanType... type) {
-        Preconditions.checkNotNull(type);
-        if (type.length==0) types=null;
-        else if (type.length>1) throw new IllegalArgumentException("Atomic query does not support multiple labels or keys");
-        else {
-            if (type[0]==null) types = new TitanType[0];
-            else {
-                type(type[0]);
+        Preconditions.checkNotNull(key);
+        if (compare==Compare.EQUAL) return has(key,value);
+        if (value!=null) {
+            Object v = value; //stupid javac workaround
+            if (key.getDataType().equals(Long.class) && v instanceof Integer) {
+                //Automatic cast in case of correctable type mismatch
+                return has(key,Long.valueOf(((Number)v).longValue()),compare);
             }
+            AttributeUtil.checkAttributeType(key,value);
         }
-        group = null;
+        AtomicInterval interval = IntervalUtil.getInterval(value,compare);
+
+        if (constraints == NO_CONSTRAINTS) constraints = new HashMap<String,Object>(5);
+        if (constraints.containsKey(key.getName())) {
+            Object o = constraints.get(key.getName());
+            assert (o instanceof AtomicInterval);
+            interval = ((AtomicInterval)o).intersect(interval);
+            if (interval==null) return EmptyAtomicQuery.INSTANCE;
+//          Preconditions.checkNotNull(interval,"Additional constraint leads to empty intersection and is therefore infeasible!");
+        }
+        constraints.put(key.getName(), interval);
         return this;
     }
-    
-    public AtomicTitanQuery type(TitanType type) {
+
+    @Override
+    public TitanQuery types(TitanType... type) {
+        throw new UnsupportedOperationException("Not supported in atomic query.");
+    }
+
+    @Override
+    public TitanQuery labels(String... labels) {
+        throw new UnsupportedOperationException("Not supported in atomic query.");
+    }
+
+    @Override
+    public TitanQuery keys(String... keys) {
+        throw new UnsupportedOperationException("Not supported in atomic query.");
+    }
+
+    @Override
+    public SimpleAtomicQuery type(TitanType type) {
         Preconditions.checkNotNull(type);
-        types = new TitanType[]{type};
-        if (types[0].isEdgeLabel()) {
+        this.type=type;
+        if (type.isEdgeLabel()) {
             edgesOnly();
             if (dir==null) {
-                if (((TitanLabel)types[0]).isUnidirected()) dir = Direction.OUT;
+                if (((TitanLabel)type).isUnidirected()) dir = Direction.OUT;
                 else dir = Direction.BOTH;
             }
         }
         else {
-            assert types[0].isPropertyKey();
+            assert type.isPropertyKey();
             propertiesOnly();
         }
         return this;
     }
+    
+    @Override
+    public AtomicQuery type(String type) {
+        TitanType t = getType(type);
+        if (t==null) return EmptyAtomicQuery.INSTANCE;
+        else return type(t);
+    }
 
-//    protected void removeEdgeType() {
-//        type = null;
-//    }
-	
-	@Override
-	public AtomicTitanQuery group(TypeGroup group) {
+    @Override
+	public SimpleAtomicQuery group(TypeGroup group) {
         Preconditions.checkNotNull(group);
         this.group=group;
-        this.types=null;
+        this.type=null;
         allEdges();
 		return this;
 	}
 	
 
 	@Override
-	public AtomicTitanQuery direction(Direction d) {
+	public SimpleAtomicQuery direction(Direction d) {
         dir = d;
 		return this;
 	}
 
 	@Override
-	public AtomicTitanQuery onlyModifiable() {
+	public SimpleAtomicQuery onlyModifiable() {
         queryUnmodifiable=false;
 		return this;
 	}
 
 	@Override
-	public AtomicTitanQuery includeHidden() {
+	public SimpleAtomicQuery includeHidden() {
         queryHidden=true;
 		return this;
 	}
 
     @Override
-    public AtomicTitanQuery limit(long limit) {
+    public SimpleAtomicQuery limit(long limit) {
         this.limit=limit;
         return this;
     }
 
     @Override
-    public AtomicTitanQuery inMemory() {
+    public SimpleAtomicQuery inMemory() {
         this.inMemoryRetrieval=true;
         return this;
     }
@@ -316,13 +341,13 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 
     @Override
     public boolean hasEdgeTypeCondition() {
-        return types!=null && types.length>0;
+        return type!=null;
     }
 
     @Override
     public TitanType getTypeCondition() {
         if (!hasEdgeTypeCondition()) throw new IllegalStateException("This query does not have an edge type condition");
-        return types[0];
+        return type;
     }
 
 
@@ -393,13 +418,12 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 
     @Override
     public boolean hasConstraints() {
-        return constraints !=null && !constraints.isEmpty();
+        return !constraints.isEmpty();
     }
 
     @Override
     public Map<String,Object> getConstraints() {
-        if (constraints ==null) return new HashMap<String, Object>();
-        else return constraints;
+        return constraints;
     }
 
 
@@ -408,55 +432,45 @@ public class AtomicTitanQuery implements InternalTitanQuery {
 	 * ---------------------------------------------------------------
 	 */
 	
-    private boolean emptyQuery() {
-        return types!=null && types.length==0;
-    }
-	
 	@Override
 	public Iterable<TitanProperty> properties() {
 		propertiesOnly();
-        if (emptyQuery()) return IterablesUtil.emptyIterable();
 		return new RemovableRelationIterable<TitanProperty>(node.getRelations(this, true));
 	}
 
-
+    @Override
 	public Iterator<TitanProperty> propertyIterator() {
 		propertiesOnly();
-        if (emptyQuery()) return Iterators.emptyIterator();
 		return new RemovableRelationIterator<TitanProperty>(node.getRelations(this, true).iterator());
 	}
 
+    @Override
 	public Iterator<TitanEdge> edgeIterator() {
 		edgesOnly();
-        if (emptyQuery()) return Iterators.emptyIterator();
 		return new RemovableRelationIterator<TitanEdge>(node.getRelations(this, true).iterator());
 	}
 
 	@Override
 	public Iterable<Edge> edges() {
 		edgesOnly();
-        if (emptyQuery()) return IterablesUtil.emptyIterable();
 		return (Iterable)new RemovableRelationIterable<TitanEdge>(node.getRelations(this, true));
 	}
 
     @Override
     public Iterable<TitanEdge> titanEdges() {
         edgesOnly();
-        if (emptyQuery()) return IterablesUtil.emptyIterable();
         return new RemovableRelationIterable<TitanEdge>(node.getRelations(this, true));
     }
 
-
+    @Override
     public Iterator<TitanRelation> relationIterator() {
 		allEdges();
-        if (emptyQuery()) return Iterators.emptyIterator();
 		return new RemovableRelationIterator<TitanRelation>(node.getRelations(this, true).iterator());
 	}
 
 	@Override
 	public Iterable<TitanRelation> relations() {
 		allEdges();
-        if (emptyQuery()) return IterablesUtil.emptyIterable();
 		return new RemovableRelationIterable<TitanRelation>(node.getRelations(this, true));
 	}
 	
@@ -492,9 +506,7 @@ public class AtomicTitanQuery implements InternalTitanQuery {
     @Override
     public VertexListInternal vertexIds() {
         Preconditions.checkNotNull(tx);
-        if (emptyQuery()) {
-            return new VertexArrayList();
-        } else if (retrieveInMemory()) {
+        if (retrieveInMemory()) {
             return retrieveFromMemory(new VertexArrayList());
         } else {
             return getVertexIDs();
@@ -509,7 +521,7 @@ public class AtomicTitanQuery implements InternalTitanQuery {
     private VertexListInternal retrieveFromMemory(VertexListInternal vertices) {
         edgesOnly();
         if (node==null) node = tx.getExistingVertex(nodeid);
-        AtomicTitanQuery q = new AtomicTitanQuery(node,this);
+        SimpleAtomicQuery q = new SimpleAtomicQuery(node,this);
         Iterator<TitanEdge> iter = q.edgeIterator();
         while (iter.hasNext()) {
             TitanEdge next = iter.next();

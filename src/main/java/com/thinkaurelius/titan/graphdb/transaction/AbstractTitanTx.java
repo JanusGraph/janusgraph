@@ -7,8 +7,7 @@ import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
-import com.thinkaurelius.titan.graphdb.query.ComplexTitanQuery;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.SimpleTitanQuery;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.RelationFactory;
@@ -303,13 +302,13 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	}
 	
 	@Override
-	public InternalTitanQuery query(InternalTitanVertex n) {
-		return new ComplexTitanQuery(n);
+	public TitanQuery query(InternalTitanVertex n) {
+		return new SimpleTitanQuery(n);
 	}
 
 	@Override
 	public TitanQuery query(long nodeid) {
-		return new ComplexTitanQuery((InternalTitanVertex) getVertex(nodeid));
+		return new SimpleTitanQuery((InternalTitanVertex) getVertex(nodeid));
 	}
 
 	@Override

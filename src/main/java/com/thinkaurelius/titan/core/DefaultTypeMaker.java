@@ -36,4 +36,13 @@ public interface DefaultTypeMaker {
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
     public TitanKey makeKey(String name, TypeMaker factory);
+
+    /**
+     * Whether to ignore undefined types occurring in a query.
+     * 
+     * If this method returns true, then undefined types referred to in a {@link TitanQuery} will be silently
+     * ignored and an empty result set will be returned. If this method returns false, then usage of undefined types
+     * in queries results in an {@link IllegalArgumentException}.
+     */
+    public boolean ignoreUndefinedQueryTypes();
 }

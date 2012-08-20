@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.StandardPersistedRelationFactory;
 import com.thinkaurelius.titan.graphdb.types.manager.InMemoryTypeManager;
@@ -69,12 +69,12 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 
 	
 	@Override
-	public void loadRelations(InternalTitanQuery query) {
+	public void loadRelations(AtomicQuery query) {
 		throw new UnsupportedOperationException("InMemory Transactions do not support edge loading");
 	}
 	
 	@Override
-	public AbstractLongList getRawNeighborhood(InternalTitanQuery query) {
+	public AbstractLongList getRawNeighborhood(AtomicQuery query) {
 		throw new UnsupportedOperationException("InMemory Transactions do not support disk retrieval");
 	}
 	
@@ -149,7 +149,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 	}
 
 	@Override
-	public AbstractLongList getRawNeighborhood(InternalTitanQuery query,
+	public AbstractLongList getRawNeighborhood(AtomicQuery query,
 			InternalTitanTransaction tx) {
 		throw new UnsupportedOperationException("Not supported for in-memory graph databases");
 	}
@@ -162,7 +162,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 
 
 	@Override
-	public void loadRelations(InternalTitanQuery query, InternalTitanTransaction tx) {
+	public void loadRelations(AtomicQuery query, InternalTitanTransaction tx) {
 		throw new UnsupportedOperationException("Not supported for in-memory graph databases");
 	}
 

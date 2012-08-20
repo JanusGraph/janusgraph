@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 
 public class DisjunctiveQueryIterator<T extends TitanRelation> implements Iterator<T> {
 
-    private final List<? extends AtomicTitanQuery> queries;
+    private final List<AtomicQuery> queries;
     private final Class<T> type;
     private long remainingLimit;
     
@@ -25,12 +25,13 @@ public class DisjunctiveQueryIterator<T extends TitanRelation> implements Iterat
     private Iterator<T> nextIter = null;
     
     
-    DisjunctiveQueryIterator(ComplexTitanQuery q, Class<T> type) {
+    DisjunctiveQueryIterator(List<AtomicQuery> disjuction, Class<T> type) {
         Preconditions.checkNotNull(type);
-        Preconditions.checkNotNull(q);
+        Preconditions.checkNotNull(disjuction);
+        Preconditions.checkArgument(!disjuction.isEmpty());
         this.type=type;
-        queries = q.getDisjunctiveQueries();
-        remainingLimit = q.getLimit();
+        queries = disjuction;
+        remainingLimit = disjuction.get(0).getLimit();
     }
 
     @Override
@@ -44,7 +45,7 @@ public class DisjunctiveQueryIterator<T extends TitanRelation> implements Iterat
     private void initializeNextIter() {
         if (nextIter==null) {
             while (position<queries.size() && remainingLimit>0 && (nextIter==null || !nextIter.hasNext())) {
-                AtomicTitanQuery query = queries.get(position);
+                AtomicQuery query = queries.get(position);
                 query.limit(remainingLimit);
                 if (type.equals(TitanRelation.class)) nextIter = (Iterator<T>)query.relationIterator();
                 else if (type.equals(TitanProperty.class)) nextIter = (Iterator<T>)query.propertyIterator();

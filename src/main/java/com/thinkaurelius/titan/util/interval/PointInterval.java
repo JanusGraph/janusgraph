@@ -9,6 +9,7 @@ import java.util.Set;
  * A PointInterval is a {@link AtomicInterval} with identical start and end points.
  * 
  * In other words, the attribute values defining the end points of the interval are identical and both are inclusive.
+ *
  * 
  * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
  * 

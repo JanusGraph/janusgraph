@@ -1,13 +1,13 @@
 package com.thinkaurelius.titan.graphdb.loadingstatus;
 
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.util.datastructures.BitMap;
 
 public class DirectionTypeEncoder {
 
 	
-	public static final boolean hasAllCovered(byte code, InternalTitanQuery query) {
+	public static final boolean hasAllCovered(byte code, AtomicQuery query) {
 		for (EdgeDirection dir : EdgeDirection.values()) {
 			if (!query.hasDirectionCondition() || query.isAllowedDirection(dir)) {
 				if (dir==EdgeDirection.OUT && query.queryProperties()) {
@@ -21,7 +21,7 @@ public class DirectionTypeEncoder {
 		return true;
 	}
 	
-	public static final byte loaded(byte code, InternalTitanQuery query) {
+	public static final byte loaded(byte code, AtomicQuery query) {
 		for (EdgeDirection dir : EdgeDirection.values()) {
 			if (!query.hasDirectionCondition() || query.isAllowedDirection(dir)) {
 				if (dir==EdgeDirection.OUT && query.queryProperties()) {

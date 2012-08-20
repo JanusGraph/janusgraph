@@ -6,10 +6,9 @@ import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.QueryException;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsVertexUtil;
-import com.thinkaurelius.titan.graphdb.query.AtomicTitanQuery;
-import com.thinkaurelius.titan.graphdb.query.ComplexTitanQuery;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.entitystatus.InMemoryElement;
+import com.thinkaurelius.titan.graphdb.query.SimpleTitanQuery;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -75,16 +74,16 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 
 	
 	@Override
-	public void loadedEdges(InternalTitanQuery query) {
+	public void loadedEdges(AtomicQuery query) {
 		throw new UnsupportedOperationException("Relation loading is not supported on in memory vertices");
 	}
 
 	@Override
-	public boolean hasLoadedEdges(InternalTitanQuery query) {
+	public boolean hasLoadedEdges(AtomicQuery query) {
 		return isNew();
 	}
 
-	protected synchronized void ensureLoadedEdges(InternalTitanQuery query) {
+	protected synchronized void ensureLoadedEdges(AtomicQuery query) {
 		if (!hasLoadedEdges(query)) tx.loadRelations(query);
 	}
 
@@ -113,7 +112,7 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 	@Override
 	public Object getProperty(TitanKey key) {
 		try {
-			TitanProperty p = Iterators.getOnlyElement(new AtomicTitanQuery(this).type(key).propertyIterator(), null);
+			TitanProperty p = Iterators.getOnlyElement(new SimpleTitanQuery(this).type(key).propertyIterator(), null);
 			if (p==null) return null;
 			else return p.getAttribute();
 		} catch (IllegalArgumentException e) {
@@ -130,7 +129,7 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 	@Override
 	public<O> O getProperty(TitanKey key, Class<O> clazz) {
 		try {
-			TitanProperty p = Iterators.getOnlyElement(new AtomicTitanQuery(this).type(key).propertyIterator(), null);
+			TitanProperty p = Iterators.getOnlyElement(new SimpleTitanQuery(this).type(key).propertyIterator(), null);
 			if (p==null) return null;
 			else return p.getAttribute(clazz);
 		} catch (IllegalArgumentException e) {
@@ -146,45 +145,45 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 
 	@Override
 	public Iterable<TitanProperty> getProperties() {
-		return new AtomicTitanQuery(this).properties();
+		return new SimpleTitanQuery(this).properties();
 	}
 
 	@Override
 	public Iterable<TitanProperty> getProperties(TitanKey key) {
-		return new AtomicTitanQuery(this).type(key).properties();
+		return new SimpleTitanQuery(this).type(key).properties();
 	}
 
 	@Override
 	public Iterable<TitanProperty> getProperties(String key) {
-        return new AtomicTitanQuery(this).keys(key).properties();
+        return new SimpleTitanQuery(this).keys(key).properties();
 	}
 
     
     
 	@Override
 	public Iterable<TitanEdge> getEdges() {
-		return new AtomicTitanQuery(this).titanEdges();
+		return new SimpleTitanQuery(this).titanEdges();
 	}
 
 
 	@Override
 	public Iterable<TitanEdge> getTitanEdges(Direction dir, TitanLabel... labels) {
-		return new ComplexTitanQuery(this).direction(dir).types(labels).titanEdges();
+		return new SimpleTitanQuery(this).direction(dir).types(labels).titanEdges();
 	}
 
 	@Override
 	public Iterable<Edge> getEdges(Direction dir, String... labels) {
-        return new ComplexTitanQuery(this).direction(dir).labels(labels).edges();
+        return new SimpleTitanQuery(this).direction(dir).labels(labels).edges();
 	}
 	
 	@Override
 	public Iterable<TitanRelation> getRelations() {
-		return new AtomicTitanQuery(this).relations();
+		return new SimpleTitanQuery(this).relations();
 	}
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String... labels) {
-        return new ComplexTitanQuery(this).direction(direction).labels(labels).vertices();
+        return new SimpleTitanQuery(this).direction(direction).labels(labels).vertices();
     }
 
 	
@@ -196,13 +195,13 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
 
 	@Override
 	public long getPropertyCount() {
-		return new AtomicTitanQuery(this).propertyCount();
+		return new SimpleTitanQuery(this).propertyCount();
 	}
 
 
 	@Override
 	public long getEdgeCount() {
-		return new AtomicTitanQuery(this).count();
+		return new SimpleTitanQuery(this).count();
 	}
 	
 	@Override

@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.types.manager;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.graphdb.adjacencylist.InitialAdjListFactory;
-import com.thinkaurelius.titan.graphdb.query.AtomicTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.SimpleAtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.factory.RelationLoader;
 import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
 import com.thinkaurelius.titan.graphdb.types.PropertyKeyDefinition;
@@ -24,16 +24,16 @@ public class StandardTypeFactory implements TypeFactory {
 	@Override
 	public InternalTitanType createExistingType(long id, TypeInformation info, InternalTitanTransaction tx) {
 		RelationLoader fac = tx.getRelationFactory();
-		AtomicTitanQuery loaded = null;
+		SimpleAtomicQuery loaded = null;
 		InternalTitanType edgetype = null;
 		if (info.definition instanceof EdgeLabelDefinition) {
 			edgetype = new PersistVertexTitanLabel(tx,InitialAdjListFactory.BasicFactory,id);
-			loaded = new AtomicTitanQuery(edgetype).includeHidden();
+			loaded = new SimpleAtomicQuery(edgetype).includeHidden();
 			fac.createExistingProperty(info.definitionEdgeID, SystemKey.RelationshipTypeDefinition, edgetype, info.definition);
 			edgetype.loadedEdges(loaded.type(SystemKey.RelationshipTypeDefinition));
 		} else if (info.definition instanceof PropertyKeyDefinition) {
 			edgetype = new PersistVertexTitanKey(tx,InitialAdjListFactory.BasicFactory,id);
-			loaded = new AtomicTitanQuery(edgetype).includeHidden();
+			loaded = new SimpleAtomicQuery(edgetype).includeHidden();
 			fac.createExistingProperty(info.definitionEdgeID, SystemKey.PropertyTypeDefinition, edgetype, info.definition);
 			edgetype.loadedEdges(loaded.type(SystemKey.PropertyTypeDefinition));
 		} else throw new AssertionError("Cannot create existing edge type: Unexpected definition type: " + info.definition);

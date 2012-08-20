@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
@@ -27,12 +27,12 @@ public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
 
 	
 	@Override
-	public void loadedEdges(InternalTitanQuery query) {
+	public void loadedEdges(AtomicQuery query) {
 		throw new UnsupportedOperationException(errorName + " do not support incident edges");
 	}
 
 	@Override
-	public boolean hasLoadedEdges(InternalTitanQuery query) {
+	public boolean hasLoadedEdges(AtomicQuery query) {
 		return true;
 	}
 
@@ -88,7 +88,7 @@ public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
 
     
     @Override
-    public Iterable<InternalRelation> getRelations(InternalTitanQuery query, boolean loadRemaining) {
+    public Iterable<InternalRelation> getRelations(AtomicQuery query, boolean loadRemaining) {
         return IterablesUtil.emptyIterable();
     }
 

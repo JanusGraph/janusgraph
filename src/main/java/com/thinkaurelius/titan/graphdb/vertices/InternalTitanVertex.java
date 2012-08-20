@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.entitystatus.InternalElement;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
@@ -22,11 +22,11 @@ public interface InternalTitanVertex extends TitanVertex, InternalElement
 	 * only non-deleted/freed edges are returned.
 	 * If loadRemaining is true, all required edges are first loaded from disk if
 	 * not already in memory.
-	 * @param query InternalTitanQuery defining which edges to retrieve/return
+	 * @param query AtomicQuery defining which edges to retrieve/return
 	 * @param loadRemaining
 	 * @return Iterator over all incident edges
 	 */
-	Iterable<InternalRelation> getRelations(InternalTitanQuery query, boolean loadRemaining);
+	Iterable<InternalRelation> getRelations(AtomicQuery query, boolean loadRemaining);
 	
 	
 	/* ---------------------------------------------------------------
@@ -54,7 +54,7 @@ public interface InternalTitanVertex extends TitanVertex, InternalElement
      *
      * @param query Specifies which edges have been loaded, i.e. all incident edges matching the query
 	 */
-	void loadedEdges(InternalTitanQuery query);
+	void loadedEdges(AtomicQuery query);
 
 
     /**
@@ -62,7 +62,7 @@ public interface InternalTitanVertex extends TitanVertex, InternalElement
      * @param query Query for which to check whether edges have been loaded already
      * @return Whether all edges asked for by the query have already been loaded into memory
      */
-	boolean hasLoadedEdges(InternalTitanQuery query);
+	boolean hasLoadedEdges(AtomicQuery query);
 	
 	
 }

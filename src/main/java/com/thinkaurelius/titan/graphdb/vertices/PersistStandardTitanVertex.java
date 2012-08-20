@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.entitystatus.BasicElement;
 import com.thinkaurelius.titan.graphdb.loadingstatus.LoadingStatus;
@@ -54,12 +54,12 @@ public class PersistStandardTitanVertex extends StandardTitanVertex {
 	}
 	
 	@Override
-	public void loadedEdges(InternalTitanQuery query) {
+	public void loadedEdges(AtomicQuery query) {
 		loading = loading.loadedEdges(query);
 	}
 
 	@Override
-	public boolean hasLoadedEdges(InternalTitanQuery query) {
+	public boolean hasLoadedEdges(AtomicQuery query) {
 		return loading.hasLoadedEdges(query);
 	}
 	

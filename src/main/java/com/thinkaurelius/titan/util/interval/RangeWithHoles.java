@@ -78,7 +78,7 @@ public class RangeWithHoles<V extends Comparable<V>> extends Range<V> {
             assert newholes.contains(res.getStartPoint()); //The only point is also a hole => empty interval
             return null;
         } else {
-            return new RangeWithHoles(res.getStartPoint(),res.getEndPoint(),res.startInclusive(),res.endInclusive(),ImmutableSet.of(newholes));
+            return new RangeWithHoles(res.getStartPoint(),res.getEndPoint(),res.startInclusive(),res.endInclusive(),ImmutableSet.copyOf(newholes));
         }
     }
     

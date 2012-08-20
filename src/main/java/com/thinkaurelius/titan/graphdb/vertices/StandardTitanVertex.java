@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.adjacencylist.InitialAdjListFactory;
 import com.thinkaurelius.titan.graphdb.adjacencylist.ModificationStatus;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
@@ -56,7 +56,7 @@ public class StandardTitanVertex extends AbstractTitanVertex {
 	}
 	
 	@Override
-	public Iterable<InternalRelation> getRelations(InternalTitanQuery query, boolean loadRemaining) {
+	public Iterable<InternalRelation> getRelations(AtomicQuery query, boolean loadRemaining) {
 		assert isAvailable();
 		if (loadRemaining) ensureLoadedEdges(query);
 		

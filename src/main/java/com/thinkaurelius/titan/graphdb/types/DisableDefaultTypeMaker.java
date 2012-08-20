@@ -24,4 +24,9 @@ public class DisableDefaultTypeMaker implements DefaultTypeMaker {
     public TitanKey makeKey(String name, TypeMaker factory) {
         throw new IllegalArgumentException("Key with given name does not exist: " + name);
     }
+
+    @Override
+    public boolean ignoreUndefinedQueryTypes() {
+        return false;
+    }
 }

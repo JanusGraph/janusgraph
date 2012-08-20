@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.util;
 
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 
 public class LimitTracker {
 
@@ -8,7 +8,7 @@ public class LimitTracker {
 	
 	private int remainingLimit;
 
-	public LimitTracker(InternalTitanQuery query) {
+	public LimitTracker(AtomicQuery query) {
 		remainingLimit = (int)Math.min(retrievalLimit, query.getLimit());
 	}
 	
