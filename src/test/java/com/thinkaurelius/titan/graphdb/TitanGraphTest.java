@@ -223,7 +223,30 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testTransaction() {
+        TitanTransaction tx1 = graphdb.startTransaction();
+        TitanTransaction tx2 = graphdb.startTransaction();
         
+        TitanVertex v11 = tx1.addVertex();
+        TitanVertex v12 = tx1.addVertex();
+        tx1.addEdge(v11,v12,"knows");
+        
+        TitanVertex v21 = tx2.addVertex();
+        try {
+            v21.addEdge("knows",v11);
+            fail();
+        } catch (IllegalArgumentException e) {}
+        TitanVertex v22 = tx2.addVertex();
+        v21.addEdge("knows",v22);
+        tx2.commit();
+        try {
+            v22.addEdge("knows",v21);
+            fail();
+        } catch (IllegalStateException e) {}
+        tx1.abort();
+        try {
+            v11.setProperty("test",5);
+            fail();
+        } catch (IllegalStateException e) {}
     }
 
 	//Add more removal operations, different transaction contexts
