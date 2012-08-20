@@ -89,10 +89,10 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
 
     private static void validateConfiguration(Configuration conf) {
         if (ConfigHelper.getInputKeyspace(conf) == null || ConfigHelper.getInputColumnFamily(conf) == null) {
-            throw new UnsupportedOperationException("you must set the keyspace and columnfamily with setColumnFamily()");
+            throw new UnsupportedOperationException("You must set the keyspace and columnfamily with setColumnFamily()");
         }
         if (ConfigHelper.getInputSlicePredicate(conf) == null) {
-            throw new UnsupportedOperationException("you must set the predicate with setPredicate");
+            throw new UnsupportedOperationException("You must set the predicate with setPredicate()");
         }
         if (ConfigHelper.getInputInitialAddress(conf) == null)
             throw new UnsupportedOperationException("You must set the initial output address to a Cassandra node");

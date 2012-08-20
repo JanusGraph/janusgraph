@@ -14,19 +14,19 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusGraphTest extends BaseTest {
+public class FaunusPipelineTest extends BaseTest {
 
     protected static Configuration conf = new Configuration();
 
     static {
-        conf.set(Tokens.GRAPH_INPUT_FORMAT_CLASS, GraphSONInputFormat.class.getName());
-        conf.set(Tokens.GRAPH_OUTPUT_FORMAT_CLASS, GraphSONOutputFormat.class.getName());
-        conf.set(Tokens.STATISTIC_OUTPUT_FORMAT_CLASS, TextOutputFormat.class.getName());
-        conf.set(Tokens.DATA_OUTPUT_LOCATION, "output.txt");
+        conf.set(FaunusConfiguration.GRAPH_INPUT_FORMAT_CLASS, GraphSONInputFormat.class.getName());
+        conf.set(FaunusConfiguration.GRAPH_OUTPUT_FORMAT_CLASS, GraphSONOutputFormat.class.getName());
+        conf.set(FaunusConfiguration.STATISTIC_OUTPUT_FORMAT_CLASS, TextOutputFormat.class.getName());
+        conf.set(FaunusConfiguration.OUTPUT_LOCATION, "output.txt");
     }
 
     public void testMapOnlyComposition() throws Exception {
-        FaunusGraph g = new FaunusGraph("g", conf);
+        FaunusPipeline g = new FaunusPipeline("g", conf);
         g = g.V._().labelFilter(Tokens.Action.KEEP, "father");
         assertEquals(g.getJobSequence().size(), 1);
         List<String> classes = Arrays.asList(g.getJobSequence().get(0).getConfiguration().getStrings(MapSequence.MAP_CLASSES));
@@ -35,10 +35,11 @@ public class FaunusGraphTest extends BaseTest {
         assertEquals(classes.get(1), LabelFilter.Map.class.getName());
         assertEquals(g.getJobSequence().get(0).getConfiguration().getStrings(LabelFilter.LABELS + "-1")[0], "father");
         assertEquals(g.getJobSequence().get(0).getConfiguration().get(LabelFilter.ACTION + "-1"), Tokens.Action.KEEP.name());
+        assertTrue(g.derivationJob);
     }
 
     public void testMapOnlyComposition2() throws Exception {
-        FaunusGraph g = new FaunusGraph("g", conf);
+        FaunusPipeline g = new FaunusPipeline("g", conf);
         g = g.V._().labelFilter(Tokens.Action.KEEP, "brother")._();
         assertEquals(g.getJobSequence().size(), 1);
         List<String> classes = Arrays.asList(g.getJobSequence().get(0).getConfiguration().getStrings(MapSequence.MAP_CLASSES));
@@ -48,6 +49,7 @@ public class FaunusGraphTest extends BaseTest {
         assertEquals(classes.get(2), Identity.Map.class.getName());
         assertEquals(g.getJobSequence().get(0).getConfiguration().getStrings(LabelFilter.LABELS + "-1")[0], "brother");
         assertEquals(g.getJobSequence().get(0).getConfiguration().get(LabelFilter.ACTION + "-1"), Tokens.Action.KEEP.name());
+        assertTrue(g.derivationJob);
         try {
             String x = g.getJobSequence().get(0).getConfiguration().getStrings(LabelFilter.LABELS + "-1")[1];
             assertFalse(true);

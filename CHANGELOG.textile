@@ -1,4 +1,4 @@
-Faunus: A Library of Graph-Based Hadoop Tools
+Faunus: A Library of Hadoop-Based Graph Tools
 "http://thinkaurelius.github.com/faunus/":http://thinkaurelius.github.com/faunus/
 
 h2. Faunus 0.x

@@ -65,15 +65,12 @@ import java.util.UUID;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusGraph extends Configured implements Tool {
+public class FaunusPipeline extends Configured implements Tool {
 
-    private final Logger logger = Logger.getLogger(FaunusGraph.class);
+    protected final Logger logger = Logger.getLogger(FaunusPipeline.class);
 
-    private Configuration configuration;
-    private final Class<? extends InputFormat> inputFormat;
-    private Class<? extends OutputFormat> outputFormat;
-    private final Class<? extends OutputFormat> statisticsOutputFormat;
-    private final Path outputPath;
+    private FaunusConfiguration configuration;
+    protected boolean derivationJob = true;
     private final String jobScript;
 
     private final List<Job> jobs = new ArrayList<Job>();
@@ -84,18 +81,13 @@ public class FaunusGraph extends Configured implements Tool {
     private Class mapRClass = null;
     private Class reduceClass = null;
 
-    private static final Class<? extends InputFormat> intermediateInputFormat = SequenceFileInputFormat.class;
-    private static final Class<? extends OutputFormat> intermediateOutputFormat = SequenceFileOutputFormat.class;
+    protected static final Class<? extends InputFormat> INTERMEDIATE_INPUT_FORMAT = SequenceFileInputFormat.class;
+    protected static final Class<? extends OutputFormat> INTERMEDIATE_OUTPUT_FORMAT = SequenceFileOutputFormat.class;
 
-    public FaunusGraph V = this;
+    public FaunusPipeline V = this;
 
-    public FaunusGraph(final String jobScript, final Configuration conf) throws ClassNotFoundException {
-        this.configuration = conf;
-        this.inputFormat = (Class<? extends InputFormat>) Class.forName(this.configuration.get(Tokens.GRAPH_INPUT_FORMAT_CLASS));
-        this.outputFormat = (Class<? extends OutputFormat>) Class.forName(this.configuration.get(Tokens.GRAPH_OUTPUT_FORMAT_CLASS));
-
-        this.statisticsOutputFormat = (Class<? extends OutputFormat>) Class.forName(this.configuration.get(Tokens.STATISTIC_OUTPUT_FORMAT_CLASS));
-        this.outputPath = new Path(this.configuration.get(Tokens.DATA_OUTPUT_LOCATION));
+    public FaunusPipeline(final String jobScript, final Configuration conf) throws ClassNotFoundException {
+        this.configuration = new FaunusConfiguration(conf);
         this.jobScript = jobScript;
     }
 
@@ -131,7 +123,7 @@ public class FaunusGraph extends Configured implements Tool {
         return this.jobs;
     }
 
-    public FaunusGraph V() {
+    public FaunusPipeline V() {
         return this;
     }
 
@@ -139,14 +131,14 @@ public class FaunusGraph extends Configured implements Tool {
     ///////////////////////// DERIVATIONS /////////////////////////
     ///////////////////////////////////////////////////////////////
 
-    public FaunusGraph _() throws IOException {
+    public FaunusPipeline _() throws IOException {
         this.mapSequenceClasses.add(Identity.Map.class);
         return this;
     }
 
     // FILTERS
 
-    public FaunusGraph filter(final Class<? extends Element> klass, final String function) throws IOException {
+    public FaunusPipeline filter(final Class<? extends Element> klass, final String function) throws IOException {
         if (klass.equals(Vertex.class)) {
             this.mapSequenceConfiguration.set(VertexFilter.FUNCTION, function);
             this.mapRClass = VertexFilter.Map.class;
@@ -161,11 +153,11 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    public FaunusGraph propertyFilter(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object value) throws IOException {
+    public FaunusPipeline propertyFilter(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object value) throws IOException {
         return this.propertyFilter(klass, key, compare, value, false);
     }
 
-    public FaunusGraph propertyFilter(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object value, final Boolean nullIsWildcard) throws IOException {
+    public FaunusPipeline propertyFilter(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object value, final Boolean nullIsWildcard) throws IOException {
         if (klass.equals(Vertex.class)) {
             this.mapSequenceConfiguration.set(VertexPropertyFilter.KEY, key);
             this.mapSequenceConfiguration.set(VertexPropertyFilter.COMPARE, compare.name());
@@ -200,20 +192,20 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    public FaunusGraph directionFilter(final Direction direction) {
+    public FaunusPipeline directionFilter(final Direction direction) {
         this.mapSequenceConfiguration.set(DirectionFilter.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
         this.mapSequenceClasses.add(DirectionFilter.Map.class);
         return this;
     }
 
-    public FaunusGraph labelFilter(final Tokens.Action action, final String... labels) {
+    public FaunusPipeline labelFilter(final Tokens.Action action, final String... labels) {
         this.mapSequenceConfiguration.set(LabelFilter.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
         this.mapSequenceConfiguration.setStrings(LabelFilter.LABELS + "-" + this.mapSequenceClasses.size(), labels);
         this.mapSequenceClasses.add(LabelFilter.Map.class);
         return this;
     }
 
-    public FaunusGraph loopFilter(final Tokens.Action action, final String... labels) {
+    public FaunusPipeline loopFilter(final Tokens.Action action, final String... labels) {
         this.mapSequenceConfiguration.set(LoopFilter.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
         this.mapSequenceConfiguration.setStrings(LoopFilter.LABELS + "-" + this.mapSequenceClasses.size(), labels);
         this.mapSequenceClasses.add(LoopFilter.Map.class);
@@ -222,14 +214,14 @@ public class FaunusGraph extends Configured implements Tool {
 
     // SIDEEFFECT
 
-    public FaunusGraph sideEffect(final Class<? extends Element> klass, final String function) {
+    public FaunusPipeline sideEffect(final Class<? extends Element> klass, final String function) {
         this.mapSequenceConfiguration.set(SideEffect.CLASS + "-" + this.mapSequenceClasses.size(), klass.getName());
         this.mapSequenceConfiguration.set(SideEffect.FUNCTION + "-" + this.mapSequenceClasses.size(), function);
         this.mapSequenceClasses.add(SideEffect.Map.class);
         return this;
     }
 
-    public FaunusGraph properties(final Class<? extends Element> klass, final Tokens.Action action, final String... keys) {
+    public FaunusPipeline properties(final Class<? extends Element> klass, final Tokens.Action action, final String... keys) {
         this.mapSequenceConfiguration.set(Properties.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
         this.mapSequenceConfiguration.set(Properties.CLASS + "-" + this.mapSequenceClasses.size(), klass.getName());
         this.mapSequenceConfiguration.setStrings(Properties.KEYS + "-" + this.mapSequenceClasses.size(), keys);
@@ -237,7 +229,7 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    public FaunusGraph transpose(final String label, final String newLabel, final Tokens.Action action) {
+    public FaunusPipeline transpose(final String label, final String newLabel, final Tokens.Action action) {
         this.mapSequenceConfiguration.set(Transpose.LABEL + "-" + this.mapSequenceClasses.size(), label);
         this.mapSequenceConfiguration.set(Transpose.NEW_LABEL + "-" + this.mapSequenceClasses.size(), newLabel);
         this.mapSequenceConfiguration.set(Transpose.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
@@ -245,7 +237,7 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    public FaunusGraph traverse(final Direction firstDirection, final String firstLabel, final Direction secondDirection, final String secondLabel, final String newLabel, final Tokens.Action action) throws IOException {
+    public FaunusPipeline traverse(final Direction firstDirection, final String firstLabel, final Direction secondDirection, final String secondLabel, final String newLabel, final Tokens.Action action) throws IOException {
         this.mapSequenceConfiguration.set(Traverse.FIRST_DIRECTION, firstDirection.toString());
         this.mapSequenceConfiguration.set(Traverse.FIRST_LABEL, firstLabel);
         this.mapSequenceConfiguration.set(Traverse.SECOND_DIRECTION, secondDirection.toString());
@@ -258,7 +250,7 @@ public class FaunusGraph extends Configured implements Tool {
         return this;
     }
 
-    private FaunusGraph completeSequence() throws IOException {
+    private FaunusPipeline completeSequence() throws IOException {
         if (this.mapRClass != null && this.reduceClass != null) {
             this.mapSequenceConfiguration.set(MapReduceSequence.MAPR_CLASS, this.mapRClass.getName());
             this.mapSequenceConfiguration.set(MapReduceSequence.REDUCE_CLASS, this.reduceClass.getName());
@@ -289,7 +281,7 @@ public class FaunusGraph extends Configured implements Tool {
     }
 
     private void configureMapJob(final Job job) {
-        job.setJarByClass(FaunusGraph.class);
+        job.setJarByClass(FaunusPipeline.class);
         job.setMapOutputKeyClass(NullWritable.class);
         job.setMapOutputValueClass(FaunusVertex.class);
         job.setOutputKeyClass(NullWritable.class);
@@ -297,7 +289,7 @@ public class FaunusGraph extends Configured implements Tool {
     }
 
     private void configureMapReduceJob(final Job job) {
-        job.setJarByClass(FaunusGraph.class);
+        job.setJarByClass(FaunusPipeline.class);
         job.setMapOutputKeyClass(LongWritable.class);
         job.setMapOutputValueClass(Holder.class);
         job.setOutputKeyClass(NullWritable.class);
@@ -308,21 +300,25 @@ public class FaunusGraph extends Configured implements Tool {
     ///////////////////////// STATISTICS /////////////////////////
     //////////////////////////////////////////////////////////////
 
-    public FaunusGraph transform(final String function) throws IOException {
+    public void configureStatisticsJob(final Job job) {
+        job.setJarByClass(FaunusPipeline.class);
+        this.derivationJob = false;
+    }
+    
+    public FaunusPipeline transform(final String function) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(Transform.FUNCTION, function);
         final Job job = new Job(conf, Transform.class.getCanonicalName());
         job.setMapperClass(Transform.Map.class);
-        job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(FaunusVertex.class);
         job.setMapOutputValueClass(Text.class);
-        this.outputFormat = this.statisticsOutputFormat;
+        this.configureStatisticsJob(job);
         this.jobs.add(job);
         return this;
     }
 
-    public FaunusGraph distribution(final Class<? extends Element> klass, final String function) throws IOException {
+    public FaunusPipeline distribution(final Class<? extends Element> klass, final String function) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(Distribution.CLASS, klass.getName());
@@ -331,17 +327,16 @@ public class FaunusGraph extends Configured implements Tool {
         job.setMapperClass(Distribution.Map.class);
         job.setReducerClass(Distribution.Reduce.class);
         job.setCombinerClass(Distribution.Reduce.class);
-        job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputKeyClass(LongWritable.class);
-        this.outputFormat = this.statisticsOutputFormat;
+        this.configureStatisticsJob(job);
         this.jobs.add(job);
         return this;
     }
 
-    public FaunusGraph adjacentProperties(final String property, final String... labels) throws IOException {
+    public FaunusPipeline adjacentProperties(final String property, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(AdjacentProperties.PROPERTY, property);
@@ -349,11 +344,11 @@ public class FaunusGraph extends Configured implements Tool {
         final Job job1 = new Job(conf, AdjacentProperties.class.getCanonicalName() + ":part-1");
         job1.setMapperClass(AdjacentProperties.Map.class);
         job1.setReducerClass(AdjacentProperties.Reduce.class);
-        job1.setJarByClass(FaunusGraph.class);
         job1.setMapOutputKeyClass(LongWritable.class);
         job1.setMapOutputValueClass(Holder.class);
         job1.setOutputKeyClass(Text.class);
         job1.setOutputValueClass(Text.class);
+        this.configureStatisticsJob(job1);
         this.jobs.add(job1);
 
         // todo: aggregate or not?
@@ -362,20 +357,19 @@ public class FaunusGraph extends Configured implements Tool {
         job2.setMapperClass(AdjacentProperties.Map2.class);
         job2.setCombinerClass(AdjacentProperties.Reduce2.class);
         job2.setReducerClass(AdjacentProperties.Reduce2.class);
-        job2.setJarByClass(FaunusGraph.class);
         job2.setMapOutputKeyClass(Text.class);
         job2.setMapOutputValueClass(LongWritable.class);
         job2.setOutputKeyClass(Text.class);
         job2.setOutputValueClass(LongWritable.class);
+        this.configureStatisticsJob(job2);
         this.jobs.add(job2);
 
-        this.outputFormat = this.statisticsOutputFormat;
         return this;
 
 
     }
 
-    public FaunusGraph degree(final String property, final Direction direction, final String... labels) throws IOException {
+    public FaunusPipeline degree(final String property, final Direction direction, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(Degree.PROPERTY, property);
@@ -383,15 +377,14 @@ public class FaunusGraph extends Configured implements Tool {
         conf.setStrings(Degree.LABELS, labels);
         final Job job = new Job(conf, Degree.class.getCanonicalName());
         job.setMapperClass(Degree.Map.class);
-        job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(IntWritable.class);
-        this.outputFormat = this.statisticsOutputFormat;
+        this.configureStatisticsJob(job);
         this.jobs.add(job);
         return this;
     }
 
-    public FaunusGraph degree(final String property, final Tokens.Order order, final Direction direction, final String... labels) throws IOException {
+    public FaunusPipeline degree(final String property, final Tokens.Order order, final Direction direction, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(SortedDegree.PROPERTY, property);
@@ -401,17 +394,16 @@ public class FaunusGraph extends Configured implements Tool {
         final Job job = new Job(conf, SortedDegree.class.getCanonicalName());
         job.setMapperClass(SortedDegree.Map.class);
         job.setReducerClass(SortedDegree.Reduce.class);
-        job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(FaunusVertex.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
-        this.outputFormat = this.statisticsOutputFormat;
+        this.configureStatisticsJob(job);
         this.jobs.add(job);
         return this;
     }
 
-    public FaunusGraph degreeDistribution(final Direction direction, final String... labels) throws IOException {
+    public FaunusPipeline degreeDistribution(final Direction direction, final String... labels) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(DegreeDistribution.DIRECTION, direction.name());
@@ -420,17 +412,16 @@ public class FaunusGraph extends Configured implements Tool {
         job.setMapperClass(DegreeDistribution.Map.class);
         job.setReducerClass(DegreeDistribution.Reduce.class);
         job.setCombinerClass(DegreeDistribution.Reduce.class);
-        job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(IntWritable.class);
         job.setOutputKeyClass(LongWritable.class);
-        this.outputFormat = this.statisticsOutputFormat;
+        this.configureStatisticsJob(job);
         this.jobs.add(job);
         return this;
     }
 
-    public FaunusGraph labelDistribution(final Direction direction) throws IOException {
+    public FaunusPipeline labelDistribution(final Direction direction) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(LabelDistribution.DIRECTION, direction.name());
@@ -438,17 +429,16 @@ public class FaunusGraph extends Configured implements Tool {
         job.setMapperClass(LabelDistribution.Map.class);
         job.setReducerClass(LabelDistribution.Reduce.class);
         job.setCombinerClass(LabelDistribution.Reduce.class);
-        job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputKeyClass(LongWritable.class);
-        this.outputFormat = this.statisticsOutputFormat;
+        this.configureStatisticsJob(job);
         this.jobs.add(job);
         return this;
     }
 
-    public FaunusGraph propertyValueDistribution(final Class<? extends Element> klass, final String property) throws IOException {
+    public FaunusPipeline propertyValueDistribution(final Class<? extends Element> klass, final String property) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(PropertyValueDistribution.CLASS, klass.getName());
@@ -457,17 +447,16 @@ public class FaunusGraph extends Configured implements Tool {
         job.setMapperClass(PropertyValueDistribution.Map.class);
         job.setReducerClass(PropertyValueDistribution.Reduce.class);
         job.setCombinerClass(PropertyValueDistribution.Reduce.class);
-        job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputKeyClass(LongWritable.class);
-        this.outputFormat = this.statisticsOutputFormat;
+        this.configureStatisticsJob(job);
         this.jobs.add(job);
         return this;
     }
 
-    public FaunusGraph propertyDistribution(final Class<? extends Element> klass) throws IOException {
+    public FaunusPipeline propertyDistribution(final Class<? extends Element> klass) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
         conf.set(PropertyDistribution.CLASS, klass.getName());
@@ -475,21 +464,20 @@ public class FaunusGraph extends Configured implements Tool {
         job.setMapperClass(PropertyDistribution.Map.class);
         job.setReducerClass(PropertyDistribution.Reduce.class);
         job.setCombinerClass(PropertyDistribution.Reduce.class);
-        job.setJarByClass(FaunusGraph.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputKeyClass(LongWritable.class);
-        this.outputFormat = this.statisticsOutputFormat;
+        this.configureStatisticsJob(job);
         this.jobs.add(job);
         return this;
     }
 
     public int run(String[] args) throws Exception {
-        if (this.configuration.getBoolean(Tokens.OVERWRITE_DATA_OUTPUT_LOCATION, false)) {
+        if (this.configuration.getOutputLocationOverwrite()) {
             final FileSystem hdfs = FileSystem.get(this.getConf());
-            if (hdfs.exists(this.outputPath)) {
-                hdfs.delete(this.outputPath, true);
+            if (hdfs.exists(this.configuration.getOutputLocation())) {
+                hdfs.delete(this.configuration.getOutputLocation(), true);
             }
         }
         logger.info("        ,");
@@ -530,34 +518,35 @@ public class FaunusGraph extends Configured implements Tool {
         final FileSystem hdfs = FileSystem.get(this.getConf());
         try {
             final Job startJob = this.jobs.get(0);
-            startJob.setInputFormatClass(this.inputFormat);
+            startJob.setInputFormatClass(this.configuration.getGraphInputFormat());
             // configure input location
-            if (this.inputFormat.equals(GraphSONInputFormat.class) || this.inputFormat.equals(SequenceFileInputFormat.class)) {
-                FileInputFormat.setInputPaths(startJob, new Path(this.configuration.get(Tokens.GRAPH_INPUT_LOCATION)));
-            } else if (this.inputFormat.equals(TitanCassandraInputFormat.class)) {
+            if (this.configuration.getGraphInputFormat().equals(GraphSONInputFormat.class) || this.configuration.getGraphInputFormat().equals(SequenceFileInputFormat.class)) {
+                FileInputFormat.setInputPaths(startJob, this.configuration.getInputLocation());
+            } else if (this.configuration.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
                 ConfigHelper.setInputColumnFamily(this.configuration, ConfigHelper.getInputKeyspace(this.configuration), "User");
                 SlicePredicate predicate = new SlicePredicate().setColumn_names(Arrays.asList(ByteBufferUtil.bytes("age"), ByteBufferUtil.bytes("first"), ByteBufferUtil.bytes("last")));
                 ConfigHelper.setInputSlicePredicate(this.configuration, predicate);
             } else
-                throw new IOException(this.inputFormat.getName() + " is not a supported input format");
+                throw new IOException(this.configuration.getGraphInputFormat().getName() + " is not a supported input format");
 
 
             if (this.jobs.size() > 1) {
                 final Path path = new Path(UUID.randomUUID().toString());
                 FileOutputFormat.setOutputPath(startJob, path);
                 this.intermediateFiles.add(path);
-                startJob.setOutputFormatClass(intermediateOutputFormat);
+                startJob.setOutputFormatClass(INTERMEDIATE_OUTPUT_FORMAT);
             } else {
-                FileOutputFormat.setOutputPath(startJob, this.outputPath);
-                startJob.setOutputFormatClass(this.outputFormat);
+                FileOutputFormat.setOutputPath(startJob, this.configuration.getOutputLocation());
+                startJob.setOutputFormatClass(this.derivationJob ? this.configuration.getGraphOutputFormat() : this.configuration.getStatisticsOutputFormat());
+
 
             }
 
             if (this.jobs.size() > 2) {
                 for (int i = 1; i < this.jobs.size() - 1; i++) {
                     final Job midJob = this.jobs.get(i);
-                    midJob.setInputFormatClass(intermediateInputFormat);
-                    midJob.setOutputFormatClass(intermediateOutputFormat);
+                    midJob.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
+                    midJob.setOutputFormatClass(INTERMEDIATE_OUTPUT_FORMAT);
                     FileInputFormat.setInputPaths(midJob, this.intermediateFiles.get(this.intermediateFiles.size() - 1));
                     final Path path = new Path(UUID.randomUUID().toString());
                     FileOutputFormat.setOutputPath(midJob, path);
@@ -566,10 +555,10 @@ public class FaunusGraph extends Configured implements Tool {
             }
             if (this.jobs.size() > 1) {
                 final Job endJob = this.jobs.get(this.jobs.size() - 1);
-                endJob.setInputFormatClass(intermediateInputFormat);
-                endJob.setOutputFormatClass(this.outputFormat);
+                endJob.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
+                endJob.setOutputFormatClass(this.derivationJob ? this.configuration.getGraphOutputFormat() : this.configuration.getStatisticsOutputFormat());
                 FileInputFormat.setInputPaths(endJob, this.intermediateFiles.get(this.intermediateFiles.size() - 1));
-                FileOutputFormat.setOutputPath(endJob, this.outputPath);
+                FileOutputFormat.setOutputPath(endJob, this.configuration.getOutputLocation());
             }
         } catch (IOException e) {
             for (final Path path : this.intermediateFiles) {
@@ -617,7 +606,7 @@ public class FaunusGraph extends Configured implements Tool {
             conf.set(entry.getKey().toString(), entry.getValue().toString());
         }
 
-        final FaunusGraph faunusGraph = new FaunusGraph(script, conf);
+        final FaunusPipeline faunusPipeline = new FaunusPipeline(script, conf);
         final GroovyScriptEngineImpl scriptEngine = new GroovyScriptEngineImpl();
         scriptEngine.eval("Vertex= " + Vertex.class.getName());
         scriptEngine.eval("Edge= " + Edge.class.getName());
@@ -636,9 +625,9 @@ public class FaunusGraph extends Configured implements Tool {
         scriptEngine.eval("GREATER_THAN_EQUAL=" + Query.Compare.class.getName() + ".GREATER_THAN_EQUAL");
 
 
-        scriptEngine.put("g", faunusGraph);
-        ((FaunusGraph) scriptEngine.eval(script)).completeSequence();
-        int result = ToolRunner.run(faunusGraph, args);
+        scriptEngine.put("g", faunusPipeline);
+        ((FaunusPipeline) scriptEngine.eval(script)).completeSequence();
+        int result = ToolRunner.run(faunusPipeline, args);
         System.exit(result);
     }
 }

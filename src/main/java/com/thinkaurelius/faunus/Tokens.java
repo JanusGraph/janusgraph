@@ -23,19 +23,4 @@ public class Tokens {
     public static final String NULL = "null";
     public static final String TAB = "\t";
     public static final String NEWLINE = "\n";
-
-    public static final String GRAPH_INPUT_FORMAT_CLASS = "faunus.graph.input.format.class";
-    public static final String GRAPH_INPUT_LOCATION = "faunus.graph.input.location";
-    public static final String GRAPH_INPUT_EDGE_DIRECTION_FILTER = "faunus.graph.input.edge.direction.filter";
-    public static final String GRAPH_INPUT_EDGE_LABEL_FILTER_LABELS = "faunus.graph.input.edge.label.filter.labels";
-    public static final String GRAPH_INPUT_EDGE_LABEL_FILTER_ACTION = "faunus.graph.input.edge.label.filter.action";
-    public static final String GRAPH_INPUT_EDGE_PROPERTY_FILTER_KEYS = "faunus.graph.input.edge.property.filter.labels";
-    public static final String GRAPH_INPUT_EDGE_PROPERTY_FILTER_ACTION = "faunus.graph.input.edge.property.filter.action";
-    public static final String GRAPH_INPUT_VERTEX_PROPERTY_FILTER_KEYS = "faunus.graph.input.vertex.property.filter.labels";
-    public static final String GRAPH_INPUT_VERTEX_PROPERTY_FILTER_ACTION = "faunus.graph.input.vertex.property.filter.action";
-
-    public static final String GRAPH_OUTPUT_FORMAT_CLASS = "faunus.graph.output.format.class";
-    public static final String STATISTIC_OUTPUT_FORMAT_CLASS = "faunus.statistic.output.format.class";
-    public static final String DATA_OUTPUT_LOCATION = "faunus.data.output.location";
-    public static final String OVERWRITE_DATA_OUTPUT_LOCATION = "faunus.overwrite.data.output.location";
 }
