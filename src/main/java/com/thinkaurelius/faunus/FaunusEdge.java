@@ -40,8 +40,8 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public FaunusEdge(final long id, final long outVertex, final long inVertex, final String label) {
         super(id);
-        this.outVertex = outVertex;
-        this.inVertex = inVertex;
+        this.outVertex = Long.valueOf(outVertex);
+        this.inVertex = Long.valueOf(inVertex);
         this.label = label;
     }
 
@@ -79,8 +79,8 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public void readFields(final DataInput in) throws IOException {
         this.id = in.readLong();
-        this.inVertex = in.readLong();
-        this.outVertex = in.readLong();
+        this.inVertex = Long.valueOf(in.readLong());
+        this.outVertex = Long.valueOf(in.readLong());
         this.label = in.readUTF();
         this.properties = ElementProperties.readFields(in);
     }
@@ -100,11 +100,12 @@ public class FaunusEdge extends FaunusElement implements Edge {
     public void readFieldsCompressed(final DataInput in, final Direction idToRead) throws IOException {
         this.id = in.readLong();
         if (idToRead.equals(Direction.IN))
-            this.inVertex = in.readLong();
+            this.inVertex = Long.valueOf(in.readLong());
         else if (idToRead.equals(Direction.OUT))
-            this.outVertex = in.readLong();
+            this.outVertex = Long.valueOf(in.readLong());
         else
             throw ExceptionFactory.bothIsNotSupported();
+        this.label = null;
         this.properties = ElementProperties.readFields(in);
     }
 

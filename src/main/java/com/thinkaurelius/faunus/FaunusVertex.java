@@ -33,6 +33,19 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class FaunusVertex extends FaunusElement implements Vertex, WritableComparable<FaunusVertex> {
 
+    private static final Map<String, String> EDGE_LABELS = new HashMap<String, String>() {
+        @Override
+        public String get(final Object label) {
+            String temp = super.get(label);
+            if (null == temp) {
+               super.put((String)label,(String)label);
+               return super.get(label);
+            } else {
+                return temp;
+            }
+        }
+    };
+
     static {
         WritableComparator.define(FaunusVertex.class, new Comparator());
     }
@@ -94,35 +107,43 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
     }
 
     public Iterable<Edge> getEdges(final Direction direction, final String... labels) {
-        final List<List<Edge>> edges = new ArrayList<List<Edge>>();
+        final List<List<Edge>> edgeLists = new ArrayList<List<Edge>>();
+        final List<String> edgeListLabels = new ArrayList<String>();
+
         if (direction.equals(OUT) || direction.equals(BOTH)) {
             if (null == labels || labels.length == 0) {
                 for (final List<Edge> temp : this.outEdges.values()) {
-                    edges.add(temp);
+                    edgeLists.add(temp);
                 }
+                edgeListLabels.addAll(this.outEdges.keySet());
             } else {
                 for (final String label : labels) {
+                    edgeListLabels.add(label);
                     final List<Edge> temp = this.outEdges.get(label);
                     if (null != temp)
-                        edges.add(temp);
+                        edgeLists.add(temp);
                 }
             }
+
         }
 
         if (direction.equals(IN) || direction.equals(BOTH)) {
             if (null == labels || labels.length == 0) {
                 for (final List<Edge> temp : this.inEdges.values()) {
-                    edges.add(temp);
+                    edgeLists.add(temp);
                 }
+                edgeListLabels.addAll(this.inEdges.keySet());
             } else {
                 for (final String label : labels) {
+                    edgeListLabels.add(label);
                     final List<Edge> temp = this.inEdges.get(label);
                     if (null != temp)
-                        edges.add(temp);
+                        edgeLists.add(temp);
                 }
             }
+
         }
-        return new EdgeList(edges);
+        return new EdgeList(edgeLists, edgeListLabels);
     }
 
     public FaunusEdge addEdge(final Direction direction, final FaunusEdge edge) {
@@ -263,9 +284,10 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
     private class EdgeList extends AbstractList<Edge> {
 
         final List<List<Edge>> edges;
+
         int size;
 
-        public EdgeList(final List<List<Edge>> edgeLists) {
+        public EdgeList(final List<List<Edge>> edgeLists, final List<String> edgeListLabels) {
             this.edges = edgeLists;
             int counter = 0;
             for (final List<Edge> temp : this.edges) {
@@ -287,7 +309,6 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
                     return temp.get(index - lowIndex);
                 }
                 lowIndex = lowIndex + temp.size();
-
             }
             throw new ArrayIndexOutOfBoundsException(index);
         }
@@ -336,7 +357,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
             final Map<String, List<FaunusEdge>> edges = new HashMap<String, List<FaunusEdge>>();
             int edgeTypes = in.readShort();
             for (int i = 0; i < edgeTypes; i++) {
-                final String label = in.readUTF();
+                final String label = EDGE_LABELS.get(in.readUTF());
                 final int size = in.readInt();
                 final List<FaunusEdge> temp = new ArrayList<FaunusEdge>(size);
                 for (int j = 0; j < size; j++) {
