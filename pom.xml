@@ -457,8 +457,13 @@
             </configuration>
           </plugin>
           <plugin>
-            <artifactId>maven-pmd-plugin</artifactId>
-            <version>2.7.1</version>
+              <artifactId>maven-pmd-plugin</artifactId>
+              <version>2.7.1</version>
+               <configuration>
+                   <rulesets>
+                       <ruleset>/rulesets/favorites.xml</ruleset>
+                   </rulesets>
+              </configuration>
           </plugin>
         </plugins>
     </reporting>
