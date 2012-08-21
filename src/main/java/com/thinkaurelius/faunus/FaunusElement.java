@@ -7,10 +7,7 @@ import org.apache.hadoop.io.Writable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -30,6 +27,14 @@ public abstract class FaunusElement implements Element, Writable {
             }
         }
     };
+    
+    public static final Set<Class<?>> SUPPORTED_ATTRIBUTE_TYPES = new HashSet<Class<?>>() {{
+        add(Integer.class);
+        add(Long.class);
+        add(Float.class);
+        add(Double.class);
+        add(String.class);
+    }};
 
 
     protected Map<String, Object> properties = null;

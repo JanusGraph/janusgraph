@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.formats.titan;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusEdge;
+import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
@@ -49,6 +50,8 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
 
     @Override
     public void addRelationProperty(TitanKey key, Object attribute) {
+        if (!FaunusElement.SUPPORTED_ATTRIBUTE_TYPES.contains(attribute.getClass()))
+            attribute = attribute.toString();
         lastEdge.setProperty(key.getName(),attribute);
     }
 
