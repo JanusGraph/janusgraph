@@ -54,7 +54,7 @@ public class TitanGraphConfiguration implements GraphConfiguration {
                         throw new IllegalArgumentException("Could not create directory: " + directory);
                     }
                 }
-                rewriteConfig.setProperty("storage.directory",directory.getAbsolutePath());
+                rewriteConfig.setProperty("storage.directory",directory.toString());
             }
             if (properties.containsKey(Tokens.REXSTER_GRAPH_READ_ONLY)) {
                 rewriteConfig.setProperty("storage.read-only",properties.getBoolean(Tokens.REXSTER_GRAPH_READ_ONLY));
