@@ -23,6 +23,7 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
 
     public FaunusVertexRelationLoader(ByteBuffer key) {
         this(key.getLong());
+
     }
 
     public FaunusVertexRelationLoader(final long id) {
@@ -46,9 +47,11 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
         switch(dir) {
             case IN:
                 lastEdge = new FaunusEdge(edgeid,otherVertexId,getVertexId(),label.getName());
+                vertex.addEdge(dir,lastEdge);
                 break;
             case OUT:
                 lastEdge = new FaunusEdge(edgeid,getVertexId(),otherVertexId,label.getName());
+                vertex.addEdge(dir,lastEdge);
                 break;
             default: throw new IllegalArgumentException("Unexpected direction: " + dir);
         }

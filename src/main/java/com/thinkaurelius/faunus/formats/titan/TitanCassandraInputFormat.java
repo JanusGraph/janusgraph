@@ -274,4 +274,9 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
         }
         return new TitanCassandraRecordReader(graph);
     }
+
+    @Override
+    public void finalize() {
+        if (graph!=null) graph.shutdown();
+    }
 }
