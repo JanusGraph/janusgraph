@@ -65,7 +65,12 @@ public class TitanGraphConfiguration implements GraphConfiguration {
             jointConfig.addConfiguration(titanConfig);
             return jointConfig;
         } catch (Exception e) {
-            throw new GraphConfigurationException(e);
+            //Unroll exceptions so that Rexster prints root cause
+            Throwable cause = e;
+            while (cause.getCause()!=null) {
+                cause = cause.getCause();
+            }
+            throw new GraphConfigurationException(cause);
         }
     }
 }
