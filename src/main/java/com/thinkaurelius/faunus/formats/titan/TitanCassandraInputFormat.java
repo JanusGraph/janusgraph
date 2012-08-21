@@ -32,6 +32,7 @@ import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.InvalidRequestException;
 import org.apache.cassandra.thrift.KeyRange;
 import org.apache.cassandra.thrift.TokenRange;
+import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -251,6 +252,6 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
     }
 
     public RecordReader<NullWritable, FaunusVertex> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        return new TitanCassandraRecordReader();
+        return new TitanCassandraRecordReader(new BaseConfiguration()); //TODO: need to specify the Titan graph configuration
     }
 }

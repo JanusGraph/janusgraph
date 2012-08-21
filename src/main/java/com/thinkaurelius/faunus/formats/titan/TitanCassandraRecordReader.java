@@ -61,7 +61,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 public class TitanCassandraRecordReader extends RecordReader<NullWritable, FaunusVertex> {
-    public static final int CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT = 8192;
+    public static final int CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT = 8;
 
     private static final Logger logger = LoggerFactory.getLogger(TitanCassandraRecordReader.class);
 
@@ -77,16 +77,19 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     private TSocket socket;
     private Cassandra.Client client;
     private ConsistencyLevel consistencyLevel;
-    private int keyBufferSize = 8192;
     private List<IndexExpression> filter;
 
-    public TitanCassandraRecordReader() {
-        this(CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT);
+    private final int keyBufferSize;
+    private final FaunusTitanGraph graph;
+
+    public TitanCassandraRecordReader(org.apache.commons.configuration.Configuration configuration) {
+        this(configuration,CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT);
     }
 
-    public TitanCassandraRecordReader(int keyBufferSize) {
+    public TitanCassandraRecordReader(org.apache.commons.configuration.Configuration configuration, int keyBufferSize) {
         super();
         this.keyBufferSize = keyBufferSize;
+        this.graph = new FaunusTitanGraph(configuration);
     }
 
     public void close() {
