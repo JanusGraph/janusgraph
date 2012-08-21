@@ -278,22 +278,43 @@ public abstract class LockingTransaction implements TransactionHandle {
 			}
 		}
 	}
-	
+
 	private void unlockAll() {
-		
+
 		for (LockClaim lc : lockClaims) {
+
+			assert null != lc;
 			ByteBuffer lockKeyBuf = lc.getLockKey();
+			assert null != lockKeyBuf;
+			assert lockKeyBuf.hasRemaining();
 			ByteBuffer lockColBuf = lc.getLockCol(lc.getTimestamp(), lc.getBacker().getRid());
+			assert null != lockColBuf;
+			assert lockColBuf.hasRemaining();
 			
-			// Delete lock
-			lc.getBacker().getLockStore().mutate(lockKeyBuf, null, Arrays.asList(lockColBuf), null);
-                        log.trace("Wrote unlock: {}", lc);
+			try {	
+				// Release lock remotely
+				lc.getBacker().getLockStore().mutate(lockKeyBuf, null, Arrays.asList(lockColBuf), null);
 			
-			// Release local lock
-			lc.getBacker().getLocalLockMediator().unlock(lc.getKc(), this);
+				if (log.isTraceEnabled()) {
+					log.trace("Wrote unlock {}", lc);
+				}
+			} catch (Throwable t) {
+				log.error("Failed to unlock {}", lc, t);
+			}
+
+			try {
+				// Release lock locally
+				lc.getBacker().getLocalLockMediator().unlock(lc.getKc(), this);
+				
+				if (log.isTraceEnabled()) {
+					log.trace("Locally unlocked {}", lc);
+				}
+			} catch (Throwable t) {
+				log.error("Failed to locally unlock {}", lc, t);
+			}
 		}
 	}
-	
+
 	private void throwLockFailure(String s) throws LockingFailureException {
 		unlockAll();
 		throw new LockingFailureException(s);
