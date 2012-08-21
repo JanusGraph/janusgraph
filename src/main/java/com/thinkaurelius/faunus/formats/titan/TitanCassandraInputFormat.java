@@ -88,8 +88,6 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
     private String cfName;
     private IPartitioner partitioner;
     
-    private FaunusTitanGraph graph;
-
     private static void validateConfiguration(Configuration conf) {
         if (ConfigHelper.getInputKeyspace(conf) == null || ConfigHelper.getInputColumnFamily(conf) == null) {
             throw new UnsupportedOperationException("You must set the keyspace and columnfamily with setColumnFamily()");
@@ -107,23 +105,6 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
         Configuration conf = context.getConfiguration();
 
         validateConfiguration(conf);
-
-        //  ## Instantiate Titan ##
-        BaseConfiguration titanconfig = new BaseConfiguration();
-        //General Titan configuration for read-only
-        titanconfig.setProperty("storage.read-only","true");
-        titanconfig.setProperty("autotype","none");
-        //Cassandra specific configuration
-        titanconfig.setProperty("storage.backend","astyanax");
-        titanconfig.setProperty("storage.hostname",ConfigHelper.getInputInitialAddress(conf));
-        titanconfig.setProperty("storage.keyspace",ConfigHelper.getInputKeyspace(conf));
-        titanconfig.setProperty("storage.port",ConfigHelper.getOutputRpcPort(conf));
-        if (ConfigHelper.getReadConsistencyLevel(conf)!=null)
-            titanconfig.setProperty("storage.read-consistency-level",ConfigHelper.getReadConsistencyLevel(conf));
-        if (ConfigHelper.getWriteConsistencyLevel(conf)!=null)
-            titanconfig.setProperty("storage.write-consistency-level",ConfigHelper.getWriteConsistencyLevel(conf));
-        graph = new FaunusTitanGraph(titanconfig);
-
 
         // cannonical ranges and nodes holding replicas
         List<TokenRange> masterRangeNodes = getRangeMap(conf);
@@ -270,7 +251,27 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
         return map;
     }
 
+    private FaunusTitanGraph graph = null;
+
     public RecordReader<NullWritable, FaunusVertex> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+        if (graph == null) {
+            Configuration conf = taskAttemptContext.getConfiguration();
+            //  ## Instantiate Titan ##
+            BaseConfiguration titanconfig = new BaseConfiguration();
+            //General Titan configuration for read-only
+            titanconfig.setProperty("storage.read-only","true");
+            titanconfig.setProperty("autotype","none");
+            //Cassandra specific configuration
+            titanconfig.setProperty("storage.backend","astyanax");
+            titanconfig.setProperty("storage.hostname",ConfigHelper.getInputInitialAddress(conf));
+            titanconfig.setProperty("storage.keyspace",ConfigHelper.getInputKeyspace(conf));
+            titanconfig.setProperty("storage.port",ConfigHelper.getOutputRpcPort(conf));
+            if (ConfigHelper.getReadConsistencyLevel(conf)!=null)
+                titanconfig.setProperty("storage.read-consistency-level",ConfigHelper.getReadConsistencyLevel(conf));
+            if (ConfigHelper.getWriteConsistencyLevel(conf)!=null)
+                titanconfig.setProperty("storage.write-consistency-level",ConfigHelper.getWriteConsistencyLevel(conf));
+            graph = new FaunusTitanGraph(titanconfig);
+        }
         return new TitanCassandraRecordReader(graph);
     }
 }

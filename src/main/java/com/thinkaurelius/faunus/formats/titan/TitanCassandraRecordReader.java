@@ -88,6 +88,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
 
     public TitanCassandraRecordReader(FaunusTitanGraph graph, int keyBufferSize) {
         super();
+        if (graph==null) throw new IllegalArgumentException("Graph cannot be null");
         this.keyBufferSize = keyBufferSize;
         this.graph = graph;
     }
