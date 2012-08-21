@@ -122,11 +122,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 	@Override
 	public TitanTransaction startTransaction() {
-        return startThreadTransaction(new TransactionConfig(config));
+        return startTransaction(new TransactionConfig(config));
 	}
 
 	@Override
-	public InternalTitanTransaction startThreadTransaction(TransactionConfig configuration) {
+	public InternalTitanTransaction startTransaction(TransactionConfig configuration) {
 		return new StandardPersistTitanTx(this,etManager, configuration,storage.beginTransaction());
 	}
 
@@ -214,14 +214,16 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 	@Override
 	public void loadRelations(AtomicQuery query, InternalTitanTransaction tx) {
-		List<Entry> entries = queryForEntries(query,tx.getTxHandle());
-
-		TitanType titanType = null;
-		if (query.hasEdgeTypeCondition()) titanType = query.getTypeCondition();
-		InternalTitanVertex node = query.getNode();
-		
-		RelationLoader factory = tx.getRelationFactory();
+        List<Entry> entries = queryForEntries(query,tx.getTxHandle());
+        RelationLoader factory = tx.getRelationFactory();
+        VertexRelationLoader loader = new StandardVertexRelationLoader(query.getNode(),factory);
+        loadRelations(entries,loader,tx);
+        query.getNode().loadedEdges(query);
+    }
+    
+    protected void loadRelations(Iterable<Entry> entries, VertexRelationLoader loader, InternalTitanTransaction tx) {
         Map<String,TitanType> etCache = new HashMap<String,TitanType>();
+        TitanType titanType = null;
 
 		for (Entry entry : entries) {
 			ByteBuffer column = entry.getColumn();
@@ -238,10 +240,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 String[] keysig = def.getKeySignature();
                 keys = new Object[keysig.length];
                 for (int i=0;i<keysig.length;i++) 
-                    keys[i] = readInline(column,getEdgeType(keysig[i],etCache,tx),tx);
+                    keys[i] = readInline(column,getEdgeType(keysig[i],etCache,tx));
             }
 
-            InternalRelation edge;
             long edgeid=0;
             if (!titanType.isFunctional()) {
                 edgeid = VariableLong.readPositive(column);
@@ -252,15 +253,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 long nodeIDDiff = VariableLong.read(value);
                 if (titanType.isFunctional()) edgeid = VariableLong.readPositive(value);
                 assert edgeid>0;
-                long otherid = node.getID() + nodeIDDiff;
-                InternalTitanVertex othernode = tx.getExistingVertex(otherid);
-                if (dirID==3) {
-                    edge = factory.createExistingRelationship(edgeid, (TitanLabel) titanType, othernode,node);
-                } else {
-                    assert dirID==2;
-                    edge = factory.createExistingRelationship(edgeid, (TitanLabel) titanType, node,othernode);
-                }
-
+                long otherid = loader.getVertexId() + nodeIDDiff;
+                assert dirID==3 || dirID==2;
+                Direction dir = dirID==3?Direction.IN:Direction.OUT;
+                loader.loadEdge(edgeid,(TitanLabel)titanType,dir,otherid);
             } else {
                 assert titanType.isPropertyKey();
                 assert dirID == 0;
@@ -276,7 +272,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
                 if (titanType.isFunctional()) edgeid = VariableLong.readPositive(value);
                 assert edgeid>0;
-                edge = factory.createExistingProperty(edgeid, propType, node, attribute);
+                loader.loadProperty(edgeid,propType,attribute);
+
             }
             
 			//Read value inline edges if any
@@ -285,24 +282,23 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 //First create all keys buffered above
                 String[] keysig = def.getKeySignature();
                 for (int i=0;i<keysig.length;i++) {
-                    createInlineEdge(edge,getEdgeType(keysig[i],etCache,tx),keys[i],factory);
+                    createInlineEdge(loader,getEdgeType(keysig[i],etCache,tx),keys[i]);
                 }
                 
                 //value signature
 				for (String str : def.getCompactSignature())
-                    readLabel(edge,value,getEdgeType(str,etCache,tx),factory,tx);
+                    readLabel(loader,value,getEdgeType(str,etCache,tx));
 				
 				//Third: read rest
 				while (value.hasRemaining()) {
 					TitanType type = (TitanType)tx.getExistingVertex(IDHandler.readInlineEdgeType(value, idManager));
-					readLabel(edge,value,type,factory,tx);
+					readLabel(loader,value,type);
 				}
 			}
 		}
-		query.getNode().loadedEdges(query);
 	}
 
-    private Object readInline(ByteBuffer read, TitanType type, InternalTitanTransaction tx) {
+    private Object readInline(ByteBuffer read, TitanType type) {
         if (type.isPropertyKey()) {
             TitanKey proptype = ((TitanKey) type);
             if (hasGenericDataType(proptype))
@@ -310,26 +306,26 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
             else return serializer.readObject(read, proptype.getDataType());
         } else {
             assert type.isEdgeLabel();
-            long id = VariableLong.readPositive(read);
-            if (id==0) return null;
-            else return tx.getExistingVertex(id);
+            Long id = Long.valueOf(VariableLong.readPositive(read));
+            if (id.longValue()==0) return null;
+            else return id;
         }
     }
     
-    private void createInlineEdge(InternalRelation edge, TitanType type, Object entity, RelationLoader loader) {
+    private void createInlineEdge(VertexRelationLoader loader, TitanType type, Object entity) {
         if (entity!=null) {
             if (type.isEdgeLabel()) {
-                assert entity instanceof InternalTitanVertex;
-                loader.createExistingRelationship((TitanLabel)type, edge, (InternalTitanVertex)entity);
+                assert entity instanceof Long;
+                loader.addRelationEdge((TitanLabel)type,(Long)entity);
             } else {
                 assert type.isPropertyKey();
-                loader.createExistingProperty((TitanKey)type, edge, entity);
+                loader.addRelationProperty((TitanKey)type,entity);
             }
         }
     }
     
-	private void readLabel(InternalRelation edge, ByteBuffer read, TitanType type, RelationLoader loader, InternalTitanTransaction tx) {
-		createInlineEdge(edge,type,readInline(read,type,tx),loader);
+	private void readLabel(VertexRelationLoader loader, ByteBuffer read, TitanType type) {
+		createInlineEdge(loader,type,readInline(read,type));
 	}
 
     private TitanType getEdgeType(String name, Map<String,TitanType> etCache, InternalTitanTransaction tx) {

@@ -106,7 +106,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 	
 	
 	@Override
-	public InternalTitanTransaction startThreadTransaction(TransactionConfig config) {
+	public InternalTitanTransaction startTransaction(TransactionConfig config) {
 		Preconditions.checkArgument(!getTxConfiguration().equals(config),"Cannot open in-memory transactions with non-default configuration.");
 		return this;
 	}

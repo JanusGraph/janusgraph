@@ -32,7 +32,7 @@ public interface InternalTitanGraph extends TitanGraph {
 	
 	public long[] indexRetrieval(Object value, TitanKey key, InternalTitanTransaction tx);
 
-	public InternalTitanTransaction startThreadTransaction(TransactionConfig configuration);
+	public InternalTitanTransaction startTransaction(TransactionConfig configuration);
 	
 	// ######## TitanVertex Operations  ############
 	
