@@ -8,6 +8,7 @@ import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.config.KSMetaData;
 import org.apache.cassandra.config.Schema;
+import org.apache.cassandra.config.CFMetaData.Caching;
 import org.apache.cassandra.db.ColumnFamilyType;
 import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.cassandra.service.MigrationManager;
@@ -231,6 +232,14 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
 		
 		// Column Family not found; create it
 		CFMetaData cfm = new CFMetaData(ksname, cfname, ColumnFamilyType.Standard, BytesType.instance, null);
+		
+		// Hard-coded caching settings
+		if (cfname.equals(GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME)) {
+			cfm.caching(Caching.KEYS_ONLY);
+		} else if (cfname.equals(GraphDatabaseConfiguration.STORAGE_PROPERTYINDEX_NAME)) {
+			cfm.caching(Caching.ROWS_ONLY);
+		}
+		
 		try {
 			cfm.addDefaultIndexNames();
 		} catch (ConfigurationException e) {
