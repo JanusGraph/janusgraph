@@ -185,8 +185,8 @@ public class GraphDatabaseConfiguration {
     private static final String ATTRIBUTE_PREFIX = "attribute";
     private static final String SERIALIZER_PREFIX = "serializer";
 
-    private static final String STORAGE_EDGESTORE_DEFAULT = "edgestore";
-    private static final String STORAGE_PROPERTYINDEX_DEFAULT = "propertyindex";
+    public static final String STORAGE_EDGESTORE_NAME = "edgestore";
+    public static final String STORAGE_PROPERTYINDEX_NAME = "propertyindex";
     
     
     private final Configuration configuration;
@@ -356,12 +356,12 @@ public class GraphDatabaseConfiguration {
 	}
     
     public OrderedKeyColumnValueStore getEdgeStore(StorageManager m) {
-        String name = STORAGE_EDGESTORE_DEFAULT;
+        String name = STORAGE_EDGESTORE_NAME;
         return m.openDatabase(name);
     }
     
     public OrderedKeyColumnValueStore getPropertyIndex(StorageManager m) {
-        String name = STORAGE_PROPERTYINDEX_DEFAULT;
+        String name = STORAGE_PROPERTYINDEX_NAME;
         return m.openDatabase(name);
     }
 	

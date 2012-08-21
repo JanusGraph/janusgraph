@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -369,6 +367,14 @@ public class CassandraThriftStorageManager implements StorageManager {
 		createColumnFamily.setName(cfName);
 		createColumnFamily.setKeyspace(ksname);
 		createColumnFamily.setComparator_type("org.apache.cassandra.db.marshal.BytesType");
+		
+		// Hard-coded caching settings
+		if (cfName.equals(GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME)) {
+			createColumnFamily.setCaching("keys_only");
+		} else if (cfName.equals(GraphDatabaseConfiguration.STORAGE_PROPERTYINDEX_NAME)) {
+			createColumnFamily.setCaching("rows_only");
+		}
+		
 		log.debug("Adding column family {} to keyspace {}...", cfName, ksname);
         String schemaVer = null;
         try {

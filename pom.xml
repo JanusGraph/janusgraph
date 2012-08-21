@@ -56,6 +56,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <cassandra.dir>${project.build.directory}/cassandra-tmp/workdir</cassandra.dir>
         <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
+        <!-- Required for PMD plugin. Used for compiler plugin -->
+        <targetJdk>1.6</targetJdk>
     </properties>
 
     <repositories>
@@ -71,6 +73,10 @@
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
+        </repository>
+        <repository>
+            <id>fb-contrib</id>
+            <url>http://master.dl.sourceforge.net/project/fb-contrib/repo</url>
         </repository>
     </repositories>
 
@@ -272,8 +278,8 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>${targetJdk}</source>
+                    <target>${targetJdk}</target>
                     <excludes>
                         <!-- Here go compile excluded src directories or files -->
                     </excludes>
@@ -423,4 +429,43 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <reporting>
+        <plugins>
+          <plugin>
+              <artifactId>maven-project-info-reports-plugin</artifactId>
+              <version>2.4</version>
+              <!-- Turn off default info reports -->
+              <reportSets>
+                  <reportSet></reportSet>
+              </reportSets>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>findbugs-maven-plugin</artifactId>
+            <version>2.5.2</version>
+            <configuration>
+                <effort>Max</effort>
+                <threshold>Exp</threshold>
+                <plugins>
+                  <plugin>
+                    <groupId>com.mebigfatguy</groupId>
+                    <artifactId>fb-contrib</artifactId>
+                    <version>4.6.1</version>
+                  </plugin>
+                </plugins>
+            </configuration>
+          </plugin>
+          <plugin>
+              <artifactId>maven-pmd-plugin</artifactId>
+              <version>2.7.1</version>
+               <configuration>
+                   <rulesets>
+                       <ruleset>/rulesets/favorites.xml</ruleset>
+                   </rulesets>
+              </configuration>
+          </plugin>
+        </plugins>
+    </reporting>
+
 </project>
