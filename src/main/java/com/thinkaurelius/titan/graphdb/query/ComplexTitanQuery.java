@@ -1,10 +1,15 @@
 package com.thinkaurelius.titan.graphdb.query;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 
 import java.util.*;
@@ -13,125 +18,92 @@ import java.util.*;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class ComplexTitanQuery extends AtomicTitanQuery {
+public class ComplexTitanQuery implements TitanQuery {
 
+    private List<TitanQuery> disjunction;
     
-    public ComplexTitanQuery(InternalTitanVertex n) {
-        super(n);
+    public ComplexTitanQuery(List<TitanQuery> disjunction) {
+        Preconditions.checkNotNull(disjunction);
+        Preconditions.checkArgument(!disjunction.isEmpty());
+        this.disjunction=disjunction;
     }
 
-    public ComplexTitanQuery(InternalTitanTransaction tx, long nodeid) {
-        super(tx,nodeid);
-    }
 
     ComplexTitanQuery(ComplexTitanQuery q) {
-        super(q);
+        disjunction = new ArrayList<TitanQuery>(q.disjunction.size());
+        for (TitanQuery a : q.disjunction) disjunction.add(a.clone());
     }
 
-    @Override
-    public ComplexTitanQuery copy() {
+    public ComplexTitanQuery clone() {
         ComplexTitanQuery q = new ComplexTitanQuery(this);
         return q;
     }
-
-    @Override
-    public AtomicTitanQuery types(TitanType... type) {
-        int length = 0;
-        for (int i=0;i<type.length;i++)
-            if (type[i]!=null) length++;
-        TitanType[] ttypes = new TitanType[length];
-        int pos = 0;
-        for (int i=0;i<type.length;i++) {
-            if (type[i]!=null) {
-                ttypes[pos]=type[i];
-                pos++;
-            }
-        }
-        if (length==0 && type.length>0) return super.types(new TitanType[]{null});
-        if (ttypes.length<2) return super.types(ttypes);
-        else {
-            types = ttypes;
-            return this;
-        }
-    }
-
 
     /* ---------------------------------------------------------------
       * Query Execution
       * ---------------------------------------------------------------
       */
 
-    public boolean isAtomic() {
-        return types == null || types.length<2;
+    private List<AtomicQuery> flattenQuery() {
+        List<AtomicQuery> queries = new ArrayList<AtomicQuery>(disjunction.size());
+        flattenQuery(queries);
+        return queries;
     }
 
-    List<? extends AtomicTitanQuery> getDisjunctiveQueries() {
-        if (types==null) return ImmutableList.of(this);
-        else {
-            assert types.length>1;
-            List<AtomicTitanQuery> queries = new ArrayList<AtomicTitanQuery>(types.length);
-            for (int i=0;i<types.length;i++) {
-                AtomicTitanQuery query = new AtomicTitanQuery(this);
-                query.types(types[i]);
-                queries.add(query);
-            }
-            return queries;
+    private void flattenQuery(List<AtomicQuery> container) {
+        for (TitanQuery q : disjunction) {
+            if (q instanceof SimpleAtomicQuery) {
+                container.add((SimpleAtomicQuery)q);
+            } else if (q instanceof EmptyAtomicQuery) {
+                //do nothing
+            } else if (q instanceof ComplexTitanQuery) {
+                ((ComplexTitanQuery)q).flattenQuery(container);
+            } else throw new IllegalStateException("Unexpected query type found: " + q.getClass());
         }
     }
-
+    
     @Override
     public Iterable<TitanProperty> properties() {
-        if (isAtomic()) return super.properties();
-        else return new DisjunctiveQueryIterable(this,TitanProperty.class);
-    }
-
-
-    @Override
-    public Iterator<TitanProperty> propertyIterator() {
-        if (isAtomic()) return super.propertyIterator();
-        else return new DisjunctiveQueryIterator(this,TitanProperty.class);
-    }
-
-
-    @Override
-    public Iterator<TitanEdge> edgeIterator() {
-        if (isAtomic()) return super.edgeIterator();
-        else return new DisjunctiveQueryIterator(this,TitanEdge.class);
+        return new DisjunctiveQueryIterable(flattenQuery(),TitanProperty.class);
     }
 
 
     @Override
     public Iterable<Edge> edges() {
-        if (isAtomic()) return super.edges();
-        else return new DisjunctiveQueryIterable(this,TitanEdge.class);
+        return new DisjunctiveQueryIterable(flattenQuery(),TitanEdge.class);
     }
 
     @Override
     public Iterable<TitanEdge> titanEdges() {
-        if (isAtomic()) return super.titanEdges();
-        else return new DisjunctiveQueryIterable(this,TitanEdge.class);
+        return new DisjunctiveQueryIterable(flattenQuery(),TitanEdge.class);
     }
 
-    @Override
-    public Iterator<TitanRelation> relationIterator() {
-        if (isAtomic()) return super.relationIterator();
-        else return new DisjunctiveQueryIterator(this,TitanRelation.class);
-    }
 
     @Override
     public Iterable<TitanRelation> relations() {
-        if (isAtomic()) return super.relations();
-        else return new DisjunctiveQueryIterable(this,TitanRelation.class);
+        return new DisjunctiveQueryIterable(flattenQuery(),TitanRelation.class);
+    }
+
+    @Override
+    public long count() {
+        return Iterables.size(edges());
+    }
+
+    @Override
+    public long propertyCount() {
+        return Iterables.size(properties());
     }
 
     @Override
     public VertexListInternal vertexIds() {
-        if (isAtomic()) return super.vertexIds();
+        List<AtomicQuery> queries = flattenQuery();
+        if (queries.isEmpty()) return new VertexArrayList();
         else {
             VertexListInternal vertices = null;
-            long remaining = getLimit();
-            for (AtomicTitanQuery query : getDisjunctiveQueries()) {
-                VertexListInternal next = query.limit(remaining).vertexIds();
+            long remaining = queries.get(0).getLimit();
+            for (AtomicQuery query : queries) {
+                query.limit(remaining);
+                VertexListInternal next = query.vertexIds();
                 if (vertices==null) vertices = next;
                 else vertices.addAll(next);
                 remaining -= next.size();
@@ -143,6 +115,95 @@ public class ComplexTitanQuery extends AtomicTitanQuery {
     @Override
     public Iterable<Vertex> vertices() {
         return (Iterable)vertexIds();
+    }
+
+
+    /* ---------------------------------------------------------------
+    * Query Definition Methods
+    * ---------------------------------------------------------------
+    */
+
+    @Override
+    public TitanQuery types(TitanType... type) {
+        throw new IllegalStateException("Types have already been set");
+    }
+
+    @Override
+    public TitanQuery labels(String... labels) {
+        throw new IllegalStateException("Labels have already been set");
+    }
+
+    @Override
+    public TitanQuery keys(String... keys) {
+        throw new IllegalStateException("Keys have already been set");
+    }
+
+    @Override
+    public TitanQuery group(TypeGroup group) {
+        throw new IllegalStateException("Labels or keys have already been set");
+    }
+
+    @Override
+    public TitanQuery direction(Direction d) {
+        for (int i=0;i<disjunction.size();i++)
+            disjunction.set(i,disjunction.get(i).direction(d));
+        return this;
+    }
+
+    @Override
+    public TitanQuery has(TitanType type, Object value) {
+        for (int i=0;i<disjunction.size();i++)
+            disjunction.set(i,disjunction.get(i).has(type,value));
+        return this;
+    }
+
+    @Override
+    public TitanQuery has(String type, Object value) {
+        for (int i=0;i<disjunction.size();i++)
+            disjunction.set(i,disjunction.get(i).has(type,value));
+        return this;
+    }
+
+    @Override
+    public <T extends Comparable<T>> TitanQuery has(String s, T t, Compare compare) {
+        for (int i=0;i<disjunction.size();i++)
+            disjunction.set(i,disjunction.get(i).has(s,t,compare));
+        return this;
+    }
+
+    @Override
+    public <T extends Comparable<T>> TitanQuery interval(String key, T start, T end) {
+        for (int i=0;i<disjunction.size();i++)
+            disjunction.set(i,disjunction.get(i).interval(key,start,end));
+        return this;
+    }
+
+    @Override
+    public <T extends Comparable<T>> TitanQuery interval(TitanKey key, T start, T end) {
+        for (int i=0;i<disjunction.size();i++)
+            disjunction.set(i,disjunction.get(i).interval(key,start,end));
+        return this;
+    }
+
+    @Override
+    public TitanQuery onlyModifiable() {
+        for (int i=0;i<disjunction.size();i++)
+            disjunction.set(i,disjunction.get(i).onlyModifiable());
+        return this;
+    }
+
+    @Override
+    public TitanQuery inMemory() {
+        for (int i=0;i<disjunction.size();i++)
+            disjunction.set(i,disjunction.get(i).inMemory());
+        return this;
+    }
+
+    @Override
+    public TitanQuery limit(long limit) {
+        for (int i=0;i<disjunction.size();i++)
+            disjunction.set(i,disjunction.get(i).limit(limit));
+        return this;
     }
 
 

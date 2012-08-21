@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.relations.factory;
 
 import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.graphdb.query.AtomicTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.SimpleTitanQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
@@ -49,7 +49,7 @@ public class RelationFactoryUtil {
 
 	
 	public static final boolean hasRelationOfType(InternalTitanVertex vertex, TitanType type, Direction dir) {
-		AtomicTitanQuery q = new AtomicTitanQuery(vertex);
+        SimpleTitanQuery q = new SimpleTitanQuery(vertex);
 		q.includeHidden().type(type).direction(dir);
 		if (vertex.getRelations(q, true).iterator().hasNext()) {
 			return true;

@@ -102,6 +102,8 @@ public interface TitanQuery extends Query {
      */
     public TitanQuery has(String type, Object value);
 
+    public <T extends java.lang.Comparable<T>> TitanQuery has(java.lang.String s, T t, Query.Compare compare);
+
     /**
      * Query for those edges that have an incident property whose values lies in the interval by [start,end).
      *
@@ -214,5 +216,17 @@ public interface TitanQuery extends Query {
      * @return A list of all vertices connected to this query's central vertex by matching edges
      */
     public VertexList vertexIds();
+
+
+    /* ---------------------------------------------------------------
+    * Query execution
+    * ---------------------------------------------------------------
+    */
+
+    /**
+     * Clones the current query
+     * @return An identical copy of the query
+     */
+    public TitanQuery clone();
 
 }

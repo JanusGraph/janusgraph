@@ -3,8 +3,8 @@ package com.thinkaurelius.titan.graphdb.loadingstatus;
 import cern.colt.map.AbstractIntIntMap;
 import cern.colt.map.OpenIntIntHashMap;
 import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class BasicLoadingStatus implements LoadingStatus {
 	 */
 
 	@Override
-	public boolean hasLoadedEdges(InternalTitanQuery query) {
+	public boolean hasLoadedEdges(AtomicQuery query) {
 		if (DirectionTypeEncoder.hasAllCovered(allLoadedDirsIndex, query)) return true;
 		
 		if (groups!=null && (query.hasGroupCondition() || query.hasEdgeTypeCondition())) {
@@ -52,7 +52,7 @@ public class BasicLoadingStatus implements LoadingStatus {
 
 	
 	@Override
-	public LoadingStatus loadedEdges(InternalTitanQuery query) {
+	public LoadingStatus loadedEdges(AtomicQuery query) {
 		if (query.hasEdgeTypeCondition()) {
             if (!QueryUtil.hasFirstKeyConstraint(query)) {
                 TitanType type = query.getTypeCondition();

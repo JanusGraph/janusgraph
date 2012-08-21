@@ -47,7 +47,9 @@ public class TransactionConfig {
         this.assignIDsImmediately=assignIDsImmediately;
     }
 
-
+    public TransactionConfig() {
+        this(BlueprintsDefaultTypeMaker.INSTANCE,true);
+    }
 
 	/**
 	 * Checks whether the graph transaction is configured as read-only.

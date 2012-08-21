@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
@@ -26,13 +26,13 @@ public interface InternalTitanGraph extends TitanGraph {
 
     public boolean isReferenceVertexID(long vertexid);
 
-	void loadRelations(InternalTitanQuery query, InternalTitanTransaction tx);
+	void loadRelations(AtomicQuery query, InternalTitanTransaction tx);
 	
-	public AbstractLongList getRawNeighborhood(InternalTitanQuery query, InternalTitanTransaction tx);
+	public AbstractLongList getRawNeighborhood(AtomicQuery query, InternalTitanTransaction tx);
 	
 	public long[] indexRetrieval(Object value, TitanKey key, InternalTitanTransaction tx);
 
-	public InternalTitanTransaction startThreadTransaction(TransactionConfig configuration);
+	public InternalTitanTransaction startTransaction(TransactionConfig configuration);
 	
 	// ######## TitanVertex Operations  ############
 	

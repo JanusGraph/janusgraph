@@ -204,7 +204,7 @@ public class GraphDatabaseConfiguration {
     }
 
 	public GraphDatabaseConfiguration(File dirOrFile) {
-		Preconditions.checkNotNull(dirOrFile,"Need to specify a directory");
+		Preconditions.checkNotNull(dirOrFile,"Need to specify a configuration file or storage directory");
         try {
             if (dirOrFile.isFile()) {
                 configuration = new PropertiesConfiguration(dirOrFile);

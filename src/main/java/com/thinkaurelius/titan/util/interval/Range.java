@@ -10,6 +10,7 @@ import java.util.Set;
  * 
  * Note that a range could also be defined with identical bounds. However, in that case it is preferable to use
  * {@link PointInterval} for efficiency.
+ * The start and/or end point of a range can be null which denotes the open interval in the start and/or end direction.
  * 
  * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
  * 
@@ -114,7 +115,7 @@ public class Range<V extends Comparable<V>> implements AtomicInterval<V> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean inInterval(Object obj) {
-        Preconditions.checkNotNull(obj);
+        if (obj==null) return false;
         if (start==null && end==null) return true;
 		V p = (V)obj;
 		int startcomp = start==null?1:p.compareTo(start);
@@ -127,7 +128,7 @@ public class Range<V extends Comparable<V>> implements AtomicInterval<V> {
 
     @Override
     public AtomicInterval<V> intersect(AtomicInterval<V> other) {
-        if (other.isPoint()) {
+        if (other.isPoint() || other.hasHoles()) {
             return other.intersect(this);
         } else {
             assert other.isRange();

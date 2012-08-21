@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.loadingstatus;
 
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 
 public class DefaultLoadingStatus implements LoadingStatus {
 	
@@ -11,12 +11,12 @@ public class DefaultLoadingStatus implements LoadingStatus {
 	}
 
 	@Override
-	public boolean hasLoadedEdges(InternalTitanQuery query) {
+	public boolean hasLoadedEdges(AtomicQuery query) {
 		return defaultStatus;
 	}
 
 	@Override
-	public LoadingStatus loadedEdges(InternalTitanQuery query) {
+	public LoadingStatus loadedEdges(AtomicQuery query) {
 		if (!defaultStatus) {
 			BasicLoadingStatus update = new BasicLoadingStatus();
 			update.loadedEdges(query);

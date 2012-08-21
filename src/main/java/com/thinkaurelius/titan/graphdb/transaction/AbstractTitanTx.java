@@ -7,8 +7,7 @@ import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
-import com.thinkaurelius.titan.graphdb.query.ComplexTitanQuery;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.SimpleTitanQuery;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.RelationFactory;
@@ -82,9 +81,13 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	}
 
 
-	protected final void verifyWriteAccess() {
+	protected final void verifyWriteAccess(TitanVertex... vertices) {
 		if (config.isReadOnly()) throw new UnsupportedOperationException("Cannot create new entities in read-only transaction");
         verifyOpen();
+        for (TitanVertex v : vertices) {
+            if (!this.equals(((InternalTitanVertex)v).getTransaction())) throw new IllegalArgumentException("The vertex is not associated with this transaction ["+v+"]");
+            if (!v.isAvailable()) throw new IllegalArgumentException("The vertex is now longer available ["+v+"]");
+        }
 	}
     
     protected final void verifyOpen() {
@@ -165,7 +168,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     
     @Override
     public void deleteVertex(InternalTitanVertex n) {
-        verifyWriteAccess();
+        verifyWriteAccess(n);
         boolean removed;
         if (n.hasID()) {
             removed = vertexCache.remove(n.getID());
@@ -178,7 +181,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
     @Override
     public TitanProperty addProperty(TitanVertex vertex, TitanKey key, Object attribute) {
-        verifyWriteAccess();
+        verifyWriteAccess(vertex);
         // Check that attribute of keyed propertyType is unique and lock if so
         boolean isUniqueKey = key.isUnique();
         if (isUniqueKey) keyedPropertyCreateLock.lock();
@@ -205,7 +208,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
 	@Override
 	public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, TitanLabel label) {
-		verifyWriteAccess();
+		verifyWriteAccess(outVertex,inVertex);
         InternalRelation e = edgeFactory.createNewRelationship(label, (InternalTitanVertex)outVertex, (InternalTitanVertex)inVertex);
 		addedRelation(e);
 		return (TitanEdge)e;
@@ -303,13 +306,13 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 	}
 	
 	@Override
-	public InternalTitanQuery query(InternalTitanVertex n) {
-		return new ComplexTitanQuery(n);
+	public TitanQuery query(InternalTitanVertex n) {
+		return new SimpleTitanQuery(n);
 	}
 
 	@Override
 	public TitanQuery query(long nodeid) {
-		return new ComplexTitanQuery((InternalTitanVertex) getVertex(nodeid));
+		return new SimpleTitanQuery((InternalTitanVertex) getVertex(nodeid));
 	}
 
 	@Override

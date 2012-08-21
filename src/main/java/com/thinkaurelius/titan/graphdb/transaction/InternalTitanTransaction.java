@@ -2,9 +2,10 @@ package com.thinkaurelius.titan.graphdb.transaction;
 
 import cern.colt.list.AbstractLongList;
 import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.TitanQuery;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.graphdb.query.InternalTitanQuery;
+import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.RelationLoader;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
@@ -36,7 +37,7 @@ public interface InternalTitanTransaction extends TitanTransaction {
 	 * @param n TitanVertex for which to create a new edge query
 	 * @return New edge query
 	 */
-	InternalTitanQuery query(InternalTitanVertex n);
+	TitanQuery query(InternalTitanVertex n);
 
 	
 	// ######## TitanVertex / TitanRelation Loading  ############
@@ -46,7 +47,7 @@ public interface InternalTitanTransaction extends TitanTransaction {
 	 * 
 	 * @param query TitanRelation query for which to load all edges
 	 */
-	void loadRelations(InternalTitanQuery query);
+	void loadRelations(AtomicQuery query);
 	
 	/**
 	 * Retrieves the node ids for the neighboring vertices addresed in the given neighborhood query
@@ -54,7 +55,7 @@ public interface InternalTitanTransaction extends TitanTransaction {
 	 * @param query Neighborhood query for which to retrieve neighboring node ids
 	 * @return TitanVertex ids of neighbors
 	 */
-	AbstractLongList getRawNeighborhood(InternalTitanQuery query);
+	AbstractLongList getRawNeighborhood(AtomicQuery query);
 			
 	/**
 	 * Notifies the transaction that the specified edge has been deleted so
