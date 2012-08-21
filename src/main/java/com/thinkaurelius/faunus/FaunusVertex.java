@@ -4,6 +4,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.DefaultQuery;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.hadoop.io.WritableComparable;
@@ -53,7 +54,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
     }
 
     public Query query() {
-        throw new UnsupportedOperationException();
+        return new DefaultQuery(this);
     }
 
     public Set<String> getEdgeLabels(final Direction direction) {
@@ -70,7 +71,26 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
     }
 
     public Iterable<Vertex> getVertices(final Direction direction, final String... labels) {
-        throw new UnsupportedOperationException();
+        return new Iterable<Vertex>() {
+            public Iterator<Vertex> iterator() {
+                return new Iterator<Vertex>() {
+                    final Iterator<Edge> edges = getEdges(direction).iterator();
+                    final Direction opposite = direction.opposite();
+
+                    public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    public boolean hasNext() {
+                        return this.edges.hasNext();
+                    }
+
+                    public Vertex next() {
+                        return this.edges.next().getVertex(opposite);
+                    }
+                };
+            }
+        };
     }
 
     public Iterable<Edge> getEdges(final Direction direction, final String... labels) {

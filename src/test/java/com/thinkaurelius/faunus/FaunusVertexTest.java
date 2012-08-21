@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Vertex;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -9,6 +10,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 
 import static com.tinkerpop.blueprints.Direction.BOTH;
 import static com.tinkerpop.blueprints.Direction.IN;
@@ -19,7 +21,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class FaunusVertexTest extends BaseTest {
 
-    public void testRawComparison() throws IOException {
+    public void testRawComparator() throws IOException {
         FaunusVertex vertex1 = new FaunusVertex(10);
         FaunusVertex vertex2 = new FaunusVertex(11);
 
@@ -33,14 +35,19 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(0, new FaunusVertex.Comparator().compare(bytes1.toByteArray(), 0, bytes1.size(), bytes1.toByteArray(), 0, bytes1.size()));
     }
 
-    public void testSerialization1() throws IOException {
+    public void testSimpleVertexSerialization() throws IOException {
 
-        FaunusVertex vertex1 = new FaunusVertex(10);
+        FaunusVertex vertex1 = new FaunusVertex(10l);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(bytes);
         vertex1.write(out);
 
+        // id length is 8 bytes
+        // properties size 2 bytes
+        // out edge types size 2 bytes
+        // in edge types size 2 bytes
+        assertEquals(bytes.toByteArray().length, 14);
         FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         assertEquals(vertex1, vertex2);
@@ -49,10 +56,12 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex2.getId(), 10l);
         assertFalse(vertex2.getEdges(Direction.OUT).iterator().hasNext());
         assertFalse(vertex2.getEdges(Direction.IN).iterator().hasNext());
+        assertFalse(vertex2.getEdges(Direction.BOTH).iterator().hasNext());
+        assertEquals(vertex2.getPropertyKeys().size(), 0);
 
     }
 
-    public void testSerialization2() throws IOException {
+    public void testVertexSerialization() throws IOException {
 
         FaunusVertex vertex1 = new FaunusVertex(10);
         vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), 2, "knows"));
@@ -94,7 +103,7 @@ public class FaunusVertexTest extends BaseTest {
 
     }
 
-    public void testSerialization3() throws IOException {
+    public void testVertexSerialization2() throws IOException {
 
         FaunusVertex vertex1 = new FaunusVertex(10);
         vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), 2, "knows"));
@@ -146,7 +155,7 @@ public class FaunusVertexTest extends BaseTest {
 
     }
 
-    public void testNoProperties() throws IOException {
+    public void testVertexSerializationNoProperties() throws IOException {
         FaunusVertex vertex1 = new FaunusVertex(1l);
         vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), vertex1.getIdAsLong(), "knows"));
 
@@ -213,8 +222,21 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(asList(vertex.getEdges(OUT)).size(), 1);
         assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "knows");
         assertEquals(vertex.getProperty("name"), "marko");
-
     }
 
-
+    public void testGetVerticesAndQuery() throws IOException {
+        List<FaunusVertex> vertices = generateToyGraph(ExampleGraph.TINKERGRAPH);
+        for (FaunusVertex vertex : vertices) {
+            if (vertex.getId().equals(1l)) {
+                assertFalse(vertex.getVertices(IN).iterator().hasNext());
+                assertEquals(asList(vertex.getVertices(OUT)).size(), 3);
+                for (Vertex temp : vertex.getVertices(OUT)) {
+                    long id = (Long) temp.getId();
+                    assertTrue(id == 2l || id == 3l || id == 4l);
+                }
+                assertEquals(asList(vertex.query().has("weight", 0.5).limit(1).vertices()).size(), 1);
+                assertEquals(vertex.query().has("weight", 0.5).limit(1).vertices().iterator().next().getId(), 2l);
+            }
+        }
+    }
 }

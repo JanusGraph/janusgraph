@@ -23,4 +23,5 @@ public class Tokens {
     public static final String NULL = "null";
     public static final String TAB = "\t";
     public static final String NEWLINE = "\n";
+    public static final String EMPTY_STRING = "";
 }
