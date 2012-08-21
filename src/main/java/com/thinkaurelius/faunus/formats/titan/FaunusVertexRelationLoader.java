@@ -21,7 +21,7 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
     private FaunusEdge lastEdge=null;
 
     public FaunusVertexRelationLoader(ByteBuffer key) {
-        vertex = new FaunusVertex(key.getLong());
+        this(key.getLong());
     }
 
     public FaunusVertexRelationLoader(final long id) {
