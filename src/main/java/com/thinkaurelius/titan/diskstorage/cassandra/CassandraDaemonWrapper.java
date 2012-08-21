@@ -1,5 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
 import org.apache.cassandra.thrift.CassandraDaemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +20,8 @@ public class CassandraDaemonWrapper {
 	private static Boolean started = false;
 	
 	private static final Logger log = LoggerFactory.getLogger(CassandraDaemonWrapper.class);
+	private static final ExecutorService daemonExec =
+			Executors.newSingleThreadExecutor(new DaemonThreadFactory());
 	
 	private static String liveCassandraYamlPath;
 	
@@ -34,20 +41,50 @@ public class CassandraDaemonWrapper {
 		log.debug("Current working directory: {}", System.getProperty("user.dir"));
 		
 		System.setProperty("cassandra.config", cassandraYamlPath);
+		// Prevent Cassandra from closing stdout/stderr streams
+		System.setProperty("cassandra-foreground", "yes");
+		// Prevent Cassandra from overwriting Log4J configuration
 		System.setProperty("log4j.defaultInitOverride", "false");
 		
-		(new Thread(new CassandraRunner())).run();
+		
+		try {
+			daemonExec.submit(new CassandraStarter()).get();
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (ExecutionException e) {
+			throw new RuntimeException(e);
+		}
 		
 		liveCassandraYamlPath = cassandraYamlPath;
 		
 		started = true;
 	}
 	
-	private static class CassandraRunner implements Runnable {
+	private static class CassandraStarter implements Runnable {
 		@Override
 		public void run() {
 			CassandraDaemon.main(new String[0]);
 		}
 	}
 	
+	/**
+	 * Just like Executors.defaultThreadFactory(), except that it always returns
+	 * daemon threads.
+	 * 
+	 * @author Dan LaRocque <dalaro@hopcount.org>
+	 * 
+	 */
+	private static class DaemonThreadFactory implements ThreadFactory {
+
+		private final ThreadFactory dfl =
+				Executors.defaultThreadFactory();
+		
+		@Override
+		public Thread newThread(Runnable r) {
+			Thread t = dfl.newThread(r);
+			t.setDaemon(true);
+			return t;
+		}
+		
+	}
 }
