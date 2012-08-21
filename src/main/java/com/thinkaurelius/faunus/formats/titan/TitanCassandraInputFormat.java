@@ -262,7 +262,7 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
             titanconfig.setProperty("storage.read-only","true");
             titanconfig.setProperty("autotype","none");
             //Cassandra specific configuration
-            titanconfig.setProperty("storage.backend","astyanax");
+            titanconfig.setProperty("storage.backend","cassandra");
             titanconfig.setProperty("storage.hostname",ConfigHelper.getInputInitialAddress(conf));
             titanconfig.setProperty("storage.keyspace",ConfigHelper.getInputKeyspace(conf));
             titanconfig.setProperty("storage.port",ConfigHelper.getOutputRpcPort(conf));
