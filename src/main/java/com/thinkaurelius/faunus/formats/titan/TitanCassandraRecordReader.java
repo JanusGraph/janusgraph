@@ -184,10 +184,11 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
 
 
     public boolean nextKeyValue() throws IOException {
-        if (!iter.hasNext())
-            return false;
-        currentRow = graph.readFaunusVertex(iter.next());
-        return true;
+        currentRow = null;
+        while (currentRow==null && iter.hasNext()) {
+            currentRow = graph.readFaunusVertex(iter.next());
+        }
+        return currentRow!=null;
     }
 
     private String getLocation() {
