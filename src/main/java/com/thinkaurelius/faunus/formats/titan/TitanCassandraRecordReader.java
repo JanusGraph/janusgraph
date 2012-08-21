@@ -82,14 +82,14 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     private final int keyBufferSize;
     private final FaunusTitanGraph graph;
 
-    public TitanCassandraRecordReader(org.apache.commons.configuration.Configuration configuration) {
-        this(configuration,CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT);
+    public TitanCassandraRecordReader(FaunusTitanGraph graph) {
+        this(graph,CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT);
     }
 
-    public TitanCassandraRecordReader(org.apache.commons.configuration.Configuration configuration, int keyBufferSize) {
+    public TitanCassandraRecordReader(FaunusTitanGraph graph, int keyBufferSize) {
         super();
         this.keyBufferSize = keyBufferSize;
-        this.graph = new FaunusTitanGraph(configuration);
+        this.graph = graph;
     }
 
     public void close() {
