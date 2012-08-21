@@ -22,7 +22,7 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     protected long outVertex;
     protected long inVertex;
-    protected String label;
+    private String label;
 
     public FaunusEdge() {
         super(-1l);
@@ -40,9 +40,9 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public FaunusEdge(final long id, final long outVertex, final long inVertex, final String label) {
         super(id);
-        this.outVertex = Long.valueOf(outVertex);
-        this.inVertex = Long.valueOf(inVertex);
-        this.label = label;
+        this.outVertex = outVertex;
+        this.inVertex = inVertex;
+        setLabel(label);
     }
 
     public Vertex getVertex(final Direction direction) {
@@ -68,6 +68,10 @@ public class FaunusEdge extends FaunusElement implements Edge {
     public String getLabel() {
         return this.label;
     }
+    
+    public void setLabel(String label) {
+        this.label = TYPE_MAP.get(label);
+    }
 
     public void write(final DataOutput out) throws IOException {
         out.writeLong(this.id);
@@ -79,9 +83,9 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public void readFields(final DataInput in) throws IOException {
         this.id = in.readLong();
-        this.inVertex = Long.valueOf(in.readLong());
-        this.outVertex = Long.valueOf(in.readLong());
-        this.label = in.readUTF();
+        this.inVertex = in.readLong();
+        this.outVertex = in.readLong();
+        setLabel(in.readUTF());
         this.properties = ElementProperties.readFields(in);
     }
 

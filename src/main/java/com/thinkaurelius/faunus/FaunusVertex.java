@@ -341,30 +341,19 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
     private static class EdgeMap {
 
-        private static final Map<String, String> EDGE_LABELS = new HashMap<String, String>() {
-            @Override
-            public String get(final Object label) {
-                String temp = super.get(label);
-                if (null == temp) {
-                    super.put((String)label,(String)label);
-                    return super.get(label);
-                } else {
-                    return temp;
-                }
-            }
-        };
+
 
         public static Map<String, List<FaunusEdge>> readFields(final DataInput in, final Direction idToRead, final long otherId) throws IOException {
             final Map<String, List<FaunusEdge>> edges = new HashMap<String, List<FaunusEdge>>();
             int edgeTypes = in.readShort();
             for (int i = 0; i < edgeTypes; i++) {
-                final String label = EDGE_LABELS.get(in.readUTF());
+                final String label = in.readUTF();
                 final int size = in.readInt();
                 final List<FaunusEdge> temp = new ArrayList<FaunusEdge>(size);
                 for (int j = 0; j < size; j++) {
                     final FaunusEdge edge = new FaunusEdge();
                     edge.readFieldsCompressed(in, idToRead);
-                    edge.label = label;
+                    edge.setLabel(label);
                     if (idToRead.equals(Direction.OUT))
                         edge.inVertex = otherId;
                     else

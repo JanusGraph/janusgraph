@@ -17,6 +17,21 @@ import java.util.Set;
  */
 public abstract class FaunusElement implements Element, Writable {
 
+    protected static final Map<String, String> TYPE_MAP = new HashMap<String, String>() {
+        @Override
+        public final String get(final Object l) {
+            String label = (String)l;
+            String existing = super.get(label);
+            if (null == existing) {
+                super.put(label,label);
+                return label;
+            } else {
+                return existing;
+            }
+        }
+    };
+
+
     protected Map<String, Object> properties = null;
     protected long id;
 
@@ -27,7 +42,7 @@ public abstract class FaunusElement implements Element, Writable {
     public void setProperty(final String key, final Object value) {
         if (null == this.properties)
             this.properties = new HashMap<String, Object>();
-        this.properties.put(key, value);
+        this.properties.put(TYPE_MAP.get(key), value);
     }
 
     public Object removeProperty(final String key) {
@@ -52,7 +67,7 @@ public abstract class FaunusElement implements Element, Writable {
         else
             this.properties.clear();
         for (final Map.Entry<String, Object> entry : properties.entrySet()) {
-            this.properties.put(entry.getKey(), entry.getValue());
+            this.properties.put(TYPE_MAP.get(entry.getKey()), entry.getValue());
         }
     }
 
@@ -143,7 +158,7 @@ public abstract class FaunusElement implements Element, Writable {
                     } else {
                         throw new IOException("Property value type of " + valueClass + " is not supported");
                     }
-                    properties.put(key, valueObject);
+                    properties.put(TYPE_MAP.get(key), valueObject);
                 }
                 return properties;
             }
