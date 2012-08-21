@@ -30,9 +30,15 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
         vertex = new FaunusVertex(id);
     }
 
+    private Object prepareAttribute(Object attribute) {
+        if (!FaunusElement.SUPPORTED_ATTRIBUTE_TYPES.contains(attribute.getClass()))
+            attribute = attribute.toString();
+        return attribute;
+    }
+    
     @Override
     public void loadProperty(long propertyid, TitanKey key, Object attribute) {
-        vertex.setProperty(key.getName(),attribute);
+        vertex.setProperty(key.getName(),prepareAttribute(attribute));
     }
 
     @Override
@@ -50,9 +56,7 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
 
     @Override
     public void addRelationProperty(TitanKey key, Object attribute) {
-        if (!FaunusElement.SUPPORTED_ATTRIBUTE_TYPES.contains(attribute.getClass()))
-            attribute = attribute.toString();
-        lastEdge.setProperty(key.getName(),attribute);
+        lastEdge.setProperty(key.getName(),prepareAttribute(attribute));
     }
 
     @Override
