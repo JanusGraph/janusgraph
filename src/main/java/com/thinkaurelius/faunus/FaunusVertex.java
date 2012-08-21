@@ -33,19 +33,6 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class FaunusVertex extends FaunusElement implements Vertex, WritableComparable<FaunusVertex> {
 
-    private static final Map<String, String> EDGE_LABELS = new HashMap<String, String>() {
-        @Override
-        public String get(final Object label) {
-            String temp = super.get(label);
-            if (null == temp) {
-               super.put((String)label,(String)label);
-               return super.get(label);
-            } else {
-                return temp;
-            }
-        }
-    };
-
     static {
         WritableComparator.define(FaunusVertex.class, new Comparator());
     }
@@ -353,6 +340,20 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
     }
 
     private static class EdgeMap {
+
+        private static final Map<String, String> EDGE_LABELS = new HashMap<String, String>() {
+            @Override
+            public String get(final Object label) {
+                String temp = super.get(label);
+                if (null == temp) {
+                    super.put((String)label,(String)label);
+                    return super.get(label);
+                } else {
+                    return temp;
+                }
+            }
+        };
+
         public static Map<String, List<FaunusEdge>> readFields(final DataInput in, final Direction idToRead, final long otherId) throws IOException {
             final Map<String, List<FaunusEdge>> edges = new HashMap<String, List<FaunusEdge>>();
             int edgeTypes = in.readShort();
