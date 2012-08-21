@@ -11,7 +11,6 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
-import sun.plugin.dom.exception.InvalidStateException;
 
 import java.util.*;
 
@@ -59,7 +58,7 @@ public class ComplexTitanQuery implements TitanQuery {
                 //do nothing
             } else if (q instanceof ComplexTitanQuery) {
                 ((ComplexTitanQuery)q).flattenQuery(container);
-            } else throw new InvalidStateException("Unexpected query type found: " + q.getClass());
+            } else throw new IllegalStateException("Unexpected query type found: " + q.getClass());
         }
     }
     
