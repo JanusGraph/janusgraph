@@ -11,6 +11,7 @@ import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
+import java.io.File;
 import java.util.Iterator;
 
 /**
@@ -47,7 +48,13 @@ public class TitanGraphConfiguration implements GraphConfiguration {
 
             final Configuration rewriteConfig = new BaseConfiguration();
             if (properties.containsKey(Tokens.REXSTER_GRAPH_LOCATION)) {
-                rewriteConfig.setProperty("storage.directory",properties.getString(Tokens.REXSTER_GRAPH_LOCATION));
+                File directory = new File(properties.getString(Tokens.REXSTER_GRAPH_LOCATION));
+                if (!directory.isDirectory()) {
+                    if (!directory.mkdirs()) {
+                        throw new IllegalArgumentException("Could not create directory: " + directory);
+                    }
+                }
+                rewriteConfig.setProperty("storage.directory",directory.getAbsolutePath());
             }
             if (properties.containsKey(Tokens.REXSTER_GRAPH_READ_ONLY)) {
                 rewriteConfig.setProperty("storage.read-only",properties.getBoolean(Tokens.REXSTER_GRAPH_READ_ONLY));
