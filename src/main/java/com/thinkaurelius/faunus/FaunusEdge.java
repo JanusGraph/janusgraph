@@ -69,7 +69,7 @@ public class FaunusEdge extends FaunusElement implements Edge {
         return this.label;
     }
     
-    public void setLabel(String label) {
+    protected final void setLabel(String label) {
         this.label = TYPE_MAP.get(label);
     }
 

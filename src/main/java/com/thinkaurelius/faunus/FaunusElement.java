@@ -19,9 +19,9 @@ public abstract class FaunusElement implements Element, Writable {
 
     protected static final Map<String, String> TYPE_MAP = new HashMap<String, String>() {
         @Override
-        public final String get(final Object l) {
-            String label = (String)l;
-            String existing = super.get(label);
+        public final String get(final Object object) {
+            final String label = (String)object;
+            final String existing = super.get(label);
             if (null == existing) {
                 super.put(label,label);
                 return label;

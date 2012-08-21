@@ -32,7 +32,7 @@ import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.SlicePredicate;
-import org.apache.cassandra.utils.ByteBufferUtil;
+import org.apache.cassandra.thrift.SliceRange;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
@@ -57,7 +57,6 @@ import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -304,7 +303,7 @@ public class FaunusPipeline extends Configured implements Tool {
         job.setJarByClass(FaunusPipeline.class);
         this.derivationJob = false;
     }
-    
+
     public FaunusPipeline transform(final String function) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
@@ -523,8 +522,14 @@ public class FaunusPipeline extends Configured implements Tool {
             if (this.configuration.getGraphInputFormat().equals(GraphSONInputFormat.class) || this.configuration.getGraphInputFormat().equals(SequenceFileInputFormat.class)) {
                 FileInputFormat.setInputPaths(startJob, this.configuration.getInputLocation());
             } else if (this.configuration.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
-                ConfigHelper.setInputColumnFamily(this.configuration, ConfigHelper.getInputKeyspace(this.configuration), "User");
-                SlicePredicate predicate = new SlicePredicate().setColumn_names(Arrays.asList(ByteBufferUtil.bytes("age"), ByteBufferUtil.bytes("first"), ByteBufferUtil.bytes("last")));
+                ConfigHelper.setInputColumnFamily(this.configuration, ConfigHelper.getInputKeyspace(this.configuration), "edgestore");
+
+                SlicePredicate predicate = new SlicePredicate();
+                SliceRange sliceRange = new SliceRange();
+                sliceRange.setStart(new byte[0]);
+                sliceRange.setFinish(new byte[0]);
+                predicate.setSlice_range(sliceRange);
+
                 ConfigHelper.setInputSlicePredicate(this.configuration, predicate);
             } else
                 throw new IOException(this.configuration.getGraphInputFormat().getName() + " is not a supported input format");

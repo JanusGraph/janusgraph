@@ -87,7 +87,7 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
     private String keyspace;
     private String cfName;
     private IPartitioner partitioner;
-    
+
     private static void validateConfiguration(Configuration conf) {
         if (ConfigHelper.getInputKeyspace(conf) == null || ConfigHelper.getInputColumnFamily(conf) == null) {
             throw new UnsupportedOperationException("You must set the keyspace and columnfamily with setColumnFamily()");
