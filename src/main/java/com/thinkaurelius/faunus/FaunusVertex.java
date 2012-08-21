@@ -207,16 +207,16 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
     public void write(final DataOutput out) throws IOException {
         out.writeLong(this.id);
-        EdgeMap.write((Map) this.inEdges, out);
-        EdgeMap.write((Map) this.outEdges, out);
+        EdgeMap.write((Map) this.inEdges, out, Direction.OUT);
+        EdgeMap.write((Map) this.outEdges, out, Direction.IN);
         ElementProperties.write(this.properties, out);
 
     }
 
     public void readFields(final DataInput in) throws IOException {
         this.id = in.readLong();
-        this.inEdges = (Map) EdgeMap.readFields(in);
-        this.outEdges = (Map) EdgeMap.readFields(in);
+        this.inEdges = (Map) EdgeMap.readFields(in, Direction.OUT, this.id);
+        this.outEdges = (Map) EdgeMap.readFields(in, Direction.IN, this.id);
         this.properties = ElementProperties.readFields(in);
     }
 
@@ -332,7 +332,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
     }
 
     private static class EdgeMap {
-        public static Map<String, List<FaunusEdge>> readFields(final DataInput in) throws IOException {
+        public static Map<String, List<FaunusEdge>> readFields(final DataInput in, final Direction idToRead, final long otherId) throws IOException {
             final Map<String, List<FaunusEdge>> edges = new HashMap<String, List<FaunusEdge>>();
             int edgeTypes = in.readShort();
             for (int i = 0; i < edgeTypes; i++) {
@@ -340,20 +340,27 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
                 final int size = in.readInt();
                 final List<FaunusEdge> temp = new ArrayList<FaunusEdge>(size);
                 for (int j = 0; j < size; j++) {
-                    temp.add(new FaunusEdge(in));
+                    final FaunusEdge edge = new FaunusEdge();
+                    edge.readFieldsCompressed(in, idToRead);
+                    edge.label = label;
+                    if (idToRead.equals(Direction.OUT))
+                        edge.inVertex = otherId;
+                    else
+                        edge.outVertex = otherId;
+                    temp.add(edge);
                 }
                 edges.put(label, temp);
             }
             return edges;
         }
 
-        public static void write(final Map<String, List<FaunusEdge>> edges, final DataOutput out) throws IOException {
+        public static void write(final Map<String, List<FaunusEdge>> edges, final DataOutput out, final Direction idToWrite) throws IOException {
             out.writeShort(edges.size());
             for (final Map.Entry<String, List<FaunusEdge>> entry : edges.entrySet()) {
                 out.writeUTF(entry.getKey());
                 out.writeInt(entry.getValue().size());
                 for (final FaunusEdge edge : entry.getValue()) {
-                    edge.write(out);
+                    edge.writeCompressed(out, idToWrite);
                 }
             }
         }
