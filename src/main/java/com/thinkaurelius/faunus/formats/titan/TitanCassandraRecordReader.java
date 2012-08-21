@@ -184,19 +184,8 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     public boolean nextKeyValue() throws IOException {
         if (!iter.hasNext())
             return false;
-        currentRow = TitanCassandraRecordReader.createFaunusVertex(iter.next());
+        currentRow = graph.readFaunusVertex(iter.next());
         return true;
-    }
-
-    private static FaunusVertex createFaunusVertex(final Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>> row) {
-        final FaunusVertex vertex = new FaunusVertex(row.left.hashCode());
-        try {
-            for (final java.util.Map.Entry<ByteBuffer, IColumn> entry : row.right.entrySet()) {
-                vertex.setProperty(ByteBufferUtil.string(entry.getKey()), ByteBufferUtil.string(entry.getValue().value()));
-            }
-        } catch (Exception e) {
-        }
-        return vertex;
     }
 
     private String getLocation() {
