@@ -2,6 +2,8 @@ package com.thinkaurelius.titan.graphdb.transaction;
 
 import cern.colt.list.AbstractLongList;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanKey;
@@ -26,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StandardPersistTitanTx extends AbstractTitanTx {
 
 	private static final Logger log = LoggerFactory.getLogger(StandardPersistTitanTx.class);
-	
 
 	private final TransactionHandle txHandle;
 		
@@ -42,8 +43,8 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 		txHandle = tx;
 
 		if (config.isReadOnly()) {
-			deletedEdges = null;
-			addedEdges = null;
+			deletedEdges = ImmutableSet.of();
+			addedEdges = ImmutableList.of();
 		} else {
 			deletedEdges = Collections.newSetFromMap(new ConcurrentHashMap<InternalRelation,Boolean>(10,0.75f,1));
 			addedEdges = Collections.synchronizedList(new ArrayList<InternalRelation>());
