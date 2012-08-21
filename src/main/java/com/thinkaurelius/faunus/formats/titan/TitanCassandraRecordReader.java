@@ -57,6 +57,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -83,12 +84,12 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     private final FaunusTitanGraph graph;
 
     public TitanCassandraRecordReader(FaunusTitanGraph graph) {
-        this(graph,CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT);
+        this(graph, CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT);
     }
 
     public TitanCassandraRecordReader(FaunusTitanGraph graph, int keyBufferSize) {
         super();
-        if (graph==null) throw new IllegalArgumentException("Graph cannot be null");
+        if (graph == null) throw new IllegalArgumentException("Graph cannot be null");
         this.keyBufferSize = keyBufferSize;
         this.graph = graph;
     }
