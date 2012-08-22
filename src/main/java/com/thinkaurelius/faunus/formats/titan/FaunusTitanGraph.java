@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import org.apache.cassandra.db.IColumn;
@@ -37,7 +38,7 @@ public class FaunusTitanGraph extends StandardTitanGraph {
     }
 
     public FaunusVertex readFaunusVertex(final Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>> row) {
-        FaunusVertexRelationLoader loader = new FaunusVertexRelationLoader(row.left.duplicate());
+        FaunusVertexRelationLoader loader = new FaunusVertexRelationLoader(IDHandler.getKeyID(row.left.duplicate()));
         loadRelations(new CassandraMapIterable(row.right),loader,tx);
         return loader.getVertex();
     }
