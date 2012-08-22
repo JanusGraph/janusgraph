@@ -38,7 +38,7 @@ public class FaunusTitanGraph extends StandardTitanGraph {
 
     public FaunusVertex readFaunusVertex(final Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>> row) {
 
-        FaunusVertexRelationLoader loader = new FaunusVertexRelationLoader(row.left.duplicate());
+        FaunusVertexRelationLoader loader = new FaunusVertexRelationLoader(IDHandler.getKeyID(row.left.duplicate()));
         loadRelations(new CassandraMapIterable(row.right), loader, tx);
 
         return loader.getVertex();
