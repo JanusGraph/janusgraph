@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.thinkaurelius</groupId>
+    <groupId>com.thinkaurelius.faunus</groupId>
     <artifactId>faunus</artifactId>
     <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -40,14 +40,15 @@
         </dependency>
         <!-- TITAN -->
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>12.0</version>
-        </dependency>
-        <dependency>
             <groupId>com.thinkaurelius</groupId>
             <artifactId>titan</artifactId>
             <version>0.1-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- TESTING -->
         <dependency>
