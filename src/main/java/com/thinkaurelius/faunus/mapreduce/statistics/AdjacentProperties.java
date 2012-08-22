@@ -77,10 +77,10 @@ public class AdjacentProperties {
             final List<String> thusFar = new ArrayList<String>();
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 'f') {
-                    this.fText.set(ElementPicker.getProperty(holder.get(), this.property));
+                    this.fText.set(ElementPicker.getPropertyAsString(holder.get(), this.property));
                     break;
                 } else {
-                    thusFar.add(ElementPicker.getProperty(holder.get(), this.property));
+                    thusFar.add(ElementPicker.getPropertyAsString(holder.get(), this.property));
                 }
             }
             for (final String text : thusFar) {
@@ -89,7 +89,7 @@ public class AdjacentProperties {
             }
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 'r') {
-                    this.rText.set(ElementPicker.getProperty(holder.get(), this.property));
+                    this.rText.set(ElementPicker.getPropertyAsString(holder.get(), this.property));
                     context.write(this.rText, this.fText);
                 }
             }

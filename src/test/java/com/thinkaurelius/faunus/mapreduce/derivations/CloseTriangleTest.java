@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.derivations.Traverse;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -21,24 +20,24 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TraverseTest extends BaseTest {
+public class CloseTriangleTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new Traverse.Map());
-        mapReduceDriver.setReducer(new Traverse.Reduce());
+        mapReduceDriver.setMapper(new CloseTriangle.Map());
+        mapReduceDriver.setReducer(new CloseTriangle.Reduce());
     }
 
     public void testKnowsCreatedTraversal() throws IOException {
         Configuration config = new Configuration();
-        config.set(Traverse.FIRST_LABEL, "knows");
-        config.set(Traverse.SECOND_LABEL, "created");
-        config.set(Traverse.NEW_LABEL, "knowsCreated");
-        config.set(Traverse.FIRST_DIRECTION, OUT.toString());
-        config.set(Traverse.SECOND_DIRECTION, OUT.toString());
-        config.set(Traverse.ACTION, Tokens.Action.KEEP.toString());
+        config.setStrings(CloseTriangle.FIRST_LABELS, "knows");
+        config.setStrings(CloseTriangle.SECOND_LABELS, "created");
+        config.set(CloseTriangle.NEW_LABEL, "knowsCreated");
+        config.set(CloseTriangle.FIRST_DIRECTION, OUT.toString());
+        config.set(CloseTriangle.SECOND_DIRECTION, OUT.toString());
+        config.set(CloseTriangle.ACTION, Tokens.Action.KEEP.toString());
 
         mapReduceDriver.withConfiguration(config);
 
@@ -81,7 +80,7 @@ public class TraverseTest extends BaseTest {
         assertEquals(createdEdges, 8);
         assertEquals(knowsCreatedEdges, 4);
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(Traverse.Counters.EDGES_CREATED).getValue(), knowsCreatedEdges);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CloseTriangle.Counters.EDGES_CREATED).getValue(), knowsCreatedEdges);
 
         // vertex 1
         assertEquals(asList(results.get(1l).getEdges(IN)).size(), 0);
@@ -113,12 +112,12 @@ public class TraverseTest extends BaseTest {
 
     public void testCreatedCreatedCollaborator() throws IOException {
         Configuration config = new Configuration();
-        config.set(Traverse.FIRST_LABEL, "created");
-        config.set(Traverse.SECOND_LABEL, "created");
-        config.set(Traverse.NEW_LABEL, "collaborator");
-        config.set(Traverse.FIRST_DIRECTION, OUT.toString());
-        config.set(Traverse.SECOND_DIRECTION, IN.toString());
-        config.set(Traverse.ACTION, Tokens.Action.KEEP.toString());
+        config.setStrings(CloseTriangle.FIRST_LABELS, "created");
+        config.setStrings(CloseTriangle.SECOND_LABELS, "created");
+        config.set(CloseTriangle.NEW_LABEL, "collaborator");
+        config.set(CloseTriangle.FIRST_DIRECTION, OUT.toString());
+        config.set(CloseTriangle.SECOND_DIRECTION, IN.toString());
+        config.set(CloseTriangle.ACTION, Tokens.Action.KEEP.toString());
 
         mapReduceDriver.withConfiguration(config);
 
@@ -165,7 +164,7 @@ public class TraverseTest extends BaseTest {
         assertEquals(createdEdges, 8);
         assertEquals(collaboratorEdges, 20);
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(Traverse.Counters.EDGES_CREATED).getValue(), collaboratorEdges);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CloseTriangle.Counters.EDGES_CREATED).getValue(), collaboratorEdges);
 
         // vertex 1
         assertEquals(asList(results.get(1l).getEdges(IN)).size(), 3);
@@ -186,12 +185,12 @@ public class TraverseTest extends BaseTest {
     public void testFatherFatherGrandfather() throws IOException {
 
         Configuration config = new Configuration();
-        config.set(Traverse.FIRST_LABEL, "father");
-        config.set(Traverse.SECOND_LABEL, "father");
-        config.set(Traverse.NEW_LABEL, "grandfather");
-        config.set(Traverse.FIRST_DIRECTION, OUT.toString());
-        config.set(Traverse.SECOND_DIRECTION, OUT.toString());
-        config.set(Traverse.ACTION, Tokens.Action.DROP.toString());
+        config.setStrings(CloseTriangle.FIRST_LABELS, "father");
+        config.setStrings(CloseTriangle.SECOND_LABELS, "father");
+        config.set(CloseTriangle.NEW_LABEL, "grandfather");
+        config.set(CloseTriangle.FIRST_DIRECTION, OUT.toString());
+        config.set(CloseTriangle.SECOND_DIRECTION, OUT.toString());
+        config.set(CloseTriangle.ACTION, Tokens.Action.DROP.toString());
 
         mapReduceDriver.withConfiguration(config);
 

@@ -6,7 +6,7 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.derivations.Identity;
 import com.thinkaurelius.faunus.mapreduce.derivations.LabelFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.Traverse;
+import com.thinkaurelius.faunus.mapreduce.derivations.CloseTriangle;
 import com.thinkaurelius.faunus.mapreduce.derivations.VertexPropertyFilter;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Query;
@@ -70,16 +70,16 @@ public class MapReduceSequenceTest extends BaseTest {
         config.set(LabelFilter.ACTION + "-0", Tokens.Action.KEEP.name());
         config.setStrings(LabelFilter.LABELS + "-0", "father");
 
-        config.set(Traverse.FIRST_LABEL, "father");
-        config.set(Traverse.SECOND_LABEL, "father");
-        config.set(Traverse.NEW_LABEL, "grandfather");
-        config.set(Traverse.FIRST_DIRECTION, OUT.toString());
-        config.set(Traverse.SECOND_DIRECTION, OUT.toString());
-        config.set(Traverse.ACTION, Tokens.Action.DROP.toString());
+        config.setStrings(CloseTriangle.FIRST_LABELS, "father");
+        config.setStrings(CloseTriangle.SECOND_LABELS, "father");
+        config.set(CloseTriangle.NEW_LABEL, "grandfather");
+        config.set(CloseTriangle.FIRST_DIRECTION, OUT.toString());
+        config.set(CloseTriangle.SECOND_DIRECTION, OUT.toString());
+        config.set(CloseTriangle.ACTION, Tokens.Action.DROP.toString());
 
         config.setStrings(MapReduceSequence.MAP_CLASSES, LabelFilter.Map.class.getName());
-        config.set(MapReduceSequence.MAPR_CLASS, Traverse.Map.class.getName());
-        config.set(MapReduceSequence.REDUCE_CLASS, Traverse.Reduce.class.getName());
+        config.set(MapReduceSequence.MAPR_CLASS, CloseTriangle.Map.class.getName());
+        config.set(MapReduceSequence.REDUCE_CLASS, CloseTriangle.Reduce.class.getName());
 
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);

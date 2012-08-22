@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce;
 
+import com.thinkaurelius.faunus.FaunusElement;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 
@@ -20,8 +21,8 @@ public class ElementChecker {
         this.nullIsWildcard = nullIsWildcard;
     }
 
-    public boolean isLegal(final Element element) {
-        Object elementValue = element.getProperty(this.key);
+    public boolean isLegal(final FaunusElement element) {
+        Object elementValue = ElementPicker.getProperty(element,this.key);
         if (elementValue instanceof Number)
             elementValue = ((Number) elementValue).floatValue();
 

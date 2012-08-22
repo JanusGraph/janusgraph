@@ -17,7 +17,6 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Random;
 import java.util.SortedMap;
 
 /**
@@ -38,8 +37,10 @@ public class FaunusTitanGraph extends StandardTitanGraph {
     }
 
     public FaunusVertex readFaunusVertex(final Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>> row) {
-        FaunusVertexRelationLoader loader = new FaunusVertexRelationLoader(IDHandler.getKeyID(row.left.duplicate()));
-        loadRelations(new CassandraMapIterable(row.right),loader,tx);
+
+        FaunusVertexRelationLoader loader = new FaunusVertexRelationLoader(row.left.duplicate());
+        loadRelations(new CassandraMapIterable(row.right), loader, tx);
+
         return loader.getVertex();
     }
 

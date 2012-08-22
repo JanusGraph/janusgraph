@@ -17,21 +17,21 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class DistributionTest extends BaseTest {
+public class GroupCountTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, Text, LongWritable, Text, LongWritable> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, Text, LongWritable, Text, LongWritable>();
-        mapReduceDriver.setMapper(new Distribution.Map());
-        mapReduceDriver.setCombiner(new Distribution.Reduce());
-        mapReduceDriver.setReducer(new Distribution.Reduce());
+        mapReduceDriver.setMapper(new GroupCount.Map());
+        mapReduceDriver.setCombiner(new GroupCount.Reduce());
+        mapReduceDriver.setReducer(new GroupCount.Reduce());
     }
 
     public void testOutDegreeDistribution() throws IOException {
         Configuration config = new Configuration();
-        config.set(Distribution.CLASS, Vertex.class.getName());
-        config.set(Distribution.FUNCTION, "{ it -> [it.outE.count(), 1] }");
+        config.set(GroupCount.CLASS, Vertex.class.getName());
+        config.set(GroupCount.KEY_FUNCTION, "{ it -> it.outE.count() }");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -53,14 +53,14 @@ public class DistributionTest extends BaseTest {
         }
 
 
-        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(Distribution.Counters.EDGES_PROCESSED).getValue());
-        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(Distribution.Counters.VERTICES_PROCESSED).getValue());
+        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCount.Counters.EDGES_PROCESSED).getValue());
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(GroupCount.Counters.VERTICES_PROCESSED).getValue());
     }
 
     public void testEdgePropertySizeDistribution() throws IOException {
         Configuration config = new Configuration();
-        config.set(Distribution.CLASS, Edge.class.getName());
-        config.set(Distribution.FUNCTION, "{ it -> [it.map.next().size(), 1] }");
+        config.set(GroupCount.CLASS, Edge.class.getName());
+        config.set(GroupCount.KEY_FUNCTION, "{ it -> it.map.next().size() }");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -76,8 +76,8 @@ public class DistributionTest extends BaseTest {
         }
 
 
-        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(Distribution.Counters.EDGES_PROCESSED).getValue());
-        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(Distribution.Counters.VERTICES_PROCESSED).getValue());
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCount.Counters.EDGES_PROCESSED).getValue());
+        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCount.Counters.VERTICES_PROCESSED).getValue());
     }
 
 

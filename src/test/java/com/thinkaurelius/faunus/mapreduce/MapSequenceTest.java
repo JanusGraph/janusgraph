@@ -4,7 +4,7 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.derivations.Identity;
-import com.thinkaurelius.faunus.mapreduce.derivations.Properties;
+import com.thinkaurelius.faunus.mapreduce.derivations.KeyFilter;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -29,10 +29,10 @@ public class MapSequenceTest extends BaseTest {
     public void testLongSequence() throws Exception {
 
         Configuration config = new Configuration();
-        config.setStrings(Properties.KEYS + "-2", "name");
-        config.set(Properties.ACTION + "-2", Tokens.Action.DROP.name());
-        config.set(Properties.CLASS + "-2", Vertex.class.getName());
-        config.setStrings(MapSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), Properties.Map.class.getName());
+        config.setStrings(KeyFilter.KEYS + "-2", "name");
+        config.set(KeyFilter.ACTION + "-2", Tokens.Action.DROP.name());
+        config.set(KeyFilter.CLASS + "-2", Vertex.class.getName());
+        config.setStrings(MapSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), KeyFilter.Map.class.getName());
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
         assertEquals(results.size(), 6);
@@ -45,10 +45,10 @@ public class MapSequenceTest extends BaseTest {
 
     public void testBadSequenceId() throws Exception {
         Configuration config = new Configuration();
-        config.setStrings(Properties.KEYS + "-3", "name"); // should be 2
-        config.set(Properties.ACTION + "-3", Tokens.Action.DROP.name());
-        config.set(Properties.CLASS + "-3", Vertex.class.getName());
-        config.setStrings(MapSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), Properties.Map.class.getName());
+        config.setStrings(KeyFilter.KEYS + "-3", "name"); // should be 2
+        config.set(KeyFilter.ACTION + "-3", Tokens.Action.DROP.name());
+        config.set(KeyFilter.CLASS + "-3", Vertex.class.getName());
+        config.setStrings(MapSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), KeyFilter.Map.class.getName());
         this.mapReduceDriver.withConfiguration(config);
         try {
             final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);

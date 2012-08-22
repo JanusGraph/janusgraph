@@ -82,7 +82,7 @@ public class SortedDegree {
                 this.intWritable.set(key.get());
 
             for (final FaunusVertex vertex : values) {
-                this.textWritable.set(ElementPicker.getProperty(vertex, this.property));
+                this.textWritable.set(ElementPicker.getPropertyAsString(vertex, this.property));
                 context.write(this.textWritable, this.intWritable);
             }
         }

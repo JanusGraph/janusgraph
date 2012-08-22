@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.derivations;
 
+import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.ElementChecker;
@@ -58,7 +59,7 @@ public class EdgePropertyFilter {
             final Iterator<Edge> itty = value.getEdges(Direction.BOTH).iterator();
             while (itty.hasNext()) {
                 final Edge edge = itty.next();
-                if (this.elementChecker.isLegal(edge))
+                if (this.elementChecker.isLegal((FaunusEdge) edge))
                     context.getCounter(Counters.EDGES_KEPT).increment(1l);
                 else {
                     itty.remove();

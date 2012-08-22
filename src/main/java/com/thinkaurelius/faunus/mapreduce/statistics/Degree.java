@@ -49,7 +49,7 @@ public class Degree {
             context.getCounter(Counters.VERTICES_COUNTED).increment(1);
             context.getCounter(Counters.EDGES_COUNTED).increment(degree);
 
-            this.textWritable.set(ElementPicker.getProperty(value, this.property));
+            this.textWritable.set(ElementPicker.getPropertyAsString(value, this.property));
             this.intWritable.set(degree);
             context.write(this.textWritable, this.intWritable);
 

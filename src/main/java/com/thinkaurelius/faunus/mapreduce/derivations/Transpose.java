@@ -21,9 +21,9 @@ public class Transpose {
         EDGES_TRANSPOSED
     }
 
-    public static final String LABEL = Tokens.makeNamespace(Traverse.class) + ".label";
-    public static final String NEW_LABEL = Tokens.makeNamespace(Traverse.class) + ".newLabel";
-    public static final String ACTION = Tokens.makeNamespace(Traverse.class) + ".action";
+    public static final String LABEL = Tokens.makeNamespace(CloseTriangle.class) + ".label";
+    public static final String NEW_LABEL = Tokens.makeNamespace(CloseTriangle.class) + ".newLabel";
+    public static final String ACTION = Tokens.makeNamespace(CloseTriangle.class) + ".action";
 
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {

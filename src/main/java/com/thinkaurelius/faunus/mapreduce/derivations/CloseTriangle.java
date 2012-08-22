@@ -21,14 +21,14 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Traverse {
+public class CloseTriangle {
 
-    public static final String FIRST_DIRECTION = Tokens.makeNamespace(Traverse.class) + ".firstDirection";
-    public static final String FIRST_LABEL = Tokens.makeNamespace(Traverse.class) + ".firstLabel";
-    public static final String SECOND_DIRECTION = Tokens.makeNamespace(Traverse.class) + ".secondDirection";
-    public static final String SECOND_LABEL = Tokens.makeNamespace(Traverse.class) + ".secondLabel";
-    public static final String NEW_LABEL = Tokens.makeNamespace(Traverse.class) + ".newLabel";
-    public static final String ACTION = Tokens.makeNamespace(Traverse.class) + ".action";
+    public static final String FIRST_DIRECTION = Tokens.makeNamespace(CloseTriangle.class) + ".firstDirection";
+    public static final String FIRST_LABELS = Tokens.makeNamespace(CloseTriangle.class) + ".firstLabels";
+    public static final String SECOND_DIRECTION = Tokens.makeNamespace(CloseTriangle.class) + ".secondDirection";
+    public static final String SECOND_LABELS = Tokens.makeNamespace(CloseTriangle.class) + ".secondLabels";
+    public static final String NEW_LABEL = Tokens.makeNamespace(CloseTriangle.class) + ".newLabel";
+    public static final String ACTION = Tokens.makeNamespace(CloseTriangle.class) + ".action";
 
     public enum Counters {
         EDGES_CREATED
@@ -37,18 +37,18 @@ public class Traverse {
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
 
         private Direction firstDirection;
-        private String firstLabel;
+        private String[] firstLabels;
         private Direction secondDirection;
-        private String secondLabel;
+        private String[] secondLabels;
         private String newLabel;
         private Tokens.Action action;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.firstDirection = Direction.valueOf(context.getConfiguration().get(FIRST_DIRECTION));
-            this.firstLabel = context.getConfiguration().get(FIRST_LABEL);
+            this.firstLabels = context.getConfiguration().getStrings(FIRST_LABELS, new String[0]);
             this.secondDirection = Direction.valueOf(context.getConfiguration().get(SECOND_DIRECTION));
-            this.secondLabel = context.getConfiguration().get(SECOND_LABEL);
+            this.secondLabels = context.getConfiguration().getStrings(SECOND_LABELS, new String[0]);
             this.newLabel = context.getConfiguration().get(NEW_LABEL);
             this.action = Tokens.Action.valueOf(context.getConfiguration().get(ACTION));
         }
@@ -63,11 +63,11 @@ public class Traverse {
             final Set<Long> secondVertexIds = new HashSet<Long>();
 
             if (this.firstDirection.equals(OUT)) {
-                for (final Edge edge : value.getEdges(IN, this.firstLabel)) {
+                for (final Edge edge : value.getEdges(IN, this.firstLabels)) {
                     firstVertexIds.add(((FaunusEdge) edge).getVertexId(OUT));
                 }
             } else if (this.firstDirection.equals(IN)) {
-                for (final Edge edge : value.getEdges(OUT, this.firstLabel)) {
+                for (final Edge edge : value.getEdges(OUT, this.firstLabels)) {
                     firstVertexIds.add(((FaunusEdge) edge).getVertexId(IN));
                 }
             } else {
@@ -75,11 +75,11 @@ public class Traverse {
             }
 
             if (this.secondDirection.equals(OUT)) {
-                for (final Edge edge : value.getEdges(OUT, this.secondLabel)) {
+                for (final Edge edge : value.getEdges(OUT, this.secondLabels)) {
                     secondVertexIds.add(((FaunusEdge) edge).getVertexId(IN));
                 }
             } else if (this.secondDirection.equals(IN)) {
-                for (final Edge edge : value.getEdges(IN, this.secondLabel)) {
+                for (final Edge edge : value.getEdges(IN, this.secondLabels)) {
                     secondVertexIds.add(((FaunusEdge) edge).getVertexId(OUT));
                 }
             } else {
@@ -89,8 +89,8 @@ public class Traverse {
 
             this.longWritable.set(value.getIdAsLong());
             if (this.action.equals(Tokens.Action.DROP)) {
-                value.removeEdges(Tokens.Action.DROP, Direction.BOTH, this.firstLabel);
-                value.removeEdges(Tokens.Action.DROP, Direction.BOTH, this.secondLabel);
+                value.removeEdges(Tokens.Action.DROP, Direction.BOTH, this.firstLabels);
+                value.removeEdges(Tokens.Action.DROP, Direction.BOTH, this.secondLabels);
             }
             context.write(this.longWritable, this.vertexHolder.set('v', value));
 
