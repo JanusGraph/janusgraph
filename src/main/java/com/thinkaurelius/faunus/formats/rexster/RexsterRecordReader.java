@@ -1,21 +1,19 @@
 package com.thinkaurelius.faunus.formats.rexster;
 
-import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
-import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
-import org.hsqldb.lib.StringInputStream;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 
 /**
+ * Gets vertices from Rexster via the Gremlin Extension and a custom Gremlin script that iterates
+ * vertices and converts them to the Faunus GraphSON that is understood by the Faunus GraphSONUtility.
+ *
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex> {
@@ -24,6 +22,10 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
     private RexsterIterator rexsterIterator;
 
     private final NullWritable key = NullWritable.get();
+
+    /**
+     * The current vertex in the reader.
+     */
     private FaunusVertex value = null;
 
     private long splitStart;
@@ -39,7 +41,7 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         this.splitEnd = rexsterInputSplit.getEnd();
         this.splitStart = rexsterInputSplit.getStart();
         this.rexsterIterator = new RexsterIterator(new RexsterVertexLoaderImpl(this.rexsterConf),
-                rexsterInputSplit.getStart(), rexsterInputSplit.getEnd(), 256);
+                rexsterInputSplit.getStart(), rexsterInputSplit.getEnd(), this.rexsterConf.getRexsterBuffer());
     }
 
     @Override
@@ -48,27 +50,6 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         if (this.rexsterIterator.hasNext()) {
             final JSONObject nextJsonVertex = this.rexsterIterator.next();
             this.value = GraphSONUtility.fromJSON(nextJsonVertex.toString());
-
-            /*
-                    new FaunusVertex(nextJsonVertex.optLong("_id"));
-
-            final JSONArray outEdgesJsonArray = nextJsonVertex.optJSONArray("_outEdges");
-            for (int ix = 0; ix < outEdgesJsonArray.length(); ix++) {
-                final JSONObject edgeJson = outEdgesJsonArray.optJSONObject(ix);
-                final FaunusEdge e = new FaunusEdge(edgeJson.optLong("_outV"),
-                        edgeJson.optLong("_inV"), edgeJson.optString("_label"));
-                this.value.addEdge(Direction.OUT, e);
-            }
-
-            final JSONArray inEdgesJsonArray = nextJsonVertex.optJSONArray("_inEdges");
-            for (int ix = 0; ix < inEdgesJsonArray.length(); ix++) {
-                final JSONObject edgeJson = inEdgesJsonArray.optJSONObject(ix);
-                final FaunusEdge e = new FaunusEdge(edgeJson.optLong("_outV"),
-                        edgeJson.optLong("_inV"), edgeJson.optString("_label"));
-                this.value.addEdge(Direction.IN, e);
-            }
-            */
-
             isNext = true;
         }
 
