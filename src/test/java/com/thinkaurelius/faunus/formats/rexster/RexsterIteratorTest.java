@@ -49,10 +49,10 @@ public class RexsterIteratorTest {
     }
 
     @Test
-    public void shouldBufferBiggerThanResult() {
+    public void shouldBufferBiggerSplit() {
 
-        final RexsterVertexLoader loader = new MockRexsterVertexLoader(generateJsonArray(20));
-        final RexsterIterator iterator = new RexsterIterator(loader, 0, 10, 512);
+        final RexsterVertexLoader loader = new MockRexsterVertexLoader(generateJsonArray(40));
+        final RexsterIterator iterator = new RexsterIterator(loader, 0, 20, 1000);
 
         assertValidIteration(iterator, 0);
     }

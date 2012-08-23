@@ -1,7 +1,7 @@
 import org.codehaus.jettison.json.JSONObject
 import org.codehaus.jettison.json.JSONArray
 
-rangeOfVertices = g.V[start..end].toList()
+rangeOfVertices = g.V[start..<end].toList()
 rangeOfVertices = rangeOfVertices.collect{
     def vJson = GraphSONUtility.jsonFromElement((Element) it, null, GraphSONMode.COMPACT)
 

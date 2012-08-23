@@ -35,7 +35,15 @@ public class RexsterIterator implements Iterator<JSONObject> {
         this.bufferSize = bufferSize;
         this.splitEnd = end;
         this.start = start;
-        this.end = this.bufferSize + this.start;
+
+        // check to be sure that the split end is not exceeded by the buffer size and that the
+        // last split runs all the way to Integer.MAX_VALUE
+        if (this.splitEnd < Long.MAX_VALUE) {
+            this.end = Math.min(this.bufferSize + this.start, this.splitEnd);
+        } else {
+            this.end = Integer.MAX_VALUE;
+        }
+
         this.loader = loader;
     }
 
@@ -89,8 +97,8 @@ public class RexsterIterator implements Iterator<JSONObject> {
                 queue.add(new JSONObject(vertices.optString(ix)));
             }
 
-            //System.out.println("filling the buffer starting at " + this.start + " ending at " + this.end);
-            //System.out.println("filling the buffer:" + vertices.length() + " queue at: " + queue.size());
+            System.out.println("filling the buffer starting at " + this.start + " ending at " + this.end);
+            System.out.println("filling the buffer:" + vertices.length() + " queue at: " + queue.size());
         } catch (JSONException jse) {
             throw new RuntimeException(jse);
         }

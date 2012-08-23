@@ -26,7 +26,6 @@ public class RexsterInputSplit extends InputSplit implements Writable {
     }
 
     public String[] getLocations() throws IOException {
-        // TODO Add a layer to enable SQL "sharding" and support locality
         return new String[] {};
     }
 
@@ -50,5 +49,10 @@ public class RexsterInputSplit extends InputSplit implements Writable {
     public void write(DataOutput output) throws IOException {
         output.writeLong(start);
         output.writeLong(end);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Split at [%s to %s]", this.start, this.end == Long.MAX_VALUE ? "END" : this.end - 1);
     }
 }

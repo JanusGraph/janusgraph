@@ -19,9 +19,6 @@ import java.util.List;
  */
 public class RexsterInputFormat extends InputFormat<NullWritable, FaunusVertex> implements Configurable {
 
-    private String rexsterAddress;
-    private int rexsterPort;
-    private String graphName;
     private long estimatedVertexCount;
 
     private RexsterConfiguration rexsterConf;
@@ -43,6 +40,8 @@ public class RexsterInputFormat extends InputFormat<NullWritable, FaunusVertex> 
                 split = new RexsterInputSplit(i * chunkSize, (i * chunkSize) + chunkSize);
             }
 
+            System.out.println(split);
+
             splits.add(split);
         }
 
@@ -57,9 +56,6 @@ public class RexsterInputFormat extends InputFormat<NullWritable, FaunusVertex> 
     @Override
     public void setConf(Configuration entries) {
         this.rexsterConf = new RexsterConfiguration(entries);
-        this.rexsterAddress = this.rexsterConf.getRestAddress();
-        this.rexsterPort = this.rexsterConf.getRestPort();
-        this.graphName = this.rexsterConf.getGraph();
         this.estimatedVertexCount = this.rexsterConf.getEstimatedVertexCount();
     }
 
