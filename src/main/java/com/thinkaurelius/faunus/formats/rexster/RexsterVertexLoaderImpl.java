@@ -22,6 +22,7 @@ import java.util.Map;
 public class RexsterVertexLoaderImpl implements RexsterVertexLoader {
 
     private final RexsterConfiguration rexsterConf;
+    private static final String script = readScript();
 
     public RexsterVertexLoaderImpl(final RexsterConfiguration rexsterConf) {
         this.rexsterConf = rexsterConf;
@@ -37,7 +38,7 @@ public class RexsterVertexLoaderImpl implements RexsterVertexLoader {
 
             final JSONObject jsonGremlinScript = new JSONObject();
             jsonGremlinScript.put("params", jsonGremlinParameters);
-            jsonGremlinScript.put("script", getScript());
+            jsonGremlinScript.put("script", script);
 
             return postResultObject(this.rexsterConf.getEndpoint(), jsonGremlinScript);
         } catch (Exception e) {
@@ -45,15 +46,15 @@ public class RexsterVertexLoaderImpl implements RexsterVertexLoader {
         }
     }
 
-    private static String getScript() throws IOException {
-        /*
-        final InputStream inputStream = RexsterVertexLoaderImpl.class.getClassLoader().getResourceAsStream(
-                "com.thinkaurelius.faunus.formats.rexster.FaunusGremlin.txt");
-        final StringWriter writer = new StringWriter();
-        IOUtils.copy(inputStream, writer, "UTF-8");
-        return writer.toString();
-                     */
-        return script;
+    private static String readScript() {
+        try {
+            final InputStream inputStream = RexsterVertexLoaderImpl.class.getResourceAsStream("faunus-gremlin.txt");
+            final StringWriter writer = new StringWriter();
+            IOUtils.copy(inputStream, writer, "UTF-8");
+            return writer.toString();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
     }
 
     public static JSONArray postResultObject(final String uri, final JSONObject jsonToPost) {
@@ -94,6 +95,7 @@ public class RexsterVertexLoaderImpl implements RexsterVertexLoader {
         return sb.toString();
     }
 
+    /*
     private static final String script = "import org.codehaus.jettison.json.JSONObject\n"+
             "import org.codehaus.jettison.json.JSONArray\n"+
             "\n"+
@@ -119,4 +121,5 @@ public class RexsterVertexLoaderImpl implements RexsterVertexLoader {
             "\n"+
             "    return vJson\n"+
             "}";
+            */
 }

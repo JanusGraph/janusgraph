@@ -11,7 +11,7 @@ rangeOfVertices = rangeOfVertices.collect{
 
     def outEdgesArray = new JSONArray()
     outEdges.each { edge-> outEdgesArray.put(edge) }
-    vJson.put("_outEdges", outEdgesArray)
+    vJson.put("_outE", outEdgesArray)
 
     def inEdges = it.inE.toList().collect{ edge ->
         GraphSONUtility.jsonFromElement((Element) edge, null, GraphSONMode.COMPACT)
@@ -19,7 +19,7 @@ rangeOfVertices = rangeOfVertices.collect{
 
     def inEdgesArray = new JSONArray()
     inEdges.each { edge -> inEdgesArray.put(edge) }
-    vJson.put("_inEdges", inEdgesArray)
+    vJson.put("_inE", inEdgesArray)
 
     return vJson
 }
