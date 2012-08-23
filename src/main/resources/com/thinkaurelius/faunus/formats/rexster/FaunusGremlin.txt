@@ -1,0 +1,25 @@
+import org.codehaus.jettison.json.JSONObject
+import org.codehaus.jettison.json.JSONArray
+
+rangeOfVertices = g.V[start..end].toList()
+rangeOfVertices = rangeOfVertices.collect{
+    def vJson = GraphSONUtility.jsonFromElement((Element) it, null, GraphSONMode.COMPACT)
+
+    def outEdges = it.outE.toList().collect{ edge ->
+        GraphSONUtility.jsonFromElement((Element) edge, null, GraphSONMode.COMPACT)
+    }
+
+    def outEdgesArray = new JSONArray()
+    outEdges.each { edge-> outEdgesArray.put(edge) }
+    vJson.put("_outEdges", outEdgesArray)
+
+    def inEdges = it.inE.toList().collect{ edge ->
+        GraphSONUtility.jsonFromElement((Element) edge, null, GraphSONMode.COMPACT)
+    }
+
+    def inEdgesArray = new JSONArray()
+    inEdges.each { edge -> inEdgesArray.put(edge) }
+    vJson.put("_inEdges", inEdgesArray)
+
+    return vJson
+}

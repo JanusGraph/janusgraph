@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat;
+import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
 import com.thinkaurelius.faunus.mapreduce.MapReduceSequence;
 import com.thinkaurelius.faunus.mapreduce.MapSequence;
@@ -521,6 +522,8 @@ public class FaunusPipeline extends Configured implements Tool {
             // configure input location
             if (this.configuration.getGraphInputFormat().equals(GraphSONInputFormat.class) || this.configuration.getGraphInputFormat().equals(SequenceFileInputFormat.class)) {
                 FileInputFormat.setInputPaths(startJob, this.configuration.getInputLocation());
+            } else if (this.configuration.getGraphInputFormat().equals(RexsterInputFormat.class)) {
+
             } else if (this.configuration.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
                 ConfigHelper.setInputColumnFamily(this.configuration, ConfigHelper.getInputKeyspace(this.configuration), "edgestore");
 
