@@ -1,1 +1,0 @@
-Provide support to stream a graph out of Rexster via g.V[startSplit...endSplit]

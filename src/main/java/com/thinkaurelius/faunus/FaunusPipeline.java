@@ -85,6 +85,11 @@ public class FaunusPipeline {
     public FaunusPipeline(final String jobScript, final Configuration conf) {
         this.compiler = new FaunusRunner(jobScript, conf);
     }
+    
+    public FaunusPipeline _() throws IOException {
+        this.compiler._();
+        return this;
+    }
 
 
     public FaunusPipeline V() {
