@@ -28,7 +28,8 @@ public class FaunusPipeline {
 
     public static final String VERTEX_STATE_ERROR = "The compiler is currently in vertex state";
     public static final String EDGE_STATE_ERROR = "The compiler is currently in edge state";
-
+    public static final String TEMP_LABEL = "_%temp%_";
+    
     private final JobState state = new JobState();
     private final FaunusRunner compiler;
 
@@ -159,12 +160,12 @@ public class FaunusPipeline {
     public FaunusPipeline linkTo(final String label) throws IOException {
         if (state.atVertex()) {
             if (state.directions.size() == 1 && state.labels.size() == 1) {
-                compiler.transpose(state.labels.get(0).get(0), label, Tokens.Action.KEEP, false);
+                compiler.closeLine(label, Tokens.Action.KEEP, false, state.labels.get(0).get(0));
             } else if (state.directions.size() == 2 && state.labels.size() == 2) {
                 compiler.traverse(state.directions.get(0), state.labels.get(0).get(0), state.directions.get(1), state.labels.get(1).get(0), label, Tokens.Action.KEEP);
             } else if (state.directions.size() == 3 && state.labels.size() == 3) {
                 compiler.traverse(state.directions.get(0), state.labels.get(0).get(0), state.directions.get(1), state.labels.get(1).get(0), "_temp", Tokens.Action.KEEP);
-                compiler.traverse(state.directions.get(1), "_temp", state.directions.get(2), state.labels.get(2).get(0), label, Tokens.Action.DROP);
+                compiler.traverse(state.directions.get(1), TEMP_LABEL, state.directions.get(2), state.labels.get(2).get(0), label, Tokens.Action.DROP);
             } else {
                 throw new RuntimeException("an exception");
             }
@@ -178,7 +179,7 @@ public class FaunusPipeline {
     /*public FaunusPipeline linkFrom(final String label) throws IOException {
         if (compiler.getJobState().elementType.equals(Vertex.class)) {
             if (compiler.getJobState().directions.size() == 1 && compiler.getJobState().labels.size() == 1) {
-                compiler.transpose(compiler.getJobState().labels.get(0).get(0), label, Tokens.Action.KEEP, true);
+                compiler.closeLine(compiler.getJobState().labels.get(0).get(0), label, Tokens.Action.KEEP, true);
             } else if (compiler.getJobState().directions.size() == 2 && compiler.getJobState().labels.size() == 2) {
                 compiler.traverse(compiler.getJobState().directions.get(0), compiler.getJobState().labels.get(0).get(0), compiler.getJobState().directions.get(1), compiler.getJobState().labels.get(1).get(0), label, Tokens.Action.KEEP);
             } else {

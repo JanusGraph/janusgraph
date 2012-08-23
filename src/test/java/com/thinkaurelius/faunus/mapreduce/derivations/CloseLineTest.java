@@ -41,7 +41,7 @@ public class CloseLineTest extends BaseTest {
         vertex2.addEdge(IN, new FaunusEdge(vertex1.getIdAsLong(), vertex2.getIdAsLong(), "created"));
 
         Configuration config = new Configuration();
-        config.set(CloseLine.LABEL, "created");
+        config.setStrings(CloseLine.LABELS, "created","blah","nothing");
         config.set(CloseLine.NEW_LABEL, "createdBy");
         config.set(CloseLine.ACTION, Tokens.Action.KEEP.toString());
         mapReduceDriver.withConfiguration(config);
@@ -86,7 +86,7 @@ public class CloseLineTest extends BaseTest {
     public void testMapReduce2() throws IOException {
         Configuration config = new Configuration();
         config.set(CloseLine.ACTION, Tokens.Action.DROP.name());
-        config.set(CloseLine.LABEL, "created");
+        config.set(CloseLine.LABELS, "created");
         config.set(CloseLine.NEW_LABEL, "createdBy");
         mapReduceDriver.withConfiguration(config);
 

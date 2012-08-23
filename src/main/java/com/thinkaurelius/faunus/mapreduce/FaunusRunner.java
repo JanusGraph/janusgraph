@@ -122,14 +122,14 @@ public class FaunusRunner extends Configured implements Tool {
 
     // FILTERS
 
-    public void filter(final Class<? extends Element> klass, final String function) throws IOException {
+    public void filter(final Class<? extends Element> klass, final String closure) throws IOException {
         if (klass.equals(Vertex.class)) {
-            this.mapSequenceConfiguration.set(VertexFilter.FUNCTION, function);
+            this.mapSequenceConfiguration.set(VertexFilter.CLOSURE, closure);
             this.mapRClass = VertexFilter.Map.class;
             this.reduceClass = VertexFilter.Reduce.class;
             this.completeSequence();
         } else if (klass.equals(Edge.class)) {
-            this.mapSequenceConfiguration.set(EdgeFilter.FUNCTION + "-" + this.mapSequenceClasses.size(), function);
+            this.mapSequenceConfiguration.set(EdgeFilter.FUNCTION + "-" + this.mapSequenceClasses.size(), closure);
             this.mapSequenceClasses.add(EdgeFilter.Map.class);
         } else {
             throw new IOException("Unsupported element class: " + klass.getName());
@@ -211,8 +211,8 @@ public class FaunusRunner extends Configured implements Tool {
         this.mapSequenceClasses.add(KeyFilter.Map.class);
     }
 
-    public void transpose(final String label, final String newLabel, final Tokens.Action action, final boolean opposite) {
-        this.mapSequenceConfiguration.set(CloseLine.LABEL + "-" + this.mapSequenceClasses.size(), label);
+    public void closeLine(final String newLabel, final Tokens.Action action, final boolean opposite, final String... labels) {
+        this.mapSequenceConfiguration.setStrings(CloseLine.LABELS + "-" + this.mapSequenceClasses.size(), labels);
         this.mapSequenceConfiguration.set(CloseLine.NEW_LABEL + "-" + this.mapSequenceClasses.size(), newLabel);
         this.mapSequenceConfiguration.set(CloseLine.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
         this.mapSequenceConfiguration.setBoolean(CloseLine.OPPOSITE + "-" + this.mapSequenceClasses.size(), opposite);

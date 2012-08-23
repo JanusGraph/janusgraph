@@ -22,5 +22,11 @@ public class ElementCheckerTest extends TestCase {
         assertFalse(ec.isLegal(v1));
         assertTrue(ec.isLegal(v2));
         assertFalse(ec.isLegal(v3));
+
+        ec = new ElementChecker(true, "age", Query.Compare.EQUAL, 12f, 11f, 15f);
+        assertFalse(ec.isLegal(v1));
+        assertTrue(ec.isLegal(v2));
+        //assertTrue(ec.isLegal(v3));
+        
     }
 }

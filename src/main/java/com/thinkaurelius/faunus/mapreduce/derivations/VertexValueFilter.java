@@ -9,11 +9,8 @@ import com.tinkerpop.blueprints.Query;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -96,27 +93,6 @@ public class VertexValueFilter {
         }
     }
 
-    public static class Reduce extends Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> {
-        @Override
-        public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            FaunusVertex vertex = null;
-            final Set<Long> ids = new HashSet<Long>();
-            for (final Holder<FaunusVertex> holder : values) {
-                final char tag = holder.getTag();
-                if (tag == 'k') {
-                    ids.add(holder.get().getIdAsLong());
-                    // todo: once vertex is found, do individual removes to save memory
-                } else if (tag == 'v') {
-                    vertex = holder.get();
-                } else {
-                    throw new IOException("A tag of " + tag + " is not a legal tag for this operation");
-                }
-            }
-            if (null != vertex) {
-                if (ids.size() > 0)
-                    vertex.removeEdgesToFrom(ids);
-                context.write(NullWritable.get(), vertex);
-            }
-        }
+    public static class Reduce extends VertexFilter.Reduce {
     }
 }

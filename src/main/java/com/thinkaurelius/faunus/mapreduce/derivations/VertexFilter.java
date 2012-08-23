@@ -25,7 +25,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class VertexFilter {
 
-    public static final String FUNCTION = Tokens.makeNamespace(VertexFilter.class) + ".function";
+    public static final String CLOSURE = Tokens.makeNamespace(VertexFilter.class) + ".closure";
     private static final ScriptEngine engine = new GremlinGroovyScriptEngine();
 
     public enum Counters {
@@ -42,7 +42,7 @@ public class VertexFilter {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             try {
-                this.closure = (Closure<Boolean>) engine.eval(context.getConfiguration().get(FUNCTION));
+                this.closure = (Closure<Boolean>) engine.eval(context.getConfiguration().get(CLOSURE));
             } catch (final ScriptException e) {
                 throw new IOException(e.getMessage(), e);
             }

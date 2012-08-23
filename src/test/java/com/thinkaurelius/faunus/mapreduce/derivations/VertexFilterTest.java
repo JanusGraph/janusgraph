@@ -5,7 +5,6 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Query;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -29,7 +28,7 @@ public class VertexFilterTest extends BaseTest {
 
     public void testOldVerticesFiltered() throws IOException {
         Configuration config = new Configuration();
-        config.set(VertexFilter.FUNCTION, "{it -> it.age != null && it.age < 35}");
+        config.set(VertexFilter.CLOSURE, "{it -> it.age != null && it.age < 35}");
 
         this.mapReduceDriver.withConfiguration(config);
         Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
