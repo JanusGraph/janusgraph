@@ -5,6 +5,9 @@ import com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -53,7 +56,11 @@ public class FaunusPipelineTest extends BaseTest {
    } */
 
     public void testTrue() {
-        assertTrue(true);
+        Queue<String> q = new LinkedList<String>();
+        q.add("a");
+        q.add("b");
+        assertEquals("a",q.remove());
+        assertEquals("b",q.remove());
     }
 
     /* public void testClosure() throws Exception {

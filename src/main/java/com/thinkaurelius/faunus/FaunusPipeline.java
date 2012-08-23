@@ -12,10 +12,11 @@ import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -29,14 +30,14 @@ public class FaunusPipeline {
     public static final String VERTEX_STATE_ERROR = "The compiler is currently in vertex state";
     public static final String EDGE_STATE_ERROR = "The compiler is currently in edge state";
     public static final String TEMP_LABEL = "_%temp%_";
-    
+
     private final JobState state = new JobState();
     private final FaunusRunner compiler;
 
     private class JobState {
         private Class<? extends Element> elementType;
-        private List<Direction> directions = new ArrayList<Direction>();
-        private List<List<String>> labels = new ArrayList<List<String>>();
+        private Queue<Direction> directions = new LinkedList<Direction>();
+        private Queue<List<String>> labels = new LinkedList<List<String>>();
 
         public JobState set(Class<? extends Element> elementType) {
             this.elementType = elementType;
@@ -59,6 +60,10 @@ public class FaunusPipeline {
 
         public boolean atVertex() {
             return this.elementType.equals(Vertex.class);
+        }
+
+        public int stackSize() {
+            return this.directions.size();
         }
 
         public void clear() {
@@ -85,7 +90,7 @@ public class FaunusPipeline {
     public FaunusPipeline(final String jobScript, final Configuration conf) {
         this.compiler = new FaunusRunner(jobScript, conf);
     }
-    
+
     public FaunusPipeline _() throws IOException {
         this.compiler._();
         return this;
@@ -164,15 +169,21 @@ public class FaunusPipeline {
 
     public FaunusPipeline linkTo(final String label) throws IOException {
         if (state.atVertex()) {
-            if (state.directions.size() == 1 && state.labels.size() == 1) {
-                compiler.closeLine(label, Tokens.Action.KEEP, false, state.labels.get(0).get(0));
-            } else if (state.directions.size() == 2 && state.labels.size() == 2) {
-                compiler.traverse(state.directions.get(0), state.labels.get(0).get(0), state.directions.get(1), state.labels.get(1).get(0), label, Tokens.Action.KEEP);
-            } else if (state.directions.size() == 3 && state.labels.size() == 3) {
-                compiler.traverse(state.directions.get(0), state.labels.get(0).get(0), state.directions.get(1), state.labels.get(1).get(0), "_temp", Tokens.Action.KEEP);
-                compiler.traverse(state.directions.get(1), TEMP_LABEL, state.directions.get(2), state.labels.get(2).get(0), label, Tokens.Action.DROP);
+            if (state.stackSize() == 1) {
+                compiler.closeLine(label, Tokens.Action.KEEP, false, state.labels.remove().get(0));
+            } else if (state.stackSize() > 1) {
+                int maxSize = state.stackSize() - 1;
+                for (int i = 0; i < maxSize; i++) {
+                    final String startLabel = (i == 0) ? state.labels.remove().get(0) : TEMP_LABEL + i;
+                    final Direction startDirection = (i == 0) ? state.directions.remove() : OUT;
+                    final String endLabel = (i == maxSize - 1) ? label : TEMP_LABEL + (i + 1);
+                    compiler.closeTriangle(startDirection, startLabel, state.directions.remove(), state.labels.remove().get(0), endLabel, Tokens.Action.KEEP);
+                    // TODO: make this stage part of closeTriangle
+                    if (startLabel.equals(TEMP_LABEL + i))
+                        compiler.labelFilter(Tokens.Action.DROP, TEMP_LABEL + i);
+                }
             } else {
-                throw new RuntimeException("an exception");
+                throw new RuntimeException("There are no steps to link to: " + this.state.stackSize());
             }
         } else {
             throw new RuntimeException("Edges can not be relinked");
@@ -186,7 +197,7 @@ public class FaunusPipeline {
             if (compiler.getJobState().directions.size() == 1 && compiler.getJobState().labels.size() == 1) {
                 compiler.closeLine(compiler.getJobState().labels.get(0).get(0), label, Tokens.Action.KEEP, true);
             } else if (compiler.getJobState().directions.size() == 2 && compiler.getJobState().labels.size() == 2) {
-                compiler.traverse(compiler.getJobState().directions.get(0), compiler.getJobState().labels.get(0).get(0), compiler.getJobState().directions.get(1), compiler.getJobState().labels.get(1).get(0), label, Tokens.Action.KEEP);
+                compiler.closeTriangle(compiler.getJobState().directions.get(0), compiler.getJobState().labels.get(0).get(0), compiler.getJobState().directions.get(1), compiler.getJobState().labels.get(1).get(0), label, Tokens.Action.KEEP);
             } else {
                 throw new RuntimeException("an exception");
             }

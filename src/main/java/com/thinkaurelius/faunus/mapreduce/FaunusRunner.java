@@ -219,7 +219,7 @@ public class FaunusRunner extends Configured implements Tool {
         this.mapSequenceClasses.add(CloseLine.Map.class);
     }
 
-    public void traverse(final Direction firstDirection, final String firstLabel, final Direction secondDirection, final String secondLabel, final String newLabel, final Tokens.Action action) throws IOException {
+    public void closeTriangle(final Direction firstDirection, final String firstLabel, final Direction secondDirection, final String secondLabel, final String newLabel, final Tokens.Action action) throws IOException {
         this.mapSequenceConfiguration.set(CloseTriangle.FIRST_DIRECTION, firstDirection.toString());
         this.mapSequenceConfiguration.setStrings(CloseTriangle.FIRST_LABELS, firstLabel);
         this.mapSequenceConfiguration.set(CloseTriangle.SECOND_DIRECTION, secondDirection.toString());
