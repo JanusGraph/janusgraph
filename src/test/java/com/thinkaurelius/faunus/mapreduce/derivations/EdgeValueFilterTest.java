@@ -16,22 +16,22 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class EdgePropertyFilterTest extends BaseTest {
+public class EdgeValueFilterTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new EdgePropertyFilter.Map());
+        mapReduceDriver.setMapper(new EdgeValueFilter.Map());
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
     public void testLowWeightedEdgesFiltered() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(EdgePropertyFilter.KEY, "weight");
-        config.set(EdgePropertyFilter.VALUE_CLASS, Double.class.getName());
-        config.setFloat(EdgePropertyFilter.VALUE, 0.5f);
-        config.set(EdgePropertyFilter.COMPARE, Query.Compare.LESS_THAN_EQUAL.name());
+        config.setStrings(EdgeValueFilter.KEY, "weight");
+        config.set(EdgeValueFilter.VALUE_CLASS, Double.class.getName());
+        config.setStrings(EdgeValueFilter.VALUES, "0.5f");
+        config.set(EdgeValueFilter.COMPARE, Query.Compare.LESS_THAN_EQUAL.name());
 
         this.mapReduceDriver.withConfiguration(config);
         Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -45,17 +45,17 @@ public class EdgePropertyFilterTest extends BaseTest {
         }
 
         assertEquals(numberOfEdges, 8l);
-        assertEquals(4l, this.mapReduceDriver.getCounters().findCounter(EdgePropertyFilter.Counters.EDGES_DROPPED).getValue());
-        assertEquals(8l, this.mapReduceDriver.getCounters().findCounter(EdgePropertyFilter.Counters.EDGES_KEPT).getValue());
+        assertEquals(4l, this.mapReduceDriver.getCounters().findCounter(EdgeValueFilter.Counters.EDGES_DROPPED).getValue());
+        assertEquals(8l, this.mapReduceDriver.getCounters().findCounter(EdgeValueFilter.Counters.EDGES_KEPT).getValue());
     }
 
     public void testEdgesFilteredWithNullWildcard() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(EdgePropertyFilter.KEY, "nothing");
-        config.setClass(EdgePropertyFilter.VALUE_CLASS, Double.class, Double.class);
-        config.setFloat(EdgePropertyFilter.VALUE, 0.5f);
-        config.set(EdgePropertyFilter.COMPARE, Query.Compare.LESS_THAN_EQUAL.name());
-        config.setBoolean(EdgePropertyFilter.NULL_WILDCARD, true);
+        config.setStrings(EdgeValueFilter.KEY, "nothing");
+        config.setClass(EdgeValueFilter.VALUE_CLASS, Double.class, Double.class);
+        config.setStrings(EdgeValueFilter.VALUES, "0.5f");
+        config.set(EdgeValueFilter.COMPARE, Query.Compare.LESS_THAN_EQUAL.name());
+        config.setBoolean(EdgeValueFilter.NULL_WILDCARD, true);
 
         this.mapReduceDriver.withConfiguration(config);
         Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -68,7 +68,7 @@ public class EdgePropertyFilterTest extends BaseTest {
         }
 
         assertEquals(numberOfEdges, 12l);
-        assertEquals(0l, this.mapReduceDriver.getCounters().findCounter(EdgePropertyFilter.Counters.EDGES_DROPPED).getValue());
-        assertEquals(12l, this.mapReduceDriver.getCounters().findCounter(EdgePropertyFilter.Counters.EDGES_KEPT).getValue());
+        assertEquals(0l, this.mapReduceDriver.getCounters().findCounter(EdgeValueFilter.Counters.EDGES_DROPPED).getValue());
+        assertEquals(12l, this.mapReduceDriver.getCounters().findCounter(EdgeValueFilter.Counters.EDGES_KEPT).getValue());
     }
 }

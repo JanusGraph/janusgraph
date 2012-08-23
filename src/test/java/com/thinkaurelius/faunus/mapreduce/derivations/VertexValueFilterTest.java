@@ -17,22 +17,22 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class VertexPropertyFilterTest extends BaseTest {
+public class VertexValueFilterTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new VertexPropertyFilter.Map());
-        mapReduceDriver.setReducer(new VertexPropertyFilter.Reduce());
+        mapReduceDriver.setMapper(new VertexValueFilter.Map());
+        mapReduceDriver.setReducer(new VertexValueFilter.Reduce());
     }
 
     public void testOldVerticesFiltered() throws IOException {
         Configuration config = new Configuration();
-        config.set(VertexPropertyFilter.KEY, "age");
-        config.setClass(VertexPropertyFilter.VALUE_CLASS, Integer.class, Integer.class);
-        config.set(VertexPropertyFilter.VALUE, "35");
-        config.set(VertexPropertyFilter.COMPARE, Query.Compare.LESS_THAN.name());
+        config.set(VertexValueFilter.KEY, "age");
+        config.setClass(VertexValueFilter.VALUE_CLASS, Integer.class, Integer.class);
+        config.setStrings(VertexValueFilter.VALUES, "35");
+        config.set(VertexValueFilter.COMPARE, Query.Compare.LESS_THAN.name());
 
         this.mapReduceDriver.withConfiguration(config);
         Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -56,17 +56,17 @@ public class VertexPropertyFilterTest extends BaseTest {
             }
         }
 
-        assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyFilter.Counters.VERTICES_DROPPED).getValue());
-        assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyFilter.Counters.VERTICES_KEPT).getValue());
+        assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(VertexValueFilter.Counters.VERTICES_DROPPED).getValue());
+        assertEquals(3l, this.mapReduceDriver.getCounters().findCounter(VertexValueFilter.Counters.VERTICES_KEPT).getValue());
     }
 
     public void testOldVerticesFilteredWildCardNull() throws IOException {
         Configuration config = new Configuration();
-        config.set(VertexPropertyFilter.KEY, "age");
-        config.set(VertexPropertyFilter.VALUE_CLASS, Integer.class.getName());
-        config.set(VertexPropertyFilter.VALUE, "35");
-        config.set(VertexPropertyFilter.COMPARE, Query.Compare.LESS_THAN.name());
-        config.set(VertexPropertyFilter.NULL_WILDCARD, "true");
+        config.set(VertexValueFilter.KEY, "age");
+        config.set(VertexValueFilter.VALUE_CLASS, Integer.class.getName());
+        config.setStrings(VertexValueFilter.VALUES, "35");
+        config.set(VertexValueFilter.COMPARE, Query.Compare.LESS_THAN.name());
+        config.set(VertexValueFilter.NULL_WILDCARD, "true");
 
         this.mapReduceDriver.withConfiguration(config);
         Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -92,7 +92,7 @@ public class VertexPropertyFilterTest extends BaseTest {
             }
         }
 
-        assertEquals(1l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyFilter.Counters.VERTICES_DROPPED).getValue());
-        assertEquals(5l, this.mapReduceDriver.getCounters().findCounter(VertexPropertyFilter.Counters.VERTICES_KEPT).getValue());
+        assertEquals(1l, this.mapReduceDriver.getCounters().findCounter(VertexValueFilter.Counters.VERTICES_DROPPED).getValue());
+        assertEquals(5l, this.mapReduceDriver.getCounters().findCounter(VertexValueFilter.Counters.VERTICES_KEPT).getValue());
     }
 }

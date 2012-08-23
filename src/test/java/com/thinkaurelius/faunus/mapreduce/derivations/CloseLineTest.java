@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.derivations.Transpose;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
@@ -23,13 +22,13 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TransposeTest extends BaseTest {
+public class CloseLineTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new Transpose.Map());
+        mapReduceDriver.setMapper(new CloseLine.Map());
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
@@ -42,9 +41,9 @@ public class TransposeTest extends BaseTest {
         vertex2.addEdge(IN, new FaunusEdge(vertex1.getIdAsLong(), vertex2.getIdAsLong(), "created"));
 
         Configuration config = new Configuration();
-        config.set(Transpose.LABEL, "created");
-        config.set(Transpose.NEW_LABEL, "createdBy");
-        config.set(Transpose.ACTION, Tokens.Action.KEEP.toString());
+        config.set(CloseLine.LABEL, "created");
+        config.set(CloseLine.NEW_LABEL, "createdBy");
+        config.set(CloseLine.ACTION, Tokens.Action.KEEP.toString());
         mapReduceDriver.withConfiguration(config);
         mapReduceDriver.withInput(NullWritable.get(), vertex1).withInput(NullWritable.get(), vertex2);
         List<Pair<NullWritable, FaunusVertex>> list = mapReduceDriver.run();
@@ -86,9 +85,9 @@ public class TransposeTest extends BaseTest {
 
     public void testMapReduce2() throws IOException {
         Configuration config = new Configuration();
-        config.set(Transpose.ACTION, Tokens.Action.DROP.name());
-        config.set(Transpose.LABEL, "created");
-        config.set(Transpose.NEW_LABEL, "createdBy");
+        config.set(CloseLine.ACTION, Tokens.Action.DROP.name());
+        config.set(CloseLine.LABEL, "created");
+        config.set(CloseLine.NEW_LABEL, "createdBy");
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
@@ -118,7 +117,7 @@ public class TransposeTest extends BaseTest {
         assertTrue(getVertices(lop.getEdges(OUT), IN).contains(results.get(4l)));
         assertTrue(getVertices(lop.getEdges(OUT), IN).contains(results.get(6l)));
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(Transpose.Counters.EDGES_TRANSPOSED).getValue(), 8);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CloseLine.Counters.EDGES_TRANSPOSED).getValue(), 8);
     }
 
 }

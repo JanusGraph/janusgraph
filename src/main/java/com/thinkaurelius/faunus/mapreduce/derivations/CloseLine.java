@@ -15,15 +15,16 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Transpose {
+public class CloseLine {
 
     public enum Counters {
         EDGES_TRANSPOSED
     }
 
-    public static final String LABEL = Tokens.makeNamespace(CloseTriangle.class) + ".label";
-    public static final String NEW_LABEL = Tokens.makeNamespace(CloseTriangle.class) + ".newLabel";
-    public static final String ACTION = Tokens.makeNamespace(CloseTriangle.class) + ".action";
+    public static final String LABEL = Tokens.makeNamespace(CloseLine.class) + ".label";
+    public static final String NEW_LABEL = Tokens.makeNamespace(CloseLine.class) + ".newLabel";
+    public static final String ACTION = Tokens.makeNamespace(CloseLine.class) + ".action";
+    public static final String OPPOSITE = Tokens.makeNamespace(CloseLine.class) + ".opposite";
 
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
@@ -31,12 +32,14 @@ public class Transpose {
         private String label;
         private String newLabel;
         private Tokens.Action action;
+        private boolean opposite;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.label = context.getConfiguration().get(LABEL);
             this.newLabel = context.getConfiguration().get(NEW_LABEL);
             this.action = Tokens.Action.valueOf(context.getConfiguration().get(ACTION));
+            this.opposite = context.getConfiguration().getBoolean(OPPOSITE, true);
         }
 
         @Override
@@ -46,7 +49,10 @@ public class Transpose {
             Iterator<FaunusEdge> itty = (Iterator) value.getEdges(OUT, this.label).iterator();
             while (itty.hasNext()) {
                 final FaunusEdge edge = itty.next();
-                value.addEdge(IN, new FaunusEdge(edge.getVertexId(IN), edge.getVertexId(OUT), this.newLabel)).setProperties(edge.getProperties());
+                if(this.opposite)
+                    value.addEdge(IN, new FaunusEdge(edge.getVertexId(IN), edge.getVertexId(OUT), this.newLabel)).setProperties(edge.getProperties());
+                else
+                    value.addEdge(OUT, new FaunusEdge(edge.getVertexId(OUT), edge.getVertexId(IN), this.newLabel)).setProperties(edge.getProperties());
                 counter++;
 
                 if (action.equals(Tokens.Action.DROP))
@@ -56,7 +62,12 @@ public class Transpose {
             itty = (Iterator) value.getEdges(IN, this.label).iterator();
             while (itty.hasNext()) {
                 final FaunusEdge edge = itty.next();
-                value.addEdge(OUT, new FaunusEdge(edge.getVertexId(IN), edge.getVertexId(OUT), this.newLabel)).setProperties(edge.getProperties());
+
+                if(this.opposite)
+                    value.addEdge(OUT, new FaunusEdge(edge.getVertexId(IN), edge.getVertexId(OUT), this.newLabel)).setProperties(edge.getProperties());
+                else
+                    value.addEdge(IN, new FaunusEdge(edge.getVertexId(OUT), edge.getVertexId(IN), this.newLabel)).setProperties(edge.getProperties());
+
                 counter++;
 
                 if (action.equals(Tokens.Action.DROP))
