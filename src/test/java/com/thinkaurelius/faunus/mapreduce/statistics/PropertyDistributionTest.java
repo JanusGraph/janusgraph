@@ -23,14 +23,14 @@ public class PropertyDistributionTest extends BaseTest {
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, Text, LongWritable, Text, LongWritable>();
-        mapReduceDriver.setMapper(new PropertyDistribution.Map());
-        mapReduceDriver.setCombiner(new PropertyDistribution.Reduce());
-        mapReduceDriver.setReducer(new PropertyDistribution.Reduce());
+        mapReduceDriver.setMapper(new KeyDistribution.Map());
+        mapReduceDriver.setCombiner(new KeyDistribution.Reduce());
+        mapReduceDriver.setReducer(new KeyDistribution.Reduce());
     }
 
     public void testVertexPropertyDistribution() throws IOException {
         Configuration config = new Configuration();
-        config.set(PropertyDistribution.CLASS, Vertex.class.getName());
+        config.set(KeyDistribution.CLASS, Vertex.class.getName());
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -45,12 +45,12 @@ public class PropertyDistributionTest extends BaseTest {
             }
         }
 
-        assertEquals(24, this.mapReduceDriver.getCounters().findCounter(PropertyDistribution.Counters.PROPERTIES_COUNTED).getValue());
+        assertEquals(24, this.mapReduceDriver.getCounters().findCounter(KeyDistribution.Counters.PROPERTIES_COUNTED).getValue());
     }
 
     public void testEdgePropertyDistribution() throws IOException {
         Configuration config = new Configuration();
-        config.set(PropertyDistribution.CLASS, Edge.class.getName());
+        config.set(KeyDistribution.CLASS, Edge.class.getName());
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -63,6 +63,6 @@ public class PropertyDistributionTest extends BaseTest {
             }
         }
 
-        assertEquals(3, this.mapReduceDriver.getCounters().findCounter(PropertyDistribution.Counters.PROPERTIES_COUNTED).getValue());
+        assertEquals(3, this.mapReduceDriver.getCounters().findCounter(KeyDistribution.Counters.PROPERTIES_COUNTED).getValue());
     }
 }

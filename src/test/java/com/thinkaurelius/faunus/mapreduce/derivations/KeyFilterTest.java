@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.mapreduce.derivations;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.derivations.Properties;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -19,21 +18,21 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class PropertiesTest extends BaseTest {
+public class KeyFilterTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new Properties.Map());
+        mapReduceDriver.setMapper(new KeyFilter.Map());
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
     public void testDropNameProperty() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(Properties.KEYS, "name");
-        config.set(Properties.ACTION, Tokens.Action.DROP.name());
-        config.set(Properties.CLASS, Vertex.class.getName());
+        config.setStrings(KeyFilter.KEYS, "name");
+        config.set(KeyFilter.ACTION, Tokens.Action.DROP.name());
+        config.set(KeyFilter.CLASS, Vertex.class.getName());
         this.mapReduceDriver.withConfiguration(config);
         Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
         assertEquals(results.size(), 6);
@@ -49,10 +48,10 @@ public class PropertiesTest extends BaseTest {
             assertFalse(v.getPropertyKeys().contains("name"));
         }
 
-        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(Properties.Counters.EDGE_PROPERTIES_DROPPED).getValue());
-        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(Properties.Counters.EDGE_PROPERTIES_KEPT).getValue());
-        assertEquals(6, this.mapReduceDriver.getCounters().findCounter(Properties.Counters.VERTEX_PROPERTIES_DROPPED).getValue());
-        assertEquals(6, this.mapReduceDriver.getCounters().findCounter(Properties.Counters.VERTEX_PROPERTIES_KEPT).getValue());
+        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(KeyFilter.Counters.EDGE_PROPERTIES_DROPPED).getValue());
+        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(KeyFilter.Counters.EDGE_PROPERTIES_KEPT).getValue());
+        assertEquals(6, this.mapReduceDriver.getCounters().findCounter(KeyFilter.Counters.VERTEX_PROPERTIES_DROPPED).getValue());
+        assertEquals(6, this.mapReduceDriver.getCounters().findCounter(KeyFilter.Counters.VERTEX_PROPERTIES_KEPT).getValue());
     }
 
     // TODO TEST EDGE PROPERTY FILTERING

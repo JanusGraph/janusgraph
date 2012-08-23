@@ -6,8 +6,8 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.derivations.Identity;
 import com.thinkaurelius.faunus.mapreduce.derivations.LabelFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.Traverse;
-import com.thinkaurelius.faunus.mapreduce.derivations.VertexPropertyFilter;
+import com.thinkaurelius.faunus.mapreduce.derivations.CloseTriangle;
+import com.thinkaurelius.faunus.mapreduce.derivations.VertexValueFilter;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
@@ -36,13 +36,13 @@ public class MapReduceSequenceTest extends BaseTest {
 
     public void testVertexFiltering() throws IOException {
         Configuration config = new Configuration();
-        config.set(VertexPropertyFilter.KEY, "age");
-        config.set(VertexPropertyFilter.COMPARE, Query.Compare.LESS_THAN.name());
-        config.set(VertexPropertyFilter.VALUE, "30");
-        config.set(VertexPropertyFilter.VALUE_CLASS, Float.class.getName());
+        config.set(VertexValueFilter.KEY, "age");
+        config.set(VertexValueFilter.COMPARE, Query.Compare.LESS_THAN.name());
+        config.set(VertexValueFilter.VALUES, "30");
+        config.set(VertexValueFilter.VALUE_CLASS, Float.class.getName());
         config.setStrings(MapReduceSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), Identity.Map.class.getName());
-        config.set(MapReduceSequence.MAPR_CLASS, VertexPropertyFilter.Map.class.getName());
-        config.set(MapReduceSequence.REDUCE_CLASS, VertexPropertyFilter.Reduce.class.getName());
+        config.set(MapReduceSequence.MAPR_CLASS, VertexValueFilter.Map.class.getName());
+        config.set(MapReduceSequence.REDUCE_CLASS, VertexValueFilter.Reduce.class.getName());
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
         assertEquals(results.size(), 2);
@@ -52,12 +52,12 @@ public class MapReduceSequenceTest extends BaseTest {
 
     public void testMapReduceOneJob() throws IOException {
         Configuration config = new Configuration();
-        config.set(VertexPropertyFilter.KEY, "age");
-        config.set(VertexPropertyFilter.COMPARE, Query.Compare.LESS_THAN.name());
-        config.set(VertexPropertyFilter.VALUE, "30");
-        config.set(VertexPropertyFilter.VALUE_CLASS, Float.class.getName());
-        config.set(MapReduceSequence.MAPR_CLASS, VertexPropertyFilter.Map.class.getName());
-        config.set(MapReduceSequence.REDUCE_CLASS, VertexPropertyFilter.Reduce.class.getName());
+        config.set(VertexValueFilter.KEY, "age");
+        config.set(VertexValueFilter.COMPARE, Query.Compare.LESS_THAN.name());
+        config.set(VertexValueFilter.VALUES, "30");
+        config.set(VertexValueFilter.VALUE_CLASS, Float.class.getName());
+        config.set(MapReduceSequence.MAPR_CLASS, VertexValueFilter.Map.class.getName());
+        config.set(MapReduceSequence.REDUCE_CLASS, VertexValueFilter.Reduce.class.getName());
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
         assertEquals(results.size(), 2);
@@ -70,16 +70,16 @@ public class MapReduceSequenceTest extends BaseTest {
         config.set(LabelFilter.ACTION + "-0", Tokens.Action.KEEP.name());
         config.setStrings(LabelFilter.LABELS + "-0", "father");
 
-        config.set(Traverse.FIRST_LABEL, "father");
-        config.set(Traverse.SECOND_LABEL, "father");
-        config.set(Traverse.NEW_LABEL, "grandfather");
-        config.set(Traverse.FIRST_DIRECTION, OUT.toString());
-        config.set(Traverse.SECOND_DIRECTION, OUT.toString());
-        config.set(Traverse.ACTION, Tokens.Action.DROP.toString());
+        config.setStrings(CloseTriangle.FIRST_LABELS, "father");
+        config.setStrings(CloseTriangle.SECOND_LABELS, "father");
+        config.set(CloseTriangle.NEW_LABEL, "grandfather");
+        config.set(CloseTriangle.FIRST_DIRECTION, OUT.toString());
+        config.set(CloseTriangle.SECOND_DIRECTION, OUT.toString());
+        config.set(CloseTriangle.ACTION, Tokens.Action.DROP.toString());
 
         config.setStrings(MapReduceSequence.MAP_CLASSES, LabelFilter.Map.class.getName());
-        config.set(MapReduceSequence.MAPR_CLASS, Traverse.Map.class.getName());
-        config.set(MapReduceSequence.REDUCE_CLASS, Traverse.Reduce.class.getName());
+        config.set(MapReduceSequence.MAPR_CLASS, CloseTriangle.Map.class.getName());
+        config.set(MapReduceSequence.REDUCE_CLASS, CloseTriangle.Reduce.class.getName());
 
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);

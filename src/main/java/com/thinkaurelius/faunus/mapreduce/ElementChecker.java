@@ -1,6 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce;
 
-import com.tinkerpop.blueprints.Element;
+import com.thinkaurelius.faunus.FaunusElement;
 import com.tinkerpop.blueprints.Query;
 
 /**
@@ -10,46 +10,90 @@ public class ElementChecker {
 
     private final String key;
     private final Query.Compare compare;
-    private final Object value;
+    private final Object[] values;
     private final boolean nullIsWildcard;
 
-    public ElementChecker(final String key, final Query.Compare compare, final Object value, final boolean nullIsWildcard) {
+    public ElementChecker(final boolean nullIsWildcard, final String key, final Query.Compare compare, final Object... values) {
         this.key = key;
         this.compare = compare;
-        this.value = value;
+        this.values = values;
         this.nullIsWildcard = nullIsWildcard;
     }
 
-    public boolean isLegal(final Element element) {
-        Object elementValue = element.getProperty(this.key);
+    public boolean isLegal(final FaunusElement element) {
+        Object elementValue = ElementPicker.getProperty(element, this.key);
         if (elementValue instanceof Number)
             elementValue = ((Number) elementValue).floatValue();
 
         switch (this.compare) {
             case EQUAL:
-                if (null == elementValue)
-                    return this.value == null;
-                return elementValue.equals(this.value);
+                if (null == elementValue) {
+                    for (final Object value : values) {
+                        if (null == value)
+                            return true;
+                    }
+                    return false;
+                } else {
+                    for (final Object value : values) {
+                        if (elementValue.equals(value))
+                            return true;
+                    }
+                    return false;
+                }
             case NOT_EQUAL:
-                if (null == elementValue)
-                    return this.value != null;
-                return !elementValue.equals(this.value);
+                if (null == elementValue) {
+                    for (final Object value : values) {
+                        if (null != value)
+                            return true;
+                    }
+                    return false;
+                } else {
+                    for (final Object value : values) {
+                        if (!elementValue.equals(value))
+                            return true;
+                    }
+                    return false;
+                }
             case GREATER_THAN:
-                if (null == elementValue || this.value == null)
+                if (null == elementValue) {
                     return this.nullIsWildcard;
-                return ((Comparable) elementValue).compareTo(this.value) >= 1;
+                } else {
+                    for (final Object value : values) {
+                        if (((Comparable) elementValue).compareTo(value) >= 1)
+                            return true;
+                    }
+                    return false;
+                }
             case LESS_THAN:
-                if (null == elementValue || this.value == null)
+                if (null == elementValue) {
                     return this.nullIsWildcard;
-                return ((Comparable) elementValue).compareTo(this.value) <= -1;
+                } else {
+                    for (final Object value : values) {
+                        if (((Comparable) elementValue).compareTo(value) <= -1)
+                            return true;
+                    }
+                    return false;
+                }
             case GREATER_THAN_EQUAL:
-                if (null == elementValue || this.value == null)
+                if (null == elementValue) {
                     return this.nullIsWildcard;
-                return ((Comparable) elementValue).compareTo(this.value) >= 0;
+                } else {
+                    for (final Object value : values) {
+                        if (((Comparable) elementValue).compareTo(value) >= 0)
+                            return true;
+                    }
+                    return false;
+                }
             case LESS_THAN_EQUAL:
-                if (null == elementValue || this.value == null)
+                if (null == elementValue) {
                     return this.nullIsWildcard;
-                return ((Comparable) elementValue).compareTo(this.value) <= 0;
+                } else {
+                    for (final Object value : values) {
+                        if (((Comparable) elementValue).compareTo(value) <=0)
+                            return true;
+                    }
+                    return false;
+                }
             default:
                 throw new IllegalArgumentException("Invalid state as no valid filter was provided");
         }

@@ -17,11 +17,11 @@ import java.util.Set;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Properties {
+public class KeyFilter {
 
-    public static final String KEYS = Tokens.makeNamespace(Properties.class) + ".keys";
-    public static final String ACTION = Tokens.makeNamespace(Properties.class) + ".action";
-    public static final String CLASS = Tokens.makeNamespace(Properties.class) + ".class";
+    public static final String KEYS = Tokens.makeNamespace(KeyFilter.class) + ".keys";
+    public static final String ACTION = Tokens.makeNamespace(KeyFilter.class) + ".action";
+    public static final String CLASS = Tokens.makeNamespace(KeyFilter.class) + ".class";
 
     public enum Counters {
         EDGE_PROPERTIES_KEPT,

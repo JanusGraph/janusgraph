@@ -5,6 +5,8 @@ import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.CounterMap;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -12,49 +14,57 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class LabelDistribution {
+public class KeyDistribution {
 
-    public static final String DIRECTION = Tokens.makeNamespace(LabelDistribution.class) + ".direction";
+    public static final String CLASS = Tokens.makeNamespace(KeyDistribution.class) + ".class";
 
     public enum Counters {
-        EDGES_COUNTED,
-        VERTICES_COUNTED
+        PROPERTIES_COUNTED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, Text, LongWritable> {
 
-        private Direction direction;
+        private Class<? extends Element> klass;
         // making use of in-map aggregation/combiner
         private CounterMap<String> map;
 
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.map = new CounterMap<String>();
+            this.klass = context.getConfiguration().getClass(CLASS, Element.class, Element.class);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
-            long counter = 0;
-            for (final String label : value.getEdgeLabels(this.direction)) {
-                final int size = ((List<Edge>) value.getEdges(this.direction, label)).size();
-                this.map.incr(label, size);
-                counter = counter + size;
+
+            if (this.klass.equals(Vertex.class)) {
+                final Set<String> keys = value.getPropertyKeys();
+                for (final String temp : keys) {
+                    this.map.incr(temp, 1l);
+                }
+                context.getCounter(Counters.PROPERTIES_COUNTED).increment(keys.size());
+            } else {
+                for (final Edge edge : value.getEdges(Direction.OUT)) {
+                    final Set<String> keys = edge.getPropertyKeys();
+                    for (final String temp : keys) {
+                        this.map.incr(temp, 1l);
+                    }
+                    context.getCounter(Counters.PROPERTIES_COUNTED).increment(keys.size());
+                }
             }
-            context.getCounter(Counters.VERTICES_COUNTED).increment(1);
-            context.getCounter(Counters.EDGES_COUNTED).increment(counter);
 
             // protected against memory explosion
             if (this.map.size() > 1000) {
                 this.cleanup(context);
                 this.map.clear();
             }
+
         }
 
         private final LongWritable longWritable = new LongWritable();
@@ -64,7 +74,7 @@ public class LabelDistribution {
         public void cleanup(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             super.cleanup(context);
             for (final java.util.Map.Entry<String, Long> entry : this.map.entrySet()) {
-                this.textWritable.set(entry.getKey());
+                this.textWritable.set(null == entry.getKey() ? Tokens.NULL : entry.getKey());
                 this.longWritable.set(entry.getValue());
                 context.write(this.textWritable, this.longWritable);
             }

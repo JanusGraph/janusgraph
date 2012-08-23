@@ -19,7 +19,9 @@ public class Tokens {
     public static final String MAP = "map";
     public static final String REDUCE = "reduce";
     public static final String _ID = "_id";
+    public static final String ID = "id";
     public static final String _PROPERTIES = "_properties";
+    public static final String LABEL = "label";
     public static final String NULL = "null";
     public static final String TAB = "\t";
     public static final String NEWLINE = "\n";

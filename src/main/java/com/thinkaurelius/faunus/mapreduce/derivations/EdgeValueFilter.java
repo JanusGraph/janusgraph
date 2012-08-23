@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.derivations;
 
+import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.ElementChecker;
@@ -15,13 +16,13 @@ import java.util.Iterator;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class EdgePropertyFilter {
+public class EdgeValueFilter {
 
-    public static final String KEY = Tokens.makeNamespace(EdgePropertyFilter.class) + ".key";
-    public static final String VALUE = Tokens.makeNamespace(EdgePropertyFilter.class) + ".value";
-    public static final String VALUE_CLASS = Tokens.makeNamespace(EdgePropertyFilter.class) + ".valueClass";
-    public static final String COMPARE = Tokens.makeNamespace(EdgePropertyFilter.class) + ".compare";
-    public static final String NULL_WILDCARD = Tokens.makeNamespace(EdgePropertyFilter.class) + ".nullWildcard";
+    public static final String KEY = Tokens.makeNamespace(EdgeValueFilter.class) + ".key";
+    public static final String VALUES = Tokens.makeNamespace(EdgeValueFilter.class) + ".values";
+    public static final String VALUE_CLASS = Tokens.makeNamespace(EdgeValueFilter.class) + ".valueClass";
+    public static final String COMPARE = Tokens.makeNamespace(EdgeValueFilter.class) + ".compare";
+    public static final String NULL_WILDCARD = Tokens.makeNamespace(EdgeValueFilter.class) + ".nullWildcard";
 
     public enum Counters {
         EDGES_KEPT,
@@ -36,13 +37,20 @@ public class EdgePropertyFilter {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             final String key = context.getConfiguration().get(KEY);
             final Class valueClass = context.getConfiguration().getClass(VALUE_CLASS, String.class);
-            final Object value;
+            final String[] valueStrings = context.getConfiguration().getStrings(VALUES);
+            final Object[] values = new Object[valueStrings.length];
             if (valueClass.equals(String.class)) {
-                value = context.getConfiguration().get(VALUE);
+                for (int i = 0; i < valueStrings.length; i++) {
+                    values[i] = valueStrings[i];
+                }
             } else if (Number.class.isAssignableFrom((valueClass))) {
-                value = context.getConfiguration().getFloat(VALUE, 0.0f);
+                for (int i = 0; i < valueStrings.length; i++) {
+                    values[i] = Float.valueOf(valueStrings[i]);
+                }
             } else if (valueClass.equals(Boolean.class)) {
-                value = context.getConfiguration().getBoolean(VALUE, false);
+                for (int i = 0; i < valueStrings.length; i++) {
+                    values[i] = Boolean.valueOf(valueStrings[i]);
+                }
             } else {
                 throw new IOException("Class " + valueClass + " is an unsupported value class");
             }
@@ -50,7 +58,7 @@ public class EdgePropertyFilter {
             final Query.Compare compare = Query.Compare.valueOf(context.getConfiguration().get(COMPARE));
             final Boolean nullIsWildcard = context.getConfiguration().getBoolean(NULL_WILDCARD, false);
 
-            this.elementChecker = new ElementChecker(key, compare, value, nullIsWildcard);
+            this.elementChecker = new ElementChecker(nullIsWildcard, key, compare, values);
         }
 
         @Override
@@ -58,7 +66,7 @@ public class EdgePropertyFilter {
             final Iterator<Edge> itty = value.getEdges(Direction.BOTH).iterator();
             while (itty.hasNext()) {
                 final Edge edge = itty.next();
-                if (this.elementChecker.isLegal(edge))
+                if (this.elementChecker.isLegal((FaunusEdge) edge))
                     context.getCounter(Counters.EDGES_KEPT).increment(1l);
                 else {
                     itty.remove();
