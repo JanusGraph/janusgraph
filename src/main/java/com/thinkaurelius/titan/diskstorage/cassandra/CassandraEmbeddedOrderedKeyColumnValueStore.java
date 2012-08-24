@@ -226,12 +226,11 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
         ConsistencyLevel clvl = getConsistencyLevel(txh, Operation.READ);
         
         List<Row> slice = read(sliceCmd, clvl);
-        
-        int sliceSize = slice.size();
-        
-        if (null == slice || 0 == sliceSize)
+
+        if (null == slice || 0 == slice.size())
         	return new ArrayList<Entry>(0);
-        	
+
+        int sliceSize = slice.size();
         if (1 < sliceSize)
         	throw new GraphStorageException("Received " + sliceSize + " rows for single key");
         

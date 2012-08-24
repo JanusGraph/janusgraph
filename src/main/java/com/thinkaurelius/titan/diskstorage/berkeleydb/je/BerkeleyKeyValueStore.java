@@ -156,7 +156,7 @@ public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
 			throw new GraphStorageException(e);
 		} finally {
 			try {
-			cursor.close();
+			if (cursor!=null) cursor.close();
 			} catch (DatabaseException e) {
 				throw new GraphStorageException(e);
 			}

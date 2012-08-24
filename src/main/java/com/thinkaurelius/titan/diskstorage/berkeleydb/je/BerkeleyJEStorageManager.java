@@ -22,7 +22,7 @@ import java.util.Map;
 
 public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 
-    private Logger log = LoggerFactory.getLogger(BerkeleyJEStorageManager.class);
+    private final Logger log = LoggerFactory.getLogger(BerkeleyJEStorageManager.class);
 
 
     public static final String CACHE_KEY = "cache_percentage";
