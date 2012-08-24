@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.transaction;
 
 import cern.colt.list.ObjectArrayList;
 import cern.colt.map.OpenLongObjectHashMap;
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ public class StandardVertexCache extends OpenLongObjectHashMap implements Vertex
 	public InternalTitanVertex get(long id) {
 		readLock.lock();
         try {
-		    return (InternalTitanVertex)super.get(Long.valueOf(id));
+		    return (InternalTitanVertex)super.get(id);
         } finally {
 		    readLock.unlock();
         }
@@ -44,9 +45,11 @@ public class StandardVertexCache extends OpenLongObjectHashMap implements Vertex
 	
 	@Override
 	public void add(InternalTitanVertex vertex, long id) {
+        Preconditions.checkNotNull(vertex);
+        Preconditions.checkArgument(id>0,"Vertex id must be positive");
 		writeLock.lock();
         try {
-            assert !containsKey(Long.valueOf(id));
+            assert !containsKey(id);
             put(id, vertex);
         } finally {
 		    writeLock.unlock();
