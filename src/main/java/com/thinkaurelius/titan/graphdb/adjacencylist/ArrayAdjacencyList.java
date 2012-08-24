@@ -65,8 +65,9 @@ public class ArrayAdjacencyList implements AdjacencyList {
 
 	@Override
 	public boolean containsEdge(InternalRelation e) {
-		for (int i=0;i<contents.length;i++) {
-			if (contents[i]!=null && e.equals(contents[i])) return true;
+        InternalRelation[] c = contents;
+		for (int i=0;i<c.length;i++) {
+			if (c[i]!=null && e.equals(c[i])) return true;
 		}
 		return false;
 	}
@@ -74,8 +75,9 @@ public class ArrayAdjacencyList implements AdjacencyList {
 
 	@Override
 	public boolean isEmpty() {
-		for (int i=0;i<contents.length;i++) {
-			if (contents[i]!=null) return false;
+        InternalRelation[] c = contents;
+		for (int i=0;i<c.length;i++) {
+			if (c[i]!=null) return false;
 		}
 		return true;
 	}
@@ -177,6 +179,7 @@ public class ArrayAdjacencyList implements AdjacencyList {
 		private InternalRelation next = null;
 		private int position = -1;
 		private InternalRelation last = null;
+        private final InternalRelation[] contents;
 
 		
 		InternalIterator() {
@@ -184,6 +187,7 @@ public class ArrayAdjacencyList implements AdjacencyList {
 		}
 		
 		InternalIterator(boolean initialize) {
+            this.contents = ArrayAdjacencyList.this.contents;
 			if (initialize) findNext();
 		}
 		
@@ -193,10 +197,10 @@ public class ArrayAdjacencyList implements AdjacencyList {
 			last = next;
 			next = null;
 			for (position = position+1; position<contents.length;position++) {
-				if (contents[position]!=null && applies(contents[position])) {
-					next = contents[position];
+                next = contents[position];
+				if (next!=null && applies(next)) {
 					break;
-				}
+				} else next = null;
 			}
 		}
 		
