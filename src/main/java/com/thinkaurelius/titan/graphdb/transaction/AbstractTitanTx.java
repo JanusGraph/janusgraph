@@ -183,7 +183,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     public TitanProperty addProperty(TitanVertex vertex, TitanKey key, Object attribute) {
         verifyWriteAccess(vertex);
         // Check that attribute of keyed propertyType is unique and lock if so
-        boolean isUniqueKey = key.isUnique();
+        final boolean isUniqueKey = key.isUnique();
         if (isUniqueKey) keyedPropertyCreateLock.lock();
         InternalRelation e = null;
         try {

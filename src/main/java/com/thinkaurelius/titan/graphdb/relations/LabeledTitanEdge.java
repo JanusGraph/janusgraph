@@ -45,7 +45,7 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
 		Preconditions.checkArgument(e.getVertex(0).equals(this),"This node only supports out edges!");
 
 		ModificationStatus status = new ModificationStatus();
-		synchronized(outEdges) {
+		synchronized(this) {
 			outEdges = outEdges.addEdge(e, e.getType().isFunctional(),status);
 		}
 		return status.hasChanged();

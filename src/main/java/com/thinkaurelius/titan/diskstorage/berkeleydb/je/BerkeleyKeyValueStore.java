@@ -152,6 +152,7 @@ public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
 		        status = cursor.getNext(foundKey, foundData, LockMode.DEFAULT);
 			}
 			log.trace("Retrieved: {}",result.size());
+            return result;
 		} catch (DatabaseException e) {
 			throw new GraphStorageException(e);
 		} finally {
@@ -161,7 +162,6 @@ public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
 				throw new GraphStorageException(e);
 			}
 		}
-		return result;
 	}
 
 	@Override

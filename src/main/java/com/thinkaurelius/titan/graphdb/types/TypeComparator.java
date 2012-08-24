@@ -31,8 +31,8 @@ public class TypeComparator implements Comparator<TitanType> {
 	
 	private static final ConcurrentMap<Short,TitanType> groupTypes = new ConcurrentHashMap<Short,TitanType>();
 
-	private static Method getID=null;
-	private static Method getName=null;
+	private volatile static Method getID=null;
+	private volatile static Method getName=null;
 	
 	public static final TitanType getGroupComparisonType(final short id) {
 		if (getID==null || getName==null) {

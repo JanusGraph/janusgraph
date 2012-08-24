@@ -113,8 +113,8 @@ public class VirtualElement implements InternalElement {
 		switch(lifecycle) {
 		case Deleted: 
 			throw new IllegalStateException();
-		case New: lifecycle = New;
-		case Modified: lifecycle = New;
+		case New:
+		case Modified:
 		case Loaded: lifecycle = New; break;
 		default: throw new IllegalStateException("Current lifecycle code: " + lifecycle);
 		}

@@ -491,8 +491,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         results = edgeStore.getSlice(key, columnStart, columnEnd, limit.getLimit(), txh);
         limit.retrieved(results.size());
 
-		if (results==null) return null;
-		else if (entries==null) return results;
+		if (entries==null) return results;
 		else {
 			entries.addAll(results);
 			return entries;
@@ -576,7 +575,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 stats.removedEdge(del);
             }
         }
-        deletedRelations =null;
+        deletedRelations=null;
 
 
 		ListMultimap<InternalTitanType,InternalRelation> simpleEdgeTypes = null;

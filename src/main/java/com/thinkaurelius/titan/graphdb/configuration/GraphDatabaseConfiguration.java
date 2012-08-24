@@ -442,7 +442,7 @@ public class GraphDatabaseConfiguration {
 			try {
 				config.load(file);
 			} catch (ConfigurationException e) {
-				throw new IllegalArgumentException("Cannot load existing configuration file: " + e.getMessage());
+				throw new IllegalArgumentException("Cannot load existing configuration file",e);
 			}
 		}
 		config.setFileName(file);

@@ -34,13 +34,13 @@ public class StandardTitanVertex extends AbstractTitanVertex {
         ModificationStatus status = new ModificationStatus();
         if (EdgeDirection.IN.impliedBy(e.getDirection(this))) {
             loadIn = true;
-            synchronized(inEdges) {
+            synchronized(this) {
                 inEdges = inEdges.addEdge(e,status);
             }
             success = status.hasChanged();
         }
         if (EdgeDirection.OUT.impliedBy(e.getDirection(this))) {
-            synchronized(outEdges) {
+            synchronized(this) {
                 outEdges = outEdges.addEdge(e, e.getType().isFunctional(), status);
             }
             if (status.hasChanged()) {

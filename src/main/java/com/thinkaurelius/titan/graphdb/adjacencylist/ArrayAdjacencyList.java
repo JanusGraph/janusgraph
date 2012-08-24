@@ -193,7 +193,7 @@ public class ArrayAdjacencyList implements AdjacencyList {
 		
 
 		
-		protected void findNext() {
+		protected final void findNext() {
 			last = next;
 			next = null;
 			for (position = position+1; position<contents.length;position++) {

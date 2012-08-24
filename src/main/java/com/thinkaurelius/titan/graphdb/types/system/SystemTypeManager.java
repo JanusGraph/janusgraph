@@ -15,7 +15,7 @@ public abstract class SystemTypeManager {
 	public static final TypeGroup SYSTEM_TYPE_GROUP = new StandardTypeGroup((short)0,systemETprefix);
 	
 	
-	private static Map<Long,SystemType> systemEdgeTypes = null;
+	private volatile static Map<Long,SystemType> systemEdgeTypes = null;
 	
 	public static SystemType getSystemEdgeType(long id) {
 		if (systemEdgeTypes==null) {
