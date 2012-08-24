@@ -62,6 +62,12 @@ public class LocalBlueprintsTest extends GraphTest {
         printTestPerformance("TransactionalTitanGraphTestSuite", this.stopWatch());
     }
 
+    public void testTitanSpecificTestSuite() throws Exception {
+        this.stopWatch();
+        doTestSuite(new TitanSpecificBlueprintsTestSuite(this));
+        printTestPerformance("TitanSpecificBlueprintsTestSuite", this.stopWatch());
+    }
+
     public void testGraphMLReaderTestSuite() throws Exception {
         this.stopWatch();
         doTestSuite(new GraphMLReaderTestSuite(this));
