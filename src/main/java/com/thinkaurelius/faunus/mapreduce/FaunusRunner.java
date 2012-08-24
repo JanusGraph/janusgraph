@@ -142,10 +142,10 @@ public class FaunusRunner extends Configured implements Tool {
 
     public void propertyFilter(final Class<? extends Element> klass, final Boolean nullIsWildcard, final String key, final Query.Compare compare, final Object... values) throws IOException {
         String[] valueStrings = new String[values.length];
-        for(int i=0; i<values.length; i++) {
+        for (int i = 0; i < values.length; i++) {
             valueStrings[i] = values[i].toString();
         }
-        
+
         if (klass.equals(Vertex.class)) {
             this.mapSequenceConfiguration.set(VertexValueFilter.KEY, key);
             this.mapSequenceConfiguration.set(VertexValueFilter.COMPARE, compare.name());
@@ -211,21 +211,25 @@ public class FaunusRunner extends Configured implements Tool {
         this.mapSequenceClasses.add(KeyFilter.Map.class);
     }
 
-    public void closeLine(final String newLabel, final Tokens.Action action, final boolean opposite, final String... labels) {
-        this.mapSequenceConfiguration.setStrings(CloseLine.LABELS + "-" + this.mapSequenceClasses.size(), labels);
-        this.mapSequenceConfiguration.set(CloseLine.NEW_LABEL + "-" + this.mapSequenceClasses.size(), newLabel);
+    public void closeLine(final List<String> labels, final Tokens.Action action, final String newLabel, final Direction newDirection) {
+        this.mapSequenceConfiguration.setStrings(CloseLine.LABELS + "-" + this.mapSequenceClasses.size(), labels.toArray(new String[labels.size()]));
         this.mapSequenceConfiguration.set(CloseLine.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
-        this.mapSequenceConfiguration.setBoolean(CloseLine.OPPOSITE + "-" + this.mapSequenceClasses.size(), opposite);
+        this.mapSequenceConfiguration.set(CloseLine.NEW_LABEL + "-" + this.mapSequenceClasses.size(), newLabel);
+        this.mapSequenceConfiguration.set(CloseLine.NEW_DIRECTION + "-" + this.mapSequenceClasses.size(), newDirection.name());
         this.mapSequenceClasses.add(CloseLine.Map.class);
     }
 
-    public void closeTriangle(final Direction firstDirection, final String firstLabel, final Direction secondDirection, final String secondLabel, final String newLabel, final Tokens.Action action) throws IOException {
-        this.mapSequenceConfiguration.set(CloseTriangle.FIRST_DIRECTION, firstDirection.toString());
-        this.mapSequenceConfiguration.setStrings(CloseTriangle.FIRST_LABELS, firstLabel);
-        this.mapSequenceConfiguration.set(CloseTriangle.SECOND_DIRECTION, secondDirection.toString());
-        this.mapSequenceConfiguration.setStrings(CloseTriangle.SECOND_LABELS, secondLabel);
+    public void closeTriangle(final Direction firstDirection, final List<String> firstLabels, final Tokens.Action firstAction,
+                              final Direction secondDirection, final List<String> secondLabels, final Tokens.Action secondAction,
+                              final Direction newDirection, String newLabel) throws IOException {
+        this.mapSequenceConfiguration.set(CloseTriangle.FIRST_DIRECTION, firstDirection.name());
+        this.mapSequenceConfiguration.setStrings(CloseTriangle.FIRST_LABELS, firstLabels.toArray(new String[firstLabels.size()]));
+        this.mapSequenceConfiguration.set(CloseTriangle.FIRST_ACTION, firstAction.name());
+        this.mapSequenceConfiguration.set(CloseTriangle.SECOND_DIRECTION, secondDirection.name());
+        this.mapSequenceConfiguration.setStrings(CloseTriangle.SECOND_LABELS, secondLabels.toArray(new String[secondLabels.size()]));
+        this.mapSequenceConfiguration.set(CloseTriangle.SECOND_ACTION, secondAction.name());
+        this.mapSequenceConfiguration.set(CloseTriangle.NEW_DIRECTION, newDirection.name());
         this.mapSequenceConfiguration.set(CloseTriangle.NEW_LABEL, newLabel);
-        this.mapSequenceConfiguration.set(CloseTriangle.ACTION, action.name());
         this.mapRClass = CloseTriangle.Map.class;
         this.reduceClass = CloseTriangle.Reduce.class;
         this.completeSequence();

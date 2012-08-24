@@ -75,7 +75,9 @@ public class MapReduceSequenceTest extends BaseTest {
         config.set(CloseTriangle.NEW_LABEL, "grandfather");
         config.set(CloseTriangle.FIRST_DIRECTION, OUT.toString());
         config.set(CloseTriangle.SECOND_DIRECTION, OUT.toString());
-        config.set(CloseTriangle.ACTION, Tokens.Action.DROP.toString());
+        config.set(CloseTriangle.FIRST_ACTION, Tokens.Action.DROP.toString());
+        config.set(CloseTriangle.SECOND_ACTION, Tokens.Action.DROP.toString());
+        config.set(CloseTriangle.NEW_DIRECTION, Direction.OUT.name());
 
         config.setStrings(MapReduceSequence.MAP_CLASSES, LabelFilter.Map.class.getName());
         config.set(MapReduceSequence.MAPR_CLASS, CloseTriangle.Map.class.getName());

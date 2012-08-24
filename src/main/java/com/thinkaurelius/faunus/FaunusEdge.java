@@ -45,6 +45,14 @@ public class FaunusEdge extends FaunusElement implements Edge {
         setLabel(label);
     }
 
+    public void refill(final long id, final long outVertex, final long inVertex, final String label) {
+        this.id = id;
+        this.outVertex = outVertex;
+        this.inVertex = inVertex;
+        this.setLabel(label);
+        this.properties = null;
+    }
+
     public Vertex getVertex(final Direction direction) {
         if (OUT.equals(direction)) {
             return new FaunusVertex(this.outVertex);
@@ -68,7 +76,7 @@ public class FaunusEdge extends FaunusElement implements Edge {
     public String getLabel() {
         return this.label;
     }
-    
+
     protected final void setLabel(String label) {
         this.label = TYPE_MAP.get(label);
     }

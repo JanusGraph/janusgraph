@@ -25,10 +25,12 @@ public class CloseTriangle {
 
     public static final String FIRST_DIRECTION = Tokens.makeNamespace(CloseTriangle.class) + ".firstDirection";
     public static final String FIRST_LABELS = Tokens.makeNamespace(CloseTriangle.class) + ".firstLabels";
+    public static final String FIRST_ACTION = Tokens.makeNamespace(CloseTriangle.class) + ".firstAction";
     public static final String SECOND_DIRECTION = Tokens.makeNamespace(CloseTriangle.class) + ".secondDirection";
     public static final String SECOND_LABELS = Tokens.makeNamespace(CloseTriangle.class) + ".secondLabels";
+    public static final String SECOND_ACTION = Tokens.makeNamespace(CloseTriangle.class) + ".secondAction";
+    public static final String NEW_DIRECTION = Tokens.makeNamespace(CloseTriangle.class) + ".newDirection";
     public static final String NEW_LABEL = Tokens.makeNamespace(CloseTriangle.class) + ".newLabel";
-    public static final String ACTION = Tokens.makeNamespace(CloseTriangle.class) + ".action";
 
     public enum Counters {
         EDGES_CREATED
@@ -38,24 +40,29 @@ public class CloseTriangle {
 
         private Direction firstDirection;
         private String[] firstLabels;
+        private Tokens.Action firstAction;
         private Direction secondDirection;
         private String[] secondLabels;
+        private Tokens.Action secondAction;
+        private Direction newDirection;
         private String newLabel;
-        private Tokens.Action action;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.firstDirection = Direction.valueOf(context.getConfiguration().get(FIRST_DIRECTION));
             this.firstLabels = context.getConfiguration().getStrings(FIRST_LABELS, new String[0]);
+            this.firstAction = Tokens.Action.valueOf(context.getConfiguration().get(FIRST_ACTION));
             this.secondDirection = Direction.valueOf(context.getConfiguration().get(SECOND_DIRECTION));
             this.secondLabels = context.getConfiguration().getStrings(SECOND_LABELS, new String[0]);
+            this.secondAction = Tokens.Action.valueOf(context.getConfiguration().get(SECOND_ACTION));
+            this.newDirection = Direction.valueOf(context.getConfiguration().get(NEW_DIRECTION));
             this.newLabel = context.getConfiguration().get(NEW_LABEL);
-            this.action = Tokens.Action.valueOf(context.getConfiguration().get(ACTION));
         }
 
         private final LongWritable longWritable = new LongWritable();
         private final Holder<FaunusEdge> edgeHolder = new Holder<FaunusEdge>();
         private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
+        private final FaunusEdge newEdge = new FaunusEdge();
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
@@ -88,19 +95,31 @@ public class CloseTriangle {
 
 
             this.longWritable.set(value.getIdAsLong());
-            if (this.action.equals(Tokens.Action.DROP)) {
+            if (this.firstAction.equals(Tokens.Action.DROP)) {
                 value.removeEdges(Tokens.Action.DROP, Direction.BOTH, this.firstLabels);
+            }
+            if (this.secondAction.equals(Tokens.Action.DROP)) {
                 value.removeEdges(Tokens.Action.DROP, Direction.BOTH, this.secondLabels);
             }
+
             context.write(this.longWritable, this.vertexHolder.set('v', value));
 
             for (final Long firstId : firstVertexIds) {
                 for (final Long secondId : secondVertexIds) {
-                    final FaunusEdge edge = new FaunusEdge(firstId, secondId, this.newLabel);
-                    this.longWritable.set(firstId);
-                    context.write(this.longWritable, this.edgeHolder.set('o', edge));
-                    this.longWritable.set(secondId);
-                    context.write(this.longWritable, this.edgeHolder.set('i', edge));
+                    if (this.newDirection.equals(OUT)) {
+                        this.newEdge.refill(-1l, firstId, secondId, this.newLabel);
+                        this.longWritable.set(firstId);
+                        context.write(this.longWritable, this.edgeHolder.set('o', this.newEdge));
+                        this.longWritable.set(secondId);
+                        context.write(this.longWritable, this.edgeHolder.set('i', this.newEdge));
+                    } else {
+                        this.newEdge.refill(-1l, secondId, firstId, this.newLabel);
+                        this.longWritable.set(firstId);
+                        context.write(this.longWritable, this.edgeHolder.set('i', this.newEdge));
+                        this.longWritable.set(secondId);
+                        context.write(this.longWritable, this.edgeHolder.set('o', this.newEdge));
+                    }
+
                     context.getCounter(Counters.EDGES_CREATED).increment(2);
                 }
             }

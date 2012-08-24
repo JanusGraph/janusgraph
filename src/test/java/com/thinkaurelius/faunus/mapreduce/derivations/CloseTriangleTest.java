@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -37,7 +38,9 @@ public class CloseTriangleTest extends BaseTest {
         config.set(CloseTriangle.NEW_LABEL, "knowsCreated");
         config.set(CloseTriangle.FIRST_DIRECTION, OUT.toString());
         config.set(CloseTriangle.SECOND_DIRECTION, OUT.toString());
-        config.set(CloseTriangle.ACTION, Tokens.Action.KEEP.toString());
+        config.set(CloseTriangle.FIRST_ACTION, Tokens.Action.KEEP.name());
+        config.set(CloseTriangle.SECOND_ACTION, Tokens.Action.KEEP.name());
+        config.set(CloseTriangle.NEW_DIRECTION, Direction.OUT.name());
 
         mapReduceDriver.withConfiguration(config);
 
@@ -117,7 +120,9 @@ public class CloseTriangleTest extends BaseTest {
         config.set(CloseTriangle.NEW_LABEL, "collaborator");
         config.set(CloseTriangle.FIRST_DIRECTION, OUT.toString());
         config.set(CloseTriangle.SECOND_DIRECTION, IN.toString());
-        config.set(CloseTriangle.ACTION, Tokens.Action.KEEP.toString());
+        config.set(CloseTriangle.FIRST_ACTION, Tokens.Action.KEEP.toString());
+        config.set(CloseTriangle.SECOND_ACTION, Tokens.Action.KEEP.toString());
+        config.set(CloseTriangle.NEW_DIRECTION, Direction.OUT.name());
 
         mapReduceDriver.withConfiguration(config);
 
@@ -190,7 +195,9 @@ public class CloseTriangleTest extends BaseTest {
         config.set(CloseTriangle.NEW_LABEL, "grandfather");
         config.set(CloseTriangle.FIRST_DIRECTION, OUT.toString());
         config.set(CloseTriangle.SECOND_DIRECTION, OUT.toString());
-        config.set(CloseTriangle.ACTION, Tokens.Action.DROP.toString());
+        config.set(CloseTriangle.FIRST_ACTION, Tokens.Action.DROP.toString());
+        config.set(CloseTriangle.SECOND_ACTION, Tokens.Action.DROP.toString());
+        config.set(CloseTriangle.NEW_DIRECTION, Direction.OUT.name());
 
         mapReduceDriver.withConfiguration(config);
 

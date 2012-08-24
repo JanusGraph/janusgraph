@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.derivations;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
@@ -24,22 +25,22 @@ public class CloseLine {
     public static final String LABELS = Tokens.makeNamespace(CloseLine.class) + ".labels";
     public static final String NEW_LABEL = Tokens.makeNamespace(CloseLine.class) + ".newLabel";
     public static final String ACTION = Tokens.makeNamespace(CloseLine.class) + ".action";
-    public static final String OPPOSITE = Tokens.makeNamespace(CloseLine.class) + ".opposite";
+    public static final String NEW_DIRECTION = Tokens.makeNamespace(CloseLine.class) + ".newDirection";
 
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         private String[] labels;
-        private String newLabel;
         private Tokens.Action action;
-        private boolean opposite;
+        private String newLabel;
+        private Direction newDirection;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.labels = context.getConfiguration().getStrings(LABELS);
-            this.newLabel = context.getConfiguration().get(NEW_LABEL);
             this.action = Tokens.Action.valueOf(context.getConfiguration().get(ACTION));
-            this.opposite = context.getConfiguration().getBoolean(OPPOSITE, true);
+            this.newLabel = context.getConfiguration().get(NEW_LABEL);
+            this.newDirection = Direction.valueOf(context.getConfiguration().get(NEW_DIRECTION));
         }
 
         @Override
@@ -49,7 +50,7 @@ public class CloseLine {
             Iterator<FaunusEdge> itty = (Iterator) value.getEdges(OUT, this.labels).iterator();
             while (itty.hasNext()) {
                 final FaunusEdge edge = itty.next();
-                if (this.opposite)
+                if (this.newDirection.equals(IN))
                     value.addEdge(IN, new FaunusEdge(edge.getVertexId(IN), edge.getVertexId(OUT), this.newLabel)).setProperties(edge.getProperties());
                 else
                     value.addEdge(OUT, new FaunusEdge(edge.getVertexId(OUT), edge.getVertexId(IN), this.newLabel)).setProperties(edge.getProperties());
@@ -63,7 +64,7 @@ public class CloseLine {
             while (itty.hasNext()) {
                 final FaunusEdge edge = itty.next();
 
-                if (this.opposite)
+                if (this.newDirection.equals(IN))
                     value.addEdge(OUT, new FaunusEdge(edge.getVertexId(IN), edge.getVertexId(OUT), this.newLabel)).setProperties(edge.getProperties());
                 else
                     value.addEdge(IN, new FaunusEdge(edge.getVertexId(OUT), edge.getVertexId(IN), this.newLabel)).setProperties(edge.getProperties());

@@ -43,7 +43,8 @@ public class CloseLineTest extends BaseTest {
         Configuration config = new Configuration();
         config.setStrings(CloseLine.LABELS, "created","blah","nothing");
         config.set(CloseLine.NEW_LABEL, "createdBy");
-        config.set(CloseLine.ACTION, Tokens.Action.KEEP.toString());
+        config.set(CloseLine.ACTION, Tokens.Action.KEEP.name());
+        config.set(CloseLine.NEW_DIRECTION, Direction.IN.name());
         mapReduceDriver.withConfiguration(config);
         mapReduceDriver.withInput(NullWritable.get(), vertex1).withInput(NullWritable.get(), vertex2);
         List<Pair<NullWritable, FaunusVertex>> list = mapReduceDriver.run();
@@ -88,6 +89,7 @@ public class CloseLineTest extends BaseTest {
         config.set(CloseLine.ACTION, Tokens.Action.DROP.name());
         config.set(CloseLine.LABELS, "created");
         config.set(CloseLine.NEW_LABEL, "createdBy");
+        config.set(CloseLine.NEW_DIRECTION, Direction.IN.name());
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, this.mapReduceDriver);

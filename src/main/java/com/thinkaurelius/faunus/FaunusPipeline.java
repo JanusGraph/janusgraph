@@ -167,21 +167,19 @@ public class FaunusPipeline {
         return this;
     }
 
-    // todo: linkOut/linkIn
-    public FaunusPipeline linkTo(final String label) throws IOException {
+    private void link(final Direction direction, final String label) throws IOException {
         if (state.atVertex()) {
             if (state.stackSize() == 1) {
-                compiler.closeLine(label, Tokens.Action.KEEP, false, state.labels.remove().get(0));
+                compiler.closeLine(state.labels.remove(), Tokens.Action.KEEP, label, direction);
             } else if (state.stackSize() > 1) {
                 int maxSize = state.stackSize() - 1;
                 for (int i = 0; i < maxSize; i++) {
-                    final String startLabel = (i == 0) ? state.labels.remove().get(0) : TEMP_LABEL + i;
-                    final Direction startDirection = (i == 0) ? state.directions.remove() : OUT;
-                    final String endLabel = (i == maxSize - 1) ? label : TEMP_LABEL + (i + 1);
-                    compiler.closeTriangle(startDirection, startLabel, state.directions.remove(), state.labels.remove().get(0), endLabel, Tokens.Action.KEEP);
-                    // TODO: make this stage part of closeTriangle
-                    if (startLabel.equals(TEMP_LABEL + i))
-                        compiler.labelFilter(Tokens.Action.DROP, TEMP_LABEL + i);
+                    final List<String> firstLabels = (i == 0) ? state.labels.remove() : Arrays.asList(TEMP_LABEL + i);
+                    final Direction firstDirection = (i == 0) ? state.directions.remove() : OUT;
+                    final Tokens.Action firstLabelsAction = (firstLabels.size() == 1 && firstLabels.get(0).equals(TEMP_LABEL + i)) ? Tokens.Action.DROP : Tokens.Action.KEEP;
+                    final String newLabel = (i == maxSize - 1) ? label : TEMP_LABEL + (i + 1);
+                    final Direction newDirection = (i == maxSize - 1) ? direction : OUT;
+                    compiler.closeTriangle(firstDirection, firstLabels, firstLabelsAction, state.directions.remove(), state.labels.remove(), Tokens.Action.KEEP, newDirection, newLabel);
                 }
             } else {
                 throw new RuntimeException("There are no steps to link to: " + this.state.stackSize());
@@ -190,10 +188,20 @@ public class FaunusPipeline {
             throw new RuntimeException("Edges can not be relinked");
         }
         this.state.clear();
+    }
+
+    public FaunusPipeline linkOut(final String label) throws IOException {
+        this.link(OUT, label);
+        return this;
+    }
+
+    public FaunusPipeline linkIn(final String label) throws IOException {
+        this.link(IN, label);
         return this;
     }
 
     public FaunusPipeline drop() throws IOException {
+        //this.link(IN, label);
         return this;
     }
 
