@@ -167,6 +167,7 @@ public class FaunusPipeline {
         return this;
     }
 
+    // todo: linkOut/linkIn
     public FaunusPipeline linkTo(final String label) throws IOException {
         if (state.atVertex()) {
             if (state.stackSize() == 1) {
@@ -192,22 +193,10 @@ public class FaunusPipeline {
         return this;
     }
 
-    /*public FaunusPipeline linkFrom(final String label) throws IOException {
-        if (compiler.getJobState().elementType.equals(Vertex.class)) {
-            if (compiler.getJobState().directions.size() == 1 && compiler.getJobState().labels.size() == 1) {
-                compiler.closeLine(compiler.getJobState().labels.get(0).get(0), label, Tokens.Action.KEEP, true);
-            } else if (compiler.getJobState().directions.size() == 2 && compiler.getJobState().labels.size() == 2) {
-                compiler.closeTriangle(compiler.getJobState().directions.get(0), compiler.getJobState().labels.get(0).get(0), compiler.getJobState().directions.get(1), compiler.getJobState().labels.get(1).get(0), label, Tokens.Action.KEEP);
-            } else {
-                throw new RuntimeException("an exception");
-            }
-        } else {
-            throw new RuntimeException("Edges can not be relinked");
-        }
-        this.compiler.getJobState().directions.clear();
-        this.compiler.getJobState().labels.clear();
+    public FaunusPipeline drop() throws IOException {
         return this;
-    }*/
+    }
+
 
     public FaunusPipeline sideEffect(final String function) throws IOException {
         if (state.getElementType().equals(Vertex.class)) {
