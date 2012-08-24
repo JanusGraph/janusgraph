@@ -1,1 +1,0 @@
-Output Fulgora's binary format

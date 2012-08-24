@@ -45,12 +45,13 @@ public class FaunusEdge extends FaunusElement implements Edge {
         setLabel(label);
     }
 
-    public void refill(final long id, final long outVertex, final long inVertex, final String label) {
+    public FaunusEdge refill(final long id, final long outVertex, final long inVertex, final String label) {
         this.id = id;
         this.outVertex = outVertex;
         this.inVertex = inVertex;
         this.setLabel(label);
         this.properties = null;
+        return this;
     }
 
     public Vertex getVertex(final Direction direction) {

@@ -23,8 +23,8 @@ public class CloseLine {
     }
 
     public static final String LABELS = Tokens.makeNamespace(CloseLine.class) + ".labels";
-    public static final String NEW_LABEL = Tokens.makeNamespace(CloseLine.class) + ".newLabel";
     public static final String ACTION = Tokens.makeNamespace(CloseLine.class) + ".action";
+    public static final String NEW_LABEL = Tokens.makeNamespace(CloseLine.class) + ".newLabel";
     public static final String NEW_DIRECTION = Tokens.makeNamespace(CloseLine.class) + ".newDirection";
 
 
@@ -51,9 +51,9 @@ public class CloseLine {
             while (itty.hasNext()) {
                 final FaunusEdge edge = itty.next();
                 if (this.newDirection.equals(IN))
-                    value.addEdge(IN, new FaunusEdge(edge.getVertexId(IN), edge.getVertexId(OUT), this.newLabel)).setProperties(edge.getProperties());
+                    value.addEdge(IN, new FaunusEdge(edge.getVertexId(IN), edge.getVertexId(OUT), this.newLabel));
                 else
-                    value.addEdge(OUT, new FaunusEdge(edge.getVertexId(OUT), edge.getVertexId(IN), this.newLabel)).setProperties(edge.getProperties());
+                    value.addEdge(OUT, new FaunusEdge(edge.getVertexId(OUT), edge.getVertexId(IN), this.newLabel));
                 counter++;
 
                 if (action.equals(Tokens.Action.DROP))
@@ -65,9 +65,9 @@ public class CloseLine {
                 final FaunusEdge edge = itty.next();
 
                 if (this.newDirection.equals(IN))
-                    value.addEdge(OUT, new FaunusEdge(edge.getVertexId(IN), edge.getVertexId(OUT), this.newLabel)).setProperties(edge.getProperties());
+                    value.addEdge(OUT, new FaunusEdge(edge.getVertexId(IN), edge.getVertexId(OUT), this.newLabel));
                 else
-                    value.addEdge(IN, new FaunusEdge(edge.getVertexId(OUT), edge.getVertexId(IN), this.newLabel)).setProperties(edge.getProperties());
+                    value.addEdge(IN, new FaunusEdge(edge.getVertexId(OUT), edge.getVertexId(IN), this.newLabel));
 
                 counter++;
 
