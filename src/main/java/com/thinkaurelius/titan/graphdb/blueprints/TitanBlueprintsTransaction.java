@@ -44,11 +44,13 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     public Vertex getVertex(final Object id) {
         if (null == id)
             throw ExceptionFactory.vertexIdCanNotBeNull();
+        if (id instanceof Vertex) //allows vertices to be "re-attached" to the current transaction
+            return getVertex(((Vertex)id).getId());
 
         final long longId;
-        if (id instanceof Long)
+        if (id instanceof Long) {
             longId = (Long) id;
-        else if (id instanceof Number) {
+        } else if (id instanceof Number) {
             longId = ((Number) id).longValue();
         } else {
             try {
