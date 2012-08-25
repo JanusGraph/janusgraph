@@ -215,6 +215,8 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
     public void write(final DataOutput out) throws IOException {
         out.writeLong(this.id);
+        out.writeInt(this.energy);
+        out.writeChar(this.tag);
         EdgeMap.write((Map) this.inEdges, out, Direction.OUT);
         EdgeMap.write((Map) this.outEdges, out, Direction.IN);
         ElementProperties.write(this.properties, out);
@@ -223,6 +225,8 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
     public void readFields(final DataInput in) throws IOException {
         this.id = in.readLong();
+        this.energy = in.readInt();
+        this.tag  = in.readChar();
         this.inEdges = (Map) EdgeMap.readFields(in, Direction.OUT, this.id);
         this.outEdges = (Map) EdgeMap.readFields(in, Direction.IN, this.id);
         this.properties = ElementProperties.readFields(in);
@@ -340,8 +344,6 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
     }
 
     private static class EdgeMap {
-
-
 
         public static Map<String, List<FaunusEdge>> readFields(final DataInput in, final Direction idToRead, final long otherId) throws IOException {
             final Map<String, List<FaunusEdge>> edges = new HashMap<String, List<FaunusEdge>>();

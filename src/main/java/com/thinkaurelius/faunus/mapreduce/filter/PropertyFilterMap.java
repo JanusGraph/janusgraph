@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.mapreduce.derivations;
+package com.thinkaurelius.faunus.mapreduce.filter;
 
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
@@ -6,23 +6,25 @@ import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.ElementChecker;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class EdgeValueFilter {
+public class PropertyFilterMap {
 
-    public static final String KEY = Tokens.makeNamespace(EdgeValueFilter.class) + ".key";
-    public static final String VALUES = Tokens.makeNamespace(EdgeValueFilter.class) + ".values";
-    public static final String VALUE_CLASS = Tokens.makeNamespace(EdgeValueFilter.class) + ".valueClass";
-    public static final String COMPARE = Tokens.makeNamespace(EdgeValueFilter.class) + ".compare";
-    public static final String NULL_WILDCARD = Tokens.makeNamespace(EdgeValueFilter.class) + ".nullWildcard";
+    public static final String CLASS = Tokens.makeNamespace(PropertyFilterMap.class) + ".class";
+    public static final String KEY = Tokens.makeNamespace(PropertyFilterMap.class) + ".key";
+    public static final String VALUES = Tokens.makeNamespace(PropertyFilterMap.class) + ".values";
+    public static final String VALUE_CLASS = Tokens.makeNamespace(PropertyFilterMap.class) + ".valueClass";
+    public static final String COMPARE = Tokens.makeNamespace(PropertyFilterMap.class) + ".compare";
+    public static final String NULL_WILDCARD = Tokens.makeNamespace(PropertyFilterMap.class) + ".nullWildcard";
 
     public enum Counters {
         EDGES_KEPT,
@@ -31,10 +33,12 @@ public class EdgeValueFilter {
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
+        private boolean isVertex;
         private ElementChecker elementChecker;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
+            this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
             final String key = context.getConfiguration().get(KEY);
             final Class valueClass = context.getConfiguration().getClass(VALUE_CLASS, String.class);
             final String[] valueStrings = context.getConfiguration().getStrings(VALUES);
@@ -63,16 +67,17 @@ public class EdgeValueFilter {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            final Iterator<Edge> itty = value.getEdges(Direction.BOTH).iterator();
-            while (itty.hasNext()) {
-                final Edge edge = itty.next();
-                if (this.elementChecker.isLegal((FaunusEdge) edge))
-                    context.getCounter(Counters.EDGES_KEPT).increment(1l);
-                else {
-                    itty.remove();
-                    context.getCounter(Counters.EDGES_DROPPED).increment(1l);
+
+            if (this.isVertex) {
+                if (!this.elementChecker.isLegal(value))
+                    value.setEnergy(0);
+            } else {
+                for (Edge edge : value.getEdges(Direction.BOTH)) {
+                    if (!this.elementChecker.isLegal((FaunusEdge) edge))
+                        ((FaunusEdge) edge).setEnergy(0);
                 }
             }
+
             context.write(NullWritable.get(), value);
         }
     }

@@ -48,12 +48,16 @@ public class ValueDistribution {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
 
             if (this.klass.equals(Vertex.class)) {
-                this.map.incr(ElementPicker.getPropertyAsString(value, this.property), 1l);
-                context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
+                if (value.hasEnergy()) {
+                    this.map.incr(ElementPicker.getPropertyAsString(value, this.property), value.getEnergy());
+                    context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
+                }
             } else {
                 for (final Edge edge : value.getEdges(Direction.OUT)) {
-                    this.map.incr(ElementPicker.getPropertyAsString((FaunusEdge) edge, this.property), 1l);
-                    context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
+                    if (((FaunusEdge) edge).hasEnergy()) {
+                        this.map.incr(ElementPicker.getPropertyAsString((FaunusEdge) edge, this.property), value.getEnergy());
+                        context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
+                    }
                 }
             }
 

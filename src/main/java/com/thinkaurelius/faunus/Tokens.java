@@ -26,4 +26,8 @@ public class Tokens {
     public static final String TAB = "\t";
     public static final String NEWLINE = "\n";
     public static final String EMPTY_STRING = "";
+
+    public static final String NO_LABEL = "%";
+    public static final String TEMP_LABEL = "%_";
+
 }

@@ -8,18 +8,9 @@ import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
-import com.thinkaurelius.faunus.mapreduce.derivations.CloseLine;
-import com.thinkaurelius.faunus.mapreduce.derivations.CloseTriangle;
-import com.thinkaurelius.faunus.mapreduce.derivations.DirectionFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.EdgeFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.EdgeValueFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.Identity;
-import com.thinkaurelius.faunus.mapreduce.derivations.KeyFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.LabelFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.LoopFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.SideEffect;
-import com.thinkaurelius.faunus.mapreduce.derivations.VertexFilter;
-import com.thinkaurelius.faunus.mapreduce.derivations.VertexValueFilter;
+import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.AsMap;
 import com.thinkaurelius.faunus.mapreduce.statistics.AdjacentProperties;
 import com.thinkaurelius.faunus.mapreduce.statistics.Degree;
 import com.thinkaurelius.faunus.mapreduce.statistics.DegreeDistribution;
@@ -29,6 +20,10 @@ import com.thinkaurelius.faunus.mapreduce.statistics.Property;
 import com.thinkaurelius.faunus.mapreduce.statistics.SortedDegree;
 import com.thinkaurelius.faunus.mapreduce.statistics.Transform;
 import com.thinkaurelius.faunus.mapreduce.statistics.ValueDistribution;
+import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -116,124 +111,77 @@ public class FaunusRunner extends Configured implements Tool {
     ///////////////////////// DERIVATIONS /////////////////////////
     ///////////////////////////////////////////////////////////////
 
-    public void _() throws IOException {
-        this.mapSequenceClasses.add(Identity.Map.class);
+    ///////////// TRANSFORMS
+
+    public void _() {
+        this.mapSequenceClasses.add(IdentityMap.Map.class);
     }
 
-    // FILTERS
-
-    public void filter(final Class<? extends Element> klass, final String closure) throws IOException {
-        if (klass.equals(Vertex.class)) {
-            this.mapSequenceConfiguration.set(VertexFilter.CLOSURE, closure);
-            this.mapRClass = VertexFilter.Map.class;
-            this.reduceClass = VertexFilter.Reduce.class;
-            this.completeSequence();
-        } else if (klass.equals(Edge.class)) {
-            this.mapSequenceConfiguration.set(EdgeFilter.FUNCTION + "-" + this.mapSequenceClasses.size(), closure);
-            this.mapSequenceClasses.add(EdgeFilter.Map.class);
-        } else {
-            throw new IOException("Unsupported element class: " + klass.getName());
+    public void vertexMap(final long... ids) {
+        final String[] idStrings = new String[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            idStrings[i] = String.valueOf(ids[i]);
         }
+        this.mapSequenceConfiguration.setStrings(VertexMap.IDS + "-" + this.mapSequenceClasses.size(), idStrings);
+        this.mapSequenceClasses.add(VertexMap.Map.class);
     }
 
-    public void propertyFilter(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object... values) throws IOException {
-        this.propertyFilter(klass, false, key, compare, values);
+    public void verticesMap() {
+        this.mapSequenceClasses.add(VerticesMap.Map.class);
     }
 
-    public void propertyFilter(final Class<? extends Element> klass, final Boolean nullIsWildcard, final String key, final Query.Compare compare, final Object... values) throws IOException {
-        String[] valueStrings = new String[values.length];
+    public void verticesVerticesMapReduce(final Direction direction, final String... labels) throws IOException {
+        this.mapSequenceConfiguration.set(VerticesVerticesMapReduce.DIRECTION, direction.name());
+        this.mapSequenceConfiguration.setStrings(VerticesVerticesMapReduce.LABELS, labels);
+        this.mapRClass = VerticesVerticesMapReduce.Map.class;
+        this.reduceClass = VerticesVerticesMapReduce.Reduce.class;
+        this.completeSequence();
+    }
+
+    ///////////// FILTERS
+
+    public void filterMap(final Class<? extends Element> klass, final String closure) {
+        if (!klass.equals(Vertex.class) && !klass.equals(Edge.class)) {
+            throw new RuntimeException("Unsupported element class: " + klass.getName());
+        }
+
+        this.mapSequenceConfiguration.setClass(FilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceConfiguration.set(FilterMap.CLOSURE + "-" + this.mapSequenceClasses.size(), closure);
+        this.mapSequenceClasses.add(FilterMap.Map.class);
+    }
+
+    public void propertyFilterMap(final Class<? extends Element> klass, final boolean nullIsWildcard, final String key, final Query.Compare compare, final Object... values) {
+        final String[] valueStrings = new String[values.length];
         for (int i = 0; i < values.length; i++) {
             valueStrings[i] = values[i].toString();
         }
-
-        if (klass.equals(Vertex.class)) {
-            this.mapSequenceConfiguration.set(VertexValueFilter.KEY, key);
-            this.mapSequenceConfiguration.set(VertexValueFilter.COMPARE, compare.name());
-            this.mapSequenceConfiguration.setStrings(VertexValueFilter.VALUES, valueStrings);
-            this.mapSequenceConfiguration.setBoolean(VertexValueFilter.NULL_WILDCARD, nullIsWildcard);
-            if (values[0] instanceof String) {
-                this.mapSequenceConfiguration.setClass(VertexValueFilter.VALUE_CLASS, String.class, String.class);
-            } else if (values[0] instanceof Boolean) {
-                this.mapSequenceConfiguration.setClass(VertexValueFilter.VALUE_CLASS, Boolean.class, Boolean.class);
-            } else if (values[0] instanceof Number) {
-                this.mapSequenceConfiguration.setClass(VertexValueFilter.VALUE_CLASS, Number.class, Number.class);
-            }
-            this.mapRClass = VertexValueFilter.Map.class;
-            this.reduceClass = VertexValueFilter.Reduce.class;
-            this.completeSequence();
-        } else if (klass.equals(Edge.class)) {
-            this.mapSequenceConfiguration.set(EdgeValueFilter.KEY + "-" + this.mapSequenceClasses.size(), key);
-            this.mapSequenceConfiguration.set(EdgeValueFilter.COMPARE + "-" + this.mapSequenceClasses.size(), compare.name());
-            this.mapSequenceConfiguration.setStrings(EdgeValueFilter.VALUES + "-" + this.mapSequenceClasses.size(), valueStrings);
-            this.mapSequenceConfiguration.setBoolean(EdgeValueFilter.NULL_WILDCARD, nullIsWildcard);
-            if (values[0] instanceof String) {
-                this.mapSequenceConfiguration.setClass(EdgeValueFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), String.class, String.class);
-            } else if (values[0] instanceof Boolean) {
-                this.mapSequenceConfiguration.setClass(EdgeValueFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Boolean.class, Boolean.class);
-            } else if (values[0] instanceof Number) {
-                this.mapSequenceConfiguration.setClass(EdgeValueFilter.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Number.class, Number.class);
-            }
-            this.mapSequenceClasses.add(EdgeValueFilter.Map.class);
-        } else {
-            throw new IOException("Unsupported element class: " + klass.getName());
+        this.mapSequenceConfiguration.setClass(PropertyFilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceConfiguration.set(PropertyFilterMap.KEY + "-" + this.mapSequenceClasses.size(), key);
+        this.mapSequenceConfiguration.set(PropertyFilterMap.COMPARE + "-" + this.mapSequenceClasses.size(), compare.name());
+        this.mapSequenceConfiguration.setStrings(PropertyFilterMap.VALUES + "-" + this.mapSequenceClasses.size(), valueStrings);
+        this.mapSequenceConfiguration.setBoolean(PropertyFilterMap.NULL_WILDCARD, nullIsWildcard);
+        if (values[0] instanceof String) {
+            this.mapSequenceConfiguration.setClass(PropertyFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), String.class, String.class);
+        } else if (values[0] instanceof Boolean) {
+            this.mapSequenceConfiguration.setClass(PropertyFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Boolean.class, Boolean.class);
+        } else if (values[0] instanceof Number) {
+            this.mapSequenceConfiguration.setClass(PropertyFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Number.class, Number.class);
         }
+        this.mapSequenceClasses.add(PropertyFilterMap.Map.class);
     }
 
-    public void directionFilter(final Direction direction) {
-        this.mapSequenceConfiguration.set(DirectionFilter.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
-        this.mapSequenceClasses.add(DirectionFilter.Map.class);
+    ///////////// SIDE-EFFECTS
+
+    public void asMap(final Class<? extends Element> klass, final char tag) {
+        if (!klass.equals(Vertex.class) && !klass.equals(Edge.class)) {
+            throw new RuntimeException("Unsupported element class: " + klass.getName());
+        }
+
+        this.mapSequenceConfiguration.setClass(AsMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceConfiguration.set(AsMap.TAG + "-" + this.mapSequenceClasses.size(), String.valueOf(tag));
+        this.mapSequenceClasses.add(AsMap.Map.class);
     }
 
-    public void labelFilter(final Tokens.Action action, final String... labels) {
-        this.mapSequenceConfiguration.set(LabelFilter.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
-        this.mapSequenceConfiguration.setStrings(LabelFilter.LABELS + "-" + this.mapSequenceClasses.size(), labels);
-        this.mapSequenceClasses.add(LabelFilter.Map.class);
-    }
-
-    public void loopFilter(final Tokens.Action action, final String... labels) {
-        this.mapSequenceConfiguration.set(LoopFilter.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
-        this.mapSequenceConfiguration.setStrings(LoopFilter.LABELS + "-" + this.mapSequenceClasses.size(), labels);
-        this.mapSequenceClasses.add(LoopFilter.Map.class);
-    }
-
-    // SIDEEFFECT
-
-    public void sideEffect(final Class<? extends Element> klass, final String function) {
-        this.mapSequenceConfiguration.set(SideEffect.CLASS + "-" + this.mapSequenceClasses.size(), klass.getName());
-        this.mapSequenceConfiguration.set(SideEffect.FUNCTION + "-" + this.mapSequenceClasses.size(), function);
-        this.mapSequenceClasses.add(SideEffect.Map.class);
-    }
-
-    public void properties(final Class<? extends Element> klass, final Tokens.Action action, final String... keys) {
-        this.mapSequenceConfiguration.set(KeyFilter.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
-        this.mapSequenceConfiguration.set(KeyFilter.CLASS + "-" + this.mapSequenceClasses.size(), klass.getName());
-        this.mapSequenceConfiguration.setStrings(KeyFilter.KEYS + "-" + this.mapSequenceClasses.size(), keys);
-        this.mapSequenceClasses.add(KeyFilter.Map.class);
-    }
-
-    public void closeLine(final List<String> labels, final Tokens.Action action, final String newLabel, final Direction newDirection) {
-        this.mapSequenceConfiguration.setStrings(CloseLine.LABELS + "-" + this.mapSequenceClasses.size(), labels.toArray(new String[labels.size()]));
-        this.mapSequenceConfiguration.set(CloseLine.ACTION + "-" + this.mapSequenceClasses.size(), action.name());
-        this.mapSequenceConfiguration.set(CloseLine.NEW_LABEL + "-" + this.mapSequenceClasses.size(), newLabel);
-        this.mapSequenceConfiguration.set(CloseLine.NEW_DIRECTION + "-" + this.mapSequenceClasses.size(), newDirection.name());
-        this.mapSequenceClasses.add(CloseLine.Map.class);
-    }
-
-    public void closeTriangle(final Direction firstDirection, final List<String> firstLabels, final Tokens.Action firstAction,
-                              final Direction secondDirection, final List<String> secondLabels, final Tokens.Action secondAction,
-                              final Direction newDirection, String newLabel) throws IOException {
-        this.mapSequenceConfiguration.set(CloseTriangle.FIRST_DIRECTION, firstDirection.name());
-        this.mapSequenceConfiguration.setStrings(CloseTriangle.FIRST_LABELS, firstLabels.toArray(new String[firstLabels.size()]));
-        this.mapSequenceConfiguration.set(CloseTriangle.FIRST_ACTION, firstAction.name());
-        this.mapSequenceConfiguration.set(CloseTriangle.SECOND_DIRECTION, secondDirection.name());
-        this.mapSequenceConfiguration.setStrings(CloseTriangle.SECOND_LABELS, secondLabels.toArray(new String[secondLabels.size()]));
-        this.mapSequenceConfiguration.set(CloseTriangle.SECOND_ACTION, secondAction.name());
-        this.mapSequenceConfiguration.set(CloseTriangle.NEW_DIRECTION, newDirection.name());
-        this.mapSequenceConfiguration.set(CloseTriangle.NEW_LABEL, newLabel);
-        this.mapRClass = CloseTriangle.Map.class;
-        this.reduceClass = CloseTriangle.Reduce.class;
-        this.completeSequence();
-    }
 
     public void completeSequence() throws IOException {
         if (this.mapRClass != null && this.reduceClass != null) {

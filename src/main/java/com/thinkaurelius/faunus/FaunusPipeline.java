@@ -12,12 +12,9 @@ import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 
+import static com.tinkerpop.blueprints.Direction.BOTH;
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
 
@@ -29,48 +26,9 @@ public class FaunusPipeline {
 
     public static final String VERTEX_STATE_ERROR = "The compiler is currently in vertex state";
     public static final String EDGE_STATE_ERROR = "The compiler is currently in edge state";
-    public static final String TEMP_LABEL = "_%temp%_";
 
-    private final JobState state = new JobState();
     private final FaunusRunner compiler;
-
-    private class JobState {
-        private Class<? extends Element> elementType;
-        private Queue<Direction> directions = new LinkedList<Direction>();
-        private Queue<List<String>> labels = new LinkedList<List<String>>();
-
-        public JobState set(Class<? extends Element> elementType) {
-            this.elementType = elementType;
-            return this;
-        }
-
-        public JobState add(final Direction direction) {
-            this.directions.add(direction);
-            return this;
-        }
-
-        public JobState add(final String... labels) {
-            this.labels.add(Arrays.asList(labels));
-            return this;
-        }
-
-        public Class<? extends Element> getElementType() {
-            return this.elementType;
-        }
-
-        public boolean atVertex() {
-            return this.elementType.equals(Vertex.class);
-        }
-
-        public int stackSize() {
-            return this.directions.size();
-        }
-
-        public void clear() {
-            this.directions.clear();
-            this.labels.clear();
-        }
-    }
+    private final JobState state;
 
     private Query.Compare opposite(final Query.Compare compare) {
         if (compare.equals(Query.Compare.EQUAL))
@@ -87,147 +45,116 @@ public class FaunusPipeline {
             return Query.Compare.GREATER_THAN;
     }
 
+    private class JobState {
+        private Class<? extends Element> elementType;
+        private String property;
+
+        public JobState set(Class<? extends Element> elementType) {
+            this.elementType = elementType;
+            return this;
+        }
+
+        public Class<? extends Element> getElementType() {
+            return this.elementType;
+        }
+
+        public boolean atVertex() {
+            return this.elementType.equals(Vertex.class);
+        }
+
+        public JobState set(final String property) {
+            this.property = property;
+            return this;
+        }
+
+        public String getProperty() {
+            return this.property;
+        }
+    }
+
     public FaunusPipeline(final String jobScript, final Configuration conf) {
         this.compiler = new FaunusRunner(jobScript, conf);
+        this.state = new JobState();
     }
 
-    public FaunusPipeline _() throws IOException {
-        this.compiler._();
-        return this;
-    }
-
+    //////// TRANSFORMS
 
     public FaunusPipeline V() {
         this.state.set(Vertex.class);
+        this.compiler.verticesMap();
         return this;
     }
 
-    public FaunusPipeline E() {
-        this.state.set(Edge.class);
+    public FaunusPipeline v(final long... ids) {
+        this.state.set(Vertex.class);
+        this.compiler.vertexMap(ids);
         return this;
     }
 
-    public FaunusPipeline filter(final String closure) throws IOException {
-        this.compiler.filter(this.state.getElementType(), closure);
+    public FaunusPipeline out(final String... labels) throws IOException {
+        if (this.state.atVertex()) {
+            this.compiler.verticesVerticesMapReduce(OUT, labels);
+            return this;
+        } else
+            throw new RuntimeException("This step can not follow an edge-based step");
+    }
+
+    public FaunusPipeline in(final String... labels) throws IOException {
+        if (this.state.atVertex()) {
+            this.compiler.verticesVerticesMapReduce(IN, labels);
+            return this;
+        } else
+            throw new RuntimeException("This step can not follow an edge-based step");
+    }
+
+    public FaunusPipeline both(final String... labels) throws IOException {
+        if (this.state.atVertex()) {
+            this.compiler.verticesVerticesMapReduce(BOTH, labels);
+            return this;
+        } else
+            throw new RuntimeException("This step can not follow an edge-based step");
+    }
+
+    public FaunusPipeline property(final String key) {
+        this.state.set(key);
         return this;
     }
 
-    public FaunusPipeline has(final String key, final Query.Compare compare, final Object... values) throws IOException {
-        this.compiler.propertyFilter(this.state.getElementType(), key, compare, values);
+    //////// FILTERS
+
+    public FaunusPipeline filter(final String closure) {
+        this.compiler.filterMap(this.state.getElementType(), closure);
         return this;
     }
 
-    public FaunusPipeline has(final String key, final Object... values) throws IOException {
-        return this.has(key, Query.Compare.EQUAL, values);
+    public FaunusPipeline has(final String key, final Query.Compare compare, final Object... values) {
+        this.compiler.propertyFilterMap(this.state.getElementType(), false, key, compare, values);
+        return this;
     }
 
-    public FaunusPipeline hasNot(final String key, final Object... values) throws IOException {
-        return this.has(key, Query.Compare.NOT_EQUAL, values);
-    }
-
-    public FaunusPipeline hasNot(final String key, final Query.Compare compare, final Object... values) throws IOException {
+    public FaunusPipeline hasNot(final String key, final Query.Compare compare, final Object... values) {
         return this.has(key, this.opposite(compare), values);
     }
 
-    public FaunusPipeline outE(final String... labels) {
-        state.set(Edge.class).add(OUT).add(labels);
+    public FaunusPipeline has(final String key, final Object... values) {
+        return this.has(key, Query.Compare.EQUAL, values);
+    }
+
+    public FaunusPipeline hasNot(final String key, final Object... values) {
+        return this.has(key, Query.Compare.NOT_EQUAL, values);
+    }
+
+    public FaunusPipeline groupCount() throws IOException {
+        this.compiler.valueDistribution(this.state.getElementType(), this.state.getProperty());
         return this;
     }
 
-    public FaunusPipeline inE(final String... labels) {
-        state.set(Edge.class).add(IN).add(labels);
+    //////// SIDEEFFECTS
+
+    public FaunusPipeline as(final char tag) {
+        this.compiler.asMap(this.state.getElementType(), tag);
         return this;
     }
-
-    public FaunusPipeline inV() {
-        state.set(Vertex.class);
-        return this;
-    }
-
-    public FaunusPipeline outV() {
-        state.set(Vertex.class);
-        return this;
-    }
-
-    public FaunusPipeline out(final String... labels) {
-        if (state.atVertex()) {
-            state.add(OUT).add(labels);
-        } else {
-            throw new RuntimeException(EDGE_STATE_ERROR);
-        }
-        return this;
-    }
-
-    public FaunusPipeline in(final String... labels) {
-        if (state.atVertex()) {
-            state.add(IN).add(labels);
-        } else {
-            throw new RuntimeException(EDGE_STATE_ERROR);
-        }
-        return this;
-    }
-
-    private void link(final Direction direction, final String label) throws IOException {
-        if (state.atVertex()) {
-            if (state.stackSize() == 1) {
-                compiler.closeLine(state.labels.remove(), Tokens.Action.KEEP, label, direction);
-            } else if (state.stackSize() > 1) {
-                int maxSize = state.stackSize() - 1;
-                for (int i = 0; i < maxSize; i++) {
-                    final List<String> firstLabels = (i == 0) ? state.labels.remove() : Arrays.asList(TEMP_LABEL + i);
-                    final Direction firstDirection = (i == 0) ? state.directions.remove() : OUT;
-                    final Tokens.Action firstLabelsAction = (firstLabels.size() == 1 && firstLabels.get(0).equals(TEMP_LABEL + i)) ? Tokens.Action.DROP : Tokens.Action.KEEP;
-                    final String newLabel = (i == maxSize - 1) ? label : TEMP_LABEL + (i + 1);
-                    final Direction newDirection = (i == maxSize - 1) ? direction : OUT;
-                    compiler.closeTriangle(firstDirection, firstLabels, firstLabelsAction, state.directions.remove(), state.labels.remove(), Tokens.Action.KEEP, newDirection, newLabel);
-                }
-            } else {
-                throw new RuntimeException("There are no steps to link to: " + this.state.stackSize());
-            }
-        } else {
-            throw new RuntimeException("Edges can not be relinked");
-        }
-        this.state.clear();
-    }
-
-    public FaunusPipeline linkOut(final String label) throws IOException {
-        this.link(OUT, label);
-        return this;
-    }
-
-    public FaunusPipeline linkIn(final String label) throws IOException {
-        this.link(IN, label);
-        return this;
-    }
-
-    public FaunusPipeline drop() throws IOException {
-        //this.link(IN, label);
-        return this;
-    }
-
-
-    public FaunusPipeline sideEffect(final String function) throws IOException {
-        if (state.getElementType().equals(Vertex.class)) {
-            compiler.sideEffect(Vertex.class, function);
-        } else {
-            compiler.sideEffect(Edge.class, function);
-        }
-        return this;
-    }
-
-    public FaunusPipeline groupCount(final String keyFunction) throws IOException {
-        return this.groupCount(keyFunction, "{ it -> 1l}");
-    }
-
-    public FaunusPipeline groupCount(final String keyFunction, final String valueFunction) throws IOException {
-        if (state.getElementType().equals(Vertex.class)) {
-            compiler.distribution(Vertex.class, keyFunction, valueFunction);
-        } else {
-            compiler.distribution(Edge.class, keyFunction, valueFunction);
-        }
-        return this;
-    }
-
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1 && args.length != 2) {

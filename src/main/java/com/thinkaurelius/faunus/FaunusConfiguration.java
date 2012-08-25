@@ -1,11 +1,12 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.OutputFormat;
+
+import java.util.Collection;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -51,7 +52,7 @@ public class FaunusConfiguration extends Configuration {
     public Class<? extends OutputFormat> getStatisticsOutputFormat() {
         return this.getClass(STATISTIC_OUTPUT_FORMAT_CLASS, OutputFormat.class, OutputFormat.class);
     }
-    
+
     public Path getInputLocation() {
         return new Path(this.get(INPUT_LOCATION));
     }
@@ -62,5 +63,16 @@ public class FaunusConfiguration extends Configuration {
 
     public boolean getOutputLocationOverwrite() {
         return this.getBoolean(OUTPUT_LOCATION_OVERWRITE, false);
+    }
+
+    public static Direction getDirection(final Configuration conf, final String key) {
+        return Direction.valueOf(conf.get(key));
+    }
+
+    public static Collection<Long> getLongCollection(final Configuration conf, final String key, final Collection<Long> collection) {
+        for (final String value : conf.getStrings(key)) {
+            collection.add(Long.valueOf(value));
+        }
+        return collection;
     }
 }

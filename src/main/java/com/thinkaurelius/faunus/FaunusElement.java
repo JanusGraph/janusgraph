@@ -1,13 +1,16 @@
 package com.thinkaurelius.faunus;
 
 import com.tinkerpop.blueprints.Element;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Writable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -17,17 +20,17 @@ public abstract class FaunusElement implements Element, Writable {
     protected static final Map<String, String> TYPE_MAP = new HashMap<String, String>() {
         @Override
         public final String get(final Object object) {
-            final String label = (String)object;
+            final String label = (String) object;
             final String existing = super.get(label);
             if (null == existing) {
-                super.put(label,label);
+                super.put(label, label);
                 return label;
             } else {
                 return existing;
             }
         }
     };
-    
+
     public static final Set<Class<?>> SUPPORTED_ATTRIBUTE_TYPES = new HashSet<Class<?>>() {{
         add(Integer.class);
         add(Long.class);
@@ -39,9 +42,35 @@ public abstract class FaunusElement implements Element, Writable {
 
     protected Map<String, Object> properties = null;
     protected long id;
+    protected int energy = 0;
+    protected char tag = '_';
 
     public FaunusElement(final long id) {
         this.id = id;
+    }
+
+    public int getEnergy() {
+        return this.energy;
+    }
+
+    public void setEnergy(final int amount) {
+        this.energy = amount;
+    }
+
+    public void incrEnergy(final int amount) {
+        this.energy = this.energy + amount;
+    }
+
+    public boolean hasEnergy() {
+        return this.energy > 0;
+    }
+
+    public void setTag(final char tag) {
+        this.tag = tag;
+    }
+
+    public char getTag() {
+        return this.tag;
     }
 
     public void setProperty(final String key, final Object value) {
