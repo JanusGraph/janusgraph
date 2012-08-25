@@ -85,6 +85,12 @@ public class FaunusPipeline {
         return this;
     }
 
+    public FaunusPipeline E() {
+        this.state.set(Edge.class);
+        this.compiler.edgesMap();
+        return this;
+    }
+
     public FaunusPipeline v(final long... ids) {
         this.state.set(Vertex.class);
         this.compiler.vertexMap(ids);
@@ -151,9 +157,41 @@ public class FaunusPipeline {
 
     //////// SIDEEFFECTS
 
-    public FaunusPipeline as(final char tag) {
-        this.compiler.asMap(this.state.getElementType(), tag);
+    public FaunusPipeline as(final String tag) {
+        this.compiler.asMap(this.state.getElementType(), tag.charAt(0));
         return this;
+    }
+
+
+    public FaunusPipeline linkOut(final String tag, final String label) throws IOException {
+        this.compiler.linkMapReduce(tag.charAt(0), OUT, label);
+        return this;
+    }
+
+    public FaunusPipeline linkIn(final String tag, final String label) throws IOException {
+        this.compiler.linkMapReduce(tag.charAt(0), IN, label);
+        return this;
+    }
+
+    public FaunusPipeline linkBoth(final String tag, final String label) throws IOException {
+        this.compiler.linkMapReduce(tag.charAt(0), BOTH, label);
+        return this;
+    }
+
+    private FaunusPipeline commit(final Tokens.Action action) throws IOException {
+        if (this.state.atVertex())
+            this.compiler.commitVerticesMapReduce(action);
+        else
+            this.compiler.commitEdgesMap(action);
+        return this;
+    }
+
+    public FaunusPipeline drop() throws IOException {
+        return this.commit(Tokens.Action.DROP);
+    }
+
+    public FaunusPipeline keep() throws IOException {
+        return this.commit(Tokens.Action.KEEP);
     }
 
     public static void main(String[] args) throws Exception {

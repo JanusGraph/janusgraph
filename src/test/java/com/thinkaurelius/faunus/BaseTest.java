@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus;
 import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.NullWritable;
@@ -12,6 +11,7 @@ import org.apache.hadoop.mrunit.types.Pair;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +38,14 @@ public abstract class BaseTest extends TestCase {
             return new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
     }
 
+    public static Map<Long, FaunusVertex> generateIndexedToyGraph(final ExampleGraph example) throws IOException {
+        Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
+        for (FaunusVertex vertex : generateToyGraph(example)) {
+            map.put(vertex.getIdAsLong(), vertex);
+        }
+        return map;
+    }
+
     public static Map<Long, FaunusVertex> indexResults(final List<Pair<NullWritable, FaunusVertex>> pairs) {
         final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
         for (final Pair<NullWritable, FaunusVertex> pair : pairs) {
@@ -58,20 +66,10 @@ public abstract class BaseTest extends TestCase {
         return indexResults(driver.run());
     }
 
-    public static Map<Long, FaunusVertex> runWithGraph(final Graph graph, final MapReduceDriver driver) throws IOException {
+    public static Map<Long, FaunusVertex> runWithGraph(Collection<FaunusVertex> vertices, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
-        for (final Vertex vertex : graph.getVertices()) {
-            final FaunusVertex temp = new FaunusVertex(Long.valueOf(vertex.getId().toString()));
-            for (final Edge edge : vertex.getEdges(Direction.OUT)) {
-                temp.addEdge(Direction.OUT, new FaunusEdge(temp.getIdAsLong(), Long.valueOf(edge.getVertex(Direction.IN).getId().toString()), edge.getLabel()));
-            }
-            for (final Edge edge : vertex.getEdges(Direction.IN)) {
-                temp.addEdge(Direction.IN, new FaunusEdge(Long.valueOf(edge.getVertex(Direction.OUT).getId().toString()), temp.getIdAsLong(), edge.getLabel()));
-            }
-            for (final String key : vertex.getPropertyKeys()) {
-                temp.setProperty(key, vertex.getProperty(key));
-            }
-            driver.withInput(NullWritable.get(), temp);
+        for (final Vertex vertex : vertices) {
+            driver.withInput(NullWritable.get(), vertex);
         }
         return indexResults(driver.run());
     }

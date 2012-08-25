@@ -55,6 +55,13 @@ public class VerticesVerticesMapReduce {
                     this.longWritable.set(vertex.getIdAsLong());
                     context.write(this.longWritable, this.holder.set('e', vertex));
                 }
+
+                /*for (final Vertex v : value.getVertices(this.direction, this.labels)) {
+                    FaunusVertex vertex = (FaunusVertex) v;
+                    vertex.setEnergy(energy);
+                    this.longWritable.set(vertex.getIdAsLong());
+                    context.write(this.longWritable, this.holder.set('e', vertex));
+                }*/
             }
             value.setEnergy(0);
             this.longWritable.set(value.getIdAsLong());

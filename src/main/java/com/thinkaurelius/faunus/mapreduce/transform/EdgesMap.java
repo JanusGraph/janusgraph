@@ -12,7 +12,7 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class VerticesMap {
+public class EdgesMap {
 
     public enum Counters {
         VERTICES_PROCESSED
@@ -22,9 +22,9 @@ public class VerticesMap {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            value.setEnergy(1);
+            value.setEnergy(0);
             for (final Edge edge : value.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).setEnergy(0);
+                ((FaunusEdge) edge).setEnergy(1);
             }
             context.write(NullWritable.get(), value);
         }

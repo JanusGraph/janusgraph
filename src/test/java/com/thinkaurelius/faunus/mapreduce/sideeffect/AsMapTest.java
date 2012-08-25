@@ -32,13 +32,22 @@ public class AsMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, mapReduceDriver);
+        Map<Long, FaunusVertex> results = generateIndexedToyGraph(BaseTest.ExampleGraph.TINKERGRAPH);
+        results.get(1l).setEnergy(1);
+        results.get(2l).setEnergy(0);
+        results.get(3l).setEnergy(2);
+        results.get(4l).setEnergy(0);
+        results.get(5l).setEnergy(0);
+        results.get(6l).setEnergy(3);
+
+        results = runWithGraph(results.values(), mapReduceDriver);
+
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).getTag(), 'a');
-        assertEquals(results.get(2l).getTag(), 'a');
+        assertEquals(results.get(2l).getTag(), '_');
         assertEquals(results.get(3l).getTag(), 'a');
-        assertEquals(results.get(4l).getTag(), 'a');
-        assertEquals(results.get(5l).getTag(), 'a');
+        assertEquals(results.get(4l).getTag(), '_');
+        assertEquals(results.get(5l).getTag(), '_');
         assertEquals(results.get(6l).getTag(), 'a');
     }
 }

@@ -11,6 +11,9 @@ import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
 import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.AsMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.LinkMapReduce;
 import com.thinkaurelius.faunus.mapreduce.statistics.AdjacentProperties;
 import com.thinkaurelius.faunus.mapreduce.statistics.Degree;
 import com.thinkaurelius.faunus.mapreduce.statistics.DegreeDistribution;
@@ -20,6 +23,7 @@ import com.thinkaurelius.faunus.mapreduce.statistics.Property;
 import com.thinkaurelius.faunus.mapreduce.statistics.SortedDegree;
 import com.thinkaurelius.faunus.mapreduce.statistics.Transform;
 import com.thinkaurelius.faunus.mapreduce.statistics.ValueDistribution;
+import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
@@ -130,6 +134,10 @@ public class FaunusRunner extends Configured implements Tool {
         this.mapSequenceClasses.add(VerticesMap.Map.class);
     }
 
+    public void edgesMap() {
+        this.mapSequenceClasses.add(EdgesMap.Map.class);
+    }
+
     public void verticesVerticesMapReduce(final Direction direction, final String... labels) throws IOException {
         this.mapSequenceConfiguration.set(VerticesVerticesMapReduce.DIRECTION, direction.name());
         this.mapSequenceConfiguration.setStrings(VerticesVerticesMapReduce.LABELS, labels);
@@ -180,6 +188,28 @@ public class FaunusRunner extends Configured implements Tool {
         this.mapSequenceConfiguration.setClass(AsMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceConfiguration.set(AsMap.TAG + "-" + this.mapSequenceClasses.size(), String.valueOf(tag));
         this.mapSequenceClasses.add(AsMap.Map.class);
+    }
+
+
+    public void linkMapReduce(final char tag, final Direction direction, final String label) throws IOException {
+        this.mapSequenceConfiguration.set(LinkMapReduce.TAG, String.valueOf(tag));
+        this.mapSequenceConfiguration.set(LinkMapReduce.DIRECTION, direction.name());
+        this.mapSequenceConfiguration.set(LinkMapReduce.LABEL, label);
+        this.mapRClass = LinkMapReduce.Map.class;
+        this.reduceClass = LinkMapReduce.Reduce.class;
+        this.completeSequence();
+    }
+
+    public void commitEdgesMap(final Tokens.Action action) {
+        this.mapSequenceConfiguration.set(CommitEdgesMap.ACTION + "-" + mapSequenceClasses.size(), action.name());
+        this.mapSequenceClasses.add(CommitEdgesMap.Map.class);
+    }
+
+    public void commitVerticesMapReduce(final Tokens.Action action) throws IOException {
+        this.mapSequenceConfiguration.set(CommitVerticesMap.ACTION, action.name());
+        this.mapRClass = CommitVerticesMap.Map.class;
+        this.reduceClass = CommitVerticesMap.Reduce.class;
+        this.completeSequence();
     }
 
 

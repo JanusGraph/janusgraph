@@ -69,11 +69,11 @@ public class PropertyFilterMap {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
 
             if (this.isVertex) {
-                if (!this.elementChecker.isLegal(value))
+                if (value.hasEnergy() && !this.elementChecker.isLegal(value))
                     value.setEnergy(0);
             } else {
                 for (Edge edge : value.getEdges(Direction.BOTH)) {
-                    if (!this.elementChecker.isLegal((FaunusEdge) edge))
+                    if (((FaunusEdge) edge).hasEnergy() && !this.elementChecker.isLegal((FaunusEdge) edge))
                         ((FaunusEdge) edge).setEnergy(0);
                 }
             }

@@ -86,7 +86,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
                     }
 
                     public Vertex next() {
-                        return this.edges.next().getVertex(opposite);
+                        return this.edges.next().getVertex(this.opposite);
                     }
                 };
             }
