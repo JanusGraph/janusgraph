@@ -2,7 +2,6 @@ package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueDistribution;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
@@ -18,21 +17,21 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class ValueDistributionTest extends BaseTest {
+public class ValueGroupCountMapReduceTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, Text, LongWritable, Text, LongWritable> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, Text, LongWritable, Text, LongWritable>();
-        mapReduceDriver.setMapper(new ValueDistribution.Map());
-        mapReduceDriver.setCombiner(new ValueDistribution.Reduce());
-        mapReduceDriver.setReducer(new ValueDistribution.Reduce());
+        mapReduceDriver.setMapper(new ValueGroupCountMapReduce.Map());
+        mapReduceDriver.setCombiner(new ValueGroupCountMapReduce.Reduce());
+        mapReduceDriver.setReducer(new ValueGroupCountMapReduce.Reduce());
     }
 
     public void testVertexTypeProperty() throws IOException {
         Configuration config = new Configuration();
-        config.set(ValueDistribution.CLASS, Vertex.class.getName());
-        config.set(ValueDistribution.PROPERTY, "type");
+        config.set(ValueGroupCountMapReduce.CLASS, Vertex.class.getName());
+        config.set(ValueGroupCountMapReduce.PROPERTY, "type");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -55,13 +54,13 @@ public class ValueDistributionTest extends BaseTest {
             }
         }
 
-        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(ValueDistribution.Counters.PROPERTIES_COUNTED).getValue());
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED).getValue());
     }
 
     public void testVertexNoProperty() throws IOException {
         Configuration config = new Configuration();
-        config.set(ValueDistribution.CLASS, Vertex.class.getName());
-        config.set(ValueDistribution.PROPERTY, "nothing property");
+        config.set(ValueGroupCountMapReduce.CLASS, Vertex.class.getName());
+        config.set(ValueGroupCountMapReduce.PROPERTY, "nothing property");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -74,13 +73,13 @@ public class ValueDistributionTest extends BaseTest {
             }
         }
 
-        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(ValueDistribution.Counters.PROPERTIES_COUNTED).getValue());
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED).getValue());
     }
 
     public void testEdgeTimeProperty() throws IOException {
         Configuration config = new Configuration();
-        config.set(ValueDistribution.CLASS, Edge.class.getName());
-        config.set(ValueDistribution.PROPERTY, "time");
+        config.set(ValueGroupCountMapReduce.CLASS, Edge.class.getName());
+        config.set(ValueGroupCountMapReduce.PROPERTY, "time");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -99,12 +98,12 @@ public class ValueDistributionTest extends BaseTest {
             }
         }
 
-        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(ValueDistribution.Counters.PROPERTIES_COUNTED).getValue());
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED).getValue());
     }
 
     public void testEdgeLabelDistribution1() throws IOException {
         Configuration config = new Configuration();
-        config.set(ValueDistribution.PROPERTY, "label");
+        config.set(ValueGroupCountMapReduce.PROPERTY, "label");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         assertEquals(results.size(), 6);
@@ -126,12 +125,12 @@ public class ValueDistributionTest extends BaseTest {
             }
         }
 
-        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(ValueDistribution.Counters.PROPERTIES_COUNTED).getValue());
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED).getValue());
     }
 
     public void testEdgeLabelDistribution2() throws IOException {
         Configuration config = new Configuration();
-        config.set(ValueDistribution.PROPERTY, "label");
+        config.set(ValueGroupCountMapReduce.PROPERTY, "label");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         assertEquals(results.size(), 6);
@@ -153,7 +152,7 @@ public class ValueDistributionTest extends BaseTest {
             }
         }
 
-        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(ValueDistribution.Counters.PROPERTIES_COUNTED).getValue());
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED).getValue());
     }
 
 

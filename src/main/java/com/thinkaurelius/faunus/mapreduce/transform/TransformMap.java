@@ -15,9 +15,9 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Transform {
+public class TransformMap {
 
-    public static final String FUNCTION = Tokens.makeNamespace(Transform.class) + ".function";
+    public static final String FUNCTION = Tokens.makeNamespace(TransformMap.class) + ".function";
     private static final ScriptEngine engine = new GremlinGroovyScriptEngine();
 
     public enum Counters {

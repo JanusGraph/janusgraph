@@ -20,10 +20,10 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class ValueDistribution {
+public class ValueGroupCountMapReduce {
 
-    public static final String PROPERTY = Tokens.makeNamespace(ValueDistribution.class) + ".property";
-    public static final String CLASS = Tokens.makeNamespace(ValueDistribution.class) + ".class";
+    public static final String PROPERTY = Tokens.makeNamespace(ValueGroupCountMapReduce.class) + ".property";
+    public static final String CLASS = Tokens.makeNamespace(ValueGroupCountMapReduce.class) + ".class";
 
     public enum Counters {
         PROPERTIES_COUNTED

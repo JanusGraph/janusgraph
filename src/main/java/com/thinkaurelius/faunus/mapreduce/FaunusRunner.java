@@ -15,11 +15,11 @@ import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.LinkMapReduce;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueDistribution;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
 import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
-import com.thinkaurelius.faunus.mapreduce.transform.Transform;
+import com.thinkaurelius.faunus.mapreduce.transform.TransformMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
@@ -295,9 +295,9 @@ public class FaunusRunner extends Configured implements Tool {
     public void transform(final String function) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
-        conf.set(Transform.FUNCTION, function);
-        final Job job = new Job(conf, Transform.class.getCanonicalName());
-        job.setMapperClass(Transform.Map.class);
+        conf.set(TransformMap.FUNCTION, function);
+        final Job job = new Job(conf, TransformMap.class.getCanonicalName());
+        job.setMapperClass(TransformMap.Map.class);
         job.setMapOutputKeyClass(FaunusVertex.class);
         job.setMapOutputValueClass(Text.class);
         this.configureStatisticsJob(job);
@@ -329,12 +329,12 @@ public class FaunusRunner extends Configured implements Tool {
     public void valueDistribution(final Class<? extends Element> klass, final String property) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
-        conf.set(ValueDistribution.CLASS, klass.getName());
-        conf.set(ValueDistribution.PROPERTY, property);
-        final Job job = new Job(conf, ValueDistribution.class.getCanonicalName());
-        job.setMapperClass(ValueDistribution.Map.class);
-        job.setReducerClass(ValueDistribution.Reduce.class);
-        job.setCombinerClass(ValueDistribution.Reduce.class);
+        conf.set(ValueGroupCountMapReduce.CLASS, klass.getName());
+        conf.set(ValueGroupCountMapReduce.PROPERTY, property);
+        final Job job = new Job(conf, ValueGroupCountMapReduce.class.getCanonicalName());
+        job.setMapperClass(ValueGroupCountMapReduce.Map.class);
+        job.setReducerClass(ValueGroupCountMapReduce.Reduce.class);
+        job.setCombinerClass(ValueGroupCountMapReduce.Reduce.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(Text.class);
