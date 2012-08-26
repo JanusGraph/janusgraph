@@ -11,7 +11,6 @@ import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
 import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.AsMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
@@ -207,7 +206,7 @@ public class FaunusRunner extends Configured implements Tool {
     ///////////// SIDE-EFFECTS
 
     public void asMap(final Class<? extends Element> klass, final String tag, final int step) {
-        this.configuration.setInt(tag,step);
+        this.configuration.setInt(tag, step);
     }
 
 
