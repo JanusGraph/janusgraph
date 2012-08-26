@@ -58,6 +58,10 @@ public abstract class FaunusElement implements Element, Writable {
         this.paths.add(path);
     }
 
+    public void addPaths(final List<List<MicroElement>> paths) {
+        this.paths.addAll(paths);
+    }
+
     public List<List<MicroElement>> getPaths() {
         return this.paths;
     }

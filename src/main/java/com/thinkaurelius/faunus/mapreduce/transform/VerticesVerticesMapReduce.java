@@ -52,7 +52,7 @@ public class VerticesVerticesMapReduce {
             if (value.hasPaths()) {
                 for (final Edge edge : value.getEdges(this.direction, this.labels)) {
                     FaunusVertex vertex = new FaunusVertex((Long) edge.getVertex(this.direction.opposite()).getId());
-                    vertex.getPaths().addAll(value.getPaths());
+                    vertex.addPaths(value.getPaths());
                     this.longWritable.set(vertex.getIdAsLong());
                     context.write(this.longWritable, this.holder.set('e', vertex));
                 }
@@ -77,23 +77,20 @@ public class VerticesVerticesMapReduce {
             final FaunusVertex vertex = new FaunusVertex(key.get());  // TODO: make a FaunusVertex.clear() for object reuse
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
-                final FaunusVertex vertex2 = (FaunusVertex) holder.get();
+                final FaunusVertex temp = (FaunusVertex) holder.get();
                 if (tag == 'o') {
-                    vertex.setProperties(vertex2.getProperties());
-                    for (final Edge edge : vertex2.getEdges(OUT)) {
+                    vertex.setProperties(temp.getProperties());
+                    for (final Edge edge : temp.getEdges(OUT)) {
                         vertex.addEdge(OUT, (FaunusEdge) edge);
                     }
-                    for (final Edge edge : vertex2.getEdges(IN)) {
+                    for (final Edge edge : temp.getEdges(IN)) {
                         vertex.addEdge(IN, (FaunusEdge) edge);
                     }
-                } else if (tag == 'e') {
-
-                    for (List<MicroElement> path : vertex2.getPaths()) {
+                } else {
+                    for (final List<MicroElement> path : temp.getPaths()) {
                         vertex.addPath(path);
                         vertex.incrPath();
                     }
-                } else {
-                    throw new IOException("A tag of " + tag + " is not a legal tag for this operation");
                 }
             }
             context.write(NullWritable.get(), vertex);
