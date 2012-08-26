@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -12,6 +13,7 @@ import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static com.tinkerpop.blueprints.Direction.BOTH;
@@ -45,8 +47,8 @@ public class LinkMapReduceTest extends BaseTest {
         for (FaunusVertex vertex : results.values()) {
             vertex.removeEdges(Tokens.Action.DROP, Direction.BOTH);
         }
-        results.get(3l).addPath(Arrays.asList(1l, 3l));
-        results.get(5l).addPath(Arrays.asList(1l, 5l));
+        results.get(3l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)));
+        results.get(5l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(5l)));
 
         results = runWithGraph(results.values(), mapReduceDriver);
         assertEquals(asList(results.get(1l).getEdges(OUT, "knowsCreated")).size(), 2);

@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.LongWritable;
@@ -86,9 +87,10 @@ public class VerticesVerticesMapReduce {
                         vertex.addEdge(IN, (FaunusEdge) edge);
                     }
                 } else if (tag == 'e') {
-                    for (List<Long> path : vertex2.getPaths()) {
-                        path.add(vertex.getIdAsLong());
+
+                    for (List<MicroElement> path : vertex2.getPaths()) {
                         vertex.addPath(path);
+                        vertex.incrPath();
                     }
                 } else {
                     throw new IOException("A tag of " + tag + " is not a legal tag for this operation");

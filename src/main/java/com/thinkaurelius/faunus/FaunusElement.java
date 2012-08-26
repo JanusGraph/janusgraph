@@ -1,5 +1,8 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.util.MicroEdge;
+import com.thinkaurelius.faunus.util.MicroElement;
+import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Element;
 import org.apache.hadoop.io.Writable;
 
@@ -18,6 +21,7 @@ import java.util.Set;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public abstract class FaunusElement implements Element, Writable {
+
 
     protected static final Map<String, String> TYPE_MAP = new HashMap<String, String>() {
         @Override
@@ -44,17 +48,17 @@ public abstract class FaunusElement implements Element, Writable {
 
     protected long id;
     protected Map<String, Object> properties = null;
-    protected List<List<Long>> paths = new ArrayList<List<Long>>();
+    protected List<List<MicroElement>> paths = new ArrayList<List<MicroElement>>();
 
     public FaunusElement(final long id) {
         this.id = id;
     }
 
-    public void addPath(List<Long> path) {
+    public void addPath(List<MicroElement> path) {
         this.paths.add(path);
     }
 
-    public List<List<Long>> getPaths() {
+    public List<List<MicroElement>> getPaths() {
         return this.paths;
     }
 
@@ -72,9 +76,14 @@ public abstract class FaunusElement implements Element, Writable {
 
     public void incrPath() {
         if (paths.size() == 0) {
-            this.paths.add(new ArrayList<Long>());
+            this.paths.add(new ArrayList<MicroElement>());
         }
-        this.paths.get(paths.size() - 1).add(this.id);
+        final List<MicroElement> path = this.paths.get(paths.size() - 1);
+        if (this instanceof FaunusVertex) {
+            path.add(new MicroVertex(this.id));
+        } else {
+            path.add(new MicroEdge(this.id));
+        }
     }
 
     public void setProperty(final String key, final Object value) {
@@ -206,24 +215,32 @@ public abstract class FaunusElement implements Element, Writable {
 
     public static class ElementPaths {
 
-        public static void write(final List<List<Long>> paths, final DataOutput out) throws IOException {
+        public static void write(final List<List<MicroElement>> paths, final DataOutput out) throws IOException {
             out.writeInt(paths.size());
-            for (List<Long> path : paths) {
+            for (final List<MicroElement> path : paths) {
                 out.writeInt(path.size());
-                for (Long element : path) {
-                    out.writeLong(element);
+                for (MicroElement element : path) {
+                    if (element instanceof MicroVertex)
+                        out.writeChar('v');
+                    else
+                        out.writeChar('e');
+                    out.writeLong(element.getId());
                 }
             }
         }
 
-        public static List<List<Long>> readFields(final DataInput in) throws IOException {
+        public static List<List<MicroElement>> readFields(final DataInput in) throws IOException {
             int pathsSize = in.readInt();
-            List<List<Long>> paths = new ArrayList<List<Long>>(pathsSize);
+            final List<List<MicroElement>> paths = new ArrayList<List<MicroElement>>(pathsSize);
             for (int i = 0; i < pathsSize; i++) {
                 int pathSize = in.readInt();
-                List<Long> path = new ArrayList<Long>(pathSize);
+                List<MicroElement> path = new ArrayList<MicroElement>(pathSize);
                 for (int j = 0; j < pathSize; j++) {
-                    path.add(in.readLong());
+                    char type = in.readChar();
+                    if (type == 'v')
+                        path.add(new MicroVertex(in.readLong()));
+                    else
+                        path.add(new MicroEdge(in.readLong()));
                 }
                 paths.add(path);
             }
@@ -231,5 +248,6 @@ public abstract class FaunusElement implements Element, Writable {
         }
 
     }
+
 
 }

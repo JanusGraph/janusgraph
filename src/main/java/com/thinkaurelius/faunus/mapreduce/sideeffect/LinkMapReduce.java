@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -48,8 +49,8 @@ public class LinkMapReduce {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             if (value.hasPaths()) {
-                for (final List<Long> path : value.getPaths()) {
-                    final long linkElementId = path.get(this.step);
+                for (final List<MicroElement> path : value.getPaths()) {
+                    final long linkElementId = path.get(this.step).getId();
                     final FaunusEdge edge;
                     if (this.direction.equals(IN))
                         edge = new FaunusEdge(linkElementId, value.getIdAsLong(), this.label);
