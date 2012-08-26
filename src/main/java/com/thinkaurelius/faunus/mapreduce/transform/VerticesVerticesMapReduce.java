@@ -51,9 +51,7 @@ public class VerticesVerticesMapReduce {
             if (value.hasPaths()) {
                 for (final Edge edge : value.getEdges(this.direction, this.labels)) {
                     FaunusVertex vertex = new FaunusVertex((Long) edge.getVertex(this.direction.opposite()).getId());
-                    for(List<Long> path : value.getPaths()) {
-                        vertex.addPath(path);
-                    }
+                    vertex.getPaths().addAll(value.getPaths());
                     this.longWritable.set(vertex.getIdAsLong());
                     context.write(this.longWritable, this.holder.set('e', vertex));
                 }
@@ -88,7 +86,7 @@ public class VerticesVerticesMapReduce {
                         vertex.addEdge(IN, (FaunusEdge) edge);
                     }
                 } else if (tag == 'e') {
-                    for(List<Long> path : vertex2.getPaths()) {
+                    for (List<Long> path : vertex2.getPaths()) {
                         path.add(vertex.getIdAsLong());
                         vertex.addPath(path);
                     }

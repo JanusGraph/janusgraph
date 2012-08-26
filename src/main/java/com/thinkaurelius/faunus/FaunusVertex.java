@@ -53,6 +53,18 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         this.readFields(in);
     }
 
+    public void addAll(final FaunusVertex vertex) {
+        this.id = vertex.getIdAsLong();
+        this.properties = vertex.getProperties();
+        this.paths.addAll(vertex.getPaths());
+        for (Edge edge : vertex.getEdges(OUT)) {
+            this.addEdge(OUT, (FaunusEdge) edge);
+        }
+        for (Edge edge : vertex.getEdges(IN)) {
+            this.addEdge(IN, (FaunusEdge) edge);
+        }
+    }
+
     public Query query() {
         return new DefaultQuery(this);
     }

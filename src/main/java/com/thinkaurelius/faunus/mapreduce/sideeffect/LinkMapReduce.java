@@ -7,7 +7,6 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -15,6 +14,8 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 import java.util.List;
+
+import static com.tinkerpop.blueprints.Direction.IN;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -39,7 +40,7 @@ public class LinkMapReduce {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.step = context.getConfiguration().getInt(STEP, 0);
+            this.step = context.getConfiguration().getInt(context.getConfiguration().get(STEP), 0);
             this.direction = FaunusConfiguration.getDirection(context.getConfiguration(), DIRECTION);
             this.label = context.getConfiguration().get(LABEL);
         }
@@ -47,12 +48,17 @@ public class LinkMapReduce {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             if (value.hasPaths()) {
-                for (List<Long> path : value.getPaths()) {
-                    long element = path.get(this.step);
-                    value.addEdge(Direction.IN, new FaunusEdge(element, value.getIdAsLong(), this.label));
-                    this.longWritable.set(element);
-                    context.write(this.longWritable, this.holder.set('e', new FaunusEdge(element, value.getIdAsLong(), this.label)));
+                for (final List<Long> path : value.getPaths()) {
+                    final long linkElementId = path.get(this.step);
+                    final FaunusEdge edge;
+                    if (this.direction.equals(IN))
+                        edge = new FaunusEdge(linkElementId, value.getIdAsLong(), this.label);
+                    else
+                        edge = new FaunusEdge(value.getIdAsLong(), linkElementId, this.label);
 
+                    value.addEdge(this.direction, edge);
+                    this.longWritable.set(linkElementId);
+                    context.write(this.longWritable, this.holder.set('e', edge));
                 }
             }
 
@@ -63,26 +69,22 @@ public class LinkMapReduce {
 
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
+        private Direction direction;
+
+        @Override
+        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
+            this.direction = FaunusConfiguration.getDirection(context.getConfiguration(), DIRECTION);
+            this.direction = this.direction.opposite();
+        }
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             final FaunusVertex vertex = new FaunusVertex(key.get());
-            for (Holder holder : values) {
+            for (final Holder holder : values) {
                 if (holder.getTag() == 'v') {
-                    FaunusVertex temp = (FaunusVertex) holder.get();
-                    vertex.setProperties(temp.getProperties());
-                    for (List<Long> path : temp.getPaths()) {
-                        vertex.addPath(path);
-                    }
-                    for (Edge edge : temp.getEdges(Direction.OUT)) {
-                        vertex.addEdge(Direction.OUT, (FaunusEdge) edge);
-                    }
-                    for (Edge edge : temp.getEdges(Direction.IN)) {
-                        vertex.addEdge(Direction.IN, (FaunusEdge) edge);
-                    }
+                    vertex.addAll((FaunusVertex) holder.get());
                 } else {
-                    FaunusEdge edge = (FaunusEdge) holder.get();
-                    vertex.addEdge(Direction.OUT, edge);
+                    vertex.addEdge(this.direction, (FaunusEdge) holder.get());
                 }
             }
             context.write(NullWritable.get(), vertex);

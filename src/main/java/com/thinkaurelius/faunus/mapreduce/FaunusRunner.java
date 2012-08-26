@@ -206,19 +206,13 @@ public class FaunusRunner extends Configured implements Tool {
 
     ///////////// SIDE-EFFECTS
 
-    public void asMap(final Class<? extends Element> klass, final char tag) {
-        if (!klass.equals(Vertex.class) && !klass.equals(Edge.class)) {
-            throw new RuntimeException("Unsupported element class: " + klass.getName());
-        }
-
-        this.mapSequenceConfiguration.setClass(AsMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(AsMap.TAG + "-" + this.mapSequenceClasses.size(), String.valueOf(tag));
-        this.mapSequenceClasses.add(AsMap.Map.class);
+    public void asMap(final Class<? extends Element> klass, final String tag, final int step) {
+        this.configuration.setInt(tag,step);
     }
 
 
-    public void linkMapReduce(final int step, final Direction direction, final String label) throws IOException {
-        this.mapSequenceConfiguration.setInt(LinkMapReduce.STEP, step);
+    public void linkMapReduce(final String step, final Direction direction, final String label) throws IOException {
+        this.mapSequenceConfiguration.set(LinkMapReduce.STEP, step);
         this.mapSequenceConfiguration.set(LinkMapReduce.DIRECTION, direction.name());
         this.mapSequenceConfiguration.set(LinkMapReduce.LABEL, label);
         this.mapRClass = LinkMapReduce.Map.class;

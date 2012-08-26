@@ -48,6 +48,7 @@ public class FaunusPipeline {
     private class JobState {
         private Class<? extends Element> elementType;
         private String property;
+        private int step = -1;
 
         public JobState set(Class<? extends Element> elementType) {
             this.elementType = elementType;
@@ -70,6 +71,14 @@ public class FaunusPipeline {
         public String getProperty() {
             return this.property;
         }
+        
+        public int incrStep() {
+            return this.step++;
+        }
+        
+        public int getStep() {
+            return this.step;
+        }
     }
 
     public FaunusPipeline(final String jobScript, final Configuration conf) {
@@ -81,23 +90,27 @@ public class FaunusPipeline {
 
     public FaunusPipeline V() {
         this.state.set(Vertex.class);
+        this.state.incrStep();
         this.compiler.verticesMap();
         return this;
     }
 
     public FaunusPipeline E() {
         this.state.set(Edge.class);
+        this.state.incrStep();
         this.compiler.edgesMap();
         return this;
     }
 
     public FaunusPipeline v(final long... ids) {
         this.state.set(Vertex.class);
+        this.state.incrStep();
         this.compiler.vertexMap(ids);
         return this;
     }
 
     public FaunusPipeline out(final String... labels) throws IOException {
+        this.state.incrStep();
         if (this.state.atVertex()) {
             this.compiler.verticesVerticesMapReduce(OUT, labels);
             return this;
@@ -106,6 +119,7 @@ public class FaunusPipeline {
     }
 
     public FaunusPipeline in(final String... labels) throws IOException {
+        this.state.incrStep();
         if (this.state.atVertex()) {
             this.compiler.verticesVerticesMapReduce(IN, labels);
             return this;
@@ -114,6 +128,7 @@ public class FaunusPipeline {
     }
 
     public FaunusPipeline both(final String... labels) throws IOException {
+        this.state.incrStep();
         if (this.state.atVertex()) {
             this.compiler.verticesVerticesMapReduce(BOTH, labels);
             return this;
@@ -168,25 +183,21 @@ public class FaunusPipeline {
     //////// SIDEEFFECTS
 
     public FaunusPipeline as(final String tag) {
-        this.compiler.asMap(this.state.getElementType(), tag.charAt(0));
+        this.compiler.asMap(this.state.getElementType(), tag, this.state.getStep());
         return this;
     }
 
 
-    public FaunusPipeline linkIn(final int step, final String label) throws IOException {
+    public FaunusPipeline linkIn(final String step, final String label) throws IOException {
         this.compiler.linkMapReduce(step, IN, label);
         return this;
     }
 
-    /*public FaunusPipeline linkIn(final String tag, final String label) throws IOException {
-        this.compiler.linkMapReduce(tag.charAt(0), IN, label);
+    public FaunusPipeline linkOut(final String step, final String label) throws IOException {
+        this.compiler.linkMapReduce(step, OUT, label);
         return this;
     }
 
-    public FaunusPipeline linkBoth(final String tag, final String label) throws IOException {
-        this.compiler.linkMapReduce(tag.charAt(0), BOTH, label);
-        return this;
-    }*/
 
     private FaunusPipeline commit(final Tokens.Action action) throws IOException {
         if (this.state.atVertex())
