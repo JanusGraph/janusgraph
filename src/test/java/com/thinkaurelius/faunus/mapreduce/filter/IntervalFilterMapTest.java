@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.mapreduce.format;
+package com.thinkaurelius.faunus.mapreduce.filter;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
