@@ -67,12 +67,12 @@ public class IntervalFilterMap {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
 
             if (this.isVertex) {
-                if (value.hasEnergy() && !(this.startChecker.isLegal(value) && this.endChecker.isLegal(value)))
-                    value.setEnergy(0);
+                if (value.hasPaths() && !(this.startChecker.isLegal(value) && this.endChecker.isLegal(value)))
+                    value.clearPaths();
             } else {
                 for (Edge edge : value.getEdges(Direction.BOTH)) {
-                    if (((FaunusEdge) edge).hasEnergy() && !(this.startChecker.isLegal((FaunusEdge)edge) && this.endChecker.isLegal((FaunusEdge)edge)))
-                        ((FaunusEdge) edge).setEnergy(0);
+                    if (((FaunusEdge) edge).hasPaths() && !(this.startChecker.isLegal((FaunusEdge)edge) && this.endChecker.isLegal((FaunusEdge)edge)))
+                        ((FaunusEdge) edge).clearPaths();
                 }
             }
 

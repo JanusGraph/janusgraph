@@ -1,10 +1,7 @@
 package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
-import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.io.NullWritable;
@@ -39,15 +36,15 @@ public class AsMap {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
 
-            if (this.isVertex) {
-                if (value.hasEnergy())
+            /* if (this.isVertex) {
+                if (value.hasPaths())
                     value.setTag(this.tag);
             } else {
                 for (final Edge edge : value.getEdges(Direction.BOTH)) {
-                    if (((FaunusEdge) edge).hasEnergy())
+                    if (((FaunusEdge) edge).hasPaths())
                         ((FaunusEdge) edge).setTag(this.tag);
                 }
-            }
+            }*/
 
             context.write(NullWritable.get(), value);
         }

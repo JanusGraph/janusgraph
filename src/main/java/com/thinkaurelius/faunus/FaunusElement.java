@@ -6,9 +6,11 @@ import org.apache.hadoop.io.Writable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,37 +42,39 @@ public abstract class FaunusElement implements Element, Writable {
     }};
 
 
-    protected Map<String, Object> properties = null;
     protected long id;
-    protected int energy = 0;
-    protected char tag = '_';
+    protected Map<String, Object> properties = null;
+    protected List<List<Long>> paths = new ArrayList<List<Long>>();
 
     public FaunusElement(final long id) {
         this.id = id;
     }
 
-    public int getEnergy() {
-        return this.energy;
+    public void addPath(List<Long> path) {
+        this.paths.add(path);
     }
 
-    public void setEnergy(final int amount) {
-        this.energy = amount;
+    public List<List<Long>> getPaths() {
+        return this.paths;
     }
 
-    public void incrEnergy(final int amount) {
-        this.energy = this.energy + amount;
+    public boolean hasPaths() {
+        return this.paths.size() > 0;
     }
 
-    public boolean hasEnergy() {
-        return this.energy > 0;
+    public void clearPaths() {
+        this.paths.clear();
     }
 
-    public void setTag(final char tag) {
-        this.tag = tag;
+    public int pathCount() {
+        return this.paths.size();
     }
 
-    public char getTag() {
-        return this.tag;
+    public void incrPath() {
+        if (paths.size() == 0) {
+            this.paths.add(new ArrayList<Long>());
+        }
+        this.paths.get(paths.size() - 1).add(this.id);
     }
 
     public void setProperty(final String key, final Object value) {
@@ -196,6 +200,34 @@ public abstract class FaunusElement implements Element, Writable {
                 }
                 return properties;
             }
+        }
+
+    }
+
+    public static class ElementPaths {
+
+        public static void write(final List<List<Long>> paths, final DataOutput out) throws IOException {
+            out.writeInt(paths.size());
+            for (List<Long> path : paths) {
+                out.writeInt(path.size());
+                for (Long element : path) {
+                    out.writeLong(element);
+                }
+            }
+        }
+
+        public static List<List<Long>> readFields(final DataInput in) throws IOException {
+            int pathsSize = in.readInt();
+            List<List<Long>> paths = new ArrayList<List<Long>>(pathsSize);
+            for (int i = 0; i < pathsSize; i++) {
+                int pathSize = in.readInt();
+                List<Long> path = new ArrayList<Long>(pathSize);
+                for (int j = 0; j < pathSize; j++) {
+                    path.add(in.readLong());
+                }
+                paths.add(path);
+            }
+            return paths;
         }
 
     }

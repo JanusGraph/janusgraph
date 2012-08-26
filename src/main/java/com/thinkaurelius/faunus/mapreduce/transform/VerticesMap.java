@@ -22,9 +22,9 @@ public class VerticesMap {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            value.setEnergy(1);
+            value.incrPath();
             for (final Edge edge : value.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).setEnergy(0);
+                ((FaunusEdge) edge).clearPaths();
             }
             context.write(NullWritable.get(), value);
         }

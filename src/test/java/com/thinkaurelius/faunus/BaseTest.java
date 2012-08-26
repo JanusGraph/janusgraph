@@ -57,9 +57,9 @@ public abstract class BaseTest extends TestCase {
     public static Map<Long, FaunusVertex> runWithToyGraph(final ExampleGraph example, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
         for (final FaunusVertex vertex : generateToyGraph(example)) {
-            vertex.setEnergy(1);
+            vertex.incrPath();
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).setEnergy(1);
+                ((FaunusEdge) edge).incrPath();
             }
             driver.withInput(NullWritable.get(), vertex);
         }
@@ -77,9 +77,9 @@ public abstract class BaseTest extends TestCase {
     public static List runWithToyGraphNoFormatting(final ExampleGraph example, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
         for (final FaunusVertex vertex : generateToyGraph(example)) {
-            vertex.setEnergy(1);
+            vertex.incrPath();
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).setEnergy(1);
+                ((FaunusEdge) edge).incrPath();
             }
             driver.withInput(NullWritable.get(), vertex);
         }

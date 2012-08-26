@@ -55,7 +55,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.log4j.Logger;
-import sun.rmi.transport.ObjectTable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -181,23 +180,23 @@ public class FaunusRunner extends Configured implements Tool {
         }
         this.mapSequenceClasses.add(PropertyFilterMap.Map.class);
     }
-    
+
     public void intervalFilterMap(final Class<? extends Element> klass, final boolean nullIsWildcard, final String key, final Object startValue, final Object endValue) {
         this.mapSequenceConfiguration.setClass(IntervalFilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceConfiguration.set(IntervalFilterMap.KEY + "-" + this.mapSequenceClasses.size(), key);
         this.mapSequenceConfiguration.setBoolean(IntervalFilterMap.NULL_WILDCARD, nullIsWildcard);
-        if(startValue instanceof String) {
+        if (startValue instanceof String) {
             this.mapSequenceConfiguration.set(IntervalFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), String.class.getName());
-            this.mapSequenceConfiguration.set(IntervalFilterMap.START_VALUE + "-" + this.mapSequenceClasses.size(), (String)startValue);
-            this.mapSequenceConfiguration.set(IntervalFilterMap.END_VALUE + "-" + this.mapSequenceClasses.size(), (String)endValue);
-        } else if(startValue instanceof Number) {
+            this.mapSequenceConfiguration.set(IntervalFilterMap.START_VALUE + "-" + this.mapSequenceClasses.size(), (String) startValue);
+            this.mapSequenceConfiguration.set(IntervalFilterMap.END_VALUE + "-" + this.mapSequenceClasses.size(), (String) endValue);
+        } else if (startValue instanceof Number) {
             this.mapSequenceConfiguration.set(IntervalFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Float.class.getName());
-            this.mapSequenceConfiguration.setFloat(IntervalFilterMap.START_VALUE + "-" + this.mapSequenceClasses.size(), ((Number)startValue).floatValue());
-            this.mapSequenceConfiguration.setFloat(IntervalFilterMap.END_VALUE + "-" + this.mapSequenceClasses.size(), ((Number)endValue).floatValue());    
-        }  else if(startValue instanceof Boolean) {
+            this.mapSequenceConfiguration.setFloat(IntervalFilterMap.START_VALUE + "-" + this.mapSequenceClasses.size(), ((Number) startValue).floatValue());
+            this.mapSequenceConfiguration.setFloat(IntervalFilterMap.END_VALUE + "-" + this.mapSequenceClasses.size(), ((Number) endValue).floatValue());
+        } else if (startValue instanceof Boolean) {
             this.mapSequenceConfiguration.set(IntervalFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Boolean.class.getName());
-            this.mapSequenceConfiguration.setBoolean(IntervalFilterMap.START_VALUE + "-" + this.mapSequenceClasses.size(), (Boolean)startValue);
-            this.mapSequenceConfiguration.setBoolean(IntervalFilterMap.END_VALUE + "-" + this.mapSequenceClasses.size(), (Boolean)endValue);      
+            this.mapSequenceConfiguration.setBoolean(IntervalFilterMap.START_VALUE + "-" + this.mapSequenceClasses.size(), (Boolean) startValue);
+            this.mapSequenceConfiguration.setBoolean(IntervalFilterMap.END_VALUE + "-" + this.mapSequenceClasses.size(), (Boolean) endValue);
         } else {
             throw new RuntimeException("Unknown value class: " + startValue.getClass().getName());
         }
@@ -218,8 +217,8 @@ public class FaunusRunner extends Configured implements Tool {
     }
 
 
-    public void linkMapReduce(final char tag, final Direction direction, final String label) throws IOException {
-        this.mapSequenceConfiguration.set(LinkMapReduce.TAG, String.valueOf(tag));
+    public void linkMapReduce(final int step, final Direction direction, final String label) throws IOException {
+        this.mapSequenceConfiguration.setInt(LinkMapReduce.STEP, step);
         this.mapSequenceConfiguration.set(LinkMapReduce.DIRECTION, direction.name());
         this.mapSequenceConfiguration.set(LinkMapReduce.LABEL, label);
         this.mapRClass = LinkMapReduce.Map.class;
@@ -423,7 +422,7 @@ public class FaunusRunner extends Configured implements Tool {
         this.configureStatisticsJob(job);
         this.jobs.add(job);
     }
-    
+
     public void groupCountMapReduce(final Class<? extends Element> klass, final String keyClosure, final String valueClosure) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();

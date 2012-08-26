@@ -13,6 +13,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
+import java.util.List;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -47,11 +48,12 @@ public class VerticesVerticesMapReduce {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
-            if (value.hasEnergy()) {
-                final int energy = value.getEnergy();
+            if (value.hasPaths()) {
                 for (final Edge edge : value.getEdges(this.direction, this.labels)) {
                     FaunusVertex vertex = new FaunusVertex((Long) edge.getVertex(this.direction.opposite()).getId());
-                    vertex.setEnergy(energy);
+                    for(List<Long> path : value.getPaths()) {
+                        vertex.addPath(path);
+                    }
                     this.longWritable.set(vertex.getIdAsLong());
                     context.write(this.longWritable, this.holder.set('e', vertex));
                 }
@@ -63,7 +65,7 @@ public class VerticesVerticesMapReduce {
                     context.write(this.longWritable, this.holder.set('e', vertex));
                 }*/
             }
-            value.setEnergy(0);
+            value.clearPaths();
             this.longWritable.set(value.getIdAsLong());
             context.write(this.longWritable, this.holder.set('o', value));
         }
@@ -86,7 +88,10 @@ public class VerticesVerticesMapReduce {
                         vertex.addEdge(IN, (FaunusEdge) edge);
                     }
                 } else if (tag == 'e') {
-                    vertex.incrEnergy(vertex2.getEnergy());
+                    for(List<Long> path : vertex2.getPaths()) {
+                        path.add(vertex.getIdAsLong());
+                        vertex.addPath(path);
+                    }
                 } else {
                     throw new IOException("A tag of " + tag + " is not a legal tag for this operation");
                 }

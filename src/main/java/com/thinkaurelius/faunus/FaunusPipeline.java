@@ -154,7 +154,7 @@ public class FaunusPipeline {
         this.compiler.valueDistribution(this.state.getElementType(), this.state.getProperty());
         return this;
     }
-    
+
     public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) throws IOException {
         this.compiler.groupCountMapReduce(this.state.getElementType(), keyClosure, valueClosure);
         return this;
@@ -173,12 +173,12 @@ public class FaunusPipeline {
     }
 
 
-    public FaunusPipeline linkOut(final String tag, final String label) throws IOException {
-        this.compiler.linkMapReduce(tag.charAt(0), OUT, label);
+    public FaunusPipeline linkIn(final int step, final String label) throws IOException {
+        this.compiler.linkMapReduce(step, IN, label);
         return this;
     }
 
-    public FaunusPipeline linkIn(final String tag, final String label) throws IOException {
+    /*public FaunusPipeline linkIn(final String tag, final String label) throws IOException {
         this.compiler.linkMapReduce(tag.charAt(0), IN, label);
         return this;
     }
@@ -186,7 +186,7 @@ public class FaunusPipeline {
     public FaunusPipeline linkBoth(final String tag, final String label) throws IOException {
         this.compiler.linkMapReduce(tag.charAt(0), BOTH, label);
         return this;
-    }
+    }*/
 
     private FaunusPipeline commit(final Tokens.Action action) throws IOException {
         if (this.state.atVertex())
