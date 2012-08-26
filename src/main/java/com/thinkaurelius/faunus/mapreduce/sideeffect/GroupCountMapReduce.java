@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.mapreduce.statistics;
+package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
@@ -22,11 +22,11 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class GroupCount {
+public class GroupCountMapReduce {
 
-    public static final String KEY_FUNCTION = Tokens.makeNamespace(GroupCount.class) + ".keyFunction";
-    public static final String VALUE_FUNCTION = Tokens.makeNamespace(GroupCount.class) + ".valueFunction";
-    public static final String CLASS = Tokens.makeNamespace(GroupCount.class) + ".class";
+    public static final String KEY_FUNCTION = Tokens.makeNamespace(GroupCountMapReduce.class) + ".keyFunction";
+    public static final String VALUE_FUNCTION = Tokens.makeNamespace(GroupCountMapReduce.class) + ".valueFunction";
+    public static final String CLASS = Tokens.makeNamespace(GroupCountMapReduce.class) + ".class";
     private static final ScriptEngine engine = new GremlinGroovyScriptEngine();
 
     public enum Counters {
@@ -44,7 +44,7 @@ public class GroupCount {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             try {
-                this.keyClosure = (Closure) engine.eval(context.getConfiguration().get(KEY_FUNCTION));
+                this.keyClosure = (Closure) engine.eval(context.getConfiguration().get(KEY_FUNCTION, "{it -> it}"));
                 this.valueClosure = (Closure) engine.eval(context.getConfiguration().get(VALUE_FUNCTION, "{it -> 1}"));
             } catch (final ScriptException e) {
                 throw new IOException(e.getMessage(), e);
@@ -100,11 +100,11 @@ public class GroupCount {
 
         @Override
         public void reduce(final Text key, final Iterable<LongWritable> values, final Reducer<Text, LongWritable, Text, LongWritable>.Context context) throws IOException, InterruptedException {
-            long totalDegree = 0;
+            long totalCount = 0;
             for (final LongWritable token : values) {
-                totalDegree = totalDegree + token.get();
+                totalCount = totalCount + token.get();
             }
-            this.longWritable.set(totalDegree);
+            this.longWritable.set(totalCount);
             context.write(key, this.longWritable);
         }
     }

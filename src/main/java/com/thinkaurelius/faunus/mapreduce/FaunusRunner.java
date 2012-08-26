@@ -9,15 +9,16 @@ import com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
 import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.AsMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.LinkMapReduce;
 import com.thinkaurelius.faunus.mapreduce.statistics.AdjacentProperties;
 import com.thinkaurelius.faunus.mapreduce.statistics.Degree;
 import com.thinkaurelius.faunus.mapreduce.statistics.DegreeDistribution;
-import com.thinkaurelius.faunus.mapreduce.statistics.GroupCount;
 import com.thinkaurelius.faunus.mapreduce.statistics.KeyDistribution;
 import com.thinkaurelius.faunus.mapreduce.statistics.Property;
 import com.thinkaurelius.faunus.mapreduce.statistics.SortedDegree;
@@ -54,6 +55,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.log4j.Logger;
+import sun.rmi.transport.ObjectTable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -174,8 +176,33 @@ public class FaunusRunner extends Configured implements Tool {
             this.mapSequenceConfiguration.setClass(PropertyFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Boolean.class, Boolean.class);
         } else if (values[0] instanceof Number) {
             this.mapSequenceConfiguration.setClass(PropertyFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Number.class, Number.class);
+        } else {
+            throw new RuntimeException("Unknown value class: " + values[0].getClass().getName());
         }
         this.mapSequenceClasses.add(PropertyFilterMap.Map.class);
+    }
+    
+    public void intervalFilterMap(final Class<? extends Element> klass, final boolean nullIsWildcard, final String key, final Object startValue, final Object endValue) {
+        this.mapSequenceConfiguration.setClass(IntervalFilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceConfiguration.set(IntervalFilterMap.KEY + "-" + this.mapSequenceClasses.size(), key);
+        this.mapSequenceConfiguration.setBoolean(IntervalFilterMap.NULL_WILDCARD, nullIsWildcard);
+        if(startValue instanceof String) {
+            this.mapSequenceConfiguration.set(IntervalFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), String.class.getName());
+            this.mapSequenceConfiguration.set(IntervalFilterMap.START_VALUE + "-" + this.mapSequenceClasses.size(), (String)startValue);
+            this.mapSequenceConfiguration.set(IntervalFilterMap.END_VALUE + "-" + this.mapSequenceClasses.size(), (String)endValue);
+        } else if(startValue instanceof Number) {
+            this.mapSequenceConfiguration.set(IntervalFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Float.class.getName());
+            this.mapSequenceConfiguration.setFloat(IntervalFilterMap.START_VALUE + "-" + this.mapSequenceClasses.size(), ((Number)startValue).floatValue());
+            this.mapSequenceConfiguration.setFloat(IntervalFilterMap.END_VALUE + "-" + this.mapSequenceClasses.size(), ((Number)endValue).floatValue());    
+        }  else if(startValue instanceof Boolean) {
+            this.mapSequenceConfiguration.set(IntervalFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Boolean.class.getName());
+            this.mapSequenceConfiguration.setBoolean(IntervalFilterMap.START_VALUE + "-" + this.mapSequenceClasses.size(), (Boolean)startValue);
+            this.mapSequenceConfiguration.setBoolean(IntervalFilterMap.END_VALUE + "-" + this.mapSequenceClasses.size(), (Boolean)endValue);      
+        } else {
+            throw new RuntimeException("Unknown value class: " + startValue.getClass().getName());
+        }
+
+        this.mapSequenceClasses.add(IntervalFilterMap.Map.class);
     }
 
     ///////////// SIDE-EFFECTS
@@ -282,13 +309,13 @@ public class FaunusRunner extends Configured implements Tool {
     public void distribution(final Class<? extends Element> klass, final String keyFunction, final String valueFunction) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
-        conf.set(GroupCount.CLASS, klass.getName());
-        conf.set(GroupCount.KEY_FUNCTION, keyFunction);
-        conf.set(GroupCount.VALUE_FUNCTION, valueFunction);
-        final Job job = new Job(conf, GroupCount.class.getCanonicalName());
-        job.setMapperClass(GroupCount.Map.class);
-        job.setReducerClass(GroupCount.Reduce.class);
-        job.setCombinerClass(GroupCount.Reduce.class);
+        conf.set(GroupCountMapReduce.CLASS, klass.getName());
+        conf.set(GroupCountMapReduce.KEY_FUNCTION, keyFunction);
+        conf.set(GroupCountMapReduce.VALUE_FUNCTION, valueFunction);
+        final Job job = new Job(conf, GroupCountMapReduce.class.getCanonicalName());
+        job.setMapperClass(GroupCountMapReduce.Map.class);
+        job.setReducerClass(GroupCountMapReduce.Reduce.class);
+        job.setCombinerClass(GroupCountMapReduce.Reduce.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(Text.class);
@@ -389,6 +416,24 @@ public class FaunusRunner extends Configured implements Tool {
         job.setMapperClass(ValueDistribution.Map.class);
         job.setReducerClass(ValueDistribution.Reduce.class);
         job.setCombinerClass(ValueDistribution.Reduce.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(LongWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputKeyClass(LongWritable.class);
+        this.configureStatisticsJob(job);
+        this.jobs.add(job);
+    }
+    
+    public void groupCountMapReduce(final Class<? extends Element> klass, final String keyClosure, final String valueClosure) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(GroupCountMapReduce.CLASS, klass.getName());
+        conf.set(GroupCountMapReduce.KEY_FUNCTION, keyClosure);
+        conf.set(GroupCountMapReduce.VALUE_FUNCTION, valueClosure);
+        final Job job = new Job(conf, GroupCountMapReduce.class.getCanonicalName());
+        job.setMapperClass(GroupCountMapReduce.Map.class);
+        job.setReducerClass(GroupCountMapReduce.Reduce.class);
+        job.setCombinerClass(GroupCountMapReduce.Reduce.class);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(Text.class);

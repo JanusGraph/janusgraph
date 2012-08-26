@@ -154,6 +154,16 @@ public class FaunusPipeline {
         this.compiler.valueDistribution(this.state.getElementType(), this.state.getProperty());
         return this;
     }
+    
+    public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) throws IOException {
+        this.compiler.groupCountMapReduce(this.state.getElementType(), keyClosure, valueClosure);
+        return this;
+    }
+
+    public FaunusPipeline interval(final String key, final Object startValue, final Object endValue) {
+        this.compiler.intervalFilterMap(this.state.getElementType(), false, key, startValue, endValue);
+        return this;
+    }
 
     //////// SIDEEFFECTS
 

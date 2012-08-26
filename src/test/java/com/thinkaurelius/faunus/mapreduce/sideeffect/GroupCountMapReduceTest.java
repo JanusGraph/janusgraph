@@ -1,7 +1,8 @@
-package com.thinkaurelius.faunus.mapreduce.statistics;
+package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
@@ -17,21 +18,21 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class GroupCountTest extends BaseTest {
+public class GroupCountMapReduceTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, Text, LongWritable, Text, LongWritable> mapReduceDriver;
 
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, Text, LongWritable, Text, LongWritable>();
-        mapReduceDriver.setMapper(new GroupCount.Map());
-        mapReduceDriver.setCombiner(new GroupCount.Reduce());
-        mapReduceDriver.setReducer(new GroupCount.Reduce());
+        mapReduceDriver.setMapper(new GroupCountMapReduce.Map());
+        mapReduceDriver.setCombiner(new GroupCountMapReduce.Reduce());
+        mapReduceDriver.setReducer(new GroupCountMapReduce.Reduce());
     }
 
     public void testOutDegreeDistribution() throws IOException {
         Configuration config = new Configuration();
-        config.set(GroupCount.CLASS, Vertex.class.getName());
-        config.set(GroupCount.KEY_FUNCTION, "{ it -> it.outE.count() }");
+        config.set(GroupCountMapReduce.CLASS, Vertex.class.getName());
+        config.set(GroupCountMapReduce.KEY_FUNCTION, "{ it -> it.outE.count() }");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -53,14 +54,14 @@ public class GroupCountTest extends BaseTest {
         }
 
 
-        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCount.Counters.EDGES_PROCESSED).getValue());
-        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(GroupCount.Counters.VERTICES_PROCESSED).getValue());
+        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.EDGES_PROCESSED).getValue());
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
     }
 
     public void testEdgePropertySizeDistribution() throws IOException {
         Configuration config = new Configuration();
-        config.set(GroupCount.CLASS, Edge.class.getName());
-        config.set(GroupCount.KEY_FUNCTION, "{ it -> it.map.next().size() }");
+        config.set(GroupCountMapReduce.CLASS, Edge.class.getName());
+        config.set(GroupCountMapReduce.KEY_FUNCTION, "{ it -> it.map.next().size() }");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
         //System.out.println(results);
@@ -76,8 +77,8 @@ public class GroupCountTest extends BaseTest {
         }
 
 
-        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCount.Counters.EDGES_PROCESSED).getValue());
-        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCount.Counters.VERTICES_PROCESSED).getValue());
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.EDGES_PROCESSED).getValue());
+        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
     }
 
 
