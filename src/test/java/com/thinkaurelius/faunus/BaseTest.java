@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus;
 import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.NullWritable;
@@ -46,6 +47,19 @@ public abstract class BaseTest extends TestCase {
         return map;
     }
 
+    public static void incrPath(final Collection<FaunusVertex> vertices, final Class<? extends Element> klass) {
+        for (FaunusVertex vertex : vertices) {
+            if (klass.equals(Vertex.class))
+                vertex.incrPath();
+            else {
+                for (Edge edge : vertex.getEdges(Direction.BOTH)) {
+                    ((FaunusEdge) edge).incrPath();
+                }
+            }
+        }
+    }
+
+
     public static Map<Long, FaunusVertex> indexResults(final List<Pair<NullWritable, FaunusVertex>> pairs) {
         final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
         for (final Pair<NullWritable, FaunusVertex> pair : pairs) {
@@ -54,7 +68,8 @@ public abstract class BaseTest extends TestCase {
         return map;
     }
 
-    public static Map<Long, FaunusVertex> runWithToyGraph(final ExampleGraph example, final MapReduceDriver driver) throws IOException {
+    public static Map<Long, FaunusVertex> runWithToyGraph(final ExampleGraph example,
+                                                          final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
         for (final FaunusVertex vertex : generateToyGraph(example)) {
             vertex.incrPath();
@@ -66,7 +81,8 @@ public abstract class BaseTest extends TestCase {
         return indexResults(driver.run());
     }
 
-    public static Map<Long, FaunusVertex> runWithGraph(Collection<FaunusVertex> vertices, final MapReduceDriver driver) throws IOException {
+    public static Map<Long, FaunusVertex> runWithGraph(Collection<FaunusVertex> vertices,
+                                                       final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
         for (final Vertex vertex : vertices) {
             driver.withInput(NullWritable.get(), vertex);
@@ -84,14 +100,6 @@ public abstract class BaseTest extends TestCase {
             driver.withInput(NullWritable.get(), vertex);
         }
         return driver.run();
-    }
-
-    public static List<Vertex> getVertices(final Iterable<Edge> edges, final Direction direction) {
-        final List<Vertex> list = new ArrayList<Vertex>();
-        for (final Edge edge : edges) {
-            list.add(edge.getVertex(direction));
-        }
-        return list;
     }
 
     public static String getFullString(final Vertex vertex) {

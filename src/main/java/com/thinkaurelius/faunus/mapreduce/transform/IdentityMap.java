@@ -12,7 +12,7 @@ import java.io.IOException;
 public class IdentityMap {
 
     public enum Counters {
-        VERTICES_PROCESSED
+        VERTEX_COUNT
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
@@ -20,6 +20,7 @@ public class IdentityMap {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             context.write(NullWritable.get(), value);
+            context.getCounter(Counters.VERTEX_COUNT).increment(1l);
         }
     }
 }

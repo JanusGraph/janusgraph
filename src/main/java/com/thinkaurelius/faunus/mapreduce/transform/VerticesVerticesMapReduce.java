@@ -16,9 +16,6 @@ import org.apache.hadoop.mapreduce.Reducer;
 import java.io.IOException;
 import java.util.List;
 
-import static com.tinkerpop.blueprints.Direction.IN;
-import static com.tinkerpop.blueprints.Direction.OUT;
-
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -37,8 +34,8 @@ public class VerticesVerticesMapReduce {
         private String[] labels;
 
         private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
-        private final FaunusVertex vertex = new FaunusVertex(); // TODO: make a FaunusVertex.getVerticesIds()
         private final LongWritable longWritable = new LongWritable();
+        private final FaunusVertex vertex = new FaunusVertex();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
@@ -51,22 +48,15 @@ public class VerticesVerticesMapReduce {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             if (value.hasPaths()) {
                 for (final Edge edge : value.getEdges(this.direction, this.labels)) {
-                    FaunusVertex vertex = new FaunusVertex((Long) edge.getVertex(this.direction.opposite()).getId());
-                    vertex.addPaths(value.getPaths());
+                    this.vertex.reuse(((FaunusEdge) edge).getVertexId(this.direction.opposite()));
+                    this.vertex.addPaths(value.getPaths());
                     this.longWritable.set(vertex.getIdAsLong());
-                    context.write(this.longWritable, this.holder.set('e', vertex));
+                    context.write(this.longWritable, this.holder.set('p', this.vertex));
                 }
-
-                /*for (final Vertex v : value.getVertices(this.direction, this.labels)) {
-                    FaunusVertex vertex = (FaunusVertex) v;
-                    vertex.setEnergy(energy);
-                    this.longWritable.set(vertex.getIdAsLong());
-                    context.write(this.longWritable, this.holder.set('e', vertex));
-                }*/
             }
             value.clearPaths();
             this.longWritable.set(value.getIdAsLong());
-            context.write(this.longWritable, this.holder.set('o', value));
+            context.write(this.longWritable, this.holder.set('v', value));
         }
     }
 
@@ -78,14 +68,9 @@ public class VerticesVerticesMapReduce {
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 final FaunusVertex temp = (FaunusVertex) holder.get();
-                if (tag == 'o') {
+                if (tag == 'v') {
                     vertex.setProperties(temp.getProperties());
-                    for (final Edge edge : temp.getEdges(OUT)) {
-                        vertex.addEdge(OUT, (FaunusEdge) edge);
-                    }
-                    for (final Edge edge : temp.getEdges(IN)) {
-                        vertex.addEdge(IN, (FaunusEdge) edge);
-                    }
+                    vertex.addEdges(Direction.BOTH, temp);
                 } else {
                     for (final List<MicroElement> path : temp.getPaths()) {
                         vertex.addPath(path);

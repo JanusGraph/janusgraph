@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
@@ -53,16 +54,20 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         this.readFields(in);
     }
 
+    public void reuse(final long id) {
+        this.id = id;
+        this.outEdges.clear();
+        this.inEdges.clear();
+        this.properties = null;
+        this.clearPaths();
+    }
+
     public void addAll(final FaunusVertex vertex) {
         this.id = vertex.getIdAsLong();
         this.properties = vertex.getProperties();
+        if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
         this.paths.addAll(vertex.getPaths());
-        for (Edge edge : vertex.getEdges(OUT)) {
-            this.addEdge(OUT, (FaunusEdge) edge);
-        }
-        for (Edge edge : vertex.getEdges(IN)) {
-            this.addEdge(IN, (FaunusEdge) edge);
-        }
+        this.addEdges(BOTH, vertex);
     }
 
     public Query query() {
@@ -86,7 +91,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         return new Iterable<Vertex>() {
             public Iterator<Vertex> iterator() {
                 return new Iterator<Vertex>() {
-                    final Iterator<Edge> edges = getEdges(direction).iterator();
+                    final Iterator<Edge> edges = getEdges(direction, labels).iterator();
                     final Direction opposite = direction.opposite();
 
                     public void remove() {
@@ -143,6 +148,39 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
         }
         return new EdgeList(edgeLists, edgeListLabels);
+    }
+
+    private void addEdges(final Direction direction, final String label, final List<FaunusEdge> edges) {
+        List<Edge> list;
+        if (direction.equals(OUT))
+            list = this.outEdges.get(label);
+        else if (direction.equals(IN))
+            list = this.inEdges.get(label);
+        else
+            throw ExceptionFactory.bothIsNotSupported();
+
+        if (null == list) {
+            list = new ArrayList<Edge>();
+            if (direction.equals(OUT))
+                this.outEdges.put(label, list);
+            else
+                this.inEdges.put(label, list);
+        }
+        list.addAll(edges);
+    }
+
+    public void addEdges(final Direction direction, final FaunusVertex vertex) {
+        if (direction.equals(OUT) || direction.equals(BOTH)) {
+            for (final String label : vertex.getEdgeLabels(OUT)) {
+                this.addEdges(OUT, label, (List) vertex.getEdges(OUT, label));
+            }
+        }
+
+        if (direction.equals(IN) || direction.equals(BOTH)) {
+            for (final String label : vertex.getEdgeLabels(IN)) {
+                this.addEdges(IN, label, (List) vertex.getEdges(IN, label));
+            }
+        }
     }
 
     public FaunusEdge addEdge(final Direction direction, final FaunusEdge edge) {

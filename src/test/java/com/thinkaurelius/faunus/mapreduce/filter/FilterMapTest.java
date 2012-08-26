@@ -18,24 +18,20 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class IntervalFilterMapTest extends BaseTest {
+public class FilterMapTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new IntervalFilterMap.Map());
+        mapReduceDriver.setMapper(new FilterMap.Map());
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testVerticesOnAge() throws IOException {
+    public void testVerticesOnName() throws IOException {
         Configuration config = new Configuration();
-        config.setClass(IntervalFilterMap.CLASS, Vertex.class, Element.class);
-        config.setBoolean(IntervalFilterMap.NULL_WILDCARD, false);
-        config.setClass(IntervalFilterMap.VALUE_CLASS, Number.class, Number.class);
-        config.set(IntervalFilterMap.START_VALUE, "10");
-        config.set(IntervalFilterMap.END_VALUE, "30");
-        config.set(IntervalFilterMap.KEY, "age");
+        config.setClass(FilterMap.CLASS, Vertex.class, Element.class);
+        config.set(FilterMap.CLOSURE, "{it -> it.name.startsWith('v')}");
 
         mapReduceDriver.withConfiguration(config);
 
@@ -45,7 +41,7 @@ public class IntervalFilterMapTest extends BaseTest {
         results = runWithGraph(results.values(), mapReduceDriver);
 
         assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 1);
+        assertEquals(results.get(1l).pathCount(), 0);
         assertEquals(results.get(2l).pathCount(), 1);
         assertEquals(results.get(3l).pathCount(), 0);
         assertEquals(results.get(4l).pathCount(), 0);
@@ -55,12 +51,8 @@ public class IntervalFilterMapTest extends BaseTest {
 
     public void testEdgesOnWeight() throws IOException {
         Configuration config = new Configuration();
-        config.setClass(IntervalFilterMap.CLASS, Edge.class, Element.class);
-        config.setBoolean(IntervalFilterMap.NULL_WILDCARD, false);
-        config.setClass(IntervalFilterMap.VALUE_CLASS, Float.class, Float.class);
-        config.set(IntervalFilterMap.START_VALUE, "0.3");
-        config.set(IntervalFilterMap.END_VALUE, "0.45");
-        config.set(IntervalFilterMap.KEY, "weight");
+        config.setClass(FilterMap.CLASS, Edge.class, Element.class);
+        config.set(FilterMap.CLOSURE, "{it -> it.weight > 0.19 && it.weight < 0.21}");
 
         mapReduceDriver.withConfiguration(config);
 
@@ -68,17 +60,19 @@ public class IntervalFilterMapTest extends BaseTest {
         incrPath(results.values(), Edge.class);
 
         results = runWithGraph(results.values(), mapReduceDriver);
-        assertEquals(results.size(), 6);
 
+        assertEquals(results.size(), 6);
         int counter = 0;
         for (FaunusVertex vertex : results.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
                 if (((FaunusEdge) edge).pathCount() > 0 && ((FaunusEdge)edge).hasPaths()) {
                     counter++;
-                    assertEquals(edge.getProperty("weight"), 0.4d);
+                    assertEquals(edge.getProperty("weight"), 0.2d);
                 }
             }
         }
-        assertEquals(counter, 4);
+        assertEquals(counter, 2);
     }
+
+
 }

@@ -48,38 +48,45 @@ public abstract class FaunusElement implements Element, Writable {
 
     protected long id;
     protected Map<String, Object> properties = null;
-    protected List<List<MicroElement>> paths = new ArrayList<List<MicroElement>>();
+    protected List<List<MicroElement>> paths = null;
 
     public FaunusElement(final long id) {
         this.id = id;
     }
 
     public void addPath(final List<MicroElement> path) {
+        if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
         this.paths.add(path);
     }
 
     public void addPaths(final List<List<MicroElement>> paths) {
+        if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
         this.paths.addAll(paths);
     }
 
     public List<List<MicroElement>> getPaths() {
-        return this.paths;
+        return (null == this.paths) ? (List) Collections.emptyList() : this.paths;
     }
 
     public boolean hasPaths() {
-        return !this.paths.isEmpty();
+        return (null != this.paths) && !this.paths.isEmpty();
     }
 
     public void clearPaths() {
-        this.paths.clear();
+        if (null != this.paths)
+            this.paths.clear();
+        this.paths = null;
     }
 
     public int pathCount() {
-        return this.paths.size();
+        return (null == paths) ? 0 : this.paths.size();
     }
 
     public void incrPath() {
-        if (paths.size() == 0) {
+        if (null == this.paths)
+            this.paths = new ArrayList<List<MicroElement>>();
+
+        if (this.paths.size() == 0) {
             this.paths.add(new ArrayList<MicroElement>());
         }
         final List<MicroElement> path = this.paths.get(paths.size() - 1);
@@ -220,35 +227,43 @@ public abstract class FaunusElement implements Element, Writable {
     public static class ElementPaths {
 
         public static void write(final List<List<MicroElement>> paths, final DataOutput out) throws IOException {
-            out.writeInt(paths.size());
-            for (final List<MicroElement> path : paths) {
-                out.writeInt(path.size());
-                for (MicroElement element : path) {
-                    if (element instanceof MicroVertex)
-                        out.writeChar('v');
-                    else
-                        out.writeChar('e');
-                    out.writeLong(element.getId());
+            if (null == paths) {
+                out.writeInt(0);
+            } else {
+                out.writeInt(paths.size());
+                for (final List<MicroElement> path : paths) {
+                    out.writeInt(path.size());
+                    for (MicroElement element : path) {
+                        if (element instanceof MicroVertex)
+                            out.writeChar('v');
+                        else
+                            out.writeChar('e');
+                        out.writeLong(element.getId());
+                    }
                 }
             }
         }
 
         public static List<List<MicroElement>> readFields(final DataInput in) throws IOException {
             int pathsSize = in.readInt();
-            final List<List<MicroElement>> paths = new ArrayList<List<MicroElement>>(pathsSize);
-            for (int i = 0; i < pathsSize; i++) {
-                int pathSize = in.readInt();
-                List<MicroElement> path = new ArrayList<MicroElement>(pathSize);
-                for (int j = 0; j < pathSize; j++) {
-                    char type = in.readChar();
-                    if (type == 'v')
-                        path.add(new MicroVertex(in.readLong()));
-                    else
-                        path.add(new MicroEdge(in.readLong()));
+            if (pathsSize == 0)
+                return null;
+            else {
+                final List<List<MicroElement>> paths = new ArrayList<List<MicroElement>>(pathsSize);
+                for (int i = 0; i < pathsSize; i++) {
+                    int pathSize = in.readInt();
+                    List<MicroElement> path = new ArrayList<MicroElement>(pathSize);
+                    for (int j = 0; j < pathSize; j++) {
+                        char type = in.readChar();
+                        if (type == 'v')
+                            path.add(new MicroVertex(in.readLong()));
+                        else
+                            path.add(new MicroEdge(in.readLong()));
+                    }
+                    paths.add(path);
                 }
-                paths.add(path);
+                return paths;
             }
-            return paths;
         }
 
     }

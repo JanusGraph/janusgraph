@@ -44,18 +44,21 @@ public class FaunusVertexTest extends BaseTest {
         vertex1.write(out);
 
         // id length is 8 bytes
-        // energy int is 4 bytes
-        // tag char is 2 bytes
         // properties size 2 bytes
+        // paths size 4 bytes
         // out edge types size 2 bytes
         // in edge types size 2 bytes
-        //TODO assertEquals(bytes.toByteArray().length, 20);
+        assertEquals(bytes.toByteArray().length, 18);
         FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         assertEquals(vertex1, vertex2);
         assertEquals(vertex1.compareTo(vertex2), 0);
         assertEquals(vertex2.compareTo(vertex1), 0);
         assertEquals(vertex2.getId(), 10l);
+        assertFalse(vertex1.hasPaths());
+        assertFalse(vertex2.hasPaths());
+        assertEquals(vertex1.pathCount(), 0);
+        assertEquals(vertex2.pathCount(), 0);
         assertFalse(vertex2.getEdges(Direction.OUT).iterator().hasNext());
         assertFalse(vertex2.getEdges(Direction.IN).iterator().hasNext());
         assertFalse(vertex2.getEdges(Direction.BOTH).iterator().hasNext());
@@ -231,11 +234,31 @@ public class FaunusVertexTest extends BaseTest {
         for (FaunusVertex vertex : vertices) {
             if (vertex.getId().equals(1l)) {
                 assertFalse(vertex.getVertices(IN).iterator().hasNext());
+                assertTrue(vertex.getVertices(OUT).iterator().hasNext());
+                assertTrue(vertex.getVertices(BOTH).iterator().hasNext());
                 assertEquals(asList(vertex.getVertices(OUT)).size(), 3);
+                int id2 = 0;
+                int id3 = 0;
+                int id4 = 0;
                 for (Vertex temp : vertex.getVertices(OUT)) {
                     long id = (Long) temp.getId();
-                    assertTrue(id == 2l || id == 3l || id == 4l);
+                    if (id == 2l)
+                        id2++;
+                    else if (id == 3l)
+                        id3++;
+                    else if (id == 4l)
+                        id4++;
+                    else
+                        assertTrue(false);
                 }
+
+                assertEquals(asList(vertex.getVertices(OUT, "created")).size(), 1);
+                assertEquals(asList(vertex.getVertices(OUT, "knows")).size(), 2);
+                assertEquals(vertex.getVertices(OUT, "created").iterator().next().getId(), 3l);
+
+                assertEquals(id2, 1);
+                assertEquals(id3, 1);
+                assertEquals(id4, 1);
                 assertEquals(asList(vertex.query().has("weight", 0.5).limit(1).vertices()).size(), 1);
                 assertEquals(vertex.query().has("weight", 0.5).limit(1).vertices().iterator().next().getId(), 2l);
             }
