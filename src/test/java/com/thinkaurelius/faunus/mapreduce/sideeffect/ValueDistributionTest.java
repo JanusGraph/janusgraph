@@ -1,7 +1,8 @@
-package com.thinkaurelius.faunus.mapreduce.statistics;
+package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueDistribution;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;

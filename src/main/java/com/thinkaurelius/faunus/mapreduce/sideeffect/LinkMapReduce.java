@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.FaunusRunner;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.io.LongWritable;
@@ -41,7 +42,7 @@ public class LinkMapReduce {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.step = context.getConfiguration().getInt(context.getConfiguration().get(STEP), 0);
+            this.step = context.getConfiguration().getInt(context.getConfiguration().get(Tokens.makeNamespace(FaunusRunner.class) + ".tag." + context.getConfiguration().get(STEP)), 0);
             this.direction = FaunusConfiguration.getDirection(context.getConfiguration(), DIRECTION);
             this.label = context.getConfiguration().get(LABEL);
         }

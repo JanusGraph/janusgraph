@@ -5,7 +5,7 @@ package com.thinkaurelius.faunus.util;
  */
 public class MicroElement {
 
-    private final long id;
+    protected final long id;
 
     public MicroElement(final long id) {
         this.id = id;
@@ -14,7 +14,4 @@ public class MicroElement {
     public long getId() {
         return this.id;
     }
-
-
-
 }

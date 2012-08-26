@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.mapreduce.filter;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -59,7 +58,7 @@ public class IntervalFilterMapTest extends BaseTest {
         assertEquals(results.get(6l).pathCount(), 0);
     }
 
-    /*public void testEdgesOnWeight() throws IOException {
+    public void testEdgesOnWeight() throws IOException {
         Configuration config = new Configuration();
         config.setClass(IntervalFilterMap.CLASS, Edge.class, Element.class);
         config.setBoolean(IntervalFilterMap.NULL_WILDCARD, false);
@@ -73,7 +72,7 @@ public class IntervalFilterMapTest extends BaseTest {
         Map<Long, FaunusVertex> results = generateIndexedToyGraph(BaseTest.ExampleGraph.TINKERGRAPH);
         for (FaunusVertex vertex : results.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).setEnergy(1);
+                ((FaunusEdge) edge).incrPath();
             }
         }
 
@@ -83,12 +82,12 @@ public class IntervalFilterMapTest extends BaseTest {
         int counter = 0;
         for (FaunusVertex vertex : results.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                if (((FaunusEdge) edge).getEnergy() > 0) {
+                if (((FaunusEdge) edge).pathCount() > 0) {
                     counter++;
                     assertEquals(edge.getProperty("weight"), 0.4d);
                 }
             }
         }
         assertEquals(counter, 4);
-    }*/
+    }
 }

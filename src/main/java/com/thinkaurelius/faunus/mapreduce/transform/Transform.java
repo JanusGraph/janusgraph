@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.mapreduce.statistics;
+package com.thinkaurelius.faunus.mapreduce.transform;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;

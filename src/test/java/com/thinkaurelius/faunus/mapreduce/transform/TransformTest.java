@@ -1,7 +1,8 @@
-package com.thinkaurelius.faunus.mapreduce.statistics;
+package com.thinkaurelius.faunus.mapreduce.transform;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.transform.Transform;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;

@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.FaunusRunner;
 import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
@@ -37,7 +38,7 @@ public class LinkMapReduceTest extends BaseTest {
 
         Configuration config = new Configuration();
         config.set(LinkMapReduce.STEP, "blah");
-        config.setInt("blah", 0);
+        config.setInt(Tokens.makeNamespace(FaunusRunner.class) + ".tag.blah", 0);
         config.set(LinkMapReduce.DIRECTION, Direction.IN.name());
         config.set(LinkMapReduce.LABEL, "knowsCreated");
 

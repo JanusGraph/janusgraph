@@ -71,11 +71,11 @@ public class FaunusPipeline {
         public String getProperty() {
             return this.property;
         }
-        
+
         public int incrStep() {
             return this.step++;
         }
-        
+
         public int getStep() {
             return this.step;
         }
@@ -141,6 +141,11 @@ public class FaunusPipeline {
         return this;
     }
 
+    public FaunusPipeline path() throws IOException {
+        this.compiler.pathMap(this.state.getElementType());
+        return this;
+    }
+
     //////// FILTERS
 
     public FaunusPipeline filter(final String closure) {
@@ -183,7 +188,7 @@ public class FaunusPipeline {
     //////// SIDEEFFECTS
 
     public FaunusPipeline as(final String tag) {
-        this.compiler.asMap(this.state.getElementType(), tag, this.state.getStep());
+        this.compiler.as(this.state.getElementType(), tag, this.state.getStep());
         return this;
     }
 

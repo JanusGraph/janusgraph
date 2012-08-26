@@ -1,8 +1,10 @@
-package com.thinkaurelius.faunus.mapreduce.statistics;
+package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
+import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.CounterMap;
+import com.thinkaurelius.faunus.mapreduce.ElementPicker;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -14,14 +16,14 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
-import java.util.Set;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class KeyDistribution {
+public class ValueDistribution {
 
-    public static final String CLASS = Tokens.makeNamespace(KeyDistribution.class) + ".class";
+    public static final String PROPERTY = Tokens.makeNamespace(ValueDistribution.class) + ".property";
+    public static final String CLASS = Tokens.makeNamespace(ValueDistribution.class) + ".class";
 
     public enum Counters {
         PROPERTIES_COUNTED
@@ -29,6 +31,7 @@ public class KeyDistribution {
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, Text, LongWritable> {
 
+        private String property;
         private Class<? extends Element> klass;
         // making use of in-map aggregation/combiner
         private CounterMap<String> map;
@@ -37,6 +40,7 @@ public class KeyDistribution {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.map = new CounterMap<String>();
+            this.property = context.getConfiguration().get(PROPERTY);
             this.klass = context.getConfiguration().getClass(CLASS, Element.class, Element.class);
         }
 
@@ -44,18 +48,16 @@ public class KeyDistribution {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
 
             if (this.klass.equals(Vertex.class)) {
-                final Set<String> keys = value.getPropertyKeys();
-                for (final String temp : keys) {
-                    this.map.incr(temp, 1l);
+                if (value.hasPaths()) {
+                    this.map.incr(ElementPicker.getPropertyAsString(value, this.property), value.pathCount());
+                    context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
                 }
-                context.getCounter(Counters.PROPERTIES_COUNTED).increment(keys.size());
             } else {
                 for (final Edge edge : value.getEdges(Direction.OUT)) {
-                    final Set<String> keys = edge.getPropertyKeys();
-                    for (final String temp : keys) {
-                        this.map.incr(temp, 1l);
+                    if (((FaunusEdge) edge).hasPaths()) {
+                        this.map.incr(ElementPicker.getPropertyAsString((FaunusEdge) edge, this.property), value.pathCount());
+                        context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
                     }
-                    context.getCounter(Counters.PROPERTIES_COUNTED).increment(keys.size());
                 }
             }
 
@@ -74,7 +76,7 @@ public class KeyDistribution {
         public void cleanup(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             super.cleanup(context);
             for (final java.util.Map.Entry<String, Long> entry : this.map.entrySet()) {
-                this.textWritable.set(null == entry.getKey() ? Tokens.NULL : entry.getKey());
+                this.textWritable.set(entry.getKey());
                 this.longWritable.set(entry.getValue());
                 context.write(this.textWritable, this.longWritable);
             }
