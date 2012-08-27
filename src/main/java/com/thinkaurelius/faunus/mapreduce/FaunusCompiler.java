@@ -9,6 +9,7 @@ import com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
+import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap;
@@ -244,6 +245,15 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapRClass = BackFilterMapReduce.Map.class;
         this.reduceClass = BackFilterMapReduce.Reduce.class;
         this.completeSequence();
+    }
+
+    public void duplicateFilterMap(final Class<? extends Element> klass) {
+        if (!klass.equals(Vertex.class) && !klass.equals(Edge.class)) {
+            throw new RuntimeException("Unsupported element class: " + klass.getName());
+        }
+
+        this.mapSequenceConfiguration.setClass(DuplicateFilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceClasses.add(DuplicateFilterMap.Map.class);
     }
 
     ///////////// SIDE-EFFECTS

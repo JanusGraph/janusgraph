@@ -242,6 +242,12 @@ public class FaunusPipeline {
         return this;
     }
 
+    public FaunusPipeline dedup() {
+        this.state.checkLocked();
+        this.compiler.duplicateFilterMap(this.state.getElementType());
+        return this;
+    }
+
     public FaunusPipeline has(final String key, final Query.Compare compare, final Object... values) {
         this.state.checkLocked();
         this.compiler.propertyFilterMap(this.state.getElementType(), false, key, compare, values);
