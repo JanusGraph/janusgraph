@@ -42,21 +42,22 @@ public class LinkMapReduce {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.step = context.getConfiguration().getInt(context.getConfiguration().get(Tokens.makeNamespace(FaunusRunner.class) + ".tag." + context.getConfiguration().get(STEP)), 0);
+            this.step = context.getConfiguration().getInt(context.getConfiguration().get(FaunusRunner.TAG + "." + context.getConfiguration().get(STEP)), 0);
             this.direction = FaunusConfiguration.getDirection(context.getConfiguration(), DIRECTION);
             this.label = context.getConfiguration().get(LABEL);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+            final long valueId = value.getIdAsLong();
             if (value.hasPaths()) {
                 for (final List<MicroElement> path : value.getPaths()) {
                     final long linkElementId = path.get(this.step).getId();
                     final FaunusEdge edge;
                     if (this.direction.equals(IN))
-                        edge = new FaunusEdge(linkElementId, value.getIdAsLong(), this.label);
+                        edge = new FaunusEdge(linkElementId, valueId, this.label);
                     else
-                        edge = new FaunusEdge(value.getIdAsLong(), linkElementId, this.label);
+                        edge = new FaunusEdge(valueId, linkElementId, this.label);
 
                     value.addEdge(this.direction, edge);
                     this.longWritable.set(linkElementId);
@@ -64,7 +65,7 @@ public class LinkMapReduce {
                 }
             }
 
-            this.longWritable.set(value.getIdAsLong());
+            this.longWritable.set(valueId);
             context.write(this.longWritable, this.holder.set('v', value));
         }
     }

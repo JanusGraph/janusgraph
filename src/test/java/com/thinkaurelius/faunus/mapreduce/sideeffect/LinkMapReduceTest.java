@@ -38,7 +38,7 @@ public class LinkMapReduceTest extends BaseTest {
 
         Configuration config = new Configuration();
         config.set(LinkMapReduce.STEP, "blah");
-        config.setInt(Tokens.makeNamespace(FaunusRunner.class) + ".tag.blah", 0);
+        config.setInt(FaunusRunner.TAG + ".blah", 0);
         config.set(LinkMapReduce.DIRECTION, Direction.IN.name());
         config.set(LinkMapReduce.LABEL, "knowsCreated");
 

@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
+import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.CounterMap;
@@ -38,7 +39,7 @@ public class GroupCountMapReduce {
 
         private Closure keyClosure;
         private Closure valueClosure;
-        private Class<? extends Element> klass;
+        private boolean isVertex;
         private CounterMap<Object> map;
 
         @Override
@@ -49,26 +50,29 @@ public class GroupCountMapReduce {
             } catch (final ScriptException e) {
                 throw new IOException(e.getMessage(), e);
             }
-            this.klass = context.getConfiguration().getClass(CLASS, Element.class, Element.class);
+            this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
             this.map = new CounterMap<Object>();
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
-            if (this.klass.equals(Vertex.class)) {
-                final Object object = this.keyClosure.call(value);
-                final Number number = (Number) this.valueClosure.call(value);
-                this.map.incr(object, number.longValue());
-                context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
-            } else if (this.klass.equals(Edge.class)) {
-                for (final Edge edge : value.getEdges(Direction.OUT)) {
-                    final Object object = this.keyClosure.call(edge);
-                    final Number number = (Number) this.valueClosure.call(edge);
+            if (this.isVertex) {
+                if (value.hasPaths()) {
+                    final Object object = this.keyClosure.call(value);
+                    final Number number = (Number) this.valueClosure.call(value);
                     this.map.incr(object, number.longValue());
-                    context.getCounter(Counters.EDGES_PROCESSED).increment(1l);
+                    context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
             } else {
-                throw new IOException("Unsupported element class: " + this.klass.getName());
+                for (final Edge e : value.getEdges(Direction.OUT)) {
+                    final FaunusEdge edge = (FaunusEdge) e;
+                    if (edge.hasPaths()) {
+                        final Object object = this.keyClosure.call(edge);
+                        final Number number = (Number) this.valueClosure.call(edge);
+                        this.map.incr(object, number.longValue());
+                        context.getCounter(Counters.EDGES_PROCESSED).increment(1l);
+                    }
+                }
             }
 
             // protected against memory explosion
