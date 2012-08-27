@@ -8,13 +8,10 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.DefaultQuery;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
-import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableComparator;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,11 +29,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusVertex extends FaunusElement implements Vertex, WritableComparable<FaunusVertex> {
-
-    static {
-        WritableComparator.define(FaunusVertex.class, new Comparator());
-    }
+public class FaunusVertex extends FaunusElement implements Vertex {
 
     private Map<String, List<Edge>> outEdges = new HashMap<String, List<Edge>>();
     private Map<String, List<Edge>> inEdges = new HashMap<String, List<Edge>>();
@@ -275,7 +268,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         this.properties = ElementProperties.readFields(in);
     }
 
-    public int compareTo(final FaunusVertex other) {
+    public int compareTo(final FaunusElement other) {
         return new Long(this.id).compareTo((Long) other.getId());
     }
 
@@ -291,28 +284,6 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
     public FaunusVertex cloneId() {
         return new FaunusVertex(this.getIdAsLong());
-    }
-
-    public static class Comparator extends WritableComparator {
-        public Comparator() {
-            super(FaunusVertex.class);
-        }
-
-        @Override
-        public int compare(final byte[] vertex1, final int start1, final int length1, final byte[] vertex2, final int start2, final int length2) {
-            // the first 8 bytes are the long id
-            final ByteBuffer buffer1 = ByteBuffer.wrap(vertex1);
-            final ByteBuffer buffer2 = ByteBuffer.wrap(vertex2);
-            return (((Long) buffer1.getLong()).compareTo(buffer2.getLong()));
-        }
-
-        /* @Override
-       public int compare(final WritableComparable a, final WritableComparable b) {
-           if (a instanceof FaunusVertex && b instanceof FaunusVertex)
-               return  ((Long)(((FaunusVertex) a).getIdAsLong())).compareTo(((FaunusVertex) b).getIdAsLong());
-           else
-               return super.compare(a, b);
-       } */
     }
 
     private class EdgeList extends AbstractList<Edge> {

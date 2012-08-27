@@ -114,6 +114,19 @@ public class FaunusRunner extends Configured implements Tool {
 
     ///////////// TRANSFORMS
 
+    public void transform(final Class<? extends Element> klass, final String function) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(TransformMap.CLOSURE, function);
+        conf.setClass(TransformMap.CLASS, klass, Element.class);
+        final Job job = new Job(conf, TransformMap.class.getCanonicalName());
+        job.setMapperClass(TransformMap.Map.class);
+        job.setMapOutputKeyClass(FaunusVertex.class);
+        job.setMapOutputValueClass(Text.class);
+        this.configureStatisticsJob(job);
+        this.jobs.add(job);
+    }
+
     public void _() {
         this.mapSequenceClasses.add(IdentityMap.Map.class);
     }
@@ -294,26 +307,15 @@ public class FaunusRunner extends Configured implements Tool {
         job.setOutputValueClass(FaunusVertex.class);
     }
 
-    ///////////////////////////////////////////////////////////////
-    ///////////////////////// STATISTICS /////////////////////////
-    //////////////////////////////////////////////////////////////
-
-    public void configureStatisticsJob(final Job job) {
+    private void configureStatisticsJob(final Job job) {
         job.setJarByClass(FaunusPipeline.class);
         this.derivationJob = false;
     }
 
-    public void transform(final String function) throws IOException {
-        this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.set(TransformMap.FUNCTION, function);
-        final Job job = new Job(conf, TransformMap.class.getCanonicalName());
-        job.setMapperClass(TransformMap.Map.class);
-        job.setMapOutputKeyClass(FaunusVertex.class);
-        job.setMapOutputValueClass(Text.class);
-        this.configureStatisticsJob(job);
-        this.jobs.add(job);
-    }
+    ///////////////////////////////////////////////////////////////
+    ///////////////////////// STATISTICS /////////////////////////
+    //////////////////////////////////////////////////////////////
+
 
     public void distribution(final Class<? extends Element> klass, final String keyFunction, final String valueFunction) throws IOException {
         this.completeSequence();

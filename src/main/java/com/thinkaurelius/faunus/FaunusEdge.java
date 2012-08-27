@@ -131,4 +131,8 @@ public class FaunusEdge extends FaunusElement implements Edge {
     public String toString() {
         return StringFactory.edgeString(this);
     }
+
+    public int compareTo(final FaunusElement other) {
+        return new Long(this.id).compareTo((Long) other.getId());
+    }
 }

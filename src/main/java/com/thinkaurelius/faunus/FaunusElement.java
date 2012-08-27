@@ -4,11 +4,13 @@ import com.thinkaurelius.faunus.util.MicroEdge;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Element;
-import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,8 +22,11 @@ import java.util.Set;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public abstract class FaunusElement implements Element, Writable {
+public abstract class FaunusElement implements Element, WritableComparable<FaunusElement> {
 
+    static {
+        WritableComparator.define(FaunusElement.class, new Comparator());
+    }
 
     protected static final Map<String, String> TYPE_MAP = new HashMap<String, String>() {
         @Override
@@ -268,6 +273,28 @@ public abstract class FaunusElement implements Element, Writable {
             }
         }
 
+    }
+
+    public static class Comparator extends WritableComparator {
+        public Comparator() {
+            super(FaunusElement.class);
+        }
+
+        @Override
+        public int compare(final byte[] vertex1, final int start1, final int length1, final byte[] vertex2, final int start2, final int length2) {
+            // the first 8 bytes are the long id
+            final ByteBuffer buffer1 = ByteBuffer.wrap(vertex1);
+            final ByteBuffer buffer2 = ByteBuffer.wrap(vertex2);
+            return (((Long) buffer1.getLong()).compareTo(buffer2.getLong()));
+        }
+
+        /* @Override
+       public int compare(final WritableComparable a, final WritableComparable b) {
+           if (a instanceof FaunusVertex && b instanceof FaunusVertex)
+               return  ((Long)(((FaunusVertex) a).getIdAsLong())).compareTo(((FaunusVertex) b).getIdAsLong());
+           else
+               return super.compare(a, b);
+       } */
     }
 
 
