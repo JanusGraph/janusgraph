@@ -11,6 +11,7 @@ public class RexsterConfiguration {
     public static final String REXSTER_INPUT_GRAPH = "rexster.input.graph";
     public static final String REXSTER_INPUT_V_ESTIMATE = "rexster.input.v.estimate";
     public static final String REXSTER_INPUT_V_BUFFER = "rexster.input.v.buffer";
+    public static final String REXSTER_INPUT_MODE = "rexster.input.mode";
 
     private Configuration conf;
 
@@ -20,6 +21,10 @@ public class RexsterConfiguration {
 
     public Configuration getConf() {
         return conf;
+    }
+
+    public String getMode() {
+        return this.conf.get(REXSTER_INPUT_MODE);
     }
 
     public String getRestAddress() {
@@ -42,8 +47,14 @@ public class RexsterConfiguration {
         return this.conf.getInt(REXSTER_INPUT_V_BUFFER, 1024);
     }
 
-    public String getEndpoint() {
+    public String getRestEndpoint() {
         return String.format("http://%s:%s/graphs/%s/tp/gremlin", this.getRestAddress(),
                 this.getRestPort(), this.getGraph());
+    }
+
+    public String getRestStreamEndpoint() {
+        return String.format("http://%s:%s/graphs/%s/%s/%s", this.getRestAddress(),
+                this.getRestPort(), this.getGraph(), FaunusRexsterExtension.EXTENSION_NAMESPACE,
+                FaunusRexsterExtension.EXTENSION_NAME);
     }
 }

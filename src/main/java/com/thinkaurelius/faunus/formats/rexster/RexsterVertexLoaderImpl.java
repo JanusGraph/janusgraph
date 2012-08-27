@@ -40,7 +40,7 @@ public class RexsterVertexLoaderImpl implements RexsterVertexLoader {
             jsonGremlinScript.put("params", jsonGremlinParameters);
             jsonGremlinScript.put("script", script);
 
-            return postResultObject(this.rexsterConf.getEndpoint(), jsonGremlinScript);
+            return postResultObject(this.rexsterConf.getRestEndpoint(), jsonGremlinScript);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -75,7 +75,6 @@ public class RexsterVertexLoaderImpl implements RexsterVertexLoader {
             writer.close();
 
             final JSONObject json = new JSONObject(new JSONTokener(convertStreamToString(connection.getInputStream())));
-            //System.out.println(json);
             return json.optJSONArray("results");
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
@@ -94,32 +93,4 @@ public class RexsterVertexLoaderImpl implements RexsterVertexLoader {
 
         return sb.toString();
     }
-
-    /*
-    private static final String script = "import org.codehaus.jettison.json.JSONObject\n"+
-            "import org.codehaus.jettison.json.JSONArray\n"+
-            "\n"+
-            "rangeOfVertices = g.V[start..end].toList()\n"+
-            "rangeOfVertices = rangeOfVertices.collect{\n"+
-            "    def vJson = GraphSONUtility.jsonFromElement((Element) it, null, GraphSONMode.COMPACT)\n"+
-            "\n"+
-            "    def outEdges = it.outE.toList().collect{ edge ->\n"+
-            "        GraphSONUtility.jsonFromElement((Element) edge, null, GraphSONMode.COMPACT)\n"+
-            "    }\n"+
-            "\n"+
-            "    def outEdgesArray = new JSONArray()\n"+
-            "    outEdges.each { edge-> outEdgesArray.put(edge) }\n"+
-            "    vJson.put(\"_outE\", outEdgesArray)\n"+
-            "\n"+
-            "    def inEdges = it.inE.toList().collect{ edge ->\n"+
-            "        GraphSONUtility.jsonFromElement((Element) edge, null, GraphSONMode.COMPACT)\n"+
-            "    }\n"+
-            "\n"+
-            "    def inEdgesArray = new JSONArray()\n"+
-            "    inEdges.each { edge -> inEdgesArray.put(edge) }\n"+
-            "    vJson.put(\"_inE\", inEdgesArray)\n"+
-            "\n"+
-            "    return vJson\n"+
-            "}";
-            */
 }

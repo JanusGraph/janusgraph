@@ -6,6 +6,8 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.io.IOException;
@@ -40,8 +42,17 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         final RexsterInputSplit rexsterInputSplit = (RexsterInputSplit) inputSplit;
         this.splitEnd = rexsterInputSplit.getEnd();
         this.splitStart = rexsterInputSplit.getStart();
-        this.rexsterIterator = new RexsterIterator(new RexsterVertexLoaderImpl(this.rexsterConf),
-                rexsterInputSplit.getStart(), rexsterInputSplit.getEnd(), this.rexsterConf.getRexsterBuffer());
+
+        if (this.rexsterConf.getMode().equals("rest")) {
+            this.rexsterIterator = new RestIterator(new RexsterVertexLoaderImpl(this.rexsterConf),
+                    rexsterInputSplit.getStart(), rexsterInputSplit.getEnd(), this.rexsterConf.getRexsterBuffer());
+        } else if (this.rexsterConf.getMode().equals("kibble")) {
+            this.rexsterIterator = new KibbleIterator(this.rexsterConf, rexsterInputSplit.getStart(),
+                    rexsterInputSplit.getEnd());
+        } else {
+            // todo: catch this config error somewhere earlier would be better i think.
+            throw new RuntimeException("???");
+        }
     }
 
     @Override

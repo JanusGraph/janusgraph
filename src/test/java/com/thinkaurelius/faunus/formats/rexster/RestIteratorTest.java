@@ -11,12 +11,12 @@ import java.util.HashMap;
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-public class RexsterIteratorTest {
+public class RestIteratorTest {
     @Test
     public void shouldBufferToSplitStartingInMiddle() {
 
         final RexsterVertexLoader loader = new MockRexsterVertexLoader(generateJsonArray(100));
-        final RexsterIterator iterator = new RexsterIterator(loader, 20, 40, 16);
+        final RexsterIterator iterator = new RestIterator(loader, 20, 40, 16);
 
         assertValidIteration(iterator, 20);
     }
@@ -25,7 +25,7 @@ public class RexsterIteratorTest {
     public void shouldBufferToSplitFromStart() {
 
         final RexsterVertexLoader loader = new MockRexsterVertexLoader(generateJsonArray(100));
-        final RexsterIterator iterator = new RexsterIterator(loader, 0, 20, 16);
+        final RexsterIterator iterator = new RestIterator(loader, 0, 20, 16);
 
         assertValidIteration(iterator, 0);
     }
@@ -34,7 +34,7 @@ public class RexsterIteratorTest {
     public void shouldBufferToEndStartingInMiddle() {
 
         final RexsterVertexLoader loader = new MockRexsterVertexLoader(generateJsonArray(100));
-        final RexsterIterator iterator = new RexsterIterator(loader, 80, Long.MAX_VALUE, 16);
+        final RexsterIterator iterator = new RestIterator(loader, 80, Long.MAX_VALUE, 16);
 
         assertValidIteration(iterator, 80);
     }
@@ -43,7 +43,7 @@ public class RexsterIteratorTest {
     public void shouldBufferToEndFromStart() {
 
         final RexsterVertexLoader loader = new MockRexsterVertexLoader(generateJsonArray(20));
-        final RexsterIterator iterator = new RexsterIterator(loader, 0, Long.MAX_VALUE, 16);
+        final RexsterIterator iterator = new RestIterator(loader, 0, Long.MAX_VALUE, 16);
 
         assertValidIteration(iterator, 0);
     }
@@ -52,7 +52,7 @@ public class RexsterIteratorTest {
     public void shouldBufferBiggerSplit() {
 
         final RexsterVertexLoader loader = new MockRexsterVertexLoader(generateJsonArray(40));
-        final RexsterIterator iterator = new RexsterIterator(loader, 0, 20, 1000);
+        final RexsterIterator iterator = new RestIterator(loader, 0, 20, 1000);
 
         assertValidIteration(iterator, 0);
     }
