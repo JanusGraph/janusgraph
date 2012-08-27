@@ -1,7 +1,6 @@
 package com.thinkaurelius.faunus.formats.edgelist;
 
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.formats.graphson.GraphSONRecordWriter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;

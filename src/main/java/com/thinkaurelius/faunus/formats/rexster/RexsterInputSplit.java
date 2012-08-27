@@ -26,7 +26,7 @@ public class RexsterInputSplit extends InputSplit implements Writable {
     }
 
     public String[] getLocations() throws IOException {
-        return new String[] {};
+        return new String[]{};
     }
 
     public long getStart() {

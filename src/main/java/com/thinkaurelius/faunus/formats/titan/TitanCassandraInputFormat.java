@@ -259,17 +259,17 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
             //  ## Instantiate Titan ##
             BaseConfiguration titanconfig = new BaseConfiguration();
             //General Titan configuration for read-only
-            titanconfig.setProperty("storage.read-only","true");
-            titanconfig.setProperty("autotype","none");
+            titanconfig.setProperty("storage.read-only", "true");
+            titanconfig.setProperty("autotype", "none");
             //Cassandra specific configuration
-            titanconfig.setProperty("storage.backend","cassandra");   // todo: astyanax
-            titanconfig.setProperty("storage.hostname",ConfigHelper.getInputInitialAddress(conf));
-            titanconfig.setProperty("storage.keyspace",ConfigHelper.getInputKeyspace(conf));
-            titanconfig.setProperty("storage.port",ConfigHelper.getInputRpcPort(conf));
-            if (ConfigHelper.getReadConsistencyLevel(conf)!=null)
-                titanconfig.setProperty("storage.read-consistency-level",ConfigHelper.getReadConsistencyLevel(conf));
-            if (ConfigHelper.getWriteConsistencyLevel(conf)!=null)
-                titanconfig.setProperty("storage.write-consistency-level",ConfigHelper.getWriteConsistencyLevel(conf));
+            titanconfig.setProperty("storage.backend", "cassandra");   // todo: astyanax
+            titanconfig.setProperty("storage.hostname", ConfigHelper.getInputInitialAddress(conf));
+            titanconfig.setProperty("storage.keyspace", ConfigHelper.getInputKeyspace(conf));
+            titanconfig.setProperty("storage.port", ConfigHelper.getInputRpcPort(conf));
+            if (ConfigHelper.getReadConsistencyLevel(conf) != null)
+                titanconfig.setProperty("storage.read-consistency-level", ConfigHelper.getReadConsistencyLevel(conf));
+            if (ConfigHelper.getWriteConsistencyLevel(conf) != null)
+                titanconfig.setProperty("storage.write-consistency-level", ConfigHelper.getWriteConsistencyLevel(conf));
             graph = new FaunusTitanGraph(titanconfig);
         }
         return new TitanCassandraRecordReader(graph);
@@ -277,6 +277,6 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
 
     @Override
     public void finalize() {
-        if (graph!=null) graph.shutdown();
+        if (graph != null) graph.shutdown();
     }
 }

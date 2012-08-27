@@ -1,11 +1,7 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.FaunusEdge;
-import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import junit.framework.TestCase;
-import org.apache.hadoop.io.RawComparator;
-import org.apache.hadoop.io.WritableComparator;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

@@ -6,8 +6,6 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.io.IOException;
@@ -88,5 +86,6 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
     }
 
     @Override
-    public void close() throws IOException { }
+    public void close() throws IOException {
+    }
 }

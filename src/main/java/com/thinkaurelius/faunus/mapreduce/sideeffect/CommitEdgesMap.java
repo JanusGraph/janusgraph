@@ -18,6 +18,11 @@ public class CommitEdgesMap {
 
     public static final String ACTION = Tokens.makeNamespace(CommitEdgesMap.class) + ".action";
 
+    public enum Counters {
+        EDGES_DROPPED,
+        EDGES_KEPT
+    }
+
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         private boolean drop;
@@ -30,16 +35,26 @@ public class CommitEdgesMap {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             final Iterator<Edge> itty = value.getEdges(Direction.BOTH).iterator();
+            long edgesKept = 0;
+            long edgesDropped = 0;
             while (itty.hasNext()) {
                 if (this.drop) {
-                    if ((((FaunusEdge) itty.next()).hasPaths()))
+                    if ((((FaunusEdge) itty.next()).hasPaths())) {
                         itty.remove();
+                        edgesDropped++;
+                    } else
+                        edgesKept++;
                 } else {
-                    if (!(((FaunusEdge) itty.next()).hasPaths()))
+                    if (!(((FaunusEdge) itty.next()).hasPaths())) {
                         itty.remove();
+                        edgesDropped++;
+                    } else
+                        edgesKept++;
                 }
             }
             context.write(NullWritable.get(), value);
+            context.getCounter(Counters.EDGES_DROPPED).increment(edgesDropped);
+            context.getCounter(Counters.EDGES_KEPT).increment(edgesKept);
         }
     }
 }

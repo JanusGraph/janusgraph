@@ -57,7 +57,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -185,10 +184,10 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
 
     public boolean nextKeyValue() throws IOException {
         currentRow = null;
-        while (currentRow==null && iter.hasNext()) {
+        while (currentRow == null && iter.hasNext()) {
             currentRow = graph.readFaunusVertex(iter.next());
         }
-        return currentRow!=null;
+        return currentRow != null;
     }
 
     private String getLocation() {

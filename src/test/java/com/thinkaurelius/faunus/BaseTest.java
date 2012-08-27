@@ -121,7 +121,7 @@ public abstract class BaseTest extends TestCase {
             assertEquals(vertices.get(2l).getEdges(Direction.IN, "knows").iterator().next().getProperty("weight"), 0.5);
             assertEquals(vertices.get(6l).getEdges(Direction.OUT).iterator().next().getProperty("weight"), 0.2);
             assertEquals(vertices.get(5l).getEdges(Direction.IN).iterator().next().getProperty("weight"), 1);
-        } else if(exampleGraph.equals(ExampleGraph.GRAPH_OF_THE_GODS)) {
+        } else if (exampleGraph.equals(ExampleGraph.GRAPH_OF_THE_GODS)) {
             assertEquals(vertices.get(9l).getEdges(Direction.IN, "battled").iterator().next().getProperty("time"), 1);
             assertEquals(vertices.get(10l).getEdges(Direction.IN, "battled").iterator().next().getProperty("time"), 2);
             assertEquals(vertices.get(11l).getEdges(Direction.IN).iterator().next().getProperty("time"), 12);

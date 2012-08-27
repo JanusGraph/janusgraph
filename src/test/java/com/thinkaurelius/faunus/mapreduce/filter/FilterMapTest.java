@@ -44,7 +44,7 @@ public class FilterMapTest extends BaseTest {
         assertEquals(results.get(4l).pathCount(), 0);
         assertEquals(results.get(5l).pathCount(), 0);
         assertEquals(results.get(6l).pathCount(), 0);
-        
+
         assertEquals(mapReduceDriver.getCounters().findCounter(FilterMap.Counters.VERTICES_FILTERED).getValue(), 5);
         assertEquals(mapReduceDriver.getCounters().findCounter(FilterMap.Counters.EDGES_FILTERED).getValue(), 0);
 
@@ -66,7 +66,7 @@ public class FilterMapTest extends BaseTest {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
                 if (((FaunusEdge) edge).hasPaths()) {
-                    counter = counter + ((FaunusEdge)edge).pathCount();
+                    counter = counter + ((FaunusEdge) edge).pathCount();
                     assertEquals(edge.getProperty("weight"), 0.2d);
                 }
             }

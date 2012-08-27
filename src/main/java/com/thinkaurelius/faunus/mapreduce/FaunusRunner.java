@@ -13,7 +13,7 @@ import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.LinkMapReduce;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
@@ -242,9 +242,9 @@ public class FaunusRunner extends Configured implements Tool {
     }
 
     public void commitVerticesMapReduce(final Tokens.Action action) throws IOException {
-        this.mapSequenceConfiguration.set(CommitVerticesMap.ACTION, action.name());
-        this.mapRClass = CommitVerticesMap.Map.class;
-        this.reduceClass = CommitVerticesMap.Reduce.class;
+        this.mapSequenceConfiguration.set(CommitVerticesMapReduce.ACTION, action.name());
+        this.mapRClass = CommitVerticesMapReduce.Map.class;
+        this.reduceClass = CommitVerticesMapReduce.Reduce.class;
         this.completeSequence();
     }
 

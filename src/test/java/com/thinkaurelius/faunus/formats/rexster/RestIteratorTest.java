@@ -5,8 +5,8 @@ import org.codehaus.jettison.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
@@ -61,7 +61,7 @@ public class RestIteratorTest {
         int counter = 0;
 
         int dataCounter = dataCounterStart;
-        while (iterator.hasNext())  {
+        while (iterator.hasNext()) {
             final JSONObject json = iterator.next();
             Assert.assertEquals(dataCounter, json.optInt("data"));
 

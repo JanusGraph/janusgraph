@@ -27,6 +27,6 @@ public class ElementCheckerTest extends TestCase {
         assertFalse(ec.isLegal(v1));
         assertTrue(ec.isLegal(v2));
         //assertTrue(ec.isLegal(v3));
-        
+
     }
 }

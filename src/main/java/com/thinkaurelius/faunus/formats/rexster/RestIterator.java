@@ -4,7 +4,6 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Queue;
@@ -33,7 +32,7 @@ public class RestIterator implements RexsterIterator {
     }
 
     public RestIterator(final RexsterVertexLoader loader, final long start, final long end,
-                           final int bufferSize) {
+                        final int bufferSize) {
         this.bufferSize = bufferSize;
         this.splitEnd = end;
         this.start = start;

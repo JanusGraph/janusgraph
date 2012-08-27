@@ -47,7 +47,7 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
                 final Iterable<Vertex> vertices = graph.getVertices();
                 for (Vertex vertex : vertices) {
                     if (counter >= start && counter < end) {
-                        final byte [] jsonBytes = GraphSONUtility.toJSON(vertex).toString().getBytes();
+                        final byte[] jsonBytes = GraphSONUtility.toJSON(vertex).toString().getBytes();
                         out.write(jsonBytes);
                         out.write(LINE_BREAK);
                     } else if (counter >= end) {

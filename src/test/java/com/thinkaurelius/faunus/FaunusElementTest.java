@@ -1,7 +1,5 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.FaunusElement;
-import com.thinkaurelius.faunus.FaunusVertex;
 import junit.framework.TestCase;
 
 import java.io.ByteArrayOutputStream;

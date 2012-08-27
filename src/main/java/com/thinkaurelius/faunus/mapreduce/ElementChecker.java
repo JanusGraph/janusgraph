@@ -89,7 +89,7 @@ public class ElementChecker {
                     return this.nullIsWildcard;
                 } else {
                     for (final Object value : values) {
-                        if (((Comparable) elementValue).compareTo(value) <=0)
+                        if (((Comparable) elementValue).compareTo(value) <= 0)
                             return true;
                     }
                     return false;

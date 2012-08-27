@@ -36,7 +36,7 @@ public class RexsterConfiguration {
         return this.conf.get(REXSTER_INPUT_ADDRESS);
     }
 
-    public int getRestPort(){
+    public int getRestPort() {
         return this.conf.getInt(REXSTER_INPUT_PORT, 8182);
     }
 

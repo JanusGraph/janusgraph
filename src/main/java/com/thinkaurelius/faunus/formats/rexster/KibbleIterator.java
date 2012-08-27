@@ -83,7 +83,7 @@ public class KibbleIterator implements RexsterIterator {
 
             connection.setDoOutput(true);
 
-            this.streamReader =  new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            this.streamReader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }

@@ -20,10 +20,10 @@ import java.nio.ByteBuffer;
 public class FaunusVertexRelationLoader implements VertexRelationLoader {
 
     private final FaunusVertex vertex;
-    private final boolean filterSystemTypes = true; 
-    
-    private FaunusEdge lastEdge=null;
-    private boolean isSystemType=false;
+    private final boolean filterSystemTypes = true;
+
+    private FaunusEdge lastEdge = null;
+    private boolean isSystemType = false;
 
     public FaunusVertexRelationLoader(ByteBuffer key) {
         this(key.getLong());
@@ -31,7 +31,7 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
     }
 
     public FaunusVertexRelationLoader(final long id) {
-        Preconditions.checkArgument(id>0);
+        Preconditions.checkArgument(id > 0);
         vertex = new FaunusVertex(id);
     }
 
@@ -40,36 +40,37 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
             attribute = attribute.toString();
         return attribute;
     }
-    
+
     @Override
     public void loadProperty(long propertyid, TitanKey key, Object attribute) {
-        if (key == SystemKey.TypeClass) isSystemType=true;
+        if (key == SystemKey.TypeClass) isSystemType = true;
         if (filterSystemTypes && key instanceof SystemType) return;
 
-        vertex.setProperty(key.getName(),prepareAttribute(attribute));
+        vertex.setProperty(key.getName(), prepareAttribute(attribute));
     }
 
     @Override
     public void loadEdge(long edgeid, TitanLabel label, Direction dir, long otherVertexId) {
         if (filterSystemTypes && label instanceof SystemType) return;
 
-        switch(dir) {
+        switch (dir) {
             case IN:
-                lastEdge = new FaunusEdge(edgeid,otherVertexId,getVertexId(),label.getName());
-                vertex.addEdge(dir,lastEdge);
+                lastEdge = new FaunusEdge(edgeid, otherVertexId, getVertexId(), label.getName());
+                vertex.addEdge(dir, lastEdge);
                 break;
             case OUT:
-                lastEdge = new FaunusEdge(edgeid,getVertexId(),otherVertexId,label.getName());
-                vertex.addEdge(dir,lastEdge);
+                lastEdge = new FaunusEdge(edgeid, getVertexId(), otherVertexId, label.getName());
+                vertex.addEdge(dir, lastEdge);
                 break;
-            default: throw new IllegalArgumentException("Unexpected direction: " + dir);
+            default:
+                throw new IllegalArgumentException("Unexpected direction: " + dir);
         }
     }
 
     @Override
     public void addRelationProperty(TitanKey key, Object attribute) {
         if (filterSystemTypes && key instanceof SystemType) return;
-        lastEdge.setProperty(key.getName(),prepareAttribute(attribute));
+        lastEdge.setProperty(key.getName(), prepareAttribute(attribute));
     }
 
     @Override

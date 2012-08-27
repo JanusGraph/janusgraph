@@ -59,8 +59,8 @@ public class FaunusPipelineTest extends BaseTest {
         Queue<String> q = new LinkedList<String>();
         q.add("a");
         q.add("b");
-        assertEquals("a",q.remove());
-        assertEquals("b",q.remove());
+        assertEquals("a", q.remove());
+        assertEquals("b", q.remove());
     }
 
     /* public void testClosure() throws Exception {
