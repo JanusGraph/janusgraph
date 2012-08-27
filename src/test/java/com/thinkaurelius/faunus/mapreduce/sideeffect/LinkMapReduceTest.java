@@ -44,7 +44,7 @@ public class LinkMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedToyGraph(BaseTest.ExampleGraph.TINKERGRAPH);
+        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
         for (FaunusVertex vertex : results.values()) {
             vertex.removeEdges(Tokens.Action.DROP, Direction.BOTH);
         }

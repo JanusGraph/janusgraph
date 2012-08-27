@@ -32,7 +32,7 @@ public class ValueGroupCountMapReduce {
     public static class Map extends Mapper<NullWritable, FaunusVertex, Text, LongWritable> {
 
         private String property;
-        private Class<? extends Element> klass;
+        private boolean isVertex;
         // making use of in-map aggregation/combiner
         private CounterMap<String> map;
 
@@ -41,21 +41,22 @@ public class ValueGroupCountMapReduce {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.map = new CounterMap<String>();
             this.property = context.getConfiguration().get(PROPERTY);
-            this.klass = context.getConfiguration().getClass(CLASS, Element.class, Element.class);
+            this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
 
-            if (this.klass.equals(Vertex.class)) {
+            if (this.isVertex) {
                 if (value.hasPaths()) {
                     this.map.incr(ElementPicker.getPropertyAsString(value, this.property), value.pathCount());
                     context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
                 }
             } else {
-                for (final Edge edge : value.getEdges(Direction.OUT)) {
-                    if (((FaunusEdge) edge).hasPaths()) {
-                        this.map.incr(ElementPicker.getPropertyAsString((FaunusEdge) edge, this.property), value.pathCount());
+                for (final Edge e : value.getEdges(Direction.OUT)) {
+                    final FaunusEdge edge = (FaunusEdge) e;
+                    if (edge.hasPaths()) {
+                        this.map.incr(ElementPicker.getPropertyAsString(edge, this.property), edge.pathCount());
                         context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
                     }
                 }

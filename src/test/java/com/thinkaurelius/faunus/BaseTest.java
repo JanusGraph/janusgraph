@@ -32,22 +32,22 @@ public abstract class BaseTest extends TestCase {
         return list;
     }
 
-    public static List<FaunusVertex> generateToyGraph(final ExampleGraph example) throws IOException {
+    public static List<FaunusVertex> generateGraph(final ExampleGraph example) throws IOException {
         if (ExampleGraph.TINKERGRAPH.equals(example))
             return new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
         else
             return new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
     }
 
-    public static Map<Long, FaunusVertex> generateIndexedToyGraph(final ExampleGraph example) throws IOException {
+    public static Map<Long, FaunusVertex> generateIndexedGraph(final ExampleGraph example) throws IOException {
         Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
-        for (FaunusVertex vertex : generateToyGraph(example)) {
+        for (FaunusVertex vertex : generateGraph(example)) {
             map.put(vertex.getIdAsLong(), vertex);
         }
         return map;
     }
 
-    public static void incrPath(final Collection<FaunusVertex> vertices, final Class<? extends Element> klass) {
+    public static Collection<FaunusVertex> startPath(final Collection<FaunusVertex> vertices, final Class<? extends Element> klass) {
         for (FaunusVertex vertex : vertices) {
             if (klass.equals(Vertex.class))
                 vertex.startPath();
@@ -57,10 +57,10 @@ public abstract class BaseTest extends TestCase {
                 }
             }
         }
+        return vertices;
     }
 
-
-    public static Map<Long, FaunusVertex> indexResults(final List<Pair<NullWritable, FaunusVertex>> pairs) {
+    private static Map<Long, FaunusVertex> indexResults(final List<Pair<NullWritable, FaunusVertex>> pairs) {
         final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
         for (final Pair<NullWritable, FaunusVertex> pair : pairs) {
             map.put(pair.getSecond().getIdAsLong(), pair.getSecond());
@@ -68,21 +68,7 @@ public abstract class BaseTest extends TestCase {
         return map;
     }
 
-    public static Map<Long, FaunusVertex> runWithToyGraph(final ExampleGraph example,
-                                                          final MapReduceDriver driver) throws IOException {
-        driver.resetOutput();
-        for (final FaunusVertex vertex : generateToyGraph(example)) {
-            vertex.startPath();
-            for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).startPath();
-            }
-            driver.withInput(NullWritable.get(), vertex);
-        }
-        return indexResults(driver.run());
-    }
-
-    public static Map<Long, FaunusVertex> runWithGraph(Collection<FaunusVertex> vertices,
-                                                       final MapReduceDriver driver) throws IOException {
+    public static Map<Long, FaunusVertex> runWithGraph(Collection<FaunusVertex> vertices, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
         for (final Vertex vertex : vertices) {
             driver.withInput(NullWritable.get(), vertex);
@@ -90,13 +76,9 @@ public abstract class BaseTest extends TestCase {
         return indexResults(driver.run());
     }
 
-    public static List runWithToyGraphNoFormatting(final ExampleGraph example, final MapReduceDriver driver) throws IOException {
+    public static List runWithGraphNoIndex(Collection<FaunusVertex> vertices, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
-        for (final FaunusVertex vertex : generateToyGraph(example)) {
-            vertex.startPath();
-            for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).startPath();
-            }
+        for (final Vertex vertex : vertices) {
             driver.withInput(NullWritable.get(), vertex);
         }
         return driver.run();

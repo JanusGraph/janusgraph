@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -32,7 +33,7 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH), Vertex.class), mapReduceDriver);
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).pathCount(), 0);
         assertEquals(results.get(2l).pathCount(), 0);

@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.transform;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -30,7 +31,7 @@ public class TransformMapTest extends BaseTest {
         config.set(TransformMap.FUNCTION, "{it -> it.propertyKeys.size()}");
         mapReduceDriver.withConfiguration(config);
 
-        final List<Pair<FaunusVertex, Text>> results = runWithToyGraphNoFormatting(ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
+        final List<Pair<FaunusVertex, Text>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH),Vertex.class), this.mapReduceDriver);
         assertEquals(results.size(), 6);
         for (final Pair<FaunusVertex, Text> result : results) {
             assertEquals(result.getSecond().toString(), "2");

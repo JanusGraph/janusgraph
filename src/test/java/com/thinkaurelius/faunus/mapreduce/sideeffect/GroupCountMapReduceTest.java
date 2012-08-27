@@ -34,7 +34,7 @@ public class GroupCountMapReduceTest extends BaseTest {
         config.set(GroupCountMapReduce.CLASS, Vertex.class.getName());
         config.set(GroupCountMapReduce.KEY_FUNCTION, "{ it -> it.outE.count() }");
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
+        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 5);
         for (final Pair<Text, LongWritable> result : results) {
@@ -63,7 +63,7 @@ public class GroupCountMapReduceTest extends BaseTest {
         config.set(GroupCountMapReduce.CLASS, Edge.class.getName());
         config.set(GroupCountMapReduce.KEY_FUNCTION, "{ it -> it.map.next().size() }");
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<Text, LongWritable>> results = runWithToyGraphNoFormatting(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
+        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 2);
         for (final Pair<Text, LongWritable> result : results) {

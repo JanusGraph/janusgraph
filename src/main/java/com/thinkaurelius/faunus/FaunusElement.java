@@ -82,8 +82,6 @@ public abstract class FaunusElement implements Element, Writable {
     }
 
     public void clearPaths() {
-        if (null != this.paths)
-            this.paths.clear();
         this.paths = null;
     }
 

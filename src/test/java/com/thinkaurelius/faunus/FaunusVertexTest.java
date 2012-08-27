@@ -230,7 +230,7 @@ public class FaunusVertexTest extends BaseTest {
     }
 
     public void testGetVerticesAndQuery() throws IOException {
-        List<FaunusVertex> vertices = generateToyGraph(ExampleGraph.TINKERGRAPH);
+        List<FaunusVertex> vertices = generateGraph(ExampleGraph.TINKERGRAPH);
         for (FaunusVertex vertex : vertices) {
             if (vertex.getId().equals(1l)) {
                 assertFalse(vertex.getVertices(IN).iterator().hasNext());
