@@ -32,10 +32,10 @@ public class CommitEdgesMap {
             final Iterator<Edge> itty = value.getEdges(Direction.BOTH).iterator();
             while (itty.hasNext()) {
                 if (this.drop) {
-                    if ((((FaunusEdge) itty.next()).isActive()))
+                    if ((((FaunusEdge) itty.next()).hasPaths()))
                         itty.remove();
                 } else {
-                    if (!(((FaunusEdge) itty.next()).isActive()))
+                    if (!(((FaunusEdge) itty.next()).hasPaths()))
                         itty.remove();
                 }
             }

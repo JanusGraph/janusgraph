@@ -48,10 +48,8 @@ public class LinkMapReduceTest extends BaseTest {
         for (FaunusVertex vertex : results.values()) {
             vertex.removeEdges(Tokens.Action.DROP, Direction.BOTH);
         }
-        results.get(3l).activate();
-        results.get(5l).activate();
-        results.get(3l).addPath((List) Arrays.asList(new MicroVertex(1l)));
-        results.get(5l).addPath((List) Arrays.asList(new MicroVertex(1l)));
+        results.get(3l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)));
+        results.get(5l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(5l)));
 
         results = runWithGraph(results.values(), mapReduceDriver);
         assertEquals(asList(results.get(1l).getEdges(OUT, "knowsCreated")).size(), 2);

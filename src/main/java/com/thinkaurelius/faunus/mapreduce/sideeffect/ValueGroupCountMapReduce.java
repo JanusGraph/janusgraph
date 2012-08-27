@@ -32,7 +32,7 @@ public class ValueGroupCountMapReduce {
     public static class Map extends Mapper<NullWritable, FaunusVertex, Text, LongWritable> {
 
         private String property;
-        private boolean isVertex;
+        private Class<? extends Element> klass;
         // making use of in-map aggregation/combiner
         private CounterMap<String> map;
 
@@ -41,21 +41,21 @@ public class ValueGroupCountMapReduce {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.map = new CounterMap<String>();
             this.property = context.getConfiguration().get(PROPERTY);
-            this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
+            this.klass = context.getConfiguration().getClass(CLASS, Element.class, Element.class);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
 
-            if (this.isVertex) {
-                if (value.isActive()) {
-                    this.map.incr(ElementPicker.getPropertyAsString(value, this.property), value.pathCount()+1);
+            if (this.klass.equals(Vertex.class)) {
+                if (value.hasPaths()) {
+                    this.map.incr(ElementPicker.getPropertyAsString(value, this.property), value.pathCount());
                     context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
                 }
             } else {
                 for (final Edge edge : value.getEdges(Direction.OUT)) {
-                    if (((FaunusEdge) edge).isActive()) {
-                        this.map.incr(ElementPicker.getPropertyAsString((FaunusEdge) edge, this.property), value.pathCount()+1);
+                    if (((FaunusEdge) edge).hasPaths()) {
+                        this.map.incr(ElementPicker.getPropertyAsString((FaunusEdge) edge, this.property), value.pathCount());
                         context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
                     }
                 }
@@ -89,11 +89,11 @@ public class ValueGroupCountMapReduce {
 
         @Override
         public void reduce(final Text key, final Iterable<LongWritable> values, final Reducer<Text, LongWritable, Text, LongWritable>.Context context) throws IOException, InterruptedException {
-            long totalCounts = 0;
+            long totalNumberOfEdges = 0;
             for (final LongWritable token : values) {
-                totalCounts = totalCounts + token.get();
+                totalNumberOfEdges = totalNumberOfEdges + token.get();
             }
-            this.longWritable.set(totalCounts);
+            this.longWritable.set(totalNumberOfEdges);
             context.write(key, this.longWritable);
         }
     }

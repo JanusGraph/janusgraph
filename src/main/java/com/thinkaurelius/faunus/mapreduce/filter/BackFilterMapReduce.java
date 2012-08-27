@@ -40,8 +40,8 @@ public class BackFilterMapReduce {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
-            if (value.isActive()) {
-                for (final List<MicroElement> path : value.getPaths(true)) {
+            if (value.hasPaths()) {
+                for (final List<MicroElement> path : value.getPaths()) {
                     final long backElementId = path.get(this.step).getId();
                     this.longWritable.set(backElementId);
                     this.vertex.reuse(backElementId);
@@ -50,7 +50,7 @@ public class BackFilterMapReduce {
                 }
             }
 
-            value.inactive();
+            value.clearPaths();
             this.longWritable.set(value.getIdAsLong());
             context.write(this.longWritable, this.holder.set('v', value));
         }
@@ -65,8 +65,7 @@ public class BackFilterMapReduce {
                 if (holder.getTag() == 'v') {
                     vertex.addAll((FaunusVertex) holder.get());
                 } else {
-                    vertex.activate();
-                    vertex.addPaths(holder.get().getPaths(false));
+                    vertex.addPaths(holder.get().getPaths());
                 }
             }
             context.write(NullWritable.get(), vertex);

@@ -36,17 +36,17 @@ public class FilterMapTest extends BaseTest {
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = generateIndexedToyGraph(BaseTest.ExampleGraph.TINKERGRAPH);
-        activate(results.values(), Vertex.class);
+        incrPath(results.values(), Vertex.class);
 
         results = runWithGraph(results.values(), mapReduceDriver);
 
         assertEquals(results.size(), 6);
-        assertFalse(results.get(1l).isActive());
-        assertTrue(results.get(2l).isActive());
-        assertFalse(results.get(3l).isActive());
-        assertFalse(results.get(4l).isActive());
-        assertFalse(results.get(5l).isActive());
-        assertFalse(results.get(6l).isActive());
+        assertEquals(results.get(1l).pathCount(), 0);
+        assertEquals(results.get(2l).pathCount(), 1);
+        assertEquals(results.get(3l).pathCount(), 0);
+        assertEquals(results.get(4l).pathCount(), 0);
+        assertEquals(results.get(5l).pathCount(), 0);
+        assertEquals(results.get(6l).pathCount(), 0);
     }
 
     public void testEdgesOnWeight() throws IOException {
@@ -57,7 +57,7 @@ public class FilterMapTest extends BaseTest {
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = generateIndexedToyGraph(BaseTest.ExampleGraph.TINKERGRAPH);
-        activate(results.values(), Edge.class);
+        incrPath(results.values(), Edge.class);
 
         results = runWithGraph(results.values(), mapReduceDriver);
 
@@ -65,7 +65,7 @@ public class FilterMapTest extends BaseTest {
         int counter = 0;
         for (FaunusVertex vertex : results.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                if (((FaunusEdge) edge).isActive()) {
+                if (((FaunusEdge) edge).pathCount() > 0 && ((FaunusEdge)edge).hasPaths()) {
                     counter++;
                     assertEquals(edge.getProperty("weight"), 0.2d);
                 }

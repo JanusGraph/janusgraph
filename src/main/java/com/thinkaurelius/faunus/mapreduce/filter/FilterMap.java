@@ -50,11 +50,11 @@ public class FilterMap {
 
             if (this.isVertex) {
                 if (!this.closure.call(value))
-                    value.inactive();
+                    value.clearPaths();
             } else {
-                for (final Edge edge : value.getEdges(Direction.BOTH)) {
+                for (Edge edge : value.getEdges(Direction.BOTH)) {
                     if (!this.closure.call(edge))
-                        ((FaunusEdge) edge).inactive();
+                        ((FaunusEdge) edge).clearPaths();
                 }
             }
 
