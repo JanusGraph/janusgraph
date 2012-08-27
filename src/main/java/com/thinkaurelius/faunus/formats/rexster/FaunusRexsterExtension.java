@@ -27,7 +27,7 @@ import java.io.OutputStream;
 @ExtensionNaming(namespace = FaunusRexsterExtension.EXTENSION_NAMESPACE, name = FaunusRexsterExtension.EXTENSION_NAME)
 public class FaunusRexsterExtension extends AbstractRexsterExtension {
 
-    public static final String EXTENSION_NAMESPACE = "aurelius";
+    public static final String EXTENSION_NAMESPACE = "faunus";
     public static final String EXTENSION_NAME = "v";
 
     public static final byte[] LINE_BREAK = "\n".getBytes();
