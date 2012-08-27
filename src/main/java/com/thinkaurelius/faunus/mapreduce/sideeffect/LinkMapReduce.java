@@ -49,8 +49,8 @@ public class LinkMapReduce {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
-            if (value.hasPaths()) {
-                for (final List<MicroElement> path : value.getPaths()) {
+            if (value.isActive()) {
+                for (final List<MicroElement> path : value.getPaths(false)) {
                     final long linkElementId = path.get(this.step).getId();
                     final FaunusEdge edge;
                     if (this.direction.equals(IN))

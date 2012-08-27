@@ -40,17 +40,17 @@ public class IntervalFilterMapTest extends BaseTest {
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = generateIndexedToyGraph(BaseTest.ExampleGraph.TINKERGRAPH);
-        incrPath(results.values(), Vertex.class);
+        activate(results.values(), Vertex.class);
 
         results = runWithGraph(results.values(), mapReduceDriver);
 
         assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 1);
-        assertEquals(results.get(2l).pathCount(), 1);
-        assertEquals(results.get(3l).pathCount(), 0);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        assertTrue(results.get(1l).isActive());
+        assertTrue(results.get(2l).isActive());
+        assertFalse(results.get(3l).isActive());
+        assertFalse(results.get(4l).isActive());
+        assertFalse(results.get(5l).isActive());
+        assertFalse(results.get(6l).isActive());
     }
 
     public void testEdgesOnWeight() throws IOException {
@@ -65,7 +65,7 @@ public class IntervalFilterMapTest extends BaseTest {
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = generateIndexedToyGraph(BaseTest.ExampleGraph.TINKERGRAPH);
-        incrPath(results.values(), Edge.class);
+        activate(results.values(), Edge.class);
 
         results = runWithGraph(results.values(), mapReduceDriver);
         assertEquals(results.size(), 6);
@@ -73,7 +73,7 @@ public class IntervalFilterMapTest extends BaseTest {
         int counter = 0;
         for (FaunusVertex vertex : results.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                if (((FaunusEdge) edge).pathCount() > 0 && ((FaunusEdge)edge).hasPaths()) {
+                if (((FaunusEdge) edge).isActive()) {
                     counter++;
                     assertEquals(edge.getProperty("weight"), 0.4d);
                 }

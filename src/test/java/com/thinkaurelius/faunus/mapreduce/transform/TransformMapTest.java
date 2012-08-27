@@ -30,7 +30,7 @@ public class TransformMapTest extends BaseTest {
         config.set(TransformMap.FUNCTION, "{it -> it.propertyKeys.size()}");
         mapReduceDriver.withConfiguration(config);
 
-        final List<Pair<FaunusVertex, Text>> results = runWithToyGraphNoFormatting(ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
+        final List<Pair<FaunusVertex, Text>> results = runWithGraphNoFormatting(generateToyGraph(ExampleGraph.TINKERGRAPH), this.mapReduceDriver);
         assertEquals(results.size(), 6);
         for (final Pair<FaunusVertex, Text> result : results) {
             assertEquals(result.getSecond().toString(), "2");

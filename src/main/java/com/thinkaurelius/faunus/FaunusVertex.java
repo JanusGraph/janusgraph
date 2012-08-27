@@ -59,14 +59,14 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         this.outEdges.clear();
         this.inEdges.clear();
         this.properties = null;
-        this.clearPaths();
+        this.paths = null;
     }
 
     public void addAll(final FaunusVertex vertex) {
         this.id = vertex.getIdAsLong();
         this.properties = vertex.getProperties();
         if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
-        this.paths.addAll(vertex.getPaths());
+        this.paths.addAll(vertex.getPaths(false));
         this.addEdges(BOTH, vertex);
     }
 
@@ -260,6 +260,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
     public void write(final DataOutput out) throws IOException {
         out.writeLong(this.id);
+        out.writeBoolean(this.active);
         ElementPaths.write(this.paths, out);
         EdgeMap.write((Map) this.inEdges, out, Direction.OUT);
         EdgeMap.write((Map) this.outEdges, out, Direction.IN);
@@ -269,6 +270,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
     public void readFields(final DataInput in) throws IOException {
         this.id = in.readLong();
+        this.active = in.readBoolean();
         this.paths = ElementPaths.readFields(in);
         this.inEdges = (Map) EdgeMap.readFields(in, Direction.OUT, this.id);
         this.outEdges = (Map) EdgeMap.readFields(in, Direction.IN, this.id);

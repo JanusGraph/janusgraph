@@ -43,14 +43,14 @@ public class CommitVerticesMap {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
             final boolean keep;
-            final boolean hasPaths = value.hasPaths();
+            final boolean isActive = value.isActive();
 
-            if (this.drop && hasPaths)
+            if (this.drop && isActive)
                 keep = false;
-            else if (!this.drop && hasPaths)
+            else if (!this.drop && isActive)
                 keep = true;
             else
-                keep = this.drop && !hasPaths;
+                keep = this.drop && !isActive;
 
             if (keep) {
                 this.longWritable.set(value.getIdAsLong());

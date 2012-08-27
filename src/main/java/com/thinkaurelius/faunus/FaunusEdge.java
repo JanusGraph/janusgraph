@@ -50,9 +50,8 @@ public class FaunusEdge extends FaunusElement implements Edge {
         this.outVertex = outVertex;
         this.inVertex = inVertex;
         this.setLabel(label);
-        this.properties.clear();
         this.properties = null;
-        this.clearPaths();
+        this.paths = null;
         return this;
     }
 
@@ -86,6 +85,7 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public void write(final DataOutput out) throws IOException {
         out.writeLong(this.id);
+        out.writeBoolean(this.active);
         ElementPaths.write(this.paths, out);
         out.writeLong(this.inVertex);
         out.writeLong(this.outVertex);
@@ -95,6 +95,7 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public void readFields(final DataInput in) throws IOException {
         this.id = in.readLong();
+        this.active = in.readBoolean();
         this.paths = ElementPaths.readFields(in);
         this.inVertex = in.readLong();
         this.outVertex = in.readLong();
@@ -104,6 +105,7 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public void writeCompressed(final DataOutput out, final Direction idToWrite) throws IOException {
         out.writeLong(this.id);
+        out.writeBoolean(this.active);
         ElementPaths.write(this.paths, out);
         if (idToWrite.equals(Direction.IN))
             out.writeLong(this.inVertex);
@@ -117,6 +119,7 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public void readFieldsCompressed(final DataInput in, final Direction idToRead) throws IOException {
         this.id = in.readLong();
+        this.active = in.readBoolean();
         this.paths = ElementPaths.readFields(in);
         if (idToRead.equals(Direction.IN))
             this.inVertex = Long.valueOf(in.readLong());

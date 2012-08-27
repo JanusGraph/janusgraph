@@ -47,16 +47,17 @@ public abstract class BaseTest extends TestCase {
         return map;
     }
 
-    public static void incrPath(final Collection<FaunusVertex> vertices, final Class<? extends Element> klass) {
+    public static Collection<FaunusVertex> activate(final Collection<FaunusVertex> vertices, final Class<? extends Element> klass) {
         for (FaunusVertex vertex : vertices) {
             if (klass.equals(Vertex.class))
-                vertex.incrPath();
+                vertex.activate();
             else {
                 for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                    ((FaunusEdge) edge).incrPath();
+                    ((FaunusEdge) edge).activate();
                 }
             }
         }
+        return vertices;
     }
 
 
@@ -90,13 +91,9 @@ public abstract class BaseTest extends TestCase {
         return indexResults(driver.run());
     }
 
-    public static List runWithToyGraphNoFormatting(final ExampleGraph example, final MapReduceDriver driver) throws IOException {
+    public static List runWithGraphNoFormatting(Collection<FaunusVertex> vertices, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
-        for (final FaunusVertex vertex : generateToyGraph(example)) {
-            vertex.incrPath();
-            for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).incrPath();
-            }
+        for (final Vertex vertex : vertices) {
             driver.withInput(NullWritable.get(), vertex);
         }
         return driver.run();

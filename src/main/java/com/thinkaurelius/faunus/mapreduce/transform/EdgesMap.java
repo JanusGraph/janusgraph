@@ -22,9 +22,9 @@ public class EdgesMap {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            value.clearPaths();
+            value.inactive();
             for (final Edge edge : value.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).incrPath();
+                ((FaunusEdge) edge).activate();
             }
             context.write(NullWritable.get(), value);
         }

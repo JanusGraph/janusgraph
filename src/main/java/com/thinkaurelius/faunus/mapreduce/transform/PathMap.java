@@ -40,16 +40,18 @@ public class PathMap {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
-            if (this.isVertex && value.hasPaths()) {
-                for (final List<MicroElement> path : value.getPaths()) {
-                    this.textWritable.set(path.toString());
-                    context.write(NullWritable.get(), this.textWritable);
+            if (this.isVertex) {
+                if (value.isActive()) {
+                    for (final List<MicroElement> path : value.getPaths(true)) {
+                        this.textWritable.set(path.toString());
+                        context.write(NullWritable.get(), this.textWritable);
+                    }
                 }
             } else {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final FaunusEdge edge = (FaunusEdge) e;
-                    if (edge.hasPaths()) {
-                        for (final List<MicroElement> path : edge.getPaths()) {
+                    if (edge.isActive()) {
+                        for (final List<MicroElement> path : edge.getPaths(true)) {
                             this.textWritable.set(path.toString());
                             context.write(NullWritable.get(), this.textWritable);
                         }

@@ -48,10 +48,27 @@ public abstract class FaunusElement implements Element, Writable {
 
     protected long id;
     protected Map<String, Object> properties = null;
+    protected boolean active;
     protected List<List<MicroElement>> paths = null;
 
     public FaunusElement(final long id) {
         this.id = id;
+    }
+
+    public boolean isActive() {
+        return this.active;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
+
+    public void inactive() {
+        this.active = false;
+        if (null != this.paths)
+            this.paths.clear();
+        this.paths = null;
+
     }
 
     public void addPath(final List<MicroElement> path) {
@@ -64,18 +81,21 @@ public abstract class FaunusElement implements Element, Writable {
         this.paths.addAll(paths);
     }
 
-    public List<List<MicroElement>> getPaths() {
-        return (null == this.paths) ? (List) Collections.emptyList() : this.paths;
+    public List<List<MicroElement>> getPaths(boolean incr) {
+        if (incr) {
+            if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
+            final MicroElement thisElement = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+            for (List<MicroElement> path : this.paths) {
+                path.add(thisElement);
+            }
+            return this.paths;
+        } else {
+            return (null == this.paths) ? (List) Collections.emptyList() : this.paths;
+        }
     }
 
     public boolean hasPaths() {
         return (null != this.paths) && !this.paths.isEmpty();
-    }
-
-    public void clearPaths() {
-        if (null != this.paths)
-            this.paths.clear();
-        this.paths = null;
     }
 
     public int pathCount() {
@@ -90,11 +110,7 @@ public abstract class FaunusElement implements Element, Writable {
             this.paths.add(new ArrayList<MicroElement>());
         }
         final List<MicroElement> path = this.paths.get(paths.size() - 1);
-        if (this instanceof FaunusVertex) {
-            path.add(new MicroVertex(this.id));
-        } else {
-            path.add(new MicroEdge(this.id));
-        }
+
     }
 
     public void setProperty(final String key, final Object value) {

@@ -49,12 +49,12 @@ public class VerticesVerticesMapReduce {
             if (value.hasPaths()) {
                 for (final Edge edge : value.getEdges(this.direction, this.labels)) {
                     this.vertex.reuse(((FaunusEdge) edge).getVertexId(this.direction.opposite()));
-                    this.vertex.addPaths(value.getPaths());
+                    this.vertex.addPaths(value.getPaths(true));
                     this.longWritable.set(vertex.getIdAsLong());
                     context.write(this.longWritable, this.holder.set('p', this.vertex));
                 }
             }
-            value.clearPaths();
+            value.inactive();
             this.longWritable.set(value.getIdAsLong());
             context.write(this.longWritable, this.holder.set('v', value));
         }
@@ -72,9 +72,9 @@ public class VerticesVerticesMapReduce {
                     vertex.setProperties(temp.getProperties());
                     vertex.addEdges(Direction.BOTH, temp);
                 } else {
-                    for (final List<MicroElement> path : temp.getPaths()) {
+                    for (final List<MicroElement> path : temp.getPaths(false)) {
                         vertex.addPath(path);
-                        vertex.incrPath();
+                        vertex.activate();
                     }
                 }
             }
