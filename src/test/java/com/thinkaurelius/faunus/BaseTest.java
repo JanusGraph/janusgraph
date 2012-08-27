@@ -96,6 +96,38 @@ public abstract class BaseTest extends TestCase {
         return string + "]";
     }
 
+    public static void identicalStructure(final Map<Long, FaunusVertex> vertices, final ExampleGraph exampleGraph) throws IOException {
+        Map<Long, FaunusVertex> otherVertices = generateIndexedGraph(exampleGraph);
+        assertEquals(vertices.size(), otherVertices.size());
+        for (long id : vertices.keySet()) {
+            assertNotNull(otherVertices.get(id));
+            FaunusVertex v1 = vertices.get(id);
+            FaunusVertex v2 = otherVertices.get(id);
+            assertEquals(v1.getProperties().size(), v2.getProperties().size());
+            for (final String key : v1.getPropertyKeys()) {
+                assertEquals(v1.getProperty(key), v2.getProperty(key));
+            }
+            assertEquals(asList(v1.getEdges(Direction.BOTH)).size(), asList(v2.getEdges(Direction.BOTH)).size());
+            assertEquals(asList(v1.getEdges(Direction.IN)).size(), asList(v2.getEdges(Direction.IN)).size());
+            assertEquals(asList(v1.getEdges(Direction.OUT)).size(), asList(v2.getEdges(Direction.OUT)).size());
+
+            assertEquals(v1.getEdgeLabels(Direction.BOTH).size(), v2.getEdgeLabels(Direction.BOTH).size());
+            assertEquals(v1.getEdgeLabels(Direction.IN).size(), v2.getEdgeLabels(Direction.IN).size());
+            assertEquals(v1.getEdgeLabels(Direction.OUT).size(), v2.getEdgeLabels(Direction.OUT).size());
+        }
+
+        if (exampleGraph.equals(ExampleGraph.TINKERGRAPH)) {
+            assertEquals(vertices.get(1l).getEdges(Direction.OUT, "knows").iterator().next().getProperty("weight"), 0.5);
+            assertEquals(vertices.get(2l).getEdges(Direction.IN, "knows").iterator().next().getProperty("weight"), 0.5);
+            assertEquals(vertices.get(6l).getEdges(Direction.OUT).iterator().next().getProperty("weight"), 0.2);
+            assertEquals(vertices.get(5l).getEdges(Direction.IN).iterator().next().getProperty("weight"), 1);
+        } else if(exampleGraph.equals(ExampleGraph.GRAPH_OF_THE_GODS)) {
+            assertEquals(vertices.get(9l).getEdges(Direction.IN, "battled").iterator().next().getProperty("time"), 1);
+            assertEquals(vertices.get(10l).getEdges(Direction.IN, "battled").iterator().next().getProperty("time"), 2);
+            assertEquals(vertices.get(11l).getEdges(Direction.IN).iterator().next().getProperty("time"), 12);
+        }
+    }
+
     /*public void testConverter() throws IOException {
         //Graph graph = new TinkerGraph();
         //GraphMLReader.inputGraph(graph, JSONUtility.class.getResourceAsStream("graph-of-the-gods.xml"));

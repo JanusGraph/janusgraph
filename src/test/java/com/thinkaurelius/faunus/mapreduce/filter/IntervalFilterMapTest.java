@@ -39,11 +39,7 @@ public class IntervalFilterMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
-        startPath(results.values(), Vertex.class);
-
-        results = runWithGraph(results.values(), mapReduceDriver);
-
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Vertex.class), mapReduceDriver);
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).pathCount(), 1);
         assertEquals(results.get(2l).pathCount(), 1);
@@ -51,6 +47,11 @@ public class IntervalFilterMapTest extends BaseTest {
         assertEquals(results.get(4l).pathCount(), 0);
         assertEquals(results.get(5l).pathCount(), 0);
         assertEquals(results.get(6l).pathCount(), 0);
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(IntervalFilterMap.Counters.VERTICES_FILTERED).getValue(), 4);
+        assertEquals(mapReduceDriver.getCounters().findCounter(IntervalFilterMap.Counters.EDGES_FILTERED).getValue(), 0);
+
+        identicalStructure(results, ExampleGraph.TINKERGRAPH);
     }
 
     public void testEdgesOnWeight() throws IOException {
@@ -63,22 +64,23 @@ public class IntervalFilterMapTest extends BaseTest {
         config.set(IntervalFilterMap.KEY, "weight");
 
         mapReduceDriver.withConfiguration(config);
-
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
-        startPath(results.values(), Edge.class);
-
-        results = runWithGraph(results.values(), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Edge.class), mapReduceDriver);
         assertEquals(results.size(), 6);
 
         int counter = 0;
         for (FaunusVertex vertex : results.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                if (((FaunusEdge) edge).pathCount() > 0 && ((FaunusEdge)edge).hasPaths()) {
-                    counter++;
+                if (((FaunusEdge) edge).hasPaths()) {
+                    counter = ((FaunusEdge) edge).pathCount() + counter;
                     assertEquals(edge.getProperty("weight"), 0.4d);
                 }
             }
         }
         assertEquals(counter, 4);
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(IntervalFilterMap.Counters.VERTICES_FILTERED).getValue(), 0);
+        assertEquals(mapReduceDriver.getCounters().findCounter(IntervalFilterMap.Counters.EDGES_FILTERED).getValue(), 8);
+
+        identicalStructure(results, ExampleGraph.TINKERGRAPH);
     }
 }

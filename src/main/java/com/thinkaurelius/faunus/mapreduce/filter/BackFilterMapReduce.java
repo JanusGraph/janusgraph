@@ -6,6 +6,9 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusRunner;
 import com.thinkaurelius.faunus.util.MicroElement;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -23,31 +26,39 @@ public class BackFilterMapReduce {
     public static final String STEP = Tokens.makeNamespace(BackFilterMapReduce.class) + ".step";
 
     public enum Counters {
-        VERTICES_PROCESSED
+        VERTICES_FILTERED,
+        EDGES_FILTERED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
-        private int step;
 
+        private int step;
+        private boolean isVertex;
         private final FaunusVertex vertex = new FaunusVertex();
         private final Holder<FaunusElement> holder = new Holder<FaunusElement>();
         private final LongWritable longWritable = new LongWritable();
 
+
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.step = context.getConfiguration().getInt(context.getConfiguration().get(Tokens.makeNamespace(FaunusRunner.class) + ".tag." + context.getConfiguration().get(STEP)), 0);
+            this.step = context.getConfiguration().getInt(context.getConfiguration().get(FaunusRunner.TAG + "." + context.getConfiguration().get(STEP)), 0);
+            this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
-            if (value.hasPaths()) {
-                for (final List<MicroElement> path : value.getPaths()) {
-                    final long backElementId = path.get(this.step).getId();
-                    this.longWritable.set(backElementId);
-                    this.vertex.reuse(backElementId);
-                    this.vertex.addPath(path, false);
-                    context.write(this.longWritable, this.holder.set('p', this.vertex));
+            if (this.isVertex) {
+                if (value.hasPaths()) {
+                    for (final List<MicroElement> path : value.getPaths()) {
+                        final long backElementId = path.get(this.step).getId();
+                        this.longWritable.set(backElementId);
+                        this.vertex.reuse(backElementId);
+                        this.vertex.addPath(path, false);
+                        context.write(this.longWritable, this.holder.set('p', this.vertex));
+                    }
                 }
+            } else {
+                // TODO: back up edges
             }
 
             value.clearPaths();
@@ -63,7 +74,9 @@ public class BackFilterMapReduce {
             final FaunusVertex vertex = new FaunusVertex(key.get());
             for (final Holder holder : values) {
                 if (holder.getTag() == 'v') {
-                    vertex.addAll((FaunusVertex) holder.get());
+                    final FaunusVertex temp = (FaunusVertex) holder.get();
+                    vertex.addEdges(Direction.BOTH, temp);
+                    vertex.setProperties(temp.getProperties());
                 } else {
                     vertex.addPaths(holder.get().getPaths(), true);
                 }

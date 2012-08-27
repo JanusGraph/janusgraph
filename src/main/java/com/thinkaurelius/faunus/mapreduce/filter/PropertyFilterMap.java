@@ -27,8 +27,8 @@ public class PropertyFilterMap {
     public static final String NULL_WILDCARD = Tokens.makeNamespace(PropertyFilterMap.class) + ".nullWildcard";
 
     public enum Counters {
-        EDGES_KEPT,
-        EDGES_DROPPED
+        VERTICES_FILTERED,
+        EDGES_FILTERED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
@@ -69,13 +69,20 @@ public class PropertyFilterMap {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
 
             if (this.isVertex) {
-                if (value.hasPaths() && !this.elementChecker.isLegal(value))
+                if (value.hasPaths() && !this.elementChecker.isLegal(value)) {
                     value.clearPaths();
-            } else {
-                for (Edge edge : value.getEdges(Direction.BOTH)) {
-                    if (((FaunusEdge) edge).hasPaths() && !this.elementChecker.isLegal((FaunusEdge) edge))
-                        ((FaunusEdge) edge).clearPaths();
+                    context.getCounter(Counters.VERTICES_FILTERED).increment(1l);
                 }
+            } else {
+                long counter = 0;
+                for (Edge e : value.getEdges(Direction.BOTH)) {
+                    final FaunusEdge edge = (FaunusEdge) e;
+                    if (edge.hasPaths() && !this.elementChecker.isLegal(edge)) {
+                        edge.clearPaths();
+                        counter++;
+                    }
+                }
+                context.getCounter(Counters.EDGES_FILTERED).increment(counter);
             }
 
             context.write(NullWritable.get(), value);

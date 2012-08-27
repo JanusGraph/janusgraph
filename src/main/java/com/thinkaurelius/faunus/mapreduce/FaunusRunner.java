@@ -61,6 +61,8 @@ import java.util.UUID;
  */
 public class FaunusRunner extends Configured implements Tool {
 
+    public static final String TAG = Tokens.makeNamespace(FaunusRunner.class) + ".tag";
+
     protected final Logger logger = Logger.getLogger(FaunusRunner.class);
     private final String jobScript;
 
@@ -221,7 +223,7 @@ public class FaunusRunner extends Configured implements Tool {
     ///////////// SIDE-EFFECTS
 
     public void as(final Class<? extends Element> klass, final String tag, final int step) {
-        this.configuration.setInt(Tokens.makeNamespace(FaunusRunner.class) + ".tag." + tag, step);
+        this.configuration.setInt(TAG + "." + tag, step);
     }
 
 
