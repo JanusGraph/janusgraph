@@ -112,17 +112,14 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
     public Iterable<Edge> getEdges(final Direction direction, final String... labels) {
         final List<List<Edge>> edgeLists = new ArrayList<List<Edge>>();
-        final List<String> edgeListLabels = new ArrayList<String>();
 
         if (direction.equals(OUT) || direction.equals(BOTH)) {
             if (null == labels || labels.length == 0) {
                 for (final List<Edge> temp : this.outEdges.values()) {
                     edgeLists.add(temp);
                 }
-                edgeListLabels.addAll(this.outEdges.keySet());
             } else {
                 for (final String label : labels) {
-                    edgeListLabels.add(label);
                     final List<Edge> temp = this.outEdges.get(label);
                     if (null != temp)
                         edgeLists.add(temp);
@@ -136,10 +133,8 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
                 for (final List<Edge> temp : this.inEdges.values()) {
                     edgeLists.add(temp);
                 }
-                edgeListLabels.addAll(this.inEdges.keySet());
             } else {
                 for (final String label : labels) {
-                    edgeListLabels.add(label);
                     final List<Edge> temp = this.inEdges.get(label);
                     if (null != temp)
                         edgeLists.add(temp);
@@ -147,7 +142,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
             }
 
         }
-        return new EdgeList(edgeLists, edgeListLabels);
+        return new EdgeList(edgeLists);
     }
 
     private void addEdges(final Direction direction, final String label, final List<FaunusEdge> edges) {
@@ -326,7 +321,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
         int size;
 
-        public EdgeList(final List<List<Edge>> edgeLists, final List<String> edgeListLabels) {
+        public EdgeList(final List<List<Edge>> edgeLists) {
             this.edges = edgeLists;
             int counter = 0;
             for (final List<Edge> temp : this.edges) {

@@ -8,6 +8,7 @@ import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
+import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap;
@@ -207,6 +208,14 @@ public class FaunusRunner extends Configured implements Tool {
         }
 
         this.mapSequenceClasses.add(IntervalFilterMap.Map.class);
+    }
+
+    public void backFilterMapReduce(final Class<? extends Element> klass, final String step) throws IOException {
+        this.mapSequenceConfiguration.set(BackFilterMapReduce.STEP, step);
+        this.mapSequenceConfiguration.setClass(BackFilterMapReduce.CLASS, klass, Element.class);
+        this.mapRClass = BackFilterMapReduce.Map.class;
+        this.reduceClass = BackFilterMapReduce.Reduce.class;
+        this.completeSequence();
     }
 
     ///////////// SIDE-EFFECTS

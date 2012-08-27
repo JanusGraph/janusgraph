@@ -185,6 +185,11 @@ public class FaunusPipeline {
         return this;
     }
 
+    public FaunusPipeline back(final String step) throws IOException {
+        this.compiler.backFilterMapReduce(this.state.getElementType(), step);
+        return this;
+    }
+
     //////// SIDEEFFECTS
 
     public FaunusPipeline as(final String tag) {
