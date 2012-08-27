@@ -3,10 +3,15 @@ import org.codehaus.jettison.json.JSONArray
 
 rangeOfVertices = g.V[start..<end].toList()
 rangeOfVertices = rangeOfVertices.collect{
-    def vJson = GraphSONUtility.jsonFromElement((Element) it, null, GraphSONMode.COMPACT)
+    // 2.2.0 way
+    // def vJson = com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.jsonFromElement((Element) it, null, GraphSONMode.COMPACT)
+    def vJson = com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.jsonFromElement((Element) it)
 
     def outEdges = it.outE.toList().collect{ edge ->
-        GraphSONUtility.jsonFromElement((Element) edge, null, GraphSONMode.COMPACT)
+        // 2.2.0 way
+        // com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.jsonFromElement((Element) edge, null, GraphSONMode.COMPACT)
+
+        com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.jsonFromElement((Element) edge)
     }
 
     def outEdgesArray = new JSONArray()
@@ -14,7 +19,9 @@ rangeOfVertices = rangeOfVertices.collect{
     vJson.put("_outE", outEdgesArray)
 
     def inEdges = it.inE.toList().collect{ edge ->
-        GraphSONUtility.jsonFromElement((Element) edge, null, GraphSONMode.COMPACT)
+        // 2.2.0 way
+        // com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.jsonFromElement((Element) edge, null, GraphSONMode.COMPACT)
+        com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.jsonFromElement((Element) edge)
     }
 
     def inEdgesArray = new JSONArray()
