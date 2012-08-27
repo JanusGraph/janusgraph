@@ -29,7 +29,7 @@ public class LinkMapReduce {
     public static final String STEP = Tokens.makeNamespace(LinkMapReduce.class) + ".step";
 
     public enum Counters {
-        VERTICES_PROCESSED
+        EDGES_CREATED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
@@ -82,15 +82,18 @@ public class LinkMapReduce {
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+            long edgesCreated = 0;
             final FaunusVertex vertex = new FaunusVertex(key.get());
             for (final Holder holder : values) {
                 if (holder.getTag() == 'v') {
                     vertex.addAll((FaunusVertex) holder.get());
                 } else {
                     vertex.addEdge(this.direction, (FaunusEdge) holder.get());
+                    edgesCreated++;
                 }
             }
             context.write(NullWritable.get(), vertex);
+            context.getCounter(Counters.EDGES_CREATED).increment(edgesCreated);
         }
     }
 }

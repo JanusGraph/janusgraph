@@ -15,7 +15,8 @@ import java.io.IOException;
 public class EdgesMap {
 
     public enum Counters {
-        VERTICES_PROCESSED
+        VERTICES_PROCESSED,
+        EDGES_PROCESSED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
@@ -23,10 +24,14 @@ public class EdgesMap {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             value.clearPaths();
+            long edgesProcessed = 0;
             for (final Edge edge : value.getEdges(Direction.BOTH)) {
                 ((FaunusEdge) edge).startPath();
+                edgesProcessed++;
             }
             context.write(NullWritable.get(), value);
+            context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
+            context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
         }
     }
 }

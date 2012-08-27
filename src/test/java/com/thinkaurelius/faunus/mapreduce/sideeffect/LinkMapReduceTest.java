@@ -62,6 +62,40 @@ public class LinkMapReduceTest extends BaseTest {
         assertEquals(asList(results.get(5l).getEdges(BOTH)).size(), 1);
         assertFalse(results.get(6l).getEdges(BOTH).iterator().hasNext());
 
+        assertEquals(mapReduceDriver.getCounters().findCounter(LinkMapReduce.Counters.EDGES_CREATED).getValue(), 2);
+
+    }
+
+    public void testCreated2Traversal() throws IOException {
+
+        Configuration config = new Configuration();
+        config.set(LinkMapReduce.STEP, "blah");
+        config.setInt(FaunusRunner.TAG + ".blah", 0);
+        config.set(LinkMapReduce.DIRECTION, Direction.OUT.name());
+        config.set(LinkMapReduce.LABEL, "created2");
+
+        mapReduceDriver.withConfiguration(config);
+
+        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
+        for (FaunusVertex vertex : results.values()) {
+            vertex.removeEdges(Tokens.Action.DROP, Direction.BOTH);
+        }
+        results.get(3l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
+        results.get(5l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(5l)), false);
+
+        results = runWithGraph(results.values(), mapReduceDriver);
+        assertEquals(asList(results.get(1l).getEdges(IN, "created2")).size(), 2);
+        assertEquals(asList(results.get(1l).getEdges(BOTH)).size(), 2);
+        assertFalse(results.get(2l).getEdges(BOTH).iterator().hasNext());
+        assertEquals(asList(results.get(3l).getEdges(OUT, "created2")).size(), 1);
+        assertEquals(asList(results.get(3l).getEdges(BOTH)).size(), 1);
+        assertFalse(results.get(4l).getEdges(BOTH).iterator().hasNext());
+        assertEquals(asList(results.get(5l).getEdges(OUT, "created2")).size(), 1);
+        assertEquals(asList(results.get(5l).getEdges(BOTH)).size(), 1);
+        assertFalse(results.get(6l).getEdges(BOTH).iterator().hasNext());
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(LinkMapReduce.Counters.EDGES_CREATED).getValue(), 2);
+
     }
 }
 
