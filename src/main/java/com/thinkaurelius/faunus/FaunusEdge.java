@@ -50,7 +50,6 @@ public class FaunusEdge extends FaunusElement implements Edge {
         this.outVertex = outVertex;
         this.inVertex = inVertex;
         this.setLabel(label);
-        this.properties.clear();
         this.properties = null;
         this.clearPaths();
         return this;

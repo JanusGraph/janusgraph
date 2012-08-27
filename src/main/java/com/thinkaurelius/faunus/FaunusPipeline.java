@@ -166,6 +166,61 @@ public class FaunusPipeline {
             throw new RuntimeException("This step can not follow an edge-based step");
     }
 
+    public FaunusPipeline outE(final String... labels) throws IOException {
+        this.state.checkLocked();
+        this.state.incrStep();
+        if (this.state.atVertex()) {
+            this.compiler.verticesEdgesMapReduce(OUT, labels);
+            this.state.set(Edge.class);
+            return this;
+        } else
+            throw new RuntimeException("This step can not follow an edge-based step");
+    }
+
+    public FaunusPipeline inE(final String... labels) throws IOException {
+        this.state.checkLocked();
+        this.state.incrStep();
+        if (this.state.atVertex()) {
+            this.compiler.verticesEdgesMapReduce(IN, labels);
+            this.state.set(Edge.class);
+            return this;
+        } else
+            throw new RuntimeException("This step can not follow an edge-based step");
+    }
+
+    public FaunusPipeline bothE(final String... labels) throws IOException {
+        this.state.checkLocked();
+        this.state.incrStep();
+        if (this.state.atVertex()) {
+            this.compiler.verticesEdgesMapReduce(BOTH, labels);
+            this.state.set(Edge.class);
+            return this;
+        } else
+            throw new RuntimeException("This step can not follow an edge-based step");
+    }
+
+    public FaunusPipeline outV() throws IOException {
+        this.state.checkLocked();
+        this.state.incrStep();
+        if (!this.state.atVertex()) {
+            this.compiler.edgesVerticesMap(OUT);
+            this.state.set(Vertex.class);
+            return this;
+        } else
+            throw new RuntimeException("This step can not follow a vertex-based step");
+    }
+
+    public FaunusPipeline inV() throws IOException {
+        this.state.checkLocked();
+        this.state.incrStep();
+        if (!this.state.atVertex()) {
+            this.compiler.edgesVerticesMap(IN);
+            this.state.set(Vertex.class);
+            return this;
+        } else
+            throw new RuntimeException("This step can not follow a vertex-based step");
+    }
+
     public FaunusPipeline property(final String key) {
         this.state.checkLocked();
         this.state.set(key);

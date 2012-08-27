@@ -1,7 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.transform;
 
 import com.thinkaurelius.faunus.FaunusEdge;
-import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.tinkerpop.blueprints.Direction;
@@ -55,7 +54,9 @@ public class TransformMap {
                 if (value.hasPaths()) {
                     final Object result = this.closure.call(value);
                     this.textWritable.set(null == result ? Tokens.NULL : result.toString());
-                    context.write(NullWritable.get(), this.textWritable);
+                    for (int i = 0; i < value.pathCount(); i++) {
+                        context.write(NullWritable.get(), this.textWritable);
+                    }
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
             } else {
@@ -65,7 +66,9 @@ public class TransformMap {
                     if (edge.hasPaths()) {
                         final Object result = this.closure.call(edge);
                         this.textWritable.set(null == result ? Tokens.NULL : result.toString());
-                        context.write(NullWritable.get(), this.textWritable);
+                        for (int i = 0; i < edge.pathCount(); i++) {
+                            context.write(NullWritable.get(), this.textWritable);
+                        }
                         edgesProcessed++;
                     }
                 }

@@ -18,10 +18,12 @@ import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.LinkMapReduce;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.EdgesVerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
 import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
 import com.thinkaurelius.faunus.mapreduce.transform.TransformMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.tinkerpop.blueprints.Direction;
@@ -150,6 +152,20 @@ public class FaunusCompiler extends Configured implements Tool {
         this.reduceClass = VerticesVerticesMapReduce.Reduce.class;
         this.completeSequence();
     }
+
+    public void verticesEdgesMapReduce(final Direction direction, final String... labels) throws IOException {
+        this.mapSequenceConfiguration.set(VerticesEdgesMapReduce.DIRECTION, direction.name());
+        this.mapSequenceConfiguration.setStrings(VerticesEdgesMapReduce.LABELS, labels);
+        this.mapRClass = VerticesEdgesMapReduce.Map.class;
+        this.reduceClass = VerticesEdgesMapReduce.Reduce.class;
+        this.completeSequence();
+    }
+    
+    public void edgesVerticesMap(final Direction direction) throws IOException  {
+        this.mapSequenceConfiguration.set(EdgesVerticesMap.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());    
+        this.mapSequenceClasses.add(EdgesVerticesMap.Map.class);
+    }
+
 
     public void pathMap(final Class<? extends Element> klass) throws IOException {
         this.completeSequence();
