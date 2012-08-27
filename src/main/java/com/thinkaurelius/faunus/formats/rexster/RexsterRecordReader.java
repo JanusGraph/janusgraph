@@ -50,8 +50,8 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
             this.rexsterIterator = new KibbleIterator(this.rexsterConf, rexsterInputSplit.getStart(),
                     rexsterInputSplit.getEnd());
         } else {
-            // todo: catch this config error somewhere earlier would be better i think.
-            throw new RuntimeException("???");
+            throw new RuntimeException(String.format("[%s] is an invalid configuration option for %s",
+                    this.rexsterConf.getMode(), RexsterConfiguration.REXSTER_INPUT_MODE));
         }
     }
 
