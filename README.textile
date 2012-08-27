@@ -1,17 +1,14 @@
 !https://github.com/thinkaurelius/faunus/raw/master/doc/images/faunus-logo.png!
 
-Faunus is a framework for processing "property graphs":https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model using "Hadoop":http://hadoop.apache.org/. A "vertex-centric":http://en.wikipedia.org/wiki/Adjacency_list data structure is processed using MapReduce jobs that implement a "property graph algebra":http://arxiv.org/abs/0806.2274 for yielding graph derivations and basic graph statistics. Faunus can be extended with new operations written using "MapReduce":http://hadoop.apache.org/mapreduce/ and "Blueprints":http://blueprints.tinkerpop.com.
-
+Faunus is a framework for processing "property graphs":https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model using "Hadoop":http://hadoop.apache.org/. A "vertex-centric":http://en.wikipedia.org/wiki/Adjacency_list data structure is processed using the graph traversal language "Gremlin":http://gremlin.tinkerpop.com. Faunus is useful for generating graph derivations and basic graph statistics. Faunus can be extended with new operations written using "MapReduce":http://hadoop.apache.org/mapreduce/ and "Blueprints":http://blueprints.tinkerpop.com.
 h2. Features
 
 * Support for various graph-based data sources/sinks
 ** "Titan 0.1":http://thinkaurelius.github.com/titan/ distributed graph database
 ** "Rexster 2.x":http://rexster.tinkerpop.com fronted graph databases that support vertex iteration
 ** "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library text format stored in "HDFS":http://hadoop.apache.org/hdfs/
-* Support for various graph-based MapReduce operations
-** Numerous graph derivation/transformation steps
-** Numerous global graph statistics
 * Natively implements the "Blueprints":http://blueprints.tinkerpop.com graph API
+** "Gremlin":http://gremlin.tinkerpop.com graph traversal language (backed by MapReduce)
 * Open source with the liberal "Apache 2":http://www.apache.org/licenses/LICENSE-2.0.html license
 
 h2. Getting Started
