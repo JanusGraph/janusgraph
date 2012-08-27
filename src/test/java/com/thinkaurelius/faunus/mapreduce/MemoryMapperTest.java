@@ -1,4 +1,6 @@
-package com.thinkaurelius.faunus;
+package com.thinkaurelius.faunus.mapreduce;
+
+import com.thinkaurelius.faunus.BaseTest;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)

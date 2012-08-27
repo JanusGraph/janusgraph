@@ -45,14 +45,14 @@ public class FaunusEdge extends FaunusElement implements Edge {
         setLabel(label);
     }
 
-    public FaunusEdge refill(final long id, final long outVertex, final long inVertex, final String label) {
+    public FaunusEdge reuse(final long id, final long outVertex, final long inVertex, final String label) {
         this.id = id;
         this.outVertex = outVertex;
         this.inVertex = inVertex;
         this.setLabel(label);
+        this.properties.clear();
         this.properties = null;
-        this.energy = 0;
-        this.tag = '_';
+        this.clearPaths();
         return this;
     }
 
@@ -86,8 +86,7 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public void write(final DataOutput out) throws IOException {
         out.writeLong(this.id);
-        out.writeInt(this.energy);
-        out.writeChar(this.tag);
+        ElementPaths.write(this.paths, out);
         out.writeLong(this.inVertex);
         out.writeLong(this.outVertex);
         out.writeUTF(this.getLabel());
@@ -96,8 +95,7 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public void readFields(final DataInput in) throws IOException {
         this.id = in.readLong();
-        this.energy = in.readInt();
-        this.tag = in.readChar();
+        this.paths = ElementPaths.readFields(in);
         this.inVertex = in.readLong();
         this.outVertex = in.readLong();
         setLabel(in.readUTF());
@@ -106,8 +104,7 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public void writeCompressed(final DataOutput out, final Direction idToWrite) throws IOException {
         out.writeLong(this.id);
-        out.writeInt(this.energy);
-        out.writeChar(this.tag);
+        ElementPaths.write(this.paths, out);
         if (idToWrite.equals(Direction.IN))
             out.writeLong(this.inVertex);
         else if (idToWrite.equals(Direction.OUT))
@@ -120,8 +117,7 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public void readFieldsCompressed(final DataInput in, final Direction idToRead) throws IOException {
         this.id = in.readLong();
-        this.energy = in.readInt();
-        this.tag = in.readChar();
+        this.paths = ElementPaths.readFields(in);
         if (idToRead.equals(Direction.IN))
             this.inVertex = Long.valueOf(in.readLong());
         else if (idToRead.equals(Direction.OUT))

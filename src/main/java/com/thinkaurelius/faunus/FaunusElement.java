@@ -1,14 +1,19 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.util.MicroEdge;
+import com.thinkaurelius.faunus.util.MicroElement;
+import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Element;
 import org.apache.hadoop.io.Writable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -16,6 +21,7 @@ import java.util.Set;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public abstract class FaunusElement implements Element, Writable {
+
 
     protected static final Map<String, String> TYPE_MAP = new HashMap<String, String>() {
         @Override
@@ -40,37 +46,55 @@ public abstract class FaunusElement implements Element, Writable {
     }};
 
 
-    protected Map<String, Object> properties = null;
     protected long id;
-    protected int energy = 0;
-    protected char tag = '_';
+    protected Map<String, Object> properties = null;
+    protected List<List<MicroElement>> paths = null;
 
     public FaunusElement(final long id) {
         this.id = id;
     }
 
-    public int getEnergy() {
-        return this.energy;
+    public void addPath(final List<MicroElement> path) {
+        if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
+        this.paths.add(path);
     }
 
-    public void setEnergy(final int amount) {
-        this.energy = amount;
+    public void addPaths(final List<List<MicroElement>> paths) {
+        if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
+        this.paths.addAll(paths);
     }
 
-    public void incrEnergy(final int amount) {
-        this.energy = this.energy + amount;
+    public List<List<MicroElement>> getPaths() {
+        return (null == this.paths) ? (List) Collections.emptyList() : this.paths;
     }
 
-    public boolean hasEnergy() {
-        return this.energy > 0;
+    public boolean hasPaths() {
+        return (null != this.paths) && !this.paths.isEmpty();
     }
 
-    public void setTag(final char tag) {
-        this.tag = tag;
+    public void clearPaths() {
+        if (null != this.paths)
+            this.paths.clear();
+        this.paths = null;
     }
 
-    public char getTag() {
-        return this.tag;
+    public int pathCount() {
+        return (null == paths) ? 0 : this.paths.size();
+    }
+
+    public void incrPath() {
+        if (null == this.paths)
+            this.paths = new ArrayList<List<MicroElement>>();
+
+        if (this.paths.size() == 0) {
+            this.paths.add(new ArrayList<MicroElement>());
+        }
+        final List<MicroElement> path = this.paths.get(paths.size() - 1);
+        if (this instanceof FaunusVertex) {
+            path.add(new MicroVertex(this.id));
+        } else {
+            path.add(new MicroEdge(this.id));
+        }
     }
 
     public void setProperty(final String key, final Object value) {
@@ -199,5 +223,50 @@ public abstract class FaunusElement implements Element, Writable {
         }
 
     }
+
+    public static class ElementPaths {
+
+        public static void write(final List<List<MicroElement>> paths, final DataOutput out) throws IOException {
+            if (null == paths) {
+                out.writeInt(0);
+            } else {
+                out.writeInt(paths.size());
+                for (final List<MicroElement> path : paths) {
+                    out.writeInt(path.size());
+                    for (MicroElement element : path) {
+                        if (element instanceof MicroVertex)
+                            out.writeChar('v');
+                        else
+                            out.writeChar('e');
+                        out.writeLong(element.getId());
+                    }
+                }
+            }
+        }
+
+        public static List<List<MicroElement>> readFields(final DataInput in) throws IOException {
+            int pathsSize = in.readInt();
+            if (pathsSize == 0)
+                return null;
+            else {
+                final List<List<MicroElement>> paths = new ArrayList<List<MicroElement>>(pathsSize);
+                for (int i = 0; i < pathsSize; i++) {
+                    int pathSize = in.readInt();
+                    List<MicroElement> path = new ArrayList<MicroElement>(pathSize);
+                    for (int j = 0; j < pathSize; j++) {
+                        char type = in.readChar();
+                        if (type == 'v')
+                            path.add(new MicroVertex(in.readLong()));
+                        else
+                            path.add(new MicroEdge(in.readLong()));
+                    }
+                    paths.add(path);
+                }
+                return paths;
+            }
+        }
+
+    }
+
 
 }

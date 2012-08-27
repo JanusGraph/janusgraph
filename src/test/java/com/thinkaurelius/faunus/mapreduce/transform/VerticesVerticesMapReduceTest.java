@@ -34,11 +34,11 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
 
         Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.TINKERGRAPH, mapReduceDriver);
         assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).getEnergy(), 0);
-        assertEquals(results.get(2l).getEnergy(), 0);
-        assertEquals(results.get(3l).getEnergy(), 3);
-        assertEquals(results.get(4l).getEnergy(), 0);
-        assertEquals(results.get(5l).getEnergy(), 1);
-        assertEquals(results.get(6l).getEnergy(), 0);
+        assertEquals(results.get(1l).pathCount(), 0);
+        assertEquals(results.get(2l).pathCount(), 0);
+        assertEquals(results.get(3l).pathCount(), 3);
+        assertEquals(results.get(4l).pathCount(), 0);
+        assertEquals(results.get(5l).pathCount(), 1);
+        assertEquals(results.get(6l).pathCount(), 0);
     }
 }

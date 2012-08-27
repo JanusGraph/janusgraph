@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
@@ -53,6 +54,22 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         this.readFields(in);
     }
 
+    public void reuse(final long id) {
+        this.id = id;
+        this.outEdges.clear();
+        this.inEdges.clear();
+        this.properties = null;
+        this.clearPaths();
+    }
+
+    public void addAll(final FaunusVertex vertex) {
+        this.id = vertex.getIdAsLong();
+        this.properties = vertex.getProperties();
+        if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
+        this.paths.addAll(vertex.getPaths());
+        this.addEdges(BOTH, vertex);
+    }
+
     public Query query() {
         return new DefaultQuery(this);
     }
@@ -74,7 +91,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
         return new Iterable<Vertex>() {
             public Iterator<Vertex> iterator() {
                 return new Iterator<Vertex>() {
-                    final Iterator<Edge> edges = getEdges(direction).iterator();
+                    final Iterator<Edge> edges = getEdges(direction, labels).iterator();
                     final Direction opposite = direction.opposite();
 
                     public void remove() {
@@ -86,7 +103,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
                     }
 
                     public Vertex next() {
-                        return this.edges.next().getVertex(opposite);
+                        return this.edges.next().getVertex(this.opposite);
                     }
                 };
             }
@@ -95,17 +112,14 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
     public Iterable<Edge> getEdges(final Direction direction, final String... labels) {
         final List<List<Edge>> edgeLists = new ArrayList<List<Edge>>();
-        final List<String> edgeListLabels = new ArrayList<String>();
 
         if (direction.equals(OUT) || direction.equals(BOTH)) {
             if (null == labels || labels.length == 0) {
                 for (final List<Edge> temp : this.outEdges.values()) {
                     edgeLists.add(temp);
                 }
-                edgeListLabels.addAll(this.outEdges.keySet());
             } else {
                 for (final String label : labels) {
-                    edgeListLabels.add(label);
                     final List<Edge> temp = this.outEdges.get(label);
                     if (null != temp)
                         edgeLists.add(temp);
@@ -119,10 +133,8 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
                 for (final List<Edge> temp : this.inEdges.values()) {
                     edgeLists.add(temp);
                 }
-                edgeListLabels.addAll(this.inEdges.keySet());
             } else {
                 for (final String label : labels) {
-                    edgeListLabels.add(label);
                     final List<Edge> temp = this.inEdges.get(label);
                     if (null != temp)
                         edgeLists.add(temp);
@@ -130,7 +142,40 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
             }
 
         }
-        return new EdgeList(edgeLists, edgeListLabels);
+        return new EdgeList(edgeLists);
+    }
+
+    private void addEdges(final Direction direction, final String label, final List<FaunusEdge> edges) {
+        List<Edge> list;
+        if (direction.equals(OUT))
+            list = this.outEdges.get(label);
+        else if (direction.equals(IN))
+            list = this.inEdges.get(label);
+        else
+            throw ExceptionFactory.bothIsNotSupported();
+
+        if (null == list) {
+            list = new ArrayList<Edge>();
+            if (direction.equals(OUT))
+                this.outEdges.put(label, list);
+            else
+                this.inEdges.put(label, list);
+        }
+        list.addAll(edges);
+    }
+
+    public void addEdges(final Direction direction, final FaunusVertex vertex) {
+        if (direction.equals(OUT) || direction.equals(BOTH)) {
+            for (final String label : vertex.getEdgeLabels(OUT)) {
+                this.addEdges(OUT, label, (List) vertex.getEdges(OUT, label));
+            }
+        }
+
+        if (direction.equals(IN) || direction.equals(BOTH)) {
+            for (final String label : vertex.getEdgeLabels(IN)) {
+                this.addEdges(IN, label, (List) vertex.getEdges(IN, label));
+            }
+        }
     }
 
     public FaunusEdge addEdge(final Direction direction, final FaunusEdge edge) {
@@ -215,8 +260,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
     public void write(final DataOutput out) throws IOException {
         out.writeLong(this.id);
-        out.writeInt(this.energy);
-        out.writeChar(this.tag);
+        ElementPaths.write(this.paths, out);
         EdgeMap.write((Map) this.inEdges, out, Direction.OUT);
         EdgeMap.write((Map) this.outEdges, out, Direction.IN);
         ElementProperties.write(this.properties, out);
@@ -225,8 +269,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
     public void readFields(final DataInput in) throws IOException {
         this.id = in.readLong();
-        this.energy = in.readInt();
-        this.tag  = in.readChar();
+        this.paths = ElementPaths.readFields(in);
         this.inEdges = (Map) EdgeMap.readFields(in, Direction.OUT, this.id);
         this.outEdges = (Map) EdgeMap.readFields(in, Direction.IN, this.id);
         this.properties = ElementProperties.readFields(in);
@@ -278,7 +321,7 @@ public class FaunusVertex extends FaunusElement implements Vertex, WritableCompa
 
         int size;
 
-        public EdgeList(final List<List<Edge>> edgeLists, final List<String> edgeListLabels) {
+        public EdgeList(final List<List<Edge>> edgeLists) {
             this.edges = edgeLists;
             int counter = 0;
             for (final List<Edge> temp : this.edges) {

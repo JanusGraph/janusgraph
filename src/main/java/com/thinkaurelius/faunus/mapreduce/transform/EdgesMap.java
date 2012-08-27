@@ -12,26 +12,21 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class VerticesMap {
+public class EdgesMap {
 
     public enum Counters {
-        VERTEX_COUNT,
-        EDGE_COUNT
+        VERTICES_PROCESSED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            value.incrPath();
-            long counter = 0;
+            value.clearPaths();
             for (final Edge edge : value.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).clearPaths();
-                counter++;
+                ((FaunusEdge) edge).incrPath();
             }
             context.write(NullWritable.get(), value);
-            context.getCounter(Counters.VERTEX_COUNT).increment(1l);
-            context.getCounter(Counters.EDGE_COUNT).increment(counter);
         }
     }
 }
