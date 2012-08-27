@@ -326,6 +326,15 @@ public class FaunusPipeline {
         return this.commit(Tokens.Action.KEEP);
     }
 
+    /////////////// UTILITIES
+
+    public FaunusPipeline count() throws IOException {
+        this.state.checkLocked();
+        this.compiler.countMapReduce(this.state.getElementType());
+        this.state.lock();
+        return this;
+    }
+
     public static void main(String[] args) throws Exception {
         if (args.length != 1 && args.length != 2) {
             System.out.println("Faunus: A Library of Graph-Based Hadoop Tools");

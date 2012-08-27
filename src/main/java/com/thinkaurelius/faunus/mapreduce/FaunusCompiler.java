@@ -26,6 +26,7 @@ import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
+import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -38,6 +39,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -160,9 +162,9 @@ public class FaunusCompiler extends Configured implements Tool {
         this.reduceClass = VerticesEdgesMapReduce.Reduce.class;
         this.completeSequence();
     }
-    
-    public void edgesVerticesMap(final Direction direction) throws IOException  {
-        this.mapSequenceConfiguration.set(EdgesVerticesMap.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());    
+
+    public void edgesVerticesMap(final Direction direction) throws IOException {
+        this.mapSequenceConfiguration.set(EdgesVerticesMap.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
         this.mapSequenceClasses.add(EdgesVerticesMap.Map.class);
     }
 
@@ -303,6 +305,23 @@ public class FaunusCompiler extends Configured implements Tool {
         job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputKeyClass(LongWritable.class);
+        this.configureStatisticsJob(job);
+        this.jobs.add(job);
+    }
+
+    /////////////////// EXTRA
+
+    public void countMapReduce(final Class<? extends Element> klass) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(CountMapReduce.CLASS, klass.getName());
+        final Job job = new Job(conf, CountMapReduce.class.getCanonicalName());
+        job.setMapperClass(CountMapReduce.Map.class);
+        job.setReducerClass(CountMapReduce.Reduce.class);
+        job.setMapOutputKeyClass(IntWritable.class);
+        job.setMapOutputValueClass(LongWritable.class);
+        job.setOutputKeyClass(IntWritable.class);
+        job.setOutputKeyClass(Text.class);
         this.configureStatisticsJob(job);
         this.jobs.add(job);
     }
