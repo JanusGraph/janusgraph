@@ -5,7 +5,6 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.LongWritable;
@@ -14,7 +13,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -49,7 +47,7 @@ public class VerticesVerticesMapReduce {
             if (value.hasPaths()) {
                 for (final Edge edge : value.getEdges(this.direction, this.labels)) {
                     this.vertex.reuse(((FaunusEdge) edge).getVertexId(this.direction.opposite()));
-                    this.vertex.addPaths(value.getPaths());
+                    this.vertex.addPaths(value.getPaths(), false);
                     this.longWritable.set(vertex.getIdAsLong());
                     context.write(this.longWritable, this.holder.set('p', this.vertex));
                 }
@@ -72,10 +70,7 @@ public class VerticesVerticesMapReduce {
                     vertex.setProperties(temp.getProperties());
                     vertex.addEdges(Direction.BOTH, temp);
                 } else {
-                    for (final List<MicroElement> path : temp.getPaths()) {
-                        vertex.addPath(path);
-                        vertex.incrPath();
-                    }
+                    vertex.addPaths(temp.getPaths(), true);
                 }
             }
             context.write(NullWritable.get(), vertex);

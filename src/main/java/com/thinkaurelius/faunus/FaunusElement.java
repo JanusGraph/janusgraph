@@ -49,19 +49,28 @@ public abstract class FaunusElement implements Element, Writable {
     protected long id;
     protected Map<String, Object> properties = null;
     protected List<List<MicroElement>> paths = null;
+    private final MicroElement microVersion;
+
 
     public FaunusElement(final long id) {
         this.id = id;
+        this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
     }
 
-    public void addPath(final List<MicroElement> path) {
+    public void addPath(final List<MicroElement> path, final boolean incrPath) {
         if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
+        if (incrPath) path.add(this.microVersion);
         this.paths.add(path);
     }
 
-    public void addPaths(final List<List<MicroElement>> paths) {
+    public void addPaths(final List<List<MicroElement>> paths, final boolean incrPath) {
         if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
-        this.paths.addAll(paths);
+        if (incrPath) {
+            for (final List<MicroElement> path : paths) {
+                this.addPath(path, incrPath);
+            }
+        } else
+            this.paths.addAll(paths);
     }
 
     public List<List<MicroElement>> getPaths() {
@@ -79,22 +88,17 @@ public abstract class FaunusElement implements Element, Writable {
     }
 
     public int pathCount() {
-        return (null == paths) ? 0 : this.paths.size();
+        return (null == this.paths) ? 0 : this.paths.size();
     }
 
-    public void incrPath() {
+    public void startPath() {
         if (null == this.paths)
             this.paths = new ArrayList<List<MicroElement>>();
-
-        if (this.paths.size() == 0) {
-            this.paths.add(new ArrayList<MicroElement>());
-        }
-        final List<MicroElement> path = this.paths.get(paths.size() - 1);
-        if (this instanceof FaunusVertex) {
-            path.add(new MicroVertex(this.id));
-        } else {
-            path.add(new MicroEdge(this.id));
-        }
+        else
+            this.paths.clear();
+        final List<MicroElement> startPath = new ArrayList<MicroElement>();
+        startPath.add(this.microVersion);
+        this.paths.add(startPath);
     }
 
     public void setProperty(final String key, final Object value) {
@@ -147,7 +151,7 @@ public abstract class FaunusElement implements Element, Writable {
         return ((Long) this.id).hashCode();
     }
 
-    public static class ElementProperties {
+    protected static class ElementProperties {
 
         public enum PropertyType {
             INT((byte) 0),
@@ -224,7 +228,7 @@ public abstract class FaunusElement implements Element, Writable {
 
     }
 
-    public static class ElementPaths {
+    protected static class ElementPaths {
 
         public static void write(final List<List<MicroElement>> paths, final DataOutput out) throws IOException {
             if (null == paths) {

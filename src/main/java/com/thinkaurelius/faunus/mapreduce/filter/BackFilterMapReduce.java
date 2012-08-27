@@ -45,7 +45,7 @@ public class BackFilterMapReduce {
                     final long backElementId = path.get(this.step).getId();
                     this.longWritable.set(backElementId);
                     this.vertex.reuse(backElementId);
-                    this.vertex.addPath(path);
+                    this.vertex.addPath(path, false);
                     context.write(this.longWritable, this.holder.set('p', this.vertex));
                 }
             }
@@ -65,7 +65,7 @@ public class BackFilterMapReduce {
                 if (holder.getTag() == 'v') {
                     vertex.addAll((FaunusVertex) holder.get());
                 } else {
-                    vertex.addPaths(holder.get().getPaths());
+                    vertex.addPaths(holder.get().getPaths(), true);
                 }
             }
             context.write(NullWritable.get(), vertex);

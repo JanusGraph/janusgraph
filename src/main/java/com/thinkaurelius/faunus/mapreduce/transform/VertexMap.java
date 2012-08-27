@@ -34,7 +34,7 @@ public class VertexMap {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             if (this.ids.contains(value.getIdAsLong())) {
-                value.incrPath();
+                value.startPath();
             } else {
                 value.clearPaths();
             }
