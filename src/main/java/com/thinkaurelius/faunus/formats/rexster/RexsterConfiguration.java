@@ -6,8 +6,9 @@ import org.apache.hadoop.conf.Configuration;
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 public class RexsterConfiguration {
-    public static final String REXSTER_INPUT_REST_ADDRESS = "rexster.input.rest.address";
-    public static final String REXSTER_INPUT_REST_PORT = "rexster.input.rest.port";
+    public static final String REXSTER_INPUT_ADDRESS = "rexster.input.address";
+    public static final String REXSTER_INPUT_PORT = "rexster.input.port";
+    public static final String REXSTER_INPUT_SSL = "rexster.input.ssl";
     public static final String REXSTER_INPUT_GRAPH = "rexster.input.graph";
     public static final String REXSTER_INPUT_V_ESTIMATE = "rexster.input.v.estimate";
     public static final String REXSTER_INPUT_V_BUFFER = "rexster.input.v.buffer";
@@ -27,12 +28,16 @@ public class RexsterConfiguration {
         return this.conf.get(REXSTER_INPUT_MODE);
     }
 
+    public boolean getSsl() {
+        return this.conf.getBoolean(REXSTER_INPUT_SSL, false);
+    }
+
     public String getRestAddress() {
-        return this.conf.get(REXSTER_INPUT_REST_ADDRESS);
+        return this.conf.get(REXSTER_INPUT_ADDRESS);
     }
 
     public int getRestPort(){
-        return this.conf.getInt(REXSTER_INPUT_REST_PORT, 8182);
+        return this.conf.getInt(REXSTER_INPUT_PORT, 8182);
     }
 
     public String getGraph() {
@@ -47,13 +52,19 @@ public class RexsterConfiguration {
         return this.conf.getInt(REXSTER_INPUT_V_BUFFER, 1024);
     }
 
+    public String getHttpProtocol() {
+        return this.getSsl() ? "https" : "http";
+    }
+
     public String getRestEndpoint() {
-        return String.format("http://%s:%s/graphs/%s/tp/gremlin", this.getRestAddress(),
+        return String.format("%s://%s:%s/graphs/%s/tp/gremlin",
+                this.getHttpProtocol(), this.getRestAddress(),
                 this.getRestPort(), this.getGraph());
     }
 
     public String getRestStreamEndpoint() {
-        return String.format("http://%s:%s/graphs/%s/%s/%s", this.getRestAddress(),
+        return String.format("%s://%s:%s/graphs/%s/%s/%s",
+                this.getHttpProtocol(), this.getRestAddress(),
                 this.getRestPort(), this.getGraph(), FaunusRexsterExtension.EXTENSION_NAMESPACE,
                 FaunusRexsterExtension.EXTENSION_NAME);
     }
