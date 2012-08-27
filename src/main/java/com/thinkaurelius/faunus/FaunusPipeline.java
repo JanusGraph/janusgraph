@@ -1,6 +1,6 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.mapreduce.FaunusRunner;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -28,7 +28,7 @@ public class FaunusPipeline {
     public static final String EDGE_STATE_ERROR = "The compiler is currently in edge state";
     public static final String PIPELINE_IS_LOCKED = "No more steps are possible as pipeline is locked";
 
-    private final FaunusRunner compiler;
+    private final FaunusCompiler compiler;
     private final JobState state;
 
     private Query.Compare opposite(final Query.Compare compare) {
@@ -92,7 +92,7 @@ public class FaunusPipeline {
     }
 
     public FaunusPipeline(final String jobScript, final Configuration conf) {
-        this.compiler = new FaunusRunner(jobScript, conf);
+        this.compiler = new FaunusCompiler(jobScript, conf);
         this.state = new JobState();
     }
 
@@ -318,9 +318,9 @@ public class FaunusPipeline {
 
         scriptEngine.put("g", faunusPipeline);
         FaunusPipeline pipeline = ((FaunusPipeline) scriptEngine.eval(script));
-        FaunusRunner runner = pipeline.compiler;
-        runner.completeSequence();
-        int result = ToolRunner.run(runner, args);
+        FaunusCompiler compiler = pipeline.compiler;
+        compiler.completeSequence();
+        int result = ToolRunner.run(compiler, args);
         System.exit(result);
     }
 }

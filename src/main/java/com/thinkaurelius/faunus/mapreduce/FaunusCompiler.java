@@ -59,18 +59,18 @@ import java.util.UUID;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusRunner extends Configured implements Tool {
+public class FaunusCompiler extends Configured implements Tool {
 
-    public static final String TAG = Tokens.makeNamespace(FaunusRunner.class) + ".tag";
+    public static final String TAG = Tokens.makeNamespace(FaunusCompiler.class) + ".tag";
 
-    protected final Logger logger = Logger.getLogger(FaunusRunner.class);
+    protected final Logger logger = Logger.getLogger(FaunusCompiler.class);
     private final String jobScript;
 
     private FaunusConfiguration configuration;
-    protected boolean derivationJob = true;
+    private boolean derivationJob = true;
 
-    public final List<Job> jobs = new ArrayList<Job>();
-    public final List<Path> intermediateFiles = new ArrayList<Path>();
+    private final List<Job> jobs = new ArrayList<Job>();
+    private final List<Path> intermediateFiles = new ArrayList<Path>();
 
     private final Configuration mapSequenceConfiguration = new Configuration();
     private final List<Class<? extends Mapper>> mapSequenceClasses = new ArrayList<Class<? extends Mapper>>();
@@ -78,11 +78,11 @@ public class FaunusRunner extends Configured implements Tool {
     private Class reduceClass = null;
 
 
-    protected static final Class<? extends InputFormat> INTERMEDIATE_INPUT_FORMAT = SequenceFileInputFormat.class;
-    protected static final Class<? extends OutputFormat> INTERMEDIATE_OUTPUT_FORMAT = SequenceFileOutputFormat.class;
+    private static final Class<? extends InputFormat> INTERMEDIATE_INPUT_FORMAT = SequenceFileInputFormat.class;
+    private static final Class<? extends OutputFormat> INTERMEDIATE_OUTPUT_FORMAT = SequenceFileOutputFormat.class;
 
 
-    public FaunusRunner(final String jobScript, final Configuration conf) {
+    public FaunusCompiler(final String jobScript, final Configuration conf) {
         this.jobScript = jobScript;
         this.configuration = new FaunusConfiguration(conf);
     }
@@ -107,11 +107,6 @@ public class FaunusRunner extends Configured implements Tool {
         return list.toArray(new String[list.size()]);
     }
 
-
-    ////////////////////////////////////////////////////////////////
-    ///////////////////////// DERIVATIONS /////////////////////////
-    ///////////////////////////////////////////////////////////////
-
     ///////////// TRANSFORMS
 
     public void transform(final Class<? extends Element> klass, final String function) throws IOException {
@@ -121,7 +116,7 @@ public class FaunusRunner extends Configured implements Tool {
         conf.setClass(TransformMap.CLASS, klass, Element.class);
         final Job job = new Job(conf, TransformMap.class.getCanonicalName());
         job.setMapperClass(TransformMap.Map.class);
-        job.setMapOutputKeyClass(FaunusVertex.class);
+        job.setMapOutputKeyClass(NullWritable.class);
         job.setMapOutputValueClass(Text.class);
         this.configureStatisticsJob(job);
         this.jobs.add(job);
@@ -261,6 +256,43 @@ public class FaunusRunner extends Configured implements Tool {
         this.completeSequence();
     }
 
+    public void valueDistribution(final Class<? extends Element> klass, final String property) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(ValueGroupCountMapReduce.CLASS, klass.getName());
+        conf.set(ValueGroupCountMapReduce.PROPERTY, property);
+        final Job job = new Job(conf, ValueGroupCountMapReduce.class.getCanonicalName());
+        job.setMapperClass(ValueGroupCountMapReduce.Map.class);
+        job.setReducerClass(ValueGroupCountMapReduce.Reduce.class);
+        job.setCombinerClass(ValueGroupCountMapReduce.Reduce.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(LongWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputKeyClass(LongWritable.class);
+        this.configureStatisticsJob(job);
+        this.jobs.add(job);
+    }
+
+    public void groupCountMapReduce(final Class<? extends Element> klass, final String keyClosure, final String valueClosure) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.set(GroupCountMapReduce.CLASS, klass.getName());
+        conf.set(GroupCountMapReduce.KEY_FUNCTION, keyClosure);
+        conf.set(GroupCountMapReduce.VALUE_FUNCTION, valueClosure);
+        final Job job = new Job(conf, GroupCountMapReduce.class.getCanonicalName());
+        job.setMapperClass(GroupCountMapReduce.Map.class);
+        job.setReducerClass(GroupCountMapReduce.Reduce.class);
+        job.setCombinerClass(GroupCountMapReduce.Reduce.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(LongWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputKeyClass(LongWritable.class);
+        this.configureStatisticsJob(job);
+        this.jobs.add(job);
+    }
+
+    /////////////////////////////// UTILITIES
+
 
     public void completeSequence() throws IOException {
         if (this.mapRClass != null && this.reduceClass != null) {
@@ -310,68 +342,6 @@ public class FaunusRunner extends Configured implements Tool {
     private void configureStatisticsJob(final Job job) {
         job.setJarByClass(FaunusPipeline.class);
         this.derivationJob = false;
-    }
-
-    ///////////////////////////////////////////////////////////////
-    ///////////////////////// STATISTICS /////////////////////////
-    //////////////////////////////////////////////////////////////
-
-
-    public void distribution(final Class<? extends Element> klass, final String keyFunction, final String valueFunction) throws IOException {
-        this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.set(GroupCountMapReduce.CLASS, klass.getName());
-        conf.set(GroupCountMapReduce.KEY_FUNCTION, keyFunction);
-        conf.set(GroupCountMapReduce.VALUE_FUNCTION, valueFunction);
-        final Job job = new Job(conf, GroupCountMapReduce.class.getCanonicalName());
-        job.setMapperClass(GroupCountMapReduce.Map.class);
-        job.setReducerClass(GroupCountMapReduce.Reduce.class);
-        job.setCombinerClass(GroupCountMapReduce.Reduce.class);
-        job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(LongWritable.class);
-        job.setOutputKeyClass(Text.class);
-        job.setOutputKeyClass(LongWritable.class);
-        this.configureStatisticsJob(job);
-        this.jobs.add(job);
-    }
-
-    public void distribution(final Class<? extends Element> klass, final String keyFunction) throws IOException {
-        this.distribution(klass, keyFunction, "{it -> 1l}");
-    }
-
-    public void valueDistribution(final Class<? extends Element> klass, final String property) throws IOException {
-        this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.set(ValueGroupCountMapReduce.CLASS, klass.getName());
-        conf.set(ValueGroupCountMapReduce.PROPERTY, property);
-        final Job job = new Job(conf, ValueGroupCountMapReduce.class.getCanonicalName());
-        job.setMapperClass(ValueGroupCountMapReduce.Map.class);
-        job.setReducerClass(ValueGroupCountMapReduce.Reduce.class);
-        job.setCombinerClass(ValueGroupCountMapReduce.Reduce.class);
-        job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(LongWritable.class);
-        job.setOutputKeyClass(Text.class);
-        job.setOutputKeyClass(LongWritable.class);
-        this.configureStatisticsJob(job);
-        this.jobs.add(job);
-    }
-
-    public void groupCountMapReduce(final Class<? extends Element> klass, final String keyClosure, final String valueClosure) throws IOException {
-        this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.set(GroupCountMapReduce.CLASS, klass.getName());
-        conf.set(GroupCountMapReduce.KEY_FUNCTION, keyClosure);
-        conf.set(GroupCountMapReduce.VALUE_FUNCTION, valueClosure);
-        final Job job = new Job(conf, GroupCountMapReduce.class.getCanonicalName());
-        job.setMapperClass(GroupCountMapReduce.Map.class);
-        job.setReducerClass(GroupCountMapReduce.Reduce.class);
-        job.setCombinerClass(GroupCountMapReduce.Reduce.class);
-        job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(LongWritable.class);
-        job.setOutputKeyClass(Text.class);
-        job.setOutputKeyClass(LongWritable.class);
-        this.configureStatisticsJob(job);
-        this.jobs.add(job);
     }
 
     public void composeJobs() throws IOException {

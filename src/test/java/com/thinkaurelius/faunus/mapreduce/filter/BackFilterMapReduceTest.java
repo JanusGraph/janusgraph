@@ -3,7 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.filter;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
-import com.thinkaurelius.faunus.mapreduce.FaunusRunner;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -34,7 +34,7 @@ public class BackFilterMapReduceTest extends BaseTest {
         Configuration config = new Configuration();
         config.setClass(BackFilterMapReduce.CLASS, Vertex.class, Element.class);
         config.set(BackFilterMapReduce.STEP, "here");
-        config.setInt(FaunusRunner.TAG + ".here", 0);
+        config.setInt(FaunusCompiler.TAG + ".here", 0);
 
         mapReduceDriver.withConfiguration(config);
 
@@ -58,7 +58,7 @@ public class BackFilterMapReduceTest extends BaseTest {
         Configuration config = new Configuration();
         config.setClass(BackFilterMapReduce.CLASS, Vertex.class, Element.class);
         config.set(BackFilterMapReduce.STEP, "here");
-        config.setInt(FaunusRunner.TAG + ".here", 0);
+        config.setInt(FaunusCompiler.TAG + ".here", 0);
 
         mapReduceDriver.withConfiguration(config);
 

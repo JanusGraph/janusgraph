@@ -21,12 +21,12 @@ import java.util.List;
  */
 public class TransformMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, FaunusElement, Text, FaunusElement, Text> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, Text, NullWritable, Text> mapReduceDriver;
 
     public void setUp() throws Exception {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, FaunusElement, Text, FaunusElement, Text>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, Text, NullWritable, Text>();
         mapReduceDriver.setMapper(new TransformMap.Map());
-        mapReduceDriver.setReducer(new Reducer<FaunusElement, Text, FaunusElement, Text>());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, Text, NullWritable, Text>());
     }
 
     public void testVerticesPropertyKeySize() throws IOException {
@@ -35,9 +35,9 @@ public class TransformMapTest extends BaseTest {
         config.setClass(TransformMap.CLASS, Vertex.class, Element.class);
         mapReduceDriver.withConfiguration(config);
 
-        final List<Pair<FaunusElement, Text>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH), Vertex.class), this.mapReduceDriver);
+        final List<Pair<NullWritable, Text>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH), Vertex.class), this.mapReduceDriver);
         assertEquals(results.size(), 6);
-        for (final Pair<FaunusElement, Text> result : results) {
+        for (final Pair<NullWritable, Text> result : results) {
             assertEquals(result.getSecond().toString(), "2");
         }
         assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.VERTICES_PROCESSED).getValue(), 6);
@@ -50,9 +50,9 @@ public class TransformMapTest extends BaseTest {
         config.setClass(TransformMap.CLASS, Edge.class, Element.class);
         mapReduceDriver.withConfiguration(config);
 
-        final List<Pair<FaunusElement, Text>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH), Edge.class), this.mapReduceDriver);
+        final List<Pair<NullWritable, Text>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH), Edge.class), this.mapReduceDriver);
         assertEquals(results.size(), 6);
-        for (final Pair<FaunusElement, Text> result : results) {
+        for (final Pair<NullWritable, Text> result : results) {
             assertEquals(result.getSecond().toString(), "1");
         }
 

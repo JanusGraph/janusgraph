@@ -32,7 +32,7 @@ public class TransformMap {
         EDGES_PROCESSED
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, FaunusElement, Text> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, Text> {
 
         private Closure closure;
         private boolean isVertex;
@@ -50,12 +50,12 @@ public class TransformMap {
         private final Text textWritable = new Text();
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, FaunusElement, Text>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     final Object result = this.closure.call(value);
                     this.textWritable.set(null == result ? Tokens.NULL : result.toString());
-                    context.write(value, this.textWritable);
+                    context.write(NullWritable.get(), this.textWritable);
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
             } else {
@@ -65,7 +65,7 @@ public class TransformMap {
                     if (edge.hasPaths()) {
                         final Object result = this.closure.call(edge);
                         this.textWritable.set(null == result ? Tokens.NULL : result.toString());
-                        context.write(edge, this.textWritable);
+                        context.write(NullWritable.get(), this.textWritable);
                         edgesProcessed++;
                     }
                 }
