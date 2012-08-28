@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
@@ -41,7 +40,7 @@ public class BackFilterMapReduce {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.step = context.getConfiguration().getInt(context.getConfiguration().get(FaunusCompiler.TAG + "." + context.getConfiguration().get(STEP)), 0);
+            this.step = context.getConfiguration().getInt(STEP, -1);
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
         }
 

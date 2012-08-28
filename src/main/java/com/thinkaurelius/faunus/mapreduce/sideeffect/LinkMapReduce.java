@@ -6,7 +6,7 @@ import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.faunus.mapreduce.CounterMap;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.io.LongWritable;
@@ -27,6 +27,10 @@ public class LinkMapReduce {
     public static final String DIRECTION = Tokens.makeNamespace(LinkMapReduce.class) + ".direction";
     public static final String LABEL = Tokens.makeNamespace(LinkMapReduce.class) + ".label";
     public static final String STEP = Tokens.makeNamespace(LinkMapReduce.class) + ".step";
+    public static final String MERGE_DUPLICATES = Tokens.makeNamespace(LinkMapReduce.class) + ".mergeDuplicates";
+    public static final String MERGE_WEIGHT_KEY = Tokens.makeNamespace(LinkMapReduce.class) + ".mergeWeightKey";
+
+    public static final String NO_WEIGHT_KEY = "_";
 
     public enum Counters {
         EDGES_CREATED
@@ -39,29 +43,55 @@ public class LinkMapReduce {
         private int step;
         private final Holder<FaunusElement> holder = new Holder<FaunusElement>();
         private final LongWritable longWritable = new LongWritable();
+        private boolean mergeDuplicates;
+        private String mergeWeightKey;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.step = context.getConfiguration().getInt(context.getConfiguration().get(FaunusCompiler.TAG + "." + context.getConfiguration().get(STEP)), 0);
+            this.step = context.getConfiguration().getInt(STEP, -1);
             this.direction = FaunusConfiguration.getDirection(context.getConfiguration(), DIRECTION);
             this.label = context.getConfiguration().get(LABEL);
+            this.mergeDuplicates = context.getConfiguration().getBoolean(MERGE_DUPLICATES, false);
+            this.mergeWeightKey = context.getConfiguration().get(MERGE_WEIGHT_KEY, NO_WEIGHT_KEY);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             final long valueId = value.getIdAsLong();
             if (value.hasPaths()) {
-                for (final List<MicroElement> path : value.getPaths()) {
-                    final long linkElementId = path.get(this.step).getId();
-                    final FaunusEdge edge;
-                    if (this.direction.equals(IN))
-                        edge = new FaunusEdge(linkElementId, valueId, this.label);
-                    else
-                        edge = new FaunusEdge(valueId, linkElementId, this.label);
+                if (this.mergeDuplicates) {
+                    final CounterMap<Long> map = new CounterMap<Long>();
+                    for (final List<MicroElement> path : value.getPaths()) {
+                        map.incr(path.get(this.step).getId(), 1);
+                    }
+                    for (java.util.Map.Entry<Long, Long> entry : map.entrySet()) {
+                        final long linkElementId = entry.getKey();
+                        final FaunusEdge edge;
+                        if (this.direction.equals(IN))
+                            edge = new FaunusEdge(linkElementId, valueId, this.label);
+                        else
+                            edge = new FaunusEdge(valueId, linkElementId, this.label);
 
-                    value.addEdge(this.direction, edge);
-                    this.longWritable.set(linkElementId);
-                    context.write(this.longWritable, this.holder.set('e', edge));
+                        if (!this.mergeWeightKey.equals(NO_WEIGHT_KEY))
+                            edge.setProperty(this.mergeWeightKey, entry.getValue());
+
+                        value.addEdge(this.direction, edge);
+                        this.longWritable.set(linkElementId);
+                        context.write(this.longWritable, this.holder.set('e', edge));
+                    }
+                } else {
+                    for (final List<MicroElement> path : value.getPaths()) {
+                        final long linkElementId = path.get(this.step).getId();
+                        final FaunusEdge edge;
+                        if (this.direction.equals(IN))
+                            edge = new FaunusEdge(linkElementId, valueId, this.label);
+                        else
+                            edge = new FaunusEdge(valueId, linkElementId, this.label);
+
+                        value.addEdge(this.direction, edge);
+                        this.longWritable.set(linkElementId);
+                        context.write(this.longWritable, this.holder.set('e', edge));
+                    }
                 }
             }
 

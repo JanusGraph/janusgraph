@@ -22,6 +22,7 @@ import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesVerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
 import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
+import com.thinkaurelius.faunus.mapreduce.transform.PropertyMap;
 import com.thinkaurelius.faunus.mapreduce.transform.TransformMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
@@ -65,8 +66,6 @@ import java.util.UUID;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class FaunusCompiler extends Configured implements Tool {
-
-    public static final String TAG = Tokens.makeNamespace(FaunusCompiler.class) + ".tag";
 
     protected final Logger logger = Logger.getLogger(FaunusCompiler.class);
     private final String jobScript;
@@ -168,6 +167,19 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.set(EdgesVerticesMap.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
         this.mapSequenceClasses.add(EdgesVerticesMap.Map.class);
     }
+    
+    public void propertyMap(final Class<? extends Element> klass, final String key) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.setClass(PropertyMap.CLASS, klass, Element.class);
+        conf.set(PropertyMap.KEY, key);
+        final Job job = new Job(conf, PropertyMap.class.getCanonicalName());
+        job.setMapperClass(PropertyMap.Map.class);
+        job.setMapOutputKeyClass(NullWritable.class);
+        job.setMapOutputValueClass(Text.class);
+        this.configureStatisticsJob(job);
+        this.jobs.add(job);
+    }
 
 
     public void pathMap(final Class<? extends Element> klass) throws IOException {
@@ -181,6 +193,19 @@ public class FaunusCompiler extends Configured implements Tool {
         this.configureStatisticsJob(job);
         this.jobs.add(job);
     }
+
+    /*public void select(final Class<? extends Element> klass, final int... steps) throws IOException {
+        this.completeSequence();
+        Configuration conf = new Configuration();
+        conf.setClass(SelectMap.CLASS, klass, Element.class);
+        conf.setStrings(SelectMap.STEPS, steps);
+        final Job job = new Job(conf, SelectMap.class.getCanonicalName());
+        job.setMapperClass(SelectMap.Map.class);
+        job.setMapOutputKeyClass(NullWritable.class);
+        job.setMapOutputValueClass(Text.class);
+        this.configureStatisticsJob(job);
+        this.jobs.add(job);
+    }*/
 
     ///////////// FILTERS
 
@@ -239,8 +264,8 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceClasses.add(IntervalFilterMap.Map.class);
     }
 
-    public void backFilterMapReduce(final Class<? extends Element> klass, final String step) throws IOException {
-        this.mapSequenceConfiguration.set(BackFilterMapReduce.STEP, step);
+    public void backFilterMapReduce(final Class<? extends Element> klass, final int step) throws IOException {
+        this.mapSequenceConfiguration.setInt(BackFilterMapReduce.STEP, step);
         this.mapSequenceConfiguration.setClass(BackFilterMapReduce.CLASS, klass, Element.class);
         this.mapRClass = BackFilterMapReduce.Map.class;
         this.reduceClass = BackFilterMapReduce.Reduce.class;
@@ -258,15 +283,17 @@ public class FaunusCompiler extends Configured implements Tool {
 
     ///////////// SIDE-EFFECTS
 
-    public void as(final Class<? extends Element> klass, final String tag, final int step) {
-        this.configuration.setInt(TAG + "." + tag, step);
-    }
-
-
-    public void linkMapReduce(final String step, final Direction direction, final String label) throws IOException {
-        this.mapSequenceConfiguration.set(LinkMapReduce.STEP, step);
+    public void linkMapReduce(final int step, final Direction direction, final String label, final String mergeWeightKey) throws IOException {
+        this.mapSequenceConfiguration.setInt(LinkMapReduce.STEP, step);
         this.mapSequenceConfiguration.set(LinkMapReduce.DIRECTION, direction.name());
         this.mapSequenceConfiguration.set(LinkMapReduce.LABEL, label);
+        if (null == mergeWeightKey) {
+            this.mapSequenceConfiguration.setBoolean(LinkMapReduce.MERGE_DUPLICATES, false);
+            this.mapSequenceConfiguration.set(LinkMapReduce.MERGE_WEIGHT_KEY, LinkMapReduce.NO_WEIGHT_KEY);
+        } else {
+            this.mapSequenceConfiguration.setBoolean(LinkMapReduce.MERGE_DUPLICATES, true);
+            this.mapSequenceConfiguration.set(LinkMapReduce.MERGE_WEIGHT_KEY, mergeWeightKey);
+        }
         this.mapRClass = LinkMapReduce.Map.class;
         this.reduceClass = LinkMapReduce.Reduce.class;
         this.completeSequence();

@@ -37,8 +37,7 @@ public class LinkMapReduceTest extends BaseTest {
     public void testKnowsCreatedTraversal() throws IOException {
 
         Configuration config = new Configuration();
-        config.set(LinkMapReduce.STEP, "blah");
-        config.setInt(FaunusCompiler.TAG + ".blah", 0);
+        config.setInt(LinkMapReduce.STEP, 0);
         config.set(LinkMapReduce.DIRECTION, Direction.IN.name());
         config.set(LinkMapReduce.LABEL, "knowsCreated");
 
@@ -69,8 +68,7 @@ public class LinkMapReduceTest extends BaseTest {
     public void testCreated2Traversal() throws IOException {
 
         Configuration config = new Configuration();
-        config.set(LinkMapReduce.STEP, "blah");
-        config.setInt(FaunusCompiler.TAG + ".blah", 0);
+        config.setInt(LinkMapReduce.STEP, 0);
         config.set(LinkMapReduce.DIRECTION, Direction.OUT.name());
         config.set(LinkMapReduce.LABEL, "created2");
 

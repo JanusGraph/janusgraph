@@ -12,6 +12,7 @@ import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import static com.tinkerpop.blueprints.Direction.BOTH;
@@ -51,8 +52,12 @@ public class FaunusPipeline {
         private String property;
         private int step = -1;
         private boolean locked = false;
+        private Map<String, Integer> namedSteps = new HashMap<String, Integer>();
 
         public JobState set(Class<? extends Element> elementType) {
+            if (!elementType.equals(Vertex.class) && !elementType.equals(Edge.class))
+                throw new RuntimeException("The element class type must be either Vertex or Edge");
+
             this.elementType = elementType;
             return this;
         }
@@ -70,24 +75,41 @@ public class FaunusPipeline {
             return this;
         }
 
-        public String getProperty() {
-            return this.property;
+        public String popProperty() {
+            final String temp = this.property;
+            this.property = null;
+            return temp;
         }
 
         public int incrStep() {
             return this.step++;
         }
 
-        public int getStep() {
-            return this.step;
-        }
-
         public void checkLocked() {
             if (this.locked) throw new IllegalStateException(PIPELINE_IS_LOCKED);
         }
 
+        public boolean isLocked() {
+            return this.locked;
+        }
+
         public void lock() {
             this.locked = true;
+        }
+
+        public void addStep(final String name) {
+            if (this.step == -1)
+                throw new RuntimeException("There is no previous step to name");
+
+            this.namedSteps.put(name, this.step);
+        }
+
+        public int getStep(final String name) {
+            final Integer i = this.namedSteps.get(name);
+            if (null == i)
+                throw new IllegalStateException("There is no step identified by: " + name);
+            else
+                return i;
         }
     }
 
@@ -221,15 +243,24 @@ public class FaunusPipeline {
             throw new RuntimeException("This step can not follow a vertex-based step");
     }
 
-    public FaunusPipeline property(final String key) {
+    public FaunusPipeline property(final String key) throws IOException {
         this.state.checkLocked();
+        this.compiler.propertyMap(this.state.getElementType(), key);
         this.state.set(key);
+        this.state.lock();
         return this;
     }
 
     public FaunusPipeline path() throws IOException {
         this.state.checkLocked();
         this.compiler.pathMap(this.state.getElementType());
+        this.state.lock();
+        return this;
+    }
+
+    public FaunusPipeline select(final int... steps) throws IOException {
+        this.state.checkLocked();
+        //this.compiler.select(this.state.getElementType(), steps);
         this.state.lock();
         return this;
     }
@@ -271,7 +302,7 @@ public class FaunusPipeline {
 
     public FaunusPipeline groupCount() throws IOException {
         this.state.checkLocked();
-        this.compiler.valueDistribution(this.state.getElementType(), this.state.getProperty());
+        this.compiler.valueDistribution(this.state.getElementType(), this.state.popProperty());
         return this;
     }
 
@@ -289,29 +320,37 @@ public class FaunusPipeline {
 
     public FaunusPipeline back(final String step) throws IOException {
         this.state.checkLocked();
-        this.compiler.backFilterMapReduce(this.state.getElementType(), step);
+        this.compiler.backFilterMapReduce(this.state.getElementType(), this.state.getStep(step));
         return this;
     }
 
     //////// SIDEEFFECTS
 
-    public FaunusPipeline as(final String tag) {
+    public FaunusPipeline as(final String name) {
         this.state.checkLocked();
-        this.compiler.as(this.state.getElementType(), tag, this.state.getStep());
+        this.state.addStep(name);
         return this;
     }
 
 
-    public FaunusPipeline linkIn(final String step, final String label) throws IOException {
+    public FaunusPipeline linkIn(final String step, final String label, final String mergeWeightKey) throws IOException {
         this.state.checkLocked();
-        this.compiler.linkMapReduce(step, IN, label);
+        this.compiler.linkMapReduce(this.state.getStep(step), IN, label, mergeWeightKey);
+        return this;
+    }
+
+    public FaunusPipeline linkIn(final String step, final String label) throws IOException {
+        return this.linkIn(step, label, null);
+    }
+
+    public FaunusPipeline linkOut(final String step, final String label, final String mergeWeightKey) throws IOException {
+        this.state.checkLocked();
+        this.compiler.linkMapReduce(this.state.getStep(step), OUT, label, mergeWeightKey);
         return this;
     }
 
     public FaunusPipeline linkOut(final String step, final String label) throws IOException {
-        this.state.checkLocked();
-        this.compiler.linkMapReduce(step, OUT, label);
-        return this;
+        return this.linkOut(step, label, null);
     }
 
 
@@ -338,6 +377,17 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.compiler.countMapReduce(this.state.getElementType());
         this.state.lock();
+        return this;
+    }
+
+    public FaunusPipeline done() throws IOException {
+        if (!this.state.isLocked()) {
+            final String property = this.state.popProperty();
+            if (null != property) {
+                this.property(property);
+            }
+            this.state.lock();
+        }
         return this;
     }
 
@@ -387,7 +437,7 @@ public class FaunusPipeline {
         scriptEngine.eval("gte=" + Query.Compare.class.getName() + ".GREATER_THAN_EQUAL");
 
         scriptEngine.put("g", faunusPipeline);
-        FaunusPipeline pipeline = ((FaunusPipeline) scriptEngine.eval(script));
+        FaunusPipeline pipeline = ((FaunusPipeline) scriptEngine.eval(script)).done();
         FaunusCompiler compiler = pipeline.compiler;
         compiler.completeSequence();
         int result = ToolRunner.run(compiler, args);
