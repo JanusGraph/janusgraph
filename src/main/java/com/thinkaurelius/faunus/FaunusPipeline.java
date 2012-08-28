@@ -245,10 +245,19 @@ public class FaunusPipeline {
 
     public FaunusPipeline property(final String key) throws IOException {
         this.state.checkLocked();
-        this.compiler.propertyMap(this.state.getElementType(), key);
+        //this.compiler.propertyMap(this.state.getElementType(), key);
         this.state.set(key);
-        this.state.lock();
         return this;
+    }
+
+    public FaunusPipeline label() throws IOException {
+        this.state.checkLocked();
+        if (!this.state.atVertex()) {
+            //this.compiler.propertyMap(this.state.getElementType(), Tokens.LABEL);
+            this.state.set(Tokens.LABEL);
+            return this;
+        } else
+            throw new RuntimeException("This step can not follow a vertex-based step");
     }
 
     public FaunusPipeline path() throws IOException {
@@ -384,7 +393,7 @@ public class FaunusPipeline {
         if (!this.state.isLocked()) {
             final String property = this.state.popProperty();
             if (null != property) {
-                this.property(property);
+                this.compiler.propertyMap(this.state.getElementType(), property);
             }
             this.state.lock();
         }
@@ -420,15 +429,9 @@ public class FaunusPipeline {
 
         final FaunusPipeline faunusPipeline = new FaunusPipeline(script, conf);
         final GroovyScriptEngineImpl scriptEngine = new GroovyScriptEngineImpl();
-        scriptEngine.eval("Vertex= " + Vertex.class.getName());
-        scriptEngine.eval("Edge= " + Edge.class.getName());
         scriptEngine.eval("IN=" + Direction.class.getName() + ".IN");
         scriptEngine.eval("OUT=" + Direction.class.getName() + ".OUT");
         scriptEngine.eval("BOTH=" + Direction.class.getName() + ".BOTH");
-        scriptEngine.eval("KEEP=" + Tokens.Action.class.getName() + ".KEEP");
-        scriptEngine.eval("DROP=" + Tokens.Action.class.getName() + ".DROP");
-        scriptEngine.eval("REVERSE=" + Tokens.Order.class.getName() + ".REVERSE");
-        scriptEngine.eval("STANDARD=" + Tokens.Order.class.getName() + ".STANDARD");
         scriptEngine.eval("eq=" + Query.Compare.class.getName() + ".EQUAL");
         scriptEngine.eval("neq=" + Query.Compare.class.getName() + ".NOT_EQUAL");
         scriptEngine.eval("lt=" + Query.Compare.class.getName() + ".LESS_THAN");

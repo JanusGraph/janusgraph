@@ -11,6 +11,9 @@ import java.util.Map;
  */
 public class ElementPicker {
 
+    protected ElementPicker() {
+    }
+
     public static String getPropertyAsString(final FaunusElement element, final String key) {
         if (key.equals(Tokens._ID) || key.equals(Tokens.ID))
             return element.getId().toString();

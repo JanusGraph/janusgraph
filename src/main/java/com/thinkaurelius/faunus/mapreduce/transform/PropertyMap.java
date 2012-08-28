@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.transform;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.ElementPicker;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -30,7 +31,7 @@ public class PropertyMap {
 
         private String key;
         private boolean isVertex;
-
+        
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
@@ -43,8 +44,7 @@ public class PropertyMap {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    final Object result = value.getProperty(this.key);
-                    this.textWritable.set(null == result ? Tokens.NULL : result.toString());
+                    this.textWritable.set(ElementPicker.getPropertyAsString(value,this.key));
                     for (int i = 0; i < value.pathCount(); i++) {
                         context.write(NullWritable.get(), this.textWritable);
                     }
@@ -55,8 +55,7 @@ public class PropertyMap {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
-                        final Object result = value.getProperty(this.key);
-                        this.textWritable.set(null == result ? Tokens.NULL : result.toString());
+                        this.textWritable.set(ElementPicker.getPropertyAsString(edge, this.key));
                         for (int i = 0; i < edge.pathCount(); i++) {
                             context.write(NullWritable.get(), this.textWritable);
                         }
