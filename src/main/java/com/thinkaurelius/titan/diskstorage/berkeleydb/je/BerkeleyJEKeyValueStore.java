@@ -11,15 +11,15 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BerkeleyKeyValueStore implements OrderedKeyValueStore {
+public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 	
-	private Logger log = LoggerFactory.getLogger(BerkeleyKeyValueStore.class);
+	private Logger log = LoggerFactory.getLogger(BerkeleyJEKeyValueStore.class);
 	
 	private final Database db;
 	private final String name;
 	private final BerkeleyJEStorageManager manager;
 	
-	public BerkeleyKeyValueStore(String n, Database data, BerkeleyJEStorageManager m) {
+	public BerkeleyJEKeyValueStore(String n, Database data, BerkeleyJEStorageManager m) {
 		db = data;
 		name = n;
 		manager = m;

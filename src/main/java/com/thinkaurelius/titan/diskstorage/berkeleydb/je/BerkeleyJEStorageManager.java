@@ -31,7 +31,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
     private static final String IDMANAGER_KEY = "idmanager_table";
     private static final String IDMANAGER_DEFAULT = "titan_idmanager";
     
-	private final Map<String,BerkeleyKeyValueStore> stores;
+	private final Map<String,BerkeleyJEKeyValueStore> stores;
 	
 
 	private Environment environment;
@@ -44,7 +44,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
     private final String idManagerTableName;
 
 	public BerkeleyJEStorageManager(Configuration configuration) {
-		stores = new HashMap<String, BerkeleyKeyValueStore>();
+		stores = new HashMap<String, BerkeleyJEKeyValueStore>();
 		directory=new File(configuration.getString(STORAGE_DIRECTORY_KEY));
         Preconditions.checkArgument(directory.isDirectory() && directory.canWrite(),"Cannot open or write to directory: " + directory);
 		isReadOnly= configuration.getBoolean(STORAGE_READONLY_KEY,STORAGE_READONLY_DEFAULT);
@@ -98,10 +98,10 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 
 
 	@Override
-	public BerkeleyKeyValueStore openDatabase(String name) throws GraphStorageException {
+	public BerkeleyJEKeyValueStore openDatabase(String name) throws GraphStorageException {
 		Preconditions.checkNotNull(name);
         if (stores.containsKey(name)) {
-			BerkeleyKeyValueStore store = stores.get(name);
+			BerkeleyJEKeyValueStore store = stores.get(name);
 			return store;
 		}
 		try {
@@ -117,7 +117,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 			}
 			
 			Database db = environment.openDatabase(null, name, dbConfig);
-			BerkeleyKeyValueStore store =  new BerkeleyKeyValueStore(name,db,this);
+			BerkeleyJEKeyValueStore store =  new BerkeleyJEKeyValueStore(name,db,this);
 			stores.put(name, store);
 			return store;
 		} catch (DatabaseException e) {
@@ -127,7 +127,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 
     @Override
     public synchronized long[] getIDBlock(int partition) {
-        BerkeleyKeyValueStore idDB = openDatabase(idManagerTableName);
+        BerkeleyJEKeyValueStore idDB = openDatabase(idManagerTableName);
         ByteBuffer key = ByteBufferUtil.getIntByteBuffer(partition);
         BDBTxHandle tx = beginTransaction();
         ByteBuffer value = idDB.get(key,tx);
@@ -144,7 +144,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
     }
 
 
-    void removeDatabase(BerkeleyKeyValueStore db) {
+    void removeDatabase(BerkeleyJEKeyValueStore db) {
 		if (!stores.containsKey(db.getName())) {
 			throw new GraphStorageException("Tried to remove an unkown database from the storage manager");
 		}
@@ -155,7 +155,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 	@Override
 	public void close() throws GraphStorageException {
 		if (environment!=null) {
-            BerkeleyKeyValueStore idmanager = stores.get(idManagerTableName);
+            BerkeleyJEKeyValueStore idmanager = stores.get(idManagerTableName);
             if (idmanager!=null) idmanager.close();
 			if (!stores.isEmpty()) throw new GraphStorageException("Cannot shutdown manager since some databases are still open");
 			try {

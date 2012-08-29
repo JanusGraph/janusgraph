@@ -3,12 +3,17 @@ package com.thinkaurelius.titan.graphdb.database.idassigner;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.GraphDatabaseException;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
 public class StandardIDPool implements IDPool {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(StandardIDPool.class);
     
     private static final int RENEW_ID_COUNT = 100;
     
@@ -56,6 +61,8 @@ public class StandardIDPool implements IDPool {
         
         nextID = bufferNextID;
         maxID = bufferMaxID;
+        
+        log.debug("[{}] Next/Max ID: {}",partitionID,new long[]{nextID,maxID});
 
         assert nextID>0 && maxID>nextID;
         
@@ -94,6 +101,7 @@ public class StandardIDPool implements IDPool {
         }
         long id = nextID;
         nextID++;
+        log.debug("[{}] Returned id: {}",partitionID,id);
         return id;
     }
 

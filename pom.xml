@@ -78,6 +78,12 @@
             <id>fb-contrib</id>
             <url>http://master.dl.sourceforge.net/project/fb-contrib/repo</url>
         </repository>
+        <repository>
+            <id>oracleReleases</id>
+            <name>Oracle Released Java Packages</name>
+            <url>http://download.oracle.com/maven</url>
+            <layout>default</layout>
+        </repository>
     </repositories>
 
     <!-- Libraries -->
@@ -205,7 +211,7 @@
         <dependency>
             <groupId>com.sleepycat</groupId>
             <artifactId>je</artifactId>
-            <version>4.0.92</version>
+            <version>5.0.58</version>
         </dependency>
 
 
