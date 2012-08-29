@@ -101,7 +101,7 @@ public class StandardIDPool implements IDPool {
         }
         long id = nextID;
         nextID++;
-        log.debug("[{}] Returned id: {}",partitionID,id);
+        log.trace("[{}] Returned id: {}",partitionID,id);
         return id;
     }
 
