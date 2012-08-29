@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
@@ -34,17 +35,17 @@ public class OrderedKeyValueStoreAdapter extends KeyValueStoreAdapter implements
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, 
 			int limit, TransactionHandle txh) {
-		return convert(store.getSlice(concatenate(key,columnStart), concatenate(key,columnEnd), limit, txh));
+		return convert(store.getSlice(concatenatePrefix(key,columnStart), concatenatePrefix(key,columnEnd), new KeyColumnSliceSelector(key,limit), txh));
 	}
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, 
 			TransactionHandle txh) {
-		return convert(store.getSlice(concatenate(key,columnStart), concatenate(key,columnEnd), txh));
+		return convert(store.getSlice(concatenatePrefix(key,columnStart), concatenatePrefix(key,columnEnd), new KeyColumnSliceSelector(key), txh));
 	}
 		
 	
-	public List<Entry> convert(List<KeyValueEntry> entries) {
+	private List<Entry> convert(List<KeyValueEntry> entries) {
 		if (entries==null) return null;
 		List<Entry> newentries = new ArrayList<Entry>(entries.size());
 		for (KeyValueEntry entry : entries) {
@@ -53,7 +54,7 @@ public class OrderedKeyValueStoreAdapter extends KeyValueStoreAdapter implements
 		return newentries;
 	}
 	
-	public Map<ByteBuffer,List<Entry>> convertKey(List<KeyValueEntry> entries) {
+	private Map<ByteBuffer,List<Entry>> convertKey(List<KeyValueEntry> entries) {
 		if (entries==null) return null;
 		Map<ByteBuffer,List<Entry>> keyentries = new HashMap<ByteBuffer,List<Entry>>((int)Math.sqrt(entries.size()));
 		ByteBuffer key = null;
@@ -115,90 +116,35 @@ public class OrderedKeyValueStoreAdapter extends KeyValueStoreAdapter implements
 	
 	private class KeyColumnSliceSelector implements KeySelector {
 
-		private final ByteBuffer keyStart;
-		private final ByteBuffer keyEnd;
-		private final boolean startKeyInc;
-		private final boolean endKeyInc;
-		private final ByteBuffer columnStart;
-		private final ByteBuffer columnEnd;
-		private final boolean startColumnIncl;
-		private final boolean endColumnIncl;
-		private final int keyLimit;
-		private final int columnLimit;
+		private final ByteBuffer key;
+		private final int limit;
 		
-		private final boolean abortOnLimitExcess;
-		
-		public KeyColumnSliceSelector(ByteBuffer keyStart, ByteBuffer keyEnd, 
-				boolean startKeyInc, boolean endKeyInc,
-			ByteBuffer columnStart, ByteBuffer columnEnd, 
-			boolean startColumnIncl, boolean endColumnIncl, 
-			int keyLimit, int columnLimit, boolean abortOnLimit) {
-			this.keyStart=keyStart;
-			this.keyEnd=keyEnd;
-			this.startKeyInc=startKeyInc;
-			this.endKeyInc=endKeyInc;
-			this.columnStart=columnStart;
-			this.columnEnd=columnEnd;
-			this.startColumnIncl=startColumnIncl;
-			this.endColumnIncl=endColumnIncl;
-			this.keyLimit=keyLimit;
-			this.columnLimit=columnLimit;
-			this.abortOnLimitExcess=abortOnLimit;
+		public KeyColumnSliceSelector(ByteBuffer key, int limit) {
+            Preconditions.checkArgument(limit>0,"The count limit needs to be positive. Given: " + limit);
+			this.key = key;
+            this.limit=limit;
 		}
+        
+        public KeyColumnSliceSelector(ByteBuffer key) {
+            this(key,Integer.MAX_VALUE);
+        }
 		
-		private ByteBuffer currentKey = null;
-		
-		private int countKey = 0;
-		private int countColumn = 0;
+		private int count = 0;
 
-		private boolean reachedLimit = false;
-		private boolean reachedCountLimit = false;
-		
 		@Override
 		public boolean include(ByteBuffer keycolumn) {
-			if (currentKey==null && !startKeyInc) { //Check if current equals start
-				if (equalKey(keycolumn, keyStart)) return false;
-			}
-			
-			if (!endKeyInc && equalKey(keycolumn, keyEnd)) {
-				reachedLimit = true;
-				return false;
-			}
-			
-			if (currentKey==null || !equalKey(keycolumn,currentKey)) {
-				currentKey = getKey(keycolumn);
-				countKey++;
-				if (countKey>keyLimit) {
-					reachedCountLimit = true;
-					reachedLimit = true;
-					return false;
-				}
-				countColumn = 0;
-			}
-			
-			if (countColumn>=columnLimit) return false;
-			
-			if (columnInRange(keycolumn,columnStart,columnEnd,
-					startColumnIncl,endColumnIncl)) {
-				countColumn++;
-				if (countColumn>=columnLimit) {
-					reachedCountLimit=true;
-					if (abortOnLimitExcess) reachedLimit=true;
-				}
-				return true;
-			} else return false;
+            Preconditions.checkArgument(count<limit);
+            if (equalKey(keycolumn, key)) {
+                count++;
+                return true;
+            } else return false;
 		}
 
 		@Override
 		public boolean reachedLimit() {
-			return reachedLimit;
+			return count>=limit;
 		}
-		
-		
-		public boolean reachedCountLimit() {
-			return reachedCountLimit;
-		}
-		
+
 	}
 
 

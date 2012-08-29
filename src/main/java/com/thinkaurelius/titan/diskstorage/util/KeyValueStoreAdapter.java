@@ -34,17 +34,36 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 	public final int getKeyLength() {
 		return keyLength;
 	}
-	
-	protected final ByteBuffer concatenate(ByteBuffer front, ByteBuffer end) {
-		int length = keyLength;
-		if (keyLength>0) { //fixed key length
-			Preconditions.checkArgument(front.remaining()==length);
-		} else { //variable key length
-			length = front.remaining();
-			Preconditions.checkArgument(length<maxVariableKeyLength);
-		}
+
+    public final boolean hasFixedKeyLength() {
+        return keyLength>0;
+    }
+
+
+    protected final int getLength(ByteBuffer key) {
+        int length = keyLength;
+        if (hasFixedKeyLength()) { //fixed key length
+            Preconditions.checkArgument(key.remaining()==length);
+        } else { //variable key length
+            length = key.remaining();
+            Preconditions.checkArgument(length<maxVariableKeyLength);
+        }
+        return length;
+    }
+
+    protected final ByteBuffer concatenate(ByteBuffer front, ByteBuffer end) {
+        return concatenate(front,end,true);
+    }
+
+    protected final ByteBuffer concatenatePrefix(ByteBuffer front, ByteBuffer end) {
+        return concatenate(front,end,false);
+    }
+    
+	private final ByteBuffer concatenate(ByteBuffer front, ByteBuffer end, final boolean appendLength) {
+        final boolean addKeyLength = !hasFixedKeyLength() && appendLength;
+		int length = getLength(front);
 		
-		ByteBuffer result = ByteBuffer.allocate(length + end.remaining() + ((keyLength>0)?0:variableKeyLengthSize));
+		ByteBuffer result = ByteBuffer.allocate(length + end.remaining() + (addKeyLength?variableKeyLengthSize:0));
 		
 		front.mark();
 		result.put(front);
@@ -53,17 +72,17 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 		result.put(end);
 		end.reset();
 		
-		if (keyLength<=0) result.putShort((short)length);
+		if (addKeyLength) result.putShort((short)length);
 		
 		result.flip();
 		front.reset(); end.reset();
 		return result;
 	}
-	
+
 	protected final ByteBuffer getColumn(ByteBuffer concat) {
 		concat.position(getKeyLength(concat));
 		ByteBuffer column = concat.slice();
-		if (keyLength<=0) { //variable key length => remove length at end
+		if (!hasFixedKeyLength()) { //variable key length => remove length at end
 			column.limit(column.limit()-variableKeyLengthSize);
 		}
 		return column;
@@ -71,7 +90,7 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 
 	protected final int getKeyLength(ByteBuffer concat) {
 		int length = keyLength;
-		if (keyLength<=0) { //variable key length
+		if (!hasFixedKeyLength()) { //variable key length
 			length = concat.getShort(concat.limit()-variableKeyLengthSize);
 		}
 		return length;
@@ -95,7 +114,7 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 			ByteBuffer columnEnd, boolean startInc, boolean endInc) {
 		int oldposition = concat.position(), oldlimit = concat.limit();
 		concat.position(getKeyLength(concat));
-		if (keyLength<=0) concat.limit(concat.limit()-variableKeyLengthSize);
+		if (!hasFixedKeyLength()) concat.limit(concat.limit()-variableKeyLengthSize);
 		boolean inrange = 
 				ByteBufferUtil.isSmallerThanWithEqual(columnStart, concat, startInc) &&
 				ByteBufferUtil.isSmallerThanWithEqual(concat, columnEnd, endInc);
@@ -108,8 +127,8 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 
     @Override
     public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh) {
-        if (deletions!=null) delete(key,deletions,txh);
-        if (additions!=null) insert(key,additions,txh);
+        if (deletions!=null && !deletions.isEmpty()) delete(key,deletions,txh);
+        if (additions!=null && !additions.isEmpty()) insert(key,additions,txh);
     }
     
     
