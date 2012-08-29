@@ -25,7 +25,7 @@ public class EdgeListRecordWriter extends RecordWriter<NullWritable, FaunusVerte
         try {
             NEWLINE = Tokens.NEWLINE.getBytes(UTF8);
             TAB = Tokens.TAB.getBytes(UTF8);
-        } catch (UnsupportedEncodingException uee) {
+        } catch (final UnsupportedEncodingException uee) {
             throw new IllegalArgumentException("Can not find " + UTF8 + " encoding");
         }
     }

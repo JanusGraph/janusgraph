@@ -60,19 +60,21 @@ public class GroupCountMapReduce {
                 if (value.hasPaths()) {
                     final Object object = this.keyClosure.call(value);
                     final Number number = (Number) this.valueClosure.call(value);
-                    this.map.incr(object, number.longValue());
+                    this.map.incr(object, number.longValue() + value.pathCount());
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
             } else {
+                long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
                         final Object object = this.keyClosure.call(edge);
                         final Number number = (Number) this.valueClosure.call(edge);
-                        this.map.incr(object, number.longValue());
-                        context.getCounter(Counters.EDGES_PROCESSED).increment(1l);
+                        this.map.incr(object, number.longValue() + edge.pathCount());
+                        edgesProcessed++;
                     }
                 }
+                context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
             }
 
             // protected against memory explosion
