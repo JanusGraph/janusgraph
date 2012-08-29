@@ -30,23 +30,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
 	@Test
 	public void testOpenClose() { }
-	
-    @Test
-    public void testMultipleDatabases() {
-        long memoryBaseline = 0;
-        for (int i=0;i<100;i++) {
-            graphdb.addVertex(null);
-            clopen();
-            if (i==1) {
-                memoryBaseline = MemoryAssess.getMemoryUse();
-                log.debug("Memory before: {}",memoryBaseline/1024);
-            }
-        }
-        close();
-        long memoryAfter = MemoryAssess.getMemoryUse();
-        log.debug("Memory after: {}",memoryAfter/1024);
-        //assertTrue(memoryAfter<100*1024*1024);
-    }
     
     @Test
     public void testBasic() {
@@ -410,6 +393,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		TitanKey weight = makeWeightPropertyKey(etNames[2]);
 		TitanKey id = makeIntegerUIDPropertyKey("uid");
 		TitanLabel knows = makeKeyedEdgeLabel(etNames[3], id, weight);
+        
+        System.out.println(knows.getID());
 		
 		assertEquals(connect,tx.getEdgeLabel(etNames[0]));
 		assertEquals(name,tx.getPropertyKey(etNames[1]));

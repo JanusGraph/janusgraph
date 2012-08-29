@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.relations.persist.PersistSimpleTitanEdge;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.testutil.MemoryAssess;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.apache.commons.configuration.Configuration;
@@ -44,6 +45,23 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 		this.trials = trials;
 		this.tryBatching = tryBatching;
 	}
+
+    @Test
+    public void testMultipleDatabases() {
+        long memoryBaseline = 0;
+        for (int i=0;i<100;i++) {
+            graphdb.addVertex(null);
+            clopen();
+            if (i==1) {
+                memoryBaseline = MemoryAssess.getMemoryUse();
+                log.debug("Memory before: {}",memoryBaseline/1024);
+            }
+        }
+        close();
+        long memoryAfter = MemoryAssess.getMemoryUse();
+        log.debug("Memory after: {}",memoryAfter/1024);
+        //assertTrue(memoryAfter<100*1024*1024);
+    }
 
 	@Test
 	public void vertexCreation() {
