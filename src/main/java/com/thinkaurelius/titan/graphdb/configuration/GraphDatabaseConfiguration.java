@@ -185,6 +185,14 @@ public class GraphDatabaseConfiguration {
     private static final String ATTRIBUTE_PREFIX = "attribute";
     private static final String SERIALIZER_PREFIX = "serializer";
 
+    /**
+     * These are the names for the edge store and property index databases, respectively.
+     * The edge store contains all edges and properties. The property index contains an
+     * inverted index from attribute value to vertex.
+     *
+     * These names are fixed and should NEVER be changed. Changing these strings can
+     * disrupt storage adapters that rely on these names for specific configurations.
+     */
     public static final String STORAGE_EDGESTORE_NAME = "edgestore";
     public static final String STORAGE_PROPERTYINDEX_NAME = "propertyindex";
     
