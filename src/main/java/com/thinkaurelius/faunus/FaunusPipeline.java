@@ -440,8 +440,8 @@ public class FaunusPipeline {
         scriptEngine.eval("gte=" + Query.Compare.class.getName() + ".GREATER_THAN_EQUAL");
 
         scriptEngine.put("g", faunusPipeline);
-        FaunusPipeline pipeline = ((FaunusPipeline) scriptEngine.eval(script)).done();
-        FaunusCompiler compiler = pipeline.compiler;
+        final FaunusPipeline pipeline = ((FaunusPipeline) scriptEngine.eval(script)).done();
+        final FaunusCompiler compiler = pipeline.compiler;
         compiler.completeSequence();
         int result = ToolRunner.run(compiler, args);
         System.exit(result);
