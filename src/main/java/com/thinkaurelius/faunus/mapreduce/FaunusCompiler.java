@@ -17,6 +17,7 @@ import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.LinkMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.SideEffectMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesVerticesMap;
@@ -167,7 +168,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.set(EdgesVerticesMap.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
         this.mapSequenceClasses.add(EdgesVerticesMap.Map.class);
     }
-    
+
     public void propertyMap(final Class<? extends Element> klass, final String key) throws IOException {
         this.completeSequence();
         Configuration conf = new Configuration();
@@ -282,6 +283,13 @@ public class FaunusCompiler extends Configured implements Tool {
     }
 
     ///////////// SIDE-EFFECTS
+
+    public void sideEffect(final Class<? extends Element> klass, final String closure) {
+        this.mapSequenceConfiguration.setClass(SideEffectMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceConfiguration.set(SideEffectMap.CLOSURE + "-" + this.mapSequenceClasses.size(), closure);
+        this.mapSequenceClasses.add(SideEffectMap.Map.class);
+    }
+
 
     public void linkMapReduce(final int step, final Direction direction, final String label, final String mergeWeightKey) throws IOException {
         this.mapSequenceConfiguration.setInt(LinkMapReduce.STEP, step);

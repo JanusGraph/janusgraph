@@ -6,10 +6,13 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ToolRunner;
 import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
@@ -31,6 +34,7 @@ public class FaunusPipeline {
 
     private final FaunusCompiler compiler;
     private final JobState state;
+    private static final ScriptEngine engine = new GremlinGroovyScriptEngine();
 
     private Query.Compare opposite(final Query.Compare compare) {
         if (compare.equals(Query.Compare.EQUAL))
@@ -129,6 +133,7 @@ public class FaunusPipeline {
 
     public FaunusPipeline transform(final String closure) throws IOException {
         this.state.checkLocked();
+        this.validateClosure(closure);
         this.compiler.transform(this.state.getElementType(), closure);
         this.state.lock();
         return this;
@@ -278,6 +283,7 @@ public class FaunusPipeline {
 
     public FaunusPipeline filter(final String closure) {
         this.state.checkLocked();
+        this.validateClosure(closure);
         this.compiler.filterMap(this.state.getElementType(), closure);
         return this;
     }
@@ -317,6 +323,8 @@ public class FaunusPipeline {
 
     public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) throws IOException {
         this.state.checkLocked();
+        this.validateClosure(keyClosure);
+        this.validateClosure(valueClosure);
         this.compiler.groupCountMapReduce(this.state.getElementType(), keyClosure, valueClosure);
         return this;
     }
@@ -335,12 +343,18 @@ public class FaunusPipeline {
 
     //////// SIDEEFFECTS
 
+    public FaunusPipeline sideEffect(final String closure) {
+        this.state.checkLocked();
+        this.validateClosure(closure);
+        this.compiler.sideEffect(this.state.getElementType(), closure);
+        return this;
+    }
+
     public FaunusPipeline as(final String name) {
         this.state.checkLocked();
         this.state.addStep(name);
         return this;
     }
-
 
     public FaunusPipeline linkIn(final String step, final String label, final String mergeWeightKey) throws IOException {
         this.state.checkLocked();
@@ -389,7 +403,7 @@ public class FaunusPipeline {
         return this;
     }
 
-    public FaunusPipeline done() throws IOException {
+    private FaunusPipeline done() throws IOException {
         if (!this.state.isLocked()) {
             final String property = this.state.popProperty();
             if (null != property) {
@@ -398,6 +412,14 @@ public class FaunusPipeline {
             this.state.lock();
         }
         return this;
+    }
+    
+    private void validateClosure(final String closure) {
+        try {
+            this.engine.eval(closure);
+        } catch (ScriptException e) {
+            throw new RuntimeException("The provided closure is in error: " + e.getMessage(), e);
+        }
     }
 
     public static void main(String[] args) throws Exception {
