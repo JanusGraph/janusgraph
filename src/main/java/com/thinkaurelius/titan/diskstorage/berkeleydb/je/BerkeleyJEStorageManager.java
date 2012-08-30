@@ -19,6 +19,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 
@@ -42,6 +43,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
     private final int blockSize;
     
     private final String idManagerTableName;
+    private final ReentrantLock idAcquisitionLock = new ReentrantLock();
 
 	public BerkeleyJEStorageManager(Configuration configuration) {
 		stores = new HashMap<String, BerkeleyJEKeyValueStore>();
@@ -126,21 +128,27 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 	}
 
     @Override
-    public synchronized long[] getIDBlock(int partition) {
+    public long[] getIDBlock(int partition) {
         BerkeleyJEKeyValueStore idDB = openDatabase(idManagerTableName);
         ByteBuffer key = ByteBufferUtil.getIntByteBuffer(partition);
-        BDBTxHandle tx = beginTransaction();
-        ByteBuffer value = idDB.get(key,tx);
-        int counter = 1;
-        if (value!=null) {
-            assert value.remaining()==4;
-            counter = value.getInt();
+        idAcquisitionLock.lock();
+        try {
+            BDBTxHandle tx = beginTransaction();
+            ByteBuffer value = idDB.get(key,tx);
+            int counter = 1;
+            if (value!=null) {
+                assert value.remaining()==4;
+                counter = value.getInt();
+            }
+            Preconditions.checkArgument(Integer.MAX_VALUE-blockSize>counter);
+            int next = counter + blockSize;
+            idDB.insert(new KeyValueEntry(key,ByteBufferUtil.getIntByteBuffer(next)),tx.getTransaction(),true);
+            tx.commit();
+            return new long[]{counter,next};
+        } finally {
+            idAcquisitionLock.unlock();
         }
-        Preconditions.checkArgument(Integer.MAX_VALUE-blockSize>counter);
-        int next = counter + blockSize;
-        idDB.insert(new KeyValueEntry(key,ByteBufferUtil.getIntByteBuffer(next)),tx.getTransaction(),true);
-        tx.commit();
-        return new long[]{counter,next};
+
     }
 
 
