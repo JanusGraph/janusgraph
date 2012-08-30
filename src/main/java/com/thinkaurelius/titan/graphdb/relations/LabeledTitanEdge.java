@@ -18,6 +18,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
+import java.util.Iterator;
 import java.util.Set;
 
 public class LabeledTitanEdge extends SimpleTitanEdge {
@@ -141,12 +142,12 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
 
     @Override
     public Object getProperty(TitanKey key) {
-        try {
-            TitanProperty p = Iterators.getOnlyElement(new SimpleTitanQuery(this).type(key).propertyIterator(), null);
-            if (p==null) return null;
-            else return p.getAttribute();
-        } catch (IllegalArgumentException e) {
-            throw new QueryException("Multiple properties of specified type: " + key,e);
+        Iterator<TitanProperty> iter = new SimpleTitanQuery(this).type(key).propertyIterator();
+        if (!iter.hasNext()) return null;
+        else {
+            Object value = iter.next().getAttribute();
+            if (iter.hasNext()) throw new QueryException("Multiple properties of specified type: " + key);
+            return value;
         }
     }
 
@@ -158,12 +159,12 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
 
     @Override
     public<O> O getProperty(TitanKey key, Class<O> clazz) {
-        try {
-            TitanProperty p = Iterators.getOnlyElement(new SimpleTitanQuery(this).type(key).propertyIterator(), null);
-            if (p==null) return null;
-            else return p.getAttribute(clazz);
-        } catch (IllegalArgumentException e) {
-            throw new QueryException("Multiple properties of specified type: " + key,e);
+        Iterator<TitanProperty> iter = new SimpleTitanQuery(this).type(key).propertyIterator();
+        if (!iter.hasNext()) return null;
+        else {
+            O value = iter.next().getAttribute(clazz);
+            if (iter.hasNext()) throw new QueryException("Multiple properties of specified type: " + key);
+            return value;
         }
     }
 

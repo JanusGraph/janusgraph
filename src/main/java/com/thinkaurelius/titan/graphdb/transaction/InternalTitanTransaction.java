@@ -4,6 +4,7 @@ import cern.colt.list.AbstractLongList;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanQuery;
 import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
@@ -11,7 +12,15 @@ import com.thinkaurelius.titan.graphdb.relations.factory.RelationLoader;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 
 public interface InternalTitanTransaction extends TitanTransaction {
-		
+
+    /**
+     * Verifies that this transaction is open and that all given vertices are contained in this
+     * transaction and available. Throws {@link IllegalArgumentException} if this is not the case.
+     *
+     * @param vertices
+     */
+    void verifyAccess(TitanVertex... vertices);
+    
 	/**
 	 * Returns the storage backend transaction handle issued to this transaction
 	 * @return The storage backend transaction handle issued to this transaction

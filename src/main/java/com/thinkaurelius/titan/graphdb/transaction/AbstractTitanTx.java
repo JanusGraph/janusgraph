@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.graphdb.relations.factory.RelationFactory;
 import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
 import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.factory.VertexFactory;
 import com.thinkaurelius.titan.util.datastructures.Factory;
@@ -82,14 +83,19 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     protected final void verifyWriteAccess(TitanVertex... vertices) {
         if (config.isReadOnly())
             throw new UnsupportedOperationException("Cannot create new entities in read-only transaction");
+        verifyAccess(vertices);
+    }
+
+    @Override
+    public final void verifyAccess(TitanVertex... vertices) {
         verifyOpen();
         for (TitanVertex v : vertices) {
-            if (!this.equals(((InternalTitanVertex)v).getTransaction())) throw new IllegalArgumentException("The vertex is not associated with this transaction ["+v+"]");
-            if (!v.isAvailable()) throw new IllegalArgumentException("The vertex is now longer available ["+v+"]");
+            if (!(v instanceof SystemType) && !this.equals(((InternalTitanVertex)v).getTransaction())) throw new IllegalArgumentException("The vertex or type is not associated with this transaction ["+v+"]");
+            if (!v.isAvailable()) throw new IllegalArgumentException("The vertex or type is now longer available ["+v+"]");
         }
     }
 
-    protected final void verifyOpen() {
+    private final void verifyOpen() {
         if (isClosed())
             throw GraphDatabaseException.transactionNotOpenException();
     }
@@ -124,7 +130,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     @Override
     public boolean containsVertex(long id) {
         verifyOpen();
-        if (vertexCache.contains(id))
+        if (vertexCache.contains(id) && !vertexCache.get(id).isRemoved())
             return true;
         else
             return false;
@@ -146,6 +152,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     private InternalTitanVertex getExisting(long id) {
         synchronized (vertexCache) {
             InternalTitanVertex node = vertexCache.get(id);
+            if (node.isRemoved()) throw new IllegalArgumentException("Vertex has been removed for id: " + id);
             if (node==null) {
                 IDInspector idspec = graphdb.getIDInspector();
 
@@ -166,21 +173,19 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     @Override
     public void deleteVertex(InternalTitanVertex n) {
         verifyWriteAccess(n);
-        boolean removed;
         if (n.hasID()) {
-            removed = vertexCache.remove(n.getID());
+            assert vertexCache.contains(n.getID());
         } else {
+            assert n.isNew();
             if (newNodes.isPresent())
-                removed = newNodes.get().remove(n);
-            else
-                removed = true;
+                assert newNodes.get().contains(n);
+                newNodes.get().remove(n);
         }
-        assert removed;
     }
 
     @Override
     public TitanProperty addProperty(TitanVertex vertex, TitanKey key, Object attribute) {
-        verifyWriteAccess(vertex);
+        verifyWriteAccess(vertex,key);
         // Check that attribute of keyed propertyType is unique and lock if so
         final boolean isUniqueKey = key.isUnique();
         if (isUniqueKey)
@@ -209,7 +214,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
     @Override
     public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, TitanLabel label) {
-        verifyWriteAccess(outVertex,inVertex);
+        verifyWriteAccess(outVertex,inVertex,label);
         InternalRelation e = edgeFactory.createNewRelationship(label, (InternalTitanVertex)outVertex, (InternalTitanVertex)inVertex);
         addedRelation(e);
         return (TitanEdge)e;
@@ -398,7 +403,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
     @Override
     public TitanVertex getVertex(TitanKey key, Object value) {
-        verifyOpen();
+        verifyAccess(key);
         Preconditions.checkNotNull(key);
         Preconditions.checkArgument(key.isUnique(), "Key is not declared unique");
         value = AttributeUtil.prepareAttribute(value, key.getDataType());
@@ -433,7 +438,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
     @Override
     public Iterable<TitanVertex> getVertices(final TitanKey key, Object attribute) {
-        verifyOpen();
+        verifyAccess(key);
         Preconditions.checkNotNull(key);
         attribute = AttributeUtil.prepareAttribute(attribute, key.getDataType());
         if (key.hasIndex()) {

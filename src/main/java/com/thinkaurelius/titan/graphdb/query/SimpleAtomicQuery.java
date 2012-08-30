@@ -153,6 +153,7 @@ public class SimpleAtomicQuery implements AtomicQuery {
 	
     @Override
     public AtomicQuery has(TitanType type, Object value) {
+        tx.verifyAccess(type);
         if (type.isEdgeLabel()) {
             Preconditions.checkArgument(((TitanLabel)type).isUnidirected(),"Only unidirectional edges supported in query constraint.");
             if (value!=null) {
@@ -185,6 +186,7 @@ public class SimpleAtomicQuery implements AtomicQuery {
         Preconditions.checkNotNull(start);
         Preconditions.checkNotNull(end);
         Preconditions.checkNotNull(key);
+        tx.verifyAccess(key);
         Object s = start, e = end;  //stupid javac workaround
         if (key.getDataType().equals(Long.class) && ((s instanceof Integer) || (e instanceof Integer)) ) {
             //Automatic cast in case of correctable type mismatch
@@ -212,6 +214,8 @@ public class SimpleAtomicQuery implements AtomicQuery {
     public<T extends Comparable<T>> AtomicQuery has(TitanKey key, T value, Query.Compare compare) {
         Preconditions.checkNotNull(compare);
         Preconditions.checkNotNull(key);
+        tx.verifyAccess(key);
+
         if (compare==Compare.EQUAL) return has(key,value);
         if (value!=null) {
             Object v = value; //stupid javac workaround
@@ -253,6 +257,8 @@ public class SimpleAtomicQuery implements AtomicQuery {
     @Override
     public SimpleAtomicQuery type(TitanType type) {
         Preconditions.checkNotNull(type);
+        tx.verifyAccess(type);
+
         this.type=type;
         if (type.isEdgeLabel()) {
             edgesOnly();
