@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class LabeledTitanEdge extends SimpleTitanEdge {
 
-	protected AdjacencyList outEdges;
+	protected volatile AdjacencyList outEdges;
     protected final ReentrantLock adjLock = new ReentrantLock();
 
 	public LabeledTitanEdge(TitanLabel type, InternalTitanVertex start,

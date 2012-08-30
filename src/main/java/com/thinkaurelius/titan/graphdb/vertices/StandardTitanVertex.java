@@ -17,8 +17,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class StandardTitanVertex extends AbstractTitanVertex {
 
-	private AdjacencyList inEdges;
-	private AdjacencyList outEdges;
+	private volatile AdjacencyList inEdges;
+	private volatile AdjacencyList outEdges;
     protected final ReentrantLock adjLock = new ReentrantLock();
 
 	

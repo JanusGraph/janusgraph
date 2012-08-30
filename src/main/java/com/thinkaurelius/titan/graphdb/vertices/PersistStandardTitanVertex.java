@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 
 public class PersistStandardTitanVertex extends StandardTitanVertex {
 
-	protected BasicElement entity;
+	protected final BasicElement entity;
 	private LoadingStatus loading;
 	
 	public PersistStandardTitanVertex(InternalTitanTransaction g, AdjacencyListFactory adjList) {
@@ -55,6 +55,7 @@ public class PersistStandardTitanVertex extends StandardTitanVertex {
 	
 	@Override
 	public void loadedEdges(AtomicQuery query) {
+        //Guarded by synchronization on {@link AbstractTitanVertex#ensureLoadedEdges(AtomicQuery)}
 		loading = loading.loadedEdges(query);
 	}
 

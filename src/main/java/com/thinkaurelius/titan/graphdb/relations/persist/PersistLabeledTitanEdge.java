@@ -13,7 +13,7 @@ import com.tinkerpop.blueprints.Direction;
 
 public class PersistLabeledTitanEdge extends LabeledTitanEdge {
 
-	protected BasicElement entity;
+	protected final BasicElement entity;
 	
 	public PersistLabeledTitanEdge(TitanLabel type,
                                    InternalTitanVertex start, InternalTitanVertex end, InternalTitanTransaction tx, AdjacencyListFactory adjList) {

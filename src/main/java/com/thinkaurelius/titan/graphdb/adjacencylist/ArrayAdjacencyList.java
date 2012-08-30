@@ -14,7 +14,7 @@ public class ArrayAdjacencyList implements AdjacencyList {
 	private static final long serialVersionUID = -2868708972683152295L;
 
 	private final ArrayAdjListFactory factory;
-	private InternalRelation[] contents;
+	private volatile InternalRelation[] contents;
 
 	
 	ArrayAdjacencyList(ArrayAdjListFactory factory) {

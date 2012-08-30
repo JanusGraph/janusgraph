@@ -16,7 +16,7 @@ public class SetAdjacencyList implements AdjacencyList {
 
 	
 	private final SetAdjListFactory factory;
-	private Set<InternalRelation> content;
+	private final Set<InternalRelation> content;
 
 	SetAdjacencyList(SetAdjListFactory factory) {
 		this.factory = factory;

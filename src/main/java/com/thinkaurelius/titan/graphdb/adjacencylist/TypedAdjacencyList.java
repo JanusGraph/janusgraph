@@ -14,7 +14,7 @@ public class TypedAdjacencyList implements AdjacencyList {
 
 	
 	private final TypedAdjListFactory factory;
-	private ConcurrentSkipListMap<TitanType,AdjacencyList> content;
+	private final ConcurrentSkipListMap<TitanType,AdjacencyList> content;
 
 	TypedAdjacencyList(TypedAdjListFactory factory) {
 		this.factory = factory;
