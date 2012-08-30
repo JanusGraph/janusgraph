@@ -209,9 +209,6 @@ public class FaunusCompiler extends Configured implements Tool {
         this.setKeyValueClasses(NullWritable.class, Text.class);
     }
 
-    /*public void select(final Class<? extends Element> klass, final int... steps) throws IOException {
-    }*/
-
     ///////////// FILTERS
 
     public void filterMap(final Class<? extends Element> klass, final String closure) {
