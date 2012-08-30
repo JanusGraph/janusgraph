@@ -30,6 +30,8 @@ public class StandardIDPool implements IDPool {
     
     private long bufferNextID;
     private long bufferMaxID;
+
+    private boolean initialized;
     
     public StandardIDPool(IDAuthority idAuthority, long partitionID) {
         Preconditions.checkArgument(partitionID>=0);
@@ -43,8 +45,8 @@ public class StandardIDPool implements IDPool {
         
         bufferNextID = -1;
         bufferMaxID = -1;
-        
-        renewBuffer();
+
+        initialized=false;
     }
     
     private synchronized void nextBlock() throws InterruptedException {
@@ -87,6 +89,11 @@ public class StandardIDPool implements IDPool {
     @Override
     public synchronized long nextID() {
         assert nextID<=maxID;
+        if (!initialized) {
+            renewBuffer();
+            initialized=true;
+        }
+
         if (nextID==maxID) {
             try {
                 nextBlock();
