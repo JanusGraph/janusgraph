@@ -17,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import static com.tinkerpop.blueprints.Direction.BOTH;
 import static com.tinkerpop.blueprints.Direction.IN;
@@ -413,39 +414,65 @@ public class FaunusPipeline {
         }
         return this;
     }
-    
+
     private void validateClosure(final String closure) {
         try {
-            this.engine.eval(closure);
+            engine.eval(closure);
         } catch (ScriptException e) {
             throw new RuntimeException("The provided closure is in error: " + e.getMessage(), e);
         }
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 1 && args.length != 2) {
+        if (args.length < 1 && args.length > 3) {
             System.out.println("Faunus: A Library of Graph-Based Hadoop Tools");
             System.out.println("FaunusPipeline Usage:");
-            System.out.println("  arg1: faunus configuration location (optional - defaults to bin/faunus.properties)");
-            System.out.println("  arg2: faunus script: g.V.step().step()...");
+            System.out.println("  arg1: Faunus configuration location (optional - defaults to bin/faunus.properties)");
+            System.out.println("  arg2: Faunus script: 'g.V.step().step()...'");
+            System.out.println("  arg3: Hadoop specific configurations (optional): '-D mapred.map.tasks=14 mapred.reduce.tasks=6'");
             System.exit(-1);
         }
 
         final String script;
         final String file;
-        final java.util.Properties properties = new java.util.Properties();
+        final Properties configuration = new Properties();
+        final Properties commandLine = new Properties();
         if (args.length == 1) {
             script = args[0];
             file = "bin/faunus.properties";
+        } else if (args.length == 2) {
+            if (args[1].startsWith("-D")) {
+                script = args[0];
+                file = "bin/faunus.properties";
+                for (final String property : args[1].substring(2).trim().split(" ")) {
+                    final String key = property.split("=")[0];
+                    final String value = property.split("=")[1];
+                    //System.out.println(key + "!!!" + value + "!!!");
+                    commandLine.put(key, value);
+                }
+            } else {
+                file = args[0];
+                script = args[1];
+            }
         } else {
             file = args[0];
             script = args[1];
+            for (final String property : args[2].substring(2).trim().split(" ")) {
+                final String key = property.split("=")[0];
+                final String value = property.split("=")[1];
+                //System.out.println(key + "!!!" + value + "!!!");
+                commandLine.put(key, value);
+            }
         }
-        properties.load(new FileInputStream(file));
+
+        configuration.load(new FileInputStream(file));
 
 
         final Configuration conf = new Configuration();
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+        for (Map.Entry<Object, Object> entry : configuration.entrySet()) {
+            conf.set(entry.getKey().toString(), entry.getValue().toString());
+        }
+        for (Map.Entry<Object, Object> entry : commandLine.entrySet()) {
             conf.set(entry.getKey().toString(), entry.getValue().toString());
         }
 
