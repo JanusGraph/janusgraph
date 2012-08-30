@@ -11,8 +11,6 @@ public class RexsterConfiguration {
     public static final String REXSTER_INPUT_SSL = "rexster.input.ssl";
     public static final String REXSTER_INPUT_GRAPH = "rexster.input.graph";
     public static final String REXSTER_INPUT_V_ESTIMATE = "rexster.input.v.estimate";
-    public static final String REXSTER_INPUT_V_BUFFER = "rexster.input.v.buffer";
-    public static final String REXSTER_INPUT_MODE = "rexster.input.mode";
 
     private Configuration conf;
 
@@ -22,10 +20,6 @@ public class RexsterConfiguration {
 
     public Configuration getConf() {
         return conf;
-    }
-
-    public String getMode() {
-        return this.conf.get(REXSTER_INPUT_MODE);
     }
 
     public boolean getSsl() {
@@ -46,10 +40,6 @@ public class RexsterConfiguration {
 
     public int getEstimatedVertexCount() {
         return this.conf.getInt(REXSTER_INPUT_V_ESTIMATE, 10000);
-    }
-
-    public int getRexsterBuffer() {
-        return this.conf.getInt(REXSTER_INPUT_V_BUFFER, 1024);
     }
 
     public String getHttpProtocol() {

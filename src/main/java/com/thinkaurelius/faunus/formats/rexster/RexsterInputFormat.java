@@ -40,7 +40,7 @@ public class RexsterInputFormat extends InputFormat<NullWritable, FaunusVertex> 
                 split = new RexsterInputSplit(i * chunkSize, (i * chunkSize) + chunkSize);
             }
 
-            System.out.println(split);
+            // System.out.println(split);
 
             splits.add(split);
         }

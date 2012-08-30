@@ -10,6 +10,7 @@ import com.tinkerpop.rexster.extension.ExtensionDescriptor;
 import com.tinkerpop.rexster.extension.ExtensionNaming;
 import com.tinkerpop.rexster.extension.ExtensionPoint;
 import com.tinkerpop.rexster.extension.ExtensionResponse;
+import com.tinkerpop.rexster.extension.HttpMethod;
 import com.tinkerpop.rexster.extension.RexsterContext;
 import com.tinkerpop.rexster.util.RequestObjectHelper;
 
@@ -27,12 +28,12 @@ import java.io.OutputStream;
 @ExtensionNaming(namespace = FaunusRexsterExtension.EXTENSION_NAMESPACE, name = FaunusRexsterExtension.EXTENSION_NAME)
 public class FaunusRexsterExtension extends AbstractRexsterExtension {
 
-    public static final String EXTENSION_NAMESPACE = "aurelius";
-    public static final String EXTENSION_NAME = "v";
+    public static final String EXTENSION_NAMESPACE = "faunus";
+    public static final String EXTENSION_NAME = "inputformat";
 
     public static final byte[] LINE_BREAK = "\n".getBytes();
 
-    @ExtensionDefinition(extensionPoint = ExtensionPoint.GRAPH, produces = MediaType.APPLICATION_OCTET_STREAM)
+    @ExtensionDefinition(extensionPoint = ExtensionPoint.GRAPH, produces = MediaType.APPLICATION_OCTET_STREAM, method = HttpMethod.GET)
     @ExtensionDescriptor(description = "streaming vertices for faunus")
     public ExtensionResponse getVertices(@RexsterContext final RexsterResourceContext context,
                                          @RexsterContext final Graph graph) {

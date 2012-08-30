@@ -76,6 +76,8 @@ public class KibbleIterator implements RexsterIterator {
                     this.rexsterConf.getRestStreamEndpoint(), this.start, this.end);
             final URL url = new URL(uri);
             final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(0);
+            connection.setReadTimeout(0);
             connection.setRequestMethod("GET");
 
             // worry about rexster auth later

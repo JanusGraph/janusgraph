@@ -41,16 +41,8 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         this.splitEnd = rexsterInputSplit.getEnd();
         this.splitStart = rexsterInputSplit.getStart();
 
-        if (this.rexsterConf.getMode().equals("rest")) {
-            this.rexsterIterator = new RestIterator(new RexsterVertexLoaderImpl(this.rexsterConf),
-                    rexsterInputSplit.getStart(), rexsterInputSplit.getEnd(), this.rexsterConf.getRexsterBuffer());
-        } else if (this.rexsterConf.getMode().equals("kibble")) {
-            this.rexsterIterator = new KibbleIterator(this.rexsterConf, rexsterInputSplit.getStart(),
+        this.rexsterIterator = new KibbleIterator(this.rexsterConf, rexsterInputSplit.getStart(),
                     rexsterInputSplit.getEnd());
-        } else {
-            throw new RuntimeException(String.format("[%s] is an invalid configuration option for %s",
-                    this.rexsterConf.getMode(), RexsterConfiguration.REXSTER_INPUT_MODE));
-        }
     }
 
     @Override
