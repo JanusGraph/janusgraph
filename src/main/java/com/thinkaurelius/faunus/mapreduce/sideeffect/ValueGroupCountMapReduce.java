@@ -65,7 +65,6 @@ public class ValueGroupCountMapReduce {
             // protected against memory explosion
             if (this.map.size() > 1000) {
                 this.cleanup(context);
-                this.map.clear();
             }
 
         }
@@ -81,6 +80,7 @@ public class ValueGroupCountMapReduce {
                 this.longWritable.set(entry.getValue());
                 context.write(this.textWritable, this.longWritable);
             }
+            this.map.clear();
         }
     }
 
@@ -90,11 +90,11 @@ public class ValueGroupCountMapReduce {
 
         @Override
         public void reduce(final Text key, final Iterable<LongWritable> values, final Reducer<Text, LongWritable, Text, LongWritable>.Context context) throws IOException, InterruptedException {
-            long totalNumberOfEdges = 0;
+            long totalCount = 0;
             for (final LongWritable token : values) {
-                totalNumberOfEdges = totalNumberOfEdges + token.get();
+                totalCount = totalCount + token.get();
             }
-            this.longWritable.set(totalNumberOfEdges);
+            this.longWritable.set(totalCount);
             context.write(key, this.longWritable);
         }
     }

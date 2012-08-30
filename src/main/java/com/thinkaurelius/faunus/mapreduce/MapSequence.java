@@ -1,8 +1,7 @@
 package com.thinkaurelius.faunus.mapreduce;
 
-import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
@@ -17,27 +16,41 @@ public class MapSequence {
 
     public static final String MAP_CLASSES = Tokens.makeNamespace(MapSequence.class) + ".mapClasses";
 
-    public static class Map extends MemoryMapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
+    public static class Map extends MemoryMapper<Writable, Writable, Writable, Writable> {
 
-        private List<Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>> mappers = new ArrayList<Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>>();
-        private List<Method> mapperMethods = new ArrayList<Method>();
+        private List<Mapper<Writable, Writable, Writable, Writable>> mappers = new ArrayList<Mapper<Writable, Writable, Writable, Writable>>();
+        private List<Method> mapMethods = new ArrayList<Method>();
+        private List<Method> cleanupMethods = new ArrayList<Method>();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             try {
                 final MemoryMapContext memoryContext = new MemoryMapContext(context);
-                final String[] classNames = context.getConfiguration().getStrings(MAP_CLASSES);
-                for (int i = 0; i < classNames.length; i++) {
-                    memoryContext.stageConfiguration(i);
-                    final Class<Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>> mapClass = (Class) Class.forName(classNames[i]);
-                    final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapper = mapClass.getConstructor().newInstance();
-                    try {
-                        mapClass.getMethod(Tokens.SETUP, Mapper.Context.class).invoke(mapper, memoryContext);
-                    } catch (NoSuchMethodException e) {
-                        // there is no setup method and that is okay.
+                final String[] mapClassNames = context.getConfiguration().getStrings(MAP_CLASSES, new String[0]);
+                if (mapClassNames.length > 0) {
+                    for (int i = 0; i < mapClassNames.length; i++) {
+                        memoryContext.stageConfiguration(i);
+                        final Class<Mapper<Writable, Writable, Writable, Writable>> mapClass = (Class) Class.forName(mapClassNames[i]);
+                        final Mapper<Writable, Writable, Writable, Writable> mapper = mapClass.getConstructor().newInstance();
+                        try {
+                            mapClass.getMethod(Tokens.SETUP, Mapper.Context.class).invoke(mapper, memoryContext);
+                        } catch (NoSuchMethodException e) {
+                            // there is no setup method and that is okay.
+                        }
+                        this.mappers.add(mapper);
+                        for (final Method method : mapClass.getMethods()) {
+                            if (method.getName().equals(Tokens.MAP)) {
+                                this.mapMethods.add(method);
+                                break;
+                            }
+                        }
+                        try {
+                            this.cleanupMethods.add(mapClass.getMethod(Tokens.CLEANUP, Mapper.Context.class));
+                        } catch (NoSuchMethodException e) {
+                            this.cleanupMethods.add(null);
+                        }
+
                     }
-                    this.mappers.add(mapper);
-                    this.mapperMethods.add(mapClass.getMethod(Tokens.MAP, NullWritable.class, FaunusVertex.class, Mapper.Context.class));
                 }
             } catch (Exception e) {
                 throw new IOException(e);
@@ -46,25 +59,45 @@ public class MapSequence {
 
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final Writable key, final Writable value, final Mapper<Writable, Writable, Writable, Writable>.Context context) throws IOException, InterruptedException {
             try {
+                final int size = this.mappers.size();
+
+                Writable currentKey = key;
+                Writable currentValue = value;
+
                 final MemoryMapContext memoryContext = new MemoryMapContext(context);
-                memoryContext.setCurrentValue(value);
-                for (int i = 0; i < this.mappers.size(); i++) {
-                    memoryContext.setWasWritten(false);
-                    this.mapperMethods.get(i).invoke(this.mappers.get(i), key, memoryContext.getCurrentValue(), memoryContext);
-                    if (!memoryContext.wasWritten())
+                for (int i = 0; i < size - 1; i++) {
+                    final Mapper mapper = this.mappers.get(i);
+                    final Method map = this.mapMethods.get(i);
+                    final Method cleanup = this.cleanupMethods.get(i);
+
+                    map.invoke(mapper, currentKey, currentValue, memoryContext);
+                    if (!memoryContext.nextKeyValue()) {
+                        currentKey = null;
+                        currentValue = null;
                         break;
-                    memoryContext.reset();
+                    } else {
+                        currentKey = memoryContext.getCurrentKey();
+                        currentValue = memoryContext.getCurrentValue();
+                    }
+                    if (null != cleanup)
+                        cleanup.invoke(mapper, memoryContext);
                 }
 
-                if (memoryContext.wasWritten())
-                    context.write(NullWritable.get(), memoryContext.getCurrentValue());
+                if (currentKey != null && currentValue != null) {
+                    final Mapper mapper = this.mappers.get(size - 1);
+                    final Method map = this.mapMethods.get(size - 1);
+                    final Method cleanup = this.cleanupMethods.get(size - 1);
+
+                    map.invoke(mapper, currentKey, currentValue, context);
+                    if (null != cleanup)
+                        cleanup.invoke(mapper, context);
+                }
 
             } catch (Exception e) {
                 throw new IOException(e.getMessage(), e);
             }
         }
-
     }
 }

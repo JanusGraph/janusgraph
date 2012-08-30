@@ -1,14 +1,15 @@
 package com.thinkaurelius.faunus.mapreduce;
 
-import com.thinkaurelius.faunus.FaunusVertex;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -22,11 +23,10 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
 
         private final Configuration currentConfiguration = new Configuration();
 
-        private FaunusVertex value;
+        private Queue<Writable> keys = new LinkedList<Writable>();
+        private Queue<Writable> values = new LinkedList<Writable>();
         private Mapper.Context context;
-        private boolean locked = false;
         private Configuration globalConfiguration;
-        private boolean wasWritten = false;
 
         public MemoryMapContext(final Mapper.Context context) throws IOException, InterruptedException {
             super(context.getConfiguration(), context.getTaskAttemptID() == null ? new TaskAttemptID() : context.getTaskAttemptID(), null, null, context.getOutputCommitter(), null, context.getInputSplit());
@@ -36,44 +36,23 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
 
         @Override
         public void write(final Object key, final Object value) throws IOException, InterruptedException {
-            this.value = (FaunusVertex) value;
-            this.wasWritten = true;
+            this.keys.add((Writable) key);
+            this.values.add((Writable) value);
         }
 
         @Override
-        public FaunusVertex getCurrentValue() {
-            return this.value;
+        public Writable getCurrentKey() {
+            return this.keys.remove();
         }
 
         @Override
-        public NullWritable getCurrentKey() {
-            return NullWritable.get();
+        public Writable getCurrentValue() {
+            return this.values.remove();
         }
 
         @Override
         public boolean nextKeyValue() {
-            if (this.locked)
-                return false;
-            else {
-                this.locked = true;
-                return true;
-            }
-        }
-
-        public boolean wasWritten() {
-            return this.wasWritten;
-        }
-
-        public void setWasWritten(final boolean wasWritten) {
-            this.wasWritten = wasWritten;
-        }
-
-        public void reset() {
-            this.locked = false;
-        }
-
-        public void setCurrentValue(final FaunusVertex value) {
-            this.value = value;
+            return !this.keys.isEmpty() && !this.values.isEmpty();
         }
 
         @Override
@@ -98,16 +77,6 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
                 if (key.endsWith(DASH + step)) {
                     this.currentConfiguration.set(key.replace(DASH + step, EMPTY), entry.getValue());
                 } else if (!key.matches(".*-[0-9]+")) {
-                    this.currentConfiguration.set(key, entry.getValue());
-                }
-            }
-        }
-
-        public void stageConfiguration() {
-            this.currentConfiguration.clear();
-            for (final Map.Entry<String, String> entry : this.globalConfiguration) {
-                final String key = entry.getKey();
-                if (!key.matches(".*-[0-9]+")) {
                     this.currentConfiguration.set(key, entry.getValue());
                 }
             }

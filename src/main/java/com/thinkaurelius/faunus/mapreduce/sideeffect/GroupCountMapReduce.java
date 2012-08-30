@@ -80,7 +80,6 @@ public class GroupCountMapReduce {
             // protected against memory explosion
             if (this.map.size() > 1000) {
                 this.cleanup(context);
-                this.map.clear();
             }
         }
 
@@ -96,6 +95,7 @@ public class GroupCountMapReduce {
                 this.longWritable.set(entry.getValue());
                 context.write(this.textWritable, this.longWritable);
             }
+            this.map.clear();
         }
 
     }

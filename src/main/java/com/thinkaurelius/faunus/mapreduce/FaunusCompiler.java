@@ -1,7 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce;
 
 import com.thinkaurelius.faunus.FaunusConfiguration;
-import com.thinkaurelius.faunus.FaunusPipeline;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
@@ -46,10 +45,12 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -79,8 +80,13 @@ public class FaunusCompiler extends Configured implements Tool {
 
     private final Configuration mapSequenceConfiguration = new Configuration();
     private final List<Class<? extends Mapper>> mapSequenceClasses = new ArrayList<Class<? extends Mapper>>();
-    private Class mapRClass = null;
-    private Class reduceClass = null;
+    private Class<? extends WritableComparable> mapOutputKey = NullWritable.class;
+    private Class<? extends WritableComparable> mapOutputValue = NullWritable.class;
+    private Class<? extends WritableComparable> outputKey = NullWritable.class;
+    private Class<? extends WritableComparable> outputValue = NullWritable.class;
+
+    private Class<? extends Reducer> combinerClass = null;
+    private Class<? extends Reducer> reduceClass = null;
 
 
     private static final Class<? extends InputFormat> INTERMEDIATE_INPUT_FORMAT = SequenceFileInputFormat.class;
@@ -97,8 +103,7 @@ public class FaunusCompiler extends Configured implements Tool {
         for (final Class klass : this.mapSequenceClasses) {
             list.add(klass.getCanonicalName());
         }
-        if (null != mapRClass && null != reduceClass) {
-            list.add(this.mapRClass.getCanonicalName());
+        if (null != reduceClass) {
             list.add(this.reduceClass.getCanonicalName());
         }
         return sequenceClass.getSimpleName() + list.toString();
@@ -112,23 +117,38 @@ public class FaunusCompiler extends Configured implements Tool {
         return list.toArray(new String[list.size()]);
     }
 
+    private void setKeyValueClasses(final Class<? extends WritableComparable> mapOutputKey,
+                                    final Class<? extends WritableComparable> mapOutputValue,
+                                    final Class<? extends WritableComparable> outputKey,
+                                    final Class<? extends WritableComparable> outputValue) {
+
+        this.mapOutputKey = mapOutputKey;
+        this.mapOutputValue = mapOutputValue;
+        this.outputKey = outputKey;
+        this.outputValue = outputValue;
+    }
+
+    private void setKeyValueClasses(final Class<? extends WritableComparable> mapOutputKey,
+                                    final Class<? extends WritableComparable> mapOutputValue) {
+
+        this.mapOutputKey = mapOutputKey;
+        this.mapOutputValue = mapOutputValue;
+        this.outputKey = mapOutputKey;
+        this.outputValue = mapOutputValue;
+    }
+
     ///////////// TRANSFORMS
 
-    public void transform(final Class<? extends Element> klass, final String function) throws IOException {
-        this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.set(TransformMap.CLOSURE, function);
-        conf.setClass(TransformMap.CLASS, klass, Element.class);
-        final Job job = new Job(conf, TransformMap.class.getCanonicalName());
-        job.setMapperClass(TransformMap.Map.class);
-        job.setMapOutputKeyClass(NullWritable.class);
-        job.setMapOutputValueClass(Text.class);
-        this.configureStatisticsJob(job);
-        this.jobs.add(job);
+    public void transform(final Class<? extends Element> klass, final String closure) throws IOException {
+        this.mapSequenceConfiguration.setClass(TransformMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceConfiguration.set(TransformMap.CLOSURE + "-" + this.mapSequenceClasses.size(), closure);
+        this.mapSequenceClasses.add(TransformMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
     public void _() {
         this.mapSequenceClasses.add(IdentityMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
     public void vertexMap(final long... ids) {
@@ -138,74 +158,58 @@ public class FaunusCompiler extends Configured implements Tool {
         }
         this.mapSequenceConfiguration.setStrings(VertexMap.IDS + "-" + this.mapSequenceClasses.size(), idStrings);
         this.mapSequenceClasses.add(VertexMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
     public void verticesMap() {
         this.mapSequenceClasses.add(VerticesMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
     public void edgesMap() {
         this.mapSequenceClasses.add(EdgesMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
     public void verticesVerticesMapReduce(final Direction direction, final String... labels) throws IOException {
-        this.mapSequenceConfiguration.set(VerticesVerticesMapReduce.DIRECTION, direction.name());
-        this.mapSequenceConfiguration.setStrings(VerticesVerticesMapReduce.LABELS, labels);
-        this.mapRClass = VerticesVerticesMapReduce.Map.class;
+        this.mapSequenceConfiguration.set(VerticesVerticesMapReduce.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
+        this.mapSequenceConfiguration.setStrings(VerticesVerticesMapReduce.LABELS + "-" + this.mapSequenceClasses.size(), labels);
+        this.mapSequenceClasses.add(VerticesVerticesMapReduce.Map.class);
         this.reduceClass = VerticesVerticesMapReduce.Reduce.class;
+        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
     }
 
     public void verticesEdgesMapReduce(final Direction direction, final String... labels) throws IOException {
-        this.mapSequenceConfiguration.set(VerticesEdgesMapReduce.DIRECTION, direction.name());
-        this.mapSequenceConfiguration.setStrings(VerticesEdgesMapReduce.LABELS, labels);
-        this.mapRClass = VerticesEdgesMapReduce.Map.class;
+        this.mapSequenceConfiguration.set(VerticesEdgesMapReduce.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
+        this.mapSequenceConfiguration.setStrings(VerticesEdgesMapReduce.LABELS + "-" + this.mapSequenceClasses.size(), labels);
+        this.mapSequenceClasses.add(VerticesEdgesMapReduce.Map.class);
         this.reduceClass = VerticesEdgesMapReduce.Reduce.class;
+        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
     }
 
     public void edgesVerticesMap(final Direction direction) throws IOException {
         this.mapSequenceConfiguration.set(EdgesVerticesMap.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
         this.mapSequenceClasses.add(EdgesVerticesMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
     public void propertyMap(final Class<? extends Element> klass, final String key) throws IOException {
-        this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.setClass(PropertyMap.CLASS, klass, Element.class);
-        conf.set(PropertyMap.KEY, key);
-        final Job job = new Job(conf, PropertyMap.class.getCanonicalName());
-        job.setMapperClass(PropertyMap.Map.class);
-        job.setMapOutputKeyClass(NullWritable.class);
-        job.setMapOutputValueClass(Text.class);
-        this.configureStatisticsJob(job);
-        this.jobs.add(job);
+        this.mapSequenceConfiguration.setClass(PropertyMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceConfiguration.set(PropertyMap.KEY + "-" + this.mapSequenceClasses.size(), key);
+        this.mapSequenceClasses.add(PropertyMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, Text.class);
     }
 
 
     public void pathMap(final Class<? extends Element> klass) throws IOException {
-        this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.setClass(PathMap.CLASS, klass, Element.class);
-        final Job job = new Job(conf, PathMap.class.getCanonicalName());
-        job.setMapperClass(PathMap.Map.class);
-        job.setMapOutputKeyClass(NullWritable.class);
-        job.setMapOutputValueClass(Text.class);
-        this.configureStatisticsJob(job);
-        this.jobs.add(job);
+        this.mapSequenceConfiguration.setClass(PathMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceClasses.add(PathMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, Text.class);
     }
 
     /*public void select(final Class<? extends Element> klass, final int... steps) throws IOException {
-        this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.setClass(SelectMap.CLASS, klass, Element.class);
-        conf.setStrings(SelectMap.STEPS, steps);
-        final Job job = new Job(conf, SelectMap.class.getCanonicalName());
-        job.setMapperClass(SelectMap.Map.class);
-        job.setMapOutputKeyClass(NullWritable.class);
-        job.setMapOutputValueClass(Text.class);
-        this.configureStatisticsJob(job);
-        this.jobs.add(job);
     }*/
 
     ///////////// FILTERS
@@ -218,6 +222,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.setClass(FilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceConfiguration.set(FilterMap.CLOSURE + "-" + this.mapSequenceClasses.size(), closure);
         this.mapSequenceClasses.add(FilterMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
     public void propertyFilterMap(final Class<? extends Element> klass, final boolean nullIsWildcard, final String key, final Query.Compare compare, final Object... values) {
@@ -240,6 +245,7 @@ public class FaunusCompiler extends Configured implements Tool {
             throw new RuntimeException("Unknown value class: " + values[0].getClass().getName());
         }
         this.mapSequenceClasses.add(PropertyFilterMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
     public void intervalFilterMap(final Class<? extends Element> klass, final boolean nullIsWildcard, final String key, final Object startValue, final Object endValue) {
@@ -263,13 +269,16 @@ public class FaunusCompiler extends Configured implements Tool {
         }
 
         this.mapSequenceClasses.add(IntervalFilterMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
     public void backFilterMapReduce(final Class<? extends Element> klass, final int step) throws IOException {
-        this.mapSequenceConfiguration.setInt(BackFilterMapReduce.STEP, step);
-        this.mapSequenceConfiguration.setClass(BackFilterMapReduce.CLASS, klass, Element.class);
-        this.mapRClass = BackFilterMapReduce.Map.class;
+        this.mapSequenceConfiguration.setInt(BackFilterMapReduce.STEP + "-" + this.mapSequenceClasses.size(), step);
+        this.mapSequenceConfiguration.setClass(BackFilterMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceClasses.add(BackFilterMapReduce.Map.class);
         this.reduceClass = BackFilterMapReduce.Reduce.class;
+
+        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
     }
 
@@ -280,6 +289,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
         this.mapSequenceConfiguration.setClass(DuplicateFilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceClasses.add(DuplicateFilterMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
     ///////////// SIDE-EFFECTS
@@ -288,140 +298,98 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.setClass(SideEffectMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceConfiguration.set(SideEffectMap.CLOSURE + "-" + this.mapSequenceClasses.size(), closure);
         this.mapSequenceClasses.add(SideEffectMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
 
     public void linkMapReduce(final int step, final Direction direction, final String label, final String mergeWeightKey) throws IOException {
-        this.mapSequenceConfiguration.setInt(LinkMapReduce.STEP, step);
-        this.mapSequenceConfiguration.set(LinkMapReduce.DIRECTION, direction.name());
-        this.mapSequenceConfiguration.set(LinkMapReduce.LABEL, label);
+        this.mapSequenceConfiguration.setInt(LinkMapReduce.STEP + "-" + this.mapSequenceClasses.size(), step);
+        this.mapSequenceConfiguration.set(LinkMapReduce.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
+        this.mapSequenceConfiguration.set(LinkMapReduce.LABEL + "-" + this.mapSequenceClasses.size(), label);
         if (null == mergeWeightKey) {
-            this.mapSequenceConfiguration.setBoolean(LinkMapReduce.MERGE_DUPLICATES, false);
-            this.mapSequenceConfiguration.set(LinkMapReduce.MERGE_WEIGHT_KEY, LinkMapReduce.NO_WEIGHT_KEY);
+            this.mapSequenceConfiguration.setBoolean(LinkMapReduce.MERGE_DUPLICATES + "-" + this.mapSequenceClasses.size(), false);
+            this.mapSequenceConfiguration.set(LinkMapReduce.MERGE_WEIGHT_KEY + "-" + this.mapSequenceClasses.size(), LinkMapReduce.NO_WEIGHT_KEY);
         } else {
-            this.mapSequenceConfiguration.setBoolean(LinkMapReduce.MERGE_DUPLICATES, true);
-            this.mapSequenceConfiguration.set(LinkMapReduce.MERGE_WEIGHT_KEY, mergeWeightKey);
+            this.mapSequenceConfiguration.setBoolean(LinkMapReduce.MERGE_DUPLICATES + "-" + this.mapSequenceClasses.size(), true);
+            this.mapSequenceConfiguration.set(LinkMapReduce.MERGE_WEIGHT_KEY + "-" + this.mapSequenceClasses.size(), mergeWeightKey);
         }
-        this.mapRClass = LinkMapReduce.Map.class;
+        this.mapSequenceClasses.add(LinkMapReduce.Map.class);
         this.reduceClass = LinkMapReduce.Reduce.class;
+        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
     }
 
     public void commitEdgesMap(final Tokens.Action action) {
         this.mapSequenceConfiguration.set(CommitEdgesMap.ACTION + "-" + mapSequenceClasses.size(), action.name());
         this.mapSequenceClasses.add(CommitEdgesMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
     public void commitVerticesMapReduce(final Tokens.Action action) throws IOException {
-        this.mapSequenceConfiguration.set(CommitVerticesMapReduce.ACTION, action.name());
-        this.mapRClass = CommitVerticesMapReduce.Map.class;
+        this.mapSequenceConfiguration.set(CommitVerticesMapReduce.ACTION + "-" + mapSequenceClasses.size(), action.name());
+        this.mapSequenceClasses.add(CommitVerticesMapReduce.Map.class);
         this.reduceClass = CommitVerticesMapReduce.Reduce.class;
+        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
     }
 
     public void valueDistribution(final Class<? extends Element> klass, final String property) throws IOException {
+        this.mapSequenceConfiguration.setClass(ValueGroupCountMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceConfiguration.set(ValueGroupCountMapReduce.PROPERTY + "-" + this.mapSequenceClasses.size(), property);
+        this.mapSequenceClasses.add(ValueGroupCountMapReduce.Map.class);
+        this.combinerClass = ValueGroupCountMapReduce.Reduce.class;
+        this.reduceClass = ValueGroupCountMapReduce.Reduce.class;
+        this.setKeyValueClasses(Text.class, LongWritable.class, Text.class, LongWritable.class);
         this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.set(ValueGroupCountMapReduce.CLASS, klass.getName());
-        conf.set(ValueGroupCountMapReduce.PROPERTY, property);
-        final Job job = new Job(conf, ValueGroupCountMapReduce.class.getCanonicalName());
-        job.setMapperClass(ValueGroupCountMapReduce.Map.class);
-        job.setReducerClass(ValueGroupCountMapReduce.Reduce.class);
-        job.setCombinerClass(ValueGroupCountMapReduce.Reduce.class);
-        job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(LongWritable.class);
-        job.setOutputKeyClass(Text.class);
-        job.setOutputKeyClass(LongWritable.class);
-        this.configureStatisticsJob(job);
-        this.jobs.add(job);
     }
 
     public void groupCountMapReduce(final Class<? extends Element> klass, final String keyClosure, final String valueClosure) throws IOException {
+        this.mapSequenceConfiguration.setClass(GroupCountMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceConfiguration.set(GroupCountMapReduce.KEY_FUNCTION + "-" + this.mapSequenceClasses.size(), keyClosure);
+        this.mapSequenceConfiguration.set(GroupCountMapReduce.VALUE_FUNCTION + "-" + this.mapSequenceClasses.size(), valueClosure);
+        this.mapSequenceClasses.add(GroupCountMapReduce.Map.class);
+        this.combinerClass = GroupCountMapReduce.Reduce.class;
+        this.reduceClass = GroupCountMapReduce.Reduce.class;
+        this.setKeyValueClasses(Text.class, LongWritable.class, Text.class, LongWritable.class);
         this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.set(GroupCountMapReduce.CLASS, klass.getName());
-        conf.set(GroupCountMapReduce.KEY_FUNCTION, keyClosure);
-        conf.set(GroupCountMapReduce.VALUE_FUNCTION, valueClosure);
-        final Job job = new Job(conf, GroupCountMapReduce.class.getCanonicalName());
-        job.setMapperClass(GroupCountMapReduce.Map.class);
-        job.setReducerClass(GroupCountMapReduce.Reduce.class);
-        job.setCombinerClass(GroupCountMapReduce.Reduce.class);
-        job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(LongWritable.class);
-        job.setOutputKeyClass(Text.class);
-        job.setOutputKeyClass(LongWritable.class);
-        this.configureStatisticsJob(job);
-        this.jobs.add(job);
     }
 
     /////////////////// EXTRA
 
     public void countMapReduce(final Class<? extends Element> klass) throws IOException {
+        this.mapSequenceConfiguration.setClass(CountMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceClasses.add(CountMapReduce.Map.class);
+        this.reduceClass = CountMapReduce.Reduce.class;
+        this.setKeyValueClasses(IntWritable.class, LongWritable.class, IntWritable.class, Text.class);
         this.completeSequence();
-        Configuration conf = new Configuration();
-        conf.set(CountMapReduce.CLASS, klass.getName());
-        final Job job = new Job(conf, CountMapReduce.class.getCanonicalName());
-        job.setMapperClass(CountMapReduce.Map.class);
-        job.setReducerClass(CountMapReduce.Reduce.class);
-        job.setMapOutputKeyClass(IntWritable.class);
-        job.setMapOutputValueClass(LongWritable.class);
-        job.setOutputKeyClass(IntWritable.class);
-        job.setOutputKeyClass(Text.class);
-        this.configureStatisticsJob(job);
-        this.jobs.add(job);
     }
 
     /////////////////////////////// UTILITIES
 
 
     public void completeSequence() throws IOException {
-        if (this.mapRClass != null && this.reduceClass != null) {
-            this.mapSequenceConfiguration.set(MapReduceSequence.MAPR_CLASS, this.mapRClass.getName());
-            this.mapSequenceConfiguration.set(MapReduceSequence.REDUCE_CLASS, this.reduceClass.getName());
-            if (this.mapSequenceClasses.size() > 0) {
-                this.mapSequenceConfiguration.setStrings(MapReduceSequence.MAP_CLASSES, toStringMapSequenceClasses());
-            }
-            final Job job = new Job(this.mapSequenceConfiguration, this.toStringOfJob(MapReduceSequence.class));
-            job.setMapperClass(MapReduceSequence.Map.class);
-            job.setReducerClass(MapReduceSequence.Reduce.class);
-            this.configureMapReduceJob(job);
+        if (this.mapSequenceClasses.size() > 0) {
+            this.mapSequenceConfiguration.setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
+            final Job job = new Job(this.mapSequenceConfiguration, this.toStringOfJob(MapSequence.class));
+            job.setJarByClass(FaunusCompiler.class);
+            job.setMapperClass(MapSequence.Map.class);
+            if (this.reduceClass != null)
+                job.setReducerClass(this.reduceClass);
+            if (this.combinerClass != null)
+                job.setCombinerClass(this.combinerClass);
+            job.setMapOutputKeyClass(this.mapOutputKey);
+            job.setMapOutputValueClass(this.mapOutputValue);
+            job.setOutputKeyClass(this.outputKey);
+            job.setOutputValueClass(this.outputValue);
+            if (!(this.outputKey.equals(NullWritable.class) && this.outputValue.equals(FaunusVertex.class)))
+                this.derivationJob = false;
             this.jobs.add(job);
 
-        } else {
-            if (this.mapSequenceClasses.size() > 0) {
-                this.mapSequenceConfiguration.setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
-                final Job job = new Job(this.mapSequenceConfiguration, this.toStringOfJob(MapSequence.class));
-                job.setMapperClass(MapSequence.Map.class);
-                this.configureMapJob(job);
-                this.jobs.add(job);
-            }
+            this.mapSequenceConfiguration.clear();
+            this.mapSequenceClasses.clear();
+            this.combinerClass = null;
+            this.reduceClass = null;
         }
-
-        this.mapRClass = null;
-        this.reduceClass = null;
-        this.mapSequenceClasses.clear();
-        this.mapSequenceConfiguration.clear();
-    }
-
-    private void configureMapJob(final Job job) {
-        job.setJarByClass(FaunusPipeline.class);
-        job.setMapOutputKeyClass(NullWritable.class);
-        job.setMapOutputValueClass(FaunusVertex.class);
-        job.setOutputKeyClass(NullWritable.class);
-        job.setOutputValueClass(FaunusVertex.class);
-    }
-
-    private void configureMapReduceJob(final Job job) {
-        job.setJarByClass(FaunusPipeline.class);
-        job.setMapOutputKeyClass(LongWritable.class);
-        job.setMapOutputValueClass(Holder.class);
-        job.setOutputKeyClass(NullWritable.class);
-        job.setOutputValueClass(FaunusVertex.class);
-    }
-
-    private void configureStatisticsJob(final Job job) {
-        job.setJarByClass(FaunusPipeline.class);
-        this.derivationJob = false;
     }
 
     public void composeJobs() throws IOException {
@@ -460,8 +428,6 @@ public class FaunusCompiler extends Configured implements Tool {
             } else {
                 FileOutputFormat.setOutputPath(startJob, this.configuration.getOutputLocation());
                 startJob.setOutputFormatClass(this.derivationJob ? this.configuration.getGraphOutputFormat() : this.configuration.getStatisticsOutputFormat());
-
-
             }
 
             if (this.jobs.size() > 2) {
@@ -508,13 +474,14 @@ public class FaunusCompiler extends Configured implements Tool {
                 hdfs.delete(this.configuration.getOutputLocation(), true);
             }
         }
+        logger.info("Faunus: A Library of Hadoop-Based Graph Tools");
         logger.info("        ,");
         logger.info("    ,   |\\ ,__");
         logger.info("    |\\   \\/   `\\");
         logger.info("    \\ `-.:.     `\\");
         logger.info("     `-.__ `\\/\\/\\|");
         logger.info("        / `'/ () \\");
-        logger.info("      .'   /\\     )  Faunus: A Library of Hadoop-Based Graph Tools");
+        logger.info("      .'   /\\     )");
         logger.info("   .-'  .'| \\  \\__");
         logger.info(" .'  __(  \\  '`(()");
         logger.info("/_.'`  `.  |    )(");

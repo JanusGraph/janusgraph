@@ -1,56 +1,84 @@
 package com.thinkaurelius.faunus.mapreduce;
 
 import com.thinkaurelius.faunus.BaseTest;
-import com.thinkaurelius.faunus.FaunusVertex;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class MapSequenceTest extends BaseTest {
-    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
+
+    MapReduceDriver<Writable, Writable, Writable, Writable, Writable, Writable> mapReduceDriver;
 
     public void setUp() throws Exception {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
+        mapReduceDriver = new MapReduceDriver<Writable, Writable, Writable, Writable, Writable, Writable>();
         mapReduceDriver.setMapper(new MapSequence.Map());
-        mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
+       // mapReduceDriver.setReducer(new MapReduceSequence.Reduce());
     }
 
     public void testTrue() {
         assertTrue(true);
     }
 
-    /*public void testLongSequence() throws Exception {
-
+    /*public void testVertexFiltering() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(KeyFilter.KEYS + "-2", "name");
-        config.set(KeyFilter.ACTION + "-2", Tokens.Action.DROP.name());
-        config.set(KeyFilter.CLASS + "-2", Vertex.class.getName());
-        config.setStrings(MapSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), KeyFilter.Map.class.getName());
+        config.set(VertexValueFilter.KEY, "age");
+        config.set(VertexValueFilter.COMPARE, Query.Compare.LESS_THAN.name());
+        config.set(VertexValueFilter.VALUES, "30");
+        config.set(VertexValueFilter.VALUE_CLASS, Float.class.getName());
+        config.setStrings(MapReduceSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), Identity.Map.class.getName());
+        config.set(MapReduceSequence.MAPR_CLASS, VertexValueFilter.Map.class.getName());
+        config.set(MapReduceSequence.REDUCE_CLASS, VertexValueFilter.Reduce.class.getName());
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
-        assertEquals(results.size(), 6);
-        for (FaunusVertex vertex : results.values()) {
-            assertNull(vertex.getProperty("name"));
-            assertFalse(vertex.getPropertyKeys().contains("name"));
-            assertEquals(vertex.getPropertyKeys().size(), 1);
-        }
+        assertEquals(results.size(), 2);
+        assertTrue(results.containsKey(1l));
+        assertTrue(results.containsKey(2l));
     }
 
-    public void testBadSequenceId() throws Exception {
+    public void testMapReduceOneJob() throws IOException {
         Configuration config = new Configuration();
-        config.setStrings(KeyFilter.KEYS + "-3", "name"); // should be 2
-        config.set(KeyFilter.ACTION + "-3", Tokens.Action.DROP.name());
-        config.set(KeyFilter.CLASS + "-3", Vertex.class.getName());
-        config.setStrings(MapSequence.MAP_CLASSES, Identity.Map.class.getName(), Identity.Map.class.getName(), KeyFilter.Map.class.getName());
+        config.set(VertexValueFilter.KEY, "age");
+        config.set(VertexValueFilter.COMPARE, Query.Compare.LESS_THAN.name());
+        config.set(VertexValueFilter.VALUES, "30");
+        config.set(VertexValueFilter.VALUE_CLASS, Float.class.getName());
+        config.set(MapReduceSequence.MAPR_CLASS, VertexValueFilter.Map.class.getName());
+        config.set(MapReduceSequence.REDUCE_CLASS, VertexValueFilter.Reduce.class.getName());
         this.mapReduceDriver.withConfiguration(config);
-        try {
-            final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
-            assertFalse(true);
-        } catch (IOException e) {
-            assertTrue(true);
+        final Map<Long, FaunusVertex> results = runWithToyGraph(BaseTest.ExampleGraph.TINKERGRAPH, this.mapReduceDriver);
+        assertEquals(results.size(), 2);
+        assertTrue(results.containsKey(1l));
+        assertTrue(results.containsKey(2l));
+    }
+
+    public void testMapReduceLabelFilterTraverse() throws IOException {
+        Configuration config = new Configuration();
+        config.set(LabelFilter.ACTION + "-0", Tokens.Action.KEEP.name());
+        config.setStrings(LabelFilter.LABELS + "-0", "father");
+
+        config.setStrings(CloseTriangle.FIRST_LABELS, "father");
+        config.setStrings(CloseTriangle.SECOND_LABELS, "father");
+        config.set(CloseTriangle.NEW_LABEL, "grandfather");
+        config.set(CloseTriangle.FIRST_DIRECTION, OUT.toString());
+        config.set(CloseTriangle.SECOND_DIRECTION, OUT.toString());
+        config.set(CloseTriangle.FIRST_ACTION, Tokens.Action.DROP.toString());
+        config.set(CloseTriangle.SECOND_ACTION, Tokens.Action.DROP.toString());
+        config.set(CloseTriangle.NEW_DIRECTION, Direction.OUT.name());
+
+        config.setStrings(MapReduceSequence.MAP_CLASSES, LabelFilter.Map.class.getName());
+        config.set(MapReduceSequence.MAPR_CLASS, CloseTriangle.Map.class.getName());
+        config.set(MapReduceSequence.REDUCE_CLASS, CloseTriangle.Reduce.class.getName());
+
+        this.mapReduceDriver.withConfiguration(config);
+        final Map<Long, FaunusVertex> results = runWithToyGraph(ExampleGraph.GRAPH_OF_THE_GODS, this.mapReduceDriver);
+        int count = 0;
+        for (Vertex vertex : results.values()) {
+            if (vertex.getEdges(Direction.BOTH).iterator().hasNext()) {
+                count++;
+                assertEquals(vertex.getEdges(Direction.BOTH).iterator().next().getLabel(), "grandfather");
+            }
         }
-    }*/
+        assertEquals(count, 2);
+    } */
 }
