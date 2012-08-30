@@ -9,6 +9,8 @@ import com.thinkaurelius.titan.diskstorage.util.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.idassigner.DefaultIDBlockSizer;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
@@ -40,8 +42,9 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 	private final boolean transactional;
 	private final boolean isReadOnly;
 	private final boolean batchLoading;
-    private final int blockSize;
-    
+
+    private IDBlockSizer blockSizer;
+    private volatile boolean hasActiveIDAcquisition;
     private final String idManagerTableName;
     private final ReentrantLock idAcquisitionLock = new ReentrantLock();
 
@@ -52,7 +55,8 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 		isReadOnly= configuration.getBoolean(STORAGE_READONLY_KEY,STORAGE_READONLY_DEFAULT);
 		batchLoading=configuration.getBoolean(STORAGE_BATCH_KEY,STORAGE_BATCH_DEFAULT);
         boolean transactional = configuration.getBoolean(STORAGE_TRANSACTIONAL_KEY,STORAGE_TRANSACTIONAL_DEFAULT);
-        this.blockSize = configuration.getInt(IDAUTHORITY_BLOCK_SIZE_KEY,IDAUTHORITY_BLOCK_SIZE_DEFAULT);
+        this.blockSizer = new DefaultIDBlockSizer(configuration.getLong(IDAUTHORITY_BLOCK_SIZE_KEY,IDAUTHORITY_BLOCK_SIZE_DEFAULT));
+        this.hasActiveIDAcquisition=false;
         if (batchLoading) {
             if (transactional) log.warn("Disabling transactional since batch loading is enabled!");
             transactional=false;
@@ -127,12 +131,27 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 		}
 	}
 
+
+    @Override
+    public void setIDBlockSizer(IDBlockSizer sizer) {
+        idAcquisitionLock.lock();
+        try {
+            if (hasActiveIDAcquisition) throw new IllegalStateException("IDBlockSizer cannot be changed after IDs have already been assigned");
+            this.blockSizer=sizer;
+        } finally {
+            idAcquisitionLock.unlock();
+        }
+    }
+
     @Override
     public long[] getIDBlock(int partition) {
+        hasActiveIDAcquisition=true;
         BerkeleyJEKeyValueStore idDB = openDatabase(idManagerTableName);
         ByteBuffer key = ByteBufferUtil.getIntByteBuffer(partition);
         idAcquisitionLock.lock();
         try {
+            long blockSize = blockSizer.getBlockSize(partition);
+            Preconditions.checkArgument(blockSize<Integer.MAX_VALUE);
             BDBTxHandle tx = beginTransaction();
             ByteBuffer value = idDB.get(key,tx);
             int counter = 1;
@@ -141,7 +160,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
                 counter = value.getInt();
             }
             Preconditions.checkArgument(Integer.MAX_VALUE-blockSize>counter);
-            int next = counter + blockSize;
+            int next = counter + (int)blockSize;
             idDB.insert(new KeyValueEntry(key,ByteBufferUtil.getIntByteBuffer(next)),tx.getTransaction(),true);
             tx.commit();
             return new long[]{counter,next};

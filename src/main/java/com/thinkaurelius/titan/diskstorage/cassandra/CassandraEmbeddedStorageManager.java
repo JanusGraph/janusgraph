@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.config.KSMetaData;
@@ -137,6 +138,11 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
         idmanager = new OrderedKeyColumnValueIDManager(
         		openDatabase("titan_ids", keyspace, null, null), rid, config);
 	}
+
+    @Override
+    public void setIDBlockSizer(IDBlockSizer sizer) {
+        idmanager.setIDBlockSizer(sizer);
+    }
 	
 	@Override
 	public long[] getIDBlock(int partition) {

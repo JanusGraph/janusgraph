@@ -15,6 +15,7 @@ import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -210,6 +211,11 @@ public class AstyanaxStorageManager implements StorageManager {
         		
         		openDatabase("titan_ids", null), rid, config);
 	}
+
+    @Override
+    public void setIDBlockSizer(IDBlockSizer sizer) {
+        idmanager.setIDBlockSizer(sizer);
+    }
 	
 	@Override
 	public long[] getIDBlock(int partition) {

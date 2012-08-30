@@ -1,9 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 
-public interface KeyValueStorageManager {
+public interface KeyValueStorageManager extends IDAuthority {
 
 	/**
 	 * Opens an ordered database by the given name. If the database does not exist, it is
@@ -14,16 +16,6 @@ public interface KeyValueStorageManager {
 	 * @throws GraphStorageException
 	 */
 	public OrderedKeyValueStore openDatabase(String name) throws GraphStorageException;
-
-
-    /**
-     * As defined in {@see com.thinkaurelius.titan.diskstorage.IDAuthority.getIDBlock(int,int)}
-     *
-     * @param partition Partition for which to request an id block.
-     * @return a range of ids for the particular partition
-     */
-    public long[] getIDBlock(int partition);
-
 
 	/**
 	 * Returns a transaction handle for a new transaction.

@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.graphdb.database.idassigner.DefaultIDBlockSizer;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
@@ -15,25 +17,30 @@ import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class OrderedKeyColumnValueIDManager {
-	
+
+    private static final Logger log = LoggerFactory.getLogger(OrderedKeyColumnValueIDManager.class);
+
+    /* This value can't be changed without either
+      * corrupting existing ID allocations or taking
+      * some additional action to prevent such
+      * corruption.
+      */
+    private static final long BASE_ID = 1;
+
+    private static final ByteBuffer empty = ByteBuffer.allocate(0);
+
+
+
 	private final OrderedKeyColumnValueStore store;
 	
-	private final long blockSize;
 	private final long lockWaitMS;
 	private final int lockRetryCount;
 	
 	private final byte[] rid;
-	
-	/* This value can't be changed without either
-	 * corrupting existing ID allocations or taking
-	 * some additional action to prevent such
-	 * corruption.
-	 */
-	private static final long BASE_ID = 1;
 
-	private static final ByteBuffer empty = ByteBuffer.allocate(0);
-	
-	private static final Logger log = LoggerFactory.getLogger(OrderedKeyColumnValueIDManager.class);
+    private IDBlockSizer blockSizer;
+    private volatile boolean isActive;
+
 
 //    public OrderedKeyColumnValueIDManager(OrderedKeyColumnValueStore store, byte[] rid, int blockSize, long lockWaitMS, int lockRetryCount) {
 	public OrderedKeyColumnValueIDManager(OrderedKeyColumnValueStore store, byte[] rid, Configuration config) {
@@ -42,10 +49,10 @@ public class OrderedKeyColumnValueIDManager {
 		
 		this.rid = rid;
 		
-		this.blockSize = 
-				config.getLong(
+		this.blockSizer = new DefaultIDBlockSizer(config.getLong(
 						GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_KEY,
-						GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_DEFAULT);
+						GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_DEFAULT));
+        this.isActive = false;
 
 		this.lockWaitMS = 
 				config.getLong(
@@ -58,8 +65,15 @@ public class OrderedKeyColumnValueIDManager {
 						GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_DEFAULT);
 	}
 
+    public synchronized void setIDBlockSizer(IDBlockSizer sizer) {
+        if (isActive) throw new IllegalStateException("IDBlockSizer cannot be changed after IDAuthority is in use");
+        this.blockSizer=sizer;
+    }
+
 	public long[] getIDBlock(int partition) {
-		
+        isActive=true;
+		long blockSize = blockSizer.getBlockSize(partition);
+
 		for (int retry = 0; retry < lockRetryCount; retry++) {
 			
 			// Read the latest counter value from the store

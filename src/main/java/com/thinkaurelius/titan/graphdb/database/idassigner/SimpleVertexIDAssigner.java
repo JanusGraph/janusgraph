@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
@@ -27,7 +28,7 @@ public class SimpleVertexIDAssigner implements VertexIDAssigner {
 	private final Random randomSource;
 	
 	
-	public SimpleVertexIDAssigner(IDManager idManager, StorageManager storage, int randomBits) {
+	public SimpleVertexIDAssigner(IDManager idManager, IDAuthority storage, int randomBits, long baseBlockSize) {
         Preconditions.checkNotNull(idManager);
         Preconditions.checkNotNull(storage);
         Preconditions.checkArgument(randomBits>=0 && randomBits<=8,"RandomBits must be in [0,8]");
@@ -38,6 +39,7 @@ public class SimpleVertexIDAssigner implements VertexIDAssigner {
         this.randomSource = new Random();
         this.offset = randomSource.nextInt((1<<randomBits));
 
+        storage.setIDBlockSizer(new SimpleVertexIDBlockSizer(baseBlockSize));
         
 		node = new StandardIDPool(storage,IDManager.IDType.Node.addPadding(offset));
 		edge = new StandardIDPool(storage,IDManager.IDType.Edge.addPadding(offset));
@@ -107,6 +109,28 @@ public class SimpleVertexIDAssigner implements VertexIDAssigner {
         return (id<<offsetBits) + offset;
     }
 	
-	
+	private static class SimpleVertexIDBlockSizer implements IDBlockSizer {
+
+        private static final int AVG_EDGES_PER_VERTEX = 10;
+        private static final int DEFAULT_NUM_EDGE_TYPES = 50;
+
+        private final long baseBlockSize;
+
+        SimpleVertexIDBlockSizer(final long size) {
+            Preconditions.checkArgument(size>0 && size<Integer.MAX_VALUE);
+            this.baseBlockSize=size;
+        }
+        
+        @Override
+        public long getBlockSize(int partitionID) {
+            if (IDManager.IDType.Node.is(partitionID)) {
+                return baseBlockSize;
+            } else if (IDManager.IDType.Edge.is(partitionID)) {
+                return baseBlockSize*AVG_EDGES_PER_VERTEX;
+            } else if (IDManager.IDType.EdgeType.is(partitionID)) {
+                return DEFAULT_NUM_EDGE_TYPES;
+            } else throw new IllegalArgumentException("Invalid partition id: " + partitionID);
+        }
+    }
 	
 }

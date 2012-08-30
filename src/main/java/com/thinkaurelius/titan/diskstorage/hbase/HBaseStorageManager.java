@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -120,6 +121,11 @@ public class HBaseStorageManager implements StorageManager {
         		openDatabase("blocks_allocated", null, null), rid, config);
     }
 
+
+    @Override
+    public void setIDBlockSizer(IDBlockSizer sizer) {
+        idmanager.setIDBlockSizer(sizer);
+    }
 
     @Override
     public long[] getIDBlock(int partition) {

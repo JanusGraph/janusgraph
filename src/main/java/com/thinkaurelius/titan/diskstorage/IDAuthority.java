@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
+
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
@@ -15,9 +17,18 @@ public interface IDAuthority {
      * In other words, this method has to ensure that ids are uniquely assigned per partition.
      *
      * @param partition Partition for which to request an id block. Must be bigger or equal to 0
-     * @param blockSize The size of the partition block. The range of ids (i.e. return[1]-return[0]) is expected to be equal to blockSize - however, it may be smaller. Returned ids must be positive.
      * @return a range of ids for the particular partition
      */
     public long[] getIDBlock(int partition);
+
+    /**
+     * Sets the {@link IDBlockSizer} to be used by this IDAuthority. The IDBlockSizer specifies the block size for 
+     * each partition guaranteeing that the same partition will always be assigned the same block size.
+     * 
+     * The IDBlockSizer cannot be changed for an IDAuthority that has already been used (i.e. after invoking {@link #getIDBlock(int)}.
+     * 
+     * @param sizer The IDBlockSizer to be used by this IDAuthority
+     */
+    public void setIDBlockSizer(IDBlockSizer sizer);
 
 }

@@ -142,7 +142,7 @@ public class GraphDatabaseConfiguration {
      * be chosen.
      */
     public static final String IDAUTHORITY_BLOCK_SIZE_KEY = "idauthority-block-size";
-    public static final int IDAUTHORITY_BLOCK_SIZE_DEFAULT = 100000;
+    public static final int IDAUTHORITY_BLOCK_SIZE_DEFAULT = 10000;
 
 
     /**
@@ -321,7 +321,10 @@ public class GraphDatabaseConfiguration {
 	public VertexIDAssigner getIDAssigner(StorageManager storage) {
         IDManager idmanager = new IDManager();
 		return new SimpleVertexIDAssigner(idmanager, storage,
-                configuration.getInt(ID_RANDOMIZER_BITS_KEY,ID_RANDOMIZER_BITS_DEFAULT));
+                configuration.getInt(ID_RANDOMIZER_BITS_KEY,ID_RANDOMIZER_BITS_DEFAULT),
+                configuration.subset(STORAGE_NAMESPACE).getLong(
+                        GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_KEY,
+                        GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_DEFAULT));
 	}
 
     public String getStorageManagerDescription() {

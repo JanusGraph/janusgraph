@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.CfDef;
 import org.apache.cassandra.thrift.ConsistencyLevel;
@@ -187,6 +188,11 @@ public class CassandraThriftStorageManager implements StorageManager {
         idmanager = new OrderedKeyColumnValueIDManager(
         		openDatabase("titan_ids", keyspace, null, null), rid, config);
 	}
+
+    @Override
+    public void setIDBlockSizer(IDBlockSizer sizer) {
+        idmanager.setIDBlockSizer(sizer);
+    }
 
     @Override
     public long[] getIDBlock(int partition) {

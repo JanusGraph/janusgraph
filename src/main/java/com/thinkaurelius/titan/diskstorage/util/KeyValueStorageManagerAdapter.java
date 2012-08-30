@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +63,12 @@ public class KeyValueStorageManagerAdapter implements StorageManager {
         log.debug("Used key length {} for database {}",keyLength,name);
         return new OrderedKeyValueStoreAdapter(manager.openDatabase(name),keyLength);
 	}
+
+
+    @Override
+    public void setIDBlockSizer(IDBlockSizer sizer) {
+        manager.setIDBlockSizer(sizer);
+    }
 
     @Override
     public long[] getIDBlock(int partition) {
