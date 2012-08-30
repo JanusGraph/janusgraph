@@ -13,10 +13,14 @@ import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.tinkerpop.blueprints.Direction;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 public class StandardTitanVertex extends AbstractTitanVertex {
 
 	private AdjacencyList inEdges;
 	private AdjacencyList outEdges;
+    protected final ReentrantLock adjLock = new ReentrantLock();
+
 	
 	public StandardTitanVertex(InternalTitanTransaction g, AdjacencyListFactory adjList) {
 		super(g);
@@ -34,14 +38,20 @@ public class StandardTitanVertex extends AbstractTitanVertex {
         ModificationStatus status = new ModificationStatus();
         if (EdgeDirection.IN.impliedBy(e.getDirection(this))) {
             loadIn = true;
-            synchronized(this) {
+            adjLock.lock();
+            try {
                 inEdges = inEdges.addEdge(e,status);
+            } finally {
+                adjLock.unlock();
             }
             success = status.hasChanged();
         }
         if (EdgeDirection.OUT.impliedBy(e.getDirection(this))) {
-            synchronized(this) {
+            adjLock.lock();
+            try {
                 outEdges = outEdges.addEdge(e, e.getType().isFunctional(), status);
+            } finally {
+                adjLock.unlock();
             }
             if (status.hasChanged()) {
                 if (loadIn && !success) throw new InvalidElementException("Could only load one direction of loop-edge",e);

@@ -152,7 +152,6 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     private InternalTitanVertex getExisting(long id) {
         synchronized (vertexCache) {
             InternalTitanVertex node = vertexCache.get(id);
-            if (node.isRemoved()) throw new IllegalArgumentException("Vertex has been removed for id: " + id);
             if (node==null) {
                 IDInspector idspec = graphdb.getIDInspector();
 
@@ -165,7 +164,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
                 } else
                     throw new IllegalArgumentException("ID could not be recognized");
                 vertexCache.add(node, id);
-            }
+            } else if (node.isRemoved()) throw new IllegalArgumentException("Vertex has been removed for id: " + id);
             return node;
         }
     }

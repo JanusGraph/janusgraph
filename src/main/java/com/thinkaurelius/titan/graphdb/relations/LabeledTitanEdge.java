@@ -20,12 +20,13 @@ import com.tinkerpop.blueprints.Vertex;
 
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class LabeledTitanEdge extends SimpleTitanEdge {
 
 	protected AdjacencyList outEdges;
+    protected final ReentrantLock adjLock = new ReentrantLock();
 
-	
 	public LabeledTitanEdge(TitanLabel type, InternalTitanVertex start,
                             InternalTitanVertex end, InternalTitanTransaction tx, AdjacencyListFactory adjList) {
 		super(type, start, end);
@@ -46,9 +47,12 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
 		Preconditions.checkArgument(e.getVertex(0).equals(this),"This node only supports out edges!");
 
 		ModificationStatus status = new ModificationStatus();
-		synchronized(this) {
+		adjLock.lock();
+        try {
 			outEdges = outEdges.addEdge(e, e.getType().isFunctional(),status);
-		}
+		} finally {
+            adjLock.unlock();
+        }
 		return status.hasChanged();
 
 	}

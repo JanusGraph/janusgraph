@@ -84,6 +84,11 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         clopen();
 
+        try {
+            tx.getVertex(id,"v1");
+            fail();
+        } catch (IllegalArgumentException e ) {}
+
         id = tx.getPropertyKey("uid");
         assertEquals(TypeGroup.DEFAULT_GROUP,id.getGroup());
         assertTrue(id.isUnique());
@@ -176,6 +181,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         clopen();
 
+        id = tx.getPropertyKey("uid");
         v1 = tx.getVertex(id, "v1");
         assertEquals(77, ((SpecialInt) v1.getProperty("int")).getValue());
         assertEquals(v1, Iterables.getOnlyElement(tx.getVertices("someid", 100l)));
@@ -251,7 +257,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		n3 = tx.getVertex(nid);
 		assertEquals(445,n3.getProperty("uid"));
 		e=Iterables.getOnlyElement(n3.getTitanEdges(Direction.OUT, tx.getEdgeLabel("knows")));
-		assertEquals(111,e.getProperty(id));
+		assertEquals(111,e.getProperty("uid"));
         assertEquals(e,tx.getEdge(eid));
         assertEquals(e,tx.getEdge(eid.toString()));
 		TitanProperty p = Iterables.getOnlyElement(n3.getProperties("uid"));
@@ -429,6 +435,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		name = tx.getPropertyKey(etNames[1]);
 		assertTrue(name.isUnique());
 		assertTrue(name.hasIndex());
+        weight = tx.getPropertyKey(etNames[2]);
+        id = tx.getPropertyKey("uid");
+        knows = tx.getEdgeLabel(etNames[3]);
 		log.debug("Loaded edge types");
 		n2 = tx.getVertex(name, "Node2");
         assertNotNull(n2.toString());
@@ -483,7 +492,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		assertEquals(2,Iterables.size(n1.getEdges(Direction.BOTH,"knows")));
 		
 		clopen();
-		n2 = tx.getVertex(name, "Node2");
+		n2 = tx.getVertex("name", "Node2");
 		e=Iterables.getOnlyElement(n2.getTitanEdges(Direction.OUT,tx.getEdgeLabel("knows")));
 		assertEquals("New TitanRelation",e.getProperty(tx.getPropertyKey("name"),String.class));
 		assertEquals(111.5,e.getProperty("weight",Double.class).doubleValue(),0.01);
@@ -651,6 +660,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		
 		nodes = new TitanVertex[noNodes];
 		name = tx.getPropertyKey("name");
+        weight = tx.getPropertyKey("weight");
 		assertEquals("name",name.getName());
 		id = tx.getPropertyKey("uid");
 		assertTrue(id.isFunctional());
