@@ -7,7 +7,14 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
+import com.tinkerpop.pipes.util.structures.Pair;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.util.ToolRunner;
 import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
@@ -55,6 +62,7 @@ public class FaunusPipeline {
     private class JobState {
         private Class<? extends Element> elementType;
         private String property;
+        private Class<? extends WritableComparable> propertyType;
         private int step = -1;
         private boolean locked = false;
         private Map<String, Integer> namedSteps = new HashMap<String, Integer>();
@@ -75,15 +83,36 @@ public class FaunusPipeline {
             return this.elementType.equals(Vertex.class);
         }
 
-        public JobState set(final String property) {
+        public JobState setProperty(final String property) {
             this.property = property;
+            this.propertyType = Text.class;
             return this;
         }
 
-        public String popProperty() {
-            final String temp = this.property;
+        public JobState setProperty(final String property, final Class type) {
+            this.property = property;
+            if (type.equals(Integer.class)) {
+                this.propertyType = IntWritable.class;
+            } else if (type.equals(Double.class)) {
+                this.propertyType = DoubleWritable.class;
+            } else if (type.equals(Long.class)) {
+                this.propertyType = LongWritable.class;
+            } else if (type.equals(Float.class)) {
+
+                this.propertyType = FloatWritable.class;
+            } else {
+                this.propertyType = Text.class;
+            }
+            return this;
+        }
+
+        public Pair<String, Class<? extends WritableComparable>> popProperty() {
+            if (null == this.property)
+                return null;
+            Pair<String, Class<? extends WritableComparable>> pair = new Pair<String, Class<? extends WritableComparable>>(this.property, this.propertyType);
             this.property = null;
-            return temp;
+            this.propertyType = null;
+            return pair;
         }
 
         public int incrStep() {
@@ -249,18 +278,20 @@ public class FaunusPipeline {
             throw new RuntimeException("This step can not follow a vertex-based step");
     }
 
-    public FaunusPipeline property(final String key) throws IOException {
+    public FaunusPipeline property(final String key, final Class type) {
         this.state.checkLocked();
-        //this.compiler.propertyMap(this.state.getElementType(), key);
-        this.state.set(key);
+        this.state.setProperty(key, type);
         return this;
     }
 
-    public FaunusPipeline label() throws IOException {
+    public FaunusPipeline property(final String key) {
+        return this.property(key, String.class);
+    }
+
+    public FaunusPipeline label() {
         this.state.checkLocked();
         if (!this.state.atVertex()) {
-            //this.compiler.propertyMap(this.state.getElementType(), Tokens.LABEL);
-            this.state.set(Tokens.LABEL);
+            this.state.setProperty(Tokens.LABEL, String.class);
             return this;
         } else
             throw new RuntimeException("This step can not follow a vertex-based step");
@@ -318,7 +349,8 @@ public class FaunusPipeline {
 
     public FaunusPipeline groupCount() throws IOException {
         this.state.checkLocked();
-        this.compiler.valueDistribution(this.state.getElementType(), this.state.popProperty());
+        final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
+        this.compiler.valueDistribution(this.state.getElementType(), pair.getA(), pair.getB());
         return this;
     }
 
@@ -406,9 +438,9 @@ public class FaunusPipeline {
 
     private FaunusPipeline done() throws IOException {
         if (!this.state.isLocked()) {
-            final String property = this.state.popProperty();
-            if (null != property) {
-                this.compiler.propertyMap(this.state.getElementType(), property);
+            final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
+            if (null != pair) {
+                this.compiler.propertyMap(this.state.getElementType(), pair.getA(), pair.getB());
             }
             this.state.lock();
         }
@@ -427,16 +459,16 @@ public class FaunusPipeline {
         if (args.length < 1 && args.length > 3) {
             System.out.println("Faunus: A Library of Graph-Based Hadoop Tools");
             System.out.println("FaunusPipeline Usage:");
-            System.out.println("  arg1: Faunus configuration location (optional - defaults to bin/faunus.properties)");
-            System.out.println("  arg2: Faunus script: 'g.V.step().step()...'");
-            System.out.println("  arg3: Hadoop specific configurations (optional): '-D mapred.map.tasks=14 mapred.reduce.tasks=6'");
+            System.out.println("  arg1: Faunus configuration file (optional): defaults to bin/faunus.properties");
+            System.out.println("  arg2: Gremlin/Faunus script: 'g.V().step().step()...'");
+            System.out.println("  arg3: Hadoop specific configurations (optional): '-Dmapred.map.tasks=14 mapred.reduce.tasks=6'");
             System.exit(-1);
         }
 
         final String script;
         final String file;
-        final Properties configuration = new Properties();
-        final Properties commandLine = new Properties();
+        final Properties fileConfiguration = new Properties();
+        final Properties commandLineConfiguration = new Properties();
         if (args.length == 1) {
             script = args[0];
             file = "bin/faunus.properties";
@@ -448,7 +480,7 @@ public class FaunusPipeline {
                     final String key = property.split("=")[0];
                     final String value = property.split("=")[1];
                     //System.out.println(key + "!!!" + value + "!!!");
-                    commandLine.put(key, value);
+                    commandLineConfiguration.put(key, value);
                 }
             } else {
                 file = args[0];
@@ -461,18 +493,18 @@ public class FaunusPipeline {
                 final String key = property.split("=")[0];
                 final String value = property.split("=")[1];
                 //System.out.println(key + "!!!" + value + "!!!");
-                commandLine.put(key, value);
+                commandLineConfiguration.put(key, value);
             }
         }
 
-        configuration.load(new FileInputStream(file));
+        fileConfiguration.load(new FileInputStream(file));
 
 
         final Configuration conf = new Configuration();
-        for (Map.Entry<Object, Object> entry : configuration.entrySet()) {
+        for (Map.Entry<Object, Object> entry : fileConfiguration.entrySet()) {
             conf.set(entry.getKey().toString(), entry.getValue().toString());
         }
-        for (Map.Entry<Object, Object> entry : commandLine.entrySet()) {
+        for (Map.Entry<Object, Object> entry : commandLineConfiguration.entrySet()) {
             conf.set(entry.getKey().toString(), entry.getValue().toString());
         }
 

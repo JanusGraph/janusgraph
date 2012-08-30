@@ -45,6 +45,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
@@ -195,11 +196,12 @@ public class FaunusCompiler extends Configured implements Tool {
         this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
-    public void propertyMap(final Class<? extends Element> klass, final String key) throws IOException {
+    public void propertyMap(final Class<? extends Element> klass, final String key, final Class<? extends WritableComparable> type) throws IOException {
         this.mapSequenceConfiguration.setClass(PropertyMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceConfiguration.set(PropertyMap.KEY + "-" + this.mapSequenceClasses.size(), key);
+        this.mapSequenceConfiguration.setClass(PropertyMap.TYPE + "-" + this.mapSequenceClasses.size(), type, WritableComparable.class);
         this.mapSequenceClasses.add(PropertyMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, Text.class);
+        this.setKeyValueClasses(NullWritable.class, type);
     }
 
 
@@ -330,13 +332,14 @@ public class FaunusCompiler extends Configured implements Tool {
         this.completeSequence();
     }
 
-    public void valueDistribution(final Class<? extends Element> klass, final String property) throws IOException {
+    public void valueDistribution(final Class<? extends Element> klass, final String property, final Class<? extends WritableComparable> type) throws IOException {
         this.mapSequenceConfiguration.setClass(ValueGroupCountMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceConfiguration.set(ValueGroupCountMapReduce.PROPERTY + "-" + this.mapSequenceClasses.size(), property);
+        this.mapSequenceConfiguration.setClass(ValueGroupCountMapReduce.TYPE + "-" + this.mapSequenceClasses.size(), type, Writable.class);
         this.mapSequenceClasses.add(ValueGroupCountMapReduce.Map.class);
         this.combinerClass = ValueGroupCountMapReduce.Reduce.class;
         this.reduceClass = ValueGroupCountMapReduce.Reduce.class;
-        this.setKeyValueClasses(Text.class, LongWritable.class, Text.class, LongWritable.class);
+        this.setKeyValueClasses(type, LongWritable.class, type, LongWritable.class);
         this.completeSequence();
     }
 
