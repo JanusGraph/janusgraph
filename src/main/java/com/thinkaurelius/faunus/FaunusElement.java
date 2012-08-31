@@ -48,6 +48,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         add(Float.class);
         add(Double.class);
         add(String.class);
+        add(Boolean.class);
     }};
 
 
@@ -161,7 +162,8 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
             LONG((byte) 1),
             FLOAT((byte) 2),
             DOUBLE((byte) 3),
-            STRING((byte) 4);
+            STRING((byte) 4),
+            BOOLEAN((byte) 5);
             public byte val;
 
             private PropertyType(byte v) {
@@ -193,6 +195,9 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                     } else if (valueClass.equals(String.class)) {
                         out.writeByte(PropertyType.STRING.val);
                         out.writeUTF((String) valueObject);
+                    } else if (valueClass.equals(Boolean.class)) {
+                        out.writeByte(PropertyType.BOOLEAN.val);
+                        out.writeBoolean((Boolean) valueObject);
                     } else {
                         throw new IOException("Property value type of " + valueClass + " is not supported");
                     }
@@ -220,6 +225,8 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                         valueObject = in.readDouble();
                     } else if (valueClass == PropertyType.STRING.val) {
                         valueObject = in.readUTF();
+                    } else if(valueClass == PropertyType.BOOLEAN.val) {
+                        valueObject = in.readBoolean();
                     } else {
                         throw new IOException("Property value type of " + valueClass + " is not supported");
                     }

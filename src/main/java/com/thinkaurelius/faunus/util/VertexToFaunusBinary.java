@@ -73,6 +73,9 @@ public class VertexToFaunusBinary {
             } else if (valueClass.equals(String.class)) {
                 out.writeByte(FaunusElement.ElementProperties.PropertyType.STRING.val);
                 out.writeUTF((String) valueObject);
+            } else if (valueClass.equals(Boolean.class)) {
+                out.writeByte(FaunusElement.ElementProperties.PropertyType.BOOLEAN.val);
+                out.writeBoolean((Boolean) valueObject);
             } else {
                 throw new IOException("Property value type of " + valueClass + " is not supported");
             }

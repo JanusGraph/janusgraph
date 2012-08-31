@@ -31,6 +31,7 @@ public class VertexToFaunusBinaryTest extends BaseTest {
         Vertex stephen = graph.addVertex(3);
         stephen.setProperty("name", "stephen");
         stephen.setProperty("weight", 160.42);
+        stephen.setProperty("male",true);
         Edge e = graph.addEdge(null, marko, stephen, "knows");
         e.setProperty("weight", 0.2);
         e.setProperty("type", "coworker");
@@ -61,7 +62,8 @@ public class VertexToFaunusBinaryTest extends BaseTest {
         FaunusVertex stephenFaunus = new FaunusVertex(in);
         assertEquals(stephenFaunus.getProperty("name"), "stephen");
         assertEquals(stephenFaunus.getProperty("weight"), 160.42);
-        assertEquals(stephenFaunus.getPropertyKeys().size(), 2);
+        assertTrue((Boolean)stephenFaunus.getProperty("male"));
+        assertEquals(stephenFaunus.getPropertyKeys().size(), 3);
         assertEquals(asList(stephenFaunus.getEdges(Direction.IN)).size(), 1);
         assertFalse(stephenFaunus.getEdges(Direction.OUT).iterator().hasNext());
         assertTrue(stephenFaunus.getEdges(Direction.IN, "knows").iterator().hasNext());

@@ -76,12 +76,14 @@ public class FaunusVertexTest extends BaseTest {
         vertex1.setProperty("longitude", 10.01d);
         vertex1.setProperty("latitude", 11.4f);
         vertex1.setProperty("size", 10l);
-        assertEquals(vertex1.getPropertyKeys().size(), 5);
+        vertex1.setProperty("boolean",true);
+        assertEquals(vertex1.getPropertyKeys().size(), 6);
         assertEquals(vertex1.getProperty("name"), "marko");
         assertEquals(vertex1.getProperty("age"), 32);
         assertEquals(vertex1.getProperty("longitude"), 10.01d);
         assertEquals(vertex1.getProperty("latitude"), 11.4f);
         assertEquals(vertex1.getProperty("size"), 10l);
+        assertTrue((Boolean)vertex1.getProperty("boolean"));
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
@@ -92,12 +94,13 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1.compareTo(vertex2), 0);
         assertEquals(vertex2.compareTo(vertex1), 0);
         assertEquals(vertex2.getId(), 10l);
-        assertEquals(vertex2.getPropertyKeys().size(), 5);
+        assertEquals(vertex2.getPropertyKeys().size(), 6);
         assertEquals(vertex2.getProperty("name"), "marko");
         assertEquals(vertex2.getProperty("age"), 32);
         assertEquals(vertex2.getProperty("longitude"), 10.01d);
         assertEquals(vertex2.getProperty("latitude"), 11.4f);
         assertEquals(vertex1.getProperty("size"), 10l);
+        assertTrue((Boolean)vertex2.getProperty("boolean"));
 
         Iterator<Edge> edges = vertex2.getEdges(Direction.OUT).iterator();
         assertTrue(edges.hasNext());
