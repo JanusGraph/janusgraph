@@ -1,12 +1,11 @@
 package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
-import com.thinkaurelius.faunus.FaunusConfiguration;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.CounterMap;
+import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.io.LongWritable;

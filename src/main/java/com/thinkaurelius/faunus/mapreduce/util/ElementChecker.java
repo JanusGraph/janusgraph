@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.mapreduce;
+package com.thinkaurelius.faunus.mapreduce.util;
 
 import com.thinkaurelius.faunus.FaunusElement;
 import com.tinkerpop.blueprints.Query;
