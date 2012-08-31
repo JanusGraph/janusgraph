@@ -1,6 +1,5 @@
 package com.thinkaurelius.faunus.mapreduce.transform;
 
-import com.thinkaurelius.faunus.FaunusConfiguration;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
@@ -59,9 +58,12 @@ public class VerticesVerticesMapReduce {
 
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
+        private FaunusVertex vertex = new FaunusVertex();
+
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            final FaunusVertex vertex = new FaunusVertex(key.get());  // TODO: make a FaunusVertex.clear() for object reuse
+            // final FaunusVertex vertex = new FaunusVertex(key.get());
+            this.vertex.reuse(key.get());
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 final FaunusVertex temp = (FaunusVertex) holder.get();

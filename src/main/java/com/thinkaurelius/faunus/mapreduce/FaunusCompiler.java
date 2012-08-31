@@ -193,6 +193,9 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.set(VerticesEdgesMapReduce.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
         this.mapSequenceConfiguration.setStrings(VerticesEdgesMapReduce.LABELS + "-" + this.mapSequenceClasses.size(), labels);
         this.mapSequenceClasses.add(VerticesEdgesMapReduce.Map.class);
+
+        this.mapSequenceConfiguration.set(VerticesEdgesMapReduce.DIRECTION, direction.name()); // TODO: make more robust
+        this.mapSequenceConfiguration.setStrings(VerticesEdgesMapReduce.LABELS, labels);
         this.reduceClass = VerticesEdgesMapReduce.Reduce.class;
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
@@ -345,6 +348,8 @@ public class FaunusCompiler extends Configured implements Tool {
             this.mapSequenceConfiguration.set(LinkMapReduce.MERGE_WEIGHT_KEY + "-" + this.mapSequenceClasses.size(), mergeWeightKey);
         }
         this.mapSequenceClasses.add(LinkMapReduce.Map.class);
+
+        this.mapSequenceConfiguration.set(LinkMapReduce.DIRECTION, direction.name());  // TODO: make model more robust
         this.reduceClass = LinkMapReduce.Reduce.class;
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
@@ -405,10 +410,14 @@ public class FaunusCompiler extends Configured implements Tool {
             final Job job = new Job(this.mapSequenceConfiguration, this.toStringOfJob(MapSequence.class));
             job.setJarByClass(FaunusCompiler.class);
             job.setMapperClass(MapSequence.Map.class);
-            if (this.reduceClass != null)
+            if (this.reduceClass != null) {
                 job.setReducerClass(this.reduceClass);
-            if (this.combinerClass != null)
-                job.setCombinerClass(this.combinerClass);
+                if (this.combinerClass != null)
+                    job.setCombinerClass(this.combinerClass);
+            } else {
+                job.setNumReduceTasks(0);
+            }
+
             job.setMapOutputKeyClass(this.mapOutputKey);
             job.setMapOutputValueClass(this.mapOutputValue);
             job.setOutputKeyClass(this.outputKey);

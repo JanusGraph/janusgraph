@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.util;
 
+import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -50,4 +51,15 @@ public class WritableComparators {
             WritableComparator.define(DecreasingTextComparator.class, new DecreasingTextComparator());
         }
     }
+
+    public static class DecreasingBooleanComparator extends BooleanWritable.Comparator {
+        public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
+            return -super.compare(b1, s1, l1, b2, s2, l2);
+        }
+
+        static {
+            WritableComparator.define(DecreasingBooleanComparator.class, new DecreasingBooleanComparator());
+        }
+    }
+
 }

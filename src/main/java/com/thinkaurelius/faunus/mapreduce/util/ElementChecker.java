@@ -28,9 +28,13 @@ public class ElementChecker {
         switch (this.compare) {
             case EQUAL:
                 if (null == elementValue) {
-                    for (final Object value : values) {
-                        if (null == value)
-                            return true;
+                    if (this.nullIsWildcard)
+                        return true;
+                    else {
+                        for (final Object value : values) {
+                            if (null == value)
+                                return true;
+                        }
                     }
                     return false;
                 } else {
@@ -42,9 +46,13 @@ public class ElementChecker {
                 }
             case NOT_EQUAL:
                 if (null == elementValue) {
-                    for (final Object value : values) {
-                        if (null != value)
-                            return true;
+                    if (this.nullIsWildcard)
+                        return true;
+                    else {
+                        for (final Object value : values) {
+                            if (null != value)
+                                return true;
+                        }
                     }
                     return false;
                 } else {

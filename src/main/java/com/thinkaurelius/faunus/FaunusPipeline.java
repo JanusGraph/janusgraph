@@ -481,10 +481,7 @@ public class FaunusPipeline {
                 script = args[0];
                 file = "bin/faunus.properties";
                 for (final String property : args[1].substring(2).trim().split(" ")) {
-                    final String key = property.split("=")[0];
-                    final String value = property.split("=")[1];
-                    //System.out.println(key + "!!!" + value + "!!!");
-                    commandLineConfiguration.put(key, value);
+                    commandLineConfiguration.put(property.split("=")[0], property.split("=")[1]);
                 }
             } else {
                 file = args[0];
@@ -494,10 +491,7 @@ public class FaunusPipeline {
             file = args[0];
             script = args[1];
             for (final String property : args[2].substring(2).trim().split(" ")) {
-                final String key = property.split("=")[0];
-                final String value = property.split("=")[1];
-                //System.out.println(key + "!!!" + value + "!!!");
-                commandLineConfiguration.put(key, value);
+                commandLineConfiguration.put(property.split("=")[0], property.split("=")[1]);
             }
         }
 
