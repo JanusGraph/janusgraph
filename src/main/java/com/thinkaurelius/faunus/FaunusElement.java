@@ -154,7 +154,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         return ((Long) this.id).hashCode();
     }
 
-    protected static class ElementProperties {
+    public static class ElementProperties {
 
         public enum PropertyType {
             INT((byte) 0),
