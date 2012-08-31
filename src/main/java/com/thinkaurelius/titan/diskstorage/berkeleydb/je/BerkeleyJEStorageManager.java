@@ -152,18 +152,24 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
         try {
             long blockSize = blockSizer.getBlockSize(partition);
             Preconditions.checkArgument(blockSize<Integer.MAX_VALUE);
-            BDBTxHandle tx = beginTransaction();
-            ByteBuffer value = idDB.get(key,tx);
             int counter = 1;
-            if (value!=null) {
-                assert value.remaining()==4;
-                counter = value.getInt();
+            BDBTxHandle tx = null;
+            try {
+                tx = beginTransaction();
+                ByteBuffer value = idDB.get(key,tx);
+                if (value!=null) {
+                    assert value.remaining()==4;
+                    counter = value.getInt();
+                }
+                Preconditions.checkArgument(Integer.MAX_VALUE-blockSize>counter);
+                int next = counter + (int)blockSize;
+                idDB.insert(new KeyValueEntry(key,ByteBufferUtil.getIntByteBuffer(next)),tx.getTransaction(),true);
+                tx.commit();
+                return new long[]{counter,next};
+            } catch (RuntimeException e) {
+                if (tx!=null) tx.abort();
+                throw e;
             }
-            Preconditions.checkArgument(Integer.MAX_VALUE-blockSize>counter);
-            int next = counter + (int)blockSize;
-            idDB.insert(new KeyValueEntry(key,ByteBufferUtil.getIntByteBuffer(next)),tx.getTransaction(),true);
-            tx.commit();
-            return new long[]{counter,next};
         } finally {
             idAcquisitionLock.unlock();
         }
