@@ -324,12 +324,6 @@ public class FaunusPipeline {
         return this;
     }
 
-    public FaunusPipeline dedup() {
-        this.state.checkLocked();
-        this.compiler.duplicateFilterMap(this.state.getElementType());
-        return this;
-    }
-
     public FaunusPipeline has(final String key, final Query.Compare compare, final Object... values) {
         this.state.checkLocked();
         this.compiler.propertyFilterMap(this.state.getElementType(), false, key, compare, values);
@@ -351,26 +345,18 @@ public class FaunusPipeline {
         return this.has(key, Query.Compare.NOT_EQUAL, values);
     }
 
-    public FaunusPipeline groupCount() throws IOException {
-        this.state.checkLocked();
-        final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
-        this.compiler.valueDistribution(this.state.getElementType(), pair.getA(), pair.getB());
-        return this;
-    }
-
-    public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) throws IOException {
-        this.state.checkLocked();
-        this.validateClosure(keyClosure);
-        this.validateClosure(valueClosure);
-        this.compiler.groupCountMapReduce(this.state.getElementType(), keyClosure, valueClosure);
-        return this;
-    }
-
     public FaunusPipeline interval(final String key, final Object startValue, final Object endValue) {
         this.state.checkLocked();
         this.compiler.intervalFilterMap(this.state.getElementType(), false, key, startValue, endValue);
         return this;
     }
+
+    public FaunusPipeline dedup() {
+        this.state.checkLocked();
+        this.compiler.duplicateFilterMap(this.state.getElementType());
+        return this;
+    }
+
 
     public FaunusPipeline back(final String step) throws IOException {
         this.state.checkLocked();
@@ -413,6 +399,20 @@ public class FaunusPipeline {
         return this.linkOut(step, label, null);
     }
 
+    public FaunusPipeline groupCount() throws IOException {
+        this.state.checkLocked();
+        final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
+        this.compiler.valueDistribution(this.state.getElementType(), pair.getA(), pair.getB());
+        return this;
+    }
+
+    public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) throws IOException {
+        this.state.checkLocked();
+        this.validateClosure(keyClosure);
+        this.validateClosure(valueClosure);
+        this.compiler.groupCountMapReduce(this.state.getElementType(), keyClosure, valueClosure);
+        return this;
+    }
 
     private FaunusPipeline commit(final Tokens.Action action) throws IOException {
         this.state.checkLocked();
@@ -460,7 +460,7 @@ public class FaunusPipeline {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length < 1 && args.length > 3) {
+        if (args.length < 1 || args.length > 3 || (args.length == 1 && args[0].contains("-h"))) {
             System.out.println("Faunus: A Library of Graph-Based Hadoop Tools");
             System.out.println("FaunusPipeline Usage:");
             System.out.println("  arg1: Faunus configuration file (optional): defaults to bin/faunus.properties");
