@@ -1,9 +1,5 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 
 import java.io.UnsupportedEncodingException;
@@ -13,6 +9,8 @@ import java.util.Arrays;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public abstract class LockKeyColumnValueStoreTest {
 
@@ -46,9 +44,9 @@ public abstract class LockKeyColumnValueStoreTest {
 		return b;
 	}
 
-    public abstract StorageManager openStorageManager(short hostIndex);
+    public abstract StorageManager openStorageManager(short hostIndex) throws StorageException;
 
-    public void open() {
+    public void open() throws StorageException {
         manager1 = openStorageManager((short)1);
         manager2 = openStorageManager((short)2);
         store1 = manager1.openDatabase(dbName);
@@ -63,7 +61,7 @@ public abstract class LockKeyColumnValueStoreTest {
 		close();
 	}
 
-    public void close() {
+    public void close() throws StorageException {
         store1.close();
         store2.close();
         manager1.close();
@@ -72,7 +70,7 @@ public abstract class LockKeyColumnValueStoreTest {
     }
 	
 	@Test
-	public void singleLockAndUnlock() {
+	public void singleLockAndUnlock() throws StorageException {
 		store1.acquireLock(k, c1, null, host1tx1);
 		store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
 		host1tx1.commit();
@@ -82,7 +80,7 @@ public abstract class LockKeyColumnValueStoreTest {
 	}
 	
 	@Test
-	public void transactionMayReenterLock() {
+	public void transactionMayReenterLock() throws StorageException {
 		store1.acquireLock(k, c1, null, host1tx1);
 		store1.acquireLock(k, c1, null, host1tx1);
 		store1.acquireLock(k, c1, null, host1tx1);
@@ -93,36 +91,36 @@ public abstract class LockKeyColumnValueStoreTest {
 		assertEquals(v1, store1.get(k, c1, host1tx1));
 	}
 	
-	@Test(expected=LockingFailureException.class)
-	public void expectedValueMismatchCausesMutateFailure() {
+	@Test(expected=PermanentLockingException.class)
+	public void expectedValueMismatchCausesMutateFailure() throws StorageException {
 		store1.acquireLock(k, c1, v1, host1tx1);
 		store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
 		host1tx1.commit();
 	}
 	
 	@Test
-	public void testLocalLockContention() {
+	public void testLocalLockContention() throws StorageException {
 		store1.acquireLock(k, c1, null, host1tx1);
 		
 		try {
 			store1.acquireLock(k, c1, null, host1tx2);
 			fail("Lock contention exception not thrown");
-		} catch (LockingFailureException e) {
-			
+		} catch (StorageException e) {
+			assertTrue(e instanceof LockingException);
 		}
 		
 		try {
 			store1.acquireLock(k, c1, null, host1tx2);
 			fail("Lock contention exception not thrown (2nd try)");
-		} catch (LockingFailureException e) {
-			
+		} catch (StorageException e) {
+            assertTrue(e instanceof LockingException);
 		}
 		
 		host1tx1.commit();
 	}
 	
 	@Test
-	public void testRemoteLockContention() throws InterruptedException {
+	public void testRemoteLockContention() throws InterruptedException, StorageException {
 		// acquire lock on "host1"
 		store1.acquireLock(k, c1, null, host1tx1);
 		
@@ -131,7 +129,7 @@ public abstract class LockKeyColumnValueStoreTest {
 		try {
 			// acquire same lock on "host2"
 			store2.acquireLock(k, c1, null, host2tx1);
-		} catch (LockingFailureException e) {
+		} catch (StorageException e) {
 			/* Lock attempts between hosts with different LocalLockMediators,
 			 * such as host1tx1 and host2tx1 in this example, should
 			 * not generate locking failures until one of them tries
@@ -150,8 +148,8 @@ public abstract class LockKeyColumnValueStoreTest {
 			// This must fail since "host1" took the lock first
 			store2.mutate(k, Arrays.asList(new Entry(c1, v2)), null, host2tx1);
 			fail("Expected lock contention between remote transactions did not occur");
-		} catch (LockingFailureException e) {
-			
+		} catch (StorageException e) {
+            assertTrue(e instanceof LockingException);
 		}
 		
 		// This should succeed
@@ -163,26 +161,26 @@ public abstract class LockKeyColumnValueStoreTest {
 	}
 	
 	@Test
-	public void singleTransactionWithMultipleLocks() {
+	public void singleTransactionWithMultipleLocks() throws StorageException {
 		
 		tryWrites(store1, manager1, host1tx1, store1, host1tx1);
 	}
 	
 	@Test
-	public void twoLocalTransactionsWithIndependentLocks() {
+	public void twoLocalTransactionsWithIndependentLocks() throws StorageException {
 
 		tryWrites(store1, manager1, host1tx1, store1, host1tx2);
 	}
 	
 	@Test
-	public void twoTransactionsWithIndependentLocks() {
+	public void twoTransactionsWithIndependentLocks() throws StorageException {
 		
 		tryWrites(store1, manager1, host1tx1, store2, host2tx1);
 	}
 	
 	private void tryWrites(OrderedKeyColumnValueStore store1, StorageManager checkmgr,
 			TransactionHandle tx1, OrderedKeyColumnValueStore store2,
-			TransactionHandle tx2) {
+			TransactionHandle tx2) throws StorageException {
 		assertNull(store1.get(k, c1, tx1));
 		assertNull(store2.get(k, c2, tx2));
 		

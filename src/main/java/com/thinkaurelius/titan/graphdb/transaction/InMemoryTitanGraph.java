@@ -3,8 +3,8 @@ package com.thinkaurelius.titan.graphdb.transaction;
 import cern.colt.list.AbstractLongList;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.core.GraphStorageException;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
@@ -100,7 +100,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 	 */
 	
 	@Override
-	public void shutdown() throws GraphStorageException {
+	public void shutdown() throws TitanException {
 		//Nothing to do;
 	}
 	
@@ -167,9 +167,9 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 	}
 
 	@Override
-	public boolean save(Collection<InternalRelation> addedRelations,
+	public void save(Collection<InternalRelation> addedRelations,
 			Collection<InternalRelation> deletedRelations, InternalTitanTransaction tx)
-			throws GraphStorageException {
+			throws StorageException {
 		throw new UnsupportedOperationException("Not supported for in-memory graph databases");
 	}
 

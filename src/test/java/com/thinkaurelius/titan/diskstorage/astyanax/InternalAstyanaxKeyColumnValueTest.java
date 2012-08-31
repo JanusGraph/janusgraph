@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.astyanax;
 
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import org.junit.BeforeClass;
 
 import com.thinkaurelius.titan.StorageSetup;
@@ -16,7 +17,7 @@ public class InternalAstyanaxKeyColumnValueTest extends KeyColumnValueStoreTest 
 	}
 	
     @Override
-    public StorageManager openStorageManager() {
+    public StorageManager openStorageManager() throws StorageException {
         return new AstyanaxStorageManager(StorageSetup.getCassandraStorageConfiguration());
     }
 

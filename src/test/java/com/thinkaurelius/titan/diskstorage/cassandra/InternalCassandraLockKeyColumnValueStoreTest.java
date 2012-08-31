@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 
@@ -16,7 +17,7 @@ public class InternalCassandraLockKeyColumnValueStoreTest extends LockKeyColumnV
 	}
     
     @Override
-    public StorageManager openStorageManager(short idx) {
+    public StorageManager openStorageManager(short idx) throws StorageException {
     	Configuration sc = StorageSetup.getCassandraStorageConfiguration();
     	sc.addProperty(StorageManager.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, "cassandra-" + idx);
     	sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, idx);

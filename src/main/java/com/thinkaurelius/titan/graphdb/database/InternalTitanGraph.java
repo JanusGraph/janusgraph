@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database;
 
 import cern.colt.list.AbstractLongList;
-import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
@@ -36,7 +36,7 @@ public interface InternalTitanGraph extends TitanGraph {
 	
 	// ######## TitanVertex Operations  ############
 	
-	boolean save(Collection<InternalRelation> addedRelations, Collection<InternalRelation> deletedRelations, InternalTitanTransaction tx) throws GraphStorageException;
+	void save(Collection<InternalRelation> addedRelations, Collection<InternalRelation> deletedRelations, InternalTitanTransaction tx) throws StorageException;
 
 	
 }

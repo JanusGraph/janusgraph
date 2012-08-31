@@ -13,7 +13,7 @@ public interface ReadKeyColumnValueStore {
 	 * @param txh Transaction
 	 * @return Value for key and column or NULL
 	 */
-	public ByteBuffer get(ByteBuffer key, ByteBuffer column, TransactionHandle txh);
+	public ByteBuffer get(ByteBuffer key, ByteBuffer column, TransactionHandle txh) throws StorageException;
 	
 	/**
 	 * Returns true if the specified key-column pair exists in the store.
@@ -23,7 +23,7 @@ public interface ReadKeyColumnValueStore {
 	 * @param txh Transaction
 	 * @return TRUE, if key has at least one column-value pair, else FALSE
 	 */
-	public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, TransactionHandle txh);
+	public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, TransactionHandle txh) throws StorageException;
 
 	/**
 	 * Returns true if specified key is stored locally. Note that the key may not exist
@@ -34,5 +34,5 @@ public interface ReadKeyColumnValueStore {
 	 * @param key Key
 	 * @return TRUE, if the key is stored locally, else FALSE
 	 */
-	public boolean isLocalKey(ByteBuffer key);
+	public boolean isLocalKey(ByteBuffer key) throws StorageException;
 }

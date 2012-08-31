@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thriftpool;
 
-import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
 import org.apache.commons.pool.impl.GenericKeyedObjectPool;
 
@@ -37,20 +38,20 @@ public class UncheckedGenericKeyedObjectPool<K,V> extends GenericKeyedObjectPool
 	}
 	
 	@Override
-	public Object borrowObject(Object key) {
+	public Object borrowObject(Object key) throws StorageException {
 		try {
 			return super.borrowObject(key);
 		} catch (Exception e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		}
 	}
 
 	@Override
-	public void returnObject(Object key, Object o) {
+	public void returnObject(Object key, Object o) throws StorageException {
 		try {
 			super.returnObject(key, o);
 		} catch (Exception e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		}
 	}
 	
@@ -70,11 +71,11 @@ public class UncheckedGenericKeyedObjectPool<K,V> extends GenericKeyedObjectPool
 	 * @return the pooled object
 	 */
 	@SuppressWarnings("unchecked")
-	public V genericBorrowObject(K key) {
+	public V genericBorrowObject(K key) throws StorageException {
 		return (V)borrowObject(key);
 	}
 	
-	public void genericReturnObject(K key, V o) {
+	public void genericReturnObject(K key, V o) throws StorageException {
 		returnObject(key, o);
 	}
 }

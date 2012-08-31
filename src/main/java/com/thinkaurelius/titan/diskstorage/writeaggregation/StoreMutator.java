@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.writeaggregation;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -16,7 +17,7 @@ public interface StoreMutator {
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-	public void mutateEdges(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions);
+	public void mutateEdges(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException;
 
     /**
      * Applies the specified insertion and deletion mutations on the property index to the provided key.
@@ -26,7 +27,7 @@ public interface StoreMutator {
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-    public void mutateIndex(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions);
+    public void mutateIndex(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException;
 
     /**
      * Acquires a lock for the key-column pair on the edge store which ensures that nobody else can take a lock on that
@@ -43,7 +44,7 @@ public interface StoreMutator {
      * @param column Column the column on which to lock
      * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
      */
-    public void acquireEdgeLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue);
+    public void acquireEdgeLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) throws StorageException;
 
     /**
      * Acquires a lock for the key-column pair on the property index which ensures that nobody else can take a lock on that
@@ -60,13 +61,13 @@ public interface StoreMutator {
      * @param column Column the column on which to lock
      * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
      */
-    public void acquireIndexLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue);
+    public void acquireIndexLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) throws StorageException;
 
 
     /**
      * Persists any mutation that is currently buffered.
      *
      */
-	public void flush();
+	public void flush() throws StorageException;
 	
 }

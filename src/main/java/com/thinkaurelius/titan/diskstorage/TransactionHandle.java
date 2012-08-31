@@ -38,12 +38,12 @@ public interface TransactionHandle {
 	/**
 	 * Commits the transaction.
 	 */
-	public void commit();
+	public void commit() throws StorageException;
 	
 	/**
 	 * Aborts (or rolls back) the transaction.
 	 */
-	public void abort();
+	public void abort() throws StorageException;
 	
 	/**
 	 * Checks whether the transaction identified by this handle is read only.

@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.GraphDatabaseException;
+import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,9 +82,13 @@ public class StandardIDPool implements IDPool {
     
     private void renewBuffer() {
         assert bufferNextID==-1 && bufferMaxID==-1;
-        long[] idblock = idAuthority.getIDBlock(partitionID);
-        bufferNextID = idblock[0];
-        bufferMaxID = idblock[1];
+        try {
+            long[] idblock = idAuthority.getIDBlock(partitionID);
+            bufferNextID = idblock[0];
+            bufferMaxID = idblock[1];
+        } catch (StorageException e) {
+            throw new TitanException("Could not acquire new ID block from storage",e);
+        }
         Preconditions.checkArgument(bufferNextID>0);
         Preconditions.checkArgument(bufferMaxID>bufferNextID);
     }
@@ -100,7 +105,7 @@ public class StandardIDPool implements IDPool {
             try {
                 nextBlock();
             } catch (InterruptedException e) {
-                throw new GraphDatabaseException("Could not renew id block",e);
+                throw new TitanException("Could not renew id block",e);
             }
         }
 
@@ -124,10 +129,10 @@ public class StandardIDPool implements IDPool {
             try {
                 idBlockRenewer.join(5000);
             } catch (InterruptedException e) {
-                throw new GraphDatabaseException("Interrupted while waiting for id renewer thread to finish",e);
+                throw new TitanException("Interrupted while waiting for id renewer thread to finish",e);
             }
             if (idBlockRenewer.isAlive()) {
-                throw new GraphDatabaseException("ID renewer thread did not finish");
+                throw new TitanException("ID renewer thread did not finish");
             }
         }
     }

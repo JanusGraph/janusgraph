@@ -3,12 +3,12 @@ package com.thinkaurelius.titan.diskstorage.berkeleydb.je;
 
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.*;
-import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.util.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.DefaultIDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import com.thinkaurelius.titan.util.system.IOUtils;
@@ -48,7 +48,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
     private final String idManagerTableName;
     private final ReentrantLock idAcquisitionLock = new ReentrantLock();
 
-	public BerkeleyJEStorageManager(Configuration configuration) {
+	public BerkeleyJEStorageManager(Configuration configuration) throws StorageException {
 		stores = new HashMap<String, BerkeleyJEKeyValueStore>();
 		directory=new File(configuration.getString(STORAGE_DIRECTORY_KEY));
         Preconditions.checkArgument(directory.isDirectory() && directory.canWrite(),"Cannot open or write to directory: " + directory);
@@ -68,7 +68,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
         initialize(cachePercentage);
 	}
 
-	private void initialize(int cachePercent) throws GraphStorageException {
+	private void initialize(int cachePercent) throws StorageException {
 		try {
 			EnvironmentConfig envConfig = new EnvironmentConfig();
 			envConfig.setAllowCreate(true);
@@ -84,27 +84,27 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 			//Open the environment
 			environment = new Environment(directory, envConfig);
 		} catch (DatabaseException e) {
-			throw new GraphStorageException("Error during BerkeleyJE initialization: ",e);
+			throw new PermanentStorageException("Error during BerkeleyJE initialization: ",e);
 		}
 		
 	}
 	
 	@Override
-	public BDBTxHandle beginTransaction() {
+	public BerkeleyJETxHandle beginTransaction() throws StorageException  {
 		try {
 			Transaction tx = null;
 			if (transactional) {
 				tx = environment.beginTransaction(null, null);
 			}
-			return new BDBTxHandle(tx);
+			return new BerkeleyJETxHandle(tx);
 		} catch (DatabaseException e) {
-			throw new GraphStorageException("Could not start BerkeleyJE transaction",e);
+			throw new PermanentStorageException("Could not start BerkeleyJE transaction",e);
 		}
 	}
 
 
 	@Override
-	public BerkeleyJEKeyValueStore openDatabase(String name) throws GraphStorageException {
+	public BerkeleyJEKeyValueStore openDatabase(String name) throws StorageException {
 		Preconditions.checkNotNull(name);
         if (stores.containsKey(name)) {
 			BerkeleyJEKeyValueStore store = stores.get(name);
@@ -127,7 +127,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 			stores.put(name, store);
 			return store;
 		} catch (DatabaseException e) {
-			throw new GraphStorageException("Could not open BerkeleyJE data store",e);
+			throw new PermanentStorageException("Could not open BerkeleyJE data store",e);
 		}
 	}
 
@@ -144,7 +144,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
     }
 
     @Override
-    public long[] getIDBlock(int partition) {
+    public long[] getIDBlock(int partition) throws StorageException {
         hasActiveIDAcquisition=true;
         BerkeleyJEKeyValueStore idDB = openDatabase(idManagerTableName);
         ByteBuffer key = ByteBufferUtil.getIntByteBuffer(partition);
@@ -153,7 +153,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
             long blockSize = blockSizer.getBlockSize(partition);
             Preconditions.checkArgument(blockSize<Integer.MAX_VALUE);
             int counter = 1;
-            BDBTxHandle tx = null;
+            BerkeleyJETxHandle tx = null;
             try {
                 tx = beginTransaction();
                 ByteBuffer value = idDB.get(key,tx);
@@ -179,29 +179,29 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 
     void removeDatabase(BerkeleyJEKeyValueStore db) {
 		if (!stores.containsKey(db.getName())) {
-			throw new GraphStorageException("Tried to remove an unkown database from the storage manager");
+			throw new IllegalArgumentException("Tried to remove an unkown database from the storage manager");
 		}
 		stores.remove(db.getName());
 	}
 
 
 	@Override
-	public void close() throws GraphStorageException {
+	public void close() throws StorageException {
 		if (environment!=null) {
             BerkeleyJEKeyValueStore idmanager = stores.get(idManagerTableName);
             if (idmanager!=null) idmanager.close();
-			if (!stores.isEmpty()) throw new GraphStorageException("Cannot shutdown manager since some databases are still open");
+			if (!stores.isEmpty()) throw new IllegalStateException("Cannot shutdown manager since some databases are still open");
 			try {
 				environment.close();
 			} catch (DatabaseException e) {
-				throw new GraphStorageException("Could not close BerkeleyJE database",e);
+				throw new PermanentStorageException("Could not close BerkeleyJE database",e);
 			}
 		}
 		
 	}
 
     @Override
-    public void clearStorage() {
+    public void clearStorage() throws StorageException  {
         if (!stores.isEmpty()) throw new IllegalStateException("Cannot delete store, since database is open: " + stores.keySet().toString());
 
         Transaction tx = null;

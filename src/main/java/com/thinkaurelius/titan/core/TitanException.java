@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.util.datastructures.ExceptionUtil;
  * 
  * 
  */
-public class GraphDatabaseException extends RuntimeException {
+public class TitanException extends RuntimeException {
 
 	private static final long serialVersionUID = 4056436257763972423L;
 
@@ -18,7 +18,7 @@ public class GraphDatabaseException extends RuntimeException {
      *
      * @param msg Exception message
      */
-	public GraphDatabaseException(String msg) {
+	public TitanException(String msg) {
 		super(msg);
 	}
 
@@ -27,7 +27,7 @@ public class GraphDatabaseException extends RuntimeException {
      * @param msg Exception message
      * @param cause Cause of the exception
      */
-	public GraphDatabaseException(String msg, Throwable cause) {
+	public TitanException(String msg, Throwable cause) {
 		super(msg,cause);
 	}
 
@@ -36,8 +36,8 @@ public class GraphDatabaseException extends RuntimeException {
      *
      * @param cause Cause of the exception
      */
-	public GraphDatabaseException(Throwable cause) {
-		this("Exception in graph database.",cause);
+	public TitanException(Throwable cause) {
+		this("Exception in Titan",cause);
 	}
 
     /**

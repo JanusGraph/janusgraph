@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.blueprints;
 
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStorageManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Graph;
@@ -30,7 +31,7 @@ public class ExternalHBaseBlueprintsTest extends LocalBlueprintsTest {
     }
 
     @Override
-    public void cleanUp() {
+    public void cleanUp() throws StorageException {
         HBaseStorageManager s = new HBaseStorageManager(
                 StorageSetup.getHBaseGraphConfiguration().subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE));
         s.clearStorage();

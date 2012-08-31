@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
@@ -41,23 +41,23 @@ public class KeyValueStorageManagerAdapter implements StorageManager {
 	}
 		
 	@Override
-	public TransactionHandle beginTransaction() {
+	public TransactionHandle beginTransaction() throws StorageException {
 		return manager.beginTransaction();
 	}
 
 	@Override
-	public void close() {
+	public void close() throws StorageException {
 		manager.close();
 	}
 
     @Override
-    public void clearStorage() {
+    public void clearStorage() throws StorageException {
         manager.clearStorage();
     }
 
     @Override
 	public OrderedKeyColumnValueStore openDatabase(String name)
-			throws GraphStorageException {
+			throws StorageException {
         int keyLength = KeyValueStoreAdapter.variableKeyLength;
         if (keyLengths.containsKey(name)) keyLength = keyLengths.get(name).intValue();
         log.debug("Used key length {} for database {}",keyLength,name);
@@ -71,7 +71,7 @@ public class KeyValueStorageManagerAdapter implements StorageManager {
     }
 
     @Override
-    public long[] getIDBlock(int partition) {
+    public long[] getIDBlock(int partition) throws StorageException {
         return manager.getIDBlock(partition);
     }
 

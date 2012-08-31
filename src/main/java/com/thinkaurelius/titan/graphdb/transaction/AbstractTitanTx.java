@@ -97,7 +97,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
     private final void verifyOpen() {
         if (isClosed())
-            throw GraphDatabaseException.transactionNotOpenException();
+            throw TitanException.transactionNotOpenException();
     }
 
     /*

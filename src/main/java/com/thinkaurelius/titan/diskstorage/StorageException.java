@@ -1,16 +1,14 @@
-package com.thinkaurelius.titan.core;
-
-import com.thinkaurelius.titan.util.datastructures.ExceptionUtil;
+package com.thinkaurelius.titan.diskstorage;
 
 /**
  * Exception thrown in the storage layer of the graph database.
  * 
- * Such exceptions are typically caused by the underlying storage engine and re-thrown as {@link GraphStorageException}.
+ * Such exceptions are typically caused by the underlying storage engine and re-thrown as {@link StorageException}.
  * 
  * @author	Matthias Br&ouml;cheler (me@matthiasb.com);
  * 
  */
-public class GraphStorageException extends GraphDatabaseException {
+public abstract class StorageException extends Exception {
 
 	private static final long serialVersionUID = 4056436257763972423L;
 
@@ -18,7 +16,7 @@ public class GraphStorageException extends GraphDatabaseException {
      *
      * @param msg Exception message
      */
-	public GraphStorageException(String msg) {
+	public StorageException(String msg) {
 		super(msg);
 	}
 
@@ -27,7 +25,7 @@ public class GraphStorageException extends GraphDatabaseException {
      * @param msg Exception message
      * @param cause Cause of the exception
      */
-	public GraphStorageException(String msg, Throwable cause) {
+	public StorageException(String msg, Throwable cause) {
 		super(msg,cause);
 	}
 
@@ -36,7 +34,7 @@ public class GraphStorageException extends GraphDatabaseException {
      *
      * @param cause Cause of the exception
      */
-	public GraphStorageException(Throwable cause) {
+	public StorageException(Throwable cause) {
 		this("Exception in storage backend.",cause);
 	}
 

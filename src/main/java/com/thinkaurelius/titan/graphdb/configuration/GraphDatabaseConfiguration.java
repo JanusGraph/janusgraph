@@ -3,7 +3,9 @@ package com.thinkaurelius.titan.graphdb.configuration;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
+import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.astyanax.AstyanaxStorageManager;
 import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageAdapter;
@@ -367,13 +369,19 @@ public class GraphDatabaseConfiguration {
 	}
     
     public OrderedKeyColumnValueStore getEdgeStore(StorageManager m) {
-        String name = STORAGE_EDGESTORE_NAME;
-        return m.openDatabase(name);
+        return openDatabase(m,STORAGE_EDGESTORE_NAME);
     }
     
     public OrderedKeyColumnValueStore getPropertyIndex(StorageManager m) {
-        String name = STORAGE_PROPERTYINDEX_NAME;
-        return m.openDatabase(name);
+        return openDatabase(m,STORAGE_PROPERTYINDEX_NAME);
+    }
+
+    private OrderedKeyColumnValueStore openDatabase(StorageManager m, String name) {
+        try {
+            return m.openDatabase(name);
+        } catch (StorageException e) {
+            throw new TitanException("Could not open database: "+name,e);
+        }
     }
 	
 	public Serializer getSerializer() {

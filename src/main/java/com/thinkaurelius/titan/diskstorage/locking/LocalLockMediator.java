@@ -63,7 +63,7 @@ public class LocalLockMediator {
 	 * us assert that the lock being released is indeed held
 	 * by the transaction attempting to unlock.
 	 */
-	public void unlock(KeyColumn kc, LockingTransaction requestor) {
+	public void unlock(KeyColumn kc, LockingTransactionHandle requestor) {
 		
 		assert locks.containsKey(kc);
 		assert locks.get(kc).equals(requestor);

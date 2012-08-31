@@ -4,9 +4,10 @@ import cern.colt.list.AbstractLongList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
@@ -154,26 +155,38 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 	@Override
 	public synchronized void commit() {
         Preconditions.checkArgument(isOpen(),"The transaction has already been closed");
-        if (!getTxConfiguration().isReadOnly()) {
-            try {
+        
+        try {
+            if (!addedEdges.isEmpty() || !deletedEdges.isEmpty()) {
                 graphdb.save(addedEdges, deletedEdges, this);
-            } catch (GraphStorageException e) {
-                abort();
-                throw e;
             }
+            txHandle.commit();
+            super.commit();
+        } catch (StorageException e) {
+            try {
+                txHandle.abort();
+                throw new TitanException("Could not commit transaction due to exception during persistence",e);
+            } catch (StorageException s) {
+                throw new TitanException("Failure while trying to abort a unsuccessfully committed transaction",s);
+            } finally {
+                super.abort();
+            }
+        } finally {
+            clear();
         }
-
-        txHandle.commit();
-		super.commit();
-        clear();
 	}
 
 	@Override
 	public synchronized void abort() {
         Preconditions.checkArgument(isOpen(),"The transaction has already been closed");
-		txHandle.abort();
-		super.abort();
-        clear();
+        try {
+		    txHandle.abort();
+        } catch (StorageException e) {
+            throw new TitanException("Could not abort transaction due to exception during persistence",e);
+        } finally {
+            super.abort();
+            clear();
+        }
 	}
 	
 	@Override

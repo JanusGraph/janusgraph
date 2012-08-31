@@ -9,13 +9,14 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class KeyColumnValueStoreUtil {
-	public static void delete(KeyColumnValueStore store, TransactionHandle txn, long key, String col) {
+
+	public static void delete(KeyColumnValueStore store, TransactionHandle txn, long key, String col) throws StorageException {
 		ByteBuffer k = longToByteBuffer(key);
 		ByteBuffer c = stringToByteBuffer(col);
 		store.mutate(k, null, Arrays.asList(c), txn);
 	}
 	
-	public static String get(KeyColumnValueStore store, TransactionHandle txn, long key, String col) {
+	public static String get(KeyColumnValueStore store, TransactionHandle txn, long key, String col) throws StorageException {
 		ByteBuffer k = longToByteBuffer(key);
 		ByteBuffer c = stringToByteBuffer(col);
 		ByteBuffer valBytes = store.get(k, c, txn);
@@ -24,7 +25,7 @@ public class KeyColumnValueStoreUtil {
 		return byteBufferToString(valBytes);
 	}
 	
-	public static void insert(KeyColumnValueStore store, TransactionHandle txn, long key, String col, String val) {
+	public static void insert(KeyColumnValueStore store, TransactionHandle txn, long key, String col, String val) throws StorageException {
 		ByteBuffer k = longToByteBuffer(key);
 		ByteBuffer c = stringToByteBuffer(col);
 		ByteBuffer v = stringToByteBuffer(val);

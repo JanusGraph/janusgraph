@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 
@@ -16,7 +17,7 @@ public class InternalCassandraThriftKeyColumnValueTest extends KeyColumnValueSto
 	}
 
     @Override
-    public StorageManager openStorageManager() {
+    public StorageManager openStorageManager() throws StorageException {
         return new CassandraThriftStorageManager(getConfiguration());
     }
 

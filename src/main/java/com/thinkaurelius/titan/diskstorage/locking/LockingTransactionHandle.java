@@ -7,14 +7,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
+import com.thinkaurelius.titan.diskstorage.*;
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.LockingFailureException;
-import com.thinkaurelius.titan.diskstorage.LockConfig;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
 /**
@@ -25,7 +22,7 @@ import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
  * 
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
-public abstract class LockingTransaction implements TransactionHandle {
+public abstract class LockingTransactionHandle implements TransactionHandle {
 	
 	/**
 	 * This variable starts false.  It remains false during the
@@ -37,7 +34,8 @@ public abstract class LockingTransaction implements TransactionHandle {
 	
 	/**
 	 * This variable holds the last time we successfully wrote a
-	 * lock via the {@link #writeBlindLockClaim()} method.
+	 * lock via the {@link #writeBlindLockClaim(com.thinkaurelius.titan.diskstorage.LockConfig, java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer)}
+     * method.
 	 */
 	private final Map<LockConfig, Long> lastLockApplicationTimesMS =
 			new HashMap<LockConfig, Long>();
@@ -46,14 +44,14 @@ public abstract class LockingTransaction implements TransactionHandle {
 	 * All locks currently claimed by this transaction.  Note that locks
 	 * in this set may not necessarily be actually held; membership in the
 	 * set only signifies that we've attempted to claim the lock via the
-	 * {@link #writeBlindLockClaim()} method.
+	 * {@link #writeBlindLockClaim(com.thinkaurelius.titan.diskstorage.LockConfig, java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer)} method.
 	 */
 	private final LinkedHashSet<LockClaim> lockClaims =
 			new LinkedHashSet<LockClaim>();
 	
-	private static final Logger log = LoggerFactory.getLogger(LockingTransaction.class);
+	private static final Logger log = LoggerFactory.getLogger(LockingTransactionHandle.class);
 	
-	public LockingTransaction() {
+	public LockingTransactionHandle() {
 	}
 	
 	@Override
@@ -98,12 +96,12 @@ public abstract class LockingTransaction implements TransactionHandle {
 	 * LockClaim object to the lockClaims field and then returns.
 	 * <p>
 	 * If we can't get the lock from the local lock mediator, then we
-	 * throw a GraphStorageException with a string message to that effect.
+	 * throw a StorageException with a string message to that effect.
 	 */
 	public void writeBlindLockClaim(
 			LockConfig backer, ByteBuffer key,
 			ByteBuffer column, ByteBuffer expectedValue)
-			throws LockingFailureException {
+			throws StorageException {
 
 		LockClaim lc = new LockClaim(backer, key, column, expectedValue);
 		
@@ -115,7 +113,7 @@ public abstract class LockingTransaction implements TransactionHandle {
 		
 		// Check the local lock mediator
 		if (!backer.getLocalLockMediator().lock(lc.getKc(), this)) {
-			throwLockFailure("Lock contention among local transactions");
+			throw new PermanentLockingException("Lock could not be acquired because it is held by a local transaction [" + lc + "]");
 		}
 		
 		/* Write lock to the backing store
@@ -155,7 +153,7 @@ public abstract class LockingTransaction implements TransactionHandle {
 				}
 			}
 
-			throwLockFailure("Lock failed: exceeded max timeouts. " + lc);
+			throw new TemporaryLockingException("Lock failed: exceeded max timeouts [" + lc + "]");
 		} finally {
 			if (!ok)
 				backer.getLocalLockMediator().unlock(lc.getKc(), this);
@@ -171,10 +169,10 @@ public abstract class LockingTransaction implements TransactionHandle {
 	 * the current value stored at the key-column coordinate of the lock.
 	 * <p>
 	 * If we are not most senior on any object in the lockClaims list,
-	 * then we throw GraphStorageException to that effect.
+	 * then we throw StorageException to that effect.
 	 * <p>
 	 * If there is an expectedValue mismatch between any locking request
-	 * and actual key-column value, then we throw GraphStorageException
+	 * and actual key-column value, then we throw StorageException
 	 * to that effect.
 	 * <p>
 	 * In other words, if this method returns without throwing an
@@ -183,7 +181,7 @@ public abstract class LockingTransaction implements TransactionHandle {
 	 * matches reality.
 	 * 
 	 */
-	public void verifyAllLockClaims() throws LockingFailureException {
+	public void verifyAllLockClaims() throws StorageException {
 
 		// wait one full lockWaitMS since the last claim attempt, if needed
 		if (0 == lastLockApplicationTimesMS.size())
@@ -265,7 +263,7 @@ public abstract class LockingTransaction implements TransactionHandle {
                 		Hex.encodeHexString(rid),
                 		null != earliestRid ? Hex.encodeHexString(earliestRid) : "null",
                 		earliestTS });
-				throwLockFailure("A remote transaction holds " + lc);
+				throw new PermanentLockingException("Lock could not be acquired because it is held by a remote transaction [" + lc + "]");
 			}
 			
 			
@@ -274,7 +272,7 @@ public abstract class LockingTransaction implements TransactionHandle {
 			if ((null == bb && null != lc.getExpectedValue()) ||
 			    (null != bb && null == lc.getExpectedValue()) ||
 			    (null != bb && null != lc.getExpectedValue() && !lc.getExpectedValue().equals(bb))) {
-				throwLockFailure("Expected value mismatch on " + lc);
+				throw new PermanentLockingException("Updated state: lock acquired but value has changed since read [" + lc + "]");
 			}
 		}
 	}
@@ -315,17 +313,8 @@ public abstract class LockingTransaction implements TransactionHandle {
 		}
 	}
 
-	private void throwLockFailure(String s) throws LockingFailureException {
-		unlockAll();
-		throw new LockingFailureException(s);
-	}
 	
-	private void throwLockFailure(Throwable t) throws LockingFailureException {
-		unlockAll();
-		throw new LockingFailureException(t);
-	}
-	
-	private void sleepUntil(long untilTimeMillis) {
+	private void sleepUntil(long untilTimeMillis) throws StorageException {
 		long now;
 		
 		while (true) {
@@ -343,7 +332,7 @@ public abstract class LockingTransaction implements TransactionHandle {
 				log.debug("About to sleep for {} ms", delta);
 				Thread.sleep(delta);
 			} catch (InterruptedException e) {
-				throwLockFailure(e);
+				throw new TemporaryLockingException("Interrupted while waiting for lock verification",e);
 			}
 		}
 	}

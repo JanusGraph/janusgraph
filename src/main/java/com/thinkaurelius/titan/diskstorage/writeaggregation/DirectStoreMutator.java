@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.writeaggregation;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 
 import java.nio.ByteBuffer;
@@ -20,22 +21,22 @@ public class DirectStoreMutator implements StoreMutator {
 	}
 
     @Override
-    public void mutateEdges(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) {
+    public void mutateEdges(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException {
         edgestore.mutate(key,additions,deletions,txh);
     }
 
     @Override
-    public void acquireEdgeLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) {
+    public void acquireEdgeLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) throws StorageException {
         edgestore.acquireLock(key,column,expectedValue,txh);
     }
 
     @Override
-    public void mutateIndex(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) {
+    public void mutateIndex(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException {
         propertyIndex.mutate(key,additions,deletions,txh);
     }
 
     @Override
-    public void acquireIndexLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) {
+    public void acquireIndexLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) throws StorageException {
         propertyIndex.acquireLock(key,column,expectedValue,txh);
     }
 

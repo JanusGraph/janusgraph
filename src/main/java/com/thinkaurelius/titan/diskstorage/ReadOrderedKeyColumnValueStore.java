@@ -15,7 +15,7 @@ public interface ReadOrderedKeyColumnValueStore {
 	 * @param txh Transaction
 	 * @return TRUE, if key has at least one column-value pair, else FALSE
 	 */
-	public boolean containsKey(ByteBuffer key, TransactionHandle txh);
+	public boolean containsKey(ByteBuffer key, TransactionHandle txh) throws StorageException;
 	
 	/**
 	 * Retrieves the list of entries (i.e. column-value pairs) for a specified key which
@@ -29,11 +29,11 @@ public interface ReadOrderedKeyColumnValueStore {
 	 * @param columnEnd Head Column (exclusive)
 	 * @param limit Maximum number of entries to retrieve
 	 * @param txh Transaction
-	 * @throws com.thinkaurelius.titan.core.GraphStorageException when columnEnd < columnStart as determined in
+	 * @throws StorageException when columnEnd < columnStart as determined in
 	 *         {@link ByteBufferUtil#isSmallerThan(ByteBuffer,ByteBuffer)}
 	 * @return List of entries up to a maximum of "limit" entries
 	 */
-	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, int limit, TransactionHandle txh);
+	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, int limit, TransactionHandle txh) throws StorageException;
 
 	
 	/**
@@ -47,11 +47,11 @@ public interface ReadOrderedKeyColumnValueStore {
 	 * @param columnStart Tail Column (inclusive)
 	 * @param columnEnd Head Column (exclusive)
 	 * @param txh Transaction
-	 * @throws com.thinkaurelius.titan.core.GraphStorageException when columnEnd < columnStart as determined in
+	 * @throws StorageException when columnEnd < columnStart as determined in
 	 *         {@link ByteBufferUtil#isSmallerThan(ByteBuffer,ByteBuffer)}
 	 * @return List of entries
 	 */
-	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, TransactionHandle txh);
+	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, TransactionHandle txh) throws StorageException;
 
 	
 }

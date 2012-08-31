@@ -19,11 +19,8 @@ import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.query.RowQuery;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.ByteBufferSerializer;
-import com.thinkaurelius.titan.core.GraphStorageException;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.LockConfig;
-import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
@@ -64,14 +61,14 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 	}
 	
 	@Override
-	public void close() throws GraphStorageException {
+	public void close() throws StorageException {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
 	public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		try {
 			OperationResult<Column<ByteBuffer>> result = 
 				keyspace.prepareQuery(cf)
@@ -82,13 +79,13 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 		} catch (NotFoundException e) {
 			return null;
 		} catch (ConnectionException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 	}
 
 	@Override
 	public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		return null != get(key, column, txh);
 	}
 
@@ -100,7 +97,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
 	@Override
 	public void mutate(ByteBuffer key, List<Entry> additions,
-			List<ByteBuffer> deletions, TransactionHandle txh) {
+			List<ByteBuffer> deletions, TransactionHandle txh) throws StorageException {
     	Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations =
     			new HashMap<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation>(1);
     	
@@ -114,17 +111,17 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
 	@Override
 	public void acquireLock(ByteBuffer key, ByteBuffer column,
-			ByteBuffer expectedValue, TransactionHandle txh) {
+			ByteBuffer expectedValue, TransactionHandle txh) throws StorageException {
 		AstyanaxTransaction ctxh = (AstyanaxTransaction)txh;
 		if (ctxh.isMutationStarted()) {
-			throw new GraphStorageException("Attempted to obtain a lock after one or more mutations");
+			throw new PermanentLockingException("Attempted to obtain a lock after one or more mutations");
 		}
 		
 		ctxh.writeBlindLockClaim(lockConfig, key, column, expectedValue);
 	}
 
 	@Override
-	public boolean containsKey(ByteBuffer key, TransactionHandle txh) {
+	public boolean containsKey(ByteBuffer key, TransactionHandle txh) throws StorageException {
 		try {
 			// See getSlice() below for a warning suppression justification
 			@SuppressWarnings("rawtypes")
@@ -136,13 +133,13 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 			OperationResult<ColumnList<ByteBuffer>> r = rq.withColumnRange(EMPTY, EMPTY, false, 1).execute();
 			return 0 < r.getResult().size();
 		} catch (ConnectionException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 	}
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, int limit, TransactionHandle txh) {
+			ByteBuffer columnEnd, int limit, TransactionHandle txh) throws StorageException {
 		
 		/*
 		 * The following hideous cast dance avoids a type-erasure error in the
@@ -187,7 +184,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 			OperationResult<ColumnList<ByteBuffer>> tmp = (OperationResult<ColumnList<ByteBuffer>>)rq.execute();
 			r = tmp;
 		} catch (ConnectionException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 		
 		List<Entry> result = new ArrayList<Entry>(r.getResult().size());
@@ -213,13 +210,13 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, TransactionHandle txh) {
+			ByteBuffer columnEnd, TransactionHandle txh) throws StorageException {
 		return getSlice(key, columnStart, columnEnd, Integer.MAX_VALUE - 1, txh);
 	}
 
 	@Override
 	public void mutateMany(Map<ByteBuffer, Mutation> mutations,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
     	// null txh means a Transaction is calling this method
     	if (null != txh) {
     		// non-null txh -> make sure locks are valid
@@ -266,7 +263,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 		try {
 			m.execute();
 		} catch (ConnectionException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 
 	}

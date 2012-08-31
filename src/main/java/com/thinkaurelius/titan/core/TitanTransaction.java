@@ -1,7 +1,6 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
@@ -242,7 +241,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
 	 * The call releases data structures if possible. All element references (e.g. vertex objects) retrieved
 	 * through this transaction are stale after the transaction closes and should no longer be used.
 	 *
-	 * @throws GraphStorageException if an error arises during persistence
+	 * @throws com.thinkaurelius.titan.diskstorage.StorageException if an error arises during persistence
 	 */
 	public void commit();
 
@@ -252,7 +251,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * The call releases data structures if possible. All element references (e.g. vertex objects) retrieved
      * through this transaction are stale after the transaction closes and should no longer be used.
 	 * 
-	 * @throws GraphStorageException if an error arises when releasing the transaction handle
+	 * @throws com.thinkaurelius.titan.diskstorage.StorageException if an error arises when releasing the transaction handle
 	 */
 	public void abort();
 	

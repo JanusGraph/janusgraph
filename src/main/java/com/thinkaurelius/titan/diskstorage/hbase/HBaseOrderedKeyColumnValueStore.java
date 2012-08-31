@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.thinkaurelius.titan.diskstorage.*;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Delete;
@@ -24,11 +25,7 @@ import org.apache.hadoop.hbase.filter.FilterList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.core.GraphStorageException;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.LockConfig;
-import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
@@ -85,17 +82,17 @@ public class HBaseOrderedKeyColumnValueStore implements
 	}
 
 	@Override
-	public void close() throws GraphStorageException {
+	public void close() throws StorageException {
 		try {
 			pool.close();
 		} catch (IOException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 	}
 
 	@Override
 	public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		
 		byte[] keyBytes = toArray(key);
 		byte[] colBytes = toArray(column);
@@ -136,13 +133,13 @@ public class HBaseOrderedKeyColumnValueStore implements
 				return null;
 			}
 		} catch (IOException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 	}
 
 	@Override
 	public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		return null != get(key, column, txh);
 	}
 
@@ -153,7 +150,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 	}
 
 	@Override
-	public boolean containsKey(ByteBuffer key, TransactionHandle txh) {
+	public boolean containsKey(ByteBuffer key, TransactionHandle txh) throws StorageException {
 		
 		byte[] keyBytes = toArray(key);
 		
@@ -170,13 +167,13 @@ public class HBaseOrderedKeyColumnValueStore implements
 					table.close();
 			}
 		} catch (IOException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 	}
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, int limit, TransactionHandle txh) {
+			ByteBuffer columnEnd, int limit, TransactionHandle txh) throws StorageException {
 
 		byte[] colStartBytes = columnEnd.hasRemaining() ? toArray(columnStart) : null;
 		byte[] colEndBytes = columnEnd.hasRemaining() ? toArray(columnEnd) : null;
@@ -192,7 +189,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, TransactionHandle txh) {
+			ByteBuffer columnEnd, TransactionHandle txh) throws StorageException {
 
 		byte[] colStartBytes = columnEnd.hasRemaining() ? toArray(columnStart) : null;
 		byte[] colEndBytes = columnEnd.hasRemaining() ? toArray(columnEnd) : null;
@@ -203,7 +200,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 	}
 
 	private List<Entry> getHelper(ByteBuffer key,
-			Filter getFilter) {
+			Filter getFilter) throws StorageException {
 		
 		byte[] keyBytes = toArray(key);
 		
@@ -242,7 +239,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 			
 			return ret;
 		} catch (IOException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 	}
 	
@@ -279,9 +276,9 @@ public class HBaseOrderedKeyColumnValueStore implements
 
 	@Override
 	public void mutate(ByteBuffer key, List<Entry> additions,
-			List<ByteBuffer> deletions, TransactionHandle txh) {
+			List<ByteBuffer> deletions, TransactionHandle txh) throws StorageException {
 		
-    	// null txh means a LockingTransaction is calling this method
+    	// null txh means a LockingTransactionHandle is calling this method
     	if (null != txh) {
     		// non-null txh -> make sure locks are valid
     		HBaseTransaction lt = (HBaseTransaction)txh;
@@ -343,18 +340,18 @@ public class HBaseOrderedKeyColumnValueStore implements
 					table.close();
 			}
 		} catch (IOException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		} catch (InterruptedException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 	}
 
 	@Override
 	public void mutateMany(
 			Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		
-    	// null txh means a LockingTransaction is calling this method
+    	// null txh means a LockingTransactionHandle is calling this method
     	if (null != txh) {
     		// non-null txh -> make sure locks are valid
     		HBaseTransaction lt = (HBaseTransaction)txh;
@@ -422,9 +419,9 @@ public class HBaseOrderedKeyColumnValueStore implements
 					table.close();
 			}
 		} catch (IOException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		} catch (InterruptedException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 		
 		long now = System.currentTimeMillis(); 
@@ -440,10 +437,10 @@ public class HBaseOrderedKeyColumnValueStore implements
 
 	@Override
 	public void acquireLock(ByteBuffer key, ByteBuffer column,
-			ByteBuffer expectedValue, TransactionHandle txh) {
+			ByteBuffer expectedValue, TransactionHandle txh) throws StorageException {
 		HBaseTransaction lt = (HBaseTransaction)txh;
 		if (lt.isMutationStarted()) {
-			throw new GraphStorageException("Attempted to obtain a lock after one or more mutations");
+			throw new PermanentLockingException("Attempted to obtain a lock after one or more mutations");
 		}
 		
 		lt.writeBlindLockClaim(internals, key, column, expectedValue);

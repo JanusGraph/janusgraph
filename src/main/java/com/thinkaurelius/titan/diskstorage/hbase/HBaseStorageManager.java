@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -20,11 +21,7 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.core.GraphDatabaseException;
-import com.thinkaurelius.titan.core.GraphStorageException;
-import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
@@ -66,7 +63,7 @@ public class HBaseStorageManager implements StorageManager {
     
     private final org.apache.hadoop.conf.Configuration hconf;
 	
-    public HBaseStorageManager(org.apache.commons.configuration.Configuration config) {
+    public HBaseStorageManager(org.apache.commons.configuration.Configuration config) throws StorageException {
     	this.rid = ConfigHelper.getRid(config);
     	
         this.tableName = config.getString(TABLE_NAME_KEY,TABLE_NAME_DEFAULT);
@@ -128,13 +125,13 @@ public class HBaseStorageManager implements StorageManager {
     }
 
     @Override
-    public long[] getIDBlock(int partition) {
+    public long[] getIDBlock(int partition) throws StorageException {
         return idmanager.getIDBlock(partition);
     }
 
 	@Override
 	public OrderedKeyColumnValueStore openDatabase(String name)
-			throws GraphStorageException {
+			throws StorageException {
 		
 		OrderedKeyColumnValueStore lockStore =
 				openDatabase(name + "_locks", null, null);
@@ -146,13 +143,13 @@ public class HBaseStorageManager implements StorageManager {
 	}
 
 	private OrderedKeyColumnValueStore openDatabase(String name, LocalLockMediator llm, OrderedKeyColumnValueStore lockStore)
-			throws GraphStorageException {
+			throws StorageException {
 		
 		HBaseAdmin adm = null;
 		try {
 			adm = new HBaseAdmin(hconf);
 		} catch (IOException e) {
-			throw new GraphDatabaseException(e);
+			throw new TitanException(e);
 		}
 		
 		// Create our table, if necessary
@@ -164,10 +161,10 @@ public class HBaseStorageManager implements StorageManager {
 			try {
 				desc = adm.getTableDescriptor(tableName.getBytes());
 			} catch (IOException ee) {
-				throw new GraphStorageException(ee);
+				throw new TemporaryStorageException(ee);
 			}
 		} catch (IOException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 		
 		assert null != desc;
@@ -182,16 +179,16 @@ public class HBaseStorageManager implements StorageManager {
 				try {
 					Thread.sleep(1000L);
 				} catch (InterruptedException ie) {
-					throw new GraphStorageException(ie);
+					throw new TemporaryStorageException(ie);
 				}
 				adm.enableTable(tableName);
 			} catch (TableNotFoundException ee) {
 				log.error("TableNotFoundException", ee);
-				throw new GraphStorageException(ee);
+				throw new PermanentStorageException(ee);
 			} catch (org.apache.hadoop.hbase.TableExistsException ee) {
 				log.debug("Swallowing exception {}", ee);
 			} catch (IOException ee) {
-				throw new GraphStorageException(ee);
+				throw new TemporaryStorageException(ee);
 			}
 		}
 			
@@ -202,7 +199,7 @@ public class HBaseStorageManager implements StorageManager {
 	}
 
 	@Override
-	public TransactionHandle beginTransaction() {
+	public TransactionHandle beginTransaction() throws StorageException {
 		return new HBaseTransaction();
 	}
 
@@ -217,7 +214,7 @@ public class HBaseStorageManager implements StorageManager {
      *
      */
     @Override
-    public void clearStorage() {
+    public void clearStorage() throws StorageException {
 		HTable table = null;
 		try {
 			table = new HTable(hconf, tableName);
@@ -239,7 +236,7 @@ public class HBaseStorageManager implements StorageManager {
 		    	}
 		    }
 		} catch (IOException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		} finally {
 			if(table != null) {
 				try {

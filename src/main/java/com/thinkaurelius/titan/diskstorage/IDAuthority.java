@@ -19,7 +19,7 @@ public interface IDAuthority {
      * @param partition Partition for which to request an id block. Must be bigger or equal to 0
      * @return a range of ids for the particular partition
      */
-    public long[] getIDBlock(int partition);
+    public long[] getIDBlock(int partition) throws StorageException;
 
     /**
      * Sets the {@link IDBlockSizer} to be used by this IDAuthority. The IDBlockSizer specifies the block size for 

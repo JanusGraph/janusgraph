@@ -33,9 +33,9 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
 	  * Closing a graph database requires that all open thread-independent transactions have been closed -
       * otherwise they will be left abandoned.
 	  * 
-	  * @throws GraphStorageException if closing the graph database caused errors in the storage backend
+	  * @throws TitanException if closing the graph database caused errors in the storage backend
 	  */
-	public void shutdown() throws GraphStorageException;
+	public void shutdown() throws TitanException;
 
 
     public TypeMaker makeType();

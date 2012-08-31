@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.util;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 
 import java.nio.ByteBuffer;
@@ -26,7 +27,7 @@ public class OrderedKeyValueStoreAdapter extends KeyValueStoreAdapter implements
 	}
 	
 	@Override
-	public boolean containsKey(ByteBuffer key, TransactionHandle txh) {
+	public boolean containsKey(ByteBuffer key, TransactionHandle txh) throws StorageException {
 		ContainsSelector select = new ContainsSelector(key);
 		store.getSlice(key, ByteBufferUtil.nextBiggerBuffer(key), select, txh);
 		return select.contains();
@@ -34,13 +35,13 @@ public class OrderedKeyValueStoreAdapter extends KeyValueStoreAdapter implements
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, 
-			int limit, TransactionHandle txh) {
+			int limit, TransactionHandle txh) throws StorageException {
 		return convert(store.getSlice(concatenatePrefix(key,columnStart), concatenatePrefix(key,columnEnd), new KeyColumnSliceSelector(key,limit), txh));
 	}
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, 
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		return convert(store.getSlice(concatenatePrefix(key,columnStart), concatenatePrefix(key,columnEnd), new KeyColumnSliceSelector(key), txh));
 	}
 		

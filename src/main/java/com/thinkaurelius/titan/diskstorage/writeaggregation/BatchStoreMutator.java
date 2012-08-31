@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.writeaggregation;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,17 +34,17 @@ public class BatchStoreMutator extends BufferStoreMutator {
 	}
 
     @Override
-    public void acquireEdgeLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) {
+    public void acquireEdgeLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) throws StorageException {
         throw new UnsupportedOperationException("Locking is not supported during batch operations");
     }
 
     @Override
-    public void acquireIndexLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) {
+    public void acquireIndexLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) throws StorageException {
         throw new UnsupportedOperationException("Locking is not supported during batch operations");
     }
 
 	@Override
-	public void flush() {
+	public void flush() throws StorageException {
         super.flush();
         int waitTimeMS = 1;
         while (runningWorkers.get()>0) {
@@ -58,7 +59,7 @@ public class BatchStoreMutator extends BufferStoreMutator {
         }
 	}
 
-    protected void flushInternal() {
+    protected void flushInternal() throws StorageException {
         if (!edgeMutations.isEmpty()) {
             executor.execute(new MakePeristenceCalls(edgeStore, edgeMutations));
             edgeMutations = new HashMap<ByteBuffer, Mutation>();
@@ -92,7 +93,11 @@ public class BatchStoreMutator extends BufferStoreMutator {
         @Override
         public void run() {
             log.debug("Starting persistence...");
+            try {
             store.mutateMany(mutations,txh);
+            } catch (StorageException e) {
+                log.error("Exception during batch mutation: {}",e);
+            }
             runningWorkers.decrementAndGet();
             log.debug("... stopped persistence.");
         }

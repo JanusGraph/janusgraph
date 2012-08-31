@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.CfDef;
@@ -18,9 +19,6 @@ import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.core.GraphStorageException;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool;
@@ -132,7 +130,7 @@ public class CassandraThriftStorageManager implements StorageManager {
     
     private final int replicationFactor;
 	
-	public CassandraThriftStorageManager(Configuration config) {
+	public CassandraThriftStorageManager(Configuration config) throws StorageException {
 		
 		this.rid = ConfigHelper.getRid(config);
 		
@@ -195,7 +193,7 @@ public class CassandraThriftStorageManager implements StorageManager {
     }
 
     @Override
-    public long[] getIDBlock(int partition) {
+    public long[] getIDBlock(int partition) throws StorageException {
         return idmanager.getIDBlock(partition);
     }
 
@@ -211,7 +209,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 
     @Override
 	public CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name)
-			throws GraphStorageException {
+			throws StorageException {
 		
 		CassandraThriftOrderedKeyColumnValueStore lockStore =
 				openDatabase(name + "_locks", keyspace, null, null);
@@ -224,7 +222,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 	}
 	
 	private CassandraThriftOrderedKeyColumnValueStore openDatabase(final String name, final String ksoverride, CassandraThriftOrderedKeyColumnValueStore lockStore, LocalLockMediator llm)
-			throws GraphStorageException {
+			throws StorageException {
 		
 		String storeKey = llmPrefix + ":" + ksoverride + ":" + name;
 	
@@ -256,13 +254,13 @@ public class CassandraThriftStorageManager implements StorageManager {
 				log.debug("Found keyspace: {}", ksoverride);
 			}
 		} catch (TException e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		} catch (InvalidRequestException e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		} catch (NotFoundException e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		} catch (SchemaDisagreementException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		} finally {
 			if (null != conn)
 				pool.genericReturnObject(ksoverride, conn);
@@ -290,7 +288,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 	 * @throws RuntimeException if any checked Thrift or UnknownHostException
 	 *         is thrown in the body of this method
 	 */
-	public void clearStorage() throws GraphStorageException {
+	public void clearStorage() throws StorageException {
 		CTConnection conn = null;
 		try {
 			conn = CTConnectionPool.getFactory(hostname, port, THRIFT_TIMEOUT_DEFAULT).makeRawConnection();
@@ -316,7 +314,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 						keyspace);
 			}
 		} catch (Exception e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		} finally {
 			if (null != conn && conn.getTransport().isOpen())
 				conn.getTransport().close();
@@ -325,7 +323,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 	
 	private KsDef ensureKeyspaceExists(String name)
 			throws NotFoundException, InvalidRequestException, TException,
-			SchemaDisagreementException {
+			SchemaDisagreementException, StorageException {
 		
 		CTConnectionFactory fac = 
 				CTConnectionPool.getFactory(hostname, port, THRIFT_TIMEOUT_DEFAULT);
@@ -354,7 +352,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 				try {
 					CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
 				} catch (InterruptedException ie) {
-					throw new GraphStorageException(ie);
+					throw new TemporaryStorageException(ie);
 				}
 			}
 
@@ -368,7 +366,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 	}
     
     private void createColumnFamily(Cassandra.Client client, String ksname, String cfName)
-    		throws InvalidRequestException, TException {
+    		throws InvalidRequestException, TException, StorageException {
 		CfDef createColumnFamily = new CfDef();
 		createColumnFamily.setName(cfName);
 		createColumnFamily.setKeyspace(ksname);
@@ -386,7 +384,7 @@ public class CassandraThriftStorageManager implements StorageManager {
         try {
             schemaVer = client.system_add_column_family(createColumnFamily);
         } catch (SchemaDisagreementException e) {
-            throw new GraphStorageException("Error in setting up column family",e);
+            throw new TemporaryStorageException("Error in setting up column family",e);
         }
         log.debug("Added column family {} to keyspace {}.", cfName, ksname);
 		
@@ -394,7 +392,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 		try {
 			CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
 		} catch (InterruptedException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
     	
     }

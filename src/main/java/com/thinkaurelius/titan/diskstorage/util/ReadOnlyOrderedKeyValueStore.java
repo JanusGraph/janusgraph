@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 
 import java.nio.ByteBuffer;
@@ -18,19 +19,19 @@ public class ReadOnlyOrderedKeyValueStore extends ReadOnlyKeyValueStore implemen
 	}
 	
 	@Override
-	public boolean containsKey(ByteBuffer key, TransactionHandle txh) {
+	public boolean containsKey(ByteBuffer key, TransactionHandle txh) throws StorageException {
 		return store.containsKey(key, txh);
 	}
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, int limit, TransactionHandle txh) {
+			ByteBuffer columnEnd, int limit, TransactionHandle txh) throws StorageException {
 		return store.getSlice(key, columnStart, columnEnd, limit, txh);
 	}
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, TransactionHandle txh) {
+			ByteBuffer columnEnd, TransactionHandle txh) throws StorageException {
 		return store.getSlice(key, columnStart, columnEnd, txh);
 	}
 	

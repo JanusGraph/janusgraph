@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
+import com.thinkaurelius.titan.diskstorage.*;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.ColumnFamily;
 import org.apache.cassandra.db.IColumn;
@@ -26,11 +27,7 @@ import org.apache.cassandra.thrift.UnavailableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.core.GraphStorageException;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.LockConfig;
-import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
@@ -53,7 +50,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
 	
 	
-	public CassandraEmbeddedOrderedKeyColumnValueStore(
+	public CassandraEmbeddedOrderedKeyColumnValueStore (
 			String keyspace,
 			String columnFamily,
             ConsistencyLevel readConsistencyLevel,
@@ -79,13 +76,13 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 	}
 
 	@Override
-	public void close() throws GraphStorageException {
+	public void close() throws StorageException {
 		// TODO Auto-generated method stub
 	}
 
 	@Override
 	public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		
 		QueryPath slicePath = new QueryPath(columnFamily);
 
@@ -99,7 +96,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 			return null;
 
 		if (1 < rows.size())
-			throw new GraphStorageException("Received " + rows.size()
+			throw new PermanentStorageException("Received " + rows.size()
 					+ " rows from a single-key-column cassandra read");
 
 		assert 1 == rows.size();
@@ -131,7 +128,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
 	@Override
 	public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		return null != get(key, column, txh);
 	}
 
@@ -142,7 +139,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
 	@Override
 	public void mutate(ByteBuffer key, List<Entry> additions,
-			List<ByteBuffer> deletions, TransactionHandle txh) {
+			List<ByteBuffer> deletions, TransactionHandle txh) throws StorageException {
 
     	Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations =
     			new HashMap<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation>(1);
@@ -157,18 +154,18 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
 	@Override
 	public void acquireLock(ByteBuffer key, ByteBuffer column,
-			ByteBuffer expectedValue, TransactionHandle txh) {
+			ByteBuffer expectedValue, TransactionHandle txh) throws StorageException {
 		
 		CassandraETransaction ctxh = (CassandraETransaction)txh;
 		if (ctxh.isMutationStarted()) {
-			throw new GraphStorageException("Attempted to obtain a lock after one or more mutations");
+			throw new PermanentLockingException("Attempted to obtain a lock after one or more mutations");
 		}
 		
 		ctxh.writeBlindLockClaim(internals, key, column, expectedValue);
 	}
 
 	@Override
-	public boolean containsKey(ByteBuffer key, TransactionHandle txh) {
+	public boolean containsKey(ByteBuffer key, TransactionHandle txh) throws StorageException {
 		
 		QueryPath slicePath = new QueryPath(columnFamily);
         ReadCommand sliceCmd = new SliceFromReadCommand(
@@ -211,7 +208,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, int limit, TransactionHandle txh) {
+			ByteBuffer columnEnd, int limit, TransactionHandle txh) throws StorageException {
 
 		QueryPath slicePath = new QueryPath(columnFamily);
         ReadCommand sliceCmd = new SliceFromReadCommand(
@@ -232,7 +229,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
         int sliceSize = slice.size();
         if (1 < sliceSize)
-        	throw new GraphStorageException("Received " + sliceSize + " rows for single key");
+        	throw new PermanentStorageException("Received " + sliceSize + " rows for single key");
         
         Row r = slice.get(0);
 
@@ -256,7 +253,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, TransactionHandle txh) {
+			ByteBuffer columnEnd, TransactionHandle txh) throws StorageException {
 		return getSlice(key, columnStart, columnEnd, Integer.MAX_VALUE, txh);
 	}
 
@@ -268,7 +265,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 	 */
 	@Override
 	public void mutateMany(Map<ByteBuffer, Mutation> mutations,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
     	if (null == mutations)
     		return;
 
@@ -317,23 +314,23 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 		mutate(commands, clvl);
 	}
 
-	private List<Row> read(ReadCommand cmd, ConsistencyLevel clvl) {
+	private List<Row> read(ReadCommand cmd, ConsistencyLevel clvl) throws StorageException {
 		ArrayList<ReadCommand> cmdHolder = new ArrayList<ReadCommand>(1);
 		cmdHolder.add(cmd);
 		return read(cmdHolder, clvl);
 	}
 	
-	private List<Row> read(List<ReadCommand> cmds, ConsistencyLevel clvl) {
+	private List<Row> read(List<ReadCommand> cmds, ConsistencyLevel clvl) throws StorageException {
 		try {
 			return StorageProxy.read(cmds, clvl);
 		} catch (IOException e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		} catch (UnavailableException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		} catch (TimeoutException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		} catch (InvalidRequestException e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		}
 	}
 	
@@ -351,7 +348,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 	}
 	
 	private List<Entry> cfToEntries(ColumnFamily cf, ByteBuffer columnStart,
-			ByteBuffer columnEnd) {
+			ByteBuffer columnEnd) throws StorageException {
 
 		assert ! cf.isMarkedForDelete();
 		
@@ -360,7 +357,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 		for (ByteBuffer col : cf.getColumnNames()) {
 			IColumn icol = cf.getColumn(col);
 			if (null == icol)
-				throw new GraphStorageException("Unexpected null IColumn");
+				throw new PermanentStorageException("Unexpected null IColumn");
 			
 			if (icol.isMarkedForDelete())
 				continue;
@@ -376,7 +373,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 			
 			IColumn icol = cf.getColumn(col);
 			if (null == icol)
-				throw new GraphStorageException("Unexpected null IColumn");
+				throw new PermanentStorageException("Unexpected null IColumn");
 
 			if (icol.isMarkedForDelete())
 				continue;
@@ -393,7 +390,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 		return result;
 	}
 	
-	private void mutate(List<RowMutation> cmds, ConsistencyLevel clvl) {
+	private void mutate(List<RowMutation> cmds, ConsistencyLevel clvl) throws StorageException {
 		try {
 			schedule(DatabaseDescriptor.getRpcTimeout());
 			try {
@@ -402,10 +399,10 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 				release();
 			}
 		} catch (UnavailableException ex) {
-			throw new GraphStorageException(ex);
+			throw new TemporaryStorageException(ex);
 		} catch (TimeoutException ex) {
 			log.debug("Cassandra TimeoutException", ex);
-			throw new GraphStorageException(ex);
+			throw new TemporaryStorageException(ex);
 		}
 	}
 	

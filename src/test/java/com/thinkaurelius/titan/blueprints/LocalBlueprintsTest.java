@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.blueprints;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageManager;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.GraphTest;
@@ -97,7 +98,7 @@ public class LocalBlueprintsTest extends GraphTest {
         doTestSuite(testSuite, new HashSet<String>());
     }
 
-    public void cleanUp() {
+    public void cleanUp() throws StorageException {
         BerkeleyJEStorageManager s = new BerkeleyJEStorageManager(
                 StorageSetup.getBerkeleyJEStorageConfiguration());
         s.clearStorage();

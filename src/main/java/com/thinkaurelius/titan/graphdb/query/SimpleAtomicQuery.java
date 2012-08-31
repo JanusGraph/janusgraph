@@ -10,7 +10,6 @@ import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableRelationIterable;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableRelationIterator;
-import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.interval.*;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -47,7 +46,7 @@ public class SimpleAtomicQuery implements AtomicQuery {
     public SimpleAtomicQuery(InternalTitanTransaction tx) {
         Preconditions.checkNotNull(tx);
         this.tx=tx;
-        if (tx!=null && tx.isClosed()) throw GraphDatabaseException.transactionNotOpenException();
+        if (tx!=null && tx.isClosed()) throw TitanException.transactionNotOpenException();
 
         dir = null;
         type = null;

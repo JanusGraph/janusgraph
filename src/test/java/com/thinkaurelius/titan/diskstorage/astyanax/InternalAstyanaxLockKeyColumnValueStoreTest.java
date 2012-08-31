@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.astyanax;
 
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 
@@ -20,7 +21,7 @@ public class InternalAstyanaxLockKeyColumnValueStoreTest extends LockKeyColumnVa
 	}
 	
     @Override
-    public StorageManager openStorageManager(short idx) {
+    public StorageManager openStorageManager(short idx) throws StorageException {
     	Configuration sc = StorageSetup.getCassandraStorageConfiguration();
     	sc.addProperty(CassandraThriftStorageManager.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, "astyanax-" + idx);
     	sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, idx);

@@ -24,6 +24,6 @@ public interface LockKeyColumnValueStore {
      * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
      * @param txh Transaction
      */
-    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, TransactionHandle txh);
+    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, TransactionHandle txh) throws StorageException;
 
 }

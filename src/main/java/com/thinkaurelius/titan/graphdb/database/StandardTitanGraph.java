@@ -15,13 +15,12 @@ import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.DirectStoreMutator;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.StoreMutator;
-import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.statistics.TransactionStatistics;
 import com.thinkaurelius.titan.graphdb.database.util.TypeSignature;
 import com.thinkaurelius.titan.graphdb.database.util.LimitTracker;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
@@ -104,15 +103,19 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     }
 
 	@Override
-	public synchronized void shutdown() throws GraphStorageException {
+	public synchronized void shutdown() throws TitanException {
         if (!isOpen) return;
         super.shutdown();
 		etManager.close();
         idAssigner.close();
 
-		edgeStore.close();
-		propertyIndex.close();
-		storage.close();
+        try {
+            edgeStore.close();
+            propertyIndex.close();
+            storage.close();
+        } catch (StorageException e) {
+            throw new TitanException("Could not close storage backend",e);
+        }
         isOpen=false;
 	}
 
@@ -127,15 +130,25 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 	@Override
 	public InternalTitanTransaction startTransaction(TransactionConfig configuration) {
-		return new StandardPersistTitanTx(this,etManager, configuration,storage.beginTransaction());
+        try {
+		    return new StandardPersistTitanTx(this,etManager, configuration,storage.beginTransaction());
+        } catch (StorageException e) {
+            throw new TitanException("Could not start new transaction",e);
+        }
 	}
 
     // ################### READ #########################
 
+    private final TitanException readException(StorageException e) {
+        return new TitanException("Could not read from storage",e);
+    }
+
 	@Override
 	public boolean containsVertexID(long id, InternalTitanTransaction tx) {
 		log.trace("Checking node existence for {}", id);
-		return edgeStore.containsKey(IDHandler.getKey(id), tx.getTxHandle());
+        try {
+		    return edgeStore.containsKey(IDHandler.getKey(id), tx.getTxHandle());
+        } catch(StorageException e) {throw readException(e); }
 	}
 
     @Override
@@ -149,23 +162,24 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 			
         Preconditions.checkArgument(pt.getDataType().isInstance(key),"Specified object is incompatible with property data type ["+pt.getName()+"]");
 
-        if (pt.isUnique()) {
-            ByteBuffer value = propertyIndex.get(getIndexKey(key), getKeyedIndexColumn(pt), tx.getTxHandle());
-            if (value!=null) {
-                vertices = new long[1];
-                vertices[0]=VariableLong.readPositive(value);
+        try {
+            if (pt.isUnique()) {
+                ByteBuffer value = propertyIndex.get(getIndexKey(key), getKeyedIndexColumn(pt), tx.getTxHandle());
+                if (value!=null) {
+                    vertices = new long[1];
+                    vertices[0]=VariableLong.readPositive(value);
+                }
+            } else {
+                ByteBuffer startColumn = VariableLong.positiveByteBuffer(pt.getID());
+                List<Entry> entries = propertyIndex.getSlice(getIndexKey(key), startColumn,
+                                                            ByteBufferUtil.nextBiggerBuffer(startColumn), tx.getTxHandle());
+                vertices = new long[entries.size()];
+                int i = 0;
+                for (Entry ent : entries) {
+                    vertices[i++] = VariableLong.readPositive(ent.getValue());
+                }
             }
-        } else {
-            ByteBuffer startColumn = VariableLong.positiveByteBuffer(pt.getID());
-            List<Entry> entries = propertyIndex.getSlice(getIndexKey(key), startColumn,
-                                                        ByteBufferUtil.nextBiggerBuffer(startColumn), tx.getTxHandle());
-            vertices = new long[entries.size()];
-            int i = 0;
-            for (Entry ent : entries) {
-                vertices[i++] = VariableLong.readPositive(ent.getValue());
-            }
-        }
-
+        } catch (StorageException e) { throw readException(e); }
 
 		if (vertices==null) return new long[0];
 		else return vertices;
@@ -488,7 +502,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                                       List<Entry> entries, LimitTracker limit, TransactionHandle txh) {
 		if (limit.limitExhausted()) return null;
 		List<Entry> results = null;
-        results = edgeStore.getSlice(key, columnStart, columnEnd, limit.getLimit(), txh);
+        try {
+            results = edgeStore.getSlice(key, columnStart, columnEnd, limit.getLimit(), txh);
+        } catch (StorageException e) { throw readException(e); }
         limit.retrieved(results.size());
 
 		if (entries==null) return results;
@@ -538,107 +554,130 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	}
 	
 	@Override
-	public boolean save(Collection<InternalRelation> addedRelations,
-			Collection<InternalRelation> deletedRelations, InternalTitanTransaction tx) throws GraphStorageException {
-		log.trace("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
+	public void save(Collection<InternalRelation> addedRelations,
+			Collection<InternalRelation> deletedRelations, InternalTitanTransaction tx) throws StorageException {
+		//Setup
+        log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
 		Map<TitanType,TypeSignature> signatures = new HashMap<TitanType,TypeSignature>();
 		TransactionHandle txh = tx.getTxHandle();
-		TransactionStatistics stats = new TransactionStatistics();
-		
+
 		StoreMutator mutator = getStoreMutator(txh);
-        boolean acquireLocks = tx.getTxConfiguration().acquireLocks();
+        boolean acquireLocks = tx.getTxConfiguration().doesAcquireLocks();
         
-		//1. Assign TitanVertex IDs
-		assignIDs(addedRelations,tx);
-
-        //2. Collect deleted edges
-        ListMultimap<InternalTitanVertex,InternalRelation> mutations = ArrayListMultimap.create();
-        if (deletedRelations !=null && !deletedRelations.isEmpty()) {
-            for (InternalRelation del : deletedRelations) {
-                assert del.isRemoved();
-                for (int pos=0;pos<del.getArity();pos++) {
-                    InternalTitanVertex node = del.getVertex(pos);
-                    if (pos==0 || !del.isUnidirected() ) {
-                        mutations.put(node,del);
-                        if (node.isRemoved()) stats.removedNode(node);
+        int saveAttempts = 0;
+        int maxSaveRetryAttempts = 3;
+        int retryWaitTime = 500;
+        
+        while (true) { //Indefinite loop, broken if no exception occurs, otherwise retried or failed immediately
+        try {    
+            //1. Assign TitanVertex IDs
+            assignIDs(addedRelations,tx);
+    
+            //2. Collect deleted edges
+            ListMultimap<InternalTitanVertex,InternalRelation> mutations = ArrayListMultimap.create();
+            if (deletedRelations !=null && !deletedRelations.isEmpty()) {
+                for (InternalRelation del : deletedRelations) {
+                    assert del.isRemoved();
+                    for (int pos=0;pos<del.getArity();pos++) {
+                        InternalTitanVertex node = del.getVertex(pos);
+                        if (pos==0 || !del.isUnidirected() ) {
+                            mutations.put(node,del);
+                        }
+                        if (pos==0 && acquireLocks && del.getType().isFunctional() &&
+                                ((InternalTitanType)del.getType()).isFunctionalLocking()) {
+                            Entry entry = getEntry(tx,del,node,signatures);
+                            mutator.acquireEdgeLock(IDHandler.getKey(node.getID()),entry.getColumn(),entry.getValue());
+                        }
                     }
-                    if (pos==0 && acquireLocks && del.getType().isFunctional() &&
-                            ((InternalTitanType)del.getType()).isFunctionalLocking()) {
-                        Entry entry = getEntry(tx,del,node,signatures);
-                        mutator.acquireEdgeLock(IDHandler.getKey(node.getID()),entry.getColumn(),entry.getValue());
+                    if (acquireLocks && del.isProperty()) {
+                        lockKeyedProperty((TitanProperty)del,mutator);
+                    }
+    
+                }
+            }
+            deletedRelations=null;
+    
+    
+            ListMultimap<InternalTitanType,InternalRelation> simpleEdgeTypes = null;
+            ListMultimap<InternalTitanType,InternalRelation> otherEdgeTypes = null;
+            
+            //3. Sort Added Edges
+            for (InternalRelation edge : addedRelations) {
+                if (edge.isRemoved()) continue;
+                assert edge.isNew();
+                
+                TitanType et = edge.getType();
+    
+                //Give special treatment to edge type definitions
+                if (SystemTypeManager.prepersistedSystemTypes.contains(et)) {
+                    assert edge.getVertex(0) instanceof InternalTitanType;
+                    InternalTitanType node = (InternalTitanType)edge.getVertex(0);
+                    assert node.hasID();
+                    if (node.isSimple()) {
+                        if (simpleEdgeTypes==null) simpleEdgeTypes=ArrayListMultimap.create();
+                        simpleEdgeTypes.put(node,edge);
+                    } else {
+                        if (otherEdgeTypes==null) otherEdgeTypes=ArrayListMultimap.create();
+                        otherEdgeTypes.put(node,edge);					
+                    }
+                } else { //STANDARD TitanRelation
+                    assert (edge.getArity()==1 && edge.isProperty()) || (edge.getArity()==2 && edge.isEdge());
+                    for (int pos=0;pos<edge.getArity();pos++) {
+                        InternalTitanVertex node = edge.getVertex(pos);
+                        assert node.hasID();
+                        if (pos==0 || !edge.isUnidirected()) {
+                            mutations.put(node, edge);
+                        }
+                        if (pos==0 && acquireLocks && edge.getType().isFunctional() && !node.isNew()
+                                && ((InternalTitanType)edge.getType()).isFunctionalLocking()) {
+                            Entry entry = getEntry(tx,edge,node,signatures,true);
+                            mutator.acquireEdgeLock(IDHandler.getKey(node.getID()),entry.getColumn(),null);
+                        }
                     }
                 }
-                if (acquireLocks && del.isProperty()) {
-                    lockKeyedProperty((TitanProperty)del,mutator);
+                if (acquireLocks && edge.isProperty()) {
+                    lockKeyedProperty((TitanProperty)edge,mutator);
                 }
-
-                stats.removedEdge(del);
+            }
+            addedRelations.clear(); addedRelations =null;
+            
+            //3. Persist
+            if (simpleEdgeTypes!=null) persist(simpleEdgeTypes,signatures,tx,mutator);
+            if (otherEdgeTypes!=null) persist(otherEdgeTypes,signatures,tx,mutator);
+            mutator.flush();
+    
+            //Commit saved EdgeTypes to TypeManager
+            if (simpleEdgeTypes!=null) commitEdgeTypes(simpleEdgeTypes.keySet());
+            if (otherEdgeTypes!=null) commitEdgeTypes(otherEdgeTypes.keySet());
+    
+            if (!mutations.isEmpty()) persist(mutations,signatures,tx,mutator);
+            mutator.flush();
+            
+            //Successfully completed - break out of indefinite loop
+            break;
+        } catch (Throwable e) {
+            if (e instanceof TemporaryStorageException) {
+                if (saveAttempts<maxSaveRetryAttempts) {
+                    saveAttempts++;
+                    //Wait before retry
+                    if (retryWaitTime>0) {
+                        try {
+                            Thread.sleep(retryWaitTime);
+                        } catch (InterruptedException r) {
+                            throw new PermanentStorageException("Interrupted while waiting to retry failed persistence",e);
+                        }
+                    }
+                } else {
+                    throw new PermanentStorageException("Retried "+maxSaveRetryAttempts+" on temporary exception without success",e);
+                }
+            } else if (e instanceof StorageException) {
+                throw (StorageException)e;
+            } else {
+                throw new PermanentStorageException("Unidentified exception occurred during persistence",e);
             }
         }
-        deletedRelations=null;
-
-
-		ListMultimap<InternalTitanType,InternalRelation> simpleEdgeTypes = null;
-		ListMultimap<InternalTitanType,InternalRelation> otherEdgeTypes = null;
-		
-		//3. Sort Added Edges
-		for (InternalRelation edge : addedRelations) {
-			if (edge.isRemoved()) continue;
-            assert edge.isNew();
+        }
             
-			TitanType et = edge.getType();
-			stats.addedEdge(edge);
-			
-			//Give special treatment to edge type definitions
-			if (SystemTypeManager.prepersistedSystemTypes.contains(et)) {
-				assert edge.getVertex(0) instanceof InternalTitanType;
-				InternalTitanType node = (InternalTitanType)edge.getVertex(0);
-				assert node.hasID();
-				if (node.isSimple()) {
-					if (simpleEdgeTypes==null) simpleEdgeTypes=ArrayListMultimap.create();
-					if (node.isNew() && !simpleEdgeTypes.containsKey(node)) stats.addedNode(node);
-					simpleEdgeTypes.put(node,edge);
-				} else {
-					if (otherEdgeTypes==null) otherEdgeTypes=ArrayListMultimap.create();
-					otherEdgeTypes.put(node,edge);					
-				}
-			} else { //STANDARD TitanRelation
-				assert (edge.getArity()==1 && edge.isProperty()) || (edge.getArity()==2 && edge.isEdge());
-				for (int pos=0;pos<edge.getArity();pos++) {
-					InternalTitanVertex node = edge.getVertex(pos);
-					assert node.hasID();
-					if (pos==0 || !edge.isUnidirected()) {
-						if (node.isNew() && !mutations.containsKey(node)) stats.addedNode(node);
-						mutations.put(node, edge);
-					}
-                    if (pos==0 && acquireLocks && edge.getType().isFunctional() && !node.isNew()
-                            && ((InternalTitanType)edge.getType()).isFunctionalLocking()) {
-                        Entry entry = getEntry(tx,edge,node,signatures,true);
-                        mutator.acquireEdgeLock(IDHandler.getKey(node.getID()),entry.getColumn(),null);
-                    }
-				}
-			}
-            if (acquireLocks && edge.isProperty()) {
-                lockKeyedProperty((TitanProperty)edge,mutator);
-            }
-		}
-		addedRelations.clear(); addedRelations =null;
-		
-		//3. Persist
-		if (simpleEdgeTypes!=null) persist(simpleEdgeTypes,signatures,tx,mutator);
-		if (otherEdgeTypes!=null) persist(otherEdgeTypes,signatures,tx,mutator);
-        mutator.flush();
-
-        //Commit saved EdgeTypes to TypeManager
-        if (simpleEdgeTypes!=null) commitEdgeTypes(simpleEdgeTypes.keySet());
-        if (otherEdgeTypes!=null) commitEdgeTypes(otherEdgeTypes.keySet());
-
-		if (!mutations.isEmpty()) persist(mutations,signatures,tx,mutator);
-        mutator.flush();
-
-		//Update statistics: statistics.update(stats);
-
-		return true;
 	}
 	
 	private void commitEdgeTypes(Iterable<InternalTitanType> edgeTypes) {
@@ -647,7 +686,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	
 
 	private<N extends InternalTitanVertex> void persist(ListMultimap<N,InternalRelation> mutatedEdges, Map<TitanType,TypeSignature> signatures,
-			InternalTitanTransaction tx, StoreMutator mutator) {
+			InternalTitanTransaction tx, StoreMutator mutator) throws StorageException {
 		assert mutatedEdges!=null && !mutatedEdges.isEmpty();
 
 		Collection<N> vertices = mutatedEdges.keySet();
@@ -860,7 +899,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     // ################### PROPERTY INDEX HANDLING #########################
 
 	
-    private void lockKeyedProperty(TitanProperty prop, StoreMutator mutator) {
+    private void lockKeyedProperty(TitanProperty prop, StoreMutator mutator) throws StorageException {
         TitanKey pt = prop.getPropertyKey();
         assert pt.isSimple();
         if (pt.hasIndex() && pt.isUnique()) {
@@ -874,7 +913,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     }
     
     
-	private void deleteIndexEntry(TitanProperty prop, StoreMutator mutator) {
+	private void deleteIndexEntry(TitanProperty prop, StoreMutator mutator) throws StorageException  {
 		TitanKey pt = prop.getPropertyKey();
 		assert pt.isSimple();
 		if (pt.hasIndex()) {
@@ -889,7 +928,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		}
 	}
 	
-	private void addIndexEntry(TitanProperty prop, StoreMutator mutator) {
+	private void addIndexEntry(TitanProperty prop, StoreMutator mutator) throws StorageException  {
 		TitanKey pt = prop.getPropertyKey();
 		assert pt.isSimple();
 		if (pt.hasIndex()) {

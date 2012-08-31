@@ -45,15 +45,15 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         open();
 	}
 
-    public abstract StorageManager openStorageManager();
+    public abstract StorageManager openStorageManager() throws StorageException;
 
-	public void open() {
+	public void open() throws StorageException {
         manager = openStorageManager();
         tx = manager.beginTransaction();
         store = (MultiWriteKeyColumnValueStore)manager.openDatabase(storeName);
     }
     
-    public void clopen() {
+    public void clopen() throws StorageException {
         close();
         open();
     }
@@ -63,14 +63,14 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 		close();
 	}
 
-    public void close() {
+    public void close() throws StorageException {
         if (tx!=null) tx.commit();
         if (null != store) ((KeyColumnValueStore)store).close();
         if (null != manager) manager.close();
     }
     
     @Test
-    public void deletionsAppliedBeforeAdditions() {
+    public void deletionsAppliedBeforeAdditions() throws StorageException {
     	
     	ByteBuffer b1 = ByteBuffer.allocate(1);
     	b1.put((byte)1).rewind();
@@ -120,7 +120,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     }
     
     @Test
-    public void mutateManyStressTest() {
+    public void mutateManyStressTest() throws StorageException {
     
     	Map<ByteBuffer, Map<ByteBuffer, ByteBuffer>> state =
     			new HashMap<ByteBuffer, Map<ByteBuffer, ByteBuffer>>();
@@ -142,7 +142,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     	}
     }
     
-    public int checkThatStateExistsInStore(Map<ByteBuffer, Map<ByteBuffer, ByteBuffer>> state, KeyColumnValueStore store, int round) {
+    public int checkThatStateExistsInStore(Map<ByteBuffer, Map<ByteBuffer, ByteBuffer>> state, KeyColumnValueStore store, int round) throws StorageException {
     	int checked = 0;
     	
     	for (ByteBuffer key : state.keySet()) {
@@ -160,7 +160,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     	return checked;
     }
     
-    public int checkThatDeletionsApplied(Map<ByteBuffer, Mutation> changes, KeyColumnValueStore store, int round) {
+    public int checkThatDeletionsApplied(Map<ByteBuffer, Mutation> changes, KeyColumnValueStore store, int round) throws StorageException {
     	int checked = 0;
     	int skipped = 0;
     	

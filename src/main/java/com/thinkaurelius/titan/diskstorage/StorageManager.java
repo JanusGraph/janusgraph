@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.thinkaurelius.titan.core.GraphStorageException;
-
 /**
  * StorageManager provides the persistence context to the graph database middleware.
  * 
@@ -35,9 +33,9 @@ public interface StorageManager extends IDAuthority {
 	 * 
 	 * @param name Name of database
 	 * @return Database Handle
-	 * @throws GraphStorageException
+	 * @throws StorageException
 	 */
-	public OrderedKeyColumnValueStore openDatabase(String name) throws GraphStorageException;
+	public OrderedKeyColumnValueStore openDatabase(String name) throws StorageException;
 
     /**
      * Release a (sub-) range of previously acquired ids for the particular partition. Releasing the ids means that the
@@ -56,12 +54,12 @@ public interface StorageManager extends IDAuthority {
 	 * 
 	 * @return New Transaction Hanlde
 	 */
-	public TransactionHandle beginTransaction();
+	public TransactionHandle beginTransaction() throws StorageException;
 	
 	/**
 	 * Closes the Storage Manager and all databases that have been opened.
 	 */
-	public void close();
+	public void close() throws StorageException;
 
 
     /**
@@ -69,6 +67,6 @@ public interface StorageManager extends IDAuthority {
      *
      * ATTENTION: Invoking this method will delete ALL your data!!
      */
-	public void clearStorage();
+	public void clearStorage() throws StorageException;
 	
 }

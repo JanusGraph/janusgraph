@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.thinkaurelius.titan.diskstorage.*;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.Column;
 import org.apache.cassandra.thrift.ColumnOrSuperColumn;
@@ -26,11 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.core.GraphStorageException;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.LockConfig;
-import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
@@ -108,12 +105,12 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	 * be handled efficiently; a Thrift call might still be made
 	 * before returning the empty list.
 	 * 
-	 * @throws GraphStorageException when columnEnd < columnStart
+	 * @throws com.thinkaurelius.titan.diskstorage.StorageException when columnEnd < columnStart
 	 * 
 	 */
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, int limit, TransactionHandle txh) throws GraphStorageException {
+			ByteBuffer columnEnd, int limit, TransactionHandle txh) throws StorageException {
 		// Sanity check the limit argument
 		if (0 > limit) {
 			logger.warn("Setting negative limit ({}) to 0", limit);
@@ -132,7 +129,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		if (!ByteBufferUtil.isSmallerThan(columnStart, columnEnd)) {
 			// Check for invalid arguments where columnEnd < columnStart
 			if (ByteBufferUtil.isSmallerThan(columnEnd, columnStart)) {
-				throw new GraphStorageException("columnStart=" + columnStart + 
+				throw new PermanentStorageException("columnStart=" + columnStart +
 						" is greater than columnEnd=" + columnEnd + ". " +
 						"columnStart must be less than or equal to columnEnd");
 			}
@@ -172,14 +169,8 @@ public class CassandraThriftOrderedKeyColumnValueStore
 				result.add(new Entry(c.bufferForName(), c.bufferForValue()));
 			}
 			return result;
-		} catch (TException e) {
-			throw new GraphStorageException(e);
-		} catch (TimedOutException e) {
-			throw new GraphStorageException(e);
-		} catch (UnavailableException e) {
-			throw new GraphStorageException(e);
-		} catch (InvalidRequestException e) {
-			throw new GraphStorageException(e);
+		} catch (Exception e) {
+			throw convertException(e);
 		} finally {
 			if (null != conn)
 				pool.genericReturnObject(keyspace, conn);
@@ -188,7 +179,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, TransactionHandle txh) {
+			ByteBuffer columnEnd, TransactionHandle txh) throws StorageException {
 		return getSlice(key, columnStart, columnEnd, Integer.MAX_VALUE, txh);
 	}
 
@@ -198,7 +189,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	}
 
 	@Override
-	public boolean containsKey(ByteBuffer key, TransactionHandle txh) {
+	public boolean containsKey(ByteBuffer key, TransactionHandle txh) throws StorageException {
 		ColumnParent parent = new ColumnParent(columnFamily);
 		ConsistencyLevel consistency = getConsistencyLevel(txh, Operation.READ);
 		SlicePredicate predicate = new SlicePredicate();
@@ -214,14 +205,8 @@ public class CassandraThriftOrderedKeyColumnValueStore
 			Cassandra.Client client = conn.getClient();
 			List<?> result = client.get_slice(key, parent, predicate, consistency);
 			return 0 < result.size();
-		} catch (TException e) {
-			throw new GraphStorageException(e);
-		} catch (TimedOutException e) {
-			throw new GraphStorageException(e);
-		} catch (UnavailableException e) {
-			throw new GraphStorageException(e);
-		} catch (InvalidRequestException e) {
-			throw new GraphStorageException(e);
+		} catch (Exception e) {
+			throw convertException(e);
 		} finally {
 			if (null != conn)
 				pool.genericReturnObject(keyspace, conn);
@@ -229,7 +214,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	}
 
     @Override
-    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh) {
+    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh) throws StorageException {
 
     	Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations =
     			new HashMap<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation>(1);
@@ -244,7 +229,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
 	@Override
 	public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		ColumnPath path = new ColumnPath(columnFamily);
 		path.setColumn(column);
 		CTConnection conn = null;
@@ -254,18 +239,11 @@ public class CassandraThriftOrderedKeyColumnValueStore
 			ColumnOrSuperColumn result =
 				client.get(key, path, getConsistencyLevel(txh, Operation.READ));
 			return result.getColumn().bufferForValue();
-		} catch (TException e) {
-			throw new GraphStorageException(e);
-		} catch (TimedOutException e) {
-			throw new GraphStorageException(e);
-		} catch (UnavailableException e) {
-			throw new GraphStorageException(e);
-		} catch (InvalidRequestException e) {
-			e.printStackTrace();
-			throw new GraphStorageException(e);
 		} catch (NotFoundException e) {
 			return null;
-		} finally {
+		} catch (Exception e) {
+            throw convertException(e);
+        } finally {
 			if (null != conn)
 				pool.genericReturnObject(keyspace, conn);
 		}
@@ -291,7 +269,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
 	@Override
 	public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		ColumnParent parent = new ColumnParent(columnFamily);
 		ConsistencyLevel consistency = getConsistencyLevel(txh, Operation.READ);
 		SlicePredicate predicate = new SlicePredicate();
@@ -302,14 +280,8 @@ public class CassandraThriftOrderedKeyColumnValueStore
 			Cassandra.Client client = conn.getClient();
 			List<?> result = client.get_slice(key, parent, predicate, consistency);
 			return 0 < result.size();
-		} catch (TException e) {
-			throw new GraphStorageException(e);
-		} catch (TimedOutException e) {
-			throw new GraphStorageException(e);
-		} catch (UnavailableException e) {
-			throw new GraphStorageException(e);
-		} catch (InvalidRequestException e) {
-			throw new GraphStorageException(e);
+		} catch (Exception ex) {
+			throw convertException(ex);
 		} finally {
 			if (null != conn)
 				pool.genericReturnObject(keyspace, conn);
@@ -318,18 +290,18 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
 	@Override
 	public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		
 		CassandraTransaction ctxh = (CassandraTransaction)txh;
 		if (ctxh.isMutationStarted()) {
-			throw new GraphStorageException("Attempted to obtain a lock after one or more mutations");
+			throw new PermanentLockingException("Attempted to obtain a lock after one or more mutations");
 		}
 		
 		ctxh.writeBlindLockClaim(internals, key, column, expectedValue);
 	}
 
     @Override
-    public void mutateMany(Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations, TransactionHandle txh) {
+    public void mutateMany(Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations, TransactionHandle txh) throws StorageException {
 		
     	if (null == mutations)
     		return;
@@ -401,19 +373,27 @@ public class CassandraThriftOrderedKeyColumnValueStore
 			Cassandra.Client client = conn.getClient();
 
 			client.batch_mutate(batch, consistency);
-		} catch (TException ex) {
-			throw new GraphStorageException(ex);
-		} catch (TimedOutException ex) {
-			throw new GraphStorageException(ex);
-		} catch (UnavailableException ex) {
-			throw new GraphStorageException(ex);
-		} catch (InvalidRequestException ex) {
-			throw new GraphStorageException(ex);
+		} catch (Exception ex) {
+			throw convertException(ex);
 		} finally {
 			if (null != conn)
 				pool.genericReturnObject(keyspace, conn);
 		}
 		
+    }
+    
+    private final StorageException convertException(Throwable e) {
+        if (e instanceof TException) {
+            return new PermanentStorageException(e);
+        } else if (e instanceof TimedOutException) {
+            return new TemporaryStorageException(e);
+        } else if (e instanceof UnavailableException) {
+            return new TemporaryStorageException(e);
+        } else if (e instanceof InvalidRequestException) {
+            return new PermanentStorageException(e);
+        } else  {
+            return new PermanentStorageException(e);
+        }
     }
 
 	@Override

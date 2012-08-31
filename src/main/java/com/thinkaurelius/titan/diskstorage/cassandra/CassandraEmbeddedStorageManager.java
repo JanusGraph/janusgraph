@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.ConfigurationException;
@@ -18,10 +19,6 @@ import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.core.GraphStorageException;
-import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
@@ -78,7 +75,7 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
     public static final String CASSANDRA_CONFIG_DIR_DEFAULT = "";
     public static final String CASSANDRA_CONFIG_DIR_KEY = "cassandra-config-dir";
     
-	public CassandraEmbeddedStorageManager(Configuration config) {
+	public CassandraEmbeddedStorageManager(Configuration config) throws StorageException {
 		
 		this.cassandraConfigDir =
 				config.getString(
@@ -145,13 +142,13 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
     }
 	
 	@Override
-	public long[] getIDBlock(int partition) {
+	public long[] getIDBlock(int partition) throws StorageException {
         return idmanager.getIDBlock(partition);
 	}
 
 	@Override
 	public OrderedKeyColumnValueStore openDatabase(String name)
-			throws GraphStorageException {
+			throws StorageException {
 		
 		CassandraEmbeddedOrderedKeyColumnValueStore lockStore =
 				openDatabase(name + "_locks", keyspace, null, null);
@@ -163,7 +160,7 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
 	}
 
 	@Override
-	public TransactionHandle beginTransaction() {
+	public TransactionHandle beginTransaction() throws StorageException {
 		return new CassandraETransaction();
 	}
 
@@ -173,19 +170,19 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
 	}
 
 	@Override
-	public void clearStorage() {
+	public void clearStorage() throws StorageException {
 		stores.clear();
 		try {
 			MigrationManager.announceKeyspaceDrop(keyspace);
 		} catch (ConfigurationException e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		}
 	}
 
 	private CassandraEmbeddedOrderedKeyColumnValueStore openDatabase(
 			final String name, final String ksoverride,
 			CassandraEmbeddedOrderedKeyColumnValueStore lockStore,
-			LocalLockMediator llm) throws GraphStorageException {
+			LocalLockMediator llm) throws StorageException {
 		String storeKey = llmPrefix + ":" + ksoverride + ":" + name;
 		
 		CassandraEmbeddedOrderedKeyColumnValueStore store =
@@ -210,7 +207,7 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
 		return store;
 	}
 
-	private void ensureKeyspaceExists(String name) {
+	private void ensureKeyspaceExists(String name) throws StorageException {
 		
 		if (null != Schema.instance.getTableInstance(name))
 			return;
@@ -223,16 +220,16 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
 		try {
 			ksm = KSMetaData.newKeyspace(name, strategyName, options);
 		} catch (ConfigurationException e) {
-			throw new GraphStorageException("Failed to instantiate keyspace metadata for " + name, e);
+			throw new PermanentStorageException("Failed to instantiate keyspace metadata for " + name, e);
 		}
 		try {
 			MigrationManager.announceNewKeyspace(ksm);
 		} catch (ConfigurationException e) {
-			throw new GraphStorageException("Failed to create keyspace " + name, e);
+			throw new PermanentStorageException("Failed to create keyspace " + name, e);
 		}
 	}
 	
-	private void ensureColumnFamilyExists(String ksname, String cfname) {
+	private void ensureColumnFamilyExists(String ksname, String cfname) throws StorageException {
 		if (null != Schema.instance.getCFMetaData(ksname, cfname))
 			return;
 		
@@ -249,12 +246,12 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
 		try {
 			cfm.addDefaultIndexNames();
 		} catch (ConfigurationException e) {
-			throw new GraphStorageException("Failed to create column family metadata for " + ksname + ":" + cfname, e);
+			throw new PermanentStorageException("Failed to create column family metadata for " + ksname + ":" + cfname, e);
 		}
 		try {
 			MigrationManager.announceNewColumnFamily(cfm);
 		} catch (ConfigurationException e) {
-			throw new GraphStorageException("Failed to create column family " + ksname + ":" + cfname, e);
+			throw new PermanentStorageException("Failed to create column family " + ksname + ":" + cfname, e);
 		}
 	}
 }

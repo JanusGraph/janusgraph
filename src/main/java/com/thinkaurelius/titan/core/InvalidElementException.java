@@ -8,7 +8,7 @@ package com.thinkaurelius.titan.core;
  * 
  * 
  */
-public class InvalidElementException extends GraphDatabaseException {
+public class InvalidElementException extends TitanException {
 
     private final TitanVertex element;
 

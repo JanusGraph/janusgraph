@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
-import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool;
@@ -158,7 +160,7 @@ public class CassandraProcessStarter {
 			if (!outputReader.awaitThrift(CASSANDRA_STARTUP_TIMEOUT, TimeUnit.MILLISECONDS)) {
 				String msg = "Cassandra process failed to bind Thrift-port within timeout.";
 				log.error(msg);
-				throw new GraphStorageException(msg);
+				throw new TemporaryStorageException(msg);
 			}
 			log.debug("Cassandra process logged successful Thrift-port bind.");
 			
@@ -175,7 +177,7 @@ public class CassandraProcessStarter {
 			CTConnectionPool.getPool(address, port, CassandraThriftStorageManager.THRIFT_TIMEOUT_DEFAULT).clear();
 		} catch (Exception e) {
 			e.printStackTrace();
-			throw new GraphStorageException(e);
+			throw new TitanException(e);
 		}
 	}
 	
@@ -199,18 +201,18 @@ public class CassandraProcessStarter {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			throw new GraphStorageException(e);
+			throw new TitanException(e);
 		}
 	}
 
-	public void waitForClusterSize(int minSize) throws InterruptedException {
+	public void waitForClusterSize(int minSize) throws InterruptedException, StorageException {
 		CTConnectionFactory f = CTConnectionPool.getFactory(address, port, CassandraThriftStorageManager.THRIFT_TIMEOUT_DEFAULT);
 		CTConnection conn = null;
 		try {
 			conn = f.makeRawConnection();
 			CTConnectionFactory.waitForClusterSize(conn.getClient(), minSize);
 		} catch (TTransportException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		} finally {
 			if (null != conn)
 				if (conn.getTransport().isOpen())

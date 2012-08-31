@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.writeaggregation;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 
 import java.nio.ByteBuffer;
@@ -31,26 +32,26 @@ public class BufferStoreMutator implements StoreMutator {
 	}
 
     @Override
-    public void mutateEdges(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) {
+    public void mutateEdges(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException {
         mutate(edgeMutations, key, additions, deletions);
     }
 
     @Override
-    public void acquireEdgeLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) {
+    public void acquireEdgeLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) throws StorageException {
         edgeStore.acquireLock(key,column,expectedValue,txh);
     }
 
     @Override
-    public void mutateIndex(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) {
+    public void mutateIndex(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException {
         mutate(indexMutations,key,additions,deletions);
     }
 
     @Override
-    public void acquireIndexLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) {
+    public void acquireIndexLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) throws StorageException {
         propertyIndex.acquireLock(key,column,expectedValue,txh);
     }
 
-    private void mutate(Map<ByteBuffer, Mutation> mutations, ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) {
+    private void mutate(Map<ByteBuffer, Mutation> mutations, ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException {
         if ((additions==null || additions.isEmpty()) && (deletions==null || deletions.isEmpty())) return; 
         
         Mutation m = new Mutation(additions,deletions);
@@ -70,13 +71,13 @@ public class BufferStoreMutator implements StoreMutator {
     }
 
 	@Override
-	public void flush() {
+	public void flush()  throws StorageException{
         if (numMutations>0) {
             flushInternal();
         }
 	}
 
-    protected void flushInternal() {
+    protected void flushInternal() throws StorageException {
         if (!edgeMutations.isEmpty()) {
             edgeStore.mutateMany(edgeMutations,txh);
             edgeMutations.clear();

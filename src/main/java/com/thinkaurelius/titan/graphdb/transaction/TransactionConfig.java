@@ -83,7 +83,7 @@ public class TransactionConfig {
      *
      * @return True, if locks should be acquired, else false
      */
-    public boolean acquireLocks() {
+    public boolean doesAcquireLocks() {
         return acquireLocks;
     }
 

@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.berkeleydb.je;
 
 import com.sleepycat.je.*;
-import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.diskstorage.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.util.*;
 import org.slf4j.Logger;
@@ -25,11 +27,11 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 		manager = m;
 	}
 	
-	public DatabaseConfig getConfiguration() {
+	public DatabaseConfig getConfiguration() throws StorageException {
 		try {
 			return db.getConfig();
 		} catch (DatabaseException e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		}
 	}
 	
@@ -38,11 +40,11 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 	}
 	
 	private static final Transaction getTransaction(TransactionHandle txh) {
-		return (txh==null?null:((BDBTxHandle)txh).getTransaction());
+		return (txh==null?null:((BerkeleyJETxHandle)txh).getTransaction());
 	}
 	
 	@Override
-	public boolean containsKey(ByteBuffer key, TransactionHandle txh) {
+	public boolean containsKey(ByteBuffer key, TransactionHandle txh) throws StorageException {
 		log.trace("Contains query");
 		Transaction tx = getTransaction(txh);
 		try {
@@ -53,23 +55,23 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 			return status==OperationStatus.SUCCESS;
 
 		} catch (DatabaseException e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		}
 	}
 	
 	@Override
-	public void close() throws GraphStorageException {	
+	public void close() throws StorageException {
 		try {
 			db.close();
 		} catch (DatabaseException e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		}
 		manager.removeDatabase(this);
 	}
 
 
 	@Override
-	public ByteBuffer get(ByteBuffer key, TransactionHandle txh) {
+	public ByteBuffer get(ByteBuffer key, TransactionHandle txh) throws StorageException {
 		log.trace("Get query");
 		Transaction tx = getTransaction(txh);
 		try {
@@ -83,7 +85,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 				return null;
 			}
 		} catch (DatabaseException e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		}
 	}
 	
@@ -93,27 +95,27 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 	}
 	
 	@Override
-	public void acquireLock(ByteBuffer key, ByteBuffer expectedValue, TransactionHandle txh) {
+	public void acquireLock(ByteBuffer key, ByteBuffer expectedValue, TransactionHandle txh) throws StorageException {
         log.trace("Acquiring lock.");
 		if (getTransaction(txh)==null) {
-            throw new GraphStorageException("Enable transaction for locking in BerkeleyDB!");
+            throw new PermanentLockingException("Enable transaction for locking in BerkeleyDB!");
 		} //else we need no locking
 	}
 
 
 	@Override
-	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, TransactionHandle txh) {
+	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, TransactionHandle txh) throws StorageException {
 		return getSlice(keyStart,keyEnd,Integer.MAX_VALUE,txh);
 	}
 	
 	@Override
-	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, int limit, TransactionHandle txh) {
+	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, int limit, TransactionHandle txh) throws StorageException {
 		return getSlice(keyStart,keyEnd,new LimitedSelector(limit),txh);
 	}
 	
 	@Override
 	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, 
-			KeySelector selector, TransactionHandle txh) {
+			KeySelector selector, TransactionHandle txh) throws StorageException {
 		log.trace("Get slice query");
 		Transaction tx =getTransaction(txh);
 		Cursor cursor = null;
@@ -154,22 +156,22 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 			log.trace("Retrieved: {}",result.size());
             return result;
 		} catch (DatabaseException e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		} finally {
 			try {
 			if (cursor!=null) cursor.close();
 			} catch (DatabaseException e) {
-				throw new GraphStorageException(e);
+				throw new PermanentStorageException(e);
 			}
 		}
 	}
 
 	@Override
-	public void insert(List<KeyValueEntry> entries, TransactionHandle txh) {
+	public void insert(List<KeyValueEntry> entries, TransactionHandle txh) throws StorageException {
 		insert(entries,txh,true);
 	}
 	
-	public void insert(List<KeyValueEntry> entries, TransactionHandle txh, boolean allowOverwrite) {
+	public void insert(List<KeyValueEntry> entries, TransactionHandle txh, boolean allowOverwrite) throws StorageException {
 		Transaction tx = getTransaction(txh);
         log.trace("Inserting multiple entries: {}",entries.size());
         for (KeyValueEntry entry : entries) {
@@ -177,7 +179,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         }
 	}
     
-    public void insert(KeyValueEntry entry, Transaction tx, boolean allowOverwrite) {
+    public void insert(KeyValueEntry entry, Transaction tx, boolean allowOverwrite) throws StorageException {
         try {
             //log.debug("Key: {}",ByteBufferUtil.toBitString(entry.getKey(), " "));
             OperationStatus status = null;
@@ -188,20 +190,20 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
             if (status!=OperationStatus.SUCCESS) {
                 if (status==OperationStatus.KEYEXIST) {
-                    throw new GraphStorageException("Key already exists on no-overwrite.");
+                    throw new PermanentStorageException("Key already exists on no-overwrite.");
                 } else {
-                    throw new GraphStorageException("Could not write entity, return status: "+ status);
+                    throw new PermanentStorageException("Could not write entity, return status: "+ status);
                 }
             }
         } catch (DatabaseException e) {
-            throw new GraphStorageException(e);
+            throw new PermanentStorageException(e);
         }
 }
 	
 
 
 	@Override
-	public void delete(List<ByteBuffer> keys, TransactionHandle txh) {
+	public void delete(List<ByteBuffer> keys, TransactionHandle txh) throws StorageException {
 		log.trace("Deletion");
 		Transaction tx = getTransaction(txh);
 		try {
@@ -209,13 +211,13 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 			for (ByteBuffer entry : keys) {
 				OperationStatus status = db.delete(tx, getDataEntry(entry));
 				if (status!=OperationStatus.SUCCESS) {
-					throw new GraphStorageException("Could not remove: " + status);
+					throw new PermanentStorageException("Could not remove: " + status);
 				}
 			}
 			
 
 		} catch (DatabaseException e) {
-			throw new GraphStorageException(e);
+			throw new PermanentStorageException(e);
 		}
 		
 	}

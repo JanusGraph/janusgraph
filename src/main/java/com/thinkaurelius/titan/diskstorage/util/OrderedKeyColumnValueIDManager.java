@@ -4,7 +4,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
-import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.DefaultIDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.commons.codec.binary.Hex;
@@ -50,8 +51,8 @@ public class OrderedKeyColumnValueIDManager {
 		this.rid = rid;
 		
 		this.blockSizer = new DefaultIDBlockSizer(config.getLong(
-						GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_KEY,
-						GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_DEFAULT));
+                GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_KEY,
+                GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_DEFAULT));
         this.isActive = false;
 
 		this.lockWaitMS = 
@@ -70,7 +71,7 @@ public class OrderedKeyColumnValueIDManager {
         this.blockSizer=sizer;
     }
 
-	public long[] getIDBlock(int partition) {
+	public long[] getIDBlock(int partition) throws StorageException {
         isActive=true;
 		long blockSize = blockSizer.getBlockSize(partition);
 
@@ -168,7 +169,7 @@ public class OrderedKeyColumnValueIDManager {
 			}
 		}
 		
-		throw new GraphStorageException("Exceeded timeout count when attempting to allocate id block");
+		throw new TemporaryStorageException("Exceeded timeout count when attempting to allocate id block");
     }
 	
 	private ByteBuffer getBlockApplication(long counter) {

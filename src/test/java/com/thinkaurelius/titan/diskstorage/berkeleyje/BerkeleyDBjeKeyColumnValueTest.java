@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.berkeleyje;
 
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageManager;
 import com.thinkaurelius.titan.diskstorage.util.KeyValueStorageManagerAdapter;
@@ -12,7 +13,7 @@ import static junit.framework.Assert.assertEquals;
 
 public class BerkeleyDBjeKeyColumnValueTest extends KeyColumnValueStoreTest {
 
-    public StorageManager openStorageManager() {
+    public StorageManager openStorageManager() throws StorageException {
         Configuration config = StorageSetup.getBerkeleyJEStorageConfiguration();
         config.subset(KeyValueStorageManagerAdapter.KEYLENGTH_NAMESPACE).setProperty(storeName,8);
 

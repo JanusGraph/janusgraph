@@ -6,7 +6,7 @@ package com.thinkaurelius.titan.core;
  * @author	Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * 
  */
-public class QueryException extends GraphDatabaseException {
+public class QueryException extends TitanException {
 
 	private static final long serialVersionUID = 1L;
 

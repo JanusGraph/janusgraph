@@ -37,26 +37,26 @@ public abstract class KeyValueStoreTest {
 		open();
 	}
 	
-	public void open() {
+	public void open() throws StorageException {
         manager = openStorageManager();
         tx = manager.beginTransaction();
         store = manager.openDatabase(storeName);
     }
 
-    public abstract KeyValueStorageManager openStorageManager();
+    public abstract KeyValueStorageManager openStorageManager() throws StorageException;
 	
 	@After
 	public void tearDown() throws Exception {
 		close();
 	}
 
-    public void close() {
+    public void close() throws StorageException {
         if (tx!=null) tx.commit();
         store.close();
         manager.close();
     }
     
-    public void clopen() {
+    public void clopen() throws StorageException {
         close();
         open();
     }
@@ -71,7 +71,7 @@ public abstract class KeyValueStoreTest {
 		return KeyValueStoreUtil.generateData(numKeys);
 	}
 	
-	public void loadValues(String[] values) {
+	public void loadValues(String[] values) throws StorageException {
 		List<KeyValueEntry> entries = new ArrayList<KeyValueEntry>();
 		for (int i=0;i<numKeys;i++) {
 			entries.add(new KeyValueEntry(KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(values[i])));
@@ -79,7 +79,7 @@ public abstract class KeyValueStoreTest {
 		store.insert(entries, tx);
 	}
 	
-	public Set<Integer> deleteValues(int start, int every) {
+	public Set<Integer> deleteValues(int start, int every) throws StorageException {
 		Set<Integer> removed = new HashSet<Integer>();
 		List<ByteBuffer> keys = new ArrayList<ByteBuffer>();
 		for (int i=start;i<numKeys;i=i+every) {
@@ -90,11 +90,11 @@ public abstract class KeyValueStoreTest {
 		return removed;
 	}
 	
-	public void checkValueExistence(String[] values) {
+	public void checkValueExistence(String[] values) throws StorageException {
 		checkValueExistence(values,new HashSet<Integer>());
 	}
 	
-	public void checkValueExistence(String[] values, Set<Integer> removed) {
+	public void checkValueExistence(String[] values, Set<Integer> removed) throws StorageException {
 		for (int i=0;i<numKeys;i++) {
 			boolean result = store.containsKey(KeyValueStoreUtil.getBuffer(i), tx);
 			if (removed.contains(i)) {
@@ -105,11 +105,11 @@ public abstract class KeyValueStoreTest {
 		}
 	}
 	
-	public void checkValues(String[] values) {
+	public void checkValues(String[] values) throws StorageException {
 		checkValues(values,new HashSet<Integer>());
 	}
 	
-	public void checkValues(String[] values, Set<Integer> removed) {
+	public void checkValues(String[] values, Set<Integer> removed) throws StorageException {
 		for (int i=0;i<numKeys;i++) {
 			ByteBuffer result = store.get(KeyValueStoreUtil.getBuffer(i), tx);
 			if (removed.contains(i)) {
@@ -121,7 +121,7 @@ public abstract class KeyValueStoreTest {
 	}
 	
 	@Test
-	public void storeAndRetrieve() {
+	public void storeAndRetrieve() throws StorageException {
 		String[] values = generateValues();
 		log.debug("Loading values...");
 		loadValues(values);
@@ -132,7 +132,7 @@ public abstract class KeyValueStoreTest {
 	}
 	
 	@Test
-	public void storeAndRetrieveWithClosing() {
+	public void storeAndRetrieveWithClosing() throws StorageException {
 		String[] values = generateValues();
 		log.debug("Loading values...");
 		loadValues(values);
@@ -143,7 +143,7 @@ public abstract class KeyValueStoreTest {
 	}
 	
 	@Test
-	public void deletionTest1() {
+	public void deletionTest1() throws StorageException {
 		String[] values = generateValues();
 		log.debug("Loading values...");
 		loadValues(values);
@@ -155,7 +155,7 @@ public abstract class KeyValueStoreTest {
 	}
 	
 	@Test
-	public void deletionTest2() {
+	public void deletionTest2() throws StorageException {
 		String[] values = generateValues();
 		log.debug("Loading values...");
 		loadValues(values);
@@ -166,7 +166,7 @@ public abstract class KeyValueStoreTest {
 		checkValues(values,deleted);
 	}
 	
-	public void checkSlice(String[] values, Set<Integer> removed, int start, int end, int limit) {
+	public void checkSlice(String[] values, Set<Integer> removed, int start, int end, int limit) throws StorageException {
 		List<KeyValueEntry> entries;
 		if (limit<=0)
 			entries = store.getSlice(KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), tx);
@@ -193,7 +193,7 @@ public abstract class KeyValueStoreTest {
 	}
 	
 	@Test
-	public void intervalTest1() {
+	public void intervalTest1() throws StorageException {
 		String[] values = generateValues();
 		log.debug("Loading values...");
 		loadValues(values);

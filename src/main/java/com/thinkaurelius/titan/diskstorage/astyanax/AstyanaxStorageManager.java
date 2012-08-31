@@ -15,6 +15,7 @@ import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
@@ -35,10 +36,6 @@ import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
-import com.thinkaurelius.titan.core.GraphStorageException;
-import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
@@ -145,7 +142,7 @@ public class AstyanaxStorageManager implements StorageManager {
 	
 	private static final Logger log = LoggerFactory.getLogger(AstyanaxStorageManager.class);
 	
-	public AstyanaxStorageManager(Configuration config) {
+	public AstyanaxStorageManager(Configuration config) throws StorageException  {
 		
 		this.clusterName = config.getString(CLUSTER_KEY, CLUSTER_DEFAULT);
 		
@@ -218,13 +215,13 @@ public class AstyanaxStorageManager implements StorageManager {
     }
 	
 	@Override
-	public long[] getIDBlock(int partition) {
+	public long[] getIDBlock(int partition) throws StorageException {
         return idmanager.getIDBlock(partition);
 	}
 
 	@Override
 	public OrderedKeyColumnValueStore openDatabase(String name)
-			throws GraphStorageException {
+			throws StorageException {
 		
 		AstyanaxOrderedKeyColumnValueStore lockStore =
 				openDatabase(name + "_locks", null);
@@ -257,14 +254,14 @@ public class AstyanaxStorageManager implements StorageManager {
 			.rid(rid);
 	}
 	
-	private AstyanaxOrderedKeyColumnValueStore openDatabase(String name, SimpleLockConfig.Builder lcb) {
+	private AstyanaxOrderedKeyColumnValueStore openDatabase(String name, SimpleLockConfig.Builder lcb) throws StorageException  {
 
 		ensureColumnFamilyExists(name);
 		
 		return new AstyanaxOrderedKeyColumnValueStore(ksctx.getEntity(), name, lcb, readConsistencyLevel, writeConsistencyLevel, retryPolicy);
 	}
 	
-	private void ensureColumnFamilyExists(String name) {
+	private void ensureColumnFamilyExists(String name) throws StorageException  {
 		Cluster cl = clctx.getEntity();
 		try {
 			KeyspaceDefinition ksDef = cl.describeKeyspace(ksName);
@@ -283,7 +280,7 @@ public class AstyanaxStorageManager implements StorageManager {
 				cl.addColumnFamily(cfDef);
 			}
 		} catch (ConnectionException e) {
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 	}
 	
@@ -346,7 +343,7 @@ public class AstyanaxStorageManager implements StorageManager {
 		return builder;
 	}
 	
-	private void ensureKeyspaceExists(Cluster cl) {
+	private void ensureKeyspaceExists(Cluster cl) throws StorageException  {
 		KeyspaceDefinition ksDef;
 		
 		try {
@@ -373,7 +370,7 @@ public class AstyanaxStorageManager implements StorageManager {
 			log.debug("Created keyspace {}", ksName);
 		} catch (ConnectionException e) {
 			log.debug("Failed to create keyspace {}, ksName");
-			throw new GraphStorageException(e);
+			throw new TemporaryStorageException(e);
 		}
 	}
 
@@ -399,7 +396,7 @@ public class AstyanaxStorageManager implements StorageManager {
     	return ConsistencyLevel.valueOf(raw);
     }
     
-    private static RetryPolicy getRetryPolicy(Configuration config) {
+    private static RetryPolicy getRetryPolicy(Configuration config) throws StorageException  {
     	String raw = config.getString(RETRY_POLICY_KEY, RETRY_POLICY_DEFAULT);
     	String[] tokens = raw.split(",");
     	String policyClassName = tokens[0];
@@ -414,7 +411,7 @@ public class AstyanaxStorageManager implements StorageManager {
     		log.debug("Instantiated RetryPolicy object {} from config string \"{}\"", rp, raw);
     		return rp;
     	} catch (Exception e) {
-    		throw new GraphStorageException("Failed to instantiate Astyanax Retry Policy class",e);
+    		throw new PermanentStorageException("Failed to instantiate Astyanax Retry Policy class",e);
     	}
     }
 

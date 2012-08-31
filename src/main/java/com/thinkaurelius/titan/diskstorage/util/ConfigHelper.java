@@ -4,7 +4,9 @@ import java.lang.management.ManagementFactory;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 
-import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.core.TitanConfigurationException;
+import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
@@ -61,7 +63,7 @@ public class ConfigHelper {
 			try {
 				tentativeRid = Hex.decodeHex(ridText.toCharArray());
 			} catch (DecoderException e) {
-				throw new GraphStorageException(e);
+				throw new TitanConfigurationException("Could not decode hex value",e);
 			}
 			
 			log.debug("Set rid from hex string: 0x{}", ridText);
@@ -87,7 +89,7 @@ public class ConfigHelper {
 			try {
 				addrBytes = Inet4Address.getLocalHost().getAddress();
 			} catch (UnknownHostException e) {
-				throw new GraphStorageException(e);
+				throw new TitanConfigurationException("Unknown host specified",e);
 			}
 			
 			tentativeRid = new byte[addrBytes.length + endBytes.length];

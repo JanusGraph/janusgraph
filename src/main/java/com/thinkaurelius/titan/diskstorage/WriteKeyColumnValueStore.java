@@ -14,7 +14,7 @@ public interface WriteKeyColumnValueStore extends LockKeyColumnValueStore {
      * @param deletions List of columns to be removed
 	 * @param txh Transaction under which to execute the operation
 	 */
-	public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh);
+	public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh) throws StorageException;
 	
 
 	

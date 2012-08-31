@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.GraphStorageException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
@@ -126,14 +126,14 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 
 
     @Override
-    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh) {
+    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh) throws StorageException {
         if (deletions!=null && !deletions.isEmpty()) delete(key,deletions,txh);
         if (additions!=null && !additions.isEmpty()) insert(key,additions,txh);
     }
     
     
 	public void delete(ByteBuffer key, List<ByteBuffer> columns,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		List<ByteBuffer> deleted = new ArrayList<ByteBuffer>(columns.size());
 		for (ByteBuffer column : columns) {
 			ByteBuffer del = concatenate(key,column);
@@ -143,7 +143,7 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 	}
 	
 	public void insert(ByteBuffer key, List<Entry> entries,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		List<KeyValueEntry> newentries = new ArrayList<KeyValueEntry>(entries.size());
 		for (Entry entry : entries) {
 			ByteBuffer newkey = concatenate(key,entry.getColumn());
@@ -154,31 +154,31 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 	
 	@Override
 	public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		return store.containsKey(concatenate(key,column), txh);
 	}
 
 	@Override
 	public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		return store.get(concatenate(key,column), txh);
 	}
 
 
 	@Override
-	public boolean isLocalKey(ByteBuffer key) {
+	public boolean isLocalKey(ByteBuffer key) throws StorageException {
 		return store.isLocalKey(key);
 	}
 	
 	@Override
 	public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue,
-			TransactionHandle txh) {
+			TransactionHandle txh) throws StorageException {
 		store.acquireLock(concatenate(key,column), expectedValue, txh);
 	}
 
 
 	@Override
-	public void close() throws GraphStorageException {
+	public void close() throws StorageException {
 		store.close();
 	}
 }
