@@ -3,7 +3,7 @@ package com.thinkaurelius.faunus.util;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class MicroElement {
+public abstract class MicroElement {
 
     protected final long id;
 

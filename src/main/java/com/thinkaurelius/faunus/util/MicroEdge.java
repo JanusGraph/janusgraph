@@ -5,7 +5,7 @@ package com.thinkaurelius.faunus.util;
  */
 public class MicroEdge extends MicroElement {
 
-    private static final String E1 = "v[";
+    private static final String E1 = "e[";
     private static final String E2 = "]";
 
     public MicroEdge(final long id) {

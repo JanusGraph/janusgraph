@@ -35,7 +35,7 @@ public class GroupCountMapReduceTest extends BaseTest {
    /* public void testOutDegreeDistribution() throws IOException {
         Configuration config = new Configuration();
         config.set(GroupCountMapReduce.CLASS, Vertex.class.getName());
-        config.set(GroupCountMapReduce.KEY_FUNCTION, "{ it -> it.outE.count() }");
+        config.set(GroupCountMapReduce.KEY_CLOSURE, "{ it -> it.outE.count() }");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS), Vertex.class), this.mapReduceDriver);
         //System.out.println(results);
@@ -64,7 +64,7 @@ public class GroupCountMapReduceTest extends BaseTest {
     public void testEdgePropertySizeDistribution() throws IOException {
         Configuration config = new Configuration();
         config.set(GroupCountMapReduce.CLASS, Edge.class.getName());
-        config.set(GroupCountMapReduce.KEY_FUNCTION, "{ it -> it.map.next().size() }");
+        config.set(GroupCountMapReduce.KEY_CLOSURE, "{ it -> it.map.next().size() }");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS), Edge.class), this.mapReduceDriver);
         //System.out.println(results);

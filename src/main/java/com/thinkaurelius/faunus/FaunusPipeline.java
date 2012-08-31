@@ -83,25 +83,20 @@ public class FaunusPipeline {
             return this.elementType.equals(Vertex.class);
         }
 
-        public JobState setProperty(final String property) {
-            this.property = property;
-            this.propertyType = Text.class;
-            return this;
-        }
-
         public JobState setProperty(final String property, final Class type) {
             this.property = property;
-            if (type.equals(Integer.class)) {
+            if (type.equals(String.class)) {
+                this.propertyType = Text.class;
+            } else if (type.equals(Integer.class)) {
                 this.propertyType = IntWritable.class;
             } else if (type.equals(Double.class)) {
                 this.propertyType = DoubleWritable.class;
             } else if (type.equals(Long.class)) {
                 this.propertyType = LongWritable.class;
             } else if (type.equals(Float.class)) {
-
                 this.propertyType = FloatWritable.class;
             } else {
-                this.propertyType = Text.class;
+                throw new RuntimeException("The provided class is not supported: " + type.getSimpleName());
             }
             return this;
         }
@@ -147,8 +142,8 @@ public class FaunusPipeline {
         }
     }
 
-    public FaunusPipeline(final String jobScript, final Configuration conf) {
-        this.compiler = new FaunusCompiler(jobScript, conf);
+    public FaunusPipeline(final String jobScript, final Configuration configuration) {
+        this.compiler = new FaunusCompiler(jobScript, configuration);
         this.state = new JobState();
     }
 
@@ -304,13 +299,6 @@ public class FaunusPipeline {
         return this;
     }
 
-    public FaunusPipeline select(final int... steps) throws IOException {
-        this.state.checkLocked();
-        //this.compiler.select(this.state.getElementType(), steps);
-        this.state.lock();
-        return this;
-    }
-
     //////// FILTERS
 
     public FaunusPipeline filter(final String closure) {
@@ -461,7 +449,7 @@ public class FaunusPipeline {
             System.out.println("FaunusPipeline Usage:");
             System.out.println("  arg1: Faunus configuration file (optional): defaults to bin/faunus.properties");
             System.out.println("  arg2: Gremlin/Faunus script: 'g.V().step().step()...'");
-            System.out.println("  arg3: Hadoop specific configurations (optional): '-Dmapred.map.tasks=14 mapred.reduce.tasks=6'");
+            System.out.println("  arg3: Overriding configurations (optional): '-Dmapred.map.tasks=14 mapred.reduce.tasks=6'");
             System.exit(-1);
         }
 

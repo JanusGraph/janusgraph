@@ -345,8 +345,8 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public void groupCountMapReduce(final Class<? extends Element> klass, final String keyClosure, final String valueClosure) throws IOException {
         this.mapSequenceConfiguration.setClass(GroupCountMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(GroupCountMapReduce.KEY_FUNCTION + "-" + this.mapSequenceClasses.size(), keyClosure);
-        this.mapSequenceConfiguration.set(GroupCountMapReduce.VALUE_FUNCTION + "-" + this.mapSequenceClasses.size(), valueClosure);
+        this.mapSequenceConfiguration.set(GroupCountMapReduce.KEY_CLOSURE + "-" + this.mapSequenceClasses.size(), keyClosure);
+        this.mapSequenceConfiguration.set(GroupCountMapReduce.VALUE_CLOSURE + "-" + this.mapSequenceClasses.size(), valueClosure);
         this.mapSequenceClasses.add(GroupCountMapReduce.Map.class);
         this.combinerClass = GroupCountMapReduce.Reduce.class;
         this.reduceClass = GroupCountMapReduce.Reduce.class;

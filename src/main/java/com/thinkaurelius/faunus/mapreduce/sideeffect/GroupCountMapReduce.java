@@ -25,8 +25,8 @@ import java.io.IOException;
  */
 public class GroupCountMapReduce {
 
-    public static final String KEY_FUNCTION = Tokens.makeNamespace(GroupCountMapReduce.class) + ".keyFunction";
-    public static final String VALUE_FUNCTION = Tokens.makeNamespace(GroupCountMapReduce.class) + ".valueFunction";
+    public static final String KEY_CLOSURE = Tokens.makeNamespace(GroupCountMapReduce.class) + ".keyClosure";
+    public static final String VALUE_CLOSURE = Tokens.makeNamespace(GroupCountMapReduce.class) + ".valueClosure";
     public static final String CLASS = Tokens.makeNamespace(GroupCountMapReduce.class) + ".class";
     private static final ScriptEngine engine = new GremlinGroovyScriptEngine();
 
@@ -45,8 +45,8 @@ public class GroupCountMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             try {
-                this.keyClosure = (Closure) engine.eval(context.getConfiguration().get(KEY_FUNCTION, "{it -> it}"));
-                this.valueClosure = (Closure) engine.eval(context.getConfiguration().get(VALUE_FUNCTION, "{it -> 1}"));
+                this.keyClosure = (Closure) engine.eval(context.getConfiguration().get(KEY_CLOSURE, "{it -> it}"));
+                this.valueClosure = (Closure) engine.eval(context.getConfiguration().get(VALUE_CLOSURE, "{it -> 1}"));
             } catch (final ScriptException e) {
                 throw new IOException(e.getMessage(), e);
             }
