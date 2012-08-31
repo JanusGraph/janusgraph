@@ -111,7 +111,7 @@ public class FaunusPipeline {
         }
 
         public int incrStep() {
-            return this.step++;
+            return ++this.step;
         }
 
         public void checkLocked() {
@@ -167,16 +167,20 @@ public class FaunusPipeline {
     public FaunusPipeline V() {
         this.state.checkLocked();
         this.state.set(Vertex.class);
-        this.state.incrStep();
-        this.compiler.verticesMap();
+        if (this.state.incrStep() == 0)
+            this.compiler.verticesMap(false);
+        else
+            this.compiler.verticesMap(true);
         return this;
     }
 
     public FaunusPipeline E() {
         this.state.checkLocked();
         this.state.set(Edge.class);
-        this.state.incrStep();
-        this.compiler.edgesMap();
+        if (this.state.incrStep() == 0)
+            this.compiler.edgesMap(false);
+        else
+            this.compiler.edgesMap(true);
         return this;
     }
 
@@ -295,6 +299,18 @@ public class FaunusPipeline {
     public FaunusPipeline path() throws IOException {
         this.state.checkLocked();
         this.compiler.pathMap(this.state.getElementType());
+        this.state.lock();
+        return this;
+    }
+
+    public FaunusPipeline order(final Tokens.Order order, final String elementKey) throws IOException {
+        this.state.checkLocked();
+        final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
+        if (null != pair) {
+            this.compiler.orderMapReduce(this.state.getElementType(), elementKey, pair.getA(), pair.getB(), order);
+        } else {
+            throw new RuntimeException("There is no specified property to sort on");
+        }
         this.state.lock();
         return this;
     }
@@ -507,6 +523,8 @@ public class FaunusPipeline {
         scriptEngine.eval("lte=" + Query.Compare.class.getName() + ".LESS_THAN_EQUAL");
         scriptEngine.eval("gt=" + Query.Compare.class.getName() + ".GREATER_THAN");
         scriptEngine.eval("gte=" + Query.Compare.class.getName() + ".GREATER_THAN_EQUAL");
+        scriptEngine.eval("incr=" + Tokens.Order.class.getName() + ".INCREASING");
+        scriptEngine.eval("decr=" + Tokens.Order.class.getName() + ".DECREASING");
 
         scriptEngine.put("g", faunusPipeline);
         final FaunusPipeline pipeline = ((FaunusPipeline) scriptEngine.eval(script)).done();

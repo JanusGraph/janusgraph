@@ -49,7 +49,7 @@ public class LinkMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.step = context.getConfiguration().getInt(STEP, -1);
-            this.direction = FaunusConfiguration.getDirection(context.getConfiguration(), DIRECTION);
+            this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.label = context.getConfiguration().get(LABEL);
             this.mergeDuplicates = context.getConfiguration().getBoolean(MERGE_DUPLICATES, false);
             this.mergeWeightKey = context.getConfiguration().get(MERGE_WEIGHT_KEY, NO_WEIGHT_KEY);
@@ -106,7 +106,7 @@ public class LinkMapReduce {
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.direction = FaunusConfiguration.getDirection(context.getConfiguration(), DIRECTION);
+            this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.direction = this.direction.opposite();
         }
 

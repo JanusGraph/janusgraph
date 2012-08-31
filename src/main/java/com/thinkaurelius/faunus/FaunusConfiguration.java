@@ -16,9 +16,9 @@ public class FaunusConfiguration extends Configuration {
     public static final String GRAPH_INPUT_FORMAT_CLASS = "faunus.graph.input.format.class";
     public static final String INPUT_LOCATION = "faunus.input.location";
     // data source pre-filters
-    public static final String GRAPH_INPUT_EDGE_DIRECTION_FILTER = "faunus.graph.input.edge.direction.filter";
+    /*public static final String GRAPH_INPUT_EDGE_DIRECTION_FILTER = "faunus.graph.input.edge.direction.filter";
     public static final String GRAPH_INPUT_EDGE_LABEL_FILTER_LABELS = "faunus.graph.input.edge.label.filter.labels";
-    public static final String GRAPH_INPUT_EDGE_LABEL_FILTER_ACTION = "faunus.graph.input.edge.label.filter.action";
+    public static final String GRAPH_INPUT_EDGE_LABEL_FILTER_ACTION = "faunus.graph.input.edge.label.filter.action";*/
 
     public static final String GRAPH_OUTPUT_FORMAT_CLASS = "faunus.graph.output.format.class";
     public static final String STATISTIC_OUTPUT_FORMAT_CLASS = "faunus.statistic.output.format.class";
@@ -27,18 +27,6 @@ public class FaunusConfiguration extends Configuration {
 
     public FaunusConfiguration(final Configuration configuration) {
         super(configuration);
-    }
-
-    public Direction getInputEdgeDirection() {
-        return Direction.valueOf(this.get(GRAPH_INPUT_EDGE_DIRECTION_FILTER, Direction.BOTH.name()));
-    }
-
-    public String[] getInputEdgeLabels() {
-        return this.getStrings(GRAPH_INPUT_EDGE_LABEL_FILTER_LABELS, new String[0]);
-    }
-
-    public Tokens.Action getInputEdgeLabelsAction() {
-        return Tokens.Action.valueOf(this.get(GRAPH_INPUT_EDGE_LABEL_FILTER_ACTION, Tokens.Action.DROP.name()));
     }
 
     public Class<? extends InputFormat> getGraphInputFormat() {
@@ -63,10 +51,6 @@ public class FaunusConfiguration extends Configuration {
 
     public boolean getOutputLocationOverwrite() {
         return this.getBoolean(OUTPUT_LOCATION_OVERWRITE, false);
-    }
-
-    public static Direction getDirection(final Configuration conf, final String key) {
-        return Direction.valueOf(conf.get(key));
     }
 
     public static Collection<Long> getLongCollection(final Configuration conf, final String key, final Collection<Long> collection) {

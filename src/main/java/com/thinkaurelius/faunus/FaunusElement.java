@@ -288,13 +288,13 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
             return (((Long) buffer1.getLong()).compareTo(buffer2.getLong()));
         }
 
-        /* @Override
-       public int compare(final WritableComparable a, final WritableComparable b) {
-           if (a instanceof FaunusVertex && b instanceof FaunusVertex)
-               return  ((Long)(((FaunusVertex) a).getIdAsLong())).compareTo(((FaunusVertex) b).getIdAsLong());
-           else
-               return super.compare(a, b);
-       } */
+        @Override
+        public int compare(final WritableComparable a, final WritableComparable b) {
+            if (a instanceof FaunusVertex && b instanceof FaunusVertex)
+                return ((Long) (((FaunusElement) a).getIdAsLong())).compareTo(((FaunusElement) b).getIdAsLong());
+            else
+                return super.compare(a, b);
+        }
     }
 
 

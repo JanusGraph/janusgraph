@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.transform;
 
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.NullWritable;
@@ -14,6 +15,8 @@ import java.io.IOException;
  */
 public class VerticesMap {
 
+    public static final String PROCESS_EDGES = Tokens.makeNamespace(VerticesMap.class) + ".processEdges";
+
     public enum Counters {
         VERTICES_PROCESSED,
         EDGES_PROCESSED
@@ -21,17 +24,26 @@ public class VerticesMap {
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
+        private boolean processEdges;
+
+        @Override
+        public void setup(final Mapper.Context context) throws IOException, InterruptedException {
+            this.processEdges = context.getConfiguration().getBoolean(PROCESS_EDGES, true);
+        }
+
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             value.startPath();
-            long edgesProcessed = 0;
-            for (final Edge edge : value.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).clearPaths();
-                edgesProcessed++;
+            if (this.processEdges) {
+                long edgesProcessed = 0;
+                for (final Edge edge : value.getEdges(Direction.BOTH)) {
+                    ((FaunusEdge) edge).clearPaths();
+                    edgesProcessed++;
+                }
+                context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
             }
             context.write(NullWritable.get(), value);
             context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
-            context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
         }
     }
 }

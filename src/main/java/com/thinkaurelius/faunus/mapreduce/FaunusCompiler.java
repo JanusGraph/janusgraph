@@ -21,6 +21,7 @@ import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesVerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
+import com.thinkaurelius.faunus.mapreduce.transform.OrderMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
 import com.thinkaurelius.faunus.mapreduce.transform.PropertyMap;
 import com.thinkaurelius.faunus.mapreduce.transform.TransformMap;
@@ -29,6 +30,7 @@ import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
+import com.thinkaurelius.faunus.mapreduce.util.WritableComparators;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -41,12 +43,15 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -85,6 +90,7 @@ public class FaunusCompiler extends Configured implements Tool {
     private Class<? extends WritableComparable> mapOutputValue = NullWritable.class;
     private Class<? extends WritableComparable> outputKey = NullWritable.class;
     private Class<? extends WritableComparable> outputValue = NullWritable.class;
+    private Class<? extends WritableComparator> comparator = null;
 
     private Class<? extends Reducer> combinerClass = null;
     private Class<? extends Reducer> reduceClass = null;
@@ -162,12 +168,14 @@ public class FaunusCompiler extends Configured implements Tool {
         this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
-    public void verticesMap() {
+    public void verticesMap(final boolean processEdges) {
+        this.mapSequenceConfiguration.setBoolean(VerticesMap.PROCESS_EDGES + "-" + this.mapSequenceClasses.size(), processEdges);
         this.mapSequenceClasses.add(VerticesMap.Map.class);
         this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
-    public void edgesMap() {
+    public void edgesMap(final boolean processVertices) {
+        this.mapSequenceConfiguration.setBoolean(EdgesMap.PROCESS_VERTICES + "-" + this.mapSequenceClasses.size(), processVertices);
         this.mapSequenceClasses.add(EdgesMap.Map.class);
         this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
@@ -201,7 +209,31 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.set(PropertyMap.KEY + "-" + this.mapSequenceClasses.size(), key);
         this.mapSequenceConfiguration.setClass(PropertyMap.TYPE + "-" + this.mapSequenceClasses.size(), type, WritableComparable.class);
         this.mapSequenceClasses.add(PropertyMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, type);
+        this.setKeyValueClasses(LongWritable.class, type);
+    }
+
+    public void orderMapReduce(final Class<? extends Element> klass, final String elementKey, final String key, final Class<? extends WritableComparable> type, final Tokens.Order order) throws IOException {
+        this.mapSequenceConfiguration.setClass(OrderMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceConfiguration.set(OrderMapReduce.KEY + "-" + this.mapSequenceClasses.size(), key);
+        this.mapSequenceConfiguration.setClass(OrderMapReduce.TYPE + "-" + this.mapSequenceClasses.size(), type, WritableComparable.class);
+        this.mapSequenceConfiguration.set(OrderMapReduce.ELEMENT_KEY + "-" + this.mapSequenceClasses.size(), elementKey);
+
+
+        if (type.equals(LongWritable.class))
+            this.comparator = order.equals(Tokens.Order.INCREASING) ? LongWritable.Comparator.class : LongWritable.DecreasingComparator.class;
+        else if (type.equals(IntWritable.class))
+            this.comparator = order.equals(Tokens.Order.INCREASING) ? IntWritable.Comparator.class : WritableComparators.DecreasingIntComparator.class;
+        else if (type.equals(FloatWritable.class))
+            this.comparator = order.equals(Tokens.Order.INCREASING) ? FloatWritable.Comparator.class : WritableComparators.DecreasingFloatComparator.class;
+        else if (type.equals(DoubleWritable.class))
+            this.comparator = order.equals(Tokens.Order.INCREASING) ? DoubleWritable.Comparator.class : WritableComparators.DecreasingDoubleComparator.class;
+        else if (type.equals(Text.class))
+            this.comparator = order.equals(Tokens.Order.INCREASING) ? Text.Comparator.class : WritableComparators.DecreasingTextComparator.class;
+
+        this.mapSequenceClasses.add(OrderMapReduce.Map.class);
+        this.reduceClass = OrderMapReduce.Reduce.class;
+        this.setKeyValueClasses(type, Text.class, Text.class, type);
+        this.completeSequence();
     }
 
 
@@ -381,14 +413,20 @@ public class FaunusCompiler extends Configured implements Tool {
             job.setMapOutputValueClass(this.mapOutputValue);
             job.setOutputKeyClass(this.outputKey);
             job.setOutputValueClass(this.outputValue);
+
+            if (null != this.comparator)
+                job.setSortComparatorClass(this.comparator);
+
             if (!(this.outputKey.equals(NullWritable.class) && this.outputValue.equals(FaunusVertex.class)))
                 this.derivationJob = false;
+
             this.jobs.add(job);
 
             this.mapSequenceConfiguration.clear();
             this.mapSequenceClasses.clear();
             this.combinerClass = null;
             this.reduceClass = null;
+            this.comparator = null;
         }
     }
 

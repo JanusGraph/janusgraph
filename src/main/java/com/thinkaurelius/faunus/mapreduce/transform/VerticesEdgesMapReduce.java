@@ -42,7 +42,7 @@ public class VerticesEdgesMapReduce {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.direction = FaunusConfiguration.getDirection(context.getConfiguration(), DIRECTION);
+            this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
 
         }
@@ -87,7 +87,7 @@ public class VerticesEdgesMapReduce {
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.direction = FaunusConfiguration.getDirection(context.getConfiguration(), DIRECTION);
+            this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.direction = this.direction.opposite();
             this.labels = context.getConfiguration().getStrings(LABELS);
         }

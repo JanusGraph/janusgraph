@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.transform;
 
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.NullWritable;
@@ -14,6 +15,8 @@ import java.io.IOException;
  */
 public class EdgesMap {
 
+    public static final String PROCESS_VERTICES = Tokens.makeNamespace(VerticesMap.class) + ".processVertices";
+
     public enum Counters {
         VERTICES_PROCESSED,
         EDGES_PROCESSED
@@ -21,16 +24,28 @@ public class EdgesMap {
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
+        private boolean processVertices;
+
+        @Override
+        public void setup(final Mapper.Context context) throws IOException, InterruptedException {
+            this.processVertices = context.getConfiguration().getBoolean(PROCESS_VERTICES, true);
+        }
+
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            value.clearPaths();
+
+            if (this.processVertices) {
+                value.clearPaths();
+                context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
+            }
+
             long edgesProcessed = 0;
             for (final Edge edge : value.getEdges(Direction.BOTH)) {
                 ((FaunusEdge) edge).startPath();
                 edgesProcessed++;
             }
             context.write(NullWritable.get(), value);
-            context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
+
             context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
         }
     }

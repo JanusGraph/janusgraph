@@ -28,7 +28,7 @@ public class EdgesVerticesMap {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.direction = FaunusConfiguration.getDirection(context.getConfiguration(), DIRECTION);
+            this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
         }
 
         @Override
