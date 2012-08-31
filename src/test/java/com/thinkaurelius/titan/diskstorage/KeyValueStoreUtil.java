@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
@@ -64,5 +65,14 @@ public class KeyValueStoreUtil {
 	public static String getString(ByteBuffer b) {
 		return serial.readObjectNotNull(b, String.class);
 	}
+    
+    public static int count(RecordIterator<?> iterator) throws StorageException {
+        int count=0;
+        while (iterator.hasNext()) {
+            iterator.next();
+            count++;
+        }
+        return count;
+    }
 	
 }

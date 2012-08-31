@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
+import com.thinkaurelius.titan.diskstorage.StorageFeatures;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 
 public interface KeyValueStorageManager extends IDAuthority {
@@ -33,6 +34,14 @@ public interface KeyValueStorageManager extends IDAuthority {
      * ATTENTION: Invoking this method will delete ALL your data!!
      */
     public void clearStorage() throws StorageException;
+
+    /**
+     * Returns the features supported by this storage manager
+     *
+     * @see com.thinkaurelius.titan.diskstorage.StorageFeatures
+     * @return The supported features of this storage manager
+     */
+    public StorageFeatures getFeatures();
 	
 	
 }

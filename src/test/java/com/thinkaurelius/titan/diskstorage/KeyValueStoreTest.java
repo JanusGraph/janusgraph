@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
 
-import com.thinkaurelius.titan.diskstorage.util.KeyValueEntry;
-import com.thinkaurelius.titan.diskstorage.util.KeyValueStorageManager;
-import com.thinkaurelius.titan.diskstorage.util.OrderedKeyValueStore;
+import com.thinkaurelius.titan.diskstorage.util.*;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -165,6 +163,24 @@ public abstract class KeyValueStoreTest {
 		checkValueExistence(values,deleted);
 		checkValues(values,deleted);
 	}
+    
+    @Test
+    public void scanTest() throws StorageException {
+        if (manager.getFeatures().supportsScan()) {
+            ScanKeyValueStore scanstore = (ScanKeyValueStore)store;
+            String[] values = generateValues();
+            loadValues(values);
+            RecordIterator<ByteBuffer> iterator0 = scanstore.getKeys(tx);
+            assertEquals(numKeys,KeyValueStoreUtil.count(iterator0));
+            clopen();
+            scanstore = (ScanKeyValueStore)store;
+            RecordIterator<ByteBuffer> iterator1 = scanstore.getKeys(tx);
+            RecordIterator<ByteBuffer> iterator2 = scanstore.getKeys(tx);
+            RecordIterator<ByteBuffer> iterator3 = scanstore.getKeys(tx);
+            assertEquals(numKeys,KeyValueStoreUtil.count(iterator1));
+            assertEquals(numKeys,KeyValueStoreUtil.count(iterator2));
+        }
+    }
 	
 	public void checkSlice(String[] values, Set<Integer> removed, int start, int end, int limit) throws StorageException {
 		List<KeyValueEntry> entries;

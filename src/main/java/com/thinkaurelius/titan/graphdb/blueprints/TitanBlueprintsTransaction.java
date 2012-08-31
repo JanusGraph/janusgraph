@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
+import com.tinkerpop.blueprints.util.PropertyFilteredIterable;
 import com.tinkerpop.blueprints.util.StringFactory;
 
 import java.util.HashSet;
@@ -106,7 +107,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public Iterable<Edge> getEdges(String key, Object value) {
-        throw new UnsupportedOperationException("Titan does not support direct edge retrieval");
+        return new PropertyFilteredIterable<Edge>(key, value, this.getEdges());
     }
 
     @Override

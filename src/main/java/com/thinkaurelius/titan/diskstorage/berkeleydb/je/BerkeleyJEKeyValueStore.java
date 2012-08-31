@@ -11,9 +11,11 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
-public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
+public class BerkeleyJEKeyValueStore implements ScanKeyValueStore {
 	
 	private Logger log = LoggerFactory.getLogger(BerkeleyJEKeyValueStore.class);
 	
@@ -134,10 +136,10 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 			while (status == OperationStatus.SUCCESS) {
 				
 				ByteBuffer key = getByteBuffer(foundKey);
-				//log.debug("Fou: {}",ByteBufferUtil.toBitString(key, " "));
+				//log.debug("Fou: {}",ByteBufferUtil.toBitString(nextKey, " "));
 				//keyEnd.rewind();
 				if (!ByteBufferUtil.isSmallerThanWithEqual(key, keyEnd, false)) break;
-				//key.rewind();
+				//nextKey.rewind();
 				
 				boolean skip = false;
 
@@ -155,16 +157,102 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 			}
 			log.trace("Retrieved: {}",result.size());
             return result;
-		} catch (DatabaseException e) {
+		} catch (Exception e) {
 			throw new PermanentStorageException(e);
 		} finally {
 			try {
 			if (cursor!=null) cursor.close();
-			} catch (DatabaseException e) {
+			} catch (Exception e) {
 				throw new PermanentStorageException(e);
 			}
 		}
 	}
+
+    private static class KeysIterator implements RecordIterator<ByteBuffer> {
+
+        final TransactionHandle txh;
+        Cursor cursor;
+        final DatabaseEntry foundValue;
+        final DatabaseEntry foundKey;
+
+        ByteBuffer nextKey;
+
+        public KeysIterator(TransactionHandle txh, Database db) throws StorageException {
+            this.txh=txh;
+            foundKey = new DatabaseEntry();
+            foundValue = new DatabaseEntry();
+            foundValue.setPartial(0,0,true);
+            cursor = null;
+
+            //Register with transaction handle
+            if (txh!=null) {
+                ((BerkeleyJETxHandle)txh).registerIterator(this);
+            }
+
+            try {
+                cursor = db.openCursor(getTransaction(txh), null);
+                OperationStatus status = cursor.getFirst(foundKey,foundValue,LockMode.DEFAULT);
+                if (status==OperationStatus.SUCCESS) {
+                    nextKey = getByteBuffer(foundKey);
+                } else {
+                    nextKey = null;
+                    close();
+                }
+            } catch (Exception e) {
+                close();
+                throw new PermanentStorageException(e);
+            }
+        }
+
+        @Override
+        public void close() throws StorageException {
+            try {
+                //Register with transaction handle
+                if (txh!=null) {
+                    ((BerkeleyJETxHandle)txh).unregisterIterator(this);
+                }
+                if (cursor!=null) cursor.close();
+            } catch (Exception e) {
+                throw new PermanentStorageException(e);
+            }
+        }
+
+        private void getNextKey() throws StorageException {
+            try {
+                OperationStatus status = cursor.getNext(foundKey,foundValue,LockMode.DEFAULT);
+                if (status==OperationStatus.SUCCESS) {
+                    nextKey = getByteBuffer(foundKey);
+                } else {
+                    nextKey = null;
+                    close();
+                }
+            } catch (Exception e) {
+                close();
+                throw new PermanentStorageException(e);
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            return nextKey!=null;
+        }
+
+        @Override
+        public ByteBuffer next() throws StorageException {
+            if (nextKey==null) throw new NoSuchElementException();
+            ByteBuffer returnKey = nextKey;
+            getNextKey();
+            return returnKey;
+        }
+
+    }
+
+    @Override
+    public RecordIterator<ByteBuffer> getKeys(final TransactionHandle txh) throws StorageException {
+        log.trace("Get keys iterator");
+        KeysIterator iterator = new KeysIterator(txh,db);
+        return iterator;
+    }
 
 	@Override
 	public void insert(List<KeyValueEntry> entries, TransactionHandle txh) throws StorageException {
@@ -236,7 +324,4 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 	}
 
 
-
-
-	
 }

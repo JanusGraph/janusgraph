@@ -16,11 +16,5 @@ public class TitanInMemoryBlueprintsGraph extends InMemoryTitanGraph implements 
         super(new TransactionConfig(BlueprintsDefaultTypeMaker.INSTANCE,true));
     }
 
-    @Override
-    public Features getFeatures() {
-        Features features = TitanFeatures.getBaselineTitanFeatures();
-        features.isPersistent = false;
-        return features;
-    }
 
 }

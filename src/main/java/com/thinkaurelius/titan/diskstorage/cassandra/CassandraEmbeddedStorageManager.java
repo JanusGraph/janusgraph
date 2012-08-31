@@ -43,7 +43,9 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
     private final byte[] rid;
     
     private final int replicationFactor;
-    
+
+    private final StorageFeatures features;
+
     private final String cassandraConfigDir;
     
     private static final Logger log =
@@ -134,7 +136,14 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
 		
         idmanager = new OrderedKeyColumnValueIDManager(
         		openDatabase("titan_ids", keyspace, null, null), rid, config);
+
+        features = CassandraFeatures.of(config);
 	}
+
+    @Override
+    public StorageFeatures getFeatures() {
+        return features;
+    }
 
     @Override
     public void setIDBlockSizer(IDBlockSizer sizer) {

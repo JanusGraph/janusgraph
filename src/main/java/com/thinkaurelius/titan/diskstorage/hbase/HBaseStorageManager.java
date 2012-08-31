@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.util.StorageFeaturesImplementation;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -118,6 +119,10 @@ public class HBaseStorageManager implements StorageManager {
         		openDatabase("blocks_allocated", null, null), rid, config);
     }
 
+    @Override
+    public StorageFeatures getFeatures() {
+        return new StorageFeaturesImplementation(false,false);
+    }
 
     @Override
     public void setIDBlockSizer(IDBlockSizer sizer) {

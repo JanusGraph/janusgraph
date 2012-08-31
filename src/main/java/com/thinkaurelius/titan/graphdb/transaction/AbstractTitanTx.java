@@ -2,8 +2,10 @@ package com.thinkaurelius.titan.graphdb.transaction;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
@@ -17,15 +19,19 @@ import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
 import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
+import com.thinkaurelius.titan.graphdb.util.VertexCentricEdgeIterable;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.factory.VertexFactory;
 import com.thinkaurelius.titan.util.datastructures.Factory;
+import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.datastructures.Maps;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.PropertyFilteredIterable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -115,7 +121,8 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
             graphdb.assignID(n);
             if (isNode)
                 vertexCache.add(n, n.getID());
-        } else if (isNode && newNodes.isPresent()) {
+        }
+        if (isNode && newNodes.isPresent()) {
             newNodes.get().add(n);
         }
     }
@@ -174,11 +181,10 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         verifyWriteAccess(n);
         if (n.hasID()) {
             assert vertexCache.contains(n.getID());
-        } else {
-            assert n.isNew();
-            if (newNodes.isPresent())
-                assert newNodes.get().contains(n);
-                newNodes.get().remove(n);
+        } 
+        if (n.isNew() && newNodes.isPresent()) {
+            assert newNodes.get().contains(n);
+            newNodes.get().remove(n);
         }
     }
 
@@ -310,12 +316,20 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
     @Override
     public Iterable<Vertex> getVertices() {
-        throw new UnsupportedOperationException("Titan does not support global vertex operations - use Faunus instead");
+        if (newNodes.isPresent())
+            return (Iterable)Iterables.filter(newNodes.get(),new Predicate<InternalTitanVertex>() {
+                @Override
+                public boolean apply(@Nullable InternalTitanVertex internalTitanVertex) {
+                    return !(internalTitanVertex instanceof TitanType);
+                }
+            });
+        else
+            return IterablesUtil.emptyIterable();
     }
 
     @Override
     public Iterable<Edge> getEdges() {
-        throw new UnsupportedOperationException("Titan does not support global edge operations - use Faunus instead");
+        return new VertexCentricEdgeIterable(getVertices());
     }
 
 
@@ -462,8 +476,8 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
             }
             return vertices;
         } else {
-            throw new UnsupportedOperationException(
-                    "getVertices only supports indexed keys since Titan does not support global vertex operations");
+            log.warn("getVertices is invoked with a non-indexed key ["+key.getName()+"] which requires a full database scan. Create key-indexes for better performance.");
+            return Iterables.filter(new PropertyFilteredIterable<Vertex>(key.getName(), attribute, this.getVertices()),TitanVertex.class);
         }
     }
 
@@ -505,11 +519,6 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     @Override
     public TransactionConfig getTxConfiguration() {
         return config;
-    }
-
-    @Override
-    public boolean hasModifications() {
-        return !config.isReadOnly() && newNodes.isPresent() && !newNodes.get().isEmpty();
     }
 
 }

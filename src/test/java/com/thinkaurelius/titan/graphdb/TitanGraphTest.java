@@ -13,6 +13,7 @@ import com.tinkerpop.blueprints.Direction;
 import static com.tinkerpop.blueprints.Direction.*;
 import static org.junit.Assert.*;
 
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
@@ -270,6 +271,42 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		assertEquals(353,n3.getProperty("uid"));
         TitanEdge e2 = n3.addEdge("knows",tx.addVertex());
 	}
+    
+    @Test
+    public void testIteration() {
+        int numV = 50;
+        if (graphdb.getFeatures().supportsVertexIteration) {
+            
+            TitanVertex previous = tx.addVertex();
+            previous.setProperty("count",0);
+            for (int i=1;i<numV;i++) {
+                TitanVertex next = tx.addVertex();
+                next.setProperty("count",i);
+                previous.addEdge("next",next);
+                previous=next;
+            }
+            int numE = numV-1;
+            Iterable<Vertex> vertices=tx.getVertices();
+            assertEquals(numV,Iterables.size(vertices));
+            assertEquals(numV,Iterables.size(vertices));
+            assertEquals(numV,Iterables.size(tx.getVertices()));
+            Iterable<Edge> edges=tx.getEdges();
+            assertEquals(numE,Iterables.size(edges));
+            assertEquals(numE,Iterables.size(edges));
+            assertEquals(numE, Iterables.size(tx.getEdges()));
+
+            clopen();
+
+            vertices=tx.getVertices();
+            assertEquals(numV,Iterables.size(vertices));
+            assertEquals(numV,Iterables.size(vertices));
+            assertEquals(numV,Iterables.size(tx.getVertices()));
+            edges=tx.getEdges();
+            assertEquals(numE,Iterables.size(edges));
+            assertEquals(numE,Iterables.size(edges));
+            assertEquals(numE, Iterables.size(tx.getEdges()));
+        }
+    }
 	
 	@Test
 	public void testPropertyIndexPersistence() {

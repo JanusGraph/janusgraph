@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraFeatures;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
@@ -139,6 +140,8 @@ public class AstyanaxStorageManager implements StorageManager {
     private final OrderedKeyColumnValueIDManager idmanager;
 	
 	private final String llmPrefix;
+
+    private final StorageFeatures features;
 	
 	private static final Logger log = LoggerFactory.getLogger(AstyanaxStorageManager.class);
 	
@@ -207,7 +210,14 @@ public class AstyanaxStorageManager implements StorageManager {
         idmanager = new OrderedKeyColumnValueIDManager(
         		
         		openDatabase("titan_ids", null), rid, config);
+
+        features = CassandraFeatures.of(config);
 	}
+
+    @Override
+    public StorageFeatures getFeatures() {
+        return features;
+    }
 
     @Override
     public void setIDBlockSizer(IDBlockSizer sizer) {

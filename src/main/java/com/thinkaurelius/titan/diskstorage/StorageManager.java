@@ -68,5 +68,14 @@ public interface StorageManager extends IDAuthority {
      * ATTENTION: Invoking this method will delete ALL your data!!
      */
 	public void clearStorage() throws StorageException;
-	
+
+
+    /**
+     * Returns the features supported by this storage manager
+     *
+     * @see StorageFeatures
+     * @return The supported features of this storage manager
+     */
+    public StorageFeatures getFeatures();
+
 }

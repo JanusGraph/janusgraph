@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.diskstorage;
 
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.util.KeyValueStorageManagerAdapter;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.util.ScanKeyValueStore;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Assert;
@@ -212,6 +214,24 @@ public abstract class KeyColumnValueStoreTest {
 		clopen();
 		checkKeys(deleted);
 	}
+
+    @Test
+    public void scanTest() throws StorageException {
+        if (manager.getFeatures().supportsScan()) {
+            ScanKeyColumnValueStore scanstore = (ScanKeyColumnValueStore)store;
+            String[][] values = generateValues();
+            loadValues(values);
+            RecordIterator<ByteBuffer> iterator0 = scanstore.getKeys(tx);
+            assertEquals(numKeys,KeyValueStoreUtil.count(iterator0));
+            clopen();
+            scanstore = (ScanKeyColumnValueStore)store;
+            RecordIterator<ByteBuffer> iterator1 = scanstore.getKeys(tx);
+            RecordIterator<ByteBuffer> iterator2 = scanstore.getKeys(tx);
+            RecordIterator<ByteBuffer> iterator3 = scanstore.getKeys(tx);
+            assertEquals(numKeys,KeyValueStoreUtil.count(iterator1));
+            assertEquals(numKeys,KeyValueStoreUtil.count(iterator2));
+        }
+    }
 	
 	public void checkSlice(String[][] values, Set<KeyColumn> removed, int key, int start, int end, int limit) throws StorageException {
 		List<Entry> entries;

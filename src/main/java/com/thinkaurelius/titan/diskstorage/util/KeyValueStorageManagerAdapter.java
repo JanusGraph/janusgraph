@@ -2,10 +2,7 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.commons.configuration.Configuration;
@@ -39,6 +36,10 @@ public class KeyValueStorageManagerAdapter implements StorageManager {
         keyLengths = builder.build();
         
 	}
+
+    public StorageFeatures getFeatures() {
+        return manager.getFeatures();
+    }
 		
 	@Override
 	public TransactionHandle beginTransaction() throws StorageException {
@@ -61,7 +62,11 @@ public class KeyValueStorageManagerAdapter implements StorageManager {
         int keyLength = KeyValueStoreAdapter.variableKeyLength;
         if (keyLengths.containsKey(name)) keyLength = keyLengths.get(name).intValue();
         log.debug("Used key length {} for database {}",keyLength,name);
-        return new OrderedKeyValueStoreAdapter(manager.openDatabase(name),keyLength);
+        OrderedKeyValueStore store = manager.openDatabase(name);
+        if (store instanceof ScanKeyValueStore)
+            return new ScanKeyValueStoreAdapter((ScanKeyValueStore)store,keyLength);
+        else
+            return new OrderedKeyValueStoreAdapter(store,keyLength);
 	}
 
 

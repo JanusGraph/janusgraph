@@ -93,16 +93,6 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
         return getAutoStartTx().getIndexedKeys(elementClass);
     }
 
-    // ########## FEATURES ###########################
-    
-    @Override
-    public Features getFeatures() {
-        Features features = TitanFeatures.getBaselineTitanFeatures();
-        GraphDatabaseConfiguration config = ((StandardTitanGraph)this).getConfiguration();
-        features.supportsSerializableObjectProperty = config.hasSerializeAll();
-        return features;
-    }
-
     // ########## TRANSACTIONAL FORWARDING ###########################
     
     @Override

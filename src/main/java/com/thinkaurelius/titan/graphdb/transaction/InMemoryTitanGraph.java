@@ -5,6 +5,8 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
@@ -14,6 +16,7 @@ import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.factory.StandardVertexFactories;
+import com.tinkerpop.blueprints.Features;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,6 +32,11 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
         idManager = new IDManager(1,1);
         graphdb=this;
 	}
+
+    @Override
+    public Features getFeatures() {
+        return TitanFeatures.getInMemoryFeatures();
+    }
 
 
 	@Override
@@ -160,8 +168,13 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 		throw new UnsupportedOperationException("Not supported for in-memory graph databases");
 	}
 
+    @Override
+    public RecordIterator<Long> getVertexIDs(InternalTitanTransaction tx) {
+        throw new UnsupportedOperationException("Not supported for in-memory graph databases");
+    }
 
-	@Override
+
+    @Override
 	public void loadRelations(AtomicQuery query, InternalTitanTransaction tx) {
 		throw new UnsupportedOperationException("Not supported for in-memory graph databases");
 	}

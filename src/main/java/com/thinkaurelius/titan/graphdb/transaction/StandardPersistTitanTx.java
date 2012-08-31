@@ -4,6 +4,7 @@ import cern.colt.list.AbstractLongList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanKey;
@@ -17,6 +18,8 @@ import com.thinkaurelius.titan.graphdb.relations.factory.StandardPersistedRelati
 import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.factory.StandardVertexFactories;
+import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
+import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,6 +133,11 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 			return ids;
 		} else return new long[0];
 	}
+
+    @Override
+    public Iterable<Vertex> getVertices() {
+        return Iterables.concat(super.getVertices(),new VertexIterable(graphdb,this));
+    }
 	
 	/* ---------------------------------------------------------------
 	 * TitanProperty / TitanRelation Loading

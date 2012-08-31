@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
+import com.thinkaurelius.titan.diskstorage.StorageFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Features;
 
@@ -9,11 +10,11 @@ import com.tinkerpop.blueprints.Features;
 
 public class TitanFeatures {
     
-    public static Features getBaselineTitanFeatures() {
+    private static Features getBaselineTitanFeatures() {
         Features features = new Features();
         features.supportsDuplicateEdges = true;
         features.supportsSelfLoops = true;
-        features.supportsSerializableObjectProperty = true; //TODO: this is configurable!
+        features.supportsSerializableObjectProperty = true;
         features.supportsBooleanProperty = true;
         features.supportsDoubleProperty = true;
         features.supportsFloatProperty = true;
@@ -42,6 +43,28 @@ public class TitanFeatures {
         features.supportsTransactions = true;
         features.supportsThreadedTransactions = true;
         features.checkCompliance();
+        return features;
+    }
+    
+    public static Features getFeatures(GraphDatabaseConfiguration config, StorageFeatures storageFeatures) {
+        Features features = TitanFeatures.getBaselineTitanFeatures();
+        features.supportsSerializableObjectProperty = config.hasSerializeAll();
+        if (storageFeatures!=null) {
+            if (storageFeatures.supportsScan()) {
+                features.supportsVertexIteration=true;
+                features.supportsEdgeIteration=true;
+            }
+        }
+        return features;
+    }
+    
+    public static Features getInMemoryFeatures() {
+        Features features = TitanFeatures.getBaselineTitanFeatures();
+        features.isPersistent = false;
+        features.supportsVertexIteration = true;
+        features.supportsEdgeIteration = true;
+        features.supportsTransactions = false;
+        features.supportsThreadedTransactions = false;
         return features;
     }
     

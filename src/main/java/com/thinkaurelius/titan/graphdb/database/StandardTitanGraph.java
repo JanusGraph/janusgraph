@@ -7,8 +7,10 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.*;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
+import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.*;
@@ -42,6 +44,7 @@ import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.transaction.StandardPersistTitanTx;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Features;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,6 +126,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		return config;
 	}
 
+    @Override
+    public Features getFeatures() {
+        return TitanFeatures.getFeatures(getConfiguration(),storage.getFeatures());
+    }
+
 	@Override
 	public TitanTransaction startTransaction() {
         return startTransaction(new TransactionConfig(config));
@@ -150,6 +158,33 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		    return edgeStore.containsKey(IDHandler.getKey(id), tx.getTxHandle());
         } catch(StorageException e) {throw readException(e); }
 	}
+
+    @Override
+    public RecordIterator<Long> getVertexIDs(final InternalTitanTransaction tx) {
+        if (!(edgeStore instanceof ScanKeyColumnValueStore))
+            throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
+
+        try {
+            final RecordIterator<ByteBuffer> keyiter = ((ScanKeyColumnValueStore)edgeStore).getKeys(tx.getTxHandle());
+            return new RecordIterator<Long>() {
+
+                @Override
+                public boolean hasNext() throws StorageException {
+                    return keyiter.hasNext();
+                }
+
+                @Override
+                public Long next() throws StorageException {
+                    return IDHandler.getKeyID(keyiter.next());
+                }
+
+                @Override
+                public void close() throws StorageException {
+                    keyiter.close();
+                }
+            };
+        } catch (StorageException e) { throw readException(e); }
+    }
 
     @Override
 	public long[] indexRetrieval(Object key, TitanKey pt, InternalTitanTransaction tx) {

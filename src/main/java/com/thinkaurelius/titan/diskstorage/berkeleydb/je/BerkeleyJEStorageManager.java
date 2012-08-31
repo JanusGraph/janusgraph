@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.sleepycat.je.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.StorageFeatures;
 import com.thinkaurelius.titan.diskstorage.util.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -42,6 +43,7 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 	private final boolean transactional;
 	private final boolean isReadOnly;
 	private final boolean batchLoading;
+    private final StorageFeatures features;
 
     private IDBlockSizer blockSizer;
     private volatile boolean hasActiveIDAcquisition;
@@ -66,6 +68,8 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
         
         idManagerTableName = configuration.getString(IDMANAGER_KEY,IDMANAGER_DEFAULT);
         initialize(cachePercentage);
+
+        this.features = new StorageFeaturesImplementation(true,transactional);
 	}
 
 	private void initialize(int cachePercent) throws StorageException {
@@ -89,6 +93,11 @@ public class BerkeleyJEStorageManager implements KeyValueStorageManager {
 		
 	}
 	
+    @Override
+    public StorageFeatures getFeatures() {
+        return features;
+    }
+    
 	@Override
 	public BerkeleyJETxHandle beginTransaction() throws StorageException  {
 		try {

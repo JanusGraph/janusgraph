@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.blueprints;
 
+import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.GraphTest;
 
@@ -19,15 +20,15 @@ public class TransactionalTitanGraphTestSuite extends TransactionalGraphTestSuit
 
     @Override
     public void testCompetingThreads() {
-        TransactionalGraph graph = (TransactionalGraph) graphTest.generateGraph();
-        Vertex a = graph.addVertex(null);
-        Vertex b = graph.addVertex(null);
-        Edge e = graph.addEdge(null, a, b, convertId(graph,"friend"));
+        TitanBlueprintsGraph graph = (TitanBlueprintsGraph) graphTest.generateGraph();
+        //Need to define types before hand to avoid deadlock in transactions
+        
+        graph.makeType().name("friend").makeEdgeLabel();
+        graph.makeType().name("test").dataType(Long.class).makePropertyKey();
+        graph.makeType().name("blah").dataType(Float.class).makePropertyKey();
+        graph.makeType().name("bloop").dataType(Integer.class).makePropertyKey();
 
-        a.setProperty("test", 5);
-        b.setProperty("blah", 0.5f);
-        e.setProperty("bloop", 10);
-
+        
         graph.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
         graph.shutdown();
         super.testCompetingThreads();

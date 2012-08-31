@@ -53,7 +53,7 @@ public class LocalBlueprintsTest extends GraphTest {
 
     public void testKeyIndexableGraphTestSuite() throws Exception {
         this.stopWatch();                                   //Excluded test cases because Titan does not yet support dropping or modifying key indexes
-        doTestSuite(new KeyIndexableGraphTestSuite(this), ImmutableSet.of("testAutoIndexKeyDroppingWithPersistence","testReIndexingOfElements"));
+        doTestSuite(new KeyIndexableGraphTestSuite(this), ImmutableSet.of("testAutoIndexKeyDroppingWithPersistence","testReIndexingOfElements","testGettingVerticesAndEdgesWithKeyValue"));
         printTestPerformance("KeyIndexableGraphTestSuite", this.stopWatch());
     }
 

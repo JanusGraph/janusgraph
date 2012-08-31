@@ -129,7 +129,9 @@ public class CassandraThriftStorageManager implements StorageManager {
     private final int port;
     
     private final int replicationFactor;
-	
+
+	private final StorageFeatures features;
+
 	public CassandraThriftStorageManager(Configuration config) throws StorageException {
 		
 		this.rid = ConfigHelper.getRid(config);
@@ -185,7 +187,14 @@ public class CassandraThriftStorageManager implements StorageManager {
 		
         idmanager = new OrderedKeyColumnValueIDManager(
         		openDatabase("titan_ids", keyspace, null, null), rid, config);
+
+        features = CassandraFeatures.of(config);
 	}
+
+    @Override
+    public StorageFeatures getFeatures() {
+        return features;
+    }
 
     @Override
     public void setIDBlockSizer(IDBlockSizer sizer) {
