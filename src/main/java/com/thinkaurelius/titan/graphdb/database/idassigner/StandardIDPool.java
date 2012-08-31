@@ -30,6 +30,7 @@ public class StandardIDPool implements IDPool {
     
     private long bufferNextID;
     private long bufferMaxID;
+    private Thread idBlockRenewer;
 
     private boolean initialized;
     
@@ -45,6 +46,7 @@ public class StandardIDPool implements IDPool {
         
         bufferNextID = -1;
         bufferMaxID = -1;
+        idBlockRenewer = null;
 
         initialized=false;
     }
@@ -103,8 +105,10 @@ public class StandardIDPool implements IDPool {
         }
 
         if (nextID == renewBufferID) {
+            Preconditions.checkArgument(idBlockRenewer==null || !idBlockRenewer.isAlive());
             //Renew buffer
-            new IDBlockThread().start();
+            idBlockRenewer = new IDBlockThread();
+            idBlockRenewer.start();
         }
         long id = nextID;
         nextID++;
@@ -115,6 +119,17 @@ public class StandardIDPool implements IDPool {
     @Override
     public synchronized void close() {
         //TODO: release unused ids, current and buffer
+        if (idBlockRenewer!=null && idBlockRenewer.isAlive()) {
+            //Wait for renewer to finish
+            try {
+                idBlockRenewer.join(5000);
+            } catch (InterruptedException e) {
+                throw new GraphDatabaseException("Interrupted while waiting for id renewer thread to finish",e);
+            }
+            if (idBlockRenewer.isAlive()) {
+                throw new GraphDatabaseException("ID renewer thread did not finish");
+            }
+        }
     }
 
     private class IDBlockThread extends Thread {
