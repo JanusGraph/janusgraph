@@ -17,45 +17,41 @@ import java.util.Map;
 public class VertexToFaunusBinary {
 
     public static void write(final Vertex vertex, final DataOutput out) throws IOException {
-        out.writeLong(Long.valueOf(vertex.getId().toString()));
+        writeId(vertex.getId(), out);
         out.writeInt(0);
-
-        CounterMap<String> map = new CounterMap<String>();
-        for (final Edge edge : vertex.getEdges(Direction.IN)) {
-            map.incr(edge.getLabel(), 1);
-        }
-        out.writeShort(map.size());
-        for (final Map.Entry<String, Long> entry : map.entrySet()) {
-            out.writeUTF(entry.getKey());
-            out.writeInt(entry.getValue().intValue());
-            for (final Edge edge : vertex.getEdges(Direction.IN, entry.getKey())) {
-                out.writeLong(Long.valueOf(edge.getId().toString()));
-                out.writeInt(0);
-                out.writeLong(Long.valueOf(edge.getVertex(Direction.OUT).getId().toString()));
-                writeProperties(edge, out);
-            }
-        }
-
-        map.clear();
-        for (final Edge edge : vertex.getEdges(Direction.OUT)) {
-            map.incr(edge.getLabel(), 1);
-        }
-        out.writeShort(map.size());
-        for (final Map.Entry<String, Long> entry : map.entrySet()) {
-            out.writeUTF(entry.getKey());
-            out.writeInt(entry.getValue().intValue());
-            for (final Edge edge : vertex.getEdges(Direction.OUT, entry.getKey())) {
-                out.writeLong(Long.valueOf(edge.getId().toString()));
-                out.writeInt(0);
-                out.writeLong(Long.valueOf(edge.getVertex(Direction.IN).getId().toString()));
-                writeProperties(edge, out);
-            }
-        }
-
+        writeEdges(vertex, Direction.IN, out);
+        writeEdges(vertex, Direction.OUT, out);
         writeProperties(vertex, out);
     }
 
-    private static void writeProperties(Element element, final DataOutput out) throws IOException {
+    private static void writeEdges(final Vertex vertex, final Direction direction, final DataOutput out) throws IOException {
+        final CounterMap<String> map = new CounterMap<String>();
+        for (final Edge edge : vertex.getEdges(direction)) {
+            map.incr(edge.getLabel(), 1);
+        }
+        out.writeShort(map.size());
+        for (final Map.Entry<String, Long> entry : map.entrySet()) {
+            out.writeUTF(entry.getKey());
+            out.writeInt(entry.getValue().intValue());
+            for (final Edge edge : vertex.getEdges(direction, entry.getKey())) {
+                writeId(edge.getId(), out);
+                out.writeInt(0);
+                writeId(edge.getVertex(direction.opposite()).getId(), out);
+                writeProperties(edge, out);
+            }
+        }
+    }
+
+    private static void writeId(final Object id, final DataOutput out) throws IOException {
+        if (id instanceof Long)
+            out.writeLong((Long) id);
+        else if (id instanceof Number)
+            out.writeLong(((Number) id).longValue());
+        else
+            out.writeLong(Long.valueOf(id.toString()));
+    }
+
+    private static void writeProperties(final Element element, final DataOutput out) throws IOException {
         out.writeShort(element.getPropertyKeys().size());
         for (final String key : element.getPropertyKeys()) {
             out.writeUTF(key);

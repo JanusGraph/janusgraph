@@ -221,7 +221,6 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.setClass(OrderMapReduce.TYPE + "-" + this.mapSequenceClasses.size(), type, WritableComparable.class);
         this.mapSequenceConfiguration.set(OrderMapReduce.ELEMENT_KEY + "-" + this.mapSequenceClasses.size(), elementKey);
 
-
         if (type.equals(LongWritable.class))
             this.comparator = order.equals(Tokens.Order.INCREASING) ? LongWritable.Comparator.class : LongWritable.DecreasingComparator.class;
         else if (type.equals(IntWritable.class))
@@ -232,7 +231,7 @@ public class FaunusCompiler extends Configured implements Tool {
             this.comparator = order.equals(Tokens.Order.INCREASING) ? DoubleWritable.Comparator.class : WritableComparators.DecreasingDoubleComparator.class;
         else if (type.equals(Text.class))
             this.comparator = order.equals(Tokens.Order.INCREASING) ? Text.Comparator.class : WritableComparators.DecreasingTextComparator.class;
-
+        
         this.mapSequenceClasses.add(OrderMapReduce.Map.class);
         this.reduceClass = OrderMapReduce.Reduce.class;
         this.setKeyValueClasses(type, Text.class, Text.class, type);
