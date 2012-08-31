@@ -49,7 +49,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         	Object o = prop.getAttribute();
         }
         n1.query().relations();
-        System.out.println();
         assertEquals(10.5,n1.getProperty(weight));
     }
 
@@ -399,8 +398,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		TitanKey weight = makeWeightPropertyKey(etNames[2]);
 		TitanKey id = makeIntegerUIDPropertyKey("uid");
 		TitanLabel knows = makeKeyedEdgeLabel(etNames[3], id, weight);
-        
-        System.out.println(knows.getID());
+
 		
 		assertEquals(connect,tx.getEdgeLabel(etNames[0]));
 		assertEquals(name,tx.getPropertyKey(etNames[1]));
