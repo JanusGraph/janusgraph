@@ -113,7 +113,7 @@ public class StandardIDPool implements IDPool {
             //wait if previous renewal thread is still running
             if (idBlockRenewer!=null && idBlockRenewer.isAlive()) {
                 try {
-                idBlockRenewer.join();
+                    idBlockRenewer.join();
                 } catch (InterruptedException e) {
                     throw new TitanException("Interrupted while waiting for id block thread",e);
                 }
