@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb.transaction;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /***
  * Provides functionality to configure a {@link com.thinkaurelius.titan.core.TitanTransaction}.
@@ -27,6 +26,8 @@ public class TransactionConfig {
 	private boolean verifyKeyUniqueness = true;
 
     private boolean acquireLocks = true;
+
+    private boolean maintainNewVertices = true;
 	
 	/**
 	 * Constructs a new TitanTransaction configuration with default configuration parameters.
@@ -39,6 +40,7 @@ public class TransactionConfig {
             verifyKeyUniqueness = false;
             verifyNodeExistence = false;
             acquireLocks = false;
+            maintainNewVertices = false;
         }
 	}
 
@@ -64,7 +66,7 @@ public class TransactionConfig {
      *
      * @return Whether this transaction is configured to assign ids immediately.
      */
-    public boolean assignIDsImmediately() {
+    public boolean hasAssignIDsImmediately() {
         return assignIDsImmediately;
     }
 
@@ -74,7 +76,7 @@ public class TransactionConfig {
 	 * 
 	 * @return True, if node existence is verified, else false
 	 */
-	public boolean doVerifyNodeExistence() {
+	public boolean hasVerifyNodeExistence() {
 		return verifyNodeExistence;
 	}
 
@@ -83,7 +85,7 @@ public class TransactionConfig {
      *
      * @return True, if locks should be acquired, else false
      */
-    public boolean doesAcquireLocks() {
+    public boolean hasAcquireLocks() {
         return acquireLocks;
     }
 
@@ -100,9 +102,21 @@ public class TransactionConfig {
 	 * 
 	 * @return True, if node existence is verified, else false
 	 */
-	public boolean doVerifyKeyUniqueness() {
+	public boolean hasVerifyKeyUniqueness() {
 		return verifyKeyUniqueness;
 	}
+
+    /**
+     * Whether the graph transaction is configured to maintain a set of all newly created vertices in that
+     * transaction. Disabling the maintenance of new vertices saves memory at the expense of not being able
+     * to iterate over all vertices in the transaction (in case vertex iteration is supported).
+     * Hence, disabling it only makes sense in batch loading scenarios.
+     *
+     * @return True, if new vertices are maintained, else false
+     */
+    public boolean hasMaintainNewVertices() {
+        return maintainNewVertices;
+    }
 
 	
 }

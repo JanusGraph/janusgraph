@@ -597,7 +597,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		TransactionHandle txh = tx.getTxHandle();
 
 		StoreMutator mutator = getStoreMutator(txh);
-        boolean acquireLocks = tx.getTxConfiguration().doesAcquireLocks();
+        boolean acquireLocks = tx.getTxConfiguration().hasAcquireLocks();
         
         int saveAttempts = 0;
         int maxSaveRetryAttempts = 3;

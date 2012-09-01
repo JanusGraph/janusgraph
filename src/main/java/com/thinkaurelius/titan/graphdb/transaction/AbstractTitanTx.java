@@ -56,7 +56,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     private final Lock keyedPropertyCreateLock;
     private final ConcurrentMap<TitanKey, Multimap<Object, TitanVertex>> attributeIndex;
 
-    private final Optional<Set<InternalTitanVertex>> newNodes;
+    private final Optional<Set<InternalTitanVertex>> newVertices;
     private VertexCache vertexCache;
 
     private boolean isOpen;
@@ -73,11 +73,11 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         this.config = config;
         isOpen = true;
 
-        if (!config.isReadOnly()) { // TODO: don't maintain newNodes for batch loading transactions
-            newNodes = Optional.of(Collections.newSetFromMap(new ConcurrentHashMap<InternalTitanVertex, Boolean>(10,
+        if (!config.isReadOnly() && config.hasMaintainNewVertices()) {
+            newVertices = Optional.of(Collections.newSetFromMap(new ConcurrentHashMap<InternalTitanVertex, Boolean>(10,
                     0.75f, 2)));
         } else {
-            newNodes = Optional.absent();
+            newVertices = Optional.absent();
         }
         vertexCache = new StandardVertexCache();
 
@@ -117,13 +117,13 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         assert !n.hasID();
 
         boolean isNode = !(n instanceof InternalRelation);
-        if (config.assignIDsImmediately()) {
+        if (config.hasAssignIDsImmediately()) {
             graphdb.assignID(n);
             if (isNode)
                 vertexCache.add(n, n.getID());
         }
-        if (isNode && newNodes.isPresent()) {
-            newNodes.get().add(n);
+        if (isNode && newVertices.isPresent()) {
+            newVertices.get().add(n);
         }
     }
 
@@ -146,7 +146,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     @Override
     public TitanVertex getVertex(long id) {
         verifyOpen();
-        if (getTxConfiguration().doVerifyNodeExistence() && !containsVertex(id))
+        if (getTxConfiguration().hasVerifyNodeExistence() && !containsVertex(id))
             return null;
         return getExistingVertex(id);
     }
@@ -182,9 +182,9 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         if (n.hasID()) {
             assert vertexCache.contains(n.getID());
         } 
-        if (n.isNew() && newNodes.isPresent()) {
-            assert newNodes.get().contains(n);
-            newNodes.get().remove(n);
+        if (n.isNew() && newVertices.isPresent()) {
+            assert newVertices.get().contains(n);
+            newVertices.get().remove(n);
         }
     }
 
@@ -197,7 +197,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
             keyedPropertyCreateLock.lock();
         InternalRelation e = null;
         try {
-            if (isUniqueKey && config.doVerifyKeyUniqueness() && getVertex(key, attribute) != null) {
+            if (isUniqueKey && config.hasVerifyKeyUniqueness() && getVertex(key, attribute) != null) {
                 throw new InvalidElementException(
                         "The specified attribute is already used for the given property key: " + attribute, vertex);
             }
@@ -316,8 +316,8 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
     @Override
     public Iterable<Vertex> getVertices() {
-        if (newNodes.isPresent())
-            return (Iterable)Iterables.filter(newNodes.get(),new Predicate<InternalTitanVertex>() {
+        if (newVertices.isPresent())
+            return (Iterable)Iterables.filter(newVertices.get(),new Predicate<InternalTitanVertex>() {
                 @Override
                 public boolean apply(@Nullable InternalTitanVertex internalTitanVertex) {
                     return !(internalTitanVertex instanceof TitanType);
