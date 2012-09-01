@@ -1,14 +1,15 @@
 package com.thinkaurelius.faunus.formats.rexster;
 
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.codehaus.jettison.json.JSONObject;
 
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 /**
  * Gets vertices from Rexster via the Gremlin Extension and a custom Gremlin script that iterates
@@ -19,7 +20,6 @@ import java.io.IOException;
 public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
     private final RexsterConfiguration rexsterConf;
-    private RexsterIterator rexsterIterator;
 
     private final NullWritable key = NullWritable.get();
 
@@ -28,8 +28,12 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
      */
     private FaunusVertex value = null;
 
+    private DataInputStream rexsterInputStream;
+
     private long splitStart;
     private long splitEnd;
+
+    private long itemsIterated = 0;
 
     public RexsterRecordReader(final RexsterConfiguration conf) {
         this.rexsterConf = conf;
@@ -40,18 +44,19 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         final RexsterInputSplit rexsterInputSplit = (RexsterInputSplit) inputSplit;
         this.splitEnd = rexsterInputSplit.getEnd();
         this.splitStart = rexsterInputSplit.getStart();
-
-        this.rexsterIterator = new KibbleIterator(this.rexsterConf, rexsterInputSplit.getStart(),
-                    rexsterInputSplit.getEnd());
+        this.openRexsterStream();
     }
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
         boolean isNext = false;
-        if (this.rexsterIterator.hasNext()) {
-            final JSONObject nextJsonVertex = this.rexsterIterator.next();
-            this.value = GraphSONUtility.fromJSON(nextJsonVertex.toString());
+
+        try {
+            this.value = new FaunusVertex(this.rexsterInputStream);
+            itemsIterated++;
             isNext = true;
+        } catch (Exception e) {
+            isNext = false;
         }
 
         return isNext;
@@ -73,11 +78,33 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
             return 0.0f;
         } else {
             // assuming you got the estimate right this progress should be pretty close;
-            return Math.min(1.0f, this.rexsterIterator.getItemsIterated() / (float) this.rexsterConf.getEstimatedVertexCount());
+            return Math.min(1.0f, this.itemsIterated / (float) this.rexsterConf.getEstimatedVertexCount());
         }
     }
 
     @Override
     public void close() throws IOException {
+        this.rexsterInputStream.close();
+    }
+
+    private void openRexsterStream() {
+        try {
+            final String uri = String.format("%s?rexster.offset.start=%s&rexster.offset.end=%s",
+                    this.rexsterConf.getRestStreamEndpoint(), this.splitStart, this.splitEnd);
+            final URL url = new URL(uri);
+            final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(0);
+            connection.setReadTimeout(0);
+            connection.setRequestMethod("GET");
+
+            // worry about rexster auth later
+            // connection.setRequestProperty(RexsterTokens.AUTHORIZATION, Authentication.getAuthenticationHeaderValue());
+
+            connection.setDoOutput(true);
+
+            this.rexsterInputStream = new DataInputStream(connection.getInputStream());
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
     }
 }

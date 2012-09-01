@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.formats.rexster;
 
 import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
+import com.thinkaurelius.faunus.util.VertexToFaunusBinary;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.rexster.RexsterResourceContext;
@@ -17,6 +18,8 @@ import com.tinkerpop.rexster.util.RequestObjectHelper;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -31,8 +34,6 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
     public static final String EXTENSION_NAMESPACE = "faunus";
     public static final String EXTENSION_NAME = "inputformat";
 
-    public static final byte[] LINE_BREAK = "\n".getBytes();
-
     @ExtensionDefinition(extensionPoint = ExtensionPoint.GRAPH, produces = MediaType.APPLICATION_OCTET_STREAM, method = HttpMethod.GET)
     @ExtensionDescriptor(description = "streaming vertices for faunus")
     public ExtensionResponse getVertices(@RexsterContext final RexsterResourceContext context,
@@ -45,12 +46,12 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
             public void write(OutputStream out) throws IOException {
                 long counter = 0;
 
+                final DataOutputStream dos = new DataOutputStream(out);
+
                 final Iterable<Vertex> vertices = graph.getVertices();
                 for (Vertex vertex : vertices) {
                     if (counter >= start && counter < end) {
-                        final byte[] jsonBytes = GraphSONUtility.toJSON(vertex).toString().getBytes();
-                        out.write(jsonBytes);
-                        out.write(LINE_BREAK);
+                        VertexToFaunusBinary.write(vertex, dos);
                     } else if (counter >= end) {
                         break;
                     }
