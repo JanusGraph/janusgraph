@@ -24,7 +24,7 @@ public class IDPoolTest {
 
     @Test
     public void testStandardIDPool() {
-        int noIds = 1000000;
+        int noIds = 2000000;
         MockIDAuthority idauth = new MockIDAuthority(200,0);
         StandardIDPool pool = new StandardIDPool(idauth,0);
         IntSet ids = new IntHashSet(noIds);

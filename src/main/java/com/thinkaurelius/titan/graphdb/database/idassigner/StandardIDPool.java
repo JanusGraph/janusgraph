@@ -55,11 +55,12 @@ public class StandardIDPool implements IDPool {
         assert nextID == maxID;
         
         long time = System.currentTimeMillis();
-        while (bufferMaxID<0 || bufferMaxID<0) {
+        if (idBlockRenewer!=null && idBlockRenewer.isAlive()) {
             //Updating thread has not yet completed, so wait for it
             log.debug("Waiting for id renewal thread");
             idBlockRenewer.join(MAX_WAIT_TIME);
         }
+        Preconditions.checkArgument(bufferMaxID>0 && bufferNextID>0);
         
         nextID = bufferNextID;
         maxID = bufferMaxID;
