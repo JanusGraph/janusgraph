@@ -111,8 +111,24 @@ public abstract class LockingTransactionHandle implements TransactionHandle {
 			return;
 		}
 		
-		// Check the local lock mediator
-		if (!backer.getLocalLockMediator().lock(lc.getKc(), this)) {
+		/* Check the local lock mediator.
+		 * 
+		 * The timestamp calculated here is only approximate.  If it turns out that we
+		 * spend longer than the expiration period attempting to finish the rest of
+		 * this method, then there's a window of time in which the LocalLockMediator
+		 * may tell other threads that our key-column target is unlocked.  Lock conflict
+		 * is still detected in such cases during verifyAllLockClaims() below (it's
+		 * just slower than when LocalLockMediator gives the correct answer).
+		 * 
+		 * We'll also update the timestamp in the LocalLockMediator after we're done
+		 * talking to the backend store.
+		 * 
+		 * We use TimestampProvider.getApproxNSSinceEpoch()/1000 instead of the
+		 * superficially equivalent System.currentTimeMillis() to get consistent timestamp
+		 * rollovers.
+		 */
+		long tempts = TimestampProvider.getApproxNSSinceEpoch(false) + backer.getLockExpireMS() * 1000;
+		if (!backer.getLocalLockMediator().lock(lc.getKc(), this, tempts)) {
 			throw new PermanentLockingException("Lock could not be acquired because it is held by a local transaction [" + lc + "]");
 		}
 		
@@ -129,9 +145,10 @@ public abstract class LockingTransactionHandle implements TransactionHandle {
 		valBuf.putInt(0).rewind();
 		
 		boolean ok = false;
+		long ts = 0;
 		try {
 			for (int i = 0; i < backer.getLockRetryCount(); i++) {
-				long ts = TimestampProvider.getApproxNSSinceEpoch(false);
+				ts = TimestampProvider.getApproxNSSinceEpoch(false);
 				Entry addition = new Entry(lc.getLockCol(ts, backer.getRid()), valBuf);
 				
 				long before = System.currentTimeMillis();
@@ -155,8 +172,24 @@ public abstract class LockingTransactionHandle implements TransactionHandle {
 
 			throw new TemporaryLockingException("Lock failed: exceeded max timeouts [" + lc + "]");
 		} finally {
-			if (!ok)
+			if (ok) {
+				// Update the timeout
+				assert 0 != ts;
+				boolean expireTimeUpdated = backer.getLocalLockMediator().lock(
+						lc.getKc(), this, ts + 1000 * backer.getLockExpireMS());
+				
+				if (!expireTimeUpdated)
+					log.warn("Failed to update expiration time of local lock {}; is titan.storage.lock-expiry-time too low?");
+				
+				/*
+				 * No action is immediately necessary even if we failed to re-lock locally.
+				 * 
+				 * Any failure to re-lock locally will be detected later in verifyAllLockClaims().
+				 */
+
+			} else {
 				backer.getLocalLockMediator().unlock(lc.getKc(), this);
+			}
 		}
 	}
 
