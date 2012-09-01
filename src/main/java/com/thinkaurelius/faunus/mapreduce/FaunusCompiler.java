@@ -90,9 +90,9 @@ public class FaunusCompiler extends Configured implements Tool {
     private Class<? extends WritableComparable> mapOutputValue = NullWritable.class;
     private Class<? extends WritableComparable> outputKey = NullWritable.class;
     private Class<? extends WritableComparable> outputValue = NullWritable.class;
-    private Class<? extends WritableComparator> comparator = null;
 
     private Class<? extends Reducer> combinerClass = null;
+    private Class<? extends WritableComparator> comparatorClass = null;
     private Class<? extends Reducer> reduceClass = null;
 
 
@@ -185,6 +185,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.setStrings(VerticesVerticesMapReduce.LABELS + "-" + this.mapSequenceClasses.size(), labels);
         this.mapSequenceClasses.add(VerticesVerticesMapReduce.Map.class);
         this.reduceClass = VerticesVerticesMapReduce.Reduce.class;
+        this.comparatorClass = LongWritable.Comparator.class;
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
     }
@@ -197,6 +198,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.set(VerticesEdgesMapReduce.DIRECTION, direction.name()); // TODO: make more robust
         this.mapSequenceConfiguration.setStrings(VerticesEdgesMapReduce.LABELS, labels);
         this.reduceClass = VerticesEdgesMapReduce.Reduce.class;
+        this.comparatorClass = LongWritable.Comparator.class;
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
     }
@@ -222,16 +224,16 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.set(OrderMapReduce.ELEMENT_KEY + "-" + this.mapSequenceClasses.size(), elementKey);
 
         if (type.equals(LongWritable.class))
-            this.comparator = order.equals(Tokens.Order.INCREASING) ? LongWritable.Comparator.class : LongWritable.DecreasingComparator.class;
+            this.comparatorClass = order.equals(Tokens.Order.INCREASING) ? LongWritable.Comparator.class : LongWritable.DecreasingComparator.class;
         else if (type.equals(IntWritable.class))
-            this.comparator = order.equals(Tokens.Order.INCREASING) ? IntWritable.Comparator.class : WritableComparators.DecreasingIntComparator.class;
+            this.comparatorClass = order.equals(Tokens.Order.INCREASING) ? IntWritable.Comparator.class : WritableComparators.DecreasingIntComparator.class;
         else if (type.equals(FloatWritable.class))
-            this.comparator = order.equals(Tokens.Order.INCREASING) ? FloatWritable.Comparator.class : WritableComparators.DecreasingFloatComparator.class;
+            this.comparatorClass = order.equals(Tokens.Order.INCREASING) ? FloatWritable.Comparator.class : WritableComparators.DecreasingFloatComparator.class;
         else if (type.equals(DoubleWritable.class))
-            this.comparator = order.equals(Tokens.Order.INCREASING) ? DoubleWritable.Comparator.class : WritableComparators.DecreasingDoubleComparator.class;
+            this.comparatorClass = order.equals(Tokens.Order.INCREASING) ? DoubleWritable.Comparator.class : WritableComparators.DecreasingDoubleComparator.class;
         else if (type.equals(Text.class))
-            this.comparator = order.equals(Tokens.Order.INCREASING) ? Text.Comparator.class : WritableComparators.DecreasingTextComparator.class;
-        
+            this.comparatorClass = order.equals(Tokens.Order.INCREASING) ? Text.Comparator.class : WritableComparators.DecreasingTextComparator.class;
+
         this.mapSequenceClasses.add(OrderMapReduce.Map.class);
         this.reduceClass = OrderMapReduce.Reduce.class;
         this.setKeyValueClasses(type, Text.class, Text.class, type);
@@ -349,6 +351,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceClasses.add(LinkMapReduce.Map.class);
 
         this.mapSequenceConfiguration.set(LinkMapReduce.DIRECTION, direction.name());  // TODO: make model more robust
+        this.comparatorClass = LongWritable.Comparator.class;
         this.reduceClass = LinkMapReduce.Reduce.class;
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
@@ -364,6 +367,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.set(CommitVerticesMapReduce.ACTION + "-" + mapSequenceClasses.size(), action.name());
         this.mapSequenceClasses.add(CommitVerticesMapReduce.Map.class);
         this.reduceClass = CommitVerticesMapReduce.Reduce.class;
+        this.comparatorClass = LongWritable.Comparator.class;
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
     }
@@ -395,6 +399,7 @@ public class FaunusCompiler extends Configured implements Tool {
     public void countMapReduce(final Class<? extends Element> klass) throws IOException {
         this.mapSequenceConfiguration.setClass(CountMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceClasses.add(CountMapReduce.Map.class);
+        this.comparatorClass = IntWritable.Comparator.class;
         this.reduceClass = CountMapReduce.Reduce.class;
         this.setKeyValueClasses(IntWritable.class, LongWritable.class, IntWritable.class, Text.class);
         this.completeSequence();
@@ -407,6 +412,12 @@ public class FaunusCompiler extends Configured implements Tool {
         if (this.mapSequenceClasses.size() > 0) {
             this.mapSequenceConfiguration.setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
             final Job job = new Job(this.mapSequenceConfiguration, this.toStringOfJob(MapSequence.class));
+
+            // copy over any global configuration from faunus.properties and -D CLI
+            for (final Map.Entry<String, String> entry : this.configuration) {
+                job.getConfiguration().set(entry.getKey(), entry.getValue());
+            }
+
             job.setJarByClass(FaunusCompiler.class);
             job.setMapperClass(MapSequence.Map.class);
             if (this.reduceClass != null) {
@@ -415,6 +426,7 @@ public class FaunusCompiler extends Configured implements Tool {
                     job.setCombinerClass(this.combinerClass);
             } else {
                 job.setNumReduceTasks(0);
+
             }
 
             job.setMapOutputKeyClass(this.mapOutputKey);
@@ -422,8 +434,8 @@ public class FaunusCompiler extends Configured implements Tool {
             job.setOutputKeyClass(this.outputKey);
             job.setOutputValueClass(this.outputValue);
 
-            if (null != this.comparator)
-                job.setSortComparatorClass(this.comparator);
+            if (null != this.comparatorClass)
+                job.setSortComparatorClass(this.comparatorClass);
 
             if (!(this.outputKey.equals(NullWritable.class) && this.outputValue.equals(FaunusVertex.class)))
                 this.derivationJob = false;
@@ -434,7 +446,7 @@ public class FaunusCompiler extends Configured implements Tool {
             this.mapSequenceClasses.clear();
             this.combinerClass = null;
             this.reduceClass = null;
-            this.comparator = null;
+            this.comparatorClass = null;
         }
     }
 
@@ -504,12 +516,6 @@ public class FaunusCompiler extends Configured implements Tool {
                 }
             }
             throw e;
-        }
-
-        for (final Job job : this.jobs) {
-            for (final Map.Entry<String, String> entry : this.configuration) {
-                job.getConfiguration().set(entry.getKey(), entry.getValue());
-            }
         }
     }
 
