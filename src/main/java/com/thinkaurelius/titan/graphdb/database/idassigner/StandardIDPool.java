@@ -110,6 +110,15 @@ public class StandardIDPool implements IDPool {
         }
 
         if (nextID == renewBufferID) {
+            //wait if previous renewal thread is still running
+            if (idBlockRenewer!=null && idBlockRenewer.isAlive()) {
+                try {
+                idBlockRenewer.join();
+                } catch (InterruptedException e) {
+                    throw new TitanException("Interrupted while waiting for id block thread",e);
+                }
+            }
+
             Preconditions.checkArgument(idBlockRenewer==null || !idBlockRenewer.isAlive());
             //Renew buffer
             idBlockRenewer = new IDBlockThread();
