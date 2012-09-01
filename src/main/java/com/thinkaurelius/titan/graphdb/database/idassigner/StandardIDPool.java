@@ -18,7 +18,6 @@ public class StandardIDPool implements IDPool {
     
     private static final int RENEW_ID_COUNT = 100;
     
-    private static final int SLEEP_TIME = 100;
     private static final int MAX_WAIT_TIME = 2000;
     
     private final IDAuthority idAuthority;
@@ -29,8 +28,8 @@ public class StandardIDPool implements IDPool {
     private long maxID;
     private long renewBufferID;
     
-    private long bufferNextID;
-    private long bufferMaxID;
+    private volatile long bufferNextID;
+    private volatile long bufferMaxID;
     private Thread idBlockRenewer;
 
     private boolean initialized;
@@ -57,11 +56,9 @@ public class StandardIDPool implements IDPool {
         
         long time = System.currentTimeMillis();
         while (bufferMaxID<0 || bufferMaxID<0) {
-            //Updating thread has not yet completed
-            Thread.sleep(SLEEP_TIME);
-            if (System.currentTimeMillis()-time>MAX_WAIT_TIME) {
-                throw new InterruptedException("Wait time exceeded while allocating new id block");
-            }
+            //Updating thread has not yet completed, so wait for it
+            log.debug("Waiting for id renewal thread");
+            idBlockRenewer.join(MAX_WAIT_TIME);
         }
         
         nextID = bufferNextID;
@@ -81,7 +78,7 @@ public class StandardIDPool implements IDPool {
     }
     
     private void renewBuffer() {
-        assert bufferNextID==-1 && bufferMaxID==-1;
+        Preconditions.checkArgument(bufferNextID==-1 && bufferMaxID==-1,bufferMaxID+" vs. " + bufferNextID);
         try {
             long[] idblock = idAuthority.getIDBlock(partitionID);
             bufferNextID = idblock[0];
@@ -89,8 +86,8 @@ public class StandardIDPool implements IDPool {
         } catch (StorageException e) {
             throw new TitanException("Could not acquire new ID block from storage",e);
         }
-        Preconditions.checkArgument(bufferNextID>0);
-        Preconditions.checkArgument(bufferMaxID>bufferNextID);
+        Preconditions.checkArgument(bufferNextID>0,bufferNextID);
+        Preconditions.checkArgument(bufferMaxID>bufferNextID,bufferMaxID+" vs. " + bufferNextID);
     }
 
     @Override
@@ -110,30 +107,24 @@ public class StandardIDPool implements IDPool {
         }
 
         if (nextID == renewBufferID) {
-            //wait if previous renewal thread is still running
-            if (idBlockRenewer!=null && idBlockRenewer.isAlive()) {
-                try {
-                    idBlockRenewer.join();
-                } catch (InterruptedException e) {
-                    throw new TitanException("Interrupted while waiting for id block thread",e);
-                }
-            }
-
-            Preconditions.checkArgument(idBlockRenewer==null || !idBlockRenewer.isAlive());
+            Preconditions.checkArgument(idBlockRenewer==null || !idBlockRenewer.isAlive(),idBlockRenewer);
             //Renew buffer
+            log.debug("Starting id block renewal thread upon {}",nextID);
             idBlockRenewer = new IDBlockThread();
             idBlockRenewer.start();
         }
-        long id = nextID;
+        long returnId = nextID;
         nextID++;
-        log.trace("[{}] Returned id: {}",partitionID,id);
-        return id;
+        log.trace("[{}] Returned id: {}",partitionID,returnId);
+        return returnId;
     }
 
     @Override
     public synchronized void close() {
         //TODO: release unused ids, current and buffer
         if (idBlockRenewer!=null && idBlockRenewer.isAlive()) {
+            log.debug("ID renewal thread still alive on close");
+
             //Wait for renewer to finish
             try {
                 idBlockRenewer.join(5000);
@@ -151,6 +142,7 @@ public class StandardIDPool implements IDPool {
         @Override
         public void run() {
             renewBuffer();
+            log.debug("Finishing id renewal thread");
         }
 
     }
