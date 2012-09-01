@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Streams the vertex list back.
+ * Streams the vertex list back in FaunusVertex binary format.
  *
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */

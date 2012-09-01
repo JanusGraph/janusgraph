@@ -49,7 +49,7 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
-        boolean isNext = false;
+        boolean isNext;
 
         try {
             this.value = new FaunusVertex(this.rexsterInputStream);
