@@ -426,7 +426,6 @@ public class FaunusCompiler extends Configured implements Tool {
                     job.setCombinerClass(this.combinerClass);
             } else {
                 job.setNumReduceTasks(0);
-
             }
 
             job.setMapOutputKeyClass(this.mapOutputKey);
