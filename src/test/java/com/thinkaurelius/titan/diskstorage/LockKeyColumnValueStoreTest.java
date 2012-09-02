@@ -191,19 +191,19 @@ public abstract class LockKeyColumnValueStoreTest {
 	@Test
 	public void relockExtendsLocalExpiration() throws StorageException, InterruptedException {
 		/*
-		 * This test is intrinsically racy and can emit false positives.
-		 * scheduler will put our test thread back on a core in a timely fashion
-		 * after the Thread.sleep() argument elapses. We might wind up sleeping
-		 * so long that the lock really does expire. Letting the lock expire and
-		 * then acquiring a new lock is different from testing the
-		 * reentering-extends-expiration property of a single lock. This test is
-		 * nominally concerned with the latter case, but it can't guarantee
-		 * which case it actually tests. Both cases are worth testing, but it
-		 * would better if we could deterministically separate them into
-		 * distinct methods or at least distinct assertions. As mentioned at the
-		 * top, this conflation of cases is a problem because this test can give
-		 * a false positive when one of these two cases is working and the other
-		 * is broken.
+		 * This test is intrinsically racy and can emit false positives. Ther's
+		 * no guarantee that the thread scheduler will put our test thread back
+		 * on a core in a timely fashion after our Thread.sleep() argument
+		 * elapses. In this case, we might wind up sleeping so long that the
+		 * lock really does expire. Letting the lock expire and then acquiring a
+		 * new lock is different from testing the reentering-extends-expiration
+		 * property of a single lock. This test is nominally concerned with the
+		 * latter case, but it can't guarantee which case it actually tests.
+		 * Both cases are worth testing, but it would better if we could
+		 * deterministically separate them into distinct methods or at least
+		 * distinct assertions. As mentioned at the top, this conflation of
+		 * cases is a problem because this test can give a false positive when
+		 * one of these two cases is working and the other is broken.
 		 */
 		long start = System.currentTimeMillis();
 		long targetDelta = (EXPIRE_MS + 50L) * 2;
