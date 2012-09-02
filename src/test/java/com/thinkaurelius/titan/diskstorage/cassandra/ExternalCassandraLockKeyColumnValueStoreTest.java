@@ -19,6 +19,7 @@ public class ExternalCassandraLockKeyColumnValueStoreTest extends LockKeyColumnV
     	Configuration sc = StorageSetup.getCassandraStorageConfiguration();
     	sc.addProperty(CassandraThriftStorageManager.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, "cassandra-" + idx);
     	sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, idx);
+    	sc.addProperty(GraphDatabaseConfiguration.LOCK_EXPIRE_MS, EXPIRE_MS);
     	
         return new CassandraThriftStorageManager(sc);
     }

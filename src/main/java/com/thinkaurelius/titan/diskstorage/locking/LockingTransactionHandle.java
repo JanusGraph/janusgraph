@@ -51,6 +51,8 @@ public abstract class LockingTransactionHandle implements TransactionHandle {
 	
 	private static final Logger log = LoggerFactory.getLogger(LockingTransactionHandle.class);
 	
+	private static final long MILLION = 1000000;
+	
 	public LockingTransactionHandle() {
 	}
 	
@@ -111,8 +113,25 @@ public abstract class LockingTransactionHandle implements TransactionHandle {
 			return;
 		}
 		
-		// Check the local lock mediator
-		if (!backer.getLocalLockMediator().lock(lc.getKc(), this)) {
+		/* Check the local lock mediator.
+		 * 
+		 * The timestamp calculated here is only approximate.  If it turns out that we
+		 * spend longer than the expiration period attempting to finish the rest of
+		 * this method, then there's a window of time in which the LocalLockMediator
+		 * may tell other threads that our key-column target is unlocked.  Lock conflict
+		 * is still detected in such cases during verifyAllLockClaims() below (it's
+		 * just slower than when LocalLockMediator gives the correct answer).
+		 * 
+		 * We'll also update the timestamp in the LocalLockMediator after we're done
+		 * talking to the backend store.
+		 * 
+		 * We use TimestampProvider.getApproxNSSinceEpoch()/1000 instead of the
+		 * superficially equivalent System.currentTimeMillis() to get consistent timestamp
+		 * rollovers.
+		 */
+		long tempts = TimestampProvider.getApproxNSSinceEpoch(false) + 
+				backer.getLockExpireMS() * MILLION;
+		if (!backer.getLocalLockMediator().lock(lc.getKc(), this, tempts)) {
 			throw new PermanentLockingException("Lock could not be acquired because it is held by a local transaction [" + lc + "]");
 		}
 		
@@ -129,10 +148,11 @@ public abstract class LockingTransactionHandle implements TransactionHandle {
 		valBuf.putInt(0).rewind();
 		
 		boolean ok = false;
+		long tsNS = 0;
 		try {
 			for (int i = 0; i < backer.getLockRetryCount(); i++) {
-				long ts = TimestampProvider.getApproxNSSinceEpoch(false);
-				Entry addition = new Entry(lc.getLockCol(ts, backer.getRid()), valBuf);
+				tsNS = TimestampProvider.getApproxNSSinceEpoch(false);
+				Entry addition = new Entry(lc.getLockCol(tsNS, backer.getRid()), valBuf);
 				
 				long before = System.currentTimeMillis();
 				backer.getLockStore().mutate(lockKey, Arrays.asList(addition), null, null);
@@ -141,12 +161,12 @@ public abstract class LockingTransactionHandle implements TransactionHandle {
 				if (backer.getLockWaitMS() < after - before) {
 					// Too slow
 					// Delete lock claim and loop again
-					ts = TimestampProvider.getApproxNSSinceEpoch(false);
-					backer.getLockStore().mutate(lockKey, null, Arrays.asList(lc.getLockCol(ts, backer.getRid())), null);
+					tsNS = TimestampProvider.getApproxNSSinceEpoch(false);
+					backer.getLockStore().mutate(lockKey, null, Arrays.asList(lc.getLockCol(tsNS, backer.getRid())), null);
 				} else {
 					ok = true;
 					lastLockApplicationTimesMS.put(backer, before);
-					lc.setTimestamp(ts);
+					lc.setTimestamp(tsNS);
                     log.trace("Wrote lock: {}", lc);
             		lockClaims.add(lc);
 					return;
@@ -155,8 +175,24 @@ public abstract class LockingTransactionHandle implements TransactionHandle {
 
 			throw new TemporaryLockingException("Lock failed: exceeded max timeouts [" + lc + "]");
 		} finally {
-			if (!ok)
+			if (ok) {
+				// Update the timeout
+				assert 0 != tsNS;
+				boolean expireTimeUpdated = backer.getLocalLockMediator().lock(
+						lc.getKc(), this, tsNS + MILLION * backer.getLockExpireMS());
+				
+				if (!expireTimeUpdated)
+					log.warn("Failed to update expiration time of local lock {}; is titan.storage.lock-expiry-time too low?");
+				
+				/*
+				 * No action is immediately necessary even if we failed to re-lock locally.
+				 * 
+				 * Any failure to re-lock locally will be detected later in verifyAllLockClaims().
+				 */
+
+			} else {
 				backer.getLocalLockMediator().unlock(lc.getKc(), this);
+			}
 		}
 	}
 
@@ -187,21 +223,21 @@ public abstract class LockingTransactionHandle implements TransactionHandle {
 		if (0 == lastLockApplicationTimesMS.size())
 			return; // no locks
 		
-		long now = System.currentTimeMillis();
+		long now = TimestampProvider.getApproxNSSinceEpoch(false);
 		
 		// Iterate over all backends and sleep, if necessary, until
 		// the backend-specific grace period since our last lock application
 		// has passed.
 		for (LockConfig i : lastLockApplicationTimesMS.keySet()) {
-			long appTime = lastLockApplicationTimesMS.get(i);
+			long appTimeMS = lastLockApplicationTimesMS.get(i);
 			
-			long mustSleepUntil = appTime + i.getLockWaitMS();
+			long mustSleepUntil = appTimeMS + i.getLockWaitMS();
 			
-			if (mustSleepUntil < now) {
+			if (mustSleepUntil < now / MILLION) {
 				continue;
 			}
 			
-			sleepUntil(appTime + i.getLockWaitMS());
+			sleepUntil(appTimeMS + i.getLockWaitMS());
 		}
 		
 		// Check lock claim seniority
@@ -215,28 +251,28 @@ public abstract class LockingTransactionHandle implements TransactionHandle {
 			List<Entry> entries = backer.getLockStore().getSlice(lockKey, empty, empty, null);
 			
 			// Determine the timestamp and rid of the earliest still-valid lock claim
-			Long earliestTS = null;
+			Long earliestNS = null;
 			byte[] earliestRid = null;
 
             log.trace("Retrieved {} total lock claim(s) when verifying {}", entries.size(), lc);
 			
 			for (Entry e : entries) {
 				ByteBuffer bb = e.getColumn();
-				long ts = bb.getLong();
+				long tsNS = bb.getLong();
 				byte[] curRid = new byte[bb.remaining()];
 				bb.get(curRid);
 				
 				// Ignore expired lock claims
-				if (ts < now - backer.getLockExpireMS()) {
-                    log.warn("Discarded expired lock with timestamp {}", ts);
+				if (tsNS < now - (backer.getLockExpireMS() * MILLION)) {
+                    log.warn("Discarded expired lock with timestamp {}", tsNS);
 					continue;
 				}
 				
-				if (null == earliestTS || ts < earliestTS) {
+				if (null == earliestNS || tsNS < earliestNS) {
 					// Appoint new winner
-					earliestTS = ts;
+					earliestNS = tsNS;
 					earliestRid = curRid;
-				} else if (earliestTS == ts) {
+				} else if (earliestNS == tsNS) {
 					// Timestamp tie: break with column
 					// (Column must be unique because it contains Rid)
 					ByteBuffer earliestRidBuf = ByteBuffer.wrap(earliestRid);
@@ -262,7 +298,7 @@ public abstract class LockingTransactionHandle implements TransactionHandle {
                 		new Object[] {
                 		Hex.encodeHexString(rid),
                 		null != earliestRid ? Hex.encodeHexString(earliestRid) : "null",
-                		earliestTS });
+                		earliestNS });
 				throw new PermanentLockingException("Lock could not be acquired because it is held by a remote transaction [" + lc + "]");
 			}
 			

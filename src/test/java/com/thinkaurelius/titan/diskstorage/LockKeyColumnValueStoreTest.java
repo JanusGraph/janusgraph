@@ -17,13 +17,13 @@ public abstract class LockKeyColumnValueStoreTest {
 	public StorageManager manager1, manager2;
 	public TransactionHandle host1tx1, host1tx2, host2tx1;
 	public OrderedKeyColumnValueStore store1, store2;
-
-    public static final String dbName = "test";
-	
-	private ByteBuffer k, c1, c2, v1, v2;
-	
+	public static final String dbName = "test";
+    
 	protected final byte[] rid1 = new byte[] { 'a' };
 	protected final byte[] rid2 = new byte[] { 'b' };
+    protected static final long EXPIRE_MS = 1000;
+    
+    private ByteBuffer k, c1, c2, v1, v2;
 	
 	@Before
 	public void setUp() throws Exception {
@@ -177,6 +177,54 @@ public abstract class LockKeyColumnValueStoreTest {
 		
 		tryWrites(store1, manager1, host1tx1, store2, host2tx1);
 	}
+
+	@Test
+	public void expiredLocalLockIsIgnored() throws StorageException, InterruptedException {
+		tryLocks(store1, host1tx1, store1, host1tx2, true);
+	}
+	
+	@Test
+	public void expiredRemoteLockIsIgnored() throws StorageException, InterruptedException {
+		tryLocks(store1, host1tx1, store2, host2tx1, false);
+	}
+	
+	@Test
+	public void relockExtendsLocalExpiration() throws StorageException, InterruptedException {
+		/*
+		 * This test is intrinsically racy and can emit false positives. Ther's
+		 * no guarantee that the thread scheduler will put our test thread back
+		 * on a core in a timely fashion after our Thread.sleep() argument
+		 * elapses. In this case, we might wind up sleeping so long that the
+		 * lock really does expire. Letting the lock expire and then acquiring a
+		 * new lock is different from testing the reentering-extends-expiration
+		 * property of a single lock. This test is nominally concerned with the
+		 * latter case, but it can't guarantee which case it actually tests.
+		 * Both cases are worth testing, but it would better if we could
+		 * deterministically separate them into distinct methods or at least
+		 * distinct assertions. As mentioned at the top, this conflation of
+		 * cases is a problem because this test can give a false positive when
+		 * one of these two cases is working and the other is broken.
+		 */
+		long start = System.currentTimeMillis();
+		long targetDelta = (EXPIRE_MS + 50L) * 2;
+		long target = start + targetDelta;
+		int steps = 20;
+		
+		store1.acquireLock(k, k, null, host1tx1);
+		for (int i = 0; i <= steps; i++) {
+			if (target <= System.currentTimeMillis()) {
+				break;
+			}
+			store1.acquireLock(k, k, null, host1tx1);
+			Thread.sleep(targetDelta/steps);
+		}
+		
+		try {
+			store1.acquireLock(k, k, null, host1tx2);
+		} catch (StorageException e) {
+			assertTrue(e instanceof LockingException);
+		}
+	}
 	
 	private void tryWrites(OrderedKeyColumnValueStore store1, StorageManager checkmgr,
 			TransactionHandle tx1, OrderedKeyColumnValueStore store2,
@@ -198,5 +246,33 @@ public abstract class LockKeyColumnValueStoreTest {
 		assertEquals(v1, store1.get(k, c1, checktx));
 		assertEquals(v2, store1.get(k, c2, checktx));
 		checktx.commit();
+	}
+	
+	private void tryLocks(OrderedKeyColumnValueStore s1,
+			TransactionHandle tx1, OrderedKeyColumnValueStore s2,
+			TransactionHandle tx2, boolean detectLocally) throws StorageException, InterruptedException {
+		
+		s1.acquireLock(k, k, null, tx1);
+		
+		// Require local lock contention, if requested by our caller
+		// Remote lock contention is checked by separate cases
+		if (detectLocally) {
+			try {
+				s2.acquireLock(k, k, null, tx2);
+				fail("Expected lock contention between transactions did not occur");
+			} catch (StorageException e) {
+				assertTrue(e instanceof LockingException);
+			}
+		}
+		
+		// Let the original lock expire
+		Thread.sleep(EXPIRE_MS + 100L);
+		
+		// This should succeed now that the original lock is expired
+		s2.acquireLock(k, k, null, tx2);
+		
+		// Mutate to check for remote contention
+		s2.mutate(k, Arrays.asList(new Entry(c2, v2)), null, tx2);
+
 	}
 }
