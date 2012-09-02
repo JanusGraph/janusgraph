@@ -61,6 +61,10 @@ public class LocalLockMediator {
 	 * available within the JVM. When reckoning expiration times, this method
 	 * uses the approximation implemented by
 	 * {@link TimestampProvider#getApproxNSSinceEpoch(false)}.
+	 * <p>
+	 * The current implementation of this method returns true when given an
+	 * {@code expiresAt} argument in the past. Future implementations may return
+	 * false instead.
 	 * 
 	 * @param kc
 	 *            lock identifier
