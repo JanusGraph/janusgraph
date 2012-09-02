@@ -15,6 +15,7 @@ public class ExternalHBaseLockKeyColumnValueStoreTest
     	Configuration sc = StorageSetup.getHBaseStorageConfiguration();
     	sc.addProperty(HBaseStorageManager.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, "hbase-" + idx);
     	sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, idx);
+    	sc.addProperty(GraphDatabaseConfiguration.LOCK_EXPIRE_MS, EXPIRE_MS);
         return new HBaseStorageManager(sc);
     }
 }
