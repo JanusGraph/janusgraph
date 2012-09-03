@@ -49,8 +49,9 @@ public class VerticesVerticesMapReduce {
                     this.longWritable.set(vertex.getIdAsLong());
                     context.write(this.longWritable, this.holder.set('p', this.vertex));
                 }
+                value.clearPaths();
             }
-            value.clearPaths();
+
             this.longWritable.set(value.getIdAsLong());
             context.write(this.longWritable, this.holder.set('v', value));
         }
@@ -62,16 +63,12 @@ public class VerticesVerticesMapReduce {
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            // final FaunusVertex vertex = new FaunusVertex(key.get());
             this.vertex.reuse(key.get());
             for (final Holder holder : values) {
-                final char tag = holder.getTag();
-                final FaunusVertex temp = (FaunusVertex) holder.get();
-                if (tag == 'v') {
-                    vertex.setProperties(temp.getProperties());
-                    vertex.addEdges(Direction.BOTH, temp);
+                if (holder.getTag() == 'v') {
+                    vertex.addAll((FaunusVertex) holder.get());
                 } else {
-                    vertex.addPaths(temp.getPaths(), true);
+                    vertex.addPaths(holder.get().getPaths(), true);
                 }
             }
             context.write(NullWritable.get(), vertex);

@@ -55,9 +55,69 @@ public class SideEffectMapTest extends BaseTest {
         assertNull(results.get(6l).getProperty("count"));
 
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.VERTICES_PROCESSED).getValue(), 3);
+        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.VERTICES_PROCESSED).getValue(), 6);
         assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.EDGES_PROCESSED).getValue(), 0);
     }
 
+    public void testVertexSideEffectOutDegree() throws IOException {
+        Configuration config = new Configuration();
+        config.setClass(SideEffectMap.CLASS, Vertex.class, Element.class);
+        config.set(SideEffectMap.CLOSURE, "{it -> it.degree = it.outE().count()}");
+
+        mapReduceDriver.withConfiguration(config);
+
+        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
+
+        results.get(1l).startPath();
+        results.get(2l).startPath();
+        results.get(3l).startPath();
+        results.get(4l).startPath();
+        results.get(5l).startPath();
+        results.get(6l).startPath();
+
+        runWithGraph(results.values(), mapReduceDriver);
+
+        assertEquals(results.size(), 6);
+        assertEquals(results.get(1l).getProperty("degree"), 3l);
+        assertEquals(results.get(2l).getProperty("degree"), 0l);
+        assertEquals(results.get(3l).getProperty("degree"), 0l);
+        assertEquals(results.get(4l).getProperty("degree"), 2l);
+        assertEquals(results.get(5l).getProperty("degree"), 0l);
+        assertEquals(results.get(6l).getProperty("degree"), 1l);
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.VERTICES_PROCESSED).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.EDGES_PROCESSED).getValue(), 0);
+    }
+
+
+    public void testVertexSideEffectInDegree() throws IOException {
+
+        Configuration config = new Configuration();
+        config.setClass(SideEffectMap.CLASS, Vertex.class, Element.class);
+        config.set(SideEffectMap.CLOSURE, "{it -> it.degree = it.inE().count()}");
+
+        mapReduceDriver.withConfiguration(config);
+        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
+
+        results.get(1l).startPath();
+        results.get(2l).startPath();
+        results.get(3l).startPath();
+        results.get(4l).startPath();
+        results.get(5l).startPath();
+        results.get(6l).startPath();
+
+        runWithGraph(results.values(), mapReduceDriver);
+
+        assertEquals(results.size(), 6);
+        assertEquals(results.get(1l).getProperty("degree"), 0l);
+        assertEquals(results.get(2l).getProperty("degree"), 1l);
+        assertEquals(results.get(3l).getProperty("degree"), 3l);
+        assertEquals(results.get(4l).getProperty("degree"), 1l);
+        assertEquals(results.get(5l).getProperty("degree"), 1l);
+        assertEquals(results.get(6l).getProperty("degree"), 0l);
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.VERTICES_PROCESSED).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.EDGES_PROCESSED).getValue(), 0);
+    }
 
 }

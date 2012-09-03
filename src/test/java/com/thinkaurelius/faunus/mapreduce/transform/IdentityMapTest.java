@@ -43,7 +43,11 @@ public class IdentityMapTest extends BaseTest {
         }
 
         assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.VERTEX_COUNT).getValue(), 6);
-        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.EDGE_COUNT).getValue(), 12);
+        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.OUT_EDGE_COUNT).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.IN_EDGE_COUNT).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.VERTEX_PROPERTY_COUNT).getValue(), 12);
+        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.OUT_EDGE_PROPERTY_COUNT).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.IN_EDGE_PROPERTY_COUNT).getValue(), 6);
 
         identicalStructure(results, BaseTest.ExampleGraph.TINKERGRAPH);
     }
@@ -64,7 +68,11 @@ public class IdentityMapTest extends BaseTest {
         }
 
         assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.VERTEX_COUNT).getValue(), 6);
-        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.EDGE_COUNT).getValue(), 12);
+        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.OUT_EDGE_COUNT).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.IN_EDGE_COUNT).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.VERTEX_PROPERTY_COUNT).getValue(), 12);
+        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.OUT_EDGE_PROPERTY_COUNT).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.IN_EDGE_PROPERTY_COUNT).getValue(), 6);
 
         identicalStructure(results, BaseTest.ExampleGraph.TINKERGRAPH);
     }

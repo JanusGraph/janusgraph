@@ -5,7 +5,6 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.util.MicroElement;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.io.LongWritable;
@@ -73,9 +72,7 @@ public class BackFilterMapReduce {
             final FaunusVertex vertex = new FaunusVertex(key.get());
             for (final Holder holder : values) {
                 if (holder.getTag() == 'v') {
-                    final FaunusVertex temp = (FaunusVertex) holder.get();
-                    vertex.addEdges(Direction.BOTH, temp);
-                    vertex.setProperties(temp.getProperties());
+                    vertex.addAll((FaunusVertex) holder.get());
                 } else {
                     vertex.addPaths(holder.get().getPaths(), true);
                 }
