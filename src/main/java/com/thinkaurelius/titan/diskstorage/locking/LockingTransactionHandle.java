@@ -161,7 +161,6 @@ public abstract class LockingTransactionHandle implements TransactionHandle {
 				if (backer.getLockWaitMS() < after - before) {
 					// Too slow
 					// Delete lock claim and loop again
-					tsNS = TimestampProvider.getApproxNSSinceEpoch(false);
 					backer.getLockStore().mutate(lockKey, null, Arrays.asList(lc.getLockCol(tsNS, backer.getRid())), null);
 				} else {
 					ok = true;
