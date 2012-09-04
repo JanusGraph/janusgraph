@@ -144,6 +144,17 @@ public class FaunusCompiler extends Configured implements Tool {
         this.outputValue = mapOutputValue;
     }
 
+    ////////////// STEP
+
+    public void stepMapReduce(final Class<? extends Element> klass, final String mapClosure, final String reduceClosure, final Class<? extends WritableComparable> key1, final Class<? extends WritableComparable> value1, final Class<? extends WritableComparable> key2, final Class<? extends WritableComparable> value2 ) throws IOException {
+        this.mapSequenceConfiguration.setClass(StepMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceConfiguration.set(StepMapReduce.MAP_CLOSURE + "-" + this.mapSequenceClasses.size(), mapClosure);
+        this.mapSequenceConfiguration.set(StepMapReduce.REDUCE_CLOSURE, reduceClosure);
+        this.mapSequenceClasses.add(StepMapReduce.Map.class);
+        this.reduceClass = StepMapReduce.Reduce.class;
+        this.setKeyValueClasses(key1, value1, key2, value2);
+    }
+
     ///////////// TRANSFORMS
 
     public void transform(final Class<? extends Element> klass, final String closure) throws IOException {

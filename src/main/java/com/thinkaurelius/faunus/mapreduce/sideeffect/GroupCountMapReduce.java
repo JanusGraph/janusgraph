@@ -60,7 +60,7 @@ public class GroupCountMapReduce {
                 if (value.hasPaths()) {
                     final Object object = this.keyClosure.call(value);
                     final Number number = (Number) this.valueClosure.call(value);
-                    this.map.incr(object, number.longValue() + value.pathCount());
+                    this.map.incr(object, number.longValue() * value.pathCount());
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
             } else {
@@ -70,7 +70,7 @@ public class GroupCountMapReduce {
                     if (edge.hasPaths()) {
                         final Object object = this.keyClosure.call(edge);
                         final Number number = (Number) this.valueClosure.call(edge);
-                        this.map.incr(object, number.longValue() + edge.pathCount());
+                        this.map.incr(object, number.longValue() * edge.pathCount());
                         edgesProcessed++;
                     }
                 }

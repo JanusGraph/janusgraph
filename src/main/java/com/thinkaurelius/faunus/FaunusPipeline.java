@@ -9,6 +9,7 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import com.tinkerpop.pipes.util.structures.Pair;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -85,19 +86,7 @@ public class FaunusPipeline {
 
         public JobState setProperty(final String property, final Class type) {
             this.property = property;
-            if (type.equals(String.class)) {
-                this.propertyType = Text.class;
-            } else if (type.equals(Integer.class)) {
-                this.propertyType = IntWritable.class;
-            } else if (type.equals(Double.class)) {
-                this.propertyType = DoubleWritable.class;
-            } else if (type.equals(Long.class)) {
-                this.propertyType = LongWritable.class;
-            } else if (type.equals(Float.class)) {
-                this.propertyType = FloatWritable.class;
-            } else {
-                throw new RuntimeException("The provided class is not supported: " + type.getSimpleName());
-            }
+            this.propertyType = convertJavaToHadoop(type);
             return this;
         }
 
@@ -145,6 +134,23 @@ public class FaunusPipeline {
     public FaunusPipeline(final String jobScript, final Configuration configuration) {
         this.compiler = new FaunusCompiler(jobScript, configuration);
         this.state = new JobState();
+    }
+
+    ///////// STEP
+
+    public FaunusPipeline step(final String mapClosure, final String reduceClosure,
+                               final Class<? extends WritableComparable> key1,
+                               final Class<? extends WritableComparable> value1,
+                               final Class<? extends WritableComparable> key2,
+                               final Class<? extends WritableComparable> value2) throws IOException {
+        this.state.checkLocked();
+        this.validateClosure(mapClosure);
+        this.validateClosure(reduceClosure);
+        this.compiler.stepMapReduce(this.state.getElementType(), mapClosure, reduceClosure,
+                convertJavaToHadoop(key1), convertJavaToHadoop(value1),
+                convertJavaToHadoop(key2), convertJavaToHadoop(value2));
+        this.state.lock();
+        return this;
     }
 
 
@@ -456,6 +462,24 @@ public class FaunusPipeline {
             engine.eval(closure);
         } catch (ScriptException e) {
             throw new RuntimeException("The provided closure is in error: " + e.getMessage(), e);
+        }
+    }
+
+    private Class<? extends WritableComparable> convertJavaToHadoop(final Class klass) {
+        if (klass.equals(String.class)) {
+            return Text.class;
+        } else if (klass.equals(Integer.class)) {
+            return IntWritable.class;
+        } else if (klass.equals(Double.class)) {
+            return DoubleWritable.class;
+        } else if (klass.equals(Long.class)) {
+            return LongWritable.class;
+        } else if (klass.equals(Float.class)) {
+            return FloatWritable.class;
+        } else if (klass.equals(Boolean.class)) {
+            return BooleanWritable.class;
+        } else {
+            throw new RuntimeException("The provided class is not supported: " + klass.getSimpleName());
         }
     }
 
