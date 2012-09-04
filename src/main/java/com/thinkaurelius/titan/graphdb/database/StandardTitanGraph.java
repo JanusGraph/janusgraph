@@ -67,6 +67,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	private final OrderedKeyColumnValueStore propertyIndex;
     private final boolean bufferMutations;
     private final int bufferSize;
+
+    private final int maxSaveRetryAttempts;
+    private final int retrySaveWaitTime;
+
 	
 	private final Serializer serializer;
 	
@@ -81,6 +85,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         this.bufferMutations = configuration.hasBufferMutations();
         this.bufferSize = configuration.getBufferSize();
         Preconditions.checkArgument(bufferSize>0);
+        this.maxSaveRetryAttempts=config.getPersistAttempts();
+        this.retrySaveWaitTime=config.getPersistWaittime();
 
         this.idAssigner = config.getIDAssigner(this.storage);
         this.idManager = idAssigner.getIDManager();
@@ -598,16 +604,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 		StoreMutator mutator = getStoreMutator(txh);
         boolean acquireLocks = tx.getTxConfiguration().hasAcquireLocks();
-        
+
+        //1. Assign TitanVertex IDs
+        assignIDs(addedRelations,tx);
+
         int saveAttempts = 0;
-        int maxSaveRetryAttempts = 3;
-        int retryWaitTime = 500;
-        
+
         while (true) { //Indefinite loop, broken if no exception occurs, otherwise retried or failed immediately
         try {    
-            //1. Assign TitanVertex IDs
-            assignIDs(addedRelations,tx);
-    
             //2. Collect deleted edges
             ListMultimap<InternalTitanVertex,InternalRelation> mutations = ArrayListMultimap.create();
             if (deletedRelations !=null && !deletedRelations.isEmpty()) {
@@ -695,9 +699,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 if (saveAttempts<maxSaveRetryAttempts) {
                     saveAttempts++;
                     //Wait before retry
-                    if (retryWaitTime>0) {
+                    if (retrySaveWaitTime>0) {
                         try {
-                            Thread.sleep(retryWaitTime);
+                            Thread.sleep(retrySaveWaitTime);
                         } catch (InterruptedException r) {
                             throw new PermanentStorageException("Interrupted while waiting to retry failed persistence",e);
                         }

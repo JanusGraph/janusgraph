@@ -111,6 +111,22 @@ public class GraphDatabaseConfiguration {
     public static final int BUFFER_SIZE_DEFAULT = 1024;
 
     /**
+     * Number of times the database attempts to persist the transactional state to the storage layer.
+     * Persisting the state of a committed transaction might fail for various reasons, some of which are
+     * temporary such as network failures. For temporary failures, Titan will re-attempt to persist the
+     * state up to the number of times specified.
+     */
+    public static final String PERSIST_ATTEMPTS_KEY = "persist-attempts";
+    public static final int PERSIST_ATTEMPTS_DEFAULT = 3;
+
+    /**
+     * Time in milliseconds that Titan waits after an unsuccessful persistence attempt before retrying.
+     */
+    public static final String PERSIST_WAITTIME_KEY = "persist-wait-time";
+    public static final int PERSIST_WAITTIME_DEFAULT = 250;
+
+
+    /**
      * If flush ids is enabled, vertices and edges are assigned ids immediately upon creation. If not, then ids are only
      * assigned when the transaction is committed.
      */
@@ -273,6 +289,19 @@ public class GraphDatabaseConfiguration {
         return size;
     }
     
+    public int getPersistAttempts() {
+        int attempts = configuration.getInt(PERSIST_ATTEMPTS_KEY,PERSIST_ATTEMPTS_DEFAULT);
+        Preconditions.checkArgument(attempts>0,"Persistence attempts must be positive");
+        return attempts;
+    }
+
+    public int getPersistWaittime() {
+        int time = configuration.getInt(PERSIST_WAITTIME_KEY,PERSIST_WAITTIME_DEFAULT);
+        Preconditions.checkArgument(time>0,"Persistence retry wait time must be positive");
+        return time;
+    }
+
+
 
     public static List<RegisteredAttributeClass<?>> getRegisteredAttributeClasses(Configuration config) {
         List<RegisteredAttributeClass<?>> all = new ArrayList<RegisteredAttributeClass<?>>();
