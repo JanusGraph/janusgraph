@@ -11,6 +11,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import static com.tinkerpop.blueprints.Direction.BOTH;
 import static com.tinkerpop.blueprints.Direction.IN;
@@ -76,14 +77,14 @@ public class FaunusVertexTest extends BaseTest {
         vertex1.setProperty("longitude", 10.01d);
         vertex1.setProperty("latitude", 11.4f);
         vertex1.setProperty("size", 10l);
-        vertex1.setProperty("boolean",true);
+        vertex1.setProperty("boolean", true);
         assertEquals(vertex1.getPropertyKeys().size(), 6);
         assertEquals(vertex1.getProperty("name"), "marko");
         assertEquals(vertex1.getProperty("age"), 32);
         assertEquals(vertex1.getProperty("longitude"), 10.01d);
         assertEquals(vertex1.getProperty("latitude"), 11.4f);
         assertEquals(vertex1.getProperty("size"), 10l);
-        assertTrue((Boolean)vertex1.getProperty("boolean"));
+        assertTrue((Boolean) vertex1.getProperty("boolean"));
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
@@ -100,7 +101,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex2.getProperty("longitude"), 10.01d);
         assertEquals(vertex2.getProperty("latitude"), 11.4f);
         assertEquals(vertex1.getProperty("size"), 10l);
-        assertTrue((Boolean)vertex2.getProperty("boolean"));
+        assertTrue((Boolean) vertex2.getProperty("boolean"));
 
         Iterator<Edge> edges = vertex2.getEdges(Direction.OUT).iterator();
         assertTrue(edges.hasNext());
@@ -266,5 +267,24 @@ public class FaunusVertexTest extends BaseTest {
                 assertEquals(vertex.query().has("weight", 0.5).limit(1).vertices().iterator().next().getId(), 2l);
             }
         }
+    }
+
+    public void testGetEdges() throws IOException {
+        Map<Long, FaunusVertex> vertices = generateIndexedGraph(ExampleGraph.TINKERGRAPH);
+
+        assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT, "knows")).size(), 2);
+        assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT, "created")).size(), 1);
+        assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT)).size(), 3);
+        assertEquals(asList(vertices.get(1l).getEdges(Direction.IN)).size(), 0);
+
+        assertEquals(asList(vertices.get(2l).getEdges(Direction.IN, "knows")).size(), 1);
+        assertEquals(asList(vertices.get(2l).getEdges(Direction.OUT, "created")).size(), 0);
+        assertEquals(asList(vertices.get(2l).getEdges(Direction.OUT)).size(), 0);
+        assertEquals(asList(vertices.get(2l).getEdges(Direction.IN)).size(), 1);
+
+        assertEquals(asList(vertices.get(3l).getEdges(Direction.OUT, "knows")).size(), 0);
+        assertEquals(asList(vertices.get(3l).getEdges(Direction.IN, "created")).size(), 3);
+        assertEquals(asList(vertices.get(3l).getEdges(Direction.OUT)).size(), 0);
+        assertEquals(asList(vertices.get(3l).getEdges(Direction.IN)).size(), 3);
     }
 }

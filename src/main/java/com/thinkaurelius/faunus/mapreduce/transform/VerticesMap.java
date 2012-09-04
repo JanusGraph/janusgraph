@@ -34,16 +34,19 @@ public class VerticesMap {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             value.startPath();
+            long edgesProcessed = 0;
             if (this.processEdges) {
-                long edgesProcessed = 0;
                 for (final Edge edge : value.getEdges(Direction.BOTH)) {
                     ((FaunusEdge) edge).clearPaths();
                     edgesProcessed++;
                 }
-                context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
+
             }
-            context.write(NullWritable.get(), value);
+
+            context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
             context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
+            context.write(NullWritable.get(), value);
+
         }
     }
 }

@@ -8,7 +8,6 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -22,35 +21,37 @@ public class IdentityMap {
         VERTEX_PROPERTY_COUNT,
         OUT_EDGE_PROPERTY_COUNT,
         IN_EDGE_PROPERTY_COUNT
-        
+
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            context.write(NullWritable.get(), value);
+
             context.getCounter(Counters.VERTEX_COUNT).increment(1l);
             context.getCounter(Counters.VERTEX_PROPERTY_COUNT).increment(value.getProperties().size());
-            
+
             long edgeCount = 0;
             long edgePropertyCount = 0;
-            for(final Edge edge : value.getEdges(Direction.IN)) {
+            for (final Edge edge : value.getEdges(Direction.IN)) {
                 edgeCount++;
-                edgePropertyCount = edgePropertyCount + ((FaunusEdge)edge).getProperties().size();
+                edgePropertyCount = edgePropertyCount + ((FaunusEdge) edge).getProperties().size();
             }
             context.getCounter(Counters.IN_EDGE_COUNT).increment(edgeCount);
             context.getCounter(Counters.IN_EDGE_PROPERTY_COUNT).increment(edgePropertyCount);
 
             edgeCount = 0;
             edgePropertyCount = 0;
-            for(final Edge edge : value.getEdges(Direction.OUT)) {
+            for (final Edge edge : value.getEdges(Direction.OUT)) {
                 edgeCount++;
-                edgePropertyCount = edgePropertyCount + ((FaunusEdge)edge).getProperties().size();
+                edgePropertyCount = edgePropertyCount + ((FaunusEdge) edge).getProperties().size();
             }
             context.getCounter(Counters.OUT_EDGE_COUNT).increment(edgeCount);
             context.getCounter(Counters.OUT_EDGE_PROPERTY_COUNT).increment(edgePropertyCount);
-            
+
+            context.write(NullWritable.get(), value);
+
         }
     }
 }
