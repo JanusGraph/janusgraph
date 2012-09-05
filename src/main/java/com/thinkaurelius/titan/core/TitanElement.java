@@ -33,6 +33,9 @@ public interface TitanElement {
      * The <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a> explains
      * how to configure when entity ids are assigned.
      * Some entities are never assigned a unique identifier if they depend on a parent entity.
+     * 
+     * Note: Edges cannot be retrieved by the unique identifier returned by {@link #getID()}. Use the identifier returned
+     * by {@link com.tinkerpop.blueprints.Element#getId()} instead for edge retrieval.
 	 * 
 	 * @return The unique identifier for this entity
 	 * @throws IllegalStateException if the entity does not (yet) have a unique identifier

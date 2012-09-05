@@ -10,6 +10,8 @@ import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.PropertyFilteredIterable;
 import com.tinkerpop.blueprints.util.StringFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -20,6 +22,10 @@ import java.util.Set;
  */
 
 public abstract class TitanBlueprintsTransaction implements TitanTransaction {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(TitanBlueprintsTransaction.class);
+
 
     @Override
     public void stopTransaction(Conclusion conclusion) {
@@ -95,6 +101,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         else if (id instanceof String) rid = RelationIdentifier.parse((String)id);
         else if (id instanceof long[]) rid = RelationIdentifier.get((long[])id);
         else if (id instanceof int[]) rid = RelationIdentifier.get((int[])id);
+        else if (id instanceof Long) log.warn("");
 
         if (rid!=null) return rid.findEdge(this);
         else return null;

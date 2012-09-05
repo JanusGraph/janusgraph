@@ -4,6 +4,11 @@ import cern.colt.function.LongObjectProcedure;
 import cern.colt.map.AbstractLongObjectMap;
 import cern.colt.map.OpenLongObjectHashMap;
 import com.sleepycat.je.util.DbCacheSize;
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.TransactionalGraph;
+import com.tinkerpop.blueprints.Vertex;
 
 import java.io.IOException;
 
@@ -13,8 +18,10 @@ public class TestBed {
 	 * @param args
 	 * @throws java.io.IOException
 	 */
-	public static void main(String[] args) throws IOException {
-		byte b = (byte)(15 | (1<<7));
+	public static void main(String[] args) throws Exception {
+
+
+        byte b = (byte)(15 | (1<<7));
         System.out.println(b);
         System.out.println(Runtime.getRuntime().maxMemory()/1024);
         System.out.println(Runtime.getRuntime().totalMemory()/1024);
@@ -50,6 +57,23 @@ public class TestBed {
 		
 
 	}
-	
+
+
+    private static void codeSnippets() throws Exception {
+        TitanGraph g = TitanFactory.open("/tmp/titan");
+        g.createKeyIndex("name",Vertex.class);
+        Vertex juno = g.addVertex(null);
+        juno.setProperty("name", "juno");
+        juno = g.getVertices("name","juno").iterator().next();
+
+        TransactionalGraph tx = g.startTransaction();
+        Thread[] threads = new Thread[10];
+        for (int i=0;i<threads.length;i++) {
+            //threads[i]=new Thread(new DoSomething(tx));
+            threads[i].start();
+        }
+        for (int i=0;i<threads.length;i++) threads[i].join();
+        tx.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+    }
 
 }
