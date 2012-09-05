@@ -60,6 +60,11 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+/**
+ * Adopted from Cassandra's RecordReader source code.
+ *
+ * @author Marko A. Rodriguez (http://markorodriguez.com)
+ */
 public class TitanCassandraRecordReader extends RecordReader<NullWritable, FaunusVertex> {
     public static final int CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT = 8;
 
@@ -79,7 +84,6 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     private ConsistencyLevel consistencyLevel;
     private List<IndexExpression> filter;
 
-    private final int keyBufferSize;
     private final FaunusTitanGraph graph;
 
     public TitanCassandraRecordReader(FaunusTitanGraph graph) {
@@ -89,7 +93,6 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     public TitanCassandraRecordReader(FaunusTitanGraph graph, int keyBufferSize) {
         super();
         if (graph == null) throw new IllegalArgumentException("Graph cannot be null");
-        this.keyBufferSize = keyBufferSize;
         this.graph = graph;
     }
 
@@ -178,7 +181,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
         }
 
         iter = widerows ? new WideRowIterator() : new StaticRowIterator();
-        logger.debug("created {}", iter);
+        logger.debug("Created {}", iter);
     }
 
 
@@ -239,11 +242,11 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
                 comparator = TypeParser.parse(cf_def.comparator_type);
                 subComparator = cf_def.subcomparator_type == null ? null : TypeParser.parse(cf_def.subcomparator_type);
             } catch (ConfigurationException e) {
-                throw new RuntimeException("unable to load sub/comparator", e);
+                throw new RuntimeException("Unable to load sub/comparator", e);
             } catch (TException e) {
-                throw new RuntimeException("error communicating via Thrift", e);
+                throw new RuntimeException("Error communicating via Thrift", e);
             } catch (Exception e) {
-                throw new RuntimeException("unable to load keyspace " + keyspace, e);
+                throw new RuntimeException("Unable to load keyspace " + keyspace, e);
             }
         }
 
@@ -299,7 +302,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
             if (rows != null && i < rows.size())
                 return;
 
-            String startToken;
+            final String startToken;
             if (totalRead == 0) {
                 // first request
                 startToken = split.getStartToken();
@@ -395,7 +398,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
                 int n = 0;
                 for (KeySlice row : rows)
                     n += row.columns.size();
-                logger.debug("read {} columns in {} rows for {} starting with {}",
+                logger.debug("Read {} columns in {} rows for {} starting with {}",
                         new Object[]{n, rows.size(), keyRange, lastColumn});
 
                 wideColumns = Iterators.peekingIterator(new WideColumnIterator(rows));

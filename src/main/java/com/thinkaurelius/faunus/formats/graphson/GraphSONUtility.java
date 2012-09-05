@@ -155,12 +155,4 @@ public class GraphSONUtility {
             return identifier;
         }
     }
-
-    /*public static void generateGraphSON(final Graph graph, final OutputStream outputStream) throws IOException {
-        final BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(outputStream));
-        for (final Vertex vertex : graph.getVertices()) {
-            bw.write(GraphSONUtility.toJSON(vertex) + "\n");
-        }
-        bw.close();
-    }*/
 }

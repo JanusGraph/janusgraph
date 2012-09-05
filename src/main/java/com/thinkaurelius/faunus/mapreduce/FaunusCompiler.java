@@ -146,7 +146,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
     ////////////// STEP
 
-    public void stepMapReduce(final Class<? extends Element> klass, final String mapClosure, final String reduceClosure, final Class<? extends WritableComparable> key1, final Class<? extends WritableComparable> value1, final Class<? extends WritableComparable> key2, final Class<? extends WritableComparable> value2 ) throws IOException {
+    public void stepMapReduce(final Class<? extends Element> klass, final String mapClosure, final String reduceClosure, final Class<? extends WritableComparable> key1, final Class<? extends WritableComparable> value1, final Class<? extends WritableComparable> key2, final Class<? extends WritableComparable> value2) throws IOException {
         this.mapSequenceConfiguration.setClass(StepMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceConfiguration.set(StepMapReduce.MAP_CLOSURE + "-" + this.mapSequenceClasses.size(), mapClosure);
         this.mapSequenceConfiguration.set(StepMapReduce.REDUCE_CLOSURE, reduceClosure);
@@ -475,15 +475,15 @@ public class FaunusCompiler extends Configured implements Tool {
             } else if (this.configuration.getGraphInputFormat().equals(RexsterInputFormat.class)) {
                 /* do nothing */
             } else if (this.configuration.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
-                ConfigHelper.setInputColumnFamily(this.configuration, ConfigHelper.getInputKeyspace(this.configuration), "edgestore");
+                ConfigHelper.setInputColumnFamily(this.jobs.get(0).getConfiguration(), ConfigHelper.getInputKeyspace(this.configuration), "edgestore");
 
-                SlicePredicate predicate = new SlicePredicate();
-                SliceRange sliceRange = new SliceRange();
+                final SlicePredicate predicate = new SlicePredicate();
+                final SliceRange sliceRange = new SliceRange();
                 sliceRange.setStart(new byte[0]);
                 sliceRange.setFinish(new byte[0]);
                 predicate.setSlice_range(sliceRange);
 
-                ConfigHelper.setInputSlicePredicate(this.configuration, predicate);
+                ConfigHelper.setInputSlicePredicate(this.jobs.get(0).getConfiguration(), predicate);
             } else
                 throw new IOException(this.configuration.getGraphInputFormat().getName() + " is not a supported input format");
 

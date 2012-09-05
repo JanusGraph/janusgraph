@@ -27,11 +27,11 @@ public class FaunusTitanGraph extends StandardTitanGraph {
 
     private final InternalTitanTransaction tx;
 
-    public FaunusTitanGraph(String configFile) throws ConfigurationException {
+    public FaunusTitanGraph(final String configFile) throws ConfigurationException {
         this(new PropertiesConfiguration(configFile));
     }
 
-    public FaunusTitanGraph(Configuration configuration) {
+    public FaunusTitanGraph(final Configuration configuration) {
         super(new GraphDatabaseConfiguration(configuration));
         this.tx = startTransaction(new TransactionConfig(this.getConfiguration()));
     }
@@ -54,7 +54,7 @@ public class FaunusTitanGraph extends StandardTitanGraph {
 
         private final SortedMap<ByteBuffer, IColumn> columnValues;
 
-        public CassandraMapIterable(SortedMap<ByteBuffer, IColumn> columnValues) {
+        public CassandraMapIterable(final SortedMap<ByteBuffer, IColumn> columnValues) {
             Preconditions.checkNotNull(columnValues);
             this.columnValues = columnValues;
         }
@@ -70,7 +70,7 @@ public class FaunusTitanGraph extends StandardTitanGraph {
 
         private final Iterator<Map.Entry<ByteBuffer, IColumn>> iterator;
 
-        public CassandraMapIterator(Iterator<Map.Entry<ByteBuffer, IColumn>> iterator) {
+        public CassandraMapIterator(final Iterator<Map.Entry<ByteBuffer, IColumn>> iterator) {
             this.iterator = iterator;
         }
 
@@ -81,7 +81,7 @@ public class FaunusTitanGraph extends StandardTitanGraph {
 
         @Override
         public Entry next() {
-            Map.Entry<ByteBuffer, IColumn> entry = iterator.next();
+            final Map.Entry<ByteBuffer, IColumn> entry = iterator.next();
             return new Entry(entry.getKey(), entry.getValue().value());
         }
 

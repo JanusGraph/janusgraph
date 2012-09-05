@@ -28,6 +28,8 @@ public class WritableHandler {
 
     public WritableHandler(final Class<? extends WritableComparable> type) {
         this.type = type;
+        if (!type.equals(Text.class) && !type.equals(LongWritable.class) && !type.equals(IntWritable.class) && !type.equals(FloatWritable.class) && !type.equals(DoubleWritable.class))
+            throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
     }
 
     public WritableComparable set(final String s) {
@@ -45,9 +47,11 @@ public class WritableHandler {
         } else if (type.equals(DoubleWritable.class)) {
             doubleWritable.set(Double.valueOf(s));
             return doubleWritable;
-        } else {
+        } else if (type.equals(FloatWritable.class)) {
             floatWritable.set(Float.valueOf(s));
             return floatWritable;
+        } else {
+            throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
         }
     }
 
@@ -66,9 +70,11 @@ public class WritableHandler {
         } else if (type.equals(DoubleWritable.class)) {
             doubleWritable.set(l.doubleValue());
             return doubleWritable;
-        } else {
+        } else if (type.equals(FloatWritable.class)) {
             floatWritable.set(l.floatValue());
             return floatWritable;
+        } else {
+            throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
         }
     }
 
@@ -87,9 +93,11 @@ public class WritableHandler {
         } else if (type.equals(DoubleWritable.class)) {
             doubleWritable.set(i.doubleValue());
             return doubleWritable;
-        } else {
+        } else if (type.equals(FloatWritable.class)) {
             floatWritable.set(i.floatValue());
             return floatWritable;
+        } else {
+            throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
         }
     }
 
@@ -108,9 +116,11 @@ public class WritableHandler {
         } else if (type.equals(DoubleWritable.class)) {
             doubleWritable.set(d);
             return doubleWritable;
-        } else {
+        } else if (type.equals(FloatWritable.class)) {
             floatWritable.set(d.floatValue());
             return floatWritable;
+        } else {
+            throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
         }
     }
 
@@ -129,9 +139,11 @@ public class WritableHandler {
         } else if (type.equals(DoubleWritable.class)) {
             doubleWritable.set(f.doubleValue());
             return doubleWritable;
-        } else {
+        } else if (type.equals(FloatWritable.class)) {
             floatWritable.set(f);
             return floatWritable;
+        } else {
+            throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
         }
     }
 
@@ -145,20 +157,23 @@ public class WritableHandler {
                 return NULL_INT;
             else if (type.equals(DoubleWritable.class))
                 return NULL_DOUBLE;
-            else
+            else if (type.equals(FloatWritable.class))
                 return NULL_FLOAT;
+            else
+                throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
+        } else {
+            if (object instanceof String)
+                return set((String) object);
+            else if (object instanceof Long)
+                return set((Long) object);
+            else if (object instanceof Integer)
+                return set((Integer) object);
+            else if (object instanceof Double)
+                return set((Double) object);
+            else if (object instanceof Float)
+                return set((Float) object);
+            else
+                throw new IllegalArgumentException("The provided object class is not supported: " + object.getClass());
         }
-
-        if (object instanceof String)
-            return set((String) object);
-        else if (object instanceof Long)
-            return set((Long) object);
-        else if (object instanceof Integer)
-            return set((Integer) object);
-        else if (object instanceof Double)
-            return set((Double) object);
-        else
-            return set((Float) object);
-
     }
 }

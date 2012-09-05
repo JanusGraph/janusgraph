@@ -45,4 +45,9 @@ public class HolderTest extends TestCase {
 
         assertEquals(holder1.compareTo(holder2), 0);
     }
+    
+    /*public void testRawComparator() throws IOException {
+        Holder.Comparator comparator = new Holder.Comparator();
+        comparator.compare()
+    }*/
 }

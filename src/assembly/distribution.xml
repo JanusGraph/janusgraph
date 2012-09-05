@@ -10,7 +10,7 @@
             <outputDirectory>bin</outputDirectory>
             <includes>
                 <include>*.sh</include>
-                <include>*.bat</include>
+                <!--<include>*.bat</include>-->
             </includes>
         </fileSet>
         <fileSet>
@@ -37,6 +37,10 @@
         </file>
         <file>
             <source>data/graph-of-the-gods.json</source>
+            <outputDirectory>data</outputDirectory>
+        </file>
+        <file>
+            <source>data/graph-example-1.json</source>
             <outputDirectory>data</outputDirectory>
         </file>
         <file>

@@ -17,6 +17,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 /**
+ * Adopted from Hadoop's TextOutputFormat source code.
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class EdgeListOutputFormat extends FileOutputFormat<NullWritable, FaunusVertex> {

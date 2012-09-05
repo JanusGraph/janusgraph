@@ -37,13 +37,11 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class FaunusPipeline {
 
-    public static final String VERTEX_STATE_ERROR = "The compiler is currently in vertex state";
-    public static final String EDGE_STATE_ERROR = "The compiler is currently in edge state";
     public static final String PIPELINE_IS_LOCKED = "No more steps are possible as pipeline is locked";
 
-    private final FaunusCompiler compiler;
-    private final JobState state;
-    private static final ScriptEngine engine = new GremlinGroovyScriptEngine();
+    protected final FaunusCompiler compiler;
+    protected final JobState state;
+    protected static final ScriptEngine engine = new GremlinGroovyScriptEngine();
 
     private Query.Compare opposite(final Query.Compare compare) {
         if (compare.equals(Query.Compare.EQUAL))
@@ -60,7 +58,7 @@ public class FaunusPipeline {
             return Query.Compare.GREATER_THAN;
     }
 
-    private class JobState {
+    protected class JobState {
         private Class<? extends Element> elementType;
         private String property;
         private Class<? extends WritableComparable> propertyType;
@@ -70,7 +68,7 @@ public class FaunusPipeline {
 
         public JobState set(Class<? extends Element> elementType) {
             if (!elementType.equals(Vertex.class) && !elementType.equals(Edge.class))
-                throw new RuntimeException("The element class type must be either Vertex or Edge");
+                throw new IllegalArgumentException("The element class type must be either Vertex or Edge");
 
             this.elementType = elementType;
             return this;
@@ -81,6 +79,8 @@ public class FaunusPipeline {
         }
 
         public boolean atVertex() {
+            if (null == this.elementType)
+                throw new IllegalStateException("No element type can be inferred");
             return this.elementType.equals(Vertex.class);
         }
 
@@ -103,6 +103,10 @@ public class FaunusPipeline {
             return ++this.step;
         }
 
+        public int getStep() {
+            return this.step;
+        }
+
         public void checkLocked() {
             if (this.locked) throw new IllegalStateException(PIPELINE_IS_LOCKED);
         }
@@ -117,7 +121,7 @@ public class FaunusPipeline {
 
         public void addStep(final String name) {
             if (this.step == -1)
-                throw new RuntimeException("There is no previous step to name");
+                throw new IllegalArgumentException("There is no previous step to name");
 
             this.namedSteps.put(name, this.step);
         }
@@ -125,7 +129,7 @@ public class FaunusPipeline {
         public int getStep(final String name) {
             final Integer i = this.namedSteps.get(name);
             if (null == i)
-                throw new IllegalStateException("There is no step identified by: " + name);
+                throw new IllegalArgumentException("There is no step identified by: " + name);
             else
                 return i;
         }
@@ -205,7 +209,7 @@ public class FaunusPipeline {
             this.compiler.verticesVerticesMapReduce(OUT, labels);
             return this;
         } else
-            throw new RuntimeException("This step can not follow an edge-based step");
+            throw new IllegalStateException("This step can not follow an edge-based step");
     }
 
     public FaunusPipeline in(final String... labels) throws IOException {
@@ -215,7 +219,7 @@ public class FaunusPipeline {
             this.compiler.verticesVerticesMapReduce(IN, labels);
             return this;
         } else
-            throw new RuntimeException("This step can not follow an edge-based step");
+            throw new IllegalStateException("This step can not follow an edge-based step");
     }
 
     public FaunusPipeline both(final String... labels) throws IOException {
@@ -225,7 +229,7 @@ public class FaunusPipeline {
             this.compiler.verticesVerticesMapReduce(BOTH, labels);
             return this;
         } else
-            throw new RuntimeException("This step can not follow an edge-based step");
+            throw new IllegalStateException("This step can not follow an edge-based step");
     }
 
     public FaunusPipeline outE(final String... labels) throws IOException {
@@ -236,7 +240,7 @@ public class FaunusPipeline {
             this.state.set(Edge.class);
             return this;
         } else
-            throw new RuntimeException("This step can not follow an edge-based step");
+            throw new IllegalStateException("This step can not follow an edge-based step");
     }
 
     public FaunusPipeline inE(final String... labels) throws IOException {
@@ -247,7 +251,7 @@ public class FaunusPipeline {
             this.state.set(Edge.class);
             return this;
         } else
-            throw new RuntimeException("This step can not follow an edge-based step");
+            throw new IllegalStateException("This step can not follow an edge-based step");
     }
 
     public FaunusPipeline bothE(final String... labels) throws IOException {
@@ -258,7 +262,7 @@ public class FaunusPipeline {
             this.state.set(Edge.class);
             return this;
         } else
-            throw new RuntimeException("This step can not follow an edge-based step");
+            throw new IllegalStateException("This step can not follow an edge-based step");
     }
 
     public FaunusPipeline outV() throws IOException {
@@ -269,7 +273,7 @@ public class FaunusPipeline {
             this.state.set(Vertex.class);
             return this;
         } else
-            throw new RuntimeException("This step can not follow a vertex-based step");
+            throw new IllegalStateException("This step can not follow a vertex-based step");
     }
 
     public FaunusPipeline inV() throws IOException {
@@ -280,7 +284,7 @@ public class FaunusPipeline {
             this.state.set(Vertex.class);
             return this;
         } else
-            throw new RuntimeException("This step can not follow a vertex-based step");
+            throw new IllegalStateException("This step can not follow a vertex-based step");
     }
 
     public FaunusPipeline property(final String key, final Class type) {
@@ -299,7 +303,7 @@ public class FaunusPipeline {
             this.state.setProperty(Tokens.LABEL, String.class);
             return this;
         } else
-            throw new RuntimeException("This step can not follow a vertex-based step");
+            throw new IllegalStateException("This step can not follow a vertex-based step");
     }
 
     public FaunusPipeline path() throws IOException {
@@ -315,7 +319,7 @@ public class FaunusPipeline {
         if (null != pair) {
             this.compiler.orderMapReduce(this.state.getElementType(), elementKey, pair.getA(), pair.getB(), order);
         } else {
-            throw new RuntimeException("There is no specified property to sort on");
+            throw new IllegalArgumentException("There is no specified property to sort on");
         }
         this.state.lock();
         return this;
@@ -461,7 +465,7 @@ public class FaunusPipeline {
         try {
             engine.eval(closure);
         } catch (ScriptException e) {
-            throw new RuntimeException("The provided closure is in error: " + e.getMessage(), e);
+            throw new IllegalArgumentException("The provided closure is in error: " + e.getMessage(), e);
         }
     }
 
@@ -479,7 +483,7 @@ public class FaunusPipeline {
         } else if (klass.equals(Boolean.class)) {
             return BooleanWritable.class;
         } else {
-            throw new RuntimeException("The provided class is not supported: " + klass.getSimpleName());
+            throw new IllegalArgumentException("The provided class is not supported: " + klass.getSimpleName());
         }
     }
 

@@ -11,6 +11,8 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 /**
+ * Adopted from Hadoop's TextInputFormat source code.
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class GraphSONInputFormat extends FileInputFormat<NullWritable, FaunusVertex> {

@@ -1,5 +1,7 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.util.MicroElement;
+import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -9,6 +11,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +88,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1.getProperty("latitude"), 11.4f);
         assertEquals(vertex1.getProperty("size"), 10l);
         assertTrue((Boolean) vertex1.getProperty("boolean"));
+        vertex1.startPath();
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
@@ -102,6 +106,9 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex2.getProperty("latitude"), 11.4f);
         assertEquals(vertex1.getProperty("size"), 10l);
         assertTrue((Boolean) vertex2.getProperty("boolean"));
+        assertEquals(vertex2.getPaths().size(), 1);
+        assertEquals(vertex2.getPaths().get(0).size(), 1);
+        assertEquals(vertex2.getPaths().get(0).get(0).getId(), 10l);
 
         Iterator<Edge> edges = vertex2.getEdges(Direction.OUT).iterator();
         assertTrue(edges.hasNext());
@@ -128,6 +135,8 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1.getProperty("longitude"), 10.01d);
         assertEquals(vertex1.getProperty("latitude"), 11.4f);
         assertEquals(vertex1.getProperty("size"), 10l);
+        vertex1.addPath((List) Arrays.asList(new MicroVertex(10l), new MicroVertex(1l)), false);
+        vertex1.addPath((List) Arrays.asList(new MicroVertex(10l), new MicroVertex(2l)), false);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
@@ -144,6 +153,13 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex2.getProperty("longitude"), 10.01d);
         assertEquals(vertex2.getProperty("latitude"), 11.4f);
         assertEquals(vertex1.getProperty("size"), 10l);
+        assertEquals(vertex2.pathCount(), 2);
+        assertTrue(vertex2.hasPaths());
+        for (List<MicroElement> path : vertex2.getPaths()) {
+            assertEquals(path.get(0).getId(), 10l);
+            assertTrue(path.get(1).getId() == 1l || path.get(1).getId() == 2l);
+            assertEquals(path.size(), 2);
+        }
 
         Iterator<Edge> edges = vertex2.getEdges(Direction.OUT).iterator();
         assertTrue(edges.hasNext());
@@ -275,6 +291,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT, "knows")).size(), 2);
         assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT, "created")).size(), 1);
         assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT)).size(), 3);
+        assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT, "knows", "created")).size(), 3);
         assertEquals(asList(vertices.get(1l).getEdges(Direction.IN)).size(), 0);
 
         assertEquals(asList(vertices.get(2l).getEdges(Direction.IN, "knows")).size(), 1);
@@ -286,5 +303,12 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(asList(vertices.get(3l).getEdges(Direction.IN, "created")).size(), 3);
         assertEquals(asList(vertices.get(3l).getEdges(Direction.OUT)).size(), 0);
         assertEquals(asList(vertices.get(3l).getEdges(Direction.IN)).size(), 3);
+        assertEquals(asList(vertices.get(3l).getEdges(Direction.IN, "knows", "created")).size(), 3);
+
+        assertEquals(asList(vertices.get(4l).getEdges(Direction.BOTH, "created")).size(), 2);
+        assertEquals(asList(vertices.get(4l).getEdges(Direction.BOTH)).size(), 3);
+        assertEquals(asList(vertices.get(4l).getEdges(Direction.BOTH, "knows")).size(), 1);
+        assertEquals(asList(vertices.get(4l).getEdges(Direction.BOTH, "knows", "created")).size(), 3);
+        assertEquals(asList(vertices.get(4l).getEdges(Direction.BOTH, "blah")).size(), 0);
     }
 }

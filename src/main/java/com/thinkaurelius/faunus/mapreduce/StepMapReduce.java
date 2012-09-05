@@ -10,7 +10,6 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import groovy.lang.Closure;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -29,7 +28,10 @@ public class StepMapReduce {
     public static final String REDUCE_CLOSURE = Tokens.makeNamespace(StepMapReduce.class) + ".reduceClosure";
     private static final ScriptEngine engine = new GremlinGroovyScriptEngine();
 
-
+    public enum Counters {
+        VERTICES_PROCESSED,
+        EDGES_PROCESSED
+    }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, WritableComparable, WritableComparable> {
 
@@ -53,6 +55,7 @@ public class StepMapReduce {
                     for (int i = 0; i < value.pathCount(); i++) {
                         this.mapClosure.call(value, context);
                     }
+                    context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
             } else {
                 long edgesProcessed = 0;
@@ -65,6 +68,7 @@ public class StepMapReduce {
                         edgesProcessed++;
                     }
                 }
+                context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
             }
         }
     }

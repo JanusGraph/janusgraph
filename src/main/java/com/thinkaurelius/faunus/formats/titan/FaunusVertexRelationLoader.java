@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.graphdb.database.VertexRelationLoader;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.util.ExceptionFactory;
 
 import java.nio.ByteBuffer;
 
@@ -25,7 +26,7 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
     private FaunusEdge lastEdge = null;
     private boolean isSystemType = false;
 
-    public FaunusVertexRelationLoader(ByteBuffer key) {
+    public FaunusVertexRelationLoader(final ByteBuffer key) {
         this(key.getLong());
 
     }
@@ -42,7 +43,7 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
     }
 
     @Override
-    public void loadProperty(long propertyid, TitanKey key, Object attribute) {
+    public void loadProperty(final long propertyid, final TitanKey key, final Object attribute) {
         if (key == SystemKey.TypeClass) isSystemType = true;
         if (filterSystemTypes && key instanceof SystemType) return;
 
@@ -50,7 +51,7 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
     }
 
     @Override
-    public void loadEdge(long edgeid, TitanLabel label, Direction dir, long otherVertexId) {
+    public void loadEdge(final long edgeid, final TitanLabel label, final Direction dir, final long otherVertexId) {
         if (filterSystemTypes && label instanceof SystemType) return;
 
         switch (dir) {
@@ -63,18 +64,18 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
                 vertex.addEdge(dir, lastEdge);
                 break;
             default:
-                throw new IllegalArgumentException("Unexpected direction: " + dir);
+                throw ExceptionFactory.bothIsNotSupported();
         }
     }
 
     @Override
-    public void addRelationProperty(TitanKey key, Object attribute) {
+    public void addRelationProperty(final TitanKey key, final Object attribute) {
         if (filterSystemTypes && key instanceof SystemType) return;
         lastEdge.setProperty(key.getName(), prepareAttribute(attribute));
     }
 
     @Override
-    public void addRelationEdge(TitanLabel label, long vertexId) {
+    public void addRelationEdge(final TitanLabel label, final long vertexId) {
         //These are ignored in Faunus
         //TODO: should we add a warning?
     }

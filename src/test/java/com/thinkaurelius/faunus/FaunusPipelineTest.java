@@ -1,90 +1,94 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat;
-import com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import java.io.IOException;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class FaunusPipelineTest extends BaseTest {
 
-    protected static Configuration conf = new Configuration();
+    public void testElementTypeUpdating() throws IOException {
+        FaunusPipeline pipeline = new FaunusPipeline("test", new Configuration());
+        try {
+            pipeline.outE();
+            assertTrue(false);
+        } catch (IllegalStateException e) {
+            assertTrue(true);
+        }
+        pipeline.v(1, 2, 3, 4).outE("knows").inV().property("key");
+        pipeline = new FaunusPipeline("test", new Configuration());
+        pipeline.V().E().V().E();
 
-    static {
-        conf.set(FaunusConfiguration.GRAPH_INPUT_FORMAT_CLASS, GraphSONInputFormat.class.getName());
-        conf.set(FaunusConfiguration.GRAPH_OUTPUT_FORMAT_CLASS, GraphSONOutputFormat.class.getName());
-        conf.set(FaunusConfiguration.STATISTIC_OUTPUT_FORMAT_CLASS, TextOutputFormat.class.getName());
-        conf.set(FaunusConfiguration.OUTPUT_LOCATION, "output.txt");
+
+        try {
+            pipeline.V().inV();
+            assertTrue(false);
+        } catch (IllegalStateException e) {
+            assertTrue(true);
+        }
+
+        try {
+            pipeline.E().outE();
+            assertTrue(false);
+        } catch (IllegalStateException e) {
+            assertTrue(true);
+        }
+
+        try {
+            pipeline.E().outE();
+            assertTrue(false);
+        } catch (IllegalStateException e) {
+            assertTrue(true);
+        }
     }
 
-    /* public void testMapOnlyComposition() throws Exception {
-       FaunusPipeline g = new FaunusPipeline("g", conf);
-       g = g.V._().labelFilter(Tokens.Action.KEEP, "father");
-       assertEquals(g.getJobSequence().size(), 1);
-       List<String> classes = Arrays.asList(g.getJobSequence().get(0).getConfiguration().getStrings(MapSequence.MAP_CLASSES));
-       assertEquals(classes.size(), 2);
-       assertEquals(classes.get(0), Identity.Map.class.getName());
-       assertEquals(classes.get(1), LabelFilter.Map.class.getName());
-       assertEquals(g.getJobSequence().get(0).getConfiguration().getStrings(LabelFilter.LABELS + "-1")[0], "father");
-       assertEquals(g.getJobSequence().get(0).getConfiguration().get(LabelFilter.ACTION + "-1"), Tokens.Action.KEEP.name());
-       assertTrue(g.derivationJob);
-   }
+    public void testPipelineLocking() throws IOException {
+        FaunusPipeline pipeline = new FaunusPipeline("test", new Configuration());
+        pipeline.V().out().property("name");
+        /* // TODO: proper locking required
+        try {
+            pipeline.V();
+            assertTrue(false);
+        } catch (IllegalStateException e) {
+            assertTrue(true);
+        }*/
 
-   public void testMapOnlyComposition2() throws Exception {
-       FaunusPipeline g = new FaunusPipeline("g", conf);
-       g = g.V._().labelFilter(Tokens.Action.KEEP, "brother")._();
-       assertEquals(g.getJobSequence().size(), 1);
-       List<String> classes = Arrays.asList(g.getJobSequence().get(0).getConfiguration().getStrings(MapSequence.MAP_CLASSES));
-       assertEquals(classes.size(), 3);
-       assertEquals(classes.get(0), Identity.Map.class.getName());
-       assertEquals(classes.get(1), LabelFilter.Map.class.getName());
-       assertEquals(classes.get(2), Identity.Map.class.getName());
-       assertEquals(g.getJobSequence().get(0).getConfiguration().getStrings(LabelFilter.LABELS + "-1")[0], "brother");
-       assertEquals(g.getJobSequence().get(0).getConfiguration().get(LabelFilter.ACTION + "-1"), Tokens.Action.KEEP.name());
-       assertTrue(g.derivationJob);
-       try {
-           String x = g.getJobSequence().get(0).getConfiguration().getStrings(LabelFilter.LABELS + "-1")[1];
-           assertFalse(true);
-       } catch (ArrayIndexOutOfBoundsException e) {
-           assertTrue(true);
-       }
-   } */
-
-    public void testTrue() {
-        Queue<String> q = new LinkedList<String>();
-        q.add("a");
-        q.add("b");
-        assertEquals("a", q.remove());
-        assertEquals("b", q.remove());
+        try {
+            pipeline.order(Tokens.Order.INCREASING, "name").V();
+            assertTrue(false);
+        } catch (IllegalStateException e) {
+            assertTrue(true);
+        }
     }
 
-    /* public void testClosure() throws Exception {
-       ScriptEngine engine = new GroovyScriptEngineImpl();
-       Closure closure = (Closure) engine.eval("{-> 1+2}");
-       closure = closure.dehydrate();
-
-       ByteArrayOutputStream bos = new ByteArrayOutputStream();
-       ObjectOutput out = new ObjectOutputStream(bos);
-       out.writeObject(closure);
-       out.flush();
-       out.close();
-
-       BASE64Encoder encoder = new BASE64Encoder();
-       String closureString = encoder.encode(bos.toByteArray());
-       System.out.println(closureString);
-
-       ByteArrayInputStream bis = new ByteArrayInputStream(new BASE64Decoder().decodeBuffer(closureString));
-       ObjectInputStream in = new ObjectInputStream(bis);
-
-       Closure closure1 = (Closure) in.readObject();
-       in.close();
-
-       System.out.println(closure1.call());
-   } */
+    public void testPipelineStepIncr() throws IOException {
+        FaunusPipeline pipeline = new FaunusPipeline("test", new Configuration());
+        assertEquals(pipeline.state.getStep(), -1);
+        pipeline.V();
+        assertEquals(pipeline.state.getStep(), 0);
+        pipeline.as("a");
+        assertEquals(pipeline.state.getStep(), 0);
+        pipeline.has("name", "marko");
+        assertEquals(pipeline.state.getStep(), 0);
+        pipeline.out("knows");
+        assertEquals(pipeline.state.getStep(), 1);
+        pipeline.as("b");
+        assertEquals(pipeline.state.getStep(), 1);
+        pipeline.outE("battled");
+        assertEquals(pipeline.state.getStep(), 2);
+        pipeline.as("c");
+        assertEquals(pipeline.state.getStep(), 2);       
+        pipeline.inV();
+        assertEquals(pipeline.state.getStep(), 3);
+        pipeline.as("d");
+        assertEquals(pipeline.state.getStep(), 3);
+        
+        assertEquals(pipeline.state.getStep("a"), 0);
+        assertEquals(pipeline.state.getStep("b"), 1);
+        assertEquals(pipeline.state.getStep("c"), 2);
+        assertEquals(pipeline.state.getStep("d"), 3);
+    }
 
 }

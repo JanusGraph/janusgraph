@@ -20,6 +20,8 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 
 /**
+ * Adapted from Hadoop's LinedReader source code.
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
