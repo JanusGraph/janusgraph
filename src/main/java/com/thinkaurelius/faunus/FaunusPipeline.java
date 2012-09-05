@@ -309,6 +309,7 @@ public class FaunusPipeline {
     public FaunusPipeline path() throws IOException {
         this.state.checkLocked();
         this.compiler.pathMap(this.state.getElementType());
+        this.compiler.setPathEnabled(true);
         this.state.lock();
         return this;
     }
@@ -371,6 +372,7 @@ public class FaunusPipeline {
     public FaunusPipeline back(final String step) throws IOException {
         this.state.checkLocked();
         this.compiler.backFilterMapReduce(this.state.getElementType(), this.state.getStep(step));
+        this.compiler.setPathEnabled(true);
         return this;
     }
 
@@ -392,6 +394,7 @@ public class FaunusPipeline {
     public FaunusPipeline linkIn(final String step, final String label, final String mergeWeightKey) throws IOException {
         this.state.checkLocked();
         this.compiler.linkMapReduce(this.state.getStep(step), IN, label, mergeWeightKey);
+        this.compiler.setPathEnabled(true);
         return this;
     }
 
@@ -402,6 +405,7 @@ public class FaunusPipeline {
     public FaunusPipeline linkOut(final String step, final String label, final String mergeWeightKey) throws IOException {
         this.state.checkLocked();
         this.compiler.linkMapReduce(this.state.getStep(step), OUT, label, mergeWeightKey);
+        this.compiler.setPathEnabled(true);
         return this;
     }
 
@@ -442,6 +446,11 @@ public class FaunusPipeline {
     }
 
     /////////////// UTILITIES
+
+    public FaunusPipeline enablePath() {
+        this.compiler.setPathEnabled(true);
+        return this;
+    }
 
     public FaunusPipeline count() throws IOException {
         this.state.checkLocked();

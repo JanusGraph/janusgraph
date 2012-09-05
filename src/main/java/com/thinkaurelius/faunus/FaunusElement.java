@@ -57,6 +57,9 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     protected List<List<MicroElement>> paths = null;
     private final MicroElement microVersion;
 
+   // private boolean pathEnabled = false;
+    //private long pathCount = 0l;
+
 
     public FaunusElement(final long id) {
         this.id = id;
@@ -225,7 +228,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                         valueObject = in.readDouble();
                     } else if (valueClass == PropertyType.STRING.val) {
                         valueObject = in.readUTF();
-                    } else if(valueClass == PropertyType.BOOLEAN.val) {
+                    } else if (valueClass == PropertyType.BOOLEAN.val) {
                         valueObject = in.readBoolean();
                     } else {
                         throw new IOException("Property value type of " + valueClass + " is not supported");

@@ -75,6 +75,8 @@ import java.util.UUID;
  */
 public class FaunusCompiler extends Configured implements Tool {
 
+    public static final String PATH_ENABLED = Tokens.makeNamespace(FaunusCompiler.class) + ".pathEnabled";
+
     protected final Logger logger = Logger.getLogger(FaunusCompiler.class);
     private final String jobScript;
 
@@ -142,6 +144,10 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapOutputValue = mapOutputValue;
         this.outputKey = mapOutputKey;
         this.outputValue = mapOutputValue;
+    }
+
+    public void setPathEnabled(final boolean pathsEnabled) {
+        this.mapSequenceConfiguration.setBoolean(PATH_ENABLED, pathsEnabled);
     }
 
     ////////////// STEP

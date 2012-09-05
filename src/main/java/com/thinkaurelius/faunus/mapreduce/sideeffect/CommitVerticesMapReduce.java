@@ -39,6 +39,7 @@ public class CommitVerticesMapReduce {
 
         private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
+        private final FaunusVertex vertex = new FaunusVertex();
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
@@ -60,17 +61,19 @@ public class CommitVerticesMapReduce {
                 context.write(this.longWritable, this.holder.set('v', value));
                 verticesKept++;
             } else {
-                this.holder.set('k', value.cloneId());
+                final long vertexId = value.getIdAsLong();
+                this.vertex.reuse(vertexId);
+                this.holder.set('k', this.vertex);
                 for (final Edge edge : value.getEdges(OUT)) {
                     final Long id = (Long) edge.getVertex(IN).getId();
-                    if (!id.equals(value.getId())) {
+                    if (!id.equals(vertexId)) {
                         this.longWritable.set(id);
                         context.write(this.longWritable, this.holder);
                     }
                 }
                 for (final Edge edge : value.getEdges(IN)) {
                     final Long id = (Long) edge.getVertex(OUT).getId();
-                    if (!id.equals(value.getId())) {
+                    if (!id.equals(vertexId)) {
                         this.longWritable.set(id);
                         context.write(this.longWritable, this.holder);
                     }
@@ -93,10 +96,8 @@ public class CommitVerticesMapReduce {
                 if (tag == 'k') {
                     ids.add(holder.get().getIdAsLong());
                     // todo: once vertex is found, do individual removes to save memory
-                } else if (tag == 'v') {
-                    vertex = (FaunusVertex) holder.get();
                 } else {
-                    throw new IOException("A tag of " + tag + " is not a legal tag for this operation");
+                    vertex = (FaunusVertex) holder.get();
                 }
             }
             if (null != vertex) {

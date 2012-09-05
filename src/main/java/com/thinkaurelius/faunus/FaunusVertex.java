@@ -276,16 +276,6 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         return StringFactory.vertexString(this);
     }
 
-    public FaunusVertex cloneIdAndProperties() {
-        final FaunusVertex clone = new FaunusVertex(this.getIdAsLong());
-        clone.setProperties(this.getProperties());
-        return clone;
-    }
-
-    public FaunusVertex cloneId() {
-        return new FaunusVertex(this.getIdAsLong());
-    }
-
     private class EdgeList extends AbstractList<Edge> {
 
         final List<List<Edge>> edges;

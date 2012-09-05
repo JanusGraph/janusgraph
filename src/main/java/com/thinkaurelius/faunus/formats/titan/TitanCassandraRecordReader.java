@@ -66,8 +66,6 @@ import java.util.TreeMap;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class TitanCassandraRecordReader extends RecordReader<NullWritable, FaunusVertex> {
-    public static final int CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT = 8;
-
     private static final Logger logger = LoggerFactory.getLogger(TitanCassandraRecordReader.class);
 
     private ColumnFamilySplit split;
@@ -86,11 +84,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
 
     private final FaunusTitanGraph graph;
 
-    public TitanCassandraRecordReader(FaunusTitanGraph graph) {
-        this(graph, CASSANDRA_HADOOP_MAX_KEY_SIZE_DEFAULT);
-    }
-
-    public TitanCassandraRecordReader(FaunusTitanGraph graph, int keyBufferSize) {
+    public TitanCassandraRecordReader(final FaunusTitanGraph graph) {
         super();
         if (graph == null) throw new IllegalArgumentException("Graph cannot be null");
         this.graph = graph;
