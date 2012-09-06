@@ -324,9 +324,9 @@
                     <outputDirectory>target</outputDirectory>
                     <workDirectory>target/assembly/work</workDirectory>
                     <tarLongFileMode>warn</tarLongFileMode>
-                    <descriptorRefs>
+                    <!--<descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
+                    </descriptorRefs>-->
                 </configuration>
             </plugin>
             <plugin>
@@ -380,6 +380,20 @@
                     </execution>
                 </executions>
             </plugin>
+            <!--<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.4</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>-->
         </plugins>
         <pluginManagement>
             <plugins>

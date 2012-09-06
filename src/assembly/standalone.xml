@@ -6,11 +6,11 @@
     <includeBaseDirectory>false</includeBaseDirectory>
 
     <fileSets>
-       <fileSet>
-           <directory>src/main/bin</directory>
-           <outputDirectory>/bin</outputDirectory>
-           <fileMode>0755</fileMode>
-       </fileSet>
+        <fileSet>
+            <directory>src/main/bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+        </fileSet>
         <fileSet>
             <directory>target/*.jar</directory>
             <outputDirectory>/lib</outputDirectory>
