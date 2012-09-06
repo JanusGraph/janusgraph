@@ -43,9 +43,9 @@ h2. Titan Manual
 *** [[Using HBase]]
 ** Type Management
 *** [[Type Definition Overview]] (*cheat sheet*)
-** Titan Configuration & Tuning
+** Configuration and Tuning
 *** [[Graph Configuration]] (*cheat sheet*)
-* Advanced Titan Topics
+* Advanced Topics
 ** [[Building Titan]]
 * Titan Tutorials
 ** [[Generating Artificial Natural Graphs]]

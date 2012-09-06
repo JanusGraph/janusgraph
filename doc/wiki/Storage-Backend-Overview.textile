@@ -10,6 +10,6 @@ Titan currently supports 3 storage backends covering all 3 edges of the CAP theo
 h2. Storage Backend Comparison
 
 |_. Name |_. @storage.option@ |_. Consistency |_. Availability |_. Scalability |_. Replication |
-| [[Cassandra|Using Cassandra]] | _cassandra_ or _astyanax_ | eventually consistent | highly available | linear scalability | yes |
+| [[Cassandra|Using Cassandra]] | _cassandra_ | eventually consistent | highly available | linear scalability | yes |
 | [[HBase|Using HBase]] | _hbase_ | vertex consistent | single point of failure | linear scalability | yes |
 | [[BerkeleyDB|Using BerkeleyDB]] | _berkeleyje_ | "ACID":http://en.wikipedia.org/wiki/ACID | single point of failure | single machine | HA mode available |

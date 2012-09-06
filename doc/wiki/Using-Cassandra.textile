@@ -75,9 +75,8 @@ h2. Cassandra Specific Configuration
 In addition to the general "Titan Graph Configuration":Graph-Configuration, there are the following Cassandra specific Titan configuration options:
 
 |_. Option |_. Description |_. Value |_. Default |_. Modifiable |
-| storage.backend | The Cassandra client to use: _cassandra_ uses the native thrift API whereas _astyanax_ uses the more robust "Astyanax":https://github.com/Netflix/astyanax client which wraps the thrift API and provides additional features like automatic node discovery and token-ring aware request routing.  | _cassandra_ or _astyanax_ | - | Yes |
 | storage.keyspace | Name of the keyspace in which to store the Titan specific column families | String | titan | No |
-| storage.hostname | IP address or hostname of the Cassandra cluster node that this Titan instance connects to. If _astyanax_ is used, a list of comma-separated hostnames is accepted as well | IP address or hostname | - | Yes |
+| storage.hostname | IP address or hostname of the Cassandra cluster node that this Titan instance connects to. Use a list of comma-separated hostnames or IP addresses to seed multiple multiple cassandra nodes. | IP address or hostname | - | Yes |
 | storage.port | Port on which to connect to Cassandra cluster node | Integer | 9160 | Yes |
 | storage.thrift-timeout | Default time out in milliseconds after which to fail a connection attempt with a Cassandra node | Integer | 10000 | Yes |
 | storage.read-consistency-level | Cassandra consistency level for read operations | - | QUORUM | Yes |
