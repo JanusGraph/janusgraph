@@ -1,7 +1,6 @@
 !https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-logo.png!
 
-Titan is a highly scalable "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for storing and querying large graphs with billions of vertices and edges distributed across a multi-machine cluster. 
-Titan is a transactional database that can support "thousands of concurrent users":http://thinkaurelius.com/2012/08/06/titan-provides-real-time-big-graph-data/.
+Titan is a highly scalable "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for storing and querying large graphs with billions of vertices and edges distributed across a multi-machine cluster. Titan is a transactional database that can support "thousands of concurrent users":http://thinkaurelius.com/2012/08/06/titan-provides-real-time-big-graph-data/.
 
 h2. Features
 
@@ -22,4 +21,4 @@ h2. Features
 
 h2. Getting Started
 
-Read the comprehensive "Titan documentation":https://github.com/thinkaurelius/titan/wiki" and join the "mailing list":https://groups.google.com/forum/#!forum/aureliusgraphs.
+Read the comprehensive "Titan documentation":https://github.com/thinkaurelius/titan/wiki and join the "mailing list":https://groups.google.com/forum/#!forum/aureliusgraphs.
