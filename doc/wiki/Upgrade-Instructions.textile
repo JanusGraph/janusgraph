@@ -1,0 +1,12 @@
+Please follow these instructions when upgrading from an older Titan release.
+
+h2. Titan 0.y.z
+
+
+h3. Version 0.1.0 (September 7, 2012)
+
+*From Version 0.1-SNAPSHOT*
+
+# Shut down all running instances of Titan prior to upgrading ALL instances to the current release to avoid data corruption.
+
+==<hr/>==

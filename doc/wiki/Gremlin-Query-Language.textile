@@ -1,0 +1,47 @@
+!https://github.com/tinkerpop/gremlin/raw/master/doc/images/gremlin-logo.png!
+
+Titan supports the standard Gremlin graph query language for complex graph retrieval and mutation operations.  "Gremlin":http://gremlin.tinkerpop.com is a functional language whereby traversal operators are chained together to form path-like expressions. Data (e.g. a vertex) is inserted into the "left" of the function chain and data (e.g. property values) is emitted from the "right" of the function chain. This section of documentation will only briefly overview Gremlin. For more complete documentation on Gremlin, please see the "online documentation":http://gremlin.tinkerpop.com. Moreover, the examples are with respects to Gremlin-Groovy and note that there are other "JVM language implementations of Gremlin":https://github.com/tinkerpop/gremlin/wiki/JVM-Language-Implementations.
+
+h2. Traversing using Functions
+
+The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies").
+
+```text
+hercules.out('battled').in('battled').except([hercules]).name
+```
+
+The example above has 4 chained functions: @out@, @in@, @except@, and @property@ (i.e. @name@ is shorthand for @property('name')@). The function signatures of each are itemized below, where @V@ is vertex and @U@ is any object. 
+
+  # @out: V -> V@
+  # @in: V -> V@
+  # @except: U -> U@
+  # @property: V -> U@
+
+When chaining together functions, the incoming type must match the outgoing type, where @U@ matches anything. Thus, the "co-battled/ally" traversal above is correct.
+
+h2. Helper Configuration Files for Easy Local Connectivity
+
+When working with Gremlin against a local instance of [[HBase|Using HBase]] or [[Cassandra|Using Cassandra]], the following behavior is constantly repeated. 
+
+```java
+conf = new BaseConfiguration();
+conf.setProperty("storage.backend","cassandra");
+conf.setProperty("storage.hostname","127.0.0.1");
+```
+
+To make this easier, there are two configuration files in the @bin/@ directory: @cassandra.local@ and @hbase.local@. These can be used as such:
+
+```java
+TitanFactory.open("bin/cassandra.local")
+```
+
+or
+
+```java
+TitanFactory.open("bin/hbase.local")
+```
+
+h2. Next Steps
+
+* Read the "Gremlin Manual":http://gremlin.tinkerpop.com to learn more about this expressive query language.
+* Learn about the [[Rexster Graph Server]] that exposes any Titan graph through a RESTful interface.

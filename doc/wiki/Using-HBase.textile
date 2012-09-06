@@ -1,0 +1,120 @@
+!http://hbase.apache.org/images/hbase_logo.png!:http://hbase.apache.org/
+
+bq. HBase is the Hadoop database. Think of it as a distributed, scalable, big data store. Use HBase when you need random, realtime read/write access to your Big Data. This project's goal is the hosting of very large tables -- billions of rows X millions of columns -- atop clusters of commodity hardware. HBase is an open-source, distributed, versioned, column-oriented store modeled after Google's Bigtable. Just as Bigtable leverages the distributed data storage provided by the Google File System, HBase provides Bigtable-like capabilities on top of Hadoop and HDFS. -- "Apache HBase Homepage":http://hbase.apache.org/
+
+h2. HBase Setup
+
+The following sections outline the various ways in which Titan can be used in concert with HBase.
+
+h3. Local Server Mode
+
+!https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-modes-local.png!
+
+HBase can be run as a standalone database on the same local host as Titan and the end-user application. In this model, Titan and HBase communicate with one another via a @localhost@ socket. Running Titan over HBase requires the following setup steps:
+
+* Download and extract a stable HBase from [[http://www.apache.org/dyn/closer.cgi/hbase/stable/]].
+* Start HBase by invoking the @start-hbase.sh@ script in the _bin_ directory inside the extracted HBase directory. To stop HBase, use @stop-hbase.sh@.
+
+```text
+$ ./bin/start-hbase.sh 
+starting master, logging to ../logs/hbase-master-machine-name.local.out
+```
+
+Now, you can create an HBase TitanGraph as follows:
+
+```java
+Configuration conf = new BaseConfiguration();
+conf.setProperty("storage.backend","hbase");
+TitanGraph g = TitanFactory.open(conf);
+```
+
+Note, that you do not need to specify a hostname since a localhost connection is attempted by default.
+
+h3. Remote Server Mode
+
+!https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-modes-distributed.png!
+
+When the graph needs to scale beyond the confines of a single machine, then HBase and Titan are logically separated into different machines. In this model, the HBase cluster maintains the graph representation and any number of Titan instances maintain socket-based read/write access to the HBase cluster. The end-user application can directly interact with Titan within the same JVM as Titan.
+
+For example, suppose we have a running HBase cluster with two machines at IP address 77.77.77.77 and 77.77.77.78, then connecting Titan with the cluster is accomplished as follows:
+
+```java
+Configuration conf = new BaseConfiguration();
+conf.setProperty("storage.backend","hbase");
+conf.setProperty("storage.hostname","77.77.77.77,77.77.77.78");
+TitanGraph g = TitanFactory.open(conf);
+```
+
+_storage.hostname_ accepts a comma separated list of IP addresses and hostname for any subset of machines in the HBase cluster Titan should connect to.
+
+h3. Remote Server Mode with Rexster
+
+!https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-modes-rexster.png!
+
+Finally, Rexster can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Rexster over REST. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
+
+```text
+http://rexster.titan.machine1/mygraph/vertices/1
+http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
+```
+
+In this case, each Rexster server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to the "Rexster configuration page":Rexster-Graph-Server for a complete example.
+
+```xml
+    <graph>
+      <graph-name>mygraph</graph-name>
+      <graph-type>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration</graph-type>
+      <graph-location></graph-location>
+      <graph-read-only>false</graph-read-only>
+      <properties>
+            <storage.backend>hbase</storage.backend>
+            <storage.hostname>77.77.77.77,77.77.77.78</storage.hostname>
+      </properties>
+      <extensions>
+        <allows>
+          <allow>tp:gremlin</allow>
+        </allows>
+      </extensions>
+    </graph>
+```
+
+h2. HBase Specific Configuration
+
+In addition to the general "Titan Graph Configuration":Graph-Configuration, there are the following HBase specific Titan configuration options:
+
+|_. Option |_. Description |_. Value |_. Default |_. Modifiable |
+| storage.tablename | Name of the HBase table in which to store the Titan specific column families | String | titan | No |
+| storage.hostname | Comma separated list of IP addresses or hostnames of the HBase cluster nodes that this Titan instance connects to | IP addresses or hostnames. Leave empty to connect to localhost. | - | Yes |
+| storage.port | Port on which to connect to HBase cluster nodes. Leave empty to use default port. | Integer | - | Yes |
+
+Please refer to the "HBase configuration documentation":http://hbase.apache.org/book/config.files.html for more HBase configuration options and their description. By prefixing the respective HBase configuration option with _storage.hbase-config_ in the Titan configuration it will be passed on to HBase at initialization time. This allows arbitrary HBase configuration options to be configured through Titan.
+
+h2. Deploying on Amazon EC2
+
+!http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick//logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png!:http://aws.amazon.com/ec2/
+
+bq. "Amazon EC2":http://aws.amazon.com/ec2/  is a web service that provides resizable compute capacity in the cloud. It is designed to make web-scale computing easier for developers.
+
+Follow these steps to setup an HBase cluster on EC2 and deploy Titan over HBase. To follow these instructions, you need an Amazon AWS account with established authentication credentials and some basic knowledge of AWS and EC2.
+
+The following commands first launch a four-node HBase cluster on EC2 via [[Whirr|http://whirr.apache.org/]], then run a basic Titan test case using the cluster.
+
+The configuration described below puts one HBase master server in charge of three HBase regionservers.  The master will be the sole member of the Zookeeper quorum by which Titan connects to HBase.
+
+* Whirr's current stable version, 0.7.1, sometimes fails when run on a machine behind a NAT ([[WHIRR-459|https://issues.apache.org/jira/browse/WHIRR-459]]).  Login to a machine with a public IP or create and login to a micro instance on EC2 before running the following commands.
+* <pre>export AWS_ACCESS_KEY_ID=...</pre>
+* <pre>export AWS_SECRET_ACCESS_KEY=...</pre>
+* <pre>curl -O [[http://www.apache.org/dist/whirr/whirr-0.7.1/whirr-0.7.1.tar.gz]]</pre>
+* <pre>tar zxf whirr-0.7.1.tar.gz; cd whirr-0.7.1</pre>
+* <pre>ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa_whirr</pre>
+* copy hbase-ec2-0.92.1.properties from the config subdirectory of the titan source tree to whirr-0.7.1/recipes
+
+* <pre>bin/whirr launch-cluster --config recipes/hbase-ec2-0.92.1.properties --private-key-file ~/.ssh/id_rsa_whirr</pre>
+* run a simple health check on the hbase-master node (this should print "imok"):
+  <pre>echo "ruok" | nc $(awk '{print $3}' ~/.whirr/hbase-0.92.1/instances | head -1) 2181; echo</pre>  
+* login into the first node created, the hbase-master node:
+  <pre>ssh -i ~/.ssh/id_rsa_whirr -o "UserKnownHostsFile /dev/null" -o StrictHostKeyChecking=no `grep hbase-master ~/.whirr/hbase-0.92.1/instances | awk '{print $3}'`</pre>
+* <pre>sudo apt-get install git-core maven2</pre>
+* <pre>git clone 'git@github.com:thinkaurelius/titan.git'</pre>
+* <pre>cd titan</pre>
+* <pre>mvn test -Dtest=ExternalHBaseGraphPerformanceTest#unlabeledEdgeInsertion</pre>

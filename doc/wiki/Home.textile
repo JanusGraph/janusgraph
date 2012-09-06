@@ -1,0 +1,61 @@
+[[https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-logo.png|width=420px|align=left|float]] 
+Titan is a distributed "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for processing massive-scale "graphs":http://en.wikipedia.org/wiki/Graph_(mathematics) represented over a cluster of machines and can scale elastically as your data or user base grow. Titan is a native "Blueprints":http://blueprints.tinkerpop.com enabled graph database and as such, it supports the full "TinkerPop":http://tinkerpop.com stack of technologies. Titan has a pluggable storage architecture which allows it to build on proven database technology such as "Apache Cassandra":http://cassandra.apache.org/, "Apache HBase":http://hbase.apache.org/, or "Oracle BerkeleyDB":http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html and makes integration into  existing database environments seamless.
+
+<a href="https://github.com/thinkaurelius/titan/downloads">[[https://github.com/thinkaurelius/titan/raw/master/doc/images/download-button.png|align=right|float]]</a>
+
+<br/><br/><br/><br/><br/>
+
+Please use Aurelius's "mailing list":https://groups.google.com/forum/#!forum/aureliusgraphs for all Titan related questions. For TinkerPop related discussions, use the Gremlin-Users "mailing list":https://groups.google.com/forum/#!forum/gremlin-users.
+For "commercial Titan support":http://thinkaurelius.com/subscription/, please <a href="mailto:info@thinkaurelius.com">contact</a> the graph experts at "Aurelius":http://www.thinkaurelius.com.
+
+
+```xml
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan</artifactId>
+   <version>0.1.0</version>
+</dependency>
+```
+
+h2. Titan Manual
+
+* Introduction
+** [[Beginner's Guide]]
+** [[The Benefits of Titan]]
+** [[Getting Started]]
+** "Introduction to Titan Video":http://www.youtube.com/watch?v=ZkAYA4Kd8JE _(external)_
+** "Comprehensive Presentation on Titan":http://www.slideshare.net/slidarko/titan-the-rise-of-big-graph-data _(external)_
+* Using Titan
+** Titan Interfaces ("JavaDoc":http://thinkaurelius.github.com/titan/javadoc/current)
+*** [[Blueprints Interface]] (*"full documentation":http://blueprints.tinkerpop.com*)
+*** [[Gremlin Query Language]] (*"full documentation":http://gremlin.tinkerpop.com*)
+*** [[Rexster Graph Server]] (*"full documentation":http://rexster.tinkerpop.com*)
+*** [[TinkerPop Graph Stack]]
+** Transactions
+*** [[Transaction Handling]]
+*** [[Multi-Threaded Transactions]]
+** [[Titan Gotchas and Limitations | Titan Limitations]]
+* Managing Titan
+** Storage Backends
+*** [[Storage Backend Overview]]
+*** [[Using BerkeleyDB]]
+*** [[Using Cassandra]]
+*** [[Using HBase]]
+** Type Management
+*** [[Type Definition Overview]] (*cheat sheet*)
+** Titan Configuration & Tuning
+*** [[Graph Configuration]] (*cheat sheet*)
+* Advanced Titan Topics
+** [[Building Titan]]
+* Titan Tutorials
+** [[Generating Artificial Natural Graphs]]
+** [[Titan Presentations]]
+* [[Upgrade Instructions]]
+* [[Release Notes]]
+* [[Acknowledgements]]
+
+!https://secure.travis-ci.org/thinkaurelius/titan.png!:http://travis-ci.org/thinkaurelius/titan
+
+==<hr/>==
+
+The documentation in this wiki is respective of the current master branch, not the latest release. Please refer to the @doc@ directory of a release for release-specific documentation.

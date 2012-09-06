@@ -1,0 +1,103 @@
+!https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-logo.png!:http://rexster.tinkerpop.com
+
+"Rexster":http://rexster.tinkerpop.com exposes any Titan graph database via a JSON-based REST interface. In this way, the raw graph's vertices and edges can be referenced using REST endpoints. Moreover, provided and custom algorithms (called "Kibbles":https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles) can be stored on the server, triggered via HTTP, and their results returned via JSON. Finally, Rexster provides an administration and visualization interface that can be accessed from most major web browsers.
+
+h2. The Benefits of Rexster
+
+<a href="https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-dog-house-viz.png">[[https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-dog-house-viz.png|width=434px]]</a><a href="https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-dog-house-gremlin.png">[[https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-dog-house-gremlin.png|width=450px]]</a>
+
+The following is a list of the "benefits of using Rexster":https://github.com/tinkerpop/rexster/wiki/The-Benefits-of-Rexster.
+
+* "JSON-based REST interface":https://github.com/tinkerpop/rexster/wiki/Mapping-a-URI-to-JSON ensures language agnostic connectivity to Titan.
+** See "Bulbs":http://bulbflow.com/ for a Python connector.
+* HTML/JavaScript "graphical user interface":https://github.com/tinkerpop/rexster/wiki/The-Dog-House for graph administration and visualization.
+* Extend with more RESTful endpoints by adding "kibbles":https://github.com/tinkerpop/rexster/wiki/Creating-an-Extension to Rexster.
+** See "Rexster-Kibbles":https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles provided by TinkerPop.
+* Remote Gremlin traversals via the "Gremlin extensions":https://github.com/tinkerpop/rexster/wiki/Gremlin-Extension and the "Rexster console":https://github.com/tinkerpop/rexster/wiki/Rexster-Console.
+* "Security support":https://github.com/tinkerpop/rexster/wiki/Rexster-Security via user authentification.
+
+h2. Downloading and Starting Rexster
+
+Before using Rexster with Titan, it must for be downloaded. Rexster can be downloaded at "this location":https://github.com/tinkerpop/rexster/downloads. Below is a snippet of shell commands that demonstrate the process for getting Rexster downloaded and started using a default configuration.
+
+```bash
+$ curl -L https://github.com/downloads/tinkerpop/rexster/rexster-server-x.y.z.zip > rexster-server-x.y.z.zip
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current ...
+...
+$ unzip rexster-server-x.y.z.zip
+Archive:  rexster-server-x.y.z.zip
+   creating: rexster-server-x.y.z/
+...
+$ cd rexster-server-x.y.z
+$ ./rexster-server.sh --start
+```
+
+Use @CTRL-C@ to kill the server. Now that Rexster is downloaded and working, it is necessary to configure Rexster to work with Titan (see Rexster's "Getting Started":https://github.com/tinkerpop/rexster/wiki/Getting-Started page).
+
+h2. Configuring Rexster
+
+This section explains how to configure Rexster to use a Titan graph database. An example @rexster.xml@ file is provided below (see "Rexster Configuration":https://github.com/tinkerpop/rexster/wiki/Rexster-Configuration).
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<rexster>
+  <rexster-server-port>8182</rexster-server-port>
+  <rexster-server-host>0.0.0.0</rexster-server-host>
+  <rexster-shutdown-port>8183</rexster-shutdown-port>
+  <rexster-shutdown-host>127.0.0.1</rexster-shutdown-host>
+  <rexpro-server-port>8184</rexpro-server-port>
+  <rexpro-session-max-idle>1790000</rexpro-session-max-idle>
+  <rexpro-session-check-interval>3000000</rexpro-session-check-interval>
+  <base-uri>http://localhost</base-uri>
+  <web-root>public</web-root>
+  <character-set>UTF-8</character-set>
+  <security>
+    <authentication>
+        <type>default</type>
+        <configuration>
+          <users>
+            <user>
+              <username>rexster</username>
+              <password>rexster</password>
+            </user>
+          </users>
+        </configuration>
+    </authentication>
+  </security>
+  <graphs>
+    <graph>
+      <graph-name>titanexample</graph-name>
+      <graph-type>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration</graph-type>
+      <graph-location>tmp/titan</graph-location>
+      <graph-read-only>false</graph-read-only>
+      <properties>
+            <storage.backend>local</storage.backend>
+            <buffer-size>100</buffer-size>
+      </properties>
+      <extensions>
+        <allows>
+          <allow>tp:gremlin</allow>
+        </allows>
+      </extensions>
+    </graph>
+  </graphs>
+</rexster>
+```
+
+[[https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-character-2.png|align=right|float|width=100px]]
+There are three ways to configure Rexster for use with Titan:
+
+# If building Titan and Rexster from source, copy the @target/titan-x.y-jar-with-dependencies.jar@ to the Rexster @./rexster-server/src/main/ext@ directory and then do @mvn clean install@ on Rexster.
+# If building Titan from source and using Rexster distribution, copy the @target/titan-x.y-jar-with-dependencies.jar@ to the Rexster @./rexster-server/target/rexster-server-${VERSION}/ext@ directory.
+# If using the Titan zipped distribution download, copy all jar files in the @lib@ directory to the Rexster @./rexster-server/target/rexster-server-${VERSION}/ext@ directory.
+
+*NOTE*: Future releases (beyond the 0.1) will have a much more efficient/easier packaging model.
+
+Once that is done, specify the graph type as shown above. Rexster's _graph-location_ option is equivalent to Titan's _storage.directory_. In the event that Titan is being configured for "local" mode, please make sure that this value is an existing directory.  All other Titan specific configurations are subsumed under _properties_. In the example above, the backend and the buffer size are configured. Any of the "Titan configurations":Graph-Configuration can be used here. For more information on configuring Rexster, please see the "Rexster configuration":https://github.com/tinkerpop/rexster/wiki/Rexster-Configuration documentation.
+
+h2. REST API Limitations
+
+Rexster has a rich "API":https://github.com/tinkerpop/rexster/wiki/Basic-REST-API for working with Blueprints Graph implementations, but there are some limitations to consider when using Rexster with Titan:
+
+* Titan automatically assigns identifiers. Hence, the POST of an edge cannot be done with an identifier. In other words, do this: @http://localhost/graphs/titan/edges@ and _not_ this @http://localhost/graphs/titan/edges/1234@.
+* Titan uses vertex indexes and does not support manual indexes. Hence, all operations on the @indices@ resource are not supported. Use key indexes instead.

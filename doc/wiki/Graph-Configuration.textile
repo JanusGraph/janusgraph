@@ -1,0 +1,83 @@
+[[https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-configuration.png|width=200px|align=left|float]]
+
+This page summarizes Titan's configurations options. To configure a @TitanGraph@ invoke the @TitanFactory.open()@ method with a "commons configuration":http://commons.apache.org/configuration/ object or the file name of a properties configuration file. The @TitanFactory@ will return a @TitanGraph@ according to the configuration.
+
+The following example opens a @TitanGraph@ with the configured local storage directory.
+```java
+Configuration conf = new BaseConfiguration();
+conf.setProperty("storage.directory","/tmp/titan");
+TitanGraph g = TitanFactory.open(conf);
+```
+Alternatively, we could have written the configuration into a properties file and opened a @TitanGraph@ as follows
+```java
+TitanGraph g = TitanFactory.open("/tmp/titan/configuration.properties");
+```
+
+It is very important to note that some configuration options should *NEVER* be modified after the @TitanGraph@ is first initialized. Doing so may corrupt the graph or lead to unexpected behavior. The _modifiable_ column indicates whether a particular configuration option can be changed after the graph has been created.
+
+h2. Storage Configuration
+
+Titan leverages various storage backends for persistence. Use the following options to configure one of the pre-defined storage backends or your own. Particular storage backends may provide or require additional configuration options. For more information on how to configure a @TitanGraph@ over "Cassandra":Using-Cassandra or "HBase":Using-HBase please review the respective wiki pages.
+
+|_. Option |_. Description |_. Value |_. Default |_. Modifiable |
+| storage.backend | Full class name of the @StorageManager@ implementation defining the storage backend to be used for persistence or one of the following pre-defined storage backends: *cassandra*, *astyanax*, *hbase*, *local* | Class name or pre-defined short-hand | *local* | no |
+| storage.directory | Storage directory for those storage backends that require local storage | path | - | no |
+| storage.read-only | Specifies whether write operations are supported on the graph | _true_ or _false_ | _false_ | yes |
+| storage.batch-loading | Enables batch loading which improves write performance but assumes that only one thread is interacting with the graph and that vertices retrieved by id exist. Under these assumptions locking and some read operations can be avoided. Furthermore, the configured storage backend will make backend specific configurations that facilitate loading performance. *Be careful:* enabling batch loading when the assumptions are violated can result in an inconsistent or partially corrupt graph. | _true_ or _false_ | _false_ | yes |
+| storage.transactions | Enables transactions on storage backends that support them | _true_ or _false_ | _true_ | yes |
+
+h2. Persistence Configuration
+
+These configuration options modify the persistence behavior of Titan independent of the configured storage backend.
+
+|_. Option |_. Description |_. Value |_. Default |_. Modifiable |
+| buffer-size | Buffers graph mutations locally up to the specified number before persisting them against the storage backend. Set to 0 to disable buffering. Buffering is disabled automatically if the storage backend does not support buffered mutations. | >0 | 1024 | yes |
+| flush-ids | If flush ids is enabled, vertices and edges are assigned ids immediately upon creation. If not, then ids are only assigned when the transaction is committed. | _true_ or _false_ | _true_ | yes |
+| persist-attempts | Number of times to attempt persisting a committed transaction in case of temporary failures in the storage backend | >0 | 3 | yes |
+| persist-wait-time | Time to wait in milliseconds between persistence attempts | >0 | 250 | yes |
+
+h2. Distributed Locking and ID Management Configuration
+
+When Titan is used in distributed mode over multiple machines, locking may be required to ensure consistency of certain operations. In particular, locking is required when allocating id blocks for id assignment to individual @TitanGraph@ instances. Locking is also required for certain key type configuration as described in "Type Configuration":Type-configuration. These options control how locks are acquired.
+
+|_. Option |_. Description |_. Value |_. Default |_. Modifiable |
+| storage.machine-id | A unique identifier for the machine running the @TitanGraph@ instance. Ensures that no other machine accessing the storage backend can have the same identifier. | String | Machine IP | Yes |
+| storage.machine-id-appendix | A locally unique identifier for a particular @TitanGraph@ instance. This only needs to be configured when multiple @TitanGraph@ instances are running on the same machine. A unique machine specific appendix guarantees a globally unique identifier. | short integer | 0 | Yes |
+| storage.lock-wait-time | The number of milliseconds the system waits for a lock application to be acknowledged by the storage backend. Also, the time waited at the end of all lock applications before verifying that the applications were successful. This value should be a small multiple of the average consistent write time. | positive integer | 100 | No |
+| storage.lock-retries | Number of times the system attempts to acquire a lock before giving up and throwing an exception. | positive integer | 3 | Yes |
+| storage.lock-expiry-time | Number of milliseconds after which a lock is considered to have expired. Lock applications that were not released are considered expired after this time and released. This value should be larger than the maximum time a transaction can take in order to guarantee that no correctly held applications are expired pre-maturely and as small as possible to avoid dead lock. | positive integer | 300,000 | No |
+| storage.idauthority-wait-time | The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend. Also, the time waited after the application before verifying that the application was successful. | positive integer | 300 | No |
+| storage.idauthority-retries | Number of times the system attempts to acquire a unique id block before giving up and throwing an exception. | positive integer | 3 | Yes |
+| storage.idauthority-block-size | Size of the block to be acquired. Larger block sizes require fewer block applications but also leave a larger fraction of the id pool occupied and potentially lost. For write heavy applications, larger block sizes should be chosen. | positive integer | 10,000 | No* |
+
+If the _modifiable_ column has a _No*_ this means that the option cannot be adjusted while Titan instances are running. To change the option, all Titan instances must be shutdown and the value must be changed across the entire cluster be starting instances again. Also note, that while all configuration options mentioned on this page must be identical for all Titan instances running in the same cluster, the _storage.machine-id_ and _storage.machine-id-appendix_ must be configured uniquely for each Titan instance individually unless the default values are chosen.
+
+h2. General Configuration
+
+This section contains general configuration options to customize Titan's behavior.
+
+|_. Option |_. Description |_. Value |_. Default |_. Modifiable |
+| autotype | Specifies the factory to use when automatically creating types. See "Default Type Creation":Type-Configuration for more details.  | _blueprints_ or _none_ | _blueprints_ | Yes |
+
+h2. Attribute and Serializer Configuration
+
+Titan supports a number of classes for attribute values on properties. Titan efficiently serializes numbers, primitive arrays, @Date@, @ArrayList@ and @HashMap@. By default, Titan allows arbitrary objects as attribute values on properties, but those use default serializer which have significant overhead and may not be as efficient.  
+
+|_. Option |_. Description |_. Value |_. Default |_. Modifiable |
+| attributes.allow-all | If enabled, arbitrary objects can be used as attributes on properties otherwise only pre-configured and configured attributes are allowed | _true_ or _false_ | _true_ | No |
+
+To configure a custom attribute class with a custom serializer, follow these steps:
+
+# Implement a custom @AttributeSerializer@ for the custom attribute class
+# Add the following configuration options where [X] is the custom attribute id that must be larger than all attribute ids for already configured custom attributes:
+## @attributes.attribute[X] = [Full attribute class name]@
+## @attributes.serializer[X] = [Full serializer class name]@
+
+For example, suppose we want to register a special integer attribute class called @SpecialInt@ and have implemented a custom serializer @SpecialIntSerializer@ that implements @AttributeSerializer@. We already have 9 custom attributes configured in the configuration file, so we would add the following lines
+```
+attributes.attribute10 = com.example.SpecialInt
+attributes.serializer10 = com.example.SpecialIntSerializer
+```
+
+
+                                                                         

@@ -1,0 +1,35 @@
+Titan: A Highly Scalable, Distributed Graph Database
+"http://thinkaurelius.github.com/titan/":http://thinkaurelius.github.com/titan/
+
+h2. Titan 0.y.z
+
+
+h3. Version 0.1.0 (September 7, 2012)
+
+```xml
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan</artifactId>
+   <version>0.1.0</version>
+</dependency>
+```
+
+*Features:*
+
+* The focus of the initial Titan release was on building a stable and robust graph database as well as incorporating community feature suggestions and feedback from early adopters of Titan.
+
+*Bugfixes:*
+
+* Fixed concurrency and synchronization issues
+
+*Special Thanks to:*
+
+* Danny Thomas ("BinaryRage":https://github.com/BinaryRage)
+* "jramsdale":https://github.com/jramsdale
+* Cristofer ("crisweber":https://github.com/crisweber)
+* "tedoc2000":https://github.com/tedoc2000
+* Dan Forest-Barbier ("DPanth3r":https://github.com/DPanth3r)
+* "jncorpron":https://github.com/jncorpron
+* Marc Abramowitz ("msabramo":https://github.com/msabramo)
+
+==<hr/>==
