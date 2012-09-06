@@ -16,6 +16,8 @@ import java.util.Map;
  */
 public class VertexToFaunusBinary {
 
+    private static final ElementIdHandler elementIdHandler = new DefaultElementIdHandler();
+
     public static void write(final Vertex vertex, final DataOutput out) throws IOException {
         writeId(vertex.getId(), out);
         out.writeInt(0);
@@ -43,12 +45,7 @@ public class VertexToFaunusBinary {
     }
 
     private static void writeId(final Object id, final DataOutput out) throws IOException {
-        if (id instanceof Long)
-            out.writeLong((Long) id);
-        else if (id instanceof Number)
-            out.writeLong(((Number) id).longValue());
-        else
-            out.writeLong(Long.valueOf(id.toString()));
+        out.writeLong(elementIdHandler.convertIdentifier(id));
     }
 
     private static void writeProperties(final Element element, final DataOutput out) throws IOException {
