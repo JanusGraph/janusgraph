@@ -16,17 +16,35 @@ import java.util.Map;
  */
 public class VertexToFaunusBinary {
 
-    private static final ElementIdHandler elementIdHandler = new DefaultElementIdHandler();
+    private static final ElementIdHandler DEFAULT_ELEMENT_ID_HANDLER = new DefaultElementIdHandler();
+    private final ElementIdHandler elementIdHandler;
+
+    public VertexToFaunusBinary() {
+        this(DEFAULT_ELEMENT_ID_HANDLER);
+    }
+
+    public VertexToFaunusBinary(final ElementIdHandler elementIdHandler) {
+        this.elementIdHandler = elementIdHandler;
+    }
 
     public static void write(final Vertex vertex, final DataOutput out) throws IOException {
-        writeId(vertex.getId(), out);
+        new VertexToFaunusBinary().writeVertex(vertex, out);
+    }
+
+    public static void write(final Vertex vertex, final DataOutput out,
+                             final ElementIdHandler elementIdHandler) throws IOException {
+        new VertexToFaunusBinary(elementIdHandler).writeVertex(vertex, out);
+    }
+
+    public void writeVertex(final Vertex vertex, final DataOutput out) throws IOException {
+        out.writeLong(elementIdHandler.convertIdentifier(vertex.getId()));
         out.writeInt(0);
         writeEdges(vertex, Direction.IN, out);
         writeEdges(vertex, Direction.OUT, out);
         writeProperties(vertex, out);
     }
 
-    private static void writeEdges(final Vertex vertex, final Direction direction, final DataOutput out) throws IOException {
+    private void writeEdges(final Vertex vertex, final Direction direction, final DataOutput out) throws IOException {
         final CounterMap<String> map = new CounterMap<String>();
         for (final Edge edge : vertex.getEdges(direction)) {
             map.incr(edge.getLabel(), 1);
@@ -36,16 +54,12 @@ public class VertexToFaunusBinary {
             out.writeUTF(entry.getKey());
             out.writeInt(entry.getValue().intValue());
             for (final Edge edge : vertex.getEdges(direction, entry.getKey())) {
-                writeId(edge.getId(), out);
+                out.writeLong(elementIdHandler.convertIdentifier(edge.getId()));
                 out.writeInt(0);
-                writeId(edge.getVertex(direction.opposite()).getId(), out);
+                out.writeLong(elementIdHandler.convertIdentifier(edge.getVertex(direction.opposite()).getId()));
                 writeProperties(edge, out);
             }
         }
-    }
-
-    private static void writeId(final Object id, final DataOutput out) throws IOException {
-        out.writeLong(elementIdHandler.convertIdentifier(id));
     }
 
     private static void writeProperties(final Element element, final DataOutput out) throws IOException {
