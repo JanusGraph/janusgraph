@@ -1,10 +1,15 @@
 package com.thinkaurelius.faunus.formats.rexster;
 
+import com.thinkaurelius.faunus.util.DefaultElementIdHandler;
+import com.thinkaurelius.faunus.util.ElementIdHandler;
+import com.thinkaurelius.faunus.util.OrientElementIdHandler;
 import com.thinkaurelius.faunus.util.VertexToFaunusBinary;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.rexster.RexsterApplicationGraph;
 import com.tinkerpop.rexster.RexsterResourceContext;
 import com.tinkerpop.rexster.extension.AbstractRexsterExtension;
+import com.tinkerpop.rexster.extension.ExtensionConfiguration;
 import com.tinkerpop.rexster.extension.ExtensionDefinition;
 import com.tinkerpop.rexster.extension.ExtensionDescriptor;
 import com.tinkerpop.rexster.extension.ExtensionNaming;
@@ -22,6 +27,7 @@ import javax.ws.rs.core.StreamingOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -32,8 +38,10 @@ import java.util.UUID;
 @ExtensionNaming(namespace = FaunusRexsterExtension.EXTENSION_NAMESPACE, name = FaunusRexsterExtension.EXTENSION_NAME)
 public class FaunusRexsterExtension extends AbstractRexsterExtension {
     private static final Logger logger = Logger.getLogger(FaunusRexsterExtension.class);
+    private static final ElementIdHandler DEFAULT_ID_HANDLER = new DefaultElementIdHandler();
 
     private static final long WRITE_STATUS_EVERY = 100;
+    private static final String CONFIG_ID_HANDLER = "id-handler";
 
     public static final String EXTENSION_NAMESPACE = "faunus";
     public static final String EXTENSION_NAME = "inputformat";
@@ -45,6 +53,9 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
         final JSONObject requestObject = context.getRequestObject();
         final long start = RequestObjectHelper.getStartOffset(requestObject);
         final long end = RequestObjectHelper.getEndOffset(requestObject);
+
+        final ElementIdHandler elementIdHandler = this.getElementIdHandler(context.getRexsterApplicationGraph());
+        final VertexToFaunusBinary vertexToFaunusBinary = new VertexToFaunusBinary(elementIdHandler);
 
         // help with uniquely identifying incoming requests in logs.
         final UUID requestIdentifier = UUID.randomUUID();
@@ -62,7 +73,7 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
                 final Iterable<Vertex> vertices = graph.getVertices();
                 for (Vertex vertex : vertices) {
                     if (counter >= start && counter < end) {
-                        VertexToFaunusBinary.write(vertex, dos);
+                        vertexToFaunusBinary.writeVertex(vertex, dos);
 
                         if (logger.isDebugEnabled() && counter % WRITE_STATUS_EVERY == 0) {
                             logger.debug(String.format("Request [%s] at [%s] on the way to [%s].",
@@ -81,4 +92,18 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
         }).build());
     }
 
+    private ElementIdHandler getElementIdHandler(final RexsterApplicationGraph rag) {
+        final ExtensionConfiguration configuration = rag.findExtensionConfiguration(EXTENSION_NAMESPACE, EXTENSION_NAME);
+        if (configuration == null) {
+            return DEFAULT_ID_HANDLER;
+        }
+
+        final Map<String, String> map = configuration.tryGetMapFromConfiguration();
+        final String idHandlerName = map.get(CONFIG_ID_HANDLER);
+
+        if (idHandlerName.equals("orientdb"))
+          return new OrientElementIdHandler();
+        else
+          return DEFAULT_ID_HANDLER;
+    }
 }
