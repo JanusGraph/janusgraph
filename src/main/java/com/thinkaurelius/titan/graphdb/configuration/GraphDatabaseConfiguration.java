@@ -56,9 +56,10 @@ public class GraphDatabaseConfiguration {
     private static final Map<String,Class<? extends StorageManager>> preregisteredStorageManagers = new HashMap<String,Class<? extends StorageManager>>() {{
         put("local", BerkeleyJEStorageAdapter.class);
         put("berkeleyje", BerkeleyJEStorageAdapter.class);
-        put("cassandra", CassandraThriftStorageManager.class);
-        put("hbase", HBaseStorageManager.class);
+        put("cassandra", AstyanaxStorageManager.class);
+        put("cassandrathrift", CassandraThriftStorageManager.class);
         put("astyanax", AstyanaxStorageManager.class);
+        put("hbase", HBaseStorageManager.class);
         put("embeddedcassandra", CassandraEmbeddedStorageManager.class);
     }};
 

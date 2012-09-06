@@ -1,17 +1,16 @@
 package com.thinkaurelius.titan.graphdb.astyanax;
 
 import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.diskstorage.astyanax.AstyanaxStorageManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
-import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceTest;
-import com.thinkaurelius.titan.testutil.CassandraUtil;
+import com.thinkaurelius.titan.graphdb.TitanGraphConcurrentTest;
+import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class ExternalAstyanaxGraphPerformanceTest extends TitanGraphPerformanceTest {
-	
-	public ExternalAstyanaxGraphPerformanceTest() {
-		super(StorageSetup.getAstyanaxGraphConfiguration(), 0, 1, false);
+public class ExternalAstyanaxGraphConcurrentTest extends TitanGraphConcurrentTest {
+
+	public ExternalAstyanaxGraphConcurrentTest() {
+		super(StorageSetup.getAstyanaxGraphConfiguration());
 	}
 
     public static CassandraProcessStarter ch = new CassandraProcessStarter();
@@ -25,5 +24,4 @@ public class ExternalAstyanaxGraphPerformanceTest extends TitanGraphPerformanceT
     public static void stopCassandra() {
         ch.stopCassandra();
     }
-
 }

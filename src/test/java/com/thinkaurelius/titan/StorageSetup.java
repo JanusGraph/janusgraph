@@ -102,6 +102,12 @@ public class StorageSetup {
         return config;
     }
 
+    public static Configuration getCassandraThriftGraphConfiguration() {
+        Configuration config = StorageSetup.getLocalGraphConfiguration();
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,"cassandrathrift");
+        return config;
+    }
+
     public static Configuration getEmbeddedCassandraGraphConfiguration() {
         Configuration config = StorageSetup.getLocalGraphConfiguration();
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,"embeddedcassandra");

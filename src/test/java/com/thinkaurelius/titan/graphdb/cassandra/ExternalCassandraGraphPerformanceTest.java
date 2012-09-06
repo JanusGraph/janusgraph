@@ -13,7 +13,7 @@ public class ExternalCassandraGraphPerformanceTest extends TitanGraphPerformance
     public static CassandraProcessStarter ch = new CassandraProcessStarter();
 
     public ExternalCassandraGraphPerformanceTest() {
-        super(StorageSetup.getCassandraGraphConfiguration(),0,1,false);
+        super(StorageSetup.getCassandraThriftGraphConfiguration(),0,1,false);
     }
 
     @BeforeClass
