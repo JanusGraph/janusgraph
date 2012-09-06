@@ -21,7 +21,7 @@ h3. Version 0.1.0 (September 7, 2012)
 
 * Fixed concurrency and synchronization issues
 
-*Special Thanks to:*
+*Special thanks to:*
 
 * Danny Thomas ("BinaryRage":https://github.com/BinaryRage)
 * "jramsdale":https://github.com/jramsdale

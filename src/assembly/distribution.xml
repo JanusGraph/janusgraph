@@ -49,6 +49,10 @@
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
+            <source>UPGRADE.textile</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
             <source>NOTICE.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
