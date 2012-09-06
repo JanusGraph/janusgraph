@@ -1,19 +1,25 @@
 !https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-logo.png!
 
-Titan is a distributed "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for processing massive-scale graphs represented over a machine cluster. Titan separates the concerns of graph processing and manipulation from storing the graph on disk, delegating that concern to an extensible set of persistence solutions.
+Titan is a highly scalable "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for storing and querying large graphs with billions of vertices and edges distributed across a multi-machine cluster. 
+Titan is a transactional database that can support "thousands of concurrent users":http://thinkaurelius.com/2012/08/06/titan-provides-real-time-big-graph-data/.
 
 h2. Features
 
-* Support for various distributed storage layers
-** "Cassandra":http://cassandra.apache.org/ 1.1.0
-** "HBase":http://hbase.apache.org/ 0.92.1
-* Natively implements the "Blueprints":http://blueprints.tinkerpop.com graph API
-** "Gremlin":http://gremlin.tinkerpop.com graph traversal language
-** "Frames":http://frames.tinkerpop.com graph-to-object mapper
-** "Rexster":http://rexster.tinkerpop.com graph server
-* Open source with the liberal "Apache 2":http://www.apache.org/licenses/LICENSE-2.0.html license
+* Elastic and linear scalability for a growing data and user base.
+* Data distribution and replication for performance and fault tolerance.
+* Support for "ACID":http://en.wikipedia.org/wiki/ACID and "eventual consistency":http://en.wikipedia.org/wiki/Eventual_consistency.
+* Support for various "storage backend":https://github.com/thinkaurelius/titan/wiki/Storage-Backend-Overview:
+** "Apache Cassandra":http://cassandra.apache.org/
+** "Apache HBase":http://hbase.apache.org/
+** "Oracle BerkeleyDB":http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html
+* Native integration with the "TinkerPop":http://www.tinkerpop.com graph stack:
+** "Gremlin":http://gremlin.tinkerpop.com graph query language
+** "Frames":http://frames.tinkerpop.com object-to-graph mapper
+** "Rexster":http://rexster.tinkerpop.com REST graph server
+** "Blueprints":http://blueprints.tinkerpop.com standard graph API
+* Open source with the liberal "Apache 2 license":http://www.apache.org/licenses/LICENSE-2.0.html.
 
 
 h2. Getting Started
 
-Comprehensive documentation and examples are on the "Titan wiki":http://github.com/thinkaurelius/titan/wiki.
+Read the comprehensive "Titan documentation":https://github.com/thinkaurelius/titan/wiki" and join the "mailing list":https://groups.google.com/forum/#!forum/aureliusgraphs.

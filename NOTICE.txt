@@ -10,7 +10,7 @@ This product includes software developed by Aurelius (http://thinkaurelius.com/)
  * Marko A. Rodriguez
  * Stephen Mallette
 
-It also includes software from other open source projects including, but not limited to:
+It also includes software from other open source projects including, but not limited to (check pom.xml for complete listing):
 
  * TinkerPop Blueprints [http://blueprints.tinkerpop.com]
  * TinkerPop Gremlin [http://gremlin.tinkerpop.com]
@@ -18,12 +18,13 @@ It also includes software from other open source projects including, but not lim
  * Apache Commons [http://commons.apache.org/]
  * Google Guava [http://code.google.com/p/guava-libraries/]
  * Cern Colt [http://acs.lbl.gov/software/colt/]
- * Cryo [http://code.google.com/p/kryo/]
+ * Kryo [http://code.google.com/p/kryo/]
  * SLF4J [http://www.slf4j.org/]
  * Apache log4j [http://logging.apache.org/log4j/]
  * Apache HBase [http://hbase.apache.org/]
  * Apache Hadoop [http://hadoop.apache.org/]
  * Apache Cassandra [http://cassandra.apache.org/]
+ * Astyanax [https://github.com/Netflix/astyanax]
  * JUnit [http://www.junit.org/]
  * Mockito [http://code.google.com/p/mockito/]
  * Oracle's BerkeleyDB [http://www.oracle.com/technetwork/products/berkeleydb/] (see license below)
