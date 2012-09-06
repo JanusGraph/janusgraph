@@ -1,6 +1,5 @@
 package com.thinkaurelius.faunus.formats.rexster;
 
-import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
 import com.thinkaurelius.faunus.util.VertexToFaunusBinary;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
@@ -14,14 +13,16 @@ import com.tinkerpop.rexster.extension.ExtensionResponse;
 import com.tinkerpop.rexster.extension.HttpMethod;
 import com.tinkerpop.rexster.extension.RexsterContext;
 import com.tinkerpop.rexster.util.RequestObjectHelper;
+import org.apache.log4j.Logger;
+import org.codehaus.jettison.json.JSONObject;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
-import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.UUID;
 
 /**
  * Streams the vertex list back in FaunusVertex binary format.
@@ -30,6 +31,9 @@ import java.io.OutputStream;
  */
 @ExtensionNaming(namespace = FaunusRexsterExtension.EXTENSION_NAMESPACE, name = FaunusRexsterExtension.EXTENSION_NAME)
 public class FaunusRexsterExtension extends AbstractRexsterExtension {
+    private static final Logger logger = Logger.getLogger(FaunusRexsterExtension.class);
+
+    private static final long WRITE_STATUS_EVERY = 100;
 
     public static final String EXTENSION_NAMESPACE = "faunus";
     public static final String EXTENSION_NAME = "inputformat";
@@ -38,13 +42,20 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
     @ExtensionDescriptor(description = "streaming vertices for faunus")
     public ExtensionResponse getVertices(@RexsterContext final RexsterResourceContext context,
                                          @RexsterContext final Graph graph) {
-        final long start = RequestObjectHelper.getStartOffset(context.getRequestObject());
-        final long end = RequestObjectHelper.getEndOffset(context.getRequestObject());
+        final JSONObject requestObject = context.getRequestObject();
+        final long start = RequestObjectHelper.getStartOffset(requestObject);
+        final long end = RequestObjectHelper.getEndOffset(requestObject);
+
+        // help with uniquely identifying incoming requests in logs.
+        final UUID requestIdentifier = UUID.randomUUID();
+        final String verticesInSplit = end == Long.MAX_VALUE ? "END" : String.valueOf(end - start);
+        logger.debug(String.format("Request [%s] split between [%s] and [%s].", requestIdentifier, start, end));
 
         return new ExtensionResponse(Response.ok(new StreamingOutput() {
             @Override
             public void write(OutputStream out) throws IOException {
                 long counter = 0;
+                long vertexCount = 0;
 
                 final DataOutputStream dos = new DataOutputStream(out);
 
@@ -52,7 +63,16 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
                 for (Vertex vertex : vertices) {
                     if (counter >= start && counter < end) {
                         VertexToFaunusBinary.write(vertex, dos);
+
+                        if (logger.isDebugEnabled() && counter % WRITE_STATUS_EVERY == 0) {
+                            logger.debug(String.format("Request [%s] at [%s] on the way to [%s].",
+                                    requestIdentifier, vertexCount, verticesInSplit));
+                        }
+
+                        vertexCount++;
+
                     } else if (counter >= end) {
+                        logger.debug(String.format("Request [%s] completed.", requestIdentifier));
                         break;
                     }
                     counter++;
