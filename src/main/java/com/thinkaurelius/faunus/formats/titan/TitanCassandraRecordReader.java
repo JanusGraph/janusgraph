@@ -6,6 +6,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import org.apache.cassandra.auth.IAuthenticator;
 import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.db.IColumn;
@@ -81,6 +82,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     private Cassandra.Client client;
     private ConsistencyLevel consistencyLevel;
     private List<IndexExpression> filter;
+    private boolean pathEnabled;
 
     private final FaunusTitanGraph graph;
 
@@ -146,8 +148,9 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
         cfName = ConfigHelper.getInputColumnFamily(conf);
         consistencyLevel = ConsistencyLevel.valueOf(ConfigHelper.getReadConsistencyLevel(conf));
 
-
         keyspace = ConfigHelper.getInputKeyspace(conf);
+
+        this.pathEnabled = conf.getBoolean(FaunusCompiler.PATH_ENABLED, false);
 
         try {
             // only need to connect once
@@ -183,12 +186,14 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
         currentRow = null;
         while (currentRow == null && iter.hasNext()) {
             currentRow = graph.readFaunusVertex(iter.next());
+            if (null != currentRow)
+                currentRow.enablePath(this.pathEnabled);
         }
         return currentRow != null;
     }
 
     private String getLocation() {
-        ArrayList<InetAddress> localAddresses = new ArrayList<InetAddress>();
+        final List<InetAddress> localAddresses = new ArrayList<InetAddress>();
         try {
             Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
             while (nets.hasMoreElements())
@@ -199,7 +204,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
 
         for (InetAddress address : localAddresses) {
             for (String location : split.getLocations()) {
-                InetAddress locationAddress = null;
+                InetAddress locationAddress;
                 try {
                     locationAddress = InetAddress.getByName(location);
                 } catch (UnknownHostException e) {
@@ -371,7 +376,6 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
                 return;
 
             KeyRange keyRange;
-            ByteBuffer startColumn;
             if (totalRead == 0) {
                 String startToken = split.getStartToken();
                 keyRange = new KeyRange(batchSize)

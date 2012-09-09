@@ -33,7 +33,24 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH), Vertex.class, false), mapReduceDriver);
+        assertEquals(results.size(), 6);
+        assertEquals(results.get(1l).pathCount(), 0);
+        assertEquals(results.get(2l).pathCount(), 0);
+        assertEquals(results.get(3l).pathCount(), 3);
+        assertEquals(results.get(4l).pathCount(), 0);
+        assertEquals(results.get(5l).pathCount(), 1);
+        assertEquals(results.get(6l).pathCount(), 0);
+    }
+
+    public void testKnowsCreatedTraversal2() throws IOException {
+        Configuration config = new Configuration();
+        config.set(VerticesVerticesMapReduce.DIRECTION, Direction.OUT.name());
+        config.setStrings(VerticesVerticesMapReduce.LABELS, "created");
+
+        mapReduceDriver.withConfiguration(config);
+
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH), Vertex.class, true), mapReduceDriver);
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).pathCount(), 0);
         assertEquals(results.get(2l).pathCount(), 0);

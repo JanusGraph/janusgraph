@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.formats.graphson;
 
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -32,6 +33,7 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
     private long end;
     private LineReader in;
     private int maxLineLength = Integer.MAX_VALUE;
+    private boolean pathEnabled;
 
     private final NullWritable key = NullWritable.get();
     private FaunusVertex value = null;
@@ -39,6 +41,8 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
     public void initialize(final InputSplit genericSplit, final TaskAttemptContext context) throws IOException {
         final FileSplit split = (FileSplit) genericSplit;
         final Configuration conf = context.getConfiguration();
+
+        this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
         this.maxLineLength = conf.getInt("mapred.linerecordreader.maxlength", Integer.MAX_VALUE);
         this.start = split.getStart();
         this.end = this.start + split.getLength();
@@ -81,6 +85,7 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
             if (newSize < this.maxLineLength) {
                 //try {
                 this.value = GraphSONUtility.fromJSON(text.toString());
+                this.value.enablePath(this.pathEnabled);
                 break;
                 //} catch (IOException e) {
                 //    logger.warn("Malformed GraphSON: " + e.getMessage());

@@ -101,6 +101,7 @@ public class FaunusCompiler extends Configured implements Tool {
     private static final Class<? extends InputFormat> INTERMEDIATE_INPUT_FORMAT = SequenceFileInputFormat.class;
     private static final Class<? extends OutputFormat> INTERMEDIATE_OUTPUT_FORMAT = SequenceFileOutputFormat.class;
 
+    private boolean pathEnabled = false;
 
     public FaunusCompiler(final String jobScript, final Configuration conf) {
         this.jobScript = jobScript;
@@ -146,8 +147,8 @@ public class FaunusCompiler extends Configured implements Tool {
         this.outputValue = mapOutputValue;
     }
 
-    public void setPathEnabled(final boolean pathsEnabled) {
-        this.mapSequenceConfiguration.setBoolean(PATH_ENABLED, pathsEnabled);
+    public void setPathEnabled(final boolean pathEnabled) {
+        this.pathEnabled = pathEnabled;
     }
 
     ////////////// STEP
@@ -471,6 +472,10 @@ public class FaunusCompiler extends Configured implements Tool {
             return;
         }
 
+        for (final Job job : this.jobs) {
+            job.getConfiguration().setBoolean(PATH_ENABLED, this.pathEnabled);
+        }
+
         final FileSystem hdfs = FileSystem.get(this.configuration);
         try {
             final Job startJob = this.jobs.get(0);
@@ -562,12 +567,16 @@ public class FaunusCompiler extends Configured implements Tool {
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
             logger.info("Executing job " + (i + 1) + " out of " + this.jobs.size() + ": " + job.getJobName());
-            job.waitForCompletion(true);
+            boolean success = job.waitForCompletion(true);
             if (i > 0 && this.intermediateFiles.size() > 0) {
                 final FileSystem hdfs = FileSystem.get(job.getConfiguration());
                 final Path path = this.intermediateFiles.remove(0);
                 if (hdfs.exists(path))
                     hdfs.delete(path, true);
+            }
+            if (!success) {
+                logger.error("There was an error in the Faunus job -- remaining MapReduce jobs have been canceled");
+                break;
             }
         }
         return 0;

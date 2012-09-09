@@ -37,7 +37,7 @@ public class BackFilterMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Vertex.class, true), mapReduceDriver);
 
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).pathCount(), 1);
@@ -61,11 +61,18 @@ public class BackFilterMapReduceTest extends BaseTest {
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
+
+        for(FaunusVertex v : results.values()) {
+            v.enablePath(true);
+        }
+
         results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(1l)), false);
         results.get(2l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(2l)), false);
         results.get(3l).addPath((List) Arrays.asList(new MicroVertex(2l), new MicroVertex(3l)), false);
         results.get(4l).addPath((List) Arrays.asList(new MicroVertex(3l), new MicroVertex(4l)), false);
         results.get(5l).addPath((List) Arrays.asList(new MicroVertex(3l), new MicroVertex(5l)), false);
+
+
 
         results = runWithGraph(results.values(), mapReduceDriver);
 

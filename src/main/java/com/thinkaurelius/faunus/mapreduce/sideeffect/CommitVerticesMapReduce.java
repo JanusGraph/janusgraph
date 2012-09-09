@@ -62,7 +62,7 @@ public class CommitVerticesMapReduce {
                 verticesKept++;
             } else {
                 final long vertexId = value.getIdAsLong();
-                this.vertex.reuse(vertexId);
+                this.vertex.reuse(vertexId, value.pathEnabled());
                 this.holder.set('k', this.vertex);
                 for (final Edge edge : value.getEdges(OUT)) {
                     final Long id = (Long) edge.getVertex(IN).getId();

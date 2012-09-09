@@ -33,7 +33,7 @@ public class CommitEdgesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Edge.class), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Edge.class, true), mapReduceDriver);
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).pathCount(), 0);
         assertEquals(results.get(2l).pathCount(), 0);

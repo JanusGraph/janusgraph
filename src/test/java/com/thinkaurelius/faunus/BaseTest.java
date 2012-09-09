@@ -48,13 +48,22 @@ public abstract class BaseTest extends TestCase {
     }
 
     public static Collection<FaunusVertex> startPath(final Collection<FaunusVertex> vertices, final Class<? extends Element> klass) {
+        return startPath(vertices, klass, false);
+    }
+
+    public static Collection<FaunusVertex> startPath(final Collection<FaunusVertex> vertices, final Class<? extends Element> klass, boolean enablePath) {
         for (FaunusVertex vertex : vertices) {
-            if (klass.equals(Vertex.class))
+            if (klass.equals(Vertex.class)) {
+                vertex.enablePath(enablePath);
                 vertex.startPath();
-            else {
+            } else if (klass.equals(Edge.class)) {
                 for (Edge edge : vertex.getEdges(Direction.BOTH)) {
+                    ((FaunusEdge) edge).enablePath(enablePath);
                     ((FaunusEdge) edge).startPath();
                 }
+            } else {
+                startPath(vertices, Vertex.class, enablePath);
+                startPath(vertices, Edge.class, enablePath);
             }
         }
         return vertices;

@@ -1,6 +1,5 @@
 package com.thinkaurelius.faunus.mapreduce.transform;
 
-import com.thinkaurelius.faunus.FaunusConfiguration;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
@@ -56,6 +55,7 @@ public class VerticesEdgesMapReduce {
                     final List<List<MicroElement>> paths = clonePaths(value, new MicroEdge(edge.getIdAsLong()));
                     edge.addPaths(paths, false);
                     this.edge.reuse(edge.getIdAsLong(), edge.getVertexId(Direction.OUT), edge.getVertexId(Direction.IN), edge.getLabel());
+                    this.edge.enablePath(true);
                     this.edge.addPaths(paths, false);
                     this.longWritable.set(edge.getVertexId(this.direction.opposite()));
                     context.write(this.longWritable, this.holder.set('p', this.edge));
@@ -109,7 +109,7 @@ public class VerticesEdgesMapReduce {
             for (final Edge e : vertex.getEdges(this.direction, this.labels)) {
                 for (final FaunusEdge edge : edges) {
                     if (e.getId().equals(edge.getId())) {
-                        ((FaunusEdge) e).addPaths(edge.getPaths(), false);
+                        ((FaunusEdge) e).getPaths(edge, false);
                         break;
                     }
                 }

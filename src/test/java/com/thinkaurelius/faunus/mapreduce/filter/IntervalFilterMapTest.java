@@ -39,7 +39,7 @@ public class IntervalFilterMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Vertex.class, true), mapReduceDriver);
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).pathCount(), 1);
         assertEquals(results.get(2l).pathCount(), 1);
@@ -64,7 +64,7 @@ public class IntervalFilterMapTest extends BaseTest {
         config.set(IntervalFilterMap.KEY, "weight");
 
         mapReduceDriver.withConfiguration(config);
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Edge.class), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Edge.class, true), mapReduceDriver);
         assertEquals(results.size(), 6);
 
         int counter = 0;

@@ -109,19 +109,21 @@ public class Holder<T extends FaunusElement> extends GenericWritable implements 
 
             buffer1.get();
             buffer2.get();
+            // todo: make vertices go first?
 
             buffer1.getChar();
             buffer2.getChar();
+            // todo: sort on char?
 
             return (((Long) buffer1.getLong()).compareTo(buffer2.getLong()));
         }
 
-        /*@Override
+        @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
             if (a instanceof Holder && b instanceof Holder)
                 return ((Long) (((Holder) a).get().getIdAsLong())).compareTo(((Holder) b).get().getIdAsLong());
             else
                 return super.compare(a, b);
-        }*/
+        }
     }
 }

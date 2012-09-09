@@ -45,9 +45,9 @@
         </dependency>
         <!-- TITAN -->
         <dependency>
-            <groupId>com.thinkaurelius</groupId>
+            <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.1.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.hbase</groupId>

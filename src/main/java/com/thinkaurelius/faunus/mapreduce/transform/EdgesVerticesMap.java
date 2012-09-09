@@ -1,6 +1,5 @@
 package com.thinkaurelius.faunus.mapreduce.transform;
 
-import com.thinkaurelius.faunus.FaunusConfiguration;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
@@ -37,7 +36,7 @@ public class EdgesVerticesMap {
             for (final Edge e : value.getEdges(this.direction)) {
                 final FaunusEdge edge = (FaunusEdge) e;
                 if (edge.hasPaths()) {
-                    value.addPaths(edge.getPaths(), true);
+                    value.getPaths(edge, true);
                     edgesProcessed++;
                 }
             }
