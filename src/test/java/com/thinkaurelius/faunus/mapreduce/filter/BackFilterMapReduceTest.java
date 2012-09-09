@@ -30,10 +30,15 @@ public class BackFilterMapReduceTest extends BaseTest {
         mapReduceDriver.setReducer(new BackFilterMapReduce.Reduce());
     }
 
+    public void testTrue() {
+        assertTrue(true);
+    }
+
     public void testVerticesFullStart() throws IOException {
         Configuration config = new Configuration();
         config.setClass(BackFilterMapReduce.CLASS, Vertex.class, Element.class);
         config.setInt(BackFilterMapReduce.STEP, 0);
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
 
@@ -57,6 +62,7 @@ public class BackFilterMapReduceTest extends BaseTest {
         Configuration config = new Configuration();
         config.setClass(BackFilterMapReduce.CLASS, Vertex.class, Element.class);
         config.setInt(BackFilterMapReduce.STEP, 0);
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
 

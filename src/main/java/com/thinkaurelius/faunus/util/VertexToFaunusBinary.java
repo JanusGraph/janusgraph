@@ -21,9 +21,10 @@ public class VertexToFaunusBinary {
         //out.writeInt(0);
         out.writeBoolean(false);
         out.writeLong(0);
+        writeProperties(vertex, out);
         writeEdges(vertex, Direction.IN, out);
         writeEdges(vertex, Direction.OUT, out);
-        writeProperties(vertex, out);
+
     }
 
     private static void writeEdges(final Vertex vertex, final Direction direction, final DataOutput out) throws IOException {
@@ -39,9 +40,10 @@ public class VertexToFaunusBinary {
                 writeId(edge.getId(), out);
                 out.writeBoolean(false);
                 out.writeLong(0);
+                writeProperties(edge, out);
                 //out.writeInt(0);
                 writeId(edge.getVertex(direction.opposite()).getId(), out);
-                writeProperties(edge, out);
+
             }
         }
     }

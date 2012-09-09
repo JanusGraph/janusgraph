@@ -70,6 +70,7 @@ public class BackFilterMapReduce {
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             final FaunusVertex vertex = new FaunusVertex(key.get());
+            vertex.enablePath(true);
             for (final Holder holder : values) {
                 if (holder.getTag() == 'v') {
                     vertex.addAll((FaunusVertex) holder.get());
