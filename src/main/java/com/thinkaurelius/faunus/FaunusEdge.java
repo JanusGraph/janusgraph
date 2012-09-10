@@ -29,6 +29,12 @@ public class FaunusEdge extends FaunusElement implements Edge {
         this.label = DEFAULT;
     }
 
+    public FaunusEdge(final boolean enablePaths) {
+        super(-1l);
+        this.label = DEFAULT;
+        this.enablePath(enablePaths);
+    }
+
     public FaunusEdge(final DataInput in) throws IOException {
         super(-1l);
         this.readFields(in);

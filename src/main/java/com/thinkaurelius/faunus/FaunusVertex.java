@@ -37,6 +37,11 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         super(-1l);
     }
 
+    public FaunusVertex(final boolean enablePaths) {
+        super(-1l);
+        this.enablePath(enablePaths);
+    }
+
     public FaunusVertex(final long id) {
         super(id);
     }
@@ -46,12 +51,11 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         this.readFields(in);
     }
 
-    public FaunusVertex reuse(final long id, final boolean enablePaths) {
+    public FaunusVertex reuse(final long id) {
         this.id = id;
         this.outEdges.clear();
         this.inEdges.clear();
         this.properties = null;
-        this.pathEnabled = enablePaths;
         this.clearPaths();
         return this;
     }

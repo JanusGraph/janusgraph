@@ -30,10 +30,6 @@ public class BackFilterMapReduceTest extends BaseTest {
         mapReduceDriver.setReducer(new BackFilterMapReduce.Reduce());
     }
 
-    public void testTrue() {
-        assertTrue(true);
-    }
-
     public void testVerticesFullStart() throws IOException {
         Configuration config = new Configuration();
         config.setClass(BackFilterMapReduce.CLASS, Vertex.class, Element.class);

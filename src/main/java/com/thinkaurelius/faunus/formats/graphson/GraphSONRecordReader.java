@@ -83,14 +83,9 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
             }
             this.pos += newSize;
             if (newSize < this.maxLineLength) {
-                //try {
                 this.value = GraphSONUtility.fromJSON(text.toString());
                 this.value.enablePath(this.pathEnabled);
                 break;
-                //} catch (IOException e) {
-                //    logger.warn("Malformed GraphSON: " + e.getMessage());
-                //}
-
             }
 
             // line too long. try again

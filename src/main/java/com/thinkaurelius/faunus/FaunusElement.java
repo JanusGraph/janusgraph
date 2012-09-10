@@ -57,7 +57,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     protected List<List<MicroElement>> paths = null;
     private final MicroElement microVersion;
 
-    protected boolean pathEnabled;
+    protected boolean pathEnabled = false;
     protected long pathCounter = 0l;
 
 
@@ -74,22 +74,22 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         return this.pathEnabled;
     }
 
-    public void addPath(final List<MicroElement> path, final boolean incrPath) {
+    public void addPath(final List<MicroElement> path, final boolean append) {
         if (this.pathEnabled) {
             if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
-            if (incrPath) path.add(this.microVersion);
+            if (append) path.add(this.microVersion);
             this.paths.add(path);
         } else {
             this.pathCounter++;
         }
     }
 
-    public void addPaths(final List<List<MicroElement>> paths, final boolean incrPath) {
+    public void addPaths(final List<List<MicroElement>> paths, final boolean append) {
         if (this.pathEnabled) {
             if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
-            if (incrPath) {
+            if (append) {
                 for (final List<MicroElement> path : paths) {
-                    this.addPath(path, incrPath);
+                    this.addPath(path, append);
                 }
             } else
                 this.paths.addAll(paths);
@@ -105,9 +105,9 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
             throw new IllegalStateException("Path calculations are not enabled");
     }
 
-    public void getPaths(final FaunusElement element, final boolean incrPath) {
+    public void getPaths(final FaunusElement element, final boolean append) {
         if (this.pathEnabled) {
-            this.addPaths(element.getPaths(), incrPath);
+            this.addPaths(element.getPaths(), append);
         } else {
             this.pathCounter = this.pathCounter + element.pathCount();
         }
