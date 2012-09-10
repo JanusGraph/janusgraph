@@ -14,6 +14,10 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 
+import static com.tinkerpop.blueprints.Direction.BOTH;
+import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -23,7 +27,7 @@ public class VerticesVerticesMapReduce {
     public static final String LABELS = Tokens.makeNamespace(VerticesVerticesMapReduce.class) + ".labels";
 
     public enum Counters {
-        VERTICES_PROCESSED
+        EDGES_TRAVERSED;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
@@ -45,14 +49,30 @@ public class VerticesVerticesMapReduce {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+
             if (value.hasPaths()) {
-                for (final Edge edge : value.getEdges(this.direction, this.labels)) {
-                    this.vertex.reuse(((FaunusEdge) edge).getVertexId(this.direction.opposite()));
-                    this.vertex.getPaths(value, false);
-                    this.longWritable.set(vertex.getIdAsLong());
-                    context.write(this.longWritable, this.holder.set('p', this.vertex));
+                long edgesTraversed = 0l;
+                if (this.direction.equals(OUT) || this.direction.equals(BOTH)) {
+                    for (final Edge edge : value.getEdges(OUT, this.labels)) {
+                        this.vertex.reuse(((FaunusEdge) edge).getVertexId(IN));
+                        this.vertex.getPaths(value, false);
+                        this.longWritable.set(this.vertex.getIdAsLong());
+                        context.write(this.longWritable, this.holder.set('p', this.vertex));
+                        edgesTraversed++;
+                    }
+                }
+
+                if (this.direction.equals(IN) || this.direction.equals(BOTH)) {
+                    for (final Edge edge : value.getEdges(IN, this.labels)) {
+                        this.vertex.reuse(((FaunusEdge) edge).getVertexId(OUT));
+                        this.vertex.getPaths(value, false);
+                        this.longWritable.set(this.vertex.getIdAsLong());
+                        context.write(this.longWritable, this.holder.set('p', this.vertex));
+                        edgesTraversed++;
+                    }
                 }
                 value.clearPaths();
+                context.getCounter(Counters.EDGES_TRAVERSED).increment(edgesTraversed);
             }
 
             this.longWritable.set(value.getIdAsLong());
@@ -74,12 +94,12 @@ public class VerticesVerticesMapReduce {
             this.vertex.reuse(key.get());
             for (final Holder holder : values) {
                 if (holder.getTag() == 'v') {
-                    vertex.addAll((FaunusVertex) holder.get());
+                    this.vertex.addAll((FaunusVertex) holder.get());
                 } else {
-                    vertex.getPaths(holder.get(), true);
+                    this.vertex.getPaths(holder.get(), true);
                 }
             }
-            context.write(NullWritable.get(), vertex);
+            context.write(NullWritable.get(), this.vertex);
         }
     }
 }

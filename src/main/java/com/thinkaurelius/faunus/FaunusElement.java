@@ -55,7 +55,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     protected long id;
     protected Map<String, Object> properties = null;
     protected List<List<MicroElement>> paths = null;
-    private final MicroElement microVersion;
+    private MicroElement microVersion = null;
 
     protected boolean pathEnabled = false;
     protected long pathCounter = 0l;
@@ -63,19 +63,16 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
     public FaunusElement(final long id) {
         this.id = id;
-        this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
     }
 
     public void enablePath(final boolean enablePath) {
         this.pathEnabled = enablePath;
     }
 
-    public boolean pathEnabled() {
-        return this.pathEnabled;
-    }
-
     public void addPath(final List<MicroElement> path, final boolean append) {
         if (this.pathEnabled) {
+            if (null == this.microVersion)
+                this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
             if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
             if (append) path.add(this.microVersion);
             this.paths.add(path);
@@ -136,6 +133,8 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
     public void startPath() {
         if (this.pathEnabled) {
+            if (null == this.microVersion)
+                this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
             if (null == this.paths)
                 this.paths = new ArrayList<List<MicroElement>>();
             else

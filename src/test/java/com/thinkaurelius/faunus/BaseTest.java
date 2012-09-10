@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -79,7 +80,11 @@ public abstract class BaseTest extends TestCase {
 
     public static Map<Long, FaunusVertex> runWithGraph(Collection<FaunusVertex> vertices, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
-        for (final Vertex vertex : vertices) {
+        for (final FaunusVertex vertex : vertices) {
+            vertex.enablePath(driver.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            for (Edge edge : vertex.getEdges(Direction.BOTH)) {
+                ((FaunusEdge) edge).enablePath(driver.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            }
             driver.withInput(NullWritable.get(), vertex);
         }
         return indexResults(driver.run());

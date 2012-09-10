@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.filter;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -39,7 +40,7 @@ public class IntervalFilterMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Vertex.class, true), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Vertex.class), mapReduceDriver);
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).pathCount(), 1);
         assertEquals(results.get(2l).pathCount(), 1);
@@ -64,7 +65,7 @@ public class IntervalFilterMapTest extends BaseTest {
         config.set(IntervalFilterMap.KEY, "weight");
 
         mapReduceDriver.withConfiguration(config);
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Edge.class, true), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Edge.class), mapReduceDriver);
         assertEquals(results.size(), 6);
 
         int counter = 0;

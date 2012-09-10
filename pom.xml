@@ -70,21 +70,21 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <repositories>
-        <repository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>
-                https://oss.sonatype.org/content/repositories/snapshots
-            </url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
+    <!--    <repositories>
+       <repository>
+           <id>sonatype-nexus-snapshots</id>
+           <name>Sonatype Nexus Snapshots</name>
+           <url>
+               https://oss.sonatype.org/content/repositories/snapshots
+           </url>
+           <releases>
+               <enabled>false</enabled>
+           </releases>
+           <snapshots>
+               <enabled>true</enabled>
+           </snapshots>
+       </repository>
+   </repositories> -->
     <build>
         <directory>${basedir}/target</directory>
         <finalName>${project.artifactId}-${project.version}
@@ -125,6 +125,7 @@
                     <descriptors>
                         <descriptor>src/assembly/hadoop-job.xml</descriptor>
                         <descriptor>src/assembly/distribution.xml</descriptor>
+                        <descriptor>src/assembly/standalone.xml</descriptor>
                     </descriptors>
                     <finalName>${project.artifactId}-${project.version}</finalName>
                     <outputDirectory>target</outputDirectory>

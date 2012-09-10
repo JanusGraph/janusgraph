@@ -42,6 +42,7 @@ public class LinkMapReduceTest extends BaseTest {
         config.setInt(LinkMapReduce.STEP, 0);
         config.set(LinkMapReduce.DIRECTION, Direction.IN.name());
         config.set(LinkMapReduce.LABEL, "knowsCreated");
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
 
@@ -76,6 +77,7 @@ public class LinkMapReduceTest extends BaseTest {
         config.setInt(LinkMapReduce.STEP, 0);
         config.set(LinkMapReduce.DIRECTION, Direction.OUT.name());
         config.set(LinkMapReduce.LABEL, "created2");
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
 

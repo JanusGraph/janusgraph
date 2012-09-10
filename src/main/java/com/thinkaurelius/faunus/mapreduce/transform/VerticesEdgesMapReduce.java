@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.util.MicroEdge;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
@@ -18,6 +19,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.tinkerpop.blueprints.Direction.BOTH;
+import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -27,22 +32,25 @@ public class VerticesEdgesMapReduce {
     public static final String LABELS = Tokens.makeNamespace(VerticesEdgesMapReduce.class) + ".labels";
 
     public enum Counters {
-        EDGES_PROCESSED
+        EDGES_TRAVERSED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
 
         private Direction direction;
         private String[] labels;
+        private boolean pathEnabled;
 
         private final Holder<FaunusElement> holder = new Holder<FaunusElement>();
         private final LongWritable longWritable = new LongWritable();
-        private final FaunusEdge edge = new FaunusEdge();
+        private FaunusEdge edge;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
+            this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
+            this.edge = new FaunusEdge(this.pathEnabled);
 
         }
 
@@ -50,16 +58,48 @@ public class VerticesEdgesMapReduce {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
 
             if (value.hasPaths()) {
-                for (final Edge e : value.getEdges(this.direction, this.labels)) {
-                    final FaunusEdge edge = (FaunusEdge) e;
-                    final List<List<MicroElement>> paths = clonePaths(value, new MicroEdge(edge.getIdAsLong()));
-                    edge.addPaths(paths, false);
-                    this.edge.reuse(edge.getIdAsLong(), edge.getVertexId(Direction.OUT), edge.getVertexId(Direction.IN), edge.getLabel());
-                    this.edge.enablePath(true);
-                    this.edge.addPaths(paths, false);
-                    this.longWritable.set(edge.getVertexId(this.direction.opposite()));
-                    context.write(this.longWritable, this.holder.set('p', this.edge));
+                long edgesTraversed = 0l;
+
+                if (this.direction.equals(IN) || this.direction.equals(BOTH)) {
+                    for (final Edge e : value.getEdges(IN, this.labels)) {
+                        final FaunusEdge edge = (FaunusEdge) e;
+                        this.edge.reuse(edge.getIdAsLong(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
+
+                        if (this.pathEnabled) {
+                            final List<List<MicroElement>> paths = clonePaths(value, new MicroEdge(edge.getIdAsLong()));
+                            edge.addPaths(paths, false);
+                            this.edge.addPaths(paths, false);
+                        } else {
+                            edge.getPaths(value, false);
+                            this.edge.getPaths(value, false);
+                        }
+                        this.longWritable.set(edge.getVertexId(OUT));
+                        context.write(this.longWritable, this.holder.set('p', this.edge));
+                        edgesTraversed++;
+                    }
                 }
+
+                if (this.direction.equals(OUT) || this.direction.equals(BOTH)) {
+                    for (final Edge e : value.getEdges(OUT, this.labels)) {
+                        final FaunusEdge edge = (FaunusEdge) e;
+                        this.edge.reuse(edge.getIdAsLong(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
+
+                        if (this.pathEnabled) {
+                            final List<List<MicroElement>> paths = clonePaths(value, new MicroEdge(edge.getIdAsLong()));
+                            edge.addPaths(paths, false);
+                            this.edge.addPaths(paths, false);
+                        } else {
+                            edge.getPaths(value, false);
+                            this.edge.getPaths(value, false);
+                        }
+                        this.longWritable.set(edge.getVertexId(IN));
+                        context.write(this.longWritable, this.holder.set('p', this.edge));
+                        edgesTraversed++;
+                    }
+                }
+
+
+                context.getCounter(Counters.EDGES_TRAVERSED).increment(edgesTraversed);
             }
 
             value.clearPaths();
@@ -84,29 +124,34 @@ public class VerticesEdgesMapReduce {
 
         private Direction direction;
         private String[] labels;
+        private FaunusVertex vertex;
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
-            this.direction = this.direction.opposite();
+            if (!this.direction.equals(BOTH))
+                this.direction = this.direction.opposite();
+
             this.labels = context.getConfiguration().getStrings(LABELS);
+            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
         }
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            final FaunusVertex vertex = new FaunusVertex(key.get());  // TODO: make a FaunusVertex.clear() for object reuse
+            this.vertex.reuse(key.get());
             final List<FaunusEdge> edges = new ArrayList<FaunusEdge>();
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
                     final FaunusVertex temp = (FaunusVertex) holder.get();
-                    vertex.setProperties(temp.getProperties());
-                    vertex.addEdges(Direction.BOTH, temp);
+                    this.vertex.setProperties(temp.getProperties());
+                    this.vertex.addEdges(BOTH, temp);
                 } else {
                     edges.add((FaunusEdge) holder.get());
                 }
             }
-            for (final Edge e : vertex.getEdges(this.direction, this.labels)) {
+
+            for (final Edge e : this.vertex.getEdges(this.direction, this.labels)) {
                 for (final FaunusEdge edge : edges) {
                     if (e.getId().equals(edge.getId())) {
                         ((FaunusEdge) e).getPaths(edge, false);
@@ -115,7 +160,7 @@ public class VerticesEdgesMapReduce {
                 }
             }
 
-            context.write(NullWritable.get(), vertex);
+            context.write(NullWritable.get(), this.vertex);
         }
     }
 }

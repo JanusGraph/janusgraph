@@ -107,6 +107,10 @@ public class FaunusCompiler extends Configured implements Tool {
         this.jobScript = jobScript;
         this.configuration = new FaunusConfiguration(conf);
     }
+    
+    public List<Job> getJobs() {
+        return this.jobs;
+    }
 
     private String toStringOfJob(final Class sequenceClass) {
         final List<String> list = new ArrayList<String>();
