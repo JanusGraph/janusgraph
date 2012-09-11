@@ -1,6 +1,5 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
@@ -38,6 +37,11 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         super(-1l);
     }
 
+    public FaunusVertex(final boolean enablePaths) {
+        super(-1l);
+        this.enablePath(enablePaths);
+    }
+
     public FaunusVertex(final long id) {
         super(id);
     }
@@ -47,19 +51,19 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         this.readFields(in);
     }
 
-    public void reuse(final long id) {
+    public FaunusVertex reuse(final long id) {
         this.id = id;
         this.outEdges.clear();
         this.inEdges.clear();
         this.properties = null;
         this.clearPaths();
+        return this;
     }
 
     public void addAll(final FaunusVertex vertex) {
         this.id = vertex.getIdAsLong();
         this.properties = vertex.getProperties();
-        if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
-        this.paths.addAll(vertex.getPaths());
+        this.getPaths(vertex, false);
         this.addEdges(BOTH, vertex);
     }
 
@@ -252,20 +256,15 @@ public class FaunusVertex extends FaunusElement implements Vertex {
     }
 
     public void write(final DataOutput out) throws IOException {
-        out.writeLong(this.id);
-        ElementPaths.write(this.paths, out);
+        super.write(out);
         EdgeMap.write((Map) this.inEdges, out, Direction.OUT);
         EdgeMap.write((Map) this.outEdges, out, Direction.IN);
-        ElementProperties.write(this.properties, out);
-
     }
 
     public void readFields(final DataInput in) throws IOException {
-        this.id = in.readLong();
-        this.paths = ElementPaths.readFields(in);
+        super.readFields(in);
         this.inEdges = (Map) EdgeMap.readFields(in, Direction.OUT, this.id);
         this.outEdges = (Map) EdgeMap.readFields(in, Direction.IN, this.id);
-        this.properties = ElementProperties.readFields(in);
     }
 
     public int compareTo(final FaunusElement other) {

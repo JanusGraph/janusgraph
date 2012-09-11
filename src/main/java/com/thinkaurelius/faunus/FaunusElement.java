@@ -55,57 +55,97 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     protected long id;
     protected Map<String, Object> properties = null;
     protected List<List<MicroElement>> paths = null;
-    private final MicroElement microVersion;
+    private MicroElement microVersion = null;
 
-   // private boolean pathEnabled = false;
-    //private long pathCount = 0l;
+    protected boolean pathEnabled = false;
+    protected long pathCounter = 0l;
 
 
     public FaunusElement(final long id) {
         this.id = id;
-        this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
     }
 
-    public void addPath(final List<MicroElement> path, final boolean incrPath) {
-        if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
-        if (incrPath) path.add(this.microVersion);
-        this.paths.add(path);
+    public void enablePath(final boolean enablePath) {
+        this.pathEnabled = enablePath;
     }
 
-    public void addPaths(final List<List<MicroElement>> paths, final boolean incrPath) {
-        if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
-        if (incrPath) {
-            for (final List<MicroElement> path : paths) {
-                this.addPath(path, incrPath);
-            }
-        } else
-            this.paths.addAll(paths);
+    public void addPath(final List<MicroElement> path, final boolean append) {
+        if (this.pathEnabled) {
+            if (null == this.microVersion)
+                this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+            if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
+            if (append) path.add(this.microVersion);
+            this.paths.add(path);
+        } else {
+            this.pathCounter++;
+        }
+    }
+
+    public void addPaths(final List<List<MicroElement>> paths, final boolean append) {
+        if (this.pathEnabled) {
+            if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
+            if (append) {
+                for (final List<MicroElement> path : paths) {
+                    this.addPath(path, append);
+                }
+            } else
+                this.paths.addAll(paths);
+        } else {
+            this.pathCounter = pathCounter + paths.size();
+        }
     }
 
     public List<List<MicroElement>> getPaths() {
-        return (null == this.paths) ? (List) Collections.emptyList() : this.paths;
+        if (this.pathEnabled)
+            return (null == this.paths) ? (List) Collections.emptyList() : this.paths;
+        else
+            throw new IllegalStateException("Path calculations are not enabled");
+    }
+
+    public void getPaths(final FaunusElement element, final boolean append) {
+        if (this.pathEnabled) {
+            this.addPaths(element.getPaths(), append);
+        } else {
+            this.pathCounter = this.pathCounter + element.pathCount();
+        }
     }
 
     public boolean hasPaths() {
-        return (null != this.paths) && !this.paths.isEmpty();
+        if (this.pathEnabled)
+            return (null != this.paths) && !this.paths.isEmpty();
+        else
+            return this.pathCounter > 0;
     }
 
     public void clearPaths() {
-        this.paths = null;
+        if (this.pathEnabled)
+            this.paths = null;
+        else
+            this.pathCounter = 0;
     }
 
     public int pathCount() {
-        return (null == this.paths) ? 0 : this.paths.size();
+        if (this.pathEnabled)
+            return (null == this.paths) ? 0 : this.paths.size();
+        else
+            return ((Long) this.pathCounter).intValue();
     }
 
     public void startPath() {
-        if (null == this.paths)
-            this.paths = new ArrayList<List<MicroElement>>();
-        else
-            this.paths.clear();
-        final List<MicroElement> startPath = new ArrayList<MicroElement>();
-        startPath.add(this.microVersion);
-        this.paths.add(startPath);
+        if (this.pathEnabled) {
+            if (null == this.microVersion)
+                this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+            if (null == this.paths)
+                this.paths = new ArrayList<List<MicroElement>>();
+            else
+                this.paths.clear();
+            final List<MicroElement> startPath = new ArrayList<MicroElement>();
+            startPath.add(this.microVersion);
+            this.paths.add(startPath);
+        } else {
+            this.pathCounter = 1;
+        }
+
     }
 
     public void setProperty(final String key, final Object value) {
@@ -146,6 +186,26 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
     public long getIdAsLong() {
         return this.id;
+    }
+
+    public void readFields(final DataInput in) throws IOException {
+        this.id = in.readLong();
+        this.pathEnabled = in.readBoolean();
+        if (this.pathEnabled)
+            this.paths = ElementPaths.readFields(in);
+        else
+            this.pathCounter = in.readLong();
+        this.properties = ElementProperties.readFields(in);
+    }
+
+    public void write(final DataOutput out) throws IOException {
+        out.writeLong(this.id);
+        out.writeBoolean(this.pathEnabled);
+        if (this.pathEnabled)
+            ElementPaths.write(this.paths, out);
+        else
+            out.writeLong(this.pathCounter);
+        ElementProperties.write(this.properties, out);
     }
 
     @Override
@@ -300,7 +360,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
         @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
-            if (a instanceof FaunusVertex && b instanceof FaunusVertex)
+            if (a instanceof FaunusElement && b instanceof FaunusElement)
                 return ((Long) (((FaunusElement) a).getIdAsLong())).compareTo(((FaunusElement) b).getIdAsLong());
             else
                 return super.compare(a, b);

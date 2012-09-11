@@ -16,6 +16,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.ToolRunner;
 import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
@@ -42,6 +43,8 @@ public class FaunusPipeline {
     protected final FaunusCompiler compiler;
     protected final JobState state;
     protected static final ScriptEngine engine = new GremlinGroovyScriptEngine();
+
+    // TODO protected final List<String> stringRepresentation = new ArrayList<String>();
 
     private Query.Compare opposite(final Query.Compare compare) {
         if (compare.equals(Query.Compare.EQUAL))
@@ -457,6 +460,16 @@ public class FaunusPipeline {
         this.compiler.countMapReduce(this.state.getElementType());
         this.state.lock();
         return this;
+    }
+
+    public void submit() throws Exception {
+        this.done();
+        this.compiler.completeSequence();
+        for (final Job job : this.compiler.getJobs()) {
+            job.getConfiguration().set("mapred.jar", "target/faunus-0.1-SNAPSHOT-job.jar");
+        }
+        ToolRunner.run(this.compiler, new String[0]);
+
     }
 
     private FaunusPipeline done() throws IOException {

@@ -1,12 +1,14 @@
 package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
 import com.thinkaurelius.faunus.BaseTest;
+import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -40,12 +42,16 @@ public class LinkMapReduceTest extends BaseTest {
         config.setInt(LinkMapReduce.STEP, 0);
         config.set(LinkMapReduce.DIRECTION, Direction.IN.name());
         config.set(LinkMapReduce.LABEL, "knowsCreated");
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
+
         for (FaunusVertex vertex : results.values()) {
+            vertex.enablePath(true);
             vertex.removeEdges(Tokens.Action.DROP, Direction.BOTH);
+            
         }
         results.get(3l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
         results.get(5l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(5l)), false);
@@ -71,11 +77,13 @@ public class LinkMapReduceTest extends BaseTest {
         config.setInt(LinkMapReduce.STEP, 0);
         config.set(LinkMapReduce.DIRECTION, Direction.OUT.name());
         config.set(LinkMapReduce.LABEL, "created2");
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
         for (FaunusVertex vertex : results.values()) {
+            vertex.enablePath(true);
             vertex.removeEdges(Tokens.Action.DROP, Direction.BOTH);
         }
         results.get(3l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);

@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.filter;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -35,10 +36,16 @@ public class DuplicateFilterMapTest extends BaseTest {
     public void testDedupVertices() throws IOException {
         Configuration config = new Configuration();
         config.setClass(DuplicateFilterMap.CLASS, Vertex.class, Element.class);
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = generateIndexedGraph(ExampleGraph.TINKERGRAPH);
+
+        for(FaunusVertex v : results.values()) {
+            v.enablePath(true);
+        }
+
         results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(2l)), false);
         results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
         results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(4l)), false);
@@ -73,10 +80,17 @@ public class DuplicateFilterMapTest extends BaseTest {
     public void testDedupEdges() throws IOException {
         Configuration config = new Configuration();
         config.setClass(DuplicateFilterMap.CLASS, Edge.class, Element.class);
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = generateIndexedGraph(ExampleGraph.TINKERGRAPH);
+
+        for(FaunusVertex v : results.values()) {
+            for(Edge edge : v.getEdges(Direction.BOTH))
+                ((FaunusEdge)edge).enablePath(true);
+        }
+
         ((FaunusEdge) results.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new MicroVertex(2l), new MicroVertex(1l)), false);
         ((FaunusEdge) results.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new MicroVertex(2l), new MicroVertex(1l)), false);
 

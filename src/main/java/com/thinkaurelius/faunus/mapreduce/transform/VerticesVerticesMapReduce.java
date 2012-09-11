@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.LongWritable;
@@ -12,6 +13,10 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
+
+import static com.tinkerpop.blueprints.Direction.BOTH;
+import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -22,7 +27,7 @@ public class VerticesVerticesMapReduce {
     public static final String LABELS = Tokens.makeNamespace(VerticesVerticesMapReduce.class) + ".labels";
 
     public enum Counters {
-        VERTICES_PROCESSED
+        EDGES_TRAVERSED;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
@@ -30,26 +35,44 @@ public class VerticesVerticesMapReduce {
         private Direction direction;
         private String[] labels;
 
+        private FaunusVertex vertex;
         private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
-        private final FaunusVertex vertex = new FaunusVertex();
+
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
+            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+
             if (value.hasPaths()) {
-                for (final Edge edge : value.getEdges(this.direction, this.labels)) {
-                    this.vertex.reuse(((FaunusEdge) edge).getVertexId(this.direction.opposite()));
-                    this.vertex.addPaths(value.getPaths(), false);
-                    this.longWritable.set(vertex.getIdAsLong());
-                    context.write(this.longWritable, this.holder.set('p', this.vertex));
+                long edgesTraversed = 0l;
+                if (this.direction.equals(OUT) || this.direction.equals(BOTH)) {
+                    for (final Edge edge : value.getEdges(OUT, this.labels)) {
+                        this.vertex.reuse(((FaunusEdge) edge).getVertexId(IN));
+                        this.vertex.getPaths(value, false);
+                        this.longWritable.set(this.vertex.getIdAsLong());
+                        context.write(this.longWritable, this.holder.set('p', this.vertex));
+                        edgesTraversed++;
+                    }
+                }
+
+                if (this.direction.equals(IN) || this.direction.equals(BOTH)) {
+                    for (final Edge edge : value.getEdges(IN, this.labels)) {
+                        this.vertex.reuse(((FaunusEdge) edge).getVertexId(OUT));
+                        this.vertex.getPaths(value, false);
+                        this.longWritable.set(this.vertex.getIdAsLong());
+                        context.write(this.longWritable, this.holder.set('p', this.vertex));
+                        edgesTraversed++;
+                    }
                 }
                 value.clearPaths();
+                context.getCounter(Counters.EDGES_TRAVERSED).increment(edgesTraversed);
             }
 
             this.longWritable.set(value.getIdAsLong());
@@ -59,19 +82,24 @@ public class VerticesVerticesMapReduce {
 
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
-        private FaunusVertex vertex = new FaunusVertex();
+        private FaunusVertex vertex;
+
+        @Override
+        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
+            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+        }
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             this.vertex.reuse(key.get());
             for (final Holder holder : values) {
                 if (holder.getTag() == 'v') {
-                    vertex.addAll((FaunusVertex) holder.get());
+                    this.vertex.addAll((FaunusVertex) holder.get());
                 } else {
-                    vertex.addPaths(holder.get().getPaths(), true);
+                    this.vertex.getPaths(holder.get(), true);
                 }
             }
-            context.write(NullWritable.get(), vertex);
+            context.write(NullWritable.get(), this.vertex);
         }
     }
 }

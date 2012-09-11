@@ -253,6 +253,7 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
     private FaunusTitanGraph graph = null;
 
     public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+
         if (graph == null) {
             final Configuration conf = taskAttemptContext.getConfiguration();
             //  ## Instantiate Titan ##

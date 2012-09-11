@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -32,7 +33,7 @@ public class BackFilterMapReduce {
 
         private int step;
         private boolean isVertex;
-        private final FaunusVertex vertex = new FaunusVertex();
+        private FaunusVertex vertex;
         private final Holder<FaunusElement> holder = new Holder<FaunusElement>();
         private final LongWritable longWritable = new LongWritable();
 
@@ -41,6 +42,7 @@ public class BackFilterMapReduce {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.step = context.getConfiguration().getInt(STEP, -1);
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
+            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
         }
 
         @Override
@@ -67,14 +69,22 @@ public class BackFilterMapReduce {
 
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
+        private FaunusVertex vertex;
+
+        @Override
+        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
+            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+        }
+
+
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            final FaunusVertex vertex = new FaunusVertex(key.get());
+            this.vertex.reuse(key.get());
             for (final Holder holder : values) {
                 if (holder.getTag() == 'v') {
                     vertex.addAll((FaunusVertex) holder.get());
                 } else {
-                    vertex.addPaths(holder.get().getPaths(), true);
+                    vertex.getPaths(holder.get(), true);
                 }
             }
             context.write(NullWritable.get(), vertex);

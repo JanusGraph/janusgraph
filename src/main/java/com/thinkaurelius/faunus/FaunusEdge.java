@@ -29,6 +29,12 @@ public class FaunusEdge extends FaunusElement implements Edge {
         this.label = DEFAULT;
     }
 
+    public FaunusEdge(final boolean enablePaths) {
+        super(-1l);
+        this.label = DEFAULT;
+        this.enablePath(enablePaths);
+    }
+
     public FaunusEdge(final DataInput in) throws IOException {
         super(-1l);
         this.readFields(in);
@@ -84,39 +90,31 @@ public class FaunusEdge extends FaunusElement implements Edge {
     }
 
     public void write(final DataOutput out) throws IOException {
-        out.writeLong(this.id);
-        ElementPaths.write(this.paths, out);
+        super.write(out);
         out.writeLong(this.inVertex);
         out.writeLong(this.outVertex);
         out.writeUTF(this.getLabel());
-        ElementProperties.write(this.properties, out);
     }
 
     public void readFields(final DataInput in) throws IOException {
-        this.id = in.readLong();
-        this.paths = ElementPaths.readFields(in);
+        super.readFields(in);
         this.inVertex = in.readLong();
         this.outVertex = in.readLong();
         setLabel(in.readUTF());
-        this.properties = ElementProperties.readFields(in);
     }
 
     public void writeCompressed(final DataOutput out, final Direction idToWrite) throws IOException {
-        out.writeLong(this.id);
-        ElementPaths.write(this.paths, out);
+        super.write(out);
         if (idToWrite.equals(Direction.IN))
             out.writeLong(this.inVertex);
         else if (idToWrite.equals(Direction.OUT))
             out.writeLong(this.outVertex);
         else
             throw ExceptionFactory.bothIsNotSupported();
-
-        ElementProperties.write(this.properties, out);
     }
 
     public void readFieldsCompressed(final DataInput in, final Direction idToRead) throws IOException {
-        this.id = in.readLong();
-        this.paths = ElementPaths.readFields(in);
+        super.readFields(in);
         if (idToRead.equals(Direction.IN))
             this.inVertex = Long.valueOf(in.readLong());
         else if (idToRead.equals(Direction.OUT))
@@ -124,7 +122,6 @@ public class FaunusEdge extends FaunusElement implements Edge {
         else
             throw ExceptionFactory.bothIsNotSupported();
         this.label = null;
-        this.properties = ElementProperties.readFields(in);
     }
 
     public String toString() {

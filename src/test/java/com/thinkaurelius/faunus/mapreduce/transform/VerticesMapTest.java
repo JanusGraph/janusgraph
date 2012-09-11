@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.transform;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
@@ -26,8 +27,40 @@ public class VerticesMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testEdges() throws IOException {
-        mapReduceDriver.withConfiguration(new Configuration());
+    public void testVerticesWithNoPaths() throws IOException {
+        Configuration config = new Configuration();
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, false);
+
+        mapReduceDriver.withConfiguration(config);
+
+        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), mapReduceDriver);
+
+        assertEquals(results.size(), 6);
+        for (FaunusVertex vertex : results.values()) {
+            assertEquals(vertex.pathCount(), 1);
+            for (Edge edge : vertex.getEdges(Direction.BOTH)) {
+                assertEquals(((FaunusEdge) edge).pathCount(), 0);
+            }
+
+            try {
+                vertex.getPaths();
+                assertTrue(false);
+            } catch (IllegalStateException e) {
+                assertTrue(true);
+            }
+        }
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesMap.Counters.EDGES_PROCESSED).getValue(), 12);
+        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesMap.Counters.VERTICES_PROCESSED).getValue(), 6);
+
+        identicalStructure(results, ExampleGraph.TINKERGRAPH);
+    }
+
+    public void testVerticesWithPaths() throws IOException {
+        Configuration config = new Configuration();
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
+
+        mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), mapReduceDriver);
 

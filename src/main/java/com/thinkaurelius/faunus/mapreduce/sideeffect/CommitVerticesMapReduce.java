@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.sideeffect;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -32,14 +33,15 @@ public class CommitVerticesMapReduce {
 
         private boolean drop;
 
+        private FaunusVertex vertex;
+        private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
+        private final LongWritable longWritable = new LongWritable();
+
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.drop = Tokens.Action.valueOf(context.getConfiguration().get(ACTION)).equals(Tokens.Action.DROP);
+            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
         }
-
-        private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
-        private final LongWritable longWritable = new LongWritable();
-        private final FaunusVertex vertex = new FaunusVertex();
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
@@ -87,6 +89,7 @@ public class CommitVerticesMapReduce {
     }
 
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
+
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             FaunusVertex vertex = null;
