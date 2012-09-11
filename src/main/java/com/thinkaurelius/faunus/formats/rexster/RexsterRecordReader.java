@@ -38,6 +38,8 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
 
     private boolean pathEnabled;
 
+    private FaunusVertex vertex = new FaunusVertex();
+    
     public RexsterRecordReader(final RexsterConfiguration conf) {
         this.rexsterConf = conf;
     }
@@ -56,7 +58,7 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         boolean isNext;
 
         try {
-            this.value = new FaunusVertex(this.rexsterInputStream); // todo: use vertex-ghost-shell
+            this.vertex.readFields(this.rexsterInputStream);
             this.value.enablePath(this.pathEnabled);
             itemsIterated++;
             isNext = true;
