@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.formats.rexster;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -35,6 +36,8 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
 
     private long itemsIterated = 0;
 
+    private boolean pathEnabled;
+
     public RexsterRecordReader(final RexsterConfiguration conf) {
         this.rexsterConf = conf;
     }
@@ -44,6 +47,7 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         final RexsterInputSplit rexsterInputSplit = (RexsterInputSplit) inputSplit;
         this.splitEnd = rexsterInputSplit.getEnd();
         this.splitStart = rexsterInputSplit.getStart();
+        this.pathEnabled = taskAttemptContext.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
         this.openRexsterStream();
     }
 
@@ -52,7 +56,8 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         boolean isNext;
 
         try {
-            this.value = new FaunusVertex(this.rexsterInputStream);
+            this.value = new FaunusVertex(this.rexsterInputStream); // todo: use vertex-ghost-shell
+            this.value.enablePath(this.pathEnabled);
             itemsIterated++;
             isNext = true;
         } catch (Exception e) {

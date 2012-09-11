@@ -36,6 +36,44 @@ public class DuplicateFilterMapTest extends BaseTest {
     public void testDedupVertices() throws IOException {
         Configuration config = new Configuration();
         config.setClass(DuplicateFilterMap.CLASS, Vertex.class, Element.class);
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, false);
+
+        mapReduceDriver.withConfiguration(config);
+
+        Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
+
+        graph.get(1l).incrPath(3l);
+        graph.get(2l).incrPath(1l);
+        graph.get(3l).incrPath(2l);
+
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 3);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 2);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
+
+        graph = runWithGraph(graph, mapReduceDriver);
+
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 1);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 1);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(DuplicateFilterMap.Counters.VERTICES_DEDUPED).getValue(), 3);
+        assertEquals(mapReduceDriver.getCounters().findCounter(DuplicateFilterMap.Counters.EDGES_DEDUPED).getValue(), 0);
+
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
+    }
+
+
+    public void testDedupVerticesWithPaths() throws IOException {
+        Configuration config = new Configuration();
+        config.setClass(DuplicateFilterMap.CLASS, Vertex.class, Element.class);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
@@ -73,7 +111,7 @@ public class DuplicateFilterMapTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testDedupEdges() throws IOException {
+    public void testDedupEdgesWithPaths() throws IOException {
         Configuration config = new Configuration();
         config.setClass(DuplicateFilterMap.CLASS, Edge.class, Element.class);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);

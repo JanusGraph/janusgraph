@@ -65,4 +65,21 @@ public class PathMapTest extends BaseTest {
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
+
+    public void testPathsAndGetException() throws IOException {
+        Configuration config = new Configuration();
+        config.set(PathMap.CLASS, Vertex.class.getName());
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, false);
+
+        mapReduceDriver.withConfiguration(config);
+
+        try {
+            runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
+            assertFalse(true);
+        } catch (IllegalStateException e) {
+            assertTrue(true);
+        }
+
+
+    }
 }

@@ -28,13 +28,13 @@ public class VertexMap {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.ids = FaunusConfiguration.getLongCollection(context.getConfiguration(), IDS, new HashSet<Long>());
-
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             if (this.ids.contains(value.getIdAsLong())) {
                 value.startPath();
+                context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
             } else {
                 value.clearPaths();
             }

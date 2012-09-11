@@ -22,6 +22,7 @@ import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
@@ -290,6 +291,17 @@ public class FaunusPipeline {
             throw new IllegalStateException("This step can not follow a vertex-based step");
     }
 
+    public FaunusPipeline bothV() throws IOException {
+        this.state.checkLocked();
+        this.state.incrStep();
+        if (!this.state.atVertex()) {
+            this.compiler.edgesVerticesMap(BOTH);
+            this.state.set(Vertex.class);
+            return this;
+        } else
+            throw new IllegalStateException("This step can not follow a vertex-based step");
+    }
+
     public FaunusPipeline property(final String key, final Class type) {
         this.state.checkLocked();
         this.state.setProperty(key, type);
@@ -419,7 +431,10 @@ public class FaunusPipeline {
     public FaunusPipeline groupCount() throws IOException {
         this.state.checkLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
-        this.compiler.valueDistribution(this.state.getElementType(), pair.getA(), pair.getB());
+        if (null == pair)
+            return this.groupCount("{ it -> it}", "{it -> 1}");
+        else
+            this.compiler.valueDistribution(this.state.getElementType(), pair.getA(), pair.getB());
         return this;
     }
 
@@ -428,6 +443,7 @@ public class FaunusPipeline {
         this.validateClosure(keyClosure);
         this.validateClosure(valueClosure);
         this.compiler.groupCountMapReduce(this.state.getElementType(), keyClosure, valueClosure);
+        this.state.lock();
         return this;
     }
 
@@ -465,11 +481,20 @@ public class FaunusPipeline {
     public void submit() throws Exception {
         this.done();
         this.compiler.completeSequence();
+        final String fileName;
+        if (new File("target/faunus-" + Tokens.VERSION + "-job.jar").exists())
+            fileName = "target/faunus-" + Tokens.VERSION + "-job.jar";
+        else if (new File("lib/faunus-" + Tokens.VERSION + "-job.jar").exists())
+            fileName = "lib/faunus-" + Tokens.VERSION + "-job.jar";
+        else if (new File("../lib/faunus-" + Tokens.VERSION + ".jar").exists())
+            fileName = "../lib/faunus-" + Tokens.VERSION + ".jar";
+        else
+            throw new IllegalStateException("The Faunus Hadoop job jar could not be found");
+
         for (final Job job : this.compiler.getJobs()) {
-            job.getConfiguration().set("mapred.jar", "target/faunus-0.1-SNAPSHOT-job.jar");
+            job.getConfiguration().set("mapred.jar", fileName);
         }
         ToolRunner.run(this.compiler, new String[0]);
-
     }
 
     private FaunusPipeline done() throws IOException {

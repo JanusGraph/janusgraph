@@ -45,13 +45,13 @@ public class DuplicateFilterMap {
 
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    if (pathEnabled) {
+                    if (this.pathEnabled) {
                         final List<MicroElement> path = value.getPaths().get(0);
                         value.clearPaths();
                         value.addPath(path, false);
                     } else {
                         value.clearPaths();
-                        value.addPath(fakePath, false);
+                        value.incrPath(1l);
                     }
                     context.getCounter(Counters.VERTICES_DEDUPED).increment(1l);
                 }
@@ -60,13 +60,13 @@ public class DuplicateFilterMap {
                 for (final Edge e : value.getEdges(Direction.BOTH)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
-                        if (pathEnabled) {
+                        if (this.pathEnabled) {
                             final List<MicroElement> path = edge.getPaths().get(0);
                             edge.clearPaths();
                             edge.addPath(path, false);
                         } else {
                             edge.clearPaths();
-                            edge.addPath(fakePath, false);
+                            edge.incrPath(1l);
                         }
                         counter++;
                     }

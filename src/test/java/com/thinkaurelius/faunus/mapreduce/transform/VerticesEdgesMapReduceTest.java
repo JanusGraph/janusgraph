@@ -125,6 +125,12 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
         for (FaunusVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
                 assertEquals(((FaunusEdge) edge).pathCount(), 1);
+                try {
+                    ((FaunusEdge) edge).getPaths();
+                    assertTrue(false);
+                } catch (IllegalStateException e) {
+                    assertTrue(true);
+                }
             }
         }
 
