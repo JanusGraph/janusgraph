@@ -35,20 +35,20 @@ public class FilterMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 0);
-        assertEquals(results.get(2l).pathCount(), 1);
-        assertEquals(results.get(3l).pathCount(), 0);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 0);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 0);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
         assertEquals(mapReduceDriver.getCounters().findCounter(FilterMap.Counters.VERTICES_FILTERED).getValue(), 5);
         assertEquals(mapReduceDriver.getCounters().findCounter(FilterMap.Counters.EDGES_FILTERED).getValue(), 0);
 
-        identicalStructure(results, ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
     public void testEdgesOnWeight() throws IOException {

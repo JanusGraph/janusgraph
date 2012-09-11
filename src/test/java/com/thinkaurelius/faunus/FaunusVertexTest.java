@@ -1,6 +1,5 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.util.MicroElement;
 import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -109,7 +108,7 @@ public class FaunusVertexTest extends BaseTest {
         assertTrue((Boolean) vertex2.getProperty("boolean"));
 //TODO        assertEquals(vertex2.getPaths().size(), 1);
 //        assertEquals(vertex2.getPaths().get(0).size(), 1);
- //       assertEquals(vertex2.getPaths().get(0).get(0).getId(), 10l);
+        //       assertEquals(vertex2.getPaths().get(0).get(0).getId(), 10l);
 
         Iterator<Edge> edges = vertex2.getEdges(Direction.OUT).iterator();
         assertTrue(edges.hasNext());
@@ -252,8 +251,8 @@ public class FaunusVertexTest extends BaseTest {
     }
 
     public void testGetVerticesAndQuery() throws IOException {
-        List<FaunusVertex> vertices = generateGraph(ExampleGraph.TINKERGRAPH, new Configuration());
-        for (FaunusVertex vertex : vertices) {
+        Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, new Configuration());
+        for (FaunusVertex vertex : graph.values()) {
             if (vertex.getId().equals(1l)) {
                 assertFalse(vertex.getVertices(IN).iterator().hasNext());
                 assertTrue(vertex.getVertices(OUT).iterator().hasNext());
@@ -288,7 +287,7 @@ public class FaunusVertexTest extends BaseTest {
     }
 
     public void testGetEdges() throws IOException {
-        Map<Long, FaunusVertex> vertices = generateIndexedGraph(ExampleGraph.TINKERGRAPH, new Configuration());
+        Map<Long, FaunusVertex> vertices = generateGraph(ExampleGraph.TINKERGRAPH, new Configuration());
 
         assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT, "knows")).size(), 2);
         assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT, "created")).size(), 1);

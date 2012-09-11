@@ -46,26 +46,26 @@ public class LinkMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
-        for (FaunusVertex vertex : results.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             vertex.enablePath(true);
             vertex.removeEdges(Tokens.Action.DROP, Direction.BOTH);
             
         }
-        results.get(3l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
-        results.get(5l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(5l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
+        graph.get(5l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(5l)), false);
 
-        results = runWithGraph(results.values(), mapReduceDriver);
-        assertEquals(asList(results.get(1l).getEdges(OUT, "knowsCreated")).size(), 2);
-        assertEquals(asList(results.get(1l).getEdges(BOTH)).size(), 2);
-        assertFalse(results.get(2l).getEdges(BOTH).iterator().hasNext());
-        assertEquals(asList(results.get(3l).getEdges(IN, "knowsCreated")).size(), 1);
-        assertEquals(asList(results.get(3l).getEdges(BOTH)).size(), 1);
-        assertFalse(results.get(4l).getEdges(BOTH).iterator().hasNext());
-        assertEquals(asList(results.get(5l).getEdges(IN, "knowsCreated")).size(), 1);
-        assertEquals(asList(results.get(5l).getEdges(BOTH)).size(), 1);
-        assertFalse(results.get(6l).getEdges(BOTH).iterator().hasNext());
+        graph = runWithGraph(graph, mapReduceDriver);
+        assertEquals(asList(graph.get(1l).getEdges(OUT, "knowsCreated")).size(), 2);
+        assertEquals(asList(graph.get(1l).getEdges(BOTH)).size(), 2);
+        assertFalse(graph.get(2l).getEdges(BOTH).iterator().hasNext());
+        assertEquals(asList(graph.get(3l).getEdges(IN, "knowsCreated")).size(), 1);
+        assertEquals(asList(graph.get(3l).getEdges(BOTH)).size(), 1);
+        assertFalse(graph.get(4l).getEdges(BOTH).iterator().hasNext());
+        assertEquals(asList(graph.get(5l).getEdges(IN, "knowsCreated")).size(), 1);
+        assertEquals(asList(graph.get(5l).getEdges(BOTH)).size(), 1);
+        assertFalse(graph.get(6l).getEdges(BOTH).iterator().hasNext());
 
         assertEquals(mapReduceDriver.getCounters().findCounter(LinkMapReduce.Counters.EDGES_CREATED).getValue(), 2);
 
@@ -81,24 +81,24 @@ public class LinkMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
-        for (FaunusVertex vertex : results.values()) {
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        for (FaunusVertex vertex : graph.values()) {
             vertex.enablePath(true);
             vertex.removeEdges(Tokens.Action.DROP, Direction.BOTH);
         }
-        results.get(3l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
-        results.get(5l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(5l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
+        graph.get(5l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(5l)), false);
 
-        results = runWithGraph(results.values(), mapReduceDriver);
-        assertEquals(asList(results.get(1l).getEdges(IN, "created2")).size(), 2);
-        assertEquals(asList(results.get(1l).getEdges(BOTH)).size(), 2);
-        assertFalse(results.get(2l).getEdges(BOTH).iterator().hasNext());
-        assertEquals(asList(results.get(3l).getEdges(OUT, "created2")).size(), 1);
-        assertEquals(asList(results.get(3l).getEdges(BOTH)).size(), 1);
-        assertFalse(results.get(4l).getEdges(BOTH).iterator().hasNext());
-        assertEquals(asList(results.get(5l).getEdges(OUT, "created2")).size(), 1);
-        assertEquals(asList(results.get(5l).getEdges(BOTH)).size(), 1);
-        assertFalse(results.get(6l).getEdges(BOTH).iterator().hasNext());
+        graph = runWithGraph(graph, mapReduceDriver);
+        assertEquals(asList(graph.get(1l).getEdges(IN, "created2")).size(), 2);
+        assertEquals(asList(graph.get(1l).getEdges(BOTH)).size(), 2);
+        assertFalse(graph.get(2l).getEdges(BOTH).iterator().hasNext());
+        assertEquals(asList(graph.get(3l).getEdges(OUT, "created2")).size(), 1);
+        assertEquals(asList(graph.get(3l).getEdges(BOTH)).size(), 1);
+        assertFalse(graph.get(4l).getEdges(BOTH).iterator().hasNext());
+        assertEquals(asList(graph.get(5l).getEdges(OUT, "created2")).size(), 1);
+        assertEquals(asList(graph.get(5l).getEdges(BOTH)).size(), 1);
+        assertFalse(graph.get(6l).getEdges(BOTH).iterator().hasNext());
 
         assertEquals(mapReduceDriver.getCounters().findCounter(LinkMapReduce.Counters.EDGES_CREATED).getValue(), 2);
 

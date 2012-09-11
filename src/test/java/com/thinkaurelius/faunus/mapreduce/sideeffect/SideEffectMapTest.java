@@ -33,28 +33,21 @@ public class SideEffectMapTest extends BaseTest {
         Configuration config = new Configuration();
         config.setClass(SideEffectMap.CLASS, Vertex.class, Element.class);
         config.set(SideEffectMap.CLOSURE, "{it -> if(it.count) {it.count++} else {it.count=1}}");
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, false);
         
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1,1,1,2,3,3);
 
-        results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(2l)), false);
-        results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
-        results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(4l)), false);
-        results.get(2l).addPath((List) Arrays.asList(new MicroVertex(2l), new MicroVertex(1l)), false);
-        results.get(3l).addPath((List) Arrays.asList(new MicroVertex(3l), new MicroVertex(4l)), false);
-        results.get(3l).addPath((List) Arrays.asList(new MicroVertex(3l), new MicroVertex(5l)), false);
+        runWithGraph(graph, mapReduceDriver);
 
-        runWithGraph(results.values(), mapReduceDriver);
-
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).getProperty("count"), 3);
-        assertEquals(results.get(2l).getProperty("count"), 1);
-        assertEquals(results.get(3l).getProperty("count"), 2);
-        assertNull(results.get(4l).getProperty("count"));
-        assertNull(results.get(5l).getProperty("count"));
-        assertNull(results.get(6l).getProperty("count"));
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).getProperty("count"), 3);
+        assertEquals(graph.get(2l).getProperty("count"), 1);
+        assertEquals(graph.get(3l).getProperty("count"), 2);
+        assertNull(graph.get(4l).getProperty("count"));
+        assertNull(graph.get(5l).getProperty("count"));
+        assertNull(graph.get(6l).getProperty("count"));
 
 
         assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.VERTICES_PROCESSED).getValue(), 6);
@@ -68,7 +61,7 @@ public class SideEffectMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> results = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
         results.get(1l).startPath();
         results.get(2l).startPath();
@@ -77,7 +70,7 @@ public class SideEffectMapTest extends BaseTest {
         results.get(5l).startPath();
         results.get(6l).startPath();
 
-        runWithGraph(results.values(), mapReduceDriver);
+        runWithGraph(results, mapReduceDriver);
 
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).getProperty("degree"), 3l);
@@ -99,7 +92,7 @@ public class SideEffectMapTest extends BaseTest {
         config.set(SideEffectMap.CLOSURE, "{it -> it.degree = it.inE().count()}");
 
         mapReduceDriver.withConfiguration(config);
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> results = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
         results.get(1l).startPath();
         results.get(2l).startPath();
@@ -108,7 +101,7 @@ public class SideEffectMapTest extends BaseTest {
         results.get(5l).startPath();
         results.get(6l).startPath();
 
-        runWithGraph(results.values(), mapReduceDriver);
+        runWithGraph(results, mapReduceDriver);
 
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).getProperty("degree"), 0l);

@@ -11,7 +11,7 @@ import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -41,12 +41,9 @@ public class StepMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        List<FaunusVertex> vertices = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, new Configuration());
-        for (FaunusVertex v : vertices) {
-            v.startPath();
-        }
+        Map<Long, FaunusVertex> graph = startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, new Configuration()), Vertex.class);
         int counter = 0;
-        for (Object object : runWithGraphNoIndex(vertices, mapReduceDriver)) {
+        for (Object object : runWithGraphNoIndex(graph, mapReduceDriver)) {
             counter++;
             Pair pair = (Pair) object;
             assertNotSame(pair.getFirst(), pair.getSecond());

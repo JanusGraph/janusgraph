@@ -34,14 +34,14 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 1);
-        assertEquals(results.get(2l).pathCount(), 1);
-        assertEquals(results.get(3l).pathCount(), 1);
-        assertEquals(results.get(4l).pathCount(), 1);
-        assertEquals(results.get(5l).pathCount(), 1);
-        assertEquals(results.get(6l).pathCount(), 1);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 1);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 1);
+        assertEquals(graph.get(4l).pathCount(), 1);
+        assertEquals(graph.get(5l).pathCount(), 1);
+        assertEquals(graph.get(6l).pathCount(), 1);
 
 
         assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_DROPPED).getValue(), 0);
@@ -71,17 +71,17 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
-        results.get(5l).startPath();
-        results.get(3l).startPath();
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        graph.get(5l).startPath();
+        graph.get(3l).startPath();
 
-        results = runWithGraph(results.values(), mapReduceDriver);
-        assertEquals(results.size(), 2);
-        assertEquals(results.get(5l).pathCount(), 1);
-        assertEquals(results.get(3l).pathCount(), 1);
+        graph = runWithGraph(graph, mapReduceDriver);
+        assertEquals(graph.size(), 2);
+        assertEquals(graph.get(5l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 1);
 
-        assertFalse(results.get(5l).getEdges(Direction.BOTH).iterator().hasNext());
-        assertFalse(results.get(3l).getEdges(Direction.BOTH).iterator().hasNext());
+        assertFalse(graph.get(5l).getEdges(Direction.BOTH).iterator().hasNext());
+        assertFalse(graph.get(3l).getEdges(Direction.BOTH).iterator().hasNext());
 
         assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_DROPPED).getValue(), 4);
         assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_KEPT).getValue(), 2);
@@ -95,30 +95,30 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
-        results.get(1l).startPath();
-        results.get(2l).startPath();
-        results.get(4l).startPath();
-        results.get(6l).startPath();
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        graph.get(1l).startPath();
+        graph.get(2l).startPath();
+        graph.get(4l).startPath();
+        graph.get(6l).startPath();
 
-        results = runWithGraph(results.values(), mapReduceDriver);
-        assertEquals(results.size(), 4);
-        assertEquals(results.get(1l).pathCount(), 1);
-        assertEquals(results.get(2l).pathCount(), 1);
-        assertEquals(results.get(4l).pathCount(), 1);
-        assertEquals(results.get(6l).pathCount(), 1);
+        graph = runWithGraph(graph, mapReduceDriver);
+        assertEquals(graph.size(), 4);
+        assertEquals(graph.get(1l).pathCount(), 1);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(4l).pathCount(), 1);
+        assertEquals(graph.get(6l).pathCount(), 1);
 
-        for (FaunusVertex vertex : results.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             assertFalse(vertex.getEdges(Direction.BOTH, "created").iterator().hasNext());
         }
 
-        assertTrue(results.get(1l).getEdges(Direction.BOTH, "knows").iterator().hasNext());
-        assertFalse(results.get(1l).getEdges(Direction.IN, "knows").iterator().hasNext());
-        assertTrue(results.get(2l).getEdges(Direction.BOTH, "knows").iterator().hasNext());
-        assertFalse(results.get(2l).getEdges(Direction.OUT, "knows").iterator().hasNext());
-        assertTrue(results.get(4l).getEdges(Direction.BOTH, "knows").iterator().hasNext());
-        assertFalse(results.get(4l).getEdges(Direction.OUT, "knows").iterator().hasNext());
-        assertFalse(results.get(6l).getEdges(Direction.BOTH).iterator().hasNext());
+        assertTrue(graph.get(1l).getEdges(Direction.BOTH, "knows").iterator().hasNext());
+        assertFalse(graph.get(1l).getEdges(Direction.IN, "knows").iterator().hasNext());
+        assertTrue(graph.get(2l).getEdges(Direction.BOTH, "knows").iterator().hasNext());
+        assertFalse(graph.get(2l).getEdges(Direction.OUT, "knows").iterator().hasNext());
+        assertTrue(graph.get(4l).getEdges(Direction.BOTH, "knows").iterator().hasNext());
+        assertFalse(graph.get(4l).getEdges(Direction.OUT, "knows").iterator().hasNext());
+        assertFalse(graph.get(6l).getEdges(Direction.BOTH).iterator().hasNext());
 
         assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_DROPPED).getValue(), 2);
         assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_KEPT).getValue(), 4);

@@ -29,10 +29,10 @@ public class EdgesMapTest extends BaseTest {
     public void testEdges() throws IOException {
         mapReduceDriver.withConfiguration(new Configuration());
 
-        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        for (FaunusVertex vertex : results.values()) {
+        assertEquals(graph.size(), 6);
+        for (FaunusVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
                 assertEquals(((FaunusEdge) edge).pathCount(), 1);
@@ -44,6 +44,6 @@ public class EdgesMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(EdgesMap.Counters.EDGES_PROCESSED).getValue(), 12);
         assertEquals(mapReduceDriver.getCounters().findCounter(EdgesMap.Counters.VERTICES_PROCESSED).getValue(), 6);
 
-        identicalStructure(results, ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 }

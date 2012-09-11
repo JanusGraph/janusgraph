@@ -30,10 +30,10 @@ public class IdentityMapTest extends BaseTest {
     public void testIdentityNoPaths() throws IOException {
         mapReduceDriver.withConfiguration(new Configuration());
 
-        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        for (FaunusVertex vertex : results.values()) {
+        assertEquals(graph.size(), 6);
+        for (FaunusVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 0);
             assertFalse(vertex.hasPaths());
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
@@ -49,16 +49,16 @@ public class IdentityMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.OUT_EDGE_PROPERTY_COUNT).getValue(), 6);
         assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.IN_EDGE_PROPERTY_COUNT).getValue(), 6);
 
-        identicalStructure(results, BaseTest.ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
     public void testIdentityPaths() throws IOException {
         mapReduceDriver.withConfiguration(new Configuration());
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        for (FaunusVertex vertex : results.values()) {
+        assertEquals(graph.size(), 6);
+        for (FaunusVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 1);
             assertTrue(vertex.hasPaths());
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
@@ -74,6 +74,6 @@ public class IdentityMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.OUT_EDGE_PROPERTY_COUNT).getValue(), 6);
         assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.IN_EDGE_PROPERTY_COUNT).getValue(), 6);
 
-        identicalStructure(results, BaseTest.ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 }

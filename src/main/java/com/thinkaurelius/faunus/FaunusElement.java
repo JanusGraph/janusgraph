@@ -69,7 +69,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         this.pathEnabled = enablePath;
     }
 
-    public void addPath(final List<MicroElement> path, final boolean append) {
+    public void addPath(final List<MicroElement> path, final boolean append) throws IllegalStateException {
         if (this.pathEnabled) {
             if (null == this.microVersion)
                 this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
@@ -78,11 +78,10 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
             this.paths.add(path);
         } else {
             throw new IllegalStateException("Path calculations are not enabled");
-            //this.pathCounter++;
         }
     }
 
-    public void addPaths(final List<List<MicroElement>> paths, final boolean append) {
+    public void addPaths(final List<List<MicroElement>> paths, final boolean append) throws IllegalStateException {
         if (this.pathEnabled) {
             if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
             if (append) {
@@ -93,11 +92,10 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                 this.paths.addAll(paths);
         } else {
             throw new IllegalStateException("Path calculations are not enabled");
-            //this.pathCounter = pathCounter + paths.size();
         }
     }
 
-    public List<List<MicroElement>> getPaths() {
+    public List<List<MicroElement>> getPaths() throws IllegalStateException {
         if (this.pathEnabled)
             return (null == this.paths) ? (List) Collections.emptyList() : this.paths;
         else
@@ -110,6 +108,14 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         } else {
             this.pathCounter = this.pathCounter + element.pathCount();
         }
+    }
+
+    public long incrPath(final long amount) {
+        if (this.pathEnabled)
+            throw new IllegalStateException("Path calculations are enabled -- use addPath()");
+        else
+            this.pathCounter = this.pathCounter + amount;
+        return this.pathCounter;
     }
 
     public boolean hasPaths() {

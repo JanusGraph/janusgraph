@@ -38,20 +38,20 @@ public class BackFilterMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 1);
-        assertEquals(results.get(2l).pathCount(), 1);
-        assertEquals(results.get(3l).pathCount(), 1);
-        assertEquals(results.get(4l).pathCount(), 1);
-        assertEquals(results.get(5l).pathCount(), 1);
-        assertEquals(results.get(6l).pathCount(), 1);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 1);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 1);
+        assertEquals(graph.get(4l).pathCount(), 1);
+        assertEquals(graph.get(5l).pathCount(), 1);
+        assertEquals(graph.get(6l).pathCount(), 1);
 
         assertEquals(mapReduceDriver.getCounters().findCounter(FilterMap.Counters.VERTICES_FILTERED).getValue(), 0);
         assertEquals(mapReduceDriver.getCounters().findCounter(FilterMap.Counters.EDGES_FILTERED).getValue(), 0);
 
-        identicalStructure(results, ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
     public void testVerticesBiasedStart() throws IOException {
@@ -62,34 +62,32 @@ public class BackFilterMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
-        for(FaunusVertex v : results.values()) {
+        for(FaunusVertex v : graph.values()) {
             v.enablePath(true);
         }
 
-        results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(1l)), false);
-        results.get(2l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(2l)), false);
-        results.get(3l).addPath((List) Arrays.asList(new MicroVertex(2l), new MicroVertex(3l)), false);
-        results.get(4l).addPath((List) Arrays.asList(new MicroVertex(3l), new MicroVertex(4l)), false);
-        results.get(5l).addPath((List) Arrays.asList(new MicroVertex(3l), new MicroVertex(5l)), false);
+        graph.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(1l)), false);
+        graph.get(2l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(2l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new MicroVertex(2l), new MicroVertex(3l)), false);
+        graph.get(4l).addPath((List) Arrays.asList(new MicroVertex(3l), new MicroVertex(4l)), false);
+        graph.get(5l).addPath((List) Arrays.asList(new MicroVertex(3l), new MicroVertex(5l)), false);
 
+        graph = runWithGraph(graph, mapReduceDriver);
 
-
-        results = runWithGraph(results.values(), mapReduceDriver);
-
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 2);
-        assertEquals(results.get(2l).pathCount(), 1);
-        assertEquals(results.get(3l).pathCount(), 2);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 2);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 2);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
         assertEquals(mapReduceDriver.getCounters().findCounter(FilterMap.Counters.VERTICES_FILTERED).getValue(), 0);
         assertEquals(mapReduceDriver.getCounters().findCounter(FilterMap.Counters.EDGES_FILTERED).getValue(), 0);
 
-        identicalStructure(results, ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
 }

@@ -32,19 +32,19 @@ public class EdgesVerticesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config),Edge.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 0);
-        assertEquals(results.get(2l).pathCount(), 1);
-        assertEquals(results.get(3l).pathCount(), 3);
-        assertEquals(results.get(4l).pathCount(), 1);
-        assertEquals(results.get(5l).pathCount(), 1);
-        assertEquals(results.get(6l).pathCount(), 0);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 0);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 3);
+        assertEquals(graph.get(4l).pathCount(), 1);
+        assertEquals(graph.get(5l).pathCount(), 1);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
         assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.EDGES_PROCESSED).getValue(), 6);
 
-        identicalStructure(results, BaseTest.ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
     public void testOutVertices() throws IOException {
@@ -53,19 +53,19 @@ public class EdgesVerticesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config),Edge.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 3);
-        assertEquals(results.get(2l).pathCount(), 0);
-        assertEquals(results.get(3l).pathCount(), 0);
-        assertEquals(results.get(4l).pathCount(), 2);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 1);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 3);
+        assertEquals(graph.get(2l).pathCount(), 0);
+        assertEquals(graph.get(3l).pathCount(), 0);
+        assertEquals(graph.get(4l).pathCount(), 2);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 1);
 
         assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.EDGES_PROCESSED).getValue(), 6);
 
-        identicalStructure(results, BaseTest.ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
 }

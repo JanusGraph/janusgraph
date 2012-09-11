@@ -40,41 +40,37 @@ public class DuplicateFilterMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
 
-        for(FaunusVertex v : results.values()) {
-            v.enablePath(true);
-        }
+        graph.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(2l)), false);
+        graph.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
+        graph.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(4l)), false);
+        graph.get(2l).addPath((List) Arrays.asList(new MicroVertex(2l), new MicroVertex(1l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new MicroVertex(3l), new MicroVertex(4l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new MicroVertex(3l), new MicroVertex(5l)), false);
 
-        results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(2l)), false);
-        results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
-        results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(4l)), false);
-        results.get(2l).addPath((List) Arrays.asList(new MicroVertex(2l), new MicroVertex(1l)), false);
-        results.get(3l).addPath((List) Arrays.asList(new MicroVertex(3l), new MicroVertex(4l)), false);
-        results.get(3l).addPath((List) Arrays.asList(new MicroVertex(3l), new MicroVertex(5l)), false);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 3);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 2);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 3);
-        assertEquals(results.get(2l).pathCount(), 1);
-        assertEquals(results.get(3l).pathCount(), 2);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        graph = runWithGraph(graph, mapReduceDriver);
 
-        results = runWithGraph(results.values(), mapReduceDriver);
-
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 1);
-        assertEquals(results.get(2l).pathCount(), 1);
-        assertEquals(results.get(3l).pathCount(), 1);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 1);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 1);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
         assertEquals(mapReduceDriver.getCounters().findCounter(DuplicateFilterMap.Counters.VERTICES_DEDUPED).getValue(), 3);
         assertEquals(mapReduceDriver.getCounters().findCounter(DuplicateFilterMap.Counters.EDGES_DEDUPED).getValue(), 0);
 
-        identicalStructure(results, ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
     public void testDedupEdges() throws IOException {
@@ -84,19 +80,14 @@ public class DuplicateFilterMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
 
-        for(FaunusVertex v : results.values()) {
-            for(Edge edge : v.getEdges(Direction.BOTH))
-                ((FaunusEdge)edge).enablePath(true);
-        }
+        ((FaunusEdge) graph.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new MicroVertex(2l), new MicroVertex(1l)), false);
+        ((FaunusEdge) graph.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new MicroVertex(2l), new MicroVertex(1l)), false);
 
-        ((FaunusEdge) results.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new MicroVertex(2l), new MicroVertex(1l)), false);
-        ((FaunusEdge) results.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new MicroVertex(2l), new MicroVertex(1l)), false);
+        assertEquals(graph.size(), 6);
 
-        assertEquals(results.size(), 6);
-
-        for (FaunusVertex vertex : results.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.IN)) {
                 if (edge.getVertex(Direction.IN).getId().equals(2l)) {
@@ -107,11 +98,11 @@ public class DuplicateFilterMapTest extends BaseTest {
             }
         }
 
-        results = runWithGraph(results.values(), mapReduceDriver);
+        graph = runWithGraph(graph, mapReduceDriver);
 
-        assertEquals(results.size(), 6);
+        assertEquals(graph.size(), 6);
 
-        for (FaunusVertex vertex : results.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.IN)) {
                 if (edge.getVertex(Direction.IN).getId().equals(2l)) {
@@ -126,6 +117,6 @@ public class DuplicateFilterMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(DuplicateFilterMap.Counters.VERTICES_DEDUPED).getValue(), 0);
         assertEquals(mapReduceDriver.getCounters().findCounter(DuplicateFilterMap.Counters.EDGES_DEDUPED).getValue(), 1);
 
-        identicalStructure(results, ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 }

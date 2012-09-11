@@ -18,7 +18,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -169,11 +171,11 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
         config.setClass(ValueGroupCountMapReduce.TYPE, IntWritable.class, WritableComparable.class);
         this.mapReduceDriver.withConfiguration(config);
 
-        List<FaunusVertex> vertices = new ArrayList<FaunusVertex>();
-        for (int i = 0; i < 15; i++) {
+        Map<Long, FaunusVertex> vertices = new HashMap<Long, FaunusVertex>();
+        for (long i = 0; i < 15; i++) {
             FaunusVertex v = new FaunusVertex(i);
             v.setProperty("age", i);
-            vertices.add(v);
+            vertices.put(i, v);
             v.startPath();
         }
         final List<Pair<IntWritable, LongWritable>> results = runWithGraphNoIndex(vertices, mapReduceDriver);
@@ -190,11 +192,11 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
         config.setClass(ValueGroupCountMapReduce.TYPE, Text.class, WritableComparable.class);
         this.mapReduceDriver.withConfiguration(config);
 
-        List<FaunusVertex> vertices = new ArrayList<FaunusVertex>();
-        for (int i = 0; i < 15; i++) {
+        Map<Long, FaunusVertex> vertices = new HashMap<Long, FaunusVertex>();
+        for (long i = 0; i < 15; i++) {
             FaunusVertex v = new FaunusVertex(i);
             v.setProperty("age", i);
-            vertices.add(v);
+            vertices.put(i, v);
             v.startPath();
         }
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(vertices, mapReduceDriver);

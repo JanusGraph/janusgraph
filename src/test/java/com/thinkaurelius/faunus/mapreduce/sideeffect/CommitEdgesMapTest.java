@@ -33,16 +33,16 @@ public class CommitEdgesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 0);
-        assertEquals(results.get(2l).pathCount(), 0);
-        assertEquals(results.get(3l).pathCount(), 0);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 0);
+        assertEquals(graph.get(2l).pathCount(), 0);
+        assertEquals(graph.get(3l).pathCount(), 0);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
-        for (FaunusVertex vertex : results.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             assertFalse(vertex.getEdges(Direction.BOTH).iterator().hasNext());
         }
 
@@ -56,16 +56,16 @@ public class CommitEdgesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 0);
-        assertEquals(results.get(2l).pathCount(), 0);
-        assertEquals(results.get(3l).pathCount(), 0);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 0);
+        assertEquals(graph.get(2l).pathCount(), 0);
+        assertEquals(graph.get(3l).pathCount(), 0);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
-        for (FaunusVertex vertex : results.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             assertTrue(vertex.getEdges(Direction.BOTH).iterator().hasNext());
         }
 
@@ -79,23 +79,23 @@ public class CommitEdgesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
-        for (FaunusVertex vertex : results.values()) {
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        for (FaunusVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH, "created")) {
                 ((FaunusEdge) edge).startPath();
             }
         }
-        results = runWithGraph(results.values(), mapReduceDriver);
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 0);
-        assertEquals(results.get(2l).pathCount(), 0);
-        assertEquals(results.get(3l).pathCount(), 0);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        graph = runWithGraph(graph, mapReduceDriver);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 0);
+        assertEquals(graph.get(2l).pathCount(), 0);
+        assertEquals(graph.get(3l).pathCount(), 0);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
         int counter = 0;
-        for (FaunusVertex vertex : results.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             assertFalse(vertex.getEdges(Direction.BOTH, "created").iterator().hasNext());
             if (vertex.getEdges(Direction.BOTH, "knows").iterator().hasNext())
                 counter++;
@@ -112,23 +112,23 @@ public class CommitEdgesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
-        for (FaunusVertex vertex : results.values()) {
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        for (FaunusVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH, "created")) {
                 ((FaunusEdge) edge).startPath();
             }
         }
-        results = runWithGraph(results.values(), mapReduceDriver);
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 0);
-        assertEquals(results.get(2l).pathCount(), 0);
-        assertEquals(results.get(3l).pathCount(), 0);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        graph = runWithGraph(graph, mapReduceDriver);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 0);
+        assertEquals(graph.get(2l).pathCount(), 0);
+        assertEquals(graph.get(3l).pathCount(), 0);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
         int counter = 0;
-        for (FaunusVertex vertex : results.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             assertFalse(vertex.getEdges(Direction.BOTH, "knows").iterator().hasNext());
             if (vertex.getEdges(Direction.BOTH, "created").iterator().hasNext())
                 counter++;

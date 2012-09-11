@@ -14,7 +14,6 @@ import org.apache.hadoop.mrunit.types.Pair;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +33,7 @@ public abstract class BaseTest extends TestCase {
         return list;
     }
 
-    public static List<FaunusVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws IOException {
+    public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws IOException {
         final List<FaunusVertex> vertices;
         if (ExampleGraph.TINKERGRAPH.equals(example))
             vertices = new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
@@ -47,52 +46,57 @@ public abstract class BaseTest extends TestCase {
                 ((FaunusEdge) edge).enablePath(configuration.getBoolean(FaunusCompiler.PATH_ENABLED, false));
             }
         }
-        return vertices;
-    }
 
-    public static Map<Long, FaunusVertex> generateIndexedGraph(final ExampleGraph example, final Configuration configuration) throws IOException {
         Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
-        for (FaunusVertex vertex : generateGraph(example, configuration)) {
+        for (FaunusVertex vertex : vertices) {
             map.put(vertex.getIdAsLong(), vertex);
         }
         return map;
     }
 
-    public static Collection<FaunusVertex> startPath(final Collection<FaunusVertex> vertices, final Class<? extends Element> klass) {
-        for (FaunusVertex vertex : vertices) {
-            if (klass.equals(Vertex.class)) {
-                vertex.startPath();
-            } else if (klass.equals(Edge.class)) {
-                for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                    ((FaunusEdge) edge).startPath();
+    public static Map<Long, FaunusVertex> startPath(final Map<Long, FaunusVertex> graph, final Class<? extends Element> klass, final long... ids) {
+        if (ids.length == 0) {
+            for (FaunusVertex vertex : graph.values()) {
+                if (klass.equals(Vertex.class)) {
+                    vertex.startPath();
+                } else if (klass.equals(Edge.class)) {
+                    for (Edge edge : vertex.getEdges(Direction.BOTH)) {
+                        ((FaunusEdge) edge).startPath();
+                    }
+                } else {
+                    throw new IllegalArgumentException("It can only be either edge or vertex, not both");
                 }
-            } else {
-                startPath(vertices, Vertex.class);
-                startPath(vertices, Edge.class);
+            }
+        } else {
+            if (klass.equals(Edge.class))
+                throw new IllegalArgumentException("Currently no support for starting a path on a particular set of edges (only all edges)");
+
+            for (long id : ids) {
+                if (graph.get(id).hasPaths())
+                    graph.get(id).incrPath(1);
+                else
+                    graph.get(id).startPath();
             }
         }
-        return vertices;
+        return graph;
     }
 
-    private static Map<Long, FaunusVertex> indexResults(final List<Pair<NullWritable, FaunusVertex>> pairs) {
+    public static Map<Long, FaunusVertex> runWithGraph(Map<Long, FaunusVertex> graph, final MapReduceDriver driver) throws IOException {
+        driver.resetOutput();
+        for (final FaunusVertex vertex : graph.values()) {
+            driver.withInput(NullWritable.get(), vertex);
+        }
+
         final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
-        for (final Pair<NullWritable, FaunusVertex> pair : pairs) {
-            map.put(pair.getSecond().getIdAsLong(), pair.getSecond());
+        for (final Object pair : driver.run()) {
+            map.put(((Pair<NullWritable, FaunusVertex>) pair).getSecond().getIdAsLong(), ((Pair<NullWritable, FaunusVertex>) pair).getSecond());
         }
         return map;
     }
 
-    public static Map<Long, FaunusVertex> runWithGraph(Collection<FaunusVertex> vertices, final MapReduceDriver driver) throws IOException {
+    public static List runWithGraphNoIndex(Map<Long, FaunusVertex> graph, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
-        for (final FaunusVertex vertex : vertices) {
-            driver.withInput(NullWritable.get(), vertex);
-        }
-        return indexResults(driver.run());
-    }
-
-    public static List runWithGraphNoIndex(Collection<FaunusVertex> vertices, final MapReduceDriver driver) throws IOException {
-        driver.resetOutput();
-        for (final Vertex vertex : vertices) {
+        for (final Vertex vertex : graph.values()) {
             driver.withInput(NullWritable.get(), vertex);
         }
         return driver.run();
@@ -111,7 +115,7 @@ public abstract class BaseTest extends TestCase {
     }
 
     public static void identicalStructure(final Map<Long, FaunusVertex> vertices, final ExampleGraph exampleGraph) throws IOException {
-        Map<Long, FaunusVertex> otherVertices = generateIndexedGraph(exampleGraph, new Configuration());
+        Map<Long, FaunusVertex> otherVertices = generateGraph(exampleGraph, new Configuration());
         assertEquals(vertices.size(), otherVertices.size());
         for (long id : vertices.keySet()) {
             assertNotNull(otherVertices.get(id));

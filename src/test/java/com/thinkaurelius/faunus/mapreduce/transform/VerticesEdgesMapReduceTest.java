@@ -37,17 +37,17 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 0);
-        assertEquals(results.get(2l).pathCount(), 0);
-        assertEquals(results.get(3l).pathCount(), 0);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 0);
+        assertEquals(graph.get(2l).pathCount(), 0);
+        assertEquals(graph.get(3l).pathCount(), 0);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
-        for (FaunusVertex vertex : results.values()) {
+        for (FaunusVertex vertex : graph.values()) {
 
             for (Edge edge : vertex.getEdges(Direction.BOTH, "knows")) {
                 assertEquals(((FaunusEdge) edge).pathCount(), 0);
@@ -69,7 +69,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
             }
         }
 
-        identicalStructure(results, BaseTest.ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 4);
     }
 
@@ -81,17 +81,17 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 0);
-        assertEquals(results.get(2l).pathCount(), 0);
-        assertEquals(results.get(3l).pathCount(), 0);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 0);
+        assertEquals(graph.get(2l).pathCount(), 0);
+        assertEquals(graph.get(3l).pathCount(), 0);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
-        for (FaunusVertex vertex : results.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
                 assertEquals(((FaunusEdge) edge).pathCount(), 1);
                 assertEquals(((FaunusEdge) edge).getPaths().get(0).size(), 2);
@@ -100,7 +100,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
             }
         }
 
-        identicalStructure(results, BaseTest.ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 6);
     }
 
@@ -112,23 +112,23 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 0);
-        assertEquals(results.get(2l).pathCount(), 0);
-        assertEquals(results.get(3l).pathCount(), 0);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 0);
+        assertEquals(graph.get(2l).pathCount(), 0);
+        assertEquals(graph.get(3l).pathCount(), 0);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
-        for (FaunusVertex vertex : results.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
                 assertEquals(((FaunusEdge) edge).pathCount(), 1);
             }
         }
 
-        identicalStructure(results, BaseTest.ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 6);
     }
 
@@ -140,23 +140,23 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).pathCount(), 0);
-        assertEquals(results.get(2l).pathCount(), 0);
-        assertEquals(results.get(3l).pathCount(), 0);
-        assertEquals(results.get(4l).pathCount(), 0);
-        assertEquals(results.get(5l).pathCount(), 0);
-        assertEquals(results.get(6l).pathCount(), 0);
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 0);
+        assertEquals(graph.get(2l).pathCount(), 0);
+        assertEquals(graph.get(3l).pathCount(), 0);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
 
-        for (FaunusVertex vertex : results.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH, "created")) {
                 assertEquals(((FaunusEdge) edge).pathCount(), 2);
             }
         }
 
-        identicalStructure(results, BaseTest.ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 8);
     }
 }

@@ -33,10 +33,10 @@ public class VerticesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        for (FaunusVertex vertex : results.values()) {
+        assertEquals(graph.size(), 6);
+        for (FaunusVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 1);
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
                 assertEquals(((FaunusEdge) edge).pathCount(), 0);
@@ -53,7 +53,7 @@ public class VerticesMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesMap.Counters.EDGES_PROCESSED).getValue(), 12);
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesMap.Counters.VERTICES_PROCESSED).getValue(), 6);
 
-        identicalStructure(results, ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
     public void testVerticesWithPaths() throws IOException {
@@ -62,10 +62,10 @@ public class VerticesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
 
-        assertEquals(results.size(), 6);
-        for (FaunusVertex vertex : results.values()) {
+        assertEquals(graph.size(), 6);
+        for (FaunusVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 1);
             assertEquals(vertex.getPaths().get(0).size(), 1);
             assertEquals(vertex.getPaths().get(0).get(0).getId(), vertex.getId());
@@ -77,6 +77,6 @@ public class VerticesMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesMap.Counters.EDGES_PROCESSED).getValue(), 12);
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesMap.Counters.VERTICES_PROCESSED).getValue(), 6);
 
-        identicalStructure(results, ExampleGraph.TINKERGRAPH);
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 }
