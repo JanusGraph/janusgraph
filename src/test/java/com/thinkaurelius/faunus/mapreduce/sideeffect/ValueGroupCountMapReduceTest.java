@@ -39,7 +39,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
         config.set(ValueGroupCountMapReduce.CLASS, Vertex.class.getName());
         config.set(ValueGroupCountMapReduce.PROPERTY, "type");
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS), Vertex.class), this.mapReduceDriver);
+        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Vertex.class), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 6);
         for (final Pair<Text, LongWritable> result : results) {
@@ -69,7 +69,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
         config.set(ValueGroupCountMapReduce.PROPERTY, "nothing property");
         config.setClass(ValueGroupCountMapReduce.TYPE, Text.class, WritableComparable.class);
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<WritableComparable, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS), Vertex.class), this.mapReduceDriver);
+        final List<Pair<WritableComparable, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Vertex.class), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 1);
         for (final Pair<WritableComparable, LongWritable> result : results) {
@@ -88,7 +88,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
         config.set(ValueGroupCountMapReduce.CLASS, Edge.class.getName());
         config.set(ValueGroupCountMapReduce.PROPERTY, "time");
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<WritableComparable, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS), Edge.class), this.mapReduceDriver);
+        final List<Pair<WritableComparable, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Edge.class), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 4);
         for (final Pair<WritableComparable, LongWritable> result : results) {
@@ -112,7 +112,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
         Configuration config = new Configuration();
         config.set(ValueGroupCountMapReduce.PROPERTY, "label");
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS), Edge.class), this.mapReduceDriver);
+        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Edge.class), this.mapReduceDriver);
         assertEquals(results.size(), 6);
         for (final Pair<Text, LongWritable> result : results) {
             if (result.getFirst().toString().equals("lives")) {
@@ -139,7 +139,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
         Configuration config = new Configuration();
         config.set(ValueGroupCountMapReduce.PROPERTY, "label");
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS), Edge.class), this.mapReduceDriver);
+        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Edge.class), this.mapReduceDriver);
         assertEquals(results.size(), 6);
         for (final Pair<Text, LongWritable> result : results) {
             if (result.getFirst().toString().equals("lives")) {

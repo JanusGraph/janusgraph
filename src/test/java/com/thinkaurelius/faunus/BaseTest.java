@@ -7,6 +7,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import junit.framework.TestCase;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
@@ -33,38 +34,41 @@ public abstract class BaseTest extends TestCase {
         return list;
     }
 
-    public static List<FaunusVertex> generateGraph(final ExampleGraph example) throws IOException {
+    public static List<FaunusVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws IOException {
+        final List<FaunusVertex> vertices;
         if (ExampleGraph.TINKERGRAPH.equals(example))
-            return new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
+            vertices = new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
         else
-            return new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
+            vertices = new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
+
+        for (final FaunusVertex vertex : vertices) {
+            vertex.enablePath(configuration.getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            for (final Edge edge : vertex.getEdges(Direction.BOTH)) {
+                ((FaunusEdge) edge).enablePath(configuration.getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            }
+        }
+        return vertices;
     }
 
-    public static Map<Long, FaunusVertex> generateIndexedGraph(final ExampleGraph example) throws IOException {
+    public static Map<Long, FaunusVertex> generateIndexedGraph(final ExampleGraph example, final Configuration configuration) throws IOException {
         Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
-        for (FaunusVertex vertex : generateGraph(example)) {
+        for (FaunusVertex vertex : generateGraph(example, configuration)) {
             map.put(vertex.getIdAsLong(), vertex);
         }
         return map;
     }
 
     public static Collection<FaunusVertex> startPath(final Collection<FaunusVertex> vertices, final Class<? extends Element> klass) {
-        return startPath(vertices, klass, false);
-    }
-
-    public static Collection<FaunusVertex> startPath(final Collection<FaunusVertex> vertices, final Class<? extends Element> klass, boolean enablePath) {
         for (FaunusVertex vertex : vertices) {
             if (klass.equals(Vertex.class)) {
-                vertex.enablePath(enablePath);
                 vertex.startPath();
             } else if (klass.equals(Edge.class)) {
                 for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                    ((FaunusEdge) edge).enablePath(enablePath);
                     ((FaunusEdge) edge).startPath();
                 }
             } else {
-                startPath(vertices, Vertex.class, enablePath);
-                startPath(vertices, Edge.class, enablePath);
+                startPath(vertices, Vertex.class);
+                startPath(vertices, Edge.class);
             }
         }
         return vertices;
@@ -81,10 +85,6 @@ public abstract class BaseTest extends TestCase {
     public static Map<Long, FaunusVertex> runWithGraph(Collection<FaunusVertex> vertices, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
         for (final FaunusVertex vertex : vertices) {
-            vertex.enablePath(driver.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
-            for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).enablePath(driver.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
-            }
             driver.withInput(NullWritable.get(), vertex);
         }
         return indexResults(driver.run());
@@ -111,7 +111,7 @@ public abstract class BaseTest extends TestCase {
     }
 
     public static void identicalStructure(final Map<Long, FaunusVertex> vertices, final ExampleGraph exampleGraph) throws IOException {
-        Map<Long, FaunusVertex> otherVertices = generateIndexedGraph(exampleGraph);
+        Map<Long, FaunusVertex> otherVertices = generateIndexedGraph(exampleGraph, new Configuration());
         assertEquals(vertices.size(), otherVertices.size());
         for (long id : vertices.keySet()) {
             assertNotNull(otherVertices.get(id));

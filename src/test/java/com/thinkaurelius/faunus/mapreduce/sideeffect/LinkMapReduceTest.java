@@ -46,7 +46,7 @@ public class LinkMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
+        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
         for (FaunusVertex vertex : results.values()) {
             vertex.enablePath(true);
@@ -81,7 +81,7 @@ public class LinkMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
+        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
         for (FaunusVertex vertex : results.values()) {
             vertex.enablePath(true);
             vertex.removeEdges(Tokens.Action.DROP, Direction.BOTH);

@@ -6,7 +6,6 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
@@ -42,7 +41,7 @@ public class StepMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        List<FaunusVertex> vertices = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS);
+        List<FaunusVertex> vertices = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, new Configuration());
         for (FaunusVertex v : vertices) {
             v.startPath();
         }

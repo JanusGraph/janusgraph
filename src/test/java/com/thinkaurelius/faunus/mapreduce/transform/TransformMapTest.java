@@ -35,7 +35,7 @@ public class TransformMapTest extends BaseTest {
         config.setClass(TransformMap.CLASS, Vertex.class, Element.class);
         mapReduceDriver.withConfiguration(config);
 
-        final List<Pair<NullWritable, Text>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH), Vertex.class), this.mapReduceDriver);
+        final List<Pair<NullWritable, Text>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), this.mapReduceDriver);
         assertEquals(results.size(), 6);
         for (final Pair<NullWritable, Text> result : results) {
             assertEquals(result.getSecond().toString(), "2");
@@ -50,7 +50,7 @@ public class TransformMapTest extends BaseTest {
         config.setClass(TransformMap.CLASS, Edge.class, Element.class);
         mapReduceDriver.withConfiguration(config);
 
-        final List<Pair<NullWritable, Text>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH), Edge.class), this.mapReduceDriver);
+        final List<Pair<NullWritable, Text>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Edge.class), this.mapReduceDriver);
         assertEquals(results.size(), 6);
         for (final Pair<NullWritable, Text> result : results) {
             assertEquals(result.getSecond().toString(), "1");

@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -32,10 +33,11 @@ public class SideEffectMapTest extends BaseTest {
         Configuration config = new Configuration();
         config.setClass(SideEffectMap.CLASS, Vertex.class, Element.class);
         config.set(SideEffectMap.CLOSURE, "{it -> if(it.count) {it.count++} else {it.count=1}}");
-
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
+        
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
+        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
         results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(2l)), false);
         results.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
@@ -66,7 +68,7 @@ public class SideEffectMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
+        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
         results.get(1l).startPath();
         results.get(2l).startPath();
@@ -97,7 +99,7 @@ public class SideEffectMapTest extends BaseTest {
         config.set(SideEffectMap.CLOSURE, "{it -> it.degree = it.inE().count()}");
 
         mapReduceDriver.withConfiguration(config);
-        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH);
+        Map<Long, FaunusVertex> results = generateIndexedGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
         results.get(1l).startPath();
         results.get(2l).startPath();

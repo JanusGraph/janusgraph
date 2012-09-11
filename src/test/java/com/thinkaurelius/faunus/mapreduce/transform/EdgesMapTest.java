@@ -29,7 +29,7 @@ public class EdgesMapTest extends BaseTest {
     public void testEdges() throws IOException {
         mapReduceDriver.withConfiguration(new Configuration());
 
-        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), mapReduceDriver);
 
         assertEquals(results.size(), 6);
         for (FaunusVertex vertex : results.values()) {

@@ -40,7 +40,7 @@ public class DuplicateFilterMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(ExampleGraph.TINKERGRAPH);
+        Map<Long, FaunusVertex> results = generateIndexedGraph(ExampleGraph.TINKERGRAPH, config);
 
         for(FaunusVertex v : results.values()) {
             v.enablePath(true);
@@ -84,7 +84,7 @@ public class DuplicateFilterMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = generateIndexedGraph(ExampleGraph.TINKERGRAPH);
+        Map<Long, FaunusVertex> results = generateIndexedGraph(ExampleGraph.TINKERGRAPH, config);
 
         for(FaunusVertex v : results.values()) {
             for(Edge edge : v.getEdges(Direction.BOTH))

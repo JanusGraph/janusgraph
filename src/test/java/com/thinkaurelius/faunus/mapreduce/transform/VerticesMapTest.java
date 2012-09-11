@@ -33,7 +33,7 @@ public class VerticesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
 
         assertEquals(results.size(), 6);
         for (FaunusVertex vertex : results.values()) {
@@ -62,7 +62,7 @@ public class VerticesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
 
         assertEquals(results.size(), 6);
         for (FaunusVertex vertex : results.values()) {

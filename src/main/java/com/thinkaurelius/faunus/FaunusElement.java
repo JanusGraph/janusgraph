@@ -77,7 +77,8 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
             if (append) path.add(this.microVersion);
             this.paths.add(path);
         } else {
-            this.pathCounter++;
+            throw new IllegalStateException("Path calculations are not enabled");
+            //this.pathCounter++;
         }
     }
 
@@ -91,7 +92,8 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
             } else
                 this.paths.addAll(paths);
         } else {
-            this.pathCounter = pathCounter + paths.size();
+            throw new IllegalStateException("Path calculations are not enabled");
+            //this.pathCounter = pathCounter + paths.size();
         }
     }
 

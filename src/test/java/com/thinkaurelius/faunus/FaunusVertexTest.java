@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.hadoop.conf.Configuration;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -122,6 +123,7 @@ public class FaunusVertexTest extends BaseTest {
     public void testVertexSerialization2() throws IOException {
 
         FaunusVertex vertex1 = new FaunusVertex(10);
+        vertex1.enablePath(true); // TODO: look this all over
         vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), 2, "knows"));
         vertex1.addEdge(IN, new FaunusEdge(3, vertex1.getIdAsLong(), "knows"));
         vertex1.setProperty("name", "marko");
@@ -250,7 +252,7 @@ public class FaunusVertexTest extends BaseTest {
     }
 
     public void testGetVerticesAndQuery() throws IOException {
-        List<FaunusVertex> vertices = generateGraph(ExampleGraph.TINKERGRAPH);
+        List<FaunusVertex> vertices = generateGraph(ExampleGraph.TINKERGRAPH, new Configuration());
         for (FaunusVertex vertex : vertices) {
             if (vertex.getId().equals(1l)) {
                 assertFalse(vertex.getVertices(IN).iterator().hasNext());
@@ -286,7 +288,7 @@ public class FaunusVertexTest extends BaseTest {
     }
 
     public void testGetEdges() throws IOException {
-        Map<Long, FaunusVertex> vertices = generateIndexedGraph(ExampleGraph.TINKERGRAPH);
+        Map<Long, FaunusVertex> vertices = generateIndexedGraph(ExampleGraph.TINKERGRAPH, new Configuration());
 
         assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT, "knows")).size(), 2);
         assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT, "created")).size(), 1);

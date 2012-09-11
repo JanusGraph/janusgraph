@@ -30,7 +30,7 @@ public class IdentityMapTest extends BaseTest {
     public void testIdentityNoPaths() throws IOException {
         mapReduceDriver.withConfiguration(new Configuration());
 
-        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), mapReduceDriver);
 
         assertEquals(results.size(), 6);
         for (FaunusVertex vertex : results.values()) {
@@ -55,7 +55,7 @@ public class IdentityMapTest extends BaseTest {
     public void testIdentityPaths() throws IOException {
         mapReduceDriver.withConfiguration(new Configuration());
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class), mapReduceDriver);
 
         assertEquals(results.size(), 6);
         for (FaunusVertex vertex : results.values()) {
