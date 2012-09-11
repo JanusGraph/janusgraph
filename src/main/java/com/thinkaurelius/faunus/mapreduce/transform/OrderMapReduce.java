@@ -29,7 +29,7 @@ public class OrderMapReduce {
 
     public enum Counters {
         VERTICES_PROCESSED,
-        EDGES_PROCESSED
+        OUT_EDGES_PROCESSED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, WritableComparable, Text> {
@@ -72,7 +72,7 @@ public class OrderMapReduce {
                         edgesProcessed++;
                     }
                 }
-                context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
+                context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
             }
         }
     }

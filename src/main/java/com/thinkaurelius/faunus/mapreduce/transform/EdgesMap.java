@@ -15,11 +15,12 @@ import java.io.IOException;
  */
 public class EdgesMap {
 
-    public static final String PROCESS_VERTICES = Tokens.makeNamespace(VerticesMap.class) + ".processVertices";
+    public static final String PROCESS_VERTICES = Tokens.makeNamespace(EdgesMap.class) + ".processVertices";
 
     public enum Counters {
         VERTICES_PROCESSED,
-        EDGES_PROCESSED
+        OUT_EDGES_PROCESSED,
+        IN_EDGES_PROCESSED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
@@ -40,13 +41,20 @@ public class EdgesMap {
             }
 
             long edgesProcessed = 0;
-            for (final Edge edge : value.getEdges(Direction.BOTH)) {
+            for (final Edge edge : value.getEdges(Direction.IN)) {
                 ((FaunusEdge) edge).startPath();
                 edgesProcessed++;
             }
-            context.write(NullWritable.get(), value);
+            context.getCounter(Counters.IN_EDGES_PROCESSED).increment(edgesProcessed);
 
-            context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
+            edgesProcessed = 0;
+            for (final Edge edge : value.getEdges(Direction.OUT)) {
+                ((FaunusEdge) edge).startPath();
+                edgesProcessed++;
+            }
+            context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
+
+            context.write(NullWritable.get(), value);
         }
     }
 }

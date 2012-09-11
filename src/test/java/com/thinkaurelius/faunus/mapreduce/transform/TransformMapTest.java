@@ -1,8 +1,8 @@
 package com.thinkaurelius.faunus.mapreduce.transform;
 
 import com.thinkaurelius.faunus.BaseTest;
-import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -44,6 +44,23 @@ public class TransformMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.EDGES_PROCESSED).getValue(), 0);
     }
 
+    public void testVerticesPropertyKeySizeWithPaths() throws IOException {
+        Configuration config = new Configuration();
+        config.set(TransformMap.CLOSURE, "{it -> it.propertyKeys.size()}");
+        config.setClass(TransformMap.CLASS, Vertex.class, Element.class);
+        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
+        mapReduceDriver.withConfiguration(config);
+
+
+        final List<Pair<NullWritable, Text>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), this.mapReduceDriver);
+        assertEquals(results.size(), 6);
+        for (final Pair<NullWritable, Text> result : results) {
+            assertEquals(result.getSecond().toString(), "2");
+        }
+        assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.VERTICES_PROCESSED).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.EDGES_PROCESSED).getValue(), 0);
+    }
+
     public void testEdgesPropertyKeySize() throws IOException {
         Configuration config = new Configuration();
         config.set(TransformMap.CLOSURE, "{it -> it.propertyKeys.size()}");
@@ -57,6 +74,6 @@ public class TransformMapTest extends BaseTest {
         }
 
         assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.VERTICES_PROCESSED).getValue(), 0);
-        assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.EDGES_PROCESSED).getValue(),6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.EDGES_PROCESSED).getValue(), 6);
     }
 }

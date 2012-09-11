@@ -42,7 +42,8 @@ public class EdgesVerticesMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 1);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.EDGES_PROCESSED).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.IN_EDGES_PROCESSED).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
@@ -63,7 +64,30 @@ public class EdgesVerticesMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 1);
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.EDGES_PROCESSED).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.IN_EDGES_PROCESSED).getValue(), 0);
+
+        identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
+    }
+
+    public void testBothVertices() throws IOException {
+        Configuration config = new Configuration();
+        config.set(EdgesVerticesMap.DIRECTION, Direction.BOTH.name());
+
+        mapReduceDriver.withConfiguration(config);
+
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
+
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 3);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 3);
+        assertEquals(graph.get(4l).pathCount(), 3);
+        assertEquals(graph.get(5l).pathCount(), 1);
+        assertEquals(graph.get(6l).pathCount(), 1);
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.IN_EDGES_PROCESSED).getValue(), 6);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }

@@ -27,7 +27,7 @@ public class SideEffectMap {
 
     public enum Counters {
         VERTICES_PROCESSED,
-        EDGES_PROCESSED
+        OUT_EDGES_PROCESSED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
@@ -68,7 +68,7 @@ public class SideEffectMap {
                         }
                     }
                 }
-                context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
+                context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
             }
 
             context.write(NullWritable.get(), value);

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -33,7 +34,8 @@ public class LinkMapReduce {
     public static final String NO_WEIGHT_KEY = "_";
 
     public enum Counters {
-        EDGES_CREATED
+        IN_EDGES_CREATED,
+        OUT_EDGES_CREATED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
@@ -56,12 +58,17 @@ public class LinkMapReduce {
             this.mergeDuplicates = context.getConfiguration().getBoolean(MERGE_DUPLICATES, false);
             this.mergeWeightKey = context.getConfiguration().get(MERGE_WEIGHT_KEY, NO_WEIGHT_KEY);
             this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
+
+            if (!this.pathEnabled)
+                throw new IllegalStateException(LinkMapReduce.class.getSimpleName() + " requires that paths be enabled");
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             final long valueId = value.getIdAsLong();
+
             if (value.hasPaths()) {
+                long edgesCreated = 0;
                 if (this.mergeDuplicates) {
                     final CounterMap<Long> map = new CounterMap<Long>();
                     for (final List<MicroElement> path : value.getPaths()) {
@@ -80,6 +87,7 @@ public class LinkMapReduce {
                             edge.setProperty(this.mergeWeightKey, entry.getValue());
 
                         value.addEdge(this.direction, edge);
+                        edgesCreated++;
                         this.longWritable.set(linkElementId);
                         context.write(this.longWritable, this.holder.set('e', edge));
                     }
@@ -93,10 +101,16 @@ public class LinkMapReduce {
                             edge = new FaunusEdge(valueId, linkElementId, this.label);
                         edge.enablePath(this.pathEnabled);
                         value.addEdge(this.direction, edge);
+                        edgesCreated++;
                         this.longWritable.set(linkElementId);
                         context.write(this.longWritable, this.holder.set('e', edge));
                     }
                 }
+                if (this.direction.equals(OUT))
+                    context.getCounter(Counters.OUT_EDGES_CREATED).increment(edgesCreated);
+                else
+                    context.getCounter(Counters.IN_EDGES_CREATED).increment(edgesCreated);
+
             }
 
             this.longWritable.set(valueId);
@@ -129,7 +143,11 @@ public class LinkMapReduce {
                 }
             }
             context.write(NullWritable.get(), vertex);
-            context.getCounter(Counters.EDGES_CREATED).increment(edgesCreated);
+
+            if (this.direction.equals(OUT))
+                context.getCounter(Counters.OUT_EDGES_CREATED).increment(edgesCreated);
+            else
+                context.getCounter(Counters.IN_EDGES_CREATED).increment(edgesCreated);
         }
     }
 }

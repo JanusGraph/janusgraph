@@ -10,15 +10,20 @@ import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 
+import static com.tinkerpop.blueprints.Direction.BOTH;
+import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class EdgesVerticesMap {
 
-    public static final String DIRECTION = Tokens.makeNamespace(VerticesEdgesMapReduce.class) + ".direction";
+    public static final String DIRECTION = Tokens.makeNamespace(EdgesVerticesMap.class) + ".direction";
 
     public enum Counters {
-        EDGES_PROCESSED
+        IN_EDGES_PROCESSED,
+        OUT_EDGES_PROCESSED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
@@ -32,17 +37,33 @@ public class EdgesVerticesMap {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            long edgesProcessed = 0;
-            for (final Edge e : value.getEdges(this.direction)) {
-                final FaunusEdge edge = (FaunusEdge) e;
-                if (edge.hasPaths()) {
-                    value.getPaths(edge, true);
-                    edgesProcessed++;
+
+            if (this.direction.equals(IN) || this.direction.equals(BOTH)) {
+                long edgesProcessed = 0;
+                for (final Edge e : value.getEdges(IN)) {
+                    final FaunusEdge edge = (FaunusEdge) e;
+                    if (edge.hasPaths()) {
+                        value.getPaths(edge, true);
+                        edgesProcessed++;
+                    }
                 }
+                context.getCounter(Counters.IN_EDGES_PROCESSED).increment(edgesProcessed);
+            }
+
+            if (this.direction.equals(OUT) || this.direction.equals(BOTH)) {
+                long edgesProcessed = 0;
+                for (final Edge e : value.getEdges(OUT)) {
+                    final FaunusEdge edge = (FaunusEdge) e;
+                    if (edge.hasPaths()) {
+                        value.getPaths(edge, true);
+                        edgesProcessed++;
+                    }
+                }
+                context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
             }
 
             context.write(NullWritable.get(), value);
-            context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
+
         }
     }
 

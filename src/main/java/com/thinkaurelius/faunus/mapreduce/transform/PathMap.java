@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.transform;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -24,7 +25,7 @@ public class PathMap {
 
     public enum Counters {
         VERTICES_PROCESSED,
-        EDGES_PROCESSED
+        OUT_EDGES_PROCESSED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, Text> {
@@ -35,6 +36,8 @@ public class PathMap {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
+            if (!context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false))
+                throw new IllegalStateException(PathMap.class.getSimpleName() + " requires that paths be enabled");
         }
 
 
@@ -45,7 +48,9 @@ public class PathMap {
                     this.textWritable.set(path.toString());
                     context.write(NullWritable.get(), this.textWritable);
                 }
+                context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
             } else {
+                long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
@@ -53,8 +58,10 @@ public class PathMap {
                             this.textWritable.set(path.toString());
                             context.write(NullWritable.get(), this.textWritable);
                         }
+                        edgesProcessed++;
                     }
                 }
+                context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
             }
         }
     }

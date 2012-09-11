@@ -32,7 +32,7 @@ public class GroupCountMapReduce {
 
     public enum Counters {
         VERTICES_PROCESSED,
-        EDGES_PROCESSED
+        OUT_EDGES_PROCESSED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, Text, LongWritable> {
@@ -74,7 +74,7 @@ public class GroupCountMapReduce {
                         edgesProcessed++;
                     }
                 }
-                context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
+                context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
             }
 
             // protected against memory explosion

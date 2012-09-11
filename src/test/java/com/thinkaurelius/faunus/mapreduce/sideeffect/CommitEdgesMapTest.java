@@ -46,8 +46,10 @@ public class CommitEdgesMapTest extends BaseTest {
             assertFalse(vertex.getEdges(Direction.BOTH).iterator().hasNext());
         }
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.EDGES_DROPPED).getValue(), 12);
-        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.EDGES_KEPT).getValue(), 0);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_DROPPED).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_KEPT).getValue(), 0);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_DROPPED).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_KEPT).getValue(), 0);
     }
 
     public void testKeepAllEdges() throws IOException {
@@ -69,8 +71,10 @@ public class CommitEdgesMapTest extends BaseTest {
             assertTrue(vertex.getEdges(Direction.BOTH).iterator().hasNext());
         }
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.EDGES_DROPPED).getValue(), 0);
-        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.EDGES_KEPT).getValue(), 12);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_DROPPED).getValue(), 0);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_KEPT).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_DROPPED).getValue(), 0);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_KEPT).getValue(), 6);
     }
 
     public void testDropAllCreatedEdge() throws IOException {
@@ -102,8 +106,10 @@ public class CommitEdgesMapTest extends BaseTest {
         }
         assertEquals(counter, 3);
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.EDGES_DROPPED).getValue(), 8);
-        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.EDGES_KEPT).getValue(), 4);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_DROPPED).getValue(), 4);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_KEPT).getValue(), 2);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_DROPPED).getValue(), 4);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_KEPT).getValue(), 2);
     }
 
     public void testKeepAllCreatedEdge() throws IOException {
@@ -135,8 +141,10 @@ public class CommitEdgesMapTest extends BaseTest {
         }
         assertEquals(counter, 5);
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.EDGES_DROPPED).getValue(), 4);
-        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.EDGES_KEPT).getValue(), 8);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_DROPPED).getValue(), 2);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_KEPT).getValue(), 4);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_DROPPED).getValue(), 2);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_KEPT).getValue(), 4);
     }
 
 }

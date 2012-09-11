@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.Tokens;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -18,7 +19,10 @@ public class ElementPicker {
         if (key.equals(Tokens._ID) || key.equals(Tokens.ID))
             return element.getId().toString();
         else if (key.equals(Tokens._PROPERTIES)) {
-            final Map<String, Object> properties = element.getProperties();
+            final Map<String, Object> properties = new HashMap<String, Object>();
+            for (final Map.Entry<String, Object> entry : element.getProperties().entrySet()) {
+                properties.put(entry.getKey(), entry.getValue());
+            }
             properties.put(Tokens._ID, element.getId());
             return properties.toString();
         } else if (key.equals(Tokens.LABEL) && element instanceof FaunusEdge)
@@ -36,7 +40,10 @@ public class ElementPicker {
         if (key.equals(Tokens._ID) || key.equals(Tokens.ID))
             return element.getId();
         else if (key.equals(Tokens._PROPERTIES)) {
-            final Map<String, Object> properties = element.getProperties();
+            final Map<String, Object> properties = new HashMap<String, Object>();
+            for (final Map.Entry<String, Object> entry : element.getProperties().entrySet()) {
+                properties.put(entry.getKey(), entry.getValue());
+            }
             properties.put(Tokens._ID, element.getId());
             return properties;
         } else if (key.equals(Tokens.LABEL) && element instanceof FaunusEdge)

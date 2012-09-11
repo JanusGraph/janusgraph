@@ -53,7 +53,7 @@ public class GroupCountMapReduceTest extends BaseTest {
         }
 
 
-        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.EDGES_PROCESSED).getValue());
+        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
         assertEquals(12, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
     }
 
@@ -76,7 +76,7 @@ public class GroupCountMapReduceTest extends BaseTest {
         }
 
 
-        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.EDGES_PROCESSED).getValue());
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
         assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
     }
 }
