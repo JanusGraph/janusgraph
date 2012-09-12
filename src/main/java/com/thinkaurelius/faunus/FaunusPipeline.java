@@ -23,13 +23,11 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.ToolRunner;
 import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -511,28 +509,6 @@ public class FaunusPipeline {
         return this;
     }
 
-    public FaunusGraph submit() throws Exception {
-        this.done();
-        this.compiler.completeSequence();
-
-        final String fileName;
-        if (new File("target/faunus-" + Tokens.VERSION + "-job.jar").exists())
-            fileName = "target/faunus-" + Tokens.VERSION + "-job.jar";
-        else if (new File("lib/faunus-" + Tokens.VERSION + "-job.jar").exists())
-            fileName = "lib/faunus-" + Tokens.VERSION + "-job.jar";
-        else if (new File("../lib/faunus-" + Tokens.VERSION + "-job.jar").exists())
-            fileName = "../lib/faunus-" + Tokens.VERSION + "-job.jar";
-        else
-            throw new IllegalStateException("The Faunus Hadoop job jar could not be found: faunus-" + Tokens.VERSION + "-job.jar");
-
-        for (final Job job : this.compiler.getJobs()) {
-            job.getConfiguration().set("mapred.jar", fileName);
-        }
-
-        ToolRunner.run(this.compiler, new String[0]);
-        return this.compiler.isDerivationJob() ? this.graph.generateInverse() : this.graph;
-    }
-
     public String toString() {
         return this.stringRepresentation.toString();
     }
@@ -546,6 +522,17 @@ public class FaunusPipeline {
             this.state.lock();
         }
         return this;
+    }
+
+    public FaunusGraph submit() throws Exception {
+        return submit("", false);
+    }
+
+    public FaunusGraph submit(final String script, final Boolean showHeader) throws Exception {
+        this.done();
+        this.compiler.completeSequence();
+        ToolRunner.run(this.compiler, new String[]{script, showHeader.toString()});
+        return this.compiler.isDerivationJob() ? this.graph.generateInverse() : this.graph;
     }
 
     private String validateClosure(String closure) {

@@ -13,18 +13,9 @@ import java.util.Properties;
  */
 public class InlineScriptExecutor {
 
-    public static void main(final String[] arguments) throws Exception {
-        if (arguments.length == 0) {
-            System.out.println("Usage: <path_to_faunus_properties> <script> <-D options1> <option2> <option3> ...");
-        } else {
-            evaluate(arguments);
-        }
-    }
-
-    protected static void evaluate(final String[] args) throws Exception {
+    public static void main(final String[] args) throws Exception {
         if (args.length < 1 || args.length > 3 || (args.length == 1 && args[0].contains("-h"))) {
-            System.out.println("Faunus: A Library of Graph-Based Hadoop Tools");
-            System.out.println("FaunusPipeline Usage:");
+            System.out.println("Faunus Usage:");
             System.out.println("  arg1: Faunus graph configuration file (optional): defaults to bin/faunus.properties");
             System.out.println("  arg2: FaunusGremlin script: 'g.V.step.step...'");
             System.out.println("  arg3: Overriding configurations (optional): '-Dmapred.map.tasks=14 mapred.reduce.tasks=6'");
@@ -84,8 +75,7 @@ public class InlineScriptExecutor {
         scriptEngine.put("g", new FaunusGraph(conf));
         Object result = scriptEngine.eval(script);
         if (result.getClass().equals(FaunusPipeline.class))
-            ((FaunusPipeline) result).submit();
+            ((FaunusPipeline) result).submit(script, true);
         System.exit(0);
-
     }
 }

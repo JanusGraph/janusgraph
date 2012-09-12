@@ -64,6 +64,7 @@ import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -104,10 +105,6 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public FaunusCompiler(final FaunusGraph graph) {
         this.graph = graph;
-    }
-
-    public List<Job> getJobs() {
-        return this.jobs;
     }
 
     private String toStringOfJob(final Class sequenceClass) {
@@ -477,8 +474,19 @@ public class FaunusCompiler extends Configured implements Tool {
             return;
         }
 
+        final String fileName;
+        if (new File("target/faunus-" + Tokens.VERSION + "-job.jar").exists())
+            fileName = "target/faunus-" + Tokens.VERSION + "-job.jar";
+        else if (new File("lib/faunus-" + Tokens.VERSION + "-job.jar").exists())
+            fileName = "lib/faunus-" + Tokens.VERSION + "-job.jar";
+        else if (new File("../lib/faunus-" + Tokens.VERSION + "-job.jar").exists())
+            fileName = "../lib/faunus-" + Tokens.VERSION + "-job.jar";
+        else
+            throw new IllegalStateException("The Faunus Hadoop job jar could not be found: faunus-" + Tokens.VERSION + "-job.jar");
+
         for (final Job job : this.jobs) {
             job.getConfiguration().setBoolean(PATH_ENABLED, this.pathEnabled);
+            job.getConfiguration().set("mapred.jar", fileName);
         }
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConfiguration());
@@ -539,34 +547,49 @@ public class FaunusCompiler extends Configured implements Tool {
                         hdfs.delete(path, true);
                     }
                 } catch (IOException e1) {
+                    logger.warn("Could not delete intermediate file: " + path);
                 }
             }
             throw e;
         }
     }
 
-    public int run(String[] args) throws Exception {
+    public int run(final String[] args) throws Exception {
+        String script = null;
+        boolean showHeader = true;
+
+        if (args.length == 2) {
+            script = args[0];
+            showHeader = Boolean.valueOf(args[1]);
+        }
+
+
+        final FileSystem hdfs = FileSystem.get(this.getConf());
         if (this.graph.getOutputLocationOverwrite()) {
-            final FileSystem hdfs = FileSystem.get(this.getConf());
+
             if (hdfs.exists(this.graph.getOutputLocation())) {
                 hdfs.delete(this.graph.getOutputLocation(), true);
             }
         }
-        logger.info("Faunus: A Library of Hadoop-Based Graph Tools");
-        logger.info("        ,");
-        logger.info("    ,   |\\ ,__");
-        logger.info("    |\\   \\/   `\\");
-        logger.info("    \\ `-.:.     `\\");
-        logger.info("     `-.__ `\\/\\/\\|");
-        logger.info("        / `'/ () \\");
-        logger.info("      .'   /\\     )");
-        logger.info("   .-'  .'| \\  \\__");
-        logger.info(" .'  __(  \\  '`(()");
-        logger.info("/_.'`  `.  |    )(");
-        logger.info("         \\ |");
-        logger.info("          |/");
-        if (args.length > 0)
-            logger.info("Generating job chain: " + args[0]);
+
+        if (showHeader) {
+            logger.info("Faunus: A Library of Hadoop-Based Graph Tools");
+            logger.info("        ,");
+            logger.info("    ,   |\\ ,__");
+            logger.info("    |\\   \\/   `\\");
+            logger.info("    \\ `-.:.     `\\");
+            logger.info("     `-.__ `\\/\\/\\|");
+            logger.info("        / `'/ () \\");
+            logger.info("      .'   /\\     )");
+            logger.info("   .-'  .'| \\  \\__");
+            logger.info(" .'  __(  \\  '`(()");
+            logger.info("/_.'`  `.  |    )(");
+            logger.info("         \\ |");
+            logger.info("          |/");
+        }
+        if (null != script && !script.isEmpty())
+            logger.info("Generating job chain: " + script);
+
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");
 
@@ -575,10 +598,14 @@ public class FaunusCompiler extends Configured implements Tool {
             logger.info("Executing job " + (i + 1) + " out of " + this.jobs.size() + ": " + job.getJobName());
             boolean success = job.waitForCompletion(true);
             if (i > 0 && this.intermediateFiles.size() > 0) {
-                final FileSystem hdfs = FileSystem.get(job.getConfiguration());
                 final Path path = this.intermediateFiles.remove(0);
-                if (hdfs.exists(path))
-                    hdfs.delete(path, true);
+                if (hdfs.exists(path)) {
+                    try {
+                        hdfs.delete(path, true);
+                    } catch (IOException e) {
+                        logger.warn("Could not delete intermediate file: " + path);
+                    }
+                }
             }
             if (!success) {
                 logger.error("There was an error in the Faunus job -- remaining MapReduce jobs have been canceled");
