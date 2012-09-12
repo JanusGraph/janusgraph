@@ -1,6 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce;
 
-import com.thinkaurelius.faunus.FaunusConfiguration;
+import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
@@ -80,7 +80,7 @@ public class FaunusCompiler extends Configured implements Tool {
     protected final Logger logger = Logger.getLogger(FaunusCompiler.class);
     private final String jobScript;
 
-    private FaunusConfiguration configuration;
+    private FaunusGraph graph;
     private boolean derivationJob = true;
 
     private final List<Job> jobs = new ArrayList<Job>();
@@ -103,9 +103,9 @@ public class FaunusCompiler extends Configured implements Tool {
 
     private boolean pathEnabled = false;
 
-    public FaunusCompiler(final String jobScript, final Configuration conf) {
+    public FaunusCompiler(final String jobScript, final FaunusGraph graph) {
         this.jobScript = jobScript;
-        this.configuration = new FaunusConfiguration(conf);
+        this.graph = graph;
     }
     
     public List<Job> getJobs() {
@@ -436,7 +436,7 @@ public class FaunusCompiler extends Configured implements Tool {
             final Job job = new Job(this.mapSequenceConfiguration, this.toStringOfJob(MapSequence.class));
 
             // copy over any global configuration from faunus.properties and -D CLI
-            for (final Map.Entry<String, String> entry : this.configuration) {
+            for (final Map.Entry<String, String> entry : this.graph.getConfiguration()) {
                 job.getConfiguration().set(entry.getKey(), entry.getValue());
             }
 
@@ -480,17 +480,17 @@ public class FaunusCompiler extends Configured implements Tool {
             job.getConfiguration().setBoolean(PATH_ENABLED, this.pathEnabled);
         }
 
-        final FileSystem hdfs = FileSystem.get(this.configuration);
+        final FileSystem hdfs = FileSystem.get(this.graph.getConfiguration());
         try {
             final Job startJob = this.jobs.get(0);
-            startJob.setInputFormatClass(this.configuration.getGraphInputFormat());
+            startJob.setInputFormatClass(this.graph.getGraphInputFormat());
             // configure input location
-            if (this.configuration.getGraphInputFormat().equals(GraphSONInputFormat.class) || this.configuration.getGraphInputFormat().equals(SequenceFileInputFormat.class)) {
-                FileInputFormat.setInputPaths(startJob, this.configuration.getInputLocation());
-            } else if (this.configuration.getGraphInputFormat().equals(RexsterInputFormat.class)) {
+            if (this.graph.getGraphInputFormat().equals(GraphSONInputFormat.class) || this.graph.getGraphInputFormat().equals(SequenceFileInputFormat.class)) {
+                FileInputFormat.setInputPaths(startJob, this.graph.getInputLocation());
+            } else if (this.graph.getGraphInputFormat().equals(RexsterInputFormat.class)) {
                 /* do nothing */
-            } else if (this.configuration.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
-                ConfigHelper.setInputColumnFamily(this.jobs.get(0).getConfiguration(), ConfigHelper.getInputKeyspace(this.configuration), "edgestore");
+            } else if (this.graph.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
+                ConfigHelper.setInputColumnFamily(this.jobs.get(0).getConfiguration(), ConfigHelper.getInputKeyspace(this.graph.getConfiguration()), "edgestore");
 
                 final SlicePredicate predicate = new SlicePredicate();
                 final SliceRange sliceRange = new SliceRange();
@@ -500,7 +500,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
                 ConfigHelper.setInputSlicePredicate(this.jobs.get(0).getConfiguration(), predicate);
             } else
-                throw new IOException(this.configuration.getGraphInputFormat().getName() + " is not a supported input format");
+                throw new IOException(this.graph.getGraphInputFormat().getName() + " is not a supported input format");
 
 
             if (this.jobs.size() > 1) {
@@ -509,8 +509,8 @@ public class FaunusCompiler extends Configured implements Tool {
                 this.intermediateFiles.add(path);
                 startJob.setOutputFormatClass(INTERMEDIATE_OUTPUT_FORMAT);
             } else {
-                FileOutputFormat.setOutputPath(startJob, this.configuration.getOutputLocation());
-                startJob.setOutputFormatClass(this.derivationJob ? this.configuration.getGraphOutputFormat() : this.configuration.getStatisticsOutputFormat());
+                FileOutputFormat.setOutputPath(startJob, this.graph.getOutputLocation());
+                startJob.setOutputFormatClass(this.derivationJob ? this.graph.getGraphOutputFormat() : this.graph.getStatisticsOutputFormat());
             }
 
             if (this.jobs.size() > 2) {
@@ -527,9 +527,9 @@ public class FaunusCompiler extends Configured implements Tool {
             if (this.jobs.size() > 1) {
                 final Job endJob = this.jobs.get(this.jobs.size() - 1);
                 endJob.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                endJob.setOutputFormatClass(this.derivationJob ? this.configuration.getGraphOutputFormat() : this.configuration.getStatisticsOutputFormat());
+                endJob.setOutputFormatClass(this.derivationJob ? this.graph.getGraphOutputFormat() : this.graph.getStatisticsOutputFormat());
                 FileInputFormat.setInputPaths(endJob, this.intermediateFiles.get(this.intermediateFiles.size() - 1));
-                FileOutputFormat.setOutputPath(endJob, this.configuration.getOutputLocation());
+                FileOutputFormat.setOutputPath(endJob, this.graph.getOutputLocation());
             }
         } catch (IOException e) {
             for (final Path path : this.intermediateFiles) {
@@ -545,10 +545,10 @@ public class FaunusCompiler extends Configured implements Tool {
     }
 
     public int run(String[] args) throws Exception {
-        if (this.configuration.getOutputLocationOverwrite()) {
+        if (this.graph.getOutputLocationOverwrite()) {
             final FileSystem hdfs = FileSystem.get(this.getConf());
-            if (hdfs.exists(this.configuration.getOutputLocation())) {
-                hdfs.delete(this.configuration.getOutputLocation(), true);
+            if (hdfs.exists(this.graph.getOutputLocation())) {
+                hdfs.delete(this.graph.getOutputLocation(), true);
             }
         }
         logger.info("Faunus: A Library of Hadoop-Based Graph Tools");

@@ -4,7 +4,6 @@ import com.tinkerpop.gremlin.groovy.Gremlin;
 import com.tinkerpop.gremlin.groovy.console.ErrorHookClosure;
 import com.tinkerpop.gremlin.groovy.console.NullResultHookClosure;
 import com.tinkerpop.gremlin.groovy.console.PromptClosure;
-import com.tinkerpop.gremlin.groovy.console.ResultHookClosure;
 import jline.History;
 import org.codehaus.groovy.tools.shell.Groovysh;
 import org.codehaus.groovy.tools.shell.IO;
@@ -36,6 +35,9 @@ public class Console {
         groovy.execute("import com.tinkerpop.gremlin.Tokens.T");
         groovy.execute("import com.tinkerpop.gremlin.groovy.*");
 
+        groovy.execute("hdfs = FileSystem.get(new Configuration())");
+        groovy.execute("local = FileSystem.getLocal(new Configuration())");
+
         groovy.setResultHook(new ResultHookClosure(groovy, io, resultPrompt));
         groovy.setHistory(new History());
 
@@ -48,6 +50,8 @@ public class Console {
         }
 
         Gremlin.load();
+        FaunusGremlin.load();
+
         try {
             runner.run();
         } catch (Error e) {

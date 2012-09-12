@@ -12,13 +12,14 @@ public class Imports {
 
     static {
         // titan
-        //imports.add("com.thinkaurelius.titan.core.*");
+        imports.add("com.thinkaurelius.titan.core.*");
         //imports.add("org.apache.commons.configuration.*");
 
         // hadoop
         imports.add("org.apache.hadoop.hdfs.*");
         imports.add("org.apache.hadoop.conf.*");
         imports.add("org.apache.hadoop.fs.*");
+        imports.add("org.apache.hadoop.util.*");
         imports.add("com.thinkaurelius.faunus.*");
 
 

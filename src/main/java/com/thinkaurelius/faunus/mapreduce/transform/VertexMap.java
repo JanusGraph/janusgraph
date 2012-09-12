@@ -1,6 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.transform;
 
-import com.thinkaurelius.faunus.FaunusConfiguration;
+import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import org.apache.hadoop.io.NullWritable;
@@ -27,7 +27,7 @@ public class VertexMap {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.ids = FaunusConfiguration.getLongCollection(context.getConfiguration(), IDS, new HashSet<Long>());
+            this.ids = FaunusGraph.getLongCollection(context.getConfiguration(), IDS, new HashSet<Long>());
         }
 
         @Override

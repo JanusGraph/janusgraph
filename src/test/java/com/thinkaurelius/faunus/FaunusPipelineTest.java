@@ -10,7 +10,7 @@ import java.io.IOException;
 public class FaunusPipelineTest extends BaseTest {
 
     public void testElementTypeUpdating() throws IOException {
-        FaunusPipeline pipeline = new FaunusPipeline("test", new Configuration());
+        FaunusPipeline pipeline = new FaunusPipeline(new FaunusGraph());
         try {
             pipeline.outE();
             assertTrue(false);
@@ -18,7 +18,7 @@ public class FaunusPipelineTest extends BaseTest {
             assertTrue(true);
         }
         pipeline.v(1, 2, 3, 4).outE("knows").inV().property("key");
-        pipeline = new FaunusPipeline("test", new Configuration());
+        pipeline = new FaunusPipeline(new FaunusGraph());
         pipeline.V().E().V().E();
 
 
@@ -45,7 +45,7 @@ public class FaunusPipelineTest extends BaseTest {
     }
 
     public void testPipelineLocking() throws IOException {
-        FaunusPipeline pipeline = new FaunusPipeline("test", new Configuration());
+        FaunusPipeline pipeline = new FaunusPipeline(new FaunusGraph());
         pipeline.V().out().property("name");
         /* // TODO: proper locking required
         try {
@@ -64,7 +64,7 @@ public class FaunusPipelineTest extends BaseTest {
     }
 
     public void testPipelineStepIncr() throws IOException {
-        FaunusPipeline pipeline = new FaunusPipeline("test", new Configuration());
+        FaunusPipeline pipeline = new FaunusPipeline(new FaunusGraph());
         assertEquals(pipeline.state.getStep(), -1);
         pipeline.V();
         assertEquals(pipeline.state.getStep(), 0);

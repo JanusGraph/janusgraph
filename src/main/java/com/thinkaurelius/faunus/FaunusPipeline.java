@@ -139,9 +139,13 @@ public class FaunusPipeline {
         }
     }
 
-    public FaunusPipeline(final String jobScript, final Configuration configuration) {
-        this.compiler = new FaunusCompiler(jobScript, configuration);
+    public FaunusPipeline(final String jobScript, final FaunusGraph graph) {
+        this.compiler = new FaunusCompiler(jobScript, graph);
         this.state = new JobState();
+    }
+
+    public FaunusPipeline(final FaunusGraph graph) {
+        this("", graph);
     }
 
     ///////// STEP
@@ -581,7 +585,7 @@ public class FaunusPipeline {
             conf.set(entry.getKey().toString(), entry.getValue().toString());
         }
 
-        final FaunusPipeline faunusPipeline = new FaunusPipeline(script, conf);
+        final FaunusPipeline faunusPipeline = new FaunusPipeline(script, new FaunusGraph(conf));
         final GroovyScriptEngineImpl scriptEngine = new GroovyScriptEngineImpl();
         scriptEngine.eval("IN=" + Direction.class.getName() + ".IN");
         scriptEngine.eval("OUT=" + Direction.class.getName() + ".OUT");
