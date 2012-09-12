@@ -48,22 +48,19 @@ public class SideEffectMap {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
-                long verticesProcessed = 0;
                 if (value.hasPaths()) {
                     for (int i = 0; i < value.pathCount(); i++) {
-                        verticesProcessed++;
                         this.closure.call(value);
                     }
-
+                    context.getCounter(Counters.VERTICES_PROCESSED).increment(1);
                 }
-                context.getCounter(Counters.VERTICES_PROCESSED).increment(verticesProcessed);
             } else {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
+                        edgesProcessed++;
                         for (int i = 0; i < edge.pathCount(); i++) {
-                            edgesProcessed++;
                             this.closure.call(edge);
                         }
                     }

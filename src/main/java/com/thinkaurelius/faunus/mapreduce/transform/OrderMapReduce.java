@@ -3,8 +3,8 @@ package com.thinkaurelius.faunus.mapreduce.transform;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.util.WritableHandler;
 import com.thinkaurelius.faunus.mapreduce.util.ElementPicker;
+import com.thinkaurelius.faunus.mapreduce.util.WritableHandler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -49,14 +49,16 @@ public class OrderMapReduce {
         }
 
         private Text text = new Text();
+        private WritableComparable writable;
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, WritableComparable, Text>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
+                    this.text.set(ElementPicker.getPropertyAsString(value, this.elementKey));
+                    this.writable = this.handler.set(ElementPicker.getProperty(value, this.key));
                     for (int i = 0; i < value.pathCount(); i++) {
-                        this.text.set(ElementPicker.getPropertyAsString(value, this.elementKey));
-                        context.write(this.handler.set(ElementPicker.getProperty(value, this.key)), this.text);
+                        context.write(this.writable, this.text);
                     }
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
@@ -65,9 +67,10 @@ public class OrderMapReduce {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
+                        this.text.set(ElementPicker.getPropertyAsString(edge, this.elementKey));
+                        this.writable = this.handler.set(ElementPicker.getProperty(edge, this.key));
                         for (int i = 0; i < edge.pathCount(); i++) {
-                            this.text.set(ElementPicker.getPropertyAsString(edge, this.elementKey));
-                            context.write(this.handler.set(ElementPicker.getProperty(edge, this.key)), this.text);
+                            context.write(this.writable, this.text);
                         }
                         edgesProcessed++;
                     }

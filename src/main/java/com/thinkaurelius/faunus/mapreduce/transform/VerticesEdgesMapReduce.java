@@ -107,6 +107,7 @@ public class VerticesEdgesMapReduce {
             context.write(this.longWritable, this.holder.set('v', value));
         }
 
+        // TODO: this is horribly inefficient
         private List<List<MicroElement>> clonePaths(final FaunusVertex vertex, final MicroEdge edge) {
             final List<List<MicroElement>> paths = new ArrayList<List<MicroElement>>();
             for (List<MicroElement> path : vertex.getPaths()) {

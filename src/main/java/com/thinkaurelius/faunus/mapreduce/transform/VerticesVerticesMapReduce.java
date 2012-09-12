@@ -27,7 +27,7 @@ public class VerticesVerticesMapReduce {
     public static final String LABELS = Tokens.makeNamespace(VerticesVerticesMapReduce.class) + ".labels";
 
     public enum Counters {
-        EDGES_TRAVERSED;
+        EDGES_TRAVERSED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {

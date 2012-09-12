@@ -13,7 +13,6 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,7 +31,6 @@ public class DuplicateFilterMap {
 
         private boolean isVertex;
         private boolean pathEnabled;
-        private static final List<MicroElement> fakePath = new ArrayList<MicroElement>();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
@@ -51,7 +49,7 @@ public class DuplicateFilterMap {
                         value.addPath(path, false);
                     } else {
                         value.clearPaths();
-                        value.incrPath(1l);
+                        value.startPath();
                     }
                     context.getCounter(Counters.VERTICES_DEDUPED).increment(1l);
                 }
@@ -66,7 +64,7 @@ public class DuplicateFilterMap {
                             edge.addPath(path, false);
                         } else {
                             edge.clearPaths();
-                            edge.incrPath(1l);
+                            edge.startPath();
                         }
                         counter++;
                     }

@@ -45,7 +45,7 @@ public class SideEffectMapTest extends BaseTest {
         assertNull(graph.get(6l).getProperty("count"));
 
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.VERTICES_PROCESSED).getValue(), 6);
+        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.VERTICES_PROCESSED).getValue(), 3);
         assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
     }
 
