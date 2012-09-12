@@ -78,7 +78,6 @@ public class FaunusCompiler extends Configured implements Tool {
     public static final String PATH_ENABLED = Tokens.makeNamespace(FaunusCompiler.class) + ".pathEnabled";
 
     protected final Logger logger = Logger.getLogger(FaunusCompiler.class);
-    private final String jobScript;
 
     private FaunusGraph graph;
     private boolean derivationJob = true;
@@ -103,8 +102,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
     private boolean pathEnabled = false;
 
-    public FaunusCompiler(final String jobScript, final FaunusGraph graph) {
-        this.jobScript = jobScript;
+    public FaunusCompiler(final FaunusGraph graph) {
         this.graph = graph;
     }
 
@@ -153,6 +151,10 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public void setPathEnabled(final boolean pathEnabled) {
         this.pathEnabled = pathEnabled;
+    }
+
+    public boolean isDerivationJob() {
+        return this.derivationJob;
     }
 
     ////////////// STEP
@@ -429,14 +431,6 @@ public class FaunusCompiler extends Configured implements Tool {
 
     /////////////////////////////// UTILITIES
 
-    public boolean isDerivation() {
-        return this.derivationJob;
-    }
-    
-    public FaunusGraph getGraph() {
-        return this.graph;
-    }
-
     public void completeSequence() throws IOException {
         if (this.mapSequenceClasses.size() > 0) {
             this.mapSequenceConfiguration.setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
@@ -571,7 +565,8 @@ public class FaunusCompiler extends Configured implements Tool {
         logger.info("/_.'`  `.  |    )(");
         logger.info("         \\ |");
         logger.info("          |/");
-        logger.info("Generating job chain: " + this.jobScript);
+        if (args.length > 0)
+            logger.info("Generating job chain: " + args[0]);
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");
 
@@ -587,7 +582,7 @@ public class FaunusCompiler extends Configured implements Tool {
             }
             if (!success) {
                 logger.error("There was an error in the Faunus job -- remaining MapReduce jobs have been canceled");
-                break;
+                return -1;
             }
         }
         return 0;

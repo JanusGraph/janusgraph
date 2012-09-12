@@ -124,8 +124,8 @@
                 <configuration>
                     <descriptors>
                         <descriptor>src/assembly/hadoop-job.xml</descriptor>
-                        <descriptor>src/assembly/distribution.xml</descriptor>
                         <descriptor>src/assembly/standalone.xml</descriptor>
+                        <descriptor>src/assembly/distribution.xml</descriptor>
                     </descriptors>
                     <finalName>${project.artifactId}-${project.version}</finalName>
                     <outputDirectory>target</outputDirectory>

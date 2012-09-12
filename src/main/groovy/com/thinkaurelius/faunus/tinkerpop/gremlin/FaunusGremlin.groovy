@@ -32,4 +32,12 @@ class FaunusGremlin {
     public static boolean isStep(final String stepName) {
         return FaunusGremlin.steps.contains(stepName);
     }
+
+    public static String version() {
+        return "faunus-" + com.thinkaurelius.faunus.Tokens.VERSION + ":gremlin-" + com.tinkerpop.gremlin.Tokens.VERSION;
+    }
+
+    public static String language() {
+        return "faunus-gremlin-groovy";
+    }
 }

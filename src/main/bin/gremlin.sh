@@ -25,7 +25,7 @@ if [ "$JAVA_OPTIONS" = "" ] ; then
 fi
 
 # Launch the application
-if [ "$1" = "-e" ]; then
+if [ "$1" = "-e" -o "$1" = "-i" ]; then
   k=$2
   if [ $# -gt 2 ]; then
     for (( i=3 ; i < $# + 1 ; i++ ))
@@ -35,10 +35,14 @@ if [ "$1" = "-e" ]; then
     done
   fi
 
-  eval $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.tinkerpop.gremlin.groovy.jsr223.ScriptExecutor $k
+  if [ "$1" = "-e" ]; then
+      eval $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.thinkaurelius.faunus.tinkerpop.gremlin.ScriptExecutor $k
+  else
+      eval $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.thinkaurelius.faunus.tinkerpop.gremlin.InlineScriptExecutor $k
+  fi
 else
   if [ "$1" = "-v" ]; then
-    $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.tinkerpop.gremlin.Version
+    $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.thinkaurelius.faunus.tinkerpop.gremlin.Version
   else
     $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.thinkaurelius.faunus.tinkerpop.gremlin.Console
   fi

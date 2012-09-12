@@ -81,6 +81,10 @@ public class FaunusGraph {
         return this.configuration.getBoolean(OUTPUT_LOCATION_OVERWRITE, false);
     }
 
+    public void setOutputLocationOverwrite(final boolean overwrite) {
+        this.configuration.setBoolean(OUTPUT_LOCATION_OVERWRITE, overwrite);
+    }
+
     public String toString() {
         return "faunusgraph[" + this.configuration.getClass(GRAPH_INPUT_FORMAT_CLASS, InputFormat.class).getSimpleName().toLowerCase() + "]";
     }

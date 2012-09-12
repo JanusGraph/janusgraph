@@ -4,7 +4,6 @@ import com.tinkerpop.gremlin.groovy.Gremlin;
 import com.tinkerpop.gremlin.groovy.console.ErrorHookClosure;
 import com.tinkerpop.gremlin.groovy.console.NullResultHookClosure;
 import com.tinkerpop.gremlin.groovy.console.PromptClosure;
-import com.tinkerpop.gremlin.groovy.console.ResultHookClosure;
 import jline.History;
 import org.codehaus.groovy.tools.shell.Groovysh;
 import org.codehaus.groovy.tools.shell.IO;

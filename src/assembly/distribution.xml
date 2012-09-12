@@ -10,7 +10,7 @@
             <outputDirectory>bin</outputDirectory>
             <includes>
                 <include>*.sh</include>
-                <!--<include>*.bat</include>-->
+                <include>*.bat</include>
             </includes>
         </fileSet>
         <fileSet>
@@ -24,6 +24,10 @@
         <fileSet>
             <directory>target/apidocs</directory>
             <outputDirectory>doc/javadoc</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>target/${project.artifactId}-${project.version}-standalone/lib</directory>
+            <outputDirectory>lib</outputDirectory>
         </fileSet>
     </fileSets>
     <files>
@@ -59,5 +63,9 @@
             <source>README.textile</source>
             <outputDirectory>/</outputDirectory>
         </file>
+        <!--<file>
+            <source>src/main/bin/README.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>-->
     </files>
 </assembly>

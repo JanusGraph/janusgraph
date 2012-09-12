@@ -1,14 +1,21 @@
 package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
-import com.tinkerpop.blueprints.Direction;
+import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.EdgesVerticesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
+import com.thinkaurelius.faunus.mapreduce.transform.OrderMapReduce;
+import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
+import com.thinkaurelius.faunus.mapreduce.transform.TransformMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import com.tinkerpop.pipes.util.structures.Pair;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
@@ -23,11 +30,12 @@ import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import static com.tinkerpop.blueprints.Direction.BOTH;
 import static com.tinkerpop.blueprints.Direction.IN;
@@ -42,10 +50,11 @@ public class FaunusPipeline {
     public static final String PIPELINE_IS_LOCKED = "No more steps are possible as pipeline is locked";
 
     protected final FaunusCompiler compiler;
+    protected final FaunusGraph graph;
     protected final JobState state;
-    protected static final ScriptEngine engine = new GremlinGroovyScriptEngine();
+    protected static final ScriptEngine engine = new GroovyScriptEngineImpl();
 
-    // TODO protected final List<String> stringRepresentation = new ArrayList<String>();
+    protected final List<String> stringRepresentation = new ArrayList<String>();
 
     private Query.Compare opposite(final Query.Compare compare) {
         if (compare.equals(Query.Compare.EQUAL))
@@ -139,13 +148,15 @@ public class FaunusPipeline {
         }
     }
 
-    public FaunusPipeline(final String jobScript, final FaunusGraph graph) {
-        this.compiler = new FaunusCompiler(jobScript, graph);
-        this.state = new JobState();
-    }
+
+    ////////////////////////////////
+    ////////////////////////////////
+    ////////////////////////////////
 
     public FaunusPipeline(final FaunusGraph graph) {
-        this("", graph);
+        this.graph = graph;
+        this.compiler = new FaunusCompiler(this.graph);
+        this.state = new JobState();
     }
 
     ///////// STEP
@@ -171,6 +182,7 @@ public class FaunusPipeline {
     public FaunusPipeline _() {
         this.state.checkLocked();
         this.compiler._();
+        makeMapReduceString(IdentityMap.class);
         return this;
     }
 
@@ -179,6 +191,7 @@ public class FaunusPipeline {
         this.validateClosure(closure);
         this.compiler.transform(this.state.getElementType(), closure);
         this.state.lock();
+        makeMapReduceString(TransformMap.class);
         return this;
     }
 
@@ -189,6 +202,8 @@ public class FaunusPipeline {
             this.compiler.verticesMap(false);
         else
             this.compiler.verticesMap(true);
+
+        makeMapReduceString(VerticesMap.class);
         return this;
     }
 
@@ -199,6 +214,8 @@ public class FaunusPipeline {
             this.compiler.edgesMap(false);
         else
             this.compiler.edgesMap(true);
+
+        makeMapReduceString(EdgesMap.class);
         return this;
     }
 
@@ -207,6 +224,8 @@ public class FaunusPipeline {
         this.state.set(Vertex.class);
         this.state.incrStep();
         this.compiler.vertexMap(ids);
+
+        makeMapReduceString(VertexMap.class);
         return this;
     }
 
@@ -215,6 +234,7 @@ public class FaunusPipeline {
         this.state.incrStep();
         if (this.state.atVertex()) {
             this.compiler.verticesVerticesMapReduce(OUT, labels);
+            makeMapReduceString(VerticesVerticesMapReduce.class, OUT.name(), Arrays.asList(labels));
             return this;
         } else
             throw new IllegalStateException("This step can not follow an edge-based step");
@@ -225,6 +245,7 @@ public class FaunusPipeline {
         this.state.incrStep();
         if (this.state.atVertex()) {
             this.compiler.verticesVerticesMapReduce(IN, labels);
+            makeMapReduceString(VerticesVerticesMapReduce.class, IN.name(), Arrays.asList(labels));
             return this;
         } else
             throw new IllegalStateException("This step can not follow an edge-based step");
@@ -235,6 +256,7 @@ public class FaunusPipeline {
         this.state.incrStep();
         if (this.state.atVertex()) {
             this.compiler.verticesVerticesMapReduce(BOTH, labels);
+            makeMapReduceString(VerticesVerticesMapReduce.class, BOTH.name(), Arrays.asList(labels));
             return this;
         } else
             throw new IllegalStateException("This step can not follow an edge-based step");
@@ -246,6 +268,7 @@ public class FaunusPipeline {
         if (this.state.atVertex()) {
             this.compiler.verticesEdgesMapReduce(OUT, labels);
             this.state.set(Edge.class);
+            makeMapReduceString(VerticesEdgesMapReduce.class, OUT.name(), Arrays.asList(labels));
             return this;
         } else
             throw new IllegalStateException("This step can not follow an edge-based step");
@@ -257,6 +280,7 @@ public class FaunusPipeline {
         if (this.state.atVertex()) {
             this.compiler.verticesEdgesMapReduce(IN, labels);
             this.state.set(Edge.class);
+            makeMapReduceString(VerticesEdgesMapReduce.class, IN.name(), Arrays.asList(labels));
             return this;
         } else
             throw new IllegalStateException("This step can not follow an edge-based step");
@@ -268,6 +292,7 @@ public class FaunusPipeline {
         if (this.state.atVertex()) {
             this.compiler.verticesEdgesMapReduce(BOTH, labels);
             this.state.set(Edge.class);
+            makeMapReduceString(VerticesEdgesMapReduce.class, BOTH.name(), Arrays.asList(labels));
             return this;
         } else
             throw new IllegalStateException("This step can not follow an edge-based step");
@@ -279,6 +304,7 @@ public class FaunusPipeline {
         if (!this.state.atVertex()) {
             this.compiler.edgesVerticesMap(OUT);
             this.state.set(Vertex.class);
+            makeMapReduceString(EdgesVerticesMap.class, OUT.name());
             return this;
         } else
             throw new IllegalStateException("This step can not follow a vertex-based step");
@@ -290,6 +316,7 @@ public class FaunusPipeline {
         if (!this.state.atVertex()) {
             this.compiler.edgesVerticesMap(IN);
             this.state.set(Vertex.class);
+            makeMapReduceString(EdgesVerticesMap.class, IN.name());
             return this;
         } else
             throw new IllegalStateException("This step can not follow a vertex-based step");
@@ -301,6 +328,7 @@ public class FaunusPipeline {
         if (!this.state.atVertex()) {
             this.compiler.edgesVerticesMap(BOTH);
             this.state.set(Vertex.class);
+            makeMapReduceString(EdgesVerticesMap.class, BOTH.name());
             return this;
         } else
             throw new IllegalStateException("This step can not follow a vertex-based step");
@@ -330,6 +358,7 @@ public class FaunusPipeline {
         this.compiler.pathMap(this.state.getElementType());
         this.compiler.setPathEnabled(true);
         this.state.lock();
+        makeMapReduceString(PathMap.class);
         return this;
     }
 
@@ -338,6 +367,7 @@ public class FaunusPipeline {
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null != pair) {
             this.compiler.orderMapReduce(this.state.getElementType(), elementKey, pair.getA(), pair.getB(), order);
+            makeMapReduceString(OrderMapReduce.class, order.name(), elementKey);
         } else {
             throw new IllegalArgumentException("There is no specified property to sort on");
         }
@@ -485,24 +515,26 @@ public class FaunusPipeline {
         this.done();
         this.compiler.completeSequence();
 
-        final FaunusGraph graph = this.compiler.isDerivation() ? this.compiler.getGraph().generateInverse() : this.compiler.getGraph();
-
         final String fileName;
         if (new File("target/faunus-" + Tokens.VERSION + "-job.jar").exists())
             fileName = "target/faunus-" + Tokens.VERSION + "-job.jar";
         else if (new File("lib/faunus-" + Tokens.VERSION + "-job.jar").exists())
             fileName = "lib/faunus-" + Tokens.VERSION + "-job.jar";
-        else if (new File("../lib/faunus-" + Tokens.VERSION + ".jar").exists())
-            fileName = "../lib/faunus-" + Tokens.VERSION + ".jar";
+        else if (new File("../lib/faunus-" + Tokens.VERSION + "-job.jar").exists())
+            fileName = "../lib/faunus-" + Tokens.VERSION + "-job.jar";
         else
-            throw new IllegalStateException("The Faunus Hadoop job jar could not be found");
+            throw new IllegalStateException("The Faunus Hadoop job jar could not be found: faunus-" + Tokens.VERSION + "-job.jar");
 
         for (final Job job : this.compiler.getJobs()) {
             job.getConfiguration().set("mapred.jar", fileName);
         }
-        ToolRunner.run(this.compiler, new String[0]);
 
-        return graph;
+        ToolRunner.run(this.compiler, new String[0]);
+        return this.compiler.isDerivationJob() ? this.graph.generateInverse() : this.graph;
+    }
+
+    public String toString() {
+        return this.stringRepresentation.toString();
     }
 
     private FaunusPipeline done() throws IOException {
@@ -532,6 +564,18 @@ public class FaunusPipeline {
         }
     }
 
+    private void makeMapReduceString(final Class klass, final Object... arguments) {
+        String result = klass.getSimpleName();
+        if (arguments.length > 0) {
+            result = result + "(";
+            for (final Object arg : arguments) {
+                result = result + arg + ",";
+            }
+            result = result.substring(0, result.length() - 1) + ")";
+        }
+        this.stringRepresentation.add(result);
+    }
+
     private Class<? extends WritableComparable> convertJavaToHadoop(final Class klass) {
         if (klass.equals(String.class)) {
             return Text.class;
@@ -548,74 +592,5 @@ public class FaunusPipeline {
         } else {
             throw new IllegalArgumentException("The provided class is not supported: " + klass.getSimpleName());
         }
-    }
-
-    public static void main(String[] args) throws Exception {
-        if (args.length < 1 || args.length > 3 || (args.length == 1 && args[0].contains("-h"))) {
-            System.out.println("Faunus: A Library of Graph-Based Hadoop Tools");
-            System.out.println("FaunusPipeline Usage:");
-            System.out.println("  arg1: Faunus configuration file (optional): defaults to bin/faunus.properties");
-            System.out.println("  arg2: Gremlin/Faunus script: 'g.V().step().step()...'");
-            System.out.println("  arg3: Overriding configurations (optional): '-Dmapred.map.tasks=14 mapred.reduce.tasks=6'");
-            System.exit(-1);
-        }
-
-        final String script;
-        final String file;
-        final Properties fileConfiguration = new Properties();
-        final Properties commandLineConfiguration = new Properties();
-        if (args.length == 1) {
-            script = args[0];
-            file = "bin/faunus.properties";
-        } else if (args.length == 2) {
-            if (args[1].startsWith("-D")) {
-                script = args[0];
-                file = "bin/faunus.properties";
-                for (final String property : args[1].substring(2).trim().split(" ")) {
-                    commandLineConfiguration.put(property.split("=")[0], property.split("=")[1]);
-                }
-            } else {
-                file = args[0];
-                script = args[1];
-            }
-        } else {
-            file = args[0];
-            script = args[1];
-            for (final String property : args[2].substring(2).trim().split(" ")) {
-                commandLineConfiguration.put(property.split("=")[0], property.split("=")[1]);
-            }
-        }
-
-        fileConfiguration.load(new FileInputStream(file));
-
-
-        final Configuration conf = new Configuration();
-        for (Map.Entry<Object, Object> entry : fileConfiguration.entrySet()) {
-            conf.set(entry.getKey().toString(), entry.getValue().toString());
-        }
-        for (Map.Entry<Object, Object> entry : commandLineConfiguration.entrySet()) {
-            conf.set(entry.getKey().toString(), entry.getValue().toString());
-        }
-
-        final FaunusPipeline faunusPipeline = new FaunusPipeline(script, new FaunusGraph(conf));
-        final GroovyScriptEngineImpl scriptEngine = new GroovyScriptEngineImpl();
-        scriptEngine.eval("IN=" + Direction.class.getName() + ".IN");
-        scriptEngine.eval("OUT=" + Direction.class.getName() + ".OUT");
-        scriptEngine.eval("BOTH=" + Direction.class.getName() + ".BOTH");
-        scriptEngine.eval("eq=" + Query.Compare.class.getName() + ".EQUAL");
-        scriptEngine.eval("neq=" + Query.Compare.class.getName() + ".NOT_EQUAL");
-        scriptEngine.eval("lt=" + Query.Compare.class.getName() + ".LESS_THAN");
-        scriptEngine.eval("lte=" + Query.Compare.class.getName() + ".LESS_THAN_EQUAL");
-        scriptEngine.eval("gt=" + Query.Compare.class.getName() + ".GREATER_THAN");
-        scriptEngine.eval("gte=" + Query.Compare.class.getName() + ".GREATER_THAN_EQUAL");
-        scriptEngine.eval("incr=" + Tokens.Order.class.getName() + ".INCREASING");
-        scriptEngine.eval("decr=" + Tokens.Order.class.getName() + ".DECREASING");
-
-        scriptEngine.put("g", faunusPipeline);
-        final FaunusPipeline pipeline = ((FaunusPipeline) scriptEngine.eval(script)).done();
-        final FaunusCompiler compiler = pipeline.compiler;
-        compiler.completeSequence();
-        int result = ToolRunner.run(compiler, args);
-        System.exit(result);
     }
 }
