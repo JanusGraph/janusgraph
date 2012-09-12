@@ -1,16 +1,29 @@
 package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
+import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.LinkMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.SideEffectMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesVerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
 import com.thinkaurelius.faunus.mapreduce.transform.OrderMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
+import com.thinkaurelius.faunus.mapreduce.transform.PropertyMap;
 import com.thinkaurelius.faunus.mapreduce.transform.TransformMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
+import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
@@ -49,7 +62,7 @@ public class FaunusPipeline {
 
     protected final FaunusCompiler compiler;
     protected final FaunusGraph graph;
-    protected final JobState state;
+    protected final State state;
     protected static final ScriptEngine engine = new GroovyScriptEngineImpl();
 
     protected final List<String> stringRepresentation = new ArrayList<String>();
@@ -69,7 +82,7 @@ public class FaunusPipeline {
             return Query.Compare.GREATER_THAN;
     }
 
-    protected class JobState {
+    protected class State {
         private Class<? extends Element> elementType;
         private String property;
         private Class<? extends WritableComparable> propertyType;
@@ -77,7 +90,7 @@ public class FaunusPipeline {
         private boolean locked = false;
         private Map<String, Integer> namedSteps = new HashMap<String, Integer>();
 
-        public JobState set(Class<? extends Element> elementType) {
+        public State set(Class<? extends Element> elementType) {
             if (!elementType.equals(Vertex.class) && !elementType.equals(Edge.class))
                 throw new IllegalArgumentException("The element class type must be either Vertex or Edge");
 
@@ -95,7 +108,7 @@ public class FaunusPipeline {
             return this.elementType.equals(Vertex.class);
         }
 
-        public JobState setProperty(final String property, final Class type) {
+        public State setProperty(final String property, final Class type) {
             this.property = property;
             this.propertyType = convertJavaToHadoop(type);
             return this;
@@ -154,7 +167,7 @@ public class FaunusPipeline {
     public FaunusPipeline(final FaunusGraph graph) {
         this.graph = graph;
         this.compiler = new FaunusCompiler(this.graph);
-        this.state = new JobState();
+        this.state = new State();
     }
 
     ///////// STEP
@@ -378,12 +391,14 @@ public class FaunusPipeline {
     public FaunusPipeline filter(final String closure) {
         this.state.checkLocked();
         this.compiler.filterMap(this.state.getElementType(), this.validateClosure(closure));
+        makeMapReduceString(FilterMap.class);
         return this;
     }
 
     public FaunusPipeline has(final String key, final Query.Compare compare, final Object... values) {
         this.state.checkLocked();
         this.compiler.propertyFilterMap(this.state.getElementType(), false, key, compare, values);
+        makeMapReduceString(PropertyFilterMap.class, compare.name(), Arrays.asList(values));
         return this;
     }
 
@@ -405,12 +420,14 @@ public class FaunusPipeline {
     public FaunusPipeline interval(final String key, final Object startValue, final Object endValue) {
         this.state.checkLocked();
         this.compiler.intervalFilterMap(this.state.getElementType(), false, key, startValue, endValue);
+        makeMapReduceString(IntervalFilterMap.class, key, startValue, endValue);
         return this;
     }
 
     public FaunusPipeline dedup() {
         this.state.checkLocked();
         this.compiler.duplicateFilterMap(this.state.getElementType());
+        makeMapReduceString(DuplicateFilterMap.class);
         return this;
     }
 
@@ -419,6 +436,15 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.compiler.backFilterMapReduce(this.state.getElementType(), this.state.getStep(step));
         this.compiler.setPathEnabled(true);
+        makeMapReduceString(BackFilterMapReduce.class, step);
+        return this;
+    }
+
+    public FaunusPipeline back(final int numberOfSteps) throws IOException {
+        this.state.checkLocked();
+        this.compiler.backFilterMapReduce(this.state.getElementType(), this.stringRepresentation.size() - numberOfSteps);
+        this.compiler.setPathEnabled(true);
+        makeMapReduceString(BackFilterMapReduce.class, numberOfSteps);
         return this;
     }
 
@@ -428,12 +454,16 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.validateClosure(closure);
         this.compiler.sideEffect(this.state.getElementType(), closure);
+        makeMapReduceString(SideEffectMap.class);
         return this;
     }
 
     public FaunusPipeline as(final String name) {
         this.state.checkLocked();
         this.state.addStep(name);
+
+        final String string = "As[" + name + "," + this.stringRepresentation.get(this.state.getStep(name)) + "]";
+        this.stringRepresentation.set(this.state.getStep(name), string);
         return this;
     }
 
@@ -441,6 +471,7 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.compiler.linkMapReduce(this.state.getStep(step), IN, label, mergeWeightKey);
         this.compiler.setPathEnabled(true);
+        makeMapReduceString(LinkMapReduce.class, IN.name(), step, label, mergeWeightKey);
         return this;
     }
 
@@ -452,6 +483,7 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.compiler.linkMapReduce(this.state.getStep(step), OUT, label, mergeWeightKey);
         this.compiler.setPathEnabled(true);
+        makeMapReduceString(LinkMapReduce.class, OUT.name(), step, label, mergeWeightKey);
         return this;
     }
 
@@ -463,9 +495,11 @@ public class FaunusPipeline {
         this.state.checkLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null == pair)
-            return this.groupCount("{ it -> it}", "{it -> 1}");
-        else
+            return this.groupCount("{it -> it}", "{it -> 1}");
+        else {
             this.compiler.valueDistribution(this.state.getElementType(), pair.getA(), pair.getB());
+            makeMapReduceString(ValueGroupCountMapReduce.class, pair.getA());
+        }
         return this;
     }
 
@@ -474,16 +508,20 @@ public class FaunusPipeline {
         this.validateClosure(keyClosure);
         this.validateClosure(valueClosure);
         this.compiler.groupCountMapReduce(this.state.getElementType(), keyClosure, valueClosure);
+        makeMapReduceString(GroupCountMapReduce.class);
         this.state.lock();
         return this;
     }
 
     private FaunusPipeline commit(final Tokens.Action action) throws IOException {
         this.state.checkLocked();
-        if (this.state.atVertex())
+        if (this.state.atVertex()) {
             this.compiler.commitVerticesMapReduce(action);
-        else
+            makeMapReduceString(CommitVerticesMapReduce.class, action.name());
+        } else {
             this.compiler.commitEdgesMap(action);
+            makeMapReduceString(CommitEdgesMap.class, action.name());
+        }
         return this;
     }
 
@@ -505,6 +543,7 @@ public class FaunusPipeline {
     public FaunusPipeline count() throws IOException {
         this.state.checkLocked();
         this.compiler.countMapReduce(this.state.getElementType());
+        makeMapReduceString(CountMapReduce.class);
         this.state.lock();
         return this;
     }
@@ -518,6 +557,7 @@ public class FaunusPipeline {
             final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
             if (null != pair) {
                 this.compiler.propertyMap(this.state.getElementType(), pair.getA(), pair.getB());
+                makeMapReduceString(PropertyMap.class, pair.getA());
             }
             this.state.lock();
         }
@@ -525,7 +565,7 @@ public class FaunusPipeline {
     }
 
     public FaunusGraph submit() throws Exception {
-        return submit("", false);
+        return submit(Tokens.EMPTY_STRING, false);
     }
 
     public FaunusGraph submit(final String script, final Boolean showHeader) throws Exception {
