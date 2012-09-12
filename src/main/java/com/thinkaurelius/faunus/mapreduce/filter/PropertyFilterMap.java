@@ -74,15 +74,15 @@ public class PropertyFilterMap {
                     context.getCounter(Counters.VERTICES_FILTERED).increment(1l);
                 }
             } else {
-                long counter = 0;
+                long edgesFiltered = 0;
                 for (Edge e : value.getEdges(Direction.BOTH)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths() && !this.elementChecker.isLegal(edge)) {
                         edge.clearPaths();
-                        counter++;
+                        edgesFiltered++;
                     }
                 }
-                context.getCounter(Counters.EDGES_FILTERED).increment(counter);
+                context.getCounter(Counters.EDGES_FILTERED).increment(edgesFiltered);
             }
 
             context.write(NullWritable.get(), value);

@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.mapreduce.util.WritableHandler;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;

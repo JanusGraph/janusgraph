@@ -24,6 +24,7 @@ import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
 import com.thinkaurelius.faunus.mapreduce.transform.OrderMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
 import com.thinkaurelius.faunus.mapreduce.transform.PropertyMap;
+import com.thinkaurelius.faunus.mapreduce.transform.PropertyMapMap;
 import com.thinkaurelius.faunus.mapreduce.transform.TransformMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
@@ -230,12 +231,18 @@ public class FaunusCompiler extends Configured implements Tool {
         this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
-    public void propertyMap(final Class<? extends Element> klass, final String key, final Class<? extends WritableComparable> type) throws IOException {
+    public void propertyMap(final Class<? extends Element> klass, final String key, final Class<? extends WritableComparable> type) {
         this.mapSequenceConfiguration.setClass(PropertyMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceConfiguration.set(PropertyMap.KEY + "-" + this.mapSequenceClasses.size(), key);
         this.mapSequenceConfiguration.setClass(PropertyMap.TYPE + "-" + this.mapSequenceClasses.size(), type, WritableComparable.class);
         this.mapSequenceClasses.add(PropertyMap.Map.class);
         this.setKeyValueClasses(LongWritable.class, type);
+    }
+    
+    public void propertyMapMap(final Class<? extends Element> klass) {
+        this.mapSequenceConfiguration.setClass(PropertyMapMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceClasses.add(PropertyMapMap.Map.class);
+        this.setKeyValueClasses(LongWritable.class, Text.class);
     }
 
     public void orderMapReduce(final Class<? extends Element> klass, final String elementKey, final String key, final Class<? extends WritableComparable> type, final Tokens.Order order) throws IOException {
@@ -483,6 +490,9 @@ public class FaunusCompiler extends Configured implements Tool {
             fileName = "../lib/faunus-" + Tokens.VERSION + "-job.jar";
         else
             throw new IllegalStateException("The Faunus Hadoop job jar could not be found: faunus-" + Tokens.VERSION + "-job.jar");
+
+        if (this.pathEnabled)
+            logger.warn("Path calculations are enabled for this Faunus job (space and time expensive)");
 
         for (final Job job : this.jobs) {
             job.getConfiguration().setBoolean(PATH_ENABLED, this.pathEnabled);

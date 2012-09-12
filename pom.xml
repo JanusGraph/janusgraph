@@ -20,6 +20,18 @@
             <url>http://markorodriguez.com</url>
         </developer>
     </developers>
+    <contributors>
+        <contributor>
+            <name>Stephen Mallette</name>
+            <email>spmva@genoprime.com</email>
+            <url>http://stephen.genoprime.com</url>
+        </contributor>
+        <contributor>
+            <name>Matthias Broecheler</name>
+            <email>me@matthiasb.com</email>
+            <url>http://matthiasb.com</url>
+        </contributor>
+    </contributors>
     <inceptionYear>2011</inceptionYear>
     <dependencies>
         <dependency>

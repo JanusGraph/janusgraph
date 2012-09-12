@@ -3,7 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.transform;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.WritableHandler;
+import com.thinkaurelius.faunus.mapreduce.util.WritableHandler;
 import com.thinkaurelius.faunus.mapreduce.util.ElementPicker;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;

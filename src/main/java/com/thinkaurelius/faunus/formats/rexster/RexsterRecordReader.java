@@ -27,7 +27,7 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
     /**
      * The current vertex in the reader.
      */
-    private FaunusVertex value = null;
+    private FaunusVertex value  = new FaunusVertex();
 
     private DataInputStream rexsterInputStream;
 
@@ -37,8 +37,6 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
     private long itemsIterated = 0;
 
     private boolean pathEnabled;
-
-    private FaunusVertex vertex = new FaunusVertex();
 
     public RexsterRecordReader(final RexsterConfiguration conf) {
         this.rexsterConf = conf;
@@ -58,9 +56,9 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         boolean isNext;
 
         try {
-            this.vertex.readFields(this.rexsterInputStream);
-            this.value = this.vertex;
-            this.value.enablePath(this.pathEnabled);
+            this.value.readFields(this.rexsterInputStream);
+            if(this.pathEnabled)
+                this.value.enablePath(true);
             itemsIterated++;
             isNext = true;
         } catch (Exception e) {

@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus;
+package com.thinkaurelius.faunus.mapreduce.util;
 
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;

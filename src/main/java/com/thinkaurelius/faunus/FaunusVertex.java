@@ -52,12 +52,19 @@ public class FaunusVertex extends FaunusElement implements Vertex {
     }
 
     public FaunusVertex reuse(final long id) {
-        this.id = id;
+        super.reuse(id);
         this.outEdges.clear();
         this.inEdges.clear();
-        this.properties = null;
-        this.clearPaths();
         return this;
+    }
+
+    public void enablePath(final boolean enablePath) {
+        super.enablePath(enablePath);
+        if (this.pathEnabled) {
+            for (final Edge edge : this.getEdges(BOTH)) {
+                ((FaunusEdge) edge).enablePath(true);
+            }
+        }
     }
 
     public void addAll(final FaunusVertex vertex) {

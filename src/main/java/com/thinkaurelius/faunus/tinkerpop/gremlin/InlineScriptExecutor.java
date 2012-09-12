@@ -60,18 +60,6 @@ public class InlineScriptExecutor {
         }
 
         final FaunusGremlinScriptEngine scriptEngine = new FaunusGremlinScriptEngine();
-        /*scriptEngine.eval("IN=" + Direction.class.getName() + ".IN");
-        scriptEngine.eval("OUT=" + Direction.class.getName() + ".OUT");
-        scriptEngine.eval("BOTH=" + Direction.class.getName() + ".BOTH");
-        scriptEngine.eval("eq=" + Query.Compare.class.getName() + ".EQUAL");
-        scriptEngine.eval("neq=" + Query.Compare.class.getName() + ".NOT_EQUAL");
-        scriptEngine.eval("lt=" + Query.Compare.class.getName() + ".LESS_THAN");
-        scriptEngine.eval("lte=" + Query.Compare.class.getName() + ".LESS_THAN_EQUAL");
-        scriptEngine.eval("gt=" + Query.Compare.class.getName() + ".GREATER_THAN");
-        scriptEngine.eval("gte=" + Query.Compare.class.getName() + ".GREATER_THAN_EQUAL");
-        scriptEngine.eval("incr=" + Tokens.Order.class.getName() + ".INCREASING");
-        scriptEngine.eval("decr=" + Tokens.Order.class.getName() + ".DECREASING");*/
-
         scriptEngine.put("g", new FaunusGraph(conf));
         Object result = scriptEngine.eval(script);
         if (result.getClass().equals(FaunusPipeline.class))

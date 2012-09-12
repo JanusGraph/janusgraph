@@ -9,6 +9,11 @@ public class Tokens {
 
     public enum Order {INCREASING, DECREASING}
 
+
+    public static enum F {
+        decr, incr
+    }
+
     private static final String NAMESPACE = "faunus.mapreduce";
 
     public static String makeNamespace(final Class klass) {
@@ -27,6 +32,6 @@ public class Tokens {
     public static final String TAB = "\t";
     public static final String NEWLINE = "\n";
     public static final String EMPTY_STRING = "";
-    
+
     public static final String VERSION = "0.1-SNAPSHOT";
 }

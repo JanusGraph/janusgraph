@@ -82,6 +82,29 @@ public class FaunusPipeline {
             return Query.Compare.GREATER_THAN;
     }
 
+    private Query.Compare convert(final com.tinkerpop.gremlin.Tokens.T compare) {
+        if (compare.equals(com.tinkerpop.gremlin.Tokens.T.eq))
+            return Query.Compare.EQUAL;
+        else if (compare.equals(com.tinkerpop.gremlin.Tokens.T.neq))
+            return Query.Compare.NOT_EQUAL;
+        else if (compare.equals(com.tinkerpop.gremlin.Tokens.T.gt))
+            return Query.Compare.GREATER_THAN;
+        else if (compare.equals(com.tinkerpop.gremlin.Tokens.T.gte))
+            return Query.Compare.GREATER_THAN_EQUAL;
+        else if (compare.equals(com.tinkerpop.gremlin.Tokens.T.lt))
+            return Query.Compare.LESS_THAN;
+        else
+            return Query.Compare.LESS_THAN_EQUAL;
+    }
+
+    private Tokens.Order convert(final Tokens.F order) {
+        if (order.equals(Tokens.F.decr))
+            return Tokens.Order.DECREASING;
+        else
+            return Tokens.Order.INCREASING;
+
+    }
+
     protected class State {
         private Class<? extends Element> elementType;
         private String property;
@@ -178,9 +201,7 @@ public class FaunusPipeline {
                                final Class<? extends WritableComparable> key2,
                                final Class<? extends WritableComparable> value2) throws IOException {
         this.state.checkLocked();
-        this.validateClosure(mapClosure);
-        this.validateClosure(reduceClosure);
-        this.compiler.stepMapReduce(this.state.getElementType(), mapClosure, reduceClosure,
+        this.compiler.stepMapReduce(this.state.getElementType(), this.validateClosure(mapClosure), this.validateClosure(reduceClosure),
                 convertJavaToHadoop(key1), convertJavaToHadoop(value1),
                 convertJavaToHadoop(key2), convertJavaToHadoop(value2));
         this.state.lock();
@@ -199,8 +220,7 @@ public class FaunusPipeline {
 
     public FaunusPipeline transform(final String closure) throws IOException {
         this.state.checkLocked();
-        this.validateClosure(closure);
-        this.compiler.transform(this.state.getElementType(), closure);
+        this.compiler.transform(this.state.getElementType(), this.validateClosure(closure));
         this.state.lock();
         makeMapReduceString(TransformMap.class);
         return this;
@@ -355,10 +375,18 @@ public class FaunusPipeline {
         return this.property(key, String.class);
     }
 
+    public FaunusPipeline map() {
+        this.state.checkLocked();
+        this.compiler.propertyMapMap(this.state.getElementType());
+        makeMapReduceString(PropertyMap.class);
+        this.state.lock();
+        return this;
+    }
+
     public FaunusPipeline label() {
         this.state.checkLocked();
         if (!this.state.atVertex()) {
-            this.state.setProperty(Tokens.LABEL, String.class);
+            this.property(Tokens.LABEL, String.class);
             return this;
         } else
             throw new IllegalStateException("This step can not follow a vertex-based step");
@@ -386,6 +414,19 @@ public class FaunusPipeline {
         return this;
     }
 
+    public FaunusPipeline order(final Tokens.Order order) throws IOException {
+        return this.order(order, Tokens.ID);
+    }
+
+    public FaunusPipeline order(final Tokens.F order, final String elementKey) throws IOException {
+        return this.order(convert(order), elementKey);
+    }
+
+    public FaunusPipeline order(final Tokens.F order) throws IOException {
+        return this.order(convert(order));
+    }
+
+
     //////// FILTERS
 
     public FaunusPipeline filter(final String closure) {
@@ -393,6 +434,14 @@ public class FaunusPipeline {
         this.compiler.filterMap(this.state.getElementType(), this.validateClosure(closure));
         makeMapReduceString(FilterMap.class);
         return this;
+    }
+
+    public FaunusPipeline has(final String key, final com.tinkerpop.gremlin.Tokens.T compare, final Object... values) {
+        return this.has(key, convert(compare), values);
+    }
+
+    public FaunusPipeline hasNot(final String key, final com.tinkerpop.gremlin.Tokens.T compare, final Object... values) {
+        return this.hasNot(key, convert(compare), values);
     }
 
     public FaunusPipeline has(final String key, final Query.Compare compare, final Object... values) {
@@ -440,20 +489,19 @@ public class FaunusPipeline {
         return this;
     }
 
-    public FaunusPipeline back(final int numberOfSteps) throws IOException {
+    /*public FaunusPipeline back(final int numberOfSteps) throws IOException {
         this.state.checkLocked();
-        this.compiler.backFilterMapReduce(this.state.getElementType(), this.stringRepresentation.size() - numberOfSteps);
+        this.compiler.backFilterMapReduce(this.state.getElementType(), this.state.getStep() - numberOfSteps);
         this.compiler.setPathEnabled(true);
         makeMapReduceString(BackFilterMapReduce.class, numberOfSteps);
         return this;
-    }
+    }*/
 
     //////// SIDEEFFECTS
 
     public FaunusPipeline sideEffect(final String closure) {
         this.state.checkLocked();
-        this.validateClosure(closure);
-        this.compiler.sideEffect(this.state.getElementType(), closure);
+        this.compiler.sideEffect(this.state.getElementType(), this.validateClosure(closure));
         makeMapReduceString(SideEffectMap.class);
         return this;
     }
@@ -462,7 +510,7 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.addStep(name);
 
-        final String string = "As[" + name + "," + this.stringRepresentation.get(this.state.getStep(name)) + "]";
+        final String string = "As(" + name + "," + this.stringRepresentation.get(this.state.getStep(name)) + ")";
         this.stringRepresentation.set(this.state.getStep(name), string);
         return this;
     }
@@ -505,9 +553,7 @@ public class FaunusPipeline {
 
     public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) throws IOException {
         this.state.checkLocked();
-        this.validateClosure(keyClosure);
-        this.validateClosure(valueClosure);
-        this.compiler.groupCountMapReduce(this.state.getElementType(), keyClosure, valueClosure);
+        this.compiler.groupCountMapReduce(this.state.getElementType(), this.validateClosure(keyClosure), this.validateClosure(valueClosure));
         makeMapReduceString(GroupCountMapReduce.class);
         this.state.lock();
         return this;
@@ -561,6 +607,7 @@ public class FaunusPipeline {
             }
             this.state.lock();
         }
+        this.compiler.completeSequence();
         return this;
     }
 
@@ -570,7 +617,6 @@ public class FaunusPipeline {
 
     public FaunusGraph submit(final String script, final Boolean showHeader) throws Exception {
         this.done();
-        this.compiler.completeSequence();
         ToolRunner.run(this.compiler, new String[]{script, showHeader.toString()});
         return this.compiler.isDerivationJob() ? this.graph.generateInverse() : this.graph;
     }
@@ -581,7 +627,7 @@ public class FaunusPipeline {
             return closure;
         } catch (ScriptException e) {
             closure = closure.trim();
-            closure = closure.replaceFirst("\\{", "{ it->");
+            closure = closure.replaceFirst("\\{", "{it->");
             try {
                 engine.eval(closure);
                 return closure;

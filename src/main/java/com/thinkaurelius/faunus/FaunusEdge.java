@@ -52,12 +52,10 @@ public class FaunusEdge extends FaunusElement implements Edge {
     }
 
     public FaunusEdge reuse(final long id, final long outVertex, final long inVertex, final String label) {
-        this.id = id;
+        super.reuse(id);
         this.outVertex = outVertex;
         this.inVertex = inVertex;
         this.setLabel(label);
-        this.properties = null;
-        this.clearPaths();
         return this;
     }
 

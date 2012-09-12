@@ -32,8 +32,6 @@ public class Console {
         for (String imps : Imports.getImports()) {
             groovy.execute("import " + imps);
         }
-        groovy.execute("import com.tinkerpop.gremlin.Tokens.T");
-        groovy.execute("import com.tinkerpop.gremlin.groovy.*");
 
         groovy.execute("hdfs = FileSystem.get(new Configuration())");
         groovy.execute("local = FileSystem.getLocal(new Configuration())");

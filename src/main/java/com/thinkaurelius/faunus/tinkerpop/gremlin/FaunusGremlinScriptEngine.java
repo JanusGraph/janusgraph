@@ -15,7 +15,7 @@ import java.io.StringReader;
  */
 public class FaunusGremlinScriptEngine extends GroovyScriptEngineImpl {
 
-    private String imports;
+    private String preEvaluate;
 
     public FaunusGremlinScriptEngine() {
         super();
@@ -26,24 +26,22 @@ public class FaunusGremlinScriptEngine extends GroovyScriptEngineImpl {
             sb.append("import ").append(imp).append("\n");
         }
 
-        sb.append("import com.tinkerpop.gremlin.Tokens.T\n");
-        sb.append("import com.tinkerpop.gremlin.groovy.*\n");
-        sb.append("hdfs = FileSystem.get(new Configuration())\n");
-        sb.append("local = FileSystem.getLocal(new Configuration())\n");
+        sb.append("hdfs = FileSystem.get(new Configuration())");
+        sb.append("local = FileSystem.getLocal(new Configuration())");
 
-        this.imports = sb.toString();
+        this.preEvaluate = sb.toString();
     }
 
     public Object eval(final String script) throws ScriptException {
-        return super.eval(this.imports + script);
+        return super.eval(this.preEvaluate + script);
     }
 
     public Object eval(final String script, final ScriptContext context) throws ScriptException {
-        return super.eval(this.imports + script, context);
+        return super.eval(this.preEvaluate + script, context);
     }
 
     public Object eval(final String script, final Bindings bindings) throws ScriptException {
-        return super.eval(this.imports + script, bindings);
+        return super.eval(this.preEvaluate + script, bindings);
     }
 
 
@@ -72,7 +70,7 @@ public class FaunusGremlinScriptEngine extends GroovyScriptEngineImpl {
     }
 
     private StringReader generateStringReader(final Reader reader) throws Exception {
-        final StringBuilder sb = new StringBuilder(this.imports);
+        final StringBuilder sb = new StringBuilder(this.preEvaluate);
         final BufferedReader bf = new BufferedReader(reader);
         String line;
         while ((line = bf.readLine()) != null) {

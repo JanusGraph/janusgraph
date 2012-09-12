@@ -28,7 +28,7 @@ class HadoopLoader {
         }
 
         FileSystem.metaClass.ls = { String path ->
-            if (null == path) path = "/"
+            if (null == path) path = ((FileSystem) delegate).getHomeDirectory().toString();
             return ((FileSystem) delegate).listStatus(new Path(path)).collect { it.toString() };
         }
 
@@ -71,16 +71,16 @@ class HadoopLoader {
 
         FileSystem.metaClass.head = { final String path, final long totalLines ->
             final FileSystem fs = (FileSystem) delegate;
-            final StringBuffer buffer = new StringBuffer();
+            final List<String> buffer = new ArrayList<String>();
             long lines = 0;
             HadoopLoader.getAllFilePaths(fs, path, new ArrayList<Path>()).each {
                 String line;
                 FSDataInputStream reader = fs.open(it);
                 while ((line = reader.readLine()) != null && ++lines <= totalLines) {
-                    buffer.append(line).append("\n")
+                    buffer.add(line);
                 }
             };
-            return "\n" + buffer.toString().trim();
+            return buffer;
 
         }
 

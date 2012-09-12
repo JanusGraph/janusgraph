@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.util.ElementPicker;
-import com.thinkaurelius.faunus.mapreduce.util.WritableHandler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -12,7 +11,6 @@ import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
@@ -20,40 +18,35 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class PropertyMap {
+public class PropertyMapMap {
 
     public static final String CLASS = Tokens.makeNamespace(PropertyMap.class) + ".class";
-    public static final String KEY = Tokens.makeNamespace(PropertyMap.class) + ".key";
-    public static final String TYPE = Tokens.makeNamespace(PropertyMap.class) + ".type";
 
     public enum Counters {
         VERTICES_PROCESSED,
         OUT_EDGES_PROCESSED
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, WritableComparable, WritableComparable> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Text> {
 
-        private String key;
         private boolean isVertex;
-        private WritableHandler handler;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
-            this.key = context.getConfiguration().get(KEY);
-            this.handler = new WritableHandler(context.getConfiguration().getClass(TYPE, Text.class, WritableComparable.class));
         }
 
         private LongWritable longWritable = new LongWritable();
+        private Text text = new Text();
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, WritableComparable, WritableComparable>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Text>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     this.longWritable.set(value.getIdAsLong());
-                    WritableComparable writable = this.handler.set(ElementPicker.getProperty(value, this.key));
+                    this.text.set(ElementPicker.getPropertyAsString(value, Tokens._PROPERTIES));
                     for (int i = 0; i < value.pathCount(); i++) {
-                        context.write(this.longWritable, writable);
+                        context.write(this.longWritable, this.text);
                     }
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
@@ -63,9 +56,9 @@ public class PropertyMap {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
                         this.longWritable.set(edge.getIdAsLong());
-                        WritableComparable writable = this.handler.set(ElementPicker.getProperty(edge, this.key));
+                        this.text.set(ElementPicker.getPropertyAsString(edge, Tokens._PROPERTIES));
                         for (int i = 0; i < edge.pathCount(); i++) {
-                            context.write(this.longWritable, writable);
+                            context.write(this.longWritable, this.text);
                         }
                         edgesProcessed++;
                     }

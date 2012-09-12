@@ -1,5 +1,5 @@
 ==============================================================
- Faunus: A Library of Graph-Based Hadoop Tools
+ Faunus: A Library of Hadoop-Based Graph Tools
  Copyright 2012 and onwards Aurelius
 ==============================================================
 
@@ -14,6 +14,7 @@ It also includes software from other open source projects including, but not lim
  * Apache Hadoop [http://hadoop.apache.org/]
  * TinkerPop Blueprints [http://blueprints.tinkerpop.com]
  * TinkerPop Gremlin [http://gremlin.tinkerpop.com]
+ * TinkerPop Rexster [http://rexster.tinkerpop.com]
  * Aurelius Titan [http://thinkaurelius.github.com/titan/]
  * Apache Cassandra [http://cassandra.apache.org/]
  * Codehaus Groovy [http://groovy.codehaus.org/]

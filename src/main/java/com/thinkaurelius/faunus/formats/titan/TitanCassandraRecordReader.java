@@ -186,8 +186,8 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
         currentRow = null;
         while (currentRow == null && iter.hasNext()) {
             currentRow = graph.readFaunusVertex(iter.next());
-            if (null != currentRow)
-                currentRow.enablePath(this.pathEnabled);
+            if (null != currentRow && this.pathEnabled)
+                currentRow.enablePath(true);
         }
         return currentRow != null;
     }

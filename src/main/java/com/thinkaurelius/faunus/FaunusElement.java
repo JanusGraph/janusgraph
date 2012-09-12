@@ -65,6 +65,15 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         this.id = id;
     }
 
+    protected FaunusElement reuse(final long id) {
+        this.id = id;
+        this.properties = null;
+        this.clearPaths();
+        if (this.pathEnabled)
+            this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+        return this;
+    }
+
     public void enablePath(final boolean enablePath) {
         this.pathEnabled = enablePath;
     }
