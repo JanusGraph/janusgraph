@@ -27,7 +27,8 @@ class HadoopLoader {
             return s.toString();
         }
 
-        FileSystem.metaClass.ls = { final String path ->
+        FileSystem.metaClass.ls = { String path ->
+            if (null == path) path = "/"
             return ((FileSystem) delegate).listStatus(new Path(path)).collect { it.toString() };
         }
 
@@ -53,17 +54,22 @@ class HadoopLoader {
         }
 
         FileSystem.metaClass.mergeToLocal = { final String from, final String to ->
-            FileSystem fs = (FileSystem) delegate;
-            FileSystem local = FileSystem.getLocal(new Configuration());
-            FSDataOutputStream outA = local.create(new Path(to));
-            FSDataInputStream inA = fs.open(new Path(from));
-            int c;
-            while ((c = inA.read()) != null) {
-                outA.write(c);
+            final FileSystem fs = (FileSystem) delegate;
+            final FileSystem local = FileSystem.getLocal(new Configuration());
+            final FSDataOutputStream outA = local.create(new Path(to));
+
+            getAllFilePaths(fs, from, []).each {
+                final FSDataInputStream inA = fs.open(it);
+                int c;
+                while ((c = inA.read()) != null) {
+                    outA.write(c);
+                }
+                inA.close();
             }
+            outA.close();
         }
 
-        FileSystem.metaClass.more = { final String path, final long totalLines ->
+        FileSystem.metaClass.head = { final String path, final long totalLines ->
             final FileSystem fs = (FileSystem) delegate;
             final StringBuffer buffer = new StringBuffer();
             long lines = 0;
@@ -78,8 +84,8 @@ class HadoopLoader {
 
         }
 
-        FileSystem.metaClass.more = { final String path ->
-            return FileSystem.more(path, Long.MAX_VALUE);
+        FileSystem.metaClass.head = { final String path ->
+            return ((FileSystem) delegate).head(path, Long.MAX_VALUE);
         }
     }
 

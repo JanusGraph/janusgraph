@@ -42,16 +42,16 @@ class GraphLoader {
             return new FaunusPipeline((FaunusGraph) delegate).V();
         }
 
-        /*FaunusGraph.metaClass.V = { final String key, final Object value ->
-            return new GremlinGroovyPipeline(((Graph) delegate).getVertices(key, value));
-        }*/
+        FaunusGraph.metaClass.V = { final String key, final Object value ->
+            return new FaunusPipeline((FaunusGraph) delegate).V().has(key, value);
+        }
 
         FaunusGraph.metaClass.E = {->
             return new FaunusPipeline((FaunusGraph) delegate).E();
         }
 
-        /*FaunusGraph.metaClass.E = { final String key, final Object value ->
-            return new GremlinGroovyPipeline(((Graph) delegate).getEdges(key, value));
-        }*/
+        FaunusGraph.metaClass.E = { final String key, final Object value ->
+            return new FaunusPipeline((FaunusGraph) delegate).E().has(key, value);
+        }
     }
 }

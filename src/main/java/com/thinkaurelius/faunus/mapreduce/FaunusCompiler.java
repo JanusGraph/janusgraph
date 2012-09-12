@@ -107,7 +107,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.jobScript = jobScript;
         this.graph = graph;
     }
-    
+
     public List<Job> getJobs() {
         return this.jobs;
     }
@@ -429,6 +429,13 @@ public class FaunusCompiler extends Configured implements Tool {
 
     /////////////////////////////// UTILITIES
 
+    public boolean isDerivation() {
+        return this.derivationJob;
+    }
+    
+    public FaunusGraph getGraph() {
+        return this.graph;
+    }
 
     public void completeSequence() throws IOException {
         if (this.mapSequenceClasses.size() > 0) {

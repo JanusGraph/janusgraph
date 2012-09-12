@@ -349,8 +349,7 @@ public class FaunusPipeline {
 
     public FaunusPipeline filter(final String closure) {
         this.state.checkLocked();
-        this.validateClosure(closure);
-        this.compiler.filterMap(this.state.getElementType(), closure);
+        this.compiler.filterMap(this.state.getElementType(), this.validateClosure(closure));
         return this;
     }
 
@@ -482,9 +481,12 @@ public class FaunusPipeline {
         return this;
     }
 
-    public void submit() throws Exception {
+    public FaunusGraph submit() throws Exception {
         this.done();
         this.compiler.completeSequence();
+
+        final FaunusGraph graph = this.compiler.isDerivation() ? this.compiler.getGraph().generateInverse() : this.compiler.getGraph();
+
         final String fileName;
         if (new File("target/faunus-" + Tokens.VERSION + "-job.jar").exists())
             fileName = "target/faunus-" + Tokens.VERSION + "-job.jar";
@@ -499,6 +501,8 @@ public class FaunusPipeline {
             job.getConfiguration().set("mapred.jar", fileName);
         }
         ToolRunner.run(this.compiler, new String[0]);
+
+        return graph;
     }
 
     private FaunusPipeline done() throws IOException {
@@ -512,10 +516,18 @@ public class FaunusPipeline {
         return this;
     }
 
-    private void validateClosure(final String closure) {
+    private String validateClosure(String closure) {
         try {
             engine.eval(closure);
+            return closure;
         } catch (ScriptException e) {
+            closure = closure.trim();
+            closure = closure.replaceFirst("\\{", "{ it->");
+            try {
+                engine.eval(closure);
+                return closure;
+            } catch (ScriptException e1) {
+            }
             throw new IllegalArgumentException("The provided closure is in error: " + e.getMessage(), e);
         }
     }
