@@ -1,9 +1,9 @@
 package com.thinkaurelius.faunus.formats.rexster;
 
-import com.thinkaurelius.faunus.util.DefaultElementIdHandler;
-import com.thinkaurelius.faunus.util.ElementIdHandler;
-import com.thinkaurelius.faunus.util.OrientElementIdHandler;
-import com.thinkaurelius.faunus.util.VertexToFaunusBinary;
+import com.thinkaurelius.faunus.formats.rexster.util.DefaultElementIdHandler;
+import com.thinkaurelius.faunus.formats.rexster.util.ElementIdHandler;
+import com.thinkaurelius.faunus.formats.rexster.util.OrientElementIdHandler;
+import com.thinkaurelius.faunus.formats.rexster.util.VertexToFaunusBinary;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.rexster.RexsterApplicationGraph;

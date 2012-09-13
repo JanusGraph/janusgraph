@@ -119,7 +119,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         }
     }
 
-    public long incrPath(final long amount) {
+    public long incrPath(final long amount) throws IllegalStateException {
         if (this.pathEnabled)
             throw new IllegalStateException("Path calculations are enabled -- use addPath()");
         else

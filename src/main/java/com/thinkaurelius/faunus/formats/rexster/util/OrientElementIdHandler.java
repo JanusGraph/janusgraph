@@ -1,7 +1,4 @@
-package com.thinkaurelius.faunus.util;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+package com.thinkaurelius.faunus.formats.rexster.util;
 
 /**
  * ElementIdHandler implementation for OrientGraph usage.

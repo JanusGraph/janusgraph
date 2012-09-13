@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.util;
+package com.thinkaurelius.faunus.formats.rexster.util;
 
 /**
  * All graph element identifiers must be of the long data type.  Implementations of this

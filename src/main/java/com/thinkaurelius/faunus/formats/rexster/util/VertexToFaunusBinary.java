@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.util;
+package com.thinkaurelius.faunus.formats.rexster.util;
 
 import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;

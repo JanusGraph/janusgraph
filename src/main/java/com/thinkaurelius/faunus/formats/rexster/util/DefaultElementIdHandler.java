@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.util;
+package com.thinkaurelius.faunus.formats.rexster.util;
 
 /**
  * Assumes that the identifier is a long itself or some other representation of a long.

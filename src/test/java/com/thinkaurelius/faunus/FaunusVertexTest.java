@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.util.MicroElement;
 import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -39,7 +40,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(0, new FaunusVertex.Comparator().compare(bytes1.toByteArray(), 0, bytes1.size(), bytes1.toByteArray(), 0, bytes1.size()));
     }
 
-    /*public void testSimpleVertexSerialization() throws IOException {
+    public void testSimpleVertexSerialization() throws IOException {
 
         FaunusVertex vertex1 = new FaunusVertex(10l);
 
@@ -47,12 +48,13 @@ public class FaunusVertexTest extends BaseTest {
         DataOutputStream out = new DataOutputStream(bytes);
         vertex1.write(out);
 
-        // id length is 8 bytes
-        // properties size 2 bytes
-        // paths size 4 bytes
-        // out edge types size 2 bytes
-        // in edge types size 2 bytes
-        assertEquals(bytes.toByteArray().length, 18);
+        // id length is 8 bytes  (long)
+        // pathsEnabled boolean 1 byte (boolean)
+        // paths size 8 bytes (long)
+        // properties size 2 bytes (short)
+        // out edge types size 2 bytes (short)
+        // in edge types size 2 bytes (short)
+        assertEquals(bytes.toByteArray().length, 23);
         FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         assertEquals(vertex1, vertex2);
@@ -63,12 +65,14 @@ public class FaunusVertexTest extends BaseTest {
         assertFalse(vertex2.hasPaths());
         assertEquals(vertex1.pathCount(), 0);
         assertEquals(vertex2.pathCount(), 0);
+        assertFalse(vertex1.pathEnabled);
+        assertFalse(vertex2.pathEnabled);
         assertFalse(vertex2.getEdges(Direction.OUT).iterator().hasNext());
         assertFalse(vertex2.getEdges(Direction.IN).iterator().hasNext());
         assertFalse(vertex2.getEdges(Direction.BOTH).iterator().hasNext());
         assertEquals(vertex2.getPropertyKeys().size(), 0);
 
-    }*/
+    }
 
     public void testVertexSerialization() throws IOException {
 
@@ -88,7 +92,6 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1.getProperty("latitude"), 11.4f);
         assertEquals(vertex1.getProperty("size"), 10l);
         assertTrue((Boolean) vertex1.getProperty("boolean"));
-        vertex1.startPath();
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
@@ -106,10 +109,6 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex2.getProperty("latitude"), 11.4f);
         assertEquals(vertex1.getProperty("size"), 10l);
         assertTrue((Boolean) vertex2.getProperty("boolean"));
-//TODO        assertEquals(vertex2.getPaths().size(), 1);
-//        assertEquals(vertex2.getPaths().get(0).size(), 1);
-        //       assertEquals(vertex2.getPaths().get(0).get(0).getId(), 10l);
-
         Iterator<Edge> edges = vertex2.getEdges(Direction.OUT).iterator();
         assertTrue(edges.hasNext());
         assertEquals(edges.next().getLabel(), "knows");
@@ -119,7 +118,7 @@ public class FaunusVertexTest extends BaseTest {
 
     }
 
-    public void testVertexSerialization2() throws IOException {
+    public void testVertexSerializationWithPaths() throws IOException {
 
         FaunusVertex vertex1 = new FaunusVertex(10);
         vertex1.enablePath(true); // TODO: look this all over
@@ -156,12 +155,12 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1.getProperty("size"), 10l);
         assertEquals(vertex2.pathCount(), 2);
         assertTrue(vertex2.hasPaths());
-/*        for (List<MicroElement> path : vertex2.getPaths()) {
+        for (List<MicroElement> path : vertex2.getPaths()) {
             assertEquals(path.get(0).getId(), 10l);
             assertTrue(path.get(1).getId() == 1l || path.get(1).getId() == 2l);
             assertEquals(path.size(), 2);
         }
-*/
+
         Iterator<Edge> edges = vertex2.getEdges(Direction.OUT).iterator();
         assertTrue(edges.hasNext());
         Edge edge = edges.next();
@@ -311,5 +310,36 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(asList(vertices.get(4l).getEdges(Direction.BOTH, "knows")).size(), 1);
         assertEquals(asList(vertices.get(4l).getEdges(Direction.BOTH, "knows", "created")).size(), 3);
         assertEquals(asList(vertices.get(4l).getEdges(Direction.BOTH, "blah")).size(), 0);
+    }
+    
+    public void testVertexReuse() throws Exception {
+        FaunusVertex vertex = new FaunusVertex();
+        assertEquals(vertex.getId(), -1l);
+        assertFalse(vertex.pathEnabled);
+        assertFalse(vertex.getEdges(BOTH).iterator().hasNext());
+        vertex.addEdge(OUT, new FaunusEdge(1,2,"knows"));
+        assertTrue(vertex.getEdges(BOTH).iterator().hasNext());
+        assertEquals(vertex.getPropertyKeys().size(), 0);
+        vertex.setProperty("name","marko");
+        assertEquals(vertex.getProperty("name"),"marko");
+        assertEquals(vertex.getPropertyKeys().size(), 1);
+        
+        vertex.reuse(10);
+        assertEquals(vertex.getId(), 10l);
+        assertFalse(vertex.getEdges(BOTH).iterator().hasNext());
+        assertEquals(vertex.getPropertyKeys().size(), 0);
+        assertNull(vertex.getProperty("name"));
+        assertFalse(vertex.pathEnabled);
+
+        vertex.enablePath(true);
+        assertTrue(vertex.pathEnabled);
+
+        vertex.reuse(220);
+        assertEquals(vertex.getId(), 220l);
+        assertFalse(vertex.getEdges(BOTH).iterator().hasNext());
+        assertEquals(vertex.getPropertyKeys().size(), 0);
+        assertNull(vertex.getProperty("name"));
+        assertTrue(vertex.pathEnabled);
+        
     }
 }

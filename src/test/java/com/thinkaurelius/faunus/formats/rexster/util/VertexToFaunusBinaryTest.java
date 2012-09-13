@@ -1,8 +1,9 @@
-package com.thinkaurelius.faunus.util;
+package com.thinkaurelius.faunus.formats.rexster.util;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.rexster.util.VertexToFaunusBinary;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
