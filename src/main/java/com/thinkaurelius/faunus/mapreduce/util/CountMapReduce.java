@@ -63,12 +63,27 @@ public class CountMapReduce {
         }
     }
 
+    public static class Combiner extends Reducer<IntWritable, LongWritable, IntWritable, LongWritable> {
+
+        private final LongWritable longWritable = new LongWritable();
+
+        @Override
+        public void reduce(final IntWritable key, final Iterable<LongWritable> values, final Reducer<IntWritable, LongWritable, IntWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+            long totalCount = 0;
+            for (final LongWritable temp : values) {
+                totalCount = totalCount + temp.get();
+            }
+            this.longWritable.set(totalCount);
+            context.write(key, this.longWritable);
+        }
+    }
+
     public static class Reduce extends Reducer<IntWritable, LongWritable, NullWritable, Text> {
 
         @Override
         public void reduce(final IntWritable key, final Iterable<LongWritable> values, final Reducer<IntWritable, LongWritable, NullWritable, Text>.Context context) throws IOException, InterruptedException {
             long totalCount = 0;
-            for (LongWritable temp : values) {
+            for (final LongWritable temp : values) {
                 totalCount = totalCount + temp.get();
             }
             context.write(NullWritable.get(), new Text(String.valueOf(totalCount)));

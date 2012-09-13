@@ -8,6 +8,7 @@ import com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
+import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
@@ -238,7 +239,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceClasses.add(PropertyMap.Map.class);
         this.setKeyValueClasses(LongWritable.class, type);
     }
-    
+
     public void propertyMapMap(final Class<? extends Element> klass) {
         this.mapSequenceConfiguration.setClass(PropertyMapMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceClasses.add(PropertyMapMap.Map.class);
@@ -355,6 +356,12 @@ public class FaunusCompiler extends Configured implements Tool {
         this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
+    public void cyclePathFilterMap(final Class<? extends Element> klass) {
+        this.mapSequenceConfiguration.setClass(CyclicPathFilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
+        this.mapSequenceClasses.add(CyclicPathFilterMap.Map.class);
+        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
+    }
+
     ///////////// SIDE-EFFECTS
 
     public void sideEffect(final Class<? extends Element> klass, final String closure) {
@@ -427,7 +434,7 @@ public class FaunusCompiler extends Configured implements Tool {
     public void countMapReduce(final Class<? extends Element> klass) throws IOException {
         this.mapSequenceConfiguration.setClass(CountMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceClasses.add(CountMapReduce.Map.class);
-        this.comparatorClass = IntWritable.Comparator.class;
+        this.combinerClass = CountMapReduce.Combiner.class;
         this.reduceClass = CountMapReduce.Reduce.class;
         this.setKeyValueClasses(IntWritable.class, LongWritable.class, IntWritable.class, Text.class);
         this.completeSequence();

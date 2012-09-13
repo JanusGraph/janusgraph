@@ -333,6 +333,7 @@ public class FaunusVertexTest extends BaseTest {
 
         vertex.enablePath(true);
         assertTrue(vertex.pathEnabled);
+        assertEquals(vertex.getPaths().size(),0);
 
         vertex.reuse(220);
         assertEquals(vertex.getId(), 220l);
@@ -340,6 +341,17 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex.getPropertyKeys().size(), 0);
         assertNull(vertex.getProperty("name"));
         assertTrue(vertex.pathEnabled);
-        
+        vertex.startPath();
+        assertEquals(vertex.getPaths().size(),1);
+        assertEquals(vertex.getPaths().get(0).size(),1);
+        assertEquals(vertex.getPaths().get(0).get(0).getId(),220);
+
+        vertex.reuse(34);
+        assertTrue(vertex.pathEnabled);
+        assertEquals(vertex.getPaths().size(),0);
+        vertex.startPath();
+        assertEquals(vertex.getPaths().size(),1);
+        assertEquals(vertex.getPaths().get(0).size(),1);
+        assertEquals(vertex.getPaths().get(0).get(0).getId(),34);
     }
 }

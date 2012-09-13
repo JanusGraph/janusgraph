@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
+import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
@@ -496,6 +497,14 @@ public class FaunusPipeline {
         makeMapReduceString(BackFilterMapReduce.class, numberOfSteps);
         return this;
     }*/
+
+    public FaunusPipeline simplePath() {
+        this.state.checkLocked();
+        this.compiler.cyclePathFilterMap(this.state.getElementType());
+        this.compiler.setPathEnabled(true);
+        makeMapReduceString(CyclicPathFilterMap.class);
+        return this;
+    }
 
     //////// SIDEEFFECTS
 

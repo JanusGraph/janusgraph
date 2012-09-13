@@ -14,4 +14,15 @@ public abstract class MicroElement {
     public long getId() {
         return this.id;
     }
+
+    public int hashCode() {
+        return Long.valueOf(this.id).hashCode();
+    }
+
+    public boolean equals(final Object object) {
+        if (object.getClass().equals(this.getClass()))
+            return this.id == ((MicroElement) object).getId();
+        else
+            return false;
+    }
 }
