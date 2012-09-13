@@ -50,10 +50,15 @@ import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
+import org.apache.hadoop.io.compress.BZip2Codec;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.DefaultCodec;
+import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -447,19 +452,22 @@ public class FaunusCompiler extends Configured implements Tool {
             this.mapSequenceConfiguration.setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
             final Job job = new Job(this.mapSequenceConfiguration, this.toStringOfJob(MapSequence.class));
 
-            // copy over any global configuration from faunus.properties and -D CLI
-            for (final Map.Entry<String, String> entry : this.graph.getConfiguration()) {
-                job.getConfiguration().set(entry.getKey(), entry.getValue());
-            }
-
             job.setJarByClass(FaunusCompiler.class);
             job.setMapperClass(MapSequence.Map.class);
             if (this.reduceClass != null) {
                 job.setReducerClass(this.reduceClass);
                 if (this.combinerClass != null)
                     job.setCombinerClass(this.combinerClass);
+                // if there is a reduce task, compress the map output to limit network traffic
+                job.getConfiguration().setBoolean("mapred.compress.map.output", true);
+                job.getConfiguration().setClass("mapred.map.output.compression.codec", DefaultCodec.class, CompressionCodec.class);
             } else {
                 job.setNumReduceTasks(0);
+            }
+
+            // copy over any global configuration from faunus.properties and -D CLI
+            for (final Map.Entry<String, String> entry : this.graph.getConfiguration()) {
+                job.getConfiguration().set(entry.getKey(), entry.getValue());
             }
 
             job.setMapOutputKeyClass(this.mapOutputKey);
@@ -489,14 +497,14 @@ public class FaunusCompiler extends Configured implements Tool {
         }
 
         final String fileName;
-        if (new File("target/faunus-" + Tokens.VERSION + "-job.jar").exists())
-            fileName = "target/faunus-" + Tokens.VERSION + "-job.jar";
-        else if (new File("lib/faunus-" + Tokens.VERSION + "-job.jar").exists())
-            fileName = "lib/faunus-" + Tokens.VERSION + "-job.jar";
-        else if (new File("../lib/faunus-" + Tokens.VERSION + "-job.jar").exists())
-            fileName = "../lib/faunus-" + Tokens.VERSION + "-job.jar";
+        if (new File("target/" + Tokens.FAUNUS_JOB_JAR).exists())
+            fileName = "target/" + Tokens.FAUNUS_JOB_JAR;
+        else if (new File("lib/" + Tokens.FAUNUS_JOB_JAR).exists())
+            fileName = "lib/" + Tokens.FAUNUS_JOB_JAR;
+        else if (new File("../lib/" + Tokens.FAUNUS_JOB_JAR).exists())
+            fileName = "../lib/" + Tokens.FAUNUS_JOB_JAR;
         else
-            throw new IllegalStateException("The Faunus Hadoop job jar could not be found: faunus-" + Tokens.VERSION + "-job.jar");
+            throw new IllegalStateException("The Faunus Hadoop job jar could not be found: faunus-" + Tokens.FAUNUS_JOB_JAR);
 
         if (this.pathEnabled)
             logger.warn("Path calculations are enabled for this Faunus job (space and time expensive)");
@@ -508,6 +516,9 @@ public class FaunusCompiler extends Configured implements Tool {
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConfiguration());
         try {
+
+            //////// HANDLING INPUT
+
             final Job startJob = this.jobs.get(0);
             startJob.setInputFormatClass(this.graph.getGraphInputFormat());
             // configure input location
@@ -528,12 +539,16 @@ public class FaunusCompiler extends Configured implements Tool {
             } else
                 throw new IOException(this.graph.getGraphInputFormat().getName() + " is not a supported input format");
 
+            //////// CHAINING JOBS TOGETHER
 
             if (this.jobs.size() > 1) {
                 final Path path = new Path(UUID.randomUUID().toString());
                 FileOutputFormat.setOutputPath(startJob, path);
                 this.intermediateFiles.add(path);
                 startJob.setOutputFormatClass(INTERMEDIATE_OUTPUT_FORMAT);
+                SequenceFileOutputFormat.setCompressOutput(startJob, true);
+                SequenceFileOutputFormat.setOutputCompressorClass(startJob, BZip2Codec.class);
+                SequenceFileOutputFormat.setOutputCompressionType(startJob, SequenceFile.CompressionType.BLOCK);
             } else {
                 FileOutputFormat.setOutputPath(startJob, this.graph.getOutputLocation());
                 startJob.setOutputFormatClass(this.derivationJob ? this.graph.getGraphOutputFormat() : this.graph.getStatisticsOutputFormat());
@@ -544,6 +559,10 @@ public class FaunusCompiler extends Configured implements Tool {
                     final Job midJob = this.jobs.get(i);
                     midJob.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
                     midJob.setOutputFormatClass(INTERMEDIATE_OUTPUT_FORMAT);
+                    SequenceFileOutputFormat.setCompressOutput(midJob, true);
+                    SequenceFileOutputFormat.setOutputCompressorClass(midJob, BZip2Codec.class);
+                    SequenceFileOutputFormat.setOutputCompressionType(midJob, SequenceFile.CompressionType.BLOCK);
+
                     FileInputFormat.setInputPaths(midJob, this.intermediateFiles.get(this.intermediateFiles.size() - 1));
                     final Path path = new Path(UUID.randomUUID().toString());
                     FileOutputFormat.setOutputPath(midJob, path);
@@ -625,7 +644,7 @@ public class FaunusCompiler extends Configured implements Tool {
                 }
             }
             if (!success) {
-                logger.error("There was an error in the Faunus job -- remaining MapReduce jobs have been canceled");
+                logger.error("Faunus job error -- emaining MapReduce jobs have been canceled");
                 return -1;
             }
         }

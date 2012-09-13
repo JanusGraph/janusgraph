@@ -60,7 +60,7 @@ public class CyclicPathFilterMap {
                     if (edge.hasPaths()) {
                         final Iterator<List<MicroElement>> itty = edge.getPaths().iterator();
                         while (itty.hasNext()) {
-                            List<MicroElement> path = itty.next();
+                            final List<MicroElement> path = itty.next();
                             this.set.clear();
                             this.set.addAll(path);
                             if (path.size() != this.set.size()) {

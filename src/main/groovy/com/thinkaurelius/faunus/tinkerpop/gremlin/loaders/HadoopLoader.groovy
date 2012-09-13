@@ -71,20 +71,17 @@ class HadoopLoader {
 
         FileSystem.metaClass.head = { final String path, final long totalLines ->
             final FileSystem fs = (FileSystem) delegate;
-            final List<String> buffer = new ArrayList<String>();
-            long lines = 0;
-            HadoopLoader.getAllFilePaths(fs, path, new ArrayList<Path>()).each {
-                String line;
-                FSDataInputStream reader = fs.open(it);
-                while ((line = reader.readLine()) != null && ++lines <= totalLines) {
-                    buffer.add(line);
-                }
-            };
-            return buffer;
+            List<Path> paths = new LinkedList<Path>(HadoopLoader.getAllFilePaths(fs, path, []));
+            if (paths.isEmpty())
+                return [];
+            else
+                return new TextFileIterator(fs, paths, totalLines);
 
         }
 
-        FileSystem.metaClass.head = { final String path ->
+
+        FileSystem.metaClass.head = {
+            final String path ->
             return ((FileSystem) delegate).head(path, Long.MAX_VALUE);
         }
     }
@@ -100,5 +97,60 @@ class HadoopLoader {
         }
         return paths;
     }
+
+    private static class TextFileIterator implements Iterator<String> {
+        private final FileSystem fs;
+        private final Queue<Path> paths;
+        private final long totalLines;
+        private long lines = 0;
+        private FSDataInputStream reader;
+        private String line;
+
+
+        public TextFileIterator(final FileSystem fs, final Queue<Path> paths, final long totalLines) {
+            this.fs = fs;
+            this.totalLines = totalLines;
+            this.paths = paths;
+            this.reader = fs.open(paths.remove());
+        }
+
+        public boolean hasNext() {
+            if (null != line)
+                return true;
+
+            if (this.lines >= this.totalLines || this.reader == null)
+                return false;
+
+            this.line = this.reader.readLine();
+            if (this.line != null) {
+                this.lines++;
+                return true;
+            } else {
+                this.reader.close();
+                if (this.paths.isEmpty())
+                    this.reader = null;
+                else
+                    this.reader = this.fs.open(this.paths.remove());
+                return this.hasNext();
+            }
+        }
+
+        public String next() {
+            if (null != line) {
+                final String temp = line;
+                line = null;
+                return temp;
+            } else if (this.hasNext()) {
+                return this.next();
+            } else {
+                throw new NoSuchElementException();
+            }
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
 
 }

@@ -9,6 +9,7 @@ import java.util.List;
 public class Imports {
 
     private static final List<String> imports = new ArrayList<String>();
+    private static final List<String> evaluates = new ArrayList<String>();
 
     static {
         // hadoop
@@ -37,9 +38,15 @@ public class Imports {
 
         imports.addAll(com.tinkerpop.gremlin.Imports.getImports());
 
+        evaluates.add("hdfs = FileSystem.get(new Configuration())");
+        evaluates.add("local = FileSystem.getLocal(new Configuration())");
     }
 
     public static List<String> getImports() {
         return Imports.imports;
+    }
+
+    public static List<String> getEvaluates() {
+        return Imports.evaluates;
     }
 }

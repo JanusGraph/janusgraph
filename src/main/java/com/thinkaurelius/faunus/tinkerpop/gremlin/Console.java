@@ -29,12 +29,12 @@ public class Console {
 
         final Groovysh groovy = new Groovysh();
         groovy.setResultHook(new NullResultHookClosure(groovy));
-        for (String imps : Imports.getImports()) {
+        for (final String imps : Imports.getImports()) {
             groovy.execute("import " + imps);
         }
-
-        groovy.execute("hdfs = FileSystem.get(new Configuration())");
-        groovy.execute("local = FileSystem.getLocal(new Configuration())");
+        for (final String evs : Imports.getEvaluates()) {
+            groovy.execute(evs);
+        }
 
         groovy.setResultHook(new ResultHookClosure(groovy, io, resultPrompt));
         groovy.setHistory(new History());

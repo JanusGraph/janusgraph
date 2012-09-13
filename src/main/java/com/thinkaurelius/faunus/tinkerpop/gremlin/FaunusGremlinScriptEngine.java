@@ -25,9 +25,9 @@ public class FaunusGremlinScriptEngine extends GroovyScriptEngineImpl {
         for (final String imp : Imports.getImports()) {
             sb.append("import ").append(imp).append("\n");
         }
-
-        sb.append("hdfs = FileSystem.get(new Configuration())");
-        sb.append("local = FileSystem.getLocal(new Configuration())");
+        for (final String evs : Imports.getEvaluates()) {
+            sb.append(evs).append("\n");
+        }
 
         this.preEvaluate = sb.toString();
     }

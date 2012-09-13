@@ -34,4 +34,5 @@ public class Tokens {
     public static final String EMPTY_STRING = "";
 
     public static final String VERSION = "0.1-SNAPSHOT";
+    public static final String FAUNUS_JOB_JAR = "faunus-" + VERSION + "-job.jar";
 }
