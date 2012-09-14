@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.graphdb.types.group.StandardTypeGroup;
@@ -20,15 +21,18 @@ public abstract class SystemTypeManager {
 	public static SystemType getSystemEdgeType(long id) {
 		if (systemEdgeTypes==null) {
 			//Initialize
-			systemEdgeTypes=new HashMap<Long,SystemType>();
-			for (SystemType et : SystemKey.values()) {
-				assert !systemEdgeTypes.containsKey(et.getID());
-				systemEdgeTypes.put(Long.valueOf(et.getID()), et);
-			}
-			for (SystemType et : SystemLabel.values()) {
-				assert !systemEdgeTypes.containsKey(et.getID());
-				systemEdgeTypes.put(Long.valueOf(et.getID()), et);
-			}
+            synchronized (SystemTypeManager.class) {
+                if (systemEdgeTypes==null) {
+                    ImmutableMap.Builder<Long,SystemType> builder = ImmutableMap.builder();
+                    for (SystemType et : SystemKey.values()) {
+                        builder.put(Long.valueOf(et.getID()), et);
+                    }
+                    for (SystemType et : SystemLabel.values()) {
+                        builder.put(Long.valueOf(et.getID()), et);
+                    }
+                    systemEdgeTypes = builder.build();
+                }
+            }
 		}
 		SystemType et = systemEdgeTypes.get(Long.valueOf(id));
 		if (et==null) throw new IllegalArgumentException("System edge type is unknown with ID:" + id);
