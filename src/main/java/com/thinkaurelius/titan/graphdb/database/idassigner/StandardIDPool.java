@@ -60,7 +60,7 @@ public class StandardIDPool implements IDPool {
             log.debug("Waiting for id renewal thread");
             idBlockRenewer.join(MAX_WAIT_TIME);
         }
-        Preconditions.checkArgument(bufferMaxID>0 && bufferNextID>0);
+        Preconditions.checkArgument(bufferMaxID>0 && bufferNextID>0,bufferMaxID+" vs. " + bufferNextID);
         
         nextID = bufferNextID;
         maxID = bufferMaxID;
