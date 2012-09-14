@@ -595,15 +595,15 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	}
 	
 	@Override
-	public void save(Collection<InternalRelation> addedRelations,
-			Collection<InternalRelation> deletedRelations, InternalTitanTransaction tx) throws StorageException {
+	public void save(final Collection<InternalRelation> addedRelations,
+			final Collection<InternalRelation> deletedRelations, final InternalTitanTransaction tx) throws StorageException {
 		//Setup
         log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
-		Map<TitanType,TypeSignature> signatures = new HashMap<TitanType,TypeSignature>();
-		TransactionHandle txh = tx.getTxHandle();
+		final Map<TitanType,TypeSignature> signatures = new HashMap<TitanType,TypeSignature>();
+		final TransactionHandle txh = tx.getTxHandle();
 
-		StoreMutator mutator = getStoreMutator(txh);
-        boolean acquireLocks = tx.getTxConfiguration().hasAcquireLocks();
+		final StoreMutator mutator = getStoreMutator(txh);
+        final boolean acquireLocks = tx.getTxConfiguration().hasAcquireLocks();
 
         //1. Assign TitanVertex IDs
         assignIDs(addedRelations,tx);
@@ -634,8 +634,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     
                 }
             }
-            deletedRelations=null;
-    
     
             ListMultimap<InternalTitanType,InternalRelation> simpleEdgeTypes = null;
             ListMultimap<InternalTitanType,InternalRelation> otherEdgeTypes = null;
@@ -678,7 +676,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                     lockKeyedProperty((TitanProperty)edge,mutator);
                 }
             }
-            addedRelations.clear(); addedRelations =null;
             
             //3. Persist
             if (simpleEdgeTypes!=null) persist(simpleEdgeTypes,signatures,tx,mutator);
@@ -698,6 +695,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
             if (e instanceof TemporaryStorageException) {
                 if (saveAttempts<maxSaveRetryAttempts) {
                     saveAttempts++;
+                    log.info("Temporary exception during commit. Attempting retry in {} ms. {}",retrySaveWaitTime,e);
                     //Wait before retry
                     if (retrySaveWaitTime>0) {
                         try {
