@@ -564,7 +564,7 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.compiler.groupCountMapReduce(this.state.getElementType(), this.validateClosure(keyClosure), this.validateClosure(valueClosure));
         makeMapReduceString(GroupCountMapReduce.class);
-        this.state.lock();
+        //this.state.lock();
         return this;
     }
 

@@ -13,8 +13,10 @@ import groovy.lang.Closure;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
@@ -42,6 +44,8 @@ public class GroupCountMapReduce {
         private boolean isVertex;
         private CounterMap<Object> map;
 
+        private MultipleOutputs<WritableComparable,WritableComparable> outputs;
+
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             try {
@@ -52,6 +56,7 @@ public class GroupCountMapReduce {
             }
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
             this.map = new CounterMap<Object>();
+            outputs = new MultipleOutputs<WritableComparable,WritableComparable>(context);
         }
 
         @Override
@@ -81,6 +86,8 @@ public class GroupCountMapReduce {
             if (this.map.size() > 1000) {
                 this.cleanup(context);
             }
+
+            this.outputs.write("graph", NullWritable.get(), value);
         }
 
 
@@ -96,11 +103,20 @@ public class GroupCountMapReduce {
                 context.write(this.textWritable, this.longWritable);
             }
             this.map.clear();
+            this.outputs.close();
         }
 
     }
 
     public static class Reduce extends Reducer<Text, LongWritable, Text, LongWritable> {
+
+        private MultipleOutputs<WritableComparable, LongWritable> outputs;
+
+        @Override
+        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
+            this.outputs = new MultipleOutputs<WritableComparable, LongWritable>(context);
+
+        }
 
         private final LongWritable longWritable = new LongWritable();
 
@@ -111,7 +127,14 @@ public class GroupCountMapReduce {
                 totalCount = totalCount + token.get();
             }
             this.longWritable.set(totalCount);
-            context.write(key, this.longWritable);
+
+
+            this.outputs.write("sideeffect", key, this.longWritable);
+        }
+
+        @Override
+        public void cleanup(final Reducer.Context context) throws IOException, InterruptedException {
+            this.outputs.close();
         }
     }
 }

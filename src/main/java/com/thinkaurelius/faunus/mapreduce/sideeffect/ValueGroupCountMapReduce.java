@@ -3,9 +3,9 @@ package com.thinkaurelius.faunus.mapreduce.sideeffect;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.util.WritableHandler;
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
 import com.thinkaurelius.faunus.mapreduce.util.ElementPicker;
+import com.thinkaurelius.faunus.mapreduce.util.WritableHandler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -16,6 +16,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 
 import java.io.IOException;
 
@@ -27,6 +28,7 @@ public class ValueGroupCountMapReduce {
     public static final String PROPERTY = Tokens.makeNamespace(ValueGroupCountMapReduce.class) + ".property";
     public static final String CLASS = Tokens.makeNamespace(ValueGroupCountMapReduce.class) + ".class";
     public static final String TYPE = Tokens.makeNamespace(ValueGroupCountMapReduce.class) + ".type";
+    public static final String TESTING = Tokens.makeNamespace(ValueGroupCountMapReduce.class) + ".testing";
 
     public enum Counters {
         PROPERTIES_COUNTED
@@ -37,9 +39,11 @@ public class ValueGroupCountMapReduce {
         private String property;
         private WritableHandler handler;
         private boolean isVertex;
+        private boolean testing;
         // making use of in-map aggregation/combiner
         private CounterMap<Object> map;
 
+        private MultipleOutputs<WritableComparable, WritableComparable> outputs;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
@@ -47,6 +51,9 @@ public class ValueGroupCountMapReduce {
             this.property = context.getConfiguration().get(PROPERTY);
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
             this.handler = new WritableHandler(context.getConfiguration().getClass(TYPE, Text.class, WritableComparable.class));
+            this.testing = context.getConfiguration().getBoolean(TESTING, false);
+            this.outputs = new MultipleOutputs<WritableComparable, WritableComparable>(context);
+
         }
 
         @Override
@@ -72,6 +79,9 @@ public class ValueGroupCountMapReduce {
                 this.cleanup(context);
             }
 
+            if (!testing)
+                this.outputs.write("graph", NullWritable.get(), value);
+
         }
 
         private final LongWritable longWritable = new LongWritable();
@@ -79,6 +89,7 @@ public class ValueGroupCountMapReduce {
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
             super.cleanup(context);
+            // this.outputs.close();
             for (final java.util.Map.Entry<Object, Long> entry : this.map.entrySet()) {
                 this.longWritable.set(entry.getValue());
                 context.write(this.handler.set(entry.getKey()), this.longWritable);
@@ -89,6 +100,16 @@ public class ValueGroupCountMapReduce {
 
     public static class Reduce extends Reducer<WritableComparable, LongWritable, WritableComparable, LongWritable> {
 
+        private MultipleOutputs<WritableComparable, LongWritable> outputs;
+        private boolean testing;
+
+        @Override
+        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
+            this.outputs = new MultipleOutputs<WritableComparable, LongWritable>(context);
+            this.testing = context.getConfiguration().getBoolean(TESTING, false);
+        }
+
+
         private final LongWritable longWritable = new LongWritable();
 
         @Override
@@ -98,7 +119,17 @@ public class ValueGroupCountMapReduce {
                 totalCount = totalCount + token.get();
             }
             this.longWritable.set(totalCount);
-            context.write(key, this.longWritable);
+
+            if (testing)
+                context.write(key, this.longWritable);
+            else
+                this.outputs.write("sideeffect", key, this.longWritable);
+        }
+
+        @Override
+        public void cleanup(final Reducer<WritableComparable, LongWritable, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
+            this.outputs.close();
         }
     }
 }

@@ -88,16 +88,26 @@ public class MapSequence {
                 if (currentKey != null && currentValue != null) {
                     final Mapper mapper = this.mappers.get(size - 1);
                     final Method map = this.mapMethods.get(size - 1);
-                    final Method cleanup = this.cleanupMethods.get(size - 1);
-
                     map.invoke(mapper, currentKey, currentValue, context);
-                    if (null != cleanup)
-                        cleanup.invoke(mapper, context);
                 }
 
             } catch (Exception e) {
                 throw new IOException(e.getMessage(), e);
             }
         }
+
+        @Override
+        public void cleanup(final Mapper<Writable, Writable, Writable, Writable>.Context context) throws IOException, InterruptedException {
+            try {
+                final int size = this.mappers.size();
+                final Mapper mapper = this.mappers.get(size - 1);
+                final Method cleanup = this.cleanupMethods.get(size - 1);
+                if (null != cleanup)
+                    cleanup.invoke(mapper, context);
+            } catch (Exception e) {
+                throw new IOException(e.getMessage(), e);
+            }
+        }
+
     }
 }

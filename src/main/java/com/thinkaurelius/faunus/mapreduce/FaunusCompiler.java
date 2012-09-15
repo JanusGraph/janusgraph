@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
@@ -43,22 +42,21 @@ import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
-import org.apache.hadoop.io.compress.BZip2Codec;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DefaultCodec;
-import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -67,16 +65,17 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -91,7 +90,6 @@ public class FaunusCompiler extends Configured implements Tool {
     private boolean derivationJob = true;
 
     private final List<Job> jobs = new ArrayList<Job>();
-    private final List<Path> intermediateFiles = new ArrayList<Path>();
 
     private final Configuration mapSequenceConfiguration = new Configuration();
     private final List<Class<? extends Mapper>> mapSequenceClasses = new ArrayList<Class<? extends Mapper>>();
@@ -496,13 +494,13 @@ public class FaunusCompiler extends Configured implements Tool {
             return;
         }
 
-        final String fileName;
+        final String hadoopFileJar;
         if (new File("target/" + Tokens.FAUNUS_JOB_JAR).exists())
-            fileName = "target/" + Tokens.FAUNUS_JOB_JAR;
+            hadoopFileJar = "target/" + Tokens.FAUNUS_JOB_JAR;
         else if (new File("lib/" + Tokens.FAUNUS_JOB_JAR).exists())
-            fileName = "lib/" + Tokens.FAUNUS_JOB_JAR;
+            hadoopFileJar = "lib/" + Tokens.FAUNUS_JOB_JAR;
         else if (new File("../lib/" + Tokens.FAUNUS_JOB_JAR).exists())
-            fileName = "../lib/" + Tokens.FAUNUS_JOB_JAR;
+            hadoopFileJar = "../lib/" + Tokens.FAUNUS_JOB_JAR;
         else
             throw new IllegalStateException("The Faunus Hadoop job jar could not be found: faunus-" + Tokens.FAUNUS_JOB_JAR);
 
@@ -511,83 +509,63 @@ public class FaunusCompiler extends Configured implements Tool {
 
         for (final Job job : this.jobs) {
             job.getConfiguration().setBoolean(PATH_ENABLED, this.pathEnabled);
-            job.getConfiguration().set("mapred.jar", fileName);
+            job.getConfiguration().set("mapred.jar", hadoopFileJar);
         }
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConfiguration());
-        try {
+        final String jobId = this.graph.getOutputLocation().getName() + "/step";
+        hdfs.mkdirs(new Path(this.graph.getOutputLocation().getName()));
 
-            //////// HANDLING INPUT
 
-            final Job startJob = this.jobs.get(0);
-            startJob.setInputFormatClass(this.graph.getGraphInputFormat());
-            // configure input location
-            if (this.graph.getGraphInputFormat().equals(GraphSONInputFormat.class) || this.graph.getGraphInputFormat().equals(SequenceFileInputFormat.class)) {
-                FileInputFormat.setInputPaths(startJob, this.graph.getInputLocation());
-            } else if (this.graph.getGraphInputFormat().equals(RexsterInputFormat.class)) {
-                /* do nothing */
-            } else if (this.graph.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
-                ConfigHelper.setInputColumnFamily(this.jobs.get(0).getConfiguration(), ConfigHelper.getInputKeyspace(this.graph.getConfiguration()), "edgestore");
+        //////// HANDLING FIRST JOB INPUT
 
-                final SlicePredicate predicate = new SlicePredicate();
-                final SliceRange sliceRange = new SliceRange();
-                sliceRange.setStart(new byte[0]);
-                sliceRange.setFinish(new byte[0]);
-                predicate.setSlice_range(sliceRange);
+        if (FileInputFormat.class.isAssignableFrom(this.graph.getGraphInputFormat())) {
+            FileInputFormat.setInputPaths(this.jobs.get(0), this.graph.getInputLocation());
+        } else if (this.graph.getGraphInputFormat().equals(RexsterInputFormat.class)) {
+            /* do nothing */
+        } else if (this.graph.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
+            ConfigHelper.setInputColumnFamily(this.jobs.get(0).getConfiguration(), ConfigHelper.getInputKeyspace(this.graph.getConfiguration()), "edgestore");
+            final SlicePredicate predicate = new SlicePredicate();
+            final SliceRange sliceRange = new SliceRange();
+            sliceRange.setStart(new byte[0]);
+            sliceRange.setFinish(new byte[0]);
+            predicate.setSlice_range(sliceRange);
+            ConfigHelper.setInputSlicePredicate(this.jobs.get(0).getConfiguration(), predicate);
+        } else
+            throw new IOException(this.graph.getGraphInputFormat().getName() + " is not a supported input format");
 
-                ConfigHelper.setInputSlicePredicate(this.jobs.get(0).getConfiguration(), predicate);
-            } else
-                throw new IOException(this.graph.getGraphInputFormat().getName() + " is not a supported input format");
 
-            //////// CHAINING JOBS TOGETHER
+        //////// CHAINING JOBS TOGETHER
 
-            if (this.jobs.size() > 1) {
-                final Path path = new Path(UUID.randomUUID().toString());
-                FileOutputFormat.setOutputPath(startJob, path);
-                this.intermediateFiles.add(path);
-                startJob.setOutputFormatClass(INTERMEDIATE_OUTPUT_FORMAT);
-                SequenceFileOutputFormat.setCompressOutput(startJob, true);
-                SequenceFileOutputFormat.setOutputCompressorClass(startJob, BZip2Codec.class);
-                SequenceFileOutputFormat.setOutputCompressionType(startJob, SequenceFile.CompressionType.BLOCK);
+        for (int i = 0; i < this.jobs.size(); i++) {
+            final Job job = this.jobs.get(i);
+            final Path path = new Path(jobId + "-" + i);
+            FileOutputFormat.setOutputPath(job, path);
+
+            if (i == 0) {
+                job.setInputFormatClass(this.graph.getGraphInputFormat());
             } else {
-                FileOutputFormat.setOutputPath(startJob, this.graph.getOutputLocation());
-                startJob.setOutputFormatClass(this.derivationJob ? this.graph.getGraphOutputFormat() : this.graph.getStatisticsOutputFormat());
+                job.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
+                FileInputFormat.setInputPathFilter(job, GraphFilter.class);
+                FileInputFormat.addInputPath(job, new Path(jobId + "-" + (i - 1)));
             }
 
-            if (this.jobs.size() > 2) {
-                for (int i = 1; i < this.jobs.size() - 1; i++) {
-                    final Job midJob = this.jobs.get(i);
-                    midJob.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                    midJob.setOutputFormatClass(INTERMEDIATE_OUTPUT_FORMAT);
-                    SequenceFileOutputFormat.setCompressOutput(midJob, true);
-                    SequenceFileOutputFormat.setOutputCompressorClass(midJob, BZip2Codec.class);
-                    SequenceFileOutputFormat.setOutputCompressionType(midJob, SequenceFile.CompressionType.BLOCK);
 
-                    FileInputFormat.setInputPaths(midJob, this.intermediateFiles.get(this.intermediateFiles.size() - 1));
-                    final Path path = new Path(UUID.randomUUID().toString());
-                    FileOutputFormat.setOutputPath(midJob, path);
-                    this.intermediateFiles.add(path);
-                }
+            if (i == this.jobs.size() - 1) {
+                MultipleOutputs.addNamedOutput(job, "sideeffect", this.graph.getStatisticsOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
+                MultipleOutputs.addNamedOutput(job, "graph", this.graph.getGraphOutputFormat(), NullWritable.class, FaunusVertex.class);
+                job.setOutputFormatClass(this.graph.getGraphOutputFormat());
+            } else {
+                MultipleOutputs.addNamedOutput(job, "sideeffect", this.graph.getStatisticsOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
+                MultipleOutputs.addNamedOutput(job, "graph", INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, FaunusVertex.class);
+                job.setOutputFormatClass(INTERMEDIATE_OUTPUT_FORMAT);
             }
-            if (this.jobs.size() > 1) {
-                final Job endJob = this.jobs.get(this.jobs.size() - 1);
-                endJob.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                endJob.setOutputFormatClass(this.derivationJob ? this.graph.getGraphOutputFormat() : this.graph.getStatisticsOutputFormat());
-                FileInputFormat.setInputPaths(endJob, this.intermediateFiles.get(this.intermediateFiles.size() - 1));
-                FileOutputFormat.setOutputPath(endJob, this.graph.getOutputLocation());
-            }
-        } catch (IOException e) {
-            for (final Path path : this.intermediateFiles) {
-                try {
-                    if (hdfs.exists(path)) {
-                        hdfs.delete(path, true);
-                    }
-                } catch (IOException e1) {
-                    logger.warn("Could not delete intermediate file: " + path);
-                }
-            }
-            throw e;
         }
+
+        //SequenceFileOutputFormat.setCompressOutput(startJob, true);
+        //SequenceFileOutputFormat.setOutputCompressorClass(startJob, BZip2Codec.class);
+        //SequenceFileOutputFormat.setOutputCompressionType(startJob, SequenceFile.CompressionType.BLOCK);
+
     }
 
     public int run(final String[] args) throws Exception {
@@ -628,28 +606,47 @@ public class FaunusCompiler extends Configured implements Tool {
 
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");
-
+        final String jobId = this.graph.getOutputLocation().getName() + "/step";
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
             logger.info("Executing job " + (i + 1) + " out of " + this.jobs.size() + ": " + job.getJobName());
             boolean success = job.waitForCompletion(true);
-            if (i > 0 && this.intermediateFiles.size() > 0) {
-                final Path path = this.intermediateFiles.remove(0);
-                if (hdfs.exists(path)) {
-                    try {
-                        hdfs.delete(path, true);
-                    } catch (IOException e) {
-                        logger.warn("Could not delete intermediate file: " + path);
-                    }
+            if (i > 0) {
+                final Path path = new Path(jobId + "-" + (i - 1));
+                // delete previous intermediate graph data
+                for (FileStatus temp : hdfs.globStatus(new Path(path.toString() + "/graph*"))) {
+                    hdfs.delete(temp.getPath(), true);
+                }
+                // delete previous intermediate graph data
+                for (FileStatus temp : hdfs.globStatus(new Path(path.toString() + "/part*"))) {
+                    hdfs.delete(temp.getPath(), true);
                 }
             }
+
             if (!success) {
-                logger.error("Faunus job error -- emaining MapReduce jobs have been canceled");
+                logger.error("Faunus job error -- remaining MapReduce jobs have been canceled");
                 return -1;
             }
         }
         return 0;
     }
 
+
+    public static class GraphFilter implements PathFilter, Serializable {
+
+        public GraphFilter() {
+        }
+
+        public boolean accept(Path path) {
+            try {
+                if (!path.getFileSystem(new Configuration()).isFile(path))
+                    return true;
+                else
+                    return path.getName().contains("graph") || path.getName().contains("part");
+            } catch (Exception e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
+        }
+    }
 
 }

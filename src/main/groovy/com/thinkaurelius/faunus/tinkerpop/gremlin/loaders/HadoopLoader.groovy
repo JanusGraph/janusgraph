@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus.tinkerpop.gremlin.loaders
 
+import com.thinkaurelius.faunus.hdfs.HDFSTools
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FSDataInputStream
 import org.apache.hadoop.fs.FSDataOutputStream
@@ -29,7 +30,10 @@ class HadoopLoader {
 
         FileSystem.metaClass.ls = { String path ->
             if (null == path) path = ((FileSystem) delegate).getHomeDirectory().toString();
-            return ((FileSystem) delegate).listStatus(new Path(path)).collect { it.toString() };
+            if (path.equals("/"))
+                return ((FileSystem) delegate).globStatus(new Path("")).collect { it.toString() };
+            else
+                return ((FileSystem) delegate).globStatus(new Path(path + "/*")).collect { it.toString() };
         }
 
         FileSystem.metaClass.exists = { final String path ->
@@ -58,7 +62,7 @@ class HadoopLoader {
             final FileSystem local = FileSystem.getLocal(new Configuration());
             final FSDataOutputStream outA = local.create(new Path(to));
 
-            getAllFilePaths(fs, from, []).each {
+            HDFSTools.getAllFilePaths(fs, from, []).each {
                 final FSDataInputStream inA = fs.open(it);
                 int c;
                 while ((c = inA.read()) != null) {
@@ -71,7 +75,7 @@ class HadoopLoader {
 
         FileSystem.metaClass.head = { final String path, final long totalLines ->
             final FileSystem fs = (FileSystem) delegate;
-            List<Path> paths = new LinkedList<Path>(HadoopLoader.getAllFilePaths(fs, path, []));
+            List<Path> paths = new LinkedList<Path>(HDFSTools.getAllFilePaths(fs, path, []));
             if (paths.isEmpty())
                 return [];
             else
@@ -84,18 +88,6 @@ class HadoopLoader {
             final String path ->
             return ((FileSystem) delegate).head(path, Long.MAX_VALUE);
         }
-    }
-
-    private static final List<Path> getAllFilePaths(final FileSystem fs, final String path, final List<Path> paths) {
-        if (fs.isDirectory(new Path(path))) {
-            fs.listStatus(new Path(path)).each { FileStatus status ->
-                if (!status.getPath().getName().startsWith("_"))
-                    return HadoopLoader.getAllFilePaths(fs, status.getPath().toString(), paths);
-            }
-        } else {
-            paths.add(new Path(path));
-        }
-        return paths;
     }
 
     private static class TextFileIterator implements Iterator<String> {
