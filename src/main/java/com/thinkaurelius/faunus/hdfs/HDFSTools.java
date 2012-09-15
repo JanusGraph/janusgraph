@@ -20,18 +20,24 @@ import java.util.List;
  */
 public class HDFSTools {
 
+    private static final String FOWARD_SLASH = "/";
+    private static final String FOWARD_SLASH_ASTERISK = "/*";
+    private static final String DASH = "-";
+    private static final String ASTERISK = "*";
+    private static final String UNDERSCORE = "_";
+
     protected HDFSTools() {
     }
 
     public static List<Path> getAllFilePaths(final FileSystem fs, String path) throws IOException {
         if (null == path) path = fs.getHomeDirectory().toString();
-        if (path.equals("/")) path = "";
+        if (path.equals(FOWARD_SLASH)) path = "";
 
         final List<Path> paths = new ArrayList<Path>();
 
-        for (final FileStatus status : fs.globStatus(new Path(path + "/*"))) {
+        for (final FileStatus status : fs.globStatus(new Path(path + FOWARD_SLASH_ASTERISK))) {
             final Path next = status.getPath();
-            if (!next.getName().startsWith("_")) {
+            if (!next.getName().startsWith(UNDERSCORE)) {
                 if (fs.isFile(next))
                     paths.add(next);
                 else
@@ -44,7 +50,7 @@ public class HDFSTools {
     public static Path getOutputsFinalJob(final FileSystem fs, String output) throws IOException {
         int largest = -1;
         for (FileStatus status : fs.listStatus(new Path(output))) {
-            final String[] name = status.getPath().getName().split("-");
+            final String[] name = status.getPath().getName().split(DASH);
             if (name.length == 2 && name[0].equals(Tokens.JOB)) {
                 if (Integer.valueOf(name[1]) > largest)
                     largest = Integer.valueOf(name[1]);
@@ -58,12 +64,12 @@ public class HDFSTools {
 
     public static void decompressJobData(final FileSystem fs, String path, String dataType, String compressFileSuffix, final CompressionCodec codec) throws IOException {
         path = new Path(path).toString();
-        for (final FileStatus status : fs.globStatus(new Path(path + "/" + dataType + "*" + compressFileSuffix))) {
-            HDFSTools.decompressFile(fs, status.getPath().toString(), path + "/" + status.getPath().getName().split("\\.")[0], codec);
+        for (final FileStatus status : fs.globStatus(new Path(path + FOWARD_SLASH + dataType + ASTERISK + compressFileSuffix))) {
+            HDFSTools.decompressFile(fs, status.getPath().toString(), path + FOWARD_SLASH + status.getPath().getName().split("\\.")[0], codec);
         }
 
         // delete compressed data
-        for (FileStatus temp : fs.globStatus(new Path(path + "/" + dataType + "*" + compressFileSuffix))) {
+        for (FileStatus temp : fs.globStatus(new Path(path + FOWARD_SLASH + dataType + ASTERISK + compressFileSuffix))) {
             fs.delete(temp.getPath(), true);
         }
     }
@@ -78,7 +84,7 @@ public class HDFSTools {
                 fs.mkdirs(outPath);
             for (final FileStatus status : fs.listStatus(new Path(in))) {
                 if (status.getPath().getName().contains("." + compressedFileSuffix))
-                    HDFSTools.decompressFile(fs, status.getPath().toString(), outPath.toString() + "/" + status.getPath().getName().split("\\.")[0], codec);
+                    HDFSTools.decompressFile(fs, status.getPath().toString(), outPath.toString() + FOWARD_SLASH + status.getPath().getName().split("\\.")[0], codec);
             }
         }
     }
@@ -93,22 +99,5 @@ public class HDFSTools {
         out.close();
         in.close();
 
-    }
-
-    public static class GraphFilter implements PathFilter, Serializable {
-
-        public GraphFilter() {
-        }
-
-        public boolean accept(Path path) {
-            try {
-                if (!path.getFileSystem(new Configuration()).isFile(path))
-                    return true;
-                else
-                    return path.getName().contains(Tokens.GRAPH) || path.getName().contains(Tokens.PART);
-            } catch (Exception e) {
-                throw new RuntimeException(e.getMessage(), e);
-            }
-        }
     }
 }

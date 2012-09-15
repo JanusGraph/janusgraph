@@ -6,7 +6,7 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
-import com.thinkaurelius.faunus.hdfs.HDFSTools;
+import com.thinkaurelius.faunus.hdfs.GraphFilter;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
@@ -548,7 +548,7 @@ public class FaunusCompiler extends Configured implements Tool {
                 job.setInputFormatClass(this.graph.getGraphInputFormat());
             } else {
                 job.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                FileInputFormat.setInputPathFilter(job, HDFSTools.GraphFilter.class);
+                FileInputFormat.setInputPathFilter(job, GraphFilter.class);
                 FileInputFormat.addInputPath(job, new Path(outputJobPrefix + "-" + (i - 1)));
             }
 
@@ -560,7 +560,6 @@ public class FaunusCompiler extends Configured implements Tool {
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
                 MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, FaunusVertex.class);
                 LazyOutputFormat.setOutputFormatClass(job, INTERMEDIATE_OUTPUT_FORMAT);
-                //job.setOutputFormatClass(INTERMEDIATE_OUTPUT_FORMAT);
             }
 
             SequenceFileOutputFormat.setCompressOutput(job, true);
@@ -619,27 +618,12 @@ public class FaunusCompiler extends Configured implements Tool {
                 for (final FileStatus temp : hdfs.globStatus(new Path(path.toString() + "/" + Tokens.PART + "*"))) {
                     hdfs.delete(temp.getPath(), true);
                 }
-
-                if (!this.graph.getSideEffectOutputCompress()) {
-                    HDFSTools.decompressJobData(hdfs, path.toString(), Tokens.SIDEEFFECT, Tokens.BZ2, new BZip2Codec());
-                }
             }
 
             if (!success) {
                 logger.error("Faunus job error -- remaining MapReduce jobs have been canceled");
                 return -1;
             }
-        }
-
-        if (!this.graph.getSideEffectOutputCompress()) {
-            final Path path = new Path(jobPath + "-" + (this.jobs.size() - 1));
-            HDFSTools.decompressJobData(hdfs, path.toString(), Tokens.SIDEEFFECT, Tokens.BZ2, new BZip2Codec());
-        }
-
-        if (!this.graph.getGraphOutputCompress()) {
-            final Path path = new Path(jobPath + "-" + (this.jobs.size() - 1));
-            HDFSTools.decompressJobData(hdfs, path.toString(), Tokens.GRAPH, Tokens.BZ2, new BZip2Codec());
-            HDFSTools.decompressJobData(hdfs, path.toString(), Tokens.PART, Tokens.BZ2, new BZip2Codec());
         }
 
         return 0;

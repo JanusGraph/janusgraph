@@ -1,6 +1,8 @@
 package com.thinkaurelius.faunus.tinkerpop.gremlin.loaders
 
+import com.thinkaurelius.faunus.Tokens
 import com.thinkaurelius.faunus.hdfs.HDFSTools
+import com.thinkaurelius.faunus.hdfs.TextFileLineIterator
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FSDataInputStream
 import org.apache.hadoop.fs.FSDataOutputStream
@@ -89,7 +91,7 @@ class HadoopLoader {
             if (paths.isEmpty())
                 return Collections.emptyList();
             else
-                return new TextFileIterator(fs, paths, totalLines);
+                return new TextFileLineIterator(fs, paths, totalLines);
 
         }
 
@@ -100,61 +102,7 @@ class HadoopLoader {
         }
 
         FileSystem.metaClass.unzip = { final String from, final String to ->
-            HDFSTools.decompressPath((FileSystem) delegate, from, to, "bz2", new BZip2Codec());
-        }
-    }
-
-    private static class TextFileIterator implements Iterator<String> {
-        private final FileSystem fs;
-        private final Queue<Path> paths;
-        private final long totalLines;
-        private long lines = 0;
-        private FSDataInputStream reader;
-        private String line;
-
-
-        public TextFileIterator(final FileSystem fs, final Queue<Path> paths, final long totalLines) {
-            this.fs = fs;
-            this.totalLines = totalLines;
-            this.paths = paths;
-            this.reader = fs.open(paths.remove());
-        }
-
-        public boolean hasNext() {
-            if (null != line)
-                return true;
-
-            if (this.lines >= this.totalLines || this.reader == null)
-                return false;
-
-            this.line = this.reader.readLine();
-            if (this.line != null) {
-                this.lines++;
-                return true;
-            } else {
-                this.reader.close();
-                if (this.paths.isEmpty())
-                    this.reader = null;
-                else
-                    this.reader = this.fs.open(this.paths.remove());
-                return this.hasNext();
-            }
-        }
-
-        public String next() {
-            if (null != line) {
-                final String temp = line;
-                line = null;
-                return temp;
-            } else if (this.hasNext()) {
-                return this.next();
-            } else {
-                throw new NoSuchElementException();
-            }
-        }
-
-        public void remove() {
-            throw new UnsupportedOperationException();
+            HDFSTools.decompressPath((FileSystem) delegate, from, to, Tokens.BZ2, new BZip2Codec());
         }
     }
 

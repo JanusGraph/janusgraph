@@ -26,9 +26,7 @@ public class FaunusGraph {
     // public static final String GRAPH_INPUT_EDGE_LABEL_FILTER_ACTION = "faunus.graph.input.edge.label.filter.action";
 
     public static final String GRAPH_OUTPUT_FORMAT_CLASS = "faunus.graph.output.format.class";
-    public static final String GRAPH_OUTPUT_COMPRESS = "faunus.graph.output.compress";
     public static final String SIDEEFFECT_OUTPUT_FORMAT_CLASS = "faunus.sideeffect.output.format.class";
-    public static final String SIDEEFFECT_OUTPUT_COMPRESS = "faunus.sideeffect.output.compress";
     public static final String OUTPUT_LOCATION = "faunus.output.location";
     public static final String OUTPUT_LOCATION_OVERWRITE = "faunus.output.location.overwrite";
 
@@ -64,14 +62,6 @@ public class FaunusGraph {
         this.configuration.setClass(GRAPH_OUTPUT_FORMAT_CLASS, format, OutputFormat.class);
     }
 
-    public boolean getGraphOutputCompress() {
-        return this.configuration.getBoolean(GRAPH_OUTPUT_COMPRESS, false);
-    }
-
-    public void setGraphOutputCompress(final boolean compress) {
-        this.configuration.setBoolean(GRAPH_OUTPUT_COMPRESS, compress);
-    }
-
     // SIDE-EFFECT OUTPUT FORMAT
 
     public Class<? extends OutputFormat> getSideEffectOutputFormat() {
@@ -80,14 +70,6 @@ public class FaunusGraph {
 
     public void setSideEffectOutputFormatClass(final Class<? extends OutputFormat> format) {
         this.configuration.setClass(SIDEEFFECT_OUTPUT_FORMAT_CLASS, format, OutputFormat.class);
-    }
-
-    public boolean getSideEffectOutputCompress() {
-        return this.configuration.getBoolean(SIDEEFFECT_OUTPUT_COMPRESS, false);
-    }
-
-    public void setSideEffectOutputCompress(final boolean compress) {
-        this.configuration.setBoolean(SIDEEFFECT_OUTPUT_COMPRESS, compress);
     }
 
     // INPUT AND OUTPUT LOCATIONS
@@ -125,9 +107,7 @@ public class FaunusGraph {
         map.put(GRAPH_INPUT_FORMAT_CLASS, this.configuration.get(GRAPH_INPUT_FORMAT_CLASS));
         map.put(INPUT_LOCATION, this.configuration.get(INPUT_LOCATION));
         map.put(GRAPH_OUTPUT_FORMAT_CLASS, this.configuration.get(GRAPH_OUTPUT_FORMAT_CLASS));
-        map.put(GRAPH_OUTPUT_COMPRESS, this.configuration.getBoolean(GRAPH_OUTPUT_COMPRESS, false));
         map.put(SIDEEFFECT_OUTPUT_FORMAT_CLASS, this.configuration.get(SIDEEFFECT_OUTPUT_FORMAT_CLASS));
-        map.put(SIDEEFFECT_OUTPUT_COMPRESS, this.configuration.getBoolean(SIDEEFFECT_OUTPUT_COMPRESS, false));
         map.put(OUTPUT_LOCATION, this.configuration.get(OUTPUT_LOCATION));
         map.put(OUTPUT_LOCATION_OVERWRITE, this.configuration.getBoolean(OUTPUT_LOCATION_OVERWRITE, false));
         return map;
