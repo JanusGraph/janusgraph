@@ -35,4 +35,11 @@ public class Tokens {
 
     public static final String VERSION = "0.1-SNAPSHOT";
     public static final String FAUNUS_JOB_JAR = "faunus-" + VERSION + "-job.jar";
+
+    public static final String PART = "part";
+    public static final String GRAPH = "graph";
+    public static final String SIDEEFFECT = "sideeffect";
+    public static final String JOB = "job";
+
+    public static final String BZ2 = "bz2";
 }

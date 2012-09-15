@@ -8,7 +8,14 @@ case `uname` in
     CP=$( echo `dirname $0`/../lib/*.jar . | sed 's/ /:/g')
 esac
 
-CP=$CP:$HADOOP_HOME/conf
+# Find Hadoop
+if [ "$HADOOP_CONF_DIR" != "" ] ; then
+  CP=$CP:$HADOOP_CONF_DIR
+elif [ "$HADOOP_CONF" != "" ] ; then
+  CP=$CP:$HADOOP_CONF
+else
+  CP=$CP:$HADOOP_HOME/conf
+fi
 
 #echo $CP
 

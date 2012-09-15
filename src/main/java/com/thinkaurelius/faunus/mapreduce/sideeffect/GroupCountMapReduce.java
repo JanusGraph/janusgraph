@@ -56,7 +56,7 @@ public class GroupCountMapReduce {
             }
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
             this.map = new CounterMap<Object>();
-            outputs = new MultipleOutputs<WritableComparable,WritableComparable>(context);
+            this.outputs = new MultipleOutputs<WritableComparable,WritableComparable>(context);
         }
 
         @Override
@@ -87,7 +87,7 @@ public class GroupCountMapReduce {
                 this.cleanup(context);
             }
 
-            this.outputs.write("graph", NullWritable.get(), value);
+            this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
         }
 
 
@@ -115,7 +115,6 @@ public class GroupCountMapReduce {
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
             this.outputs = new MultipleOutputs<WritableComparable, LongWritable>(context);
-
         }
 
         private final LongWritable longWritable = new LongWritable();
@@ -127,13 +126,12 @@ public class GroupCountMapReduce {
                 totalCount = totalCount + token.get();
             }
             this.longWritable.set(totalCount);
-
-
-            this.outputs.write("sideeffect", key, this.longWritable);
+            this.outputs.write(Tokens.SIDEEFFECT, key, this.longWritable);
         }
 
         @Override
-        public void cleanup(final Reducer.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Reducer<Text, LongWritable, Text, LongWritable>.Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
             this.outputs.close();
         }
     }

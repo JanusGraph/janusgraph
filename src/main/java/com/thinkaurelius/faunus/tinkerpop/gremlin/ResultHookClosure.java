@@ -1,12 +1,12 @@
 package com.thinkaurelius.faunus.tinkerpop.gremlin;
 
-import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusPipeline;
 import com.tinkerpop.gremlin.groovy.console.ArrayIterator;
 import com.tinkerpop.pipes.util.iterators.SingleIterator;
 import groovy.lang.Closure;
 import org.codehaus.groovy.tools.shell.IO;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -28,7 +28,8 @@ public class ResultHookClosure extends Closure {
         final Iterator itty;
         if (result instanceof FaunusPipeline) {
             try {
-                itty = new SingleIterator<FaunusGraph>(((FaunusPipeline) result).submit());
+                ((FaunusPipeline) result).submit();
+                itty = Collections.emptyList().iterator();
             } catch (Exception e) {
                 throw new RuntimeException(e.getMessage(), e);
             }

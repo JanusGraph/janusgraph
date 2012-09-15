@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
+import com.thinkaurelius.faunus.hdfs.HDFSTools;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
@@ -45,16 +46,17 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
+import org.apache.hadoop.io.compress.BZip2Codec;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.mapreduce.InputFormat;
@@ -65,6 +67,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
@@ -72,7 +75,6 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -513,7 +515,7 @@ public class FaunusCompiler extends Configured implements Tool {
         }
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConfiguration());
-        final String jobId = this.graph.getOutputLocation().getName() + "/step";
+        final String outputJobPrefix = this.graph.getOutputLocation().getName() + "/" + Tokens.JOB;
         hdfs.mkdirs(new Path(this.graph.getOutputLocation().getName()));
 
 
@@ -539,33 +541,32 @@ public class FaunusCompiler extends Configured implements Tool {
 
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
-            final Path path = new Path(jobId + "-" + i);
+            final Path path = new Path(outputJobPrefix + "-" + i);
             FileOutputFormat.setOutputPath(job, path);
 
             if (i == 0) {
                 job.setInputFormatClass(this.graph.getGraphInputFormat());
             } else {
                 job.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                FileInputFormat.setInputPathFilter(job, GraphFilter.class);
-                FileInputFormat.addInputPath(job, new Path(jobId + "-" + (i - 1)));
+                FileInputFormat.setInputPathFilter(job, HDFSTools.GraphFilter.class);
+                FileInputFormat.addInputPath(job, new Path(outputJobPrefix + "-" + (i - 1)));
             }
-
 
             if (i == this.jobs.size() - 1) {
-                MultipleOutputs.addNamedOutput(job, "sideeffect", this.graph.getStatisticsOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
-                MultipleOutputs.addNamedOutput(job, "graph", this.graph.getGraphOutputFormat(), NullWritable.class, FaunusVertex.class);
-                job.setOutputFormatClass(this.graph.getGraphOutputFormat());
+                MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
+                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, this.graph.getGraphOutputFormat(), NullWritable.class, FaunusVertex.class);
+                LazyOutputFormat.setOutputFormatClass(job, this.graph.getGraphOutputFormat());
             } else {
-                MultipleOutputs.addNamedOutput(job, "sideeffect", this.graph.getStatisticsOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
-                MultipleOutputs.addNamedOutput(job, "graph", INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, FaunusVertex.class);
-                job.setOutputFormatClass(INTERMEDIATE_OUTPUT_FORMAT);
+                MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
+                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, FaunusVertex.class);
+                LazyOutputFormat.setOutputFormatClass(job, INTERMEDIATE_OUTPUT_FORMAT);
+                //job.setOutputFormatClass(INTERMEDIATE_OUTPUT_FORMAT);
             }
+
+            SequenceFileOutputFormat.setCompressOutput(job, true);
+            SequenceFileOutputFormat.setOutputCompressorClass(job, BZip2Codec.class);
+            SequenceFileOutputFormat.setOutputCompressionType(job, SequenceFile.CompressionType.BLOCK);
         }
-
-        //SequenceFileOutputFormat.setCompressOutput(startJob, true);
-        //SequenceFileOutputFormat.setOutputCompressorClass(startJob, BZip2Codec.class);
-        //SequenceFileOutputFormat.setOutputCompressionType(startJob, SequenceFile.CompressionType.BLOCK);
-
     }
 
     public int run(final String[] args) throws Exception {
@@ -577,13 +578,9 @@ public class FaunusCompiler extends Configured implements Tool {
             showHeader = Boolean.valueOf(args[1]);
         }
 
-
         final FileSystem hdfs = FileSystem.get(this.getConf());
-        if (this.graph.getOutputLocationOverwrite()) {
-
-            if (hdfs.exists(this.graph.getOutputLocation())) {
-                hdfs.delete(this.graph.getOutputLocation(), true);
-            }
+        if (this.graph.getOutputLocationOverwrite() && hdfs.exists(this.graph.getOutputLocation())) {
+            hdfs.delete(this.graph.getOutputLocation(), true);
         }
 
         if (showHeader) {
@@ -606,20 +603,25 @@ public class FaunusCompiler extends Configured implements Tool {
 
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");
-        final String jobId = this.graph.getOutputLocation().getName() + "/step";
+        final String jobPath = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
             logger.info("Executing job " + (i + 1) + " out of " + this.jobs.size() + ": " + job.getJobName());
+            logger.info("Job data location: " + jobPath + "-" + i);
             boolean success = job.waitForCompletion(true);
             if (i > 0) {
-                final Path path = new Path(jobId + "-" + (i - 1));
+                final Path path = new Path(jobPath + "-" + (i - 1));
                 // delete previous intermediate graph data
-                for (FileStatus temp : hdfs.globStatus(new Path(path.toString() + "/graph*"))) {
+                for (final FileStatus temp : hdfs.globStatus(new Path(path.toString() + "/" + Tokens.GRAPH + "*"))) {
                     hdfs.delete(temp.getPath(), true);
                 }
                 // delete previous intermediate graph data
-                for (FileStatus temp : hdfs.globStatus(new Path(path.toString() + "/part*"))) {
+                for (final FileStatus temp : hdfs.globStatus(new Path(path.toString() + "/" + Tokens.PART + "*"))) {
                     hdfs.delete(temp.getPath(), true);
+                }
+
+                if (!this.graph.getSideEffectOutputCompress()) {
+                    HDFSTools.decompressJobData(hdfs, path.toString(), Tokens.SIDEEFFECT, Tokens.BZ2, new BZip2Codec());
                 }
             }
 
@@ -628,25 +630,20 @@ public class FaunusCompiler extends Configured implements Tool {
                 return -1;
             }
         }
+
+        if (!this.graph.getSideEffectOutputCompress()) {
+            final Path path = new Path(jobPath + "-" + (this.jobs.size() - 1));
+            HDFSTools.decompressJobData(hdfs, path.toString(), Tokens.SIDEEFFECT, Tokens.BZ2, new BZip2Codec());
+        }
+
+        if (!this.graph.getGraphOutputCompress()) {
+            final Path path = new Path(jobPath + "-" + (this.jobs.size() - 1));
+            HDFSTools.decompressJobData(hdfs, path.toString(), Tokens.GRAPH, Tokens.BZ2, new BZip2Codec());
+            HDFSTools.decompressJobData(hdfs, path.toString(), Tokens.PART, Tokens.BZ2, new BZip2Codec());
+        }
+
         return 0;
     }
 
-
-    public static class GraphFilter implements PathFilter, Serializable {
-
-        public GraphFilter() {
-        }
-
-        public boolean accept(Path path) {
-            try {
-                if (!path.getFileSystem(new Configuration()).isFile(path))
-                    return true;
-                else
-                    return path.getName().contains("graph") || path.getName().contains("part");
-            } catch (Exception e) {
-                throw new RuntimeException(e.getMessage(), e);
-            }
-        }
-    }
 
 }

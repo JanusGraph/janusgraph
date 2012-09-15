@@ -14,6 +14,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 
 import java.io.IOException;
 
@@ -25,6 +26,7 @@ public class PropertyMap {
     public static final String CLASS = Tokens.makeNamespace(PropertyMap.class) + ".class";
     public static final String KEY = Tokens.makeNamespace(PropertyMap.class) + ".key";
     public static final String TYPE = Tokens.makeNamespace(PropertyMap.class) + ".type";
+    public static final String TESTING = Tokens.makeNamespace(PropertyMap.class) + ".testing";
 
     public enum Counters {
         VERTICES_PROCESSED,
@@ -36,24 +38,35 @@ public class PropertyMap {
         private String key;
         private boolean isVertex;
         private WritableHandler handler;
+        private MultipleOutputs<WritableComparable, WritableComparable> outputs;
+        private boolean testing;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
             this.key = context.getConfiguration().get(KEY);
             this.handler = new WritableHandler(context.getConfiguration().getClass(TYPE, Text.class, WritableComparable.class));
+            this.outputs = new MultipleOutputs<WritableComparable, WritableComparable>(context);
+            this.testing = context.getConfiguration().getBoolean(TESTING, false);
         }
 
         private LongWritable longWritable = new LongWritable();
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, WritableComparable, WritableComparable>.Context context) throws IOException, InterruptedException {
+
+            if (!this.testing)
+                this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
+
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     this.longWritable.set(value.getIdAsLong());
                     WritableComparable writable = this.handler.set(ElementPicker.getProperty(value, this.key));
                     for (int i = 0; i < value.pathCount(); i++) {
-                        context.write(this.longWritable, writable);
+                        if (this.testing)
+                            context.write(this.longWritable, writable);
+                        else
+                            this.outputs.write(Tokens.SIDEEFFECT, this.longWritable, writable);
                     }
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
@@ -65,13 +78,22 @@ public class PropertyMap {
                         this.longWritable.set(edge.getIdAsLong());
                         WritableComparable writable = this.handler.set(ElementPicker.getProperty(edge, this.key));
                         for (int i = 0; i < edge.pathCount(); i++) {
-                            context.write(this.longWritable, writable);
+                            if (this.testing)
+                                context.write(this.longWritable, writable);
+                            else
+                                this.outputs.write(Tokens.SIDEEFFECT, this.longWritable, writable);
                         }
                         edgesProcessed++;
                     }
                 }
                 context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
             }
+        }
+
+        @Override
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, WritableComparable, WritableComparable>.Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
+            this.outputs.close();
         }
     }
 }

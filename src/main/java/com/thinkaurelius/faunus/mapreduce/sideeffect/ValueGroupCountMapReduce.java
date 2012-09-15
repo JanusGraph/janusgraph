@@ -79,8 +79,8 @@ public class ValueGroupCountMapReduce {
                 this.cleanup(context);
             }
 
-            if (!testing)
-                this.outputs.write("graph", NullWritable.get(), value);
+            if (!this.testing)
+                this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
 
         }
 
@@ -89,12 +89,12 @@ public class ValueGroupCountMapReduce {
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
             super.cleanup(context);
-            // this.outputs.close();
             for (final java.util.Map.Entry<Object, Long> entry : this.map.entrySet()) {
                 this.longWritable.set(entry.getValue());
                 context.write(this.handler.set(entry.getKey()), this.longWritable);
             }
             this.map.clear();
+            this.outputs.close();
         }
     }
 
@@ -120,10 +120,10 @@ public class ValueGroupCountMapReduce {
             }
             this.longWritable.set(totalCount);
 
-            if (testing)
+            if (this.testing)
                 context.write(key, this.longWritable);
             else
-                this.outputs.write("sideeffect", key, this.longWritable);
+                this.outputs.write(Tokens.SIDEEFFECT, key, this.longWritable);
         }
 
         @Override

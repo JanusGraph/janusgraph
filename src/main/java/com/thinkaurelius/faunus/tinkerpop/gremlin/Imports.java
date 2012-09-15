@@ -17,6 +17,7 @@ public class Imports {
         imports.add("org.apache.hadoop.conf.*");
         imports.add("org.apache.hadoop.fs.*");
         imports.add("org.apache.hadoop.util.*");
+        imports.add("org.apache.hadoop.io.compress.*");
         imports.add("org.apache.hadoop.mapreduce.lib.input.*");
         imports.add("org.apache.hadoop.mapreduce.lib.output.*");
 
@@ -27,6 +28,7 @@ public class Imports {
         imports.add("com.thinkaurelius.faunus.formats.graphson.*");
         imports.add("com.thinkaurelius.faunus.formats.rexster.*");
         imports.add("com.thinkaurelius.faunus.formats.titan.*");
+        imports.add("com.thinkaurelius.faunus.hdfs.*");
         imports.add("com.thinkaurelius.faunus.tinkerpop.gremlin.*");
         imports.add("com.tinkerpop.gremlin.Tokens.T");
         imports.add("com.tinkerpop.gremlin.groovy.*");

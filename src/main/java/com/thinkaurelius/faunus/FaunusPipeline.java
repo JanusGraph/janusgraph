@@ -128,7 +128,7 @@ public class FaunusPipeline {
 
         public boolean atVertex() {
             if (null == this.elementType)
-                throw new IllegalStateException("No element type can be inferred");
+                throw new IllegalStateException("No element type can be inferred: start vertex (or edge) set must be defined");
             return this.elementType.equals(Vertex.class);
         }
 
@@ -552,7 +552,7 @@ public class FaunusPipeline {
         this.state.checkLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null == pair)
-            return this.groupCount("{it -> it}", "{it -> 1}");
+            return this.groupCount("{it -> it}");
         else {
             this.compiler.valueDistribution(this.state.getElementType(), pair.getA(), pair.getB());
             makeMapReduceString(ValueGroupCountMapReduce.class, pair.getA());
@@ -564,7 +564,13 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.compiler.groupCountMapReduce(this.state.getElementType(), this.validateClosure(keyClosure), this.validateClosure(valueClosure));
         makeMapReduceString(GroupCountMapReduce.class);
-        //this.state.lock();
+        return this;
+    }
+
+    public FaunusPipeline groupCount(final String keyClosure) throws IOException {
+        this.state.checkLocked();
+        this.compiler.groupCountMapReduce(this.state.getElementType(), this.validateClosure(keyClosure), this.validateClosure("{it -> 1}"));
+        makeMapReduceString(GroupCountMapReduce.class);
         return this;
     }
 
@@ -620,14 +626,13 @@ public class FaunusPipeline {
         return this;
     }
 
-    public FaunusGraph submit() throws Exception {
-        return submit(Tokens.EMPTY_STRING, false);
+    public void submit() throws Exception {
+        submit(Tokens.EMPTY_STRING, false);
     }
 
-    public FaunusGraph submit(final String script, final Boolean showHeader) throws Exception {
+    public void submit(final String script, final Boolean showHeader) throws Exception {
         this.done();
         ToolRunner.run(this.compiler, new String[]{script, showHeader.toString()});
-        return this.compiler.isDerivationJob() ? this.graph.generateInverse() : this.graph;
     }
 
     private String validateClosure(String closure) {

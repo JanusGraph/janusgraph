@@ -7,6 +7,7 @@ import org.apache.hadoop.fs.FSDataOutputStream
 import org.apache.hadoop.fs.FileStatus
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
+import org.apache.hadoop.io.compress.BZip2Codec
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -22,18 +23,14 @@ class HadoopLoader {
             s.append(((FileStatus) delegate).getGroup()).append(" ");
             s.append(((FileStatus) delegate).getLen()).append(" ");
             if (((FileStatus) delegate).isDir())
-                s.append(((FileStatus) delegate).getPath().getName());
-            else
-                s.append(((FileStatus) delegate).getPath());
+                s.append("(D) ");
+            s.append(((FileStatus) delegate).getPath().getName());
             return s.toString();
         }
 
         FileSystem.metaClass.ls = { String path ->
-            if (null == path) path = ((FileSystem) delegate).getHomeDirectory().toString();
-            if (path.equals("/"))
-                return ((FileSystem) delegate).globStatus(new Path("")).collect { it.toString() };
-            else
-                return ((FileSystem) delegate).globStatus(new Path(path + "/*")).collect { it.toString() };
+            if (null == path || path.equals("/")) path = ((FileSystem) delegate).getHomeDirectory().toString();
+            return ((FileSystem) delegate).globStatus(new Path(path + "/*")).collect { it.toString() };
         }
 
         FileSystem.metaClass.exists = { final String path ->
@@ -41,12 +38,24 @@ class HadoopLoader {
         }
 
         FileSystem.metaClass.rm = { final String path ->
-            return ((FileSystem) delegate).delete(new Path(path), false);
+            final FileSystem fs = (FileSystem) delegate;
+            boolean deleted = false;
+            fs.globStatus(new Path(path)).each {
+                fs.delete(it.getPath(), false);
+                deleted = true;
+            }
+            return deleted;
 
         }
 
         FileSystem.metaClass.rmr = { final String path ->
-            return ((FileSystem) delegate).delete(new Path(path), true);
+            final FileSystem fs = (FileSystem) delegate;
+            boolean deleted = false;
+            fs.globStatus(new Path(path)).each {
+                fs.delete(it.getPath(), true);
+                deleted = true;
+            }
+            return deleted;
         }
 
         FileSystem.metaClass.copyToLocal = { final String from, final String to ->
@@ -62,10 +71,10 @@ class HadoopLoader {
             final FileSystem local = FileSystem.getLocal(new Configuration());
             final FSDataOutputStream outA = local.create(new Path(to));
 
-            HDFSTools.getAllFilePaths(fs, from, []).each {
+            HDFSTools.getAllFilePaths(fs, from).each {
                 final FSDataInputStream inA = fs.open(it);
                 int c;
-                while ((c = inA.read()) != null) {
+                while ((c = inA.read()) != -1) {
                     outA.write(c);
                 }
                 inA.close();
@@ -75,9 +84,10 @@ class HadoopLoader {
 
         FileSystem.metaClass.head = { final String path, final long totalLines ->
             final FileSystem fs = (FileSystem) delegate;
-            List<Path> paths = new LinkedList<Path>(HDFSTools.getAllFilePaths(fs, path, []));
+            List<Path> paths = new LinkedList<Path>();
+            paths.addAll(HDFSTools.getAllFilePaths(fs, path));
             if (paths.isEmpty())
-                return [];
+                return Collections.emptyList();
             else
                 return new TextFileIterator(fs, paths, totalLines);
 
@@ -87,6 +97,10 @@ class HadoopLoader {
         FileSystem.metaClass.head = {
             final String path ->
             return ((FileSystem) delegate).head(path, Long.MAX_VALUE);
+        }
+
+        FileSystem.metaClass.unzip = { final String from, final String to ->
+            HDFSTools.decompressPath((FileSystem) delegate, from, to, "bz2", new BZip2Codec());
         }
     }
 

@@ -12,7 +12,9 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -156,4 +158,15 @@ public abstract class BaseTest extends TestCase {
         }
         bw.close();
     }*/
+
+    public File computeTestDataRoot() {
+        final String clsUri = this.getClass().getName().replace('.', '/') + ".class";
+        final URL url = this.getClass().getClassLoader().getResource(clsUri);
+        final String clsPath = url.getPath();
+        final File root = new File(clsPath.substring(0, clsPath.length() - clsUri.length()));
+        final File temp = new File(root.getParentFile(), "test-data");
+        if (!temp.exists())
+            temp.mkdir();
+        return temp;
+    }
 }

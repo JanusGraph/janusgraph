@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce;
 import com.thinkaurelius.faunus.Tokens;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -21,6 +22,7 @@ public class MapSequence {
         private List<Mapper<Writable, Writable, Writable, Writable>> mappers = new ArrayList<Mapper<Writable, Writable, Writable, Writable>>();
         private List<Method> mapMethods = new ArrayList<Method>();
         private List<Method> cleanupMethods = new ArrayList<Method>();
+        //private MultipleOutputs outputs;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
@@ -52,6 +54,7 @@ public class MapSequence {
 
                     }
                 }
+                //this.outputs = new MultipleOutputs(context);
             } catch (Exception e) {
                 throw new IOException(e);
             }

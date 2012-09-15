@@ -35,7 +35,8 @@ public class PropertyMapTest extends BaseTest {
         config.set(PropertyMap.CLASS, Vertex.class.getName());
         config.set(PropertyMap.KEY, "name");
         config.setClass(PropertyMap.TYPE, Text.class, WritableComparable.class);
-
+        config.setBoolean(PropertyMap.TESTING, true);
+        
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
@@ -77,6 +78,7 @@ public class PropertyMapTest extends BaseTest {
         config.set(PropertyMap.CLASS, Vertex.class.getName());
         config.set(PropertyMap.KEY, "age");
         config.setClass(PropertyMap.TYPE, IntWritable.class, WritableComparable.class);
+        config.setBoolean(PropertyMap.TESTING, true);
 
         mapReduceDriver.withConfiguration(config);
 
