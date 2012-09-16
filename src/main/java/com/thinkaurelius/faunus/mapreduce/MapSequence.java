@@ -26,6 +26,7 @@ public class MapSequence {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
+            if(mappers.size() == 0)
             try {
                 final MemoryMapContext memoryContext = new MemoryMapContext(context);
                 final String[] mapClassNames = context.getConfiguration().getStrings(MAP_CLASSES, new String[0]);
@@ -65,7 +66,7 @@ public class MapSequence {
         public void map(final Writable key, final Writable value, final Mapper<Writable, Writable, Writable, Writable>.Context context) throws IOException, InterruptedException {
             try {
                 final int size = this.mappers.size();
-
+                //System.out.println(this.mappers.size());
                 Writable currentKey = key;
                 Writable currentValue = value;
 
