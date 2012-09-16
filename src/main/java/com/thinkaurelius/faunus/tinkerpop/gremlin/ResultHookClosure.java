@@ -1,12 +1,16 @@
 package com.thinkaurelius.faunus.tinkerpop.gremlin;
 
 import com.thinkaurelius.faunus.FaunusPipeline;
+import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.hdfs.HDFSTools;
+import com.thinkaurelius.faunus.hdfs.TextFileLineIterator;
 import com.tinkerpop.gremlin.groovy.console.ArrayIterator;
 import com.tinkerpop.pipes.util.iterators.SingleIterator;
 import groovy.lang.Closure;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.codehaus.groovy.tools.shell.IO;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -16,6 +20,8 @@ import java.util.Map;
 public class ResultHookClosure extends Closure {
     private final String resultPrompt;
     private final IO io;
+    private static final int LINES = 15;
+
 
     public ResultHookClosure(final Object owner, final IO io, final String resultPrompt) {
         super(owner);
@@ -28,8 +34,22 @@ public class ResultHookClosure extends Closure {
         final Iterator itty;
         if (result instanceof FaunusPipeline) {
             try {
-                ((FaunusPipeline) result).submit();
-                itty = Collections.emptyList().iterator();
+                final FaunusPipeline pipeline = (FaunusPipeline) result;
+                pipeline.submit();
+                final FileSystem hdfs = FileSystem.get(pipeline.getGraph().getConfiguration());
+                final Path output = HDFSTools.getOutputsFinalJob(hdfs, pipeline.getGraph().getOutputLocation().toString());
+                itty = new TextFileLineIterator(hdfs, hdfs.globStatus(new Path(output.toString() + "/" + Tokens.SIDEEFFECT + "*")), LINES);
+
+                int counter = 0;
+                while (itty.hasNext()) {
+                    counter++;
+                    this.io.out.println(this.resultPrompt + itty.next());
+                }
+                if (counter == LINES)
+                    this.io.out.println(this.resultPrompt + "...");
+
+                return null;
+
             } catch (Exception e) {
                 throw new RuntimeException(e.getMessage(), e);
             }

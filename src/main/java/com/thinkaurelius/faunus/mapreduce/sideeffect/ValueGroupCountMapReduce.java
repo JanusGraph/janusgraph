@@ -5,6 +5,8 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
 import com.thinkaurelius.faunus.mapreduce.util.ElementPicker;
+import com.thinkaurelius.faunus.mapreduce.util.SafeMapperOutputs;
+import com.thinkaurelius.faunus.mapreduce.util.SafeReducerOutputs;
 import com.thinkaurelius.faunus.mapreduce.util.WritableHandler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -16,7 +18,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 
 import java.io.IOException;
 
@@ -28,7 +29,6 @@ public class ValueGroupCountMapReduce {
     public static final String PROPERTY = Tokens.makeNamespace(ValueGroupCountMapReduce.class) + ".property";
     public static final String CLASS = Tokens.makeNamespace(ValueGroupCountMapReduce.class) + ".class";
     public static final String TYPE = Tokens.makeNamespace(ValueGroupCountMapReduce.class) + ".type";
-    public static final String TESTING = Tokens.makeNamespace(ValueGroupCountMapReduce.class) + ".testing";
 
     public enum Counters {
         PROPERTIES_COUNTED
@@ -39,11 +39,10 @@ public class ValueGroupCountMapReduce {
         private String property;
         private WritableHandler handler;
         private boolean isVertex;
-        private boolean testing;
         // making use of in-map aggregation/combiner
         private CounterMap<Object> map;
 
-        private MultipleOutputs<WritableComparable, WritableComparable> outputs;
+        private SafeMapperOutputs outputs;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
@@ -51,8 +50,7 @@ public class ValueGroupCountMapReduce {
             this.property = context.getConfiguration().get(PROPERTY);
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
             this.handler = new WritableHandler(context.getConfiguration().getClass(TYPE, Text.class, WritableComparable.class));
-            this.testing = context.getConfiguration().getBoolean(TESTING, false);
-            this.outputs = new MultipleOutputs<WritableComparable, WritableComparable>(context);
+            this.outputs = new SafeMapperOutputs(context);
 
         }
 
@@ -79,8 +77,7 @@ public class ValueGroupCountMapReduce {
                 this.cleanup(context);
             }
 
-            if (!this.testing)
-                this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
+            this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
 
         }
 
@@ -100,13 +97,11 @@ public class ValueGroupCountMapReduce {
 
     public static class Reduce extends Reducer<WritableComparable, LongWritable, WritableComparable, LongWritable> {
 
-        private MultipleOutputs<WritableComparable, LongWritable> outputs;
-        private boolean testing;
+        private SafeReducerOutputs outputs;
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.outputs = new MultipleOutputs<WritableComparable, LongWritable>(context);
-            this.testing = context.getConfiguration().getBoolean(TESTING, false);
+            this.outputs = new SafeReducerOutputs(context);
         }
 
 
@@ -119,11 +114,7 @@ public class ValueGroupCountMapReduce {
                 totalCount = totalCount + token.get();
             }
             this.longWritable.set(totalCount);
-
-            if (this.testing)
-                context.write(key, this.longWritable);
-            else
-                this.outputs.write(Tokens.SIDEEFFECT, key, this.longWritable);
+            this.outputs.write(Tokens.SIDEEFFECT, key, this.longWritable);
         }
 
         @Override

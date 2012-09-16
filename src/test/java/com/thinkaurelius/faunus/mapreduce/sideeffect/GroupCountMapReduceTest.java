@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
@@ -28,9 +29,7 @@ public class GroupCountMapReduceTest extends BaseTest {
         mapReduceDriver.setReducer(new GroupCountMapReduce.Reduce());
     }
 
-    public void testTrue() {}
-
-   /*public void testOutDegreeDistribution() throws IOException {
+    public void testOutDegreeDistribution() throws IOException {
         Configuration config = new Configuration();
         config.set(GroupCountMapReduce.CLASS, Vertex.class.getName());
         config.set(GroupCountMapReduce.KEY_CLOSURE, "{ it -> it.outE.count() }");
@@ -63,15 +62,16 @@ public class GroupCountMapReduceTest extends BaseTest {
         Configuration config = new Configuration();
         config.set(GroupCountMapReduce.CLASS, Edge.class.getName());
         config.set(GroupCountMapReduce.KEY_CLOSURE, "{ it -> it.map.next().size() }");
+        config.set(GroupCountMapReduce.VALUE_CLOSURE, "{ it -> 2}");
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Edge.class), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 2);
         for (final Pair<Text, LongWritable> result : results) {
             if (result.getFirst().toString().equals("0")) {
-                assertEquals(result.getSecond().get(), 14);
+                assertEquals(result.getSecond().get(), 28);
             } else if (result.getFirst().toString().equals("1")) {
-                assertEquals(result.getSecond().get(), 3);
+                assertEquals(result.getSecond().get(), 6);
             } else {
                 assertTrue(false);
             }
@@ -80,5 +80,5 @@ public class GroupCountMapReduceTest extends BaseTest {
 
         assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
         assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
-    }*/
+    }
 }

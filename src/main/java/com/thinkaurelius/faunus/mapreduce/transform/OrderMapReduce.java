@@ -4,6 +4,8 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.util.ElementPicker;
+import com.thinkaurelius.faunus.mapreduce.util.SafeMapperOutputs;
+import com.thinkaurelius.faunus.mapreduce.util.SafeReducerOutputs;
 import com.thinkaurelius.faunus.mapreduce.util.WritableHandler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -38,6 +40,7 @@ public class OrderMapReduce {
         private boolean isVertex;
         private WritableHandler handler;
         private String elementKey;
+        private SafeMapperOutputs outputs;
 
 
         @Override
@@ -46,6 +49,7 @@ public class OrderMapReduce {
             this.key = context.getConfiguration().get(KEY);
             this.handler = new WritableHandler(context.getConfiguration().getClass(TYPE, Text.class, WritableComparable.class));
             this.elementKey = context.getConfiguration().get(ELEMENT_KEY);
+            this.outputs = new SafeMapperOutputs(context);
         }
 
         private Text text = new Text();
@@ -77,15 +81,37 @@ public class OrderMapReduce {
                 }
                 context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
             }
+
+            this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
+        }
+
+        @Override
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, WritableComparable, Text>.Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
+            this.outputs.close();
         }
     }
 
     public static class Reduce extends Reducer<WritableComparable, Text, Text, WritableComparable> {
+
+        private SafeReducerOutputs outputs;
+
+        @Override
+        public void setup(final Reducer<WritableComparable, Text, Text, WritableComparable>.Context context) throws IOException, InterruptedException {
+            this.outputs = new SafeReducerOutputs(context);
+        }
+
         @Override
         public void reduce(final WritableComparable key, final Iterable<Text> values, final Reducer<WritableComparable, Text, Text, WritableComparable>.Context context) throws IOException, InterruptedException {
             for (final Text value : values) {
-                context.write(value, key);
+                this.outputs.write(Tokens.SIDEEFFECT, value, key);
             }
+        }
+
+        @Override
+        public void cleanup(final Reducer<WritableComparable, Text, Text, WritableComparable>.Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
+            this.outputs.close();
         }
     }
 }

@@ -5,7 +5,6 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
@@ -22,12 +21,12 @@ import java.util.Map;
  */
 public class PropertyMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, WritableComparable, WritableComparable, WritableComparable, WritableComparable> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, WritableComparable, NullWritable, WritableComparable> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, WritableComparable, WritableComparable, WritableComparable, WritableComparable>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, WritableComparable, NullWritable, WritableComparable>();
         mapReduceDriver.setMapper(new PropertyMap.Map());
-        mapReduceDriver.setReducer(new Reducer<WritableComparable, WritableComparable, WritableComparable, WritableComparable>());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, WritableComparable, NullWritable, WritableComparable>());
     }
 
     public void testVertexPropertiesName() throws IOException {
@@ -35,8 +34,7 @@ public class PropertyMapTest extends BaseTest {
         config.set(PropertyMap.CLASS, Vertex.class.getName());
         config.set(PropertyMap.KEY, "name");
         config.setClass(PropertyMap.TYPE, Text.class, WritableComparable.class);
-        config.setBoolean(PropertyMap.TESTING, true);
-        
+
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
@@ -49,21 +47,12 @@ public class PropertyMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        final List<Pair<LongWritable, Text>> results = runWithGraphNoIndex(graph, mapReduceDriver);
+        final List<Pair<NullWritable, Text>> results = runWithGraphNoIndex(graph, mapReduceDriver);
         assertEquals(results.size(), 5);
-        assertEquals(results.get(0).getFirst().get(), 1l);
         assertEquals(results.get(0).getSecond().toString(), "marko");
-
-        assertEquals(results.get(1).getFirst().get(), 1l);
         assertEquals(results.get(1).getSecond().toString(), "marko");
-
-        assertEquals(results.get(2).getFirst().get(), 2l);
         assertEquals(results.get(2).getSecond().toString(), "vadas");
-
-        assertEquals(results.get(3).getFirst().get(), 3l);
         assertEquals(results.get(3).getSecond().toString(), "lop");
-
-        assertEquals(results.get(4).getFirst().get(), 4l);
         assertEquals(results.get(4).getSecond().toString(), "josh");
 
 
@@ -78,7 +67,6 @@ public class PropertyMapTest extends BaseTest {
         config.set(PropertyMap.CLASS, Vertex.class.getName());
         config.set(PropertyMap.KEY, "age");
         config.setClass(PropertyMap.TYPE, IntWritable.class, WritableComparable.class);
-        config.setBoolean(PropertyMap.TESTING, true);
 
         mapReduceDriver.withConfiguration(config);
 
@@ -92,21 +80,12 @@ public class PropertyMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        final List<Pair<LongWritable, IntWritable>> results = runWithGraphNoIndex(graph, mapReduceDriver);
+        final List<Pair<NullWritable, IntWritable>> results = runWithGraphNoIndex(graph, mapReduceDriver);
         assertEquals(results.size(), 5);
-        assertEquals(results.get(0).getFirst().get(), 1l);
         assertEquals(results.get(0).getSecond().get(), 29);
-
-        assertEquals(results.get(1).getFirst().get(), 1l);
         assertEquals(results.get(1).getSecond().get(), 29);
-
-        assertEquals(results.get(2).getFirst().get(), 2l);
         assertEquals(results.get(2).getSecond().get(), 27);
-
-        assertEquals(results.get(3).getFirst().get(), 3l);
         assertEquals(results.get(3).getSecond().get(), Integer.MIN_VALUE);
-
-        assertEquals(results.get(4).getFirst().get(), 4l);
         assertEquals(results.get(4).getSecond().get(), 32);
 
 

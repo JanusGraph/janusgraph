@@ -12,6 +12,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static com.tinkerpop.blueprints.Direction.IN;
@@ -26,7 +27,9 @@ public class CommitVerticesMapReduce {
 
     public enum Counters {
         VERTICES_KEPT,
-        VERTICES_DROPPED
+        VERTICES_DROPPED,
+        OUT_EDGES_KEPT,
+        IN_EDGES_KEPT
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
@@ -107,6 +110,9 @@ public class CommitVerticesMapReduce {
                 if (ids.size() > 0)
                     vertex.removeEdgesToFrom(ids);
                 context.write(NullWritable.get(), vertex);
+
+                context.getCounter(Counters.OUT_EDGES_KEPT).increment(((List) vertex.getEdges(OUT)).size());
+                context.getCounter(Counters.IN_EDGES_KEPT).increment(((List) vertex.getEdges(IN)).size());
             }
         }
     }

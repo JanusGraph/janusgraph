@@ -551,9 +551,10 @@ public class FaunusPipeline {
     public FaunusPipeline groupCount() throws IOException {
         this.state.checkLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
-        if (null == pair)
-            return this.groupCount("{it -> it}");
-        else {
+        if (null == pair) {
+            this.compiler.groupCountMapReduce(this.state.getElementType(), null, null);
+            makeMapReduceString(GroupCountMapReduce.class);
+        } else {
             this.compiler.valueDistribution(this.state.getElementType(), pair.getA(), pair.getB());
             makeMapReduceString(ValueGroupCountMapReduce.class, pair.getA());
         }
@@ -569,7 +570,7 @@ public class FaunusPipeline {
 
     public FaunusPipeline groupCount(final String keyClosure) throws IOException {
         this.state.checkLocked();
-        this.compiler.groupCountMapReduce(this.state.getElementType(), this.validateClosure(keyClosure), this.validateClosure("{it -> 1}"));
+        this.compiler.groupCountMapReduce(this.state.getElementType(), this.validateClosure(keyClosure), null);
         makeMapReduceString(GroupCountMapReduce.class);
         return this;
     }
@@ -635,7 +636,14 @@ public class FaunusPipeline {
         ToolRunner.run(this.compiler, new String[]{script, showHeader.toString()});
     }
 
+    public FaunusGraph getGraph() {
+        return this.graph;
+    }
+
     private String validateClosure(String closure) {
+        //if (closure == null)
+        //    return null;
+
         try {
             engine.eval(closure);
             return closure;

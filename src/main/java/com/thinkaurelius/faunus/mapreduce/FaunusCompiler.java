@@ -6,7 +6,7 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
-import com.thinkaurelius.faunus.hdfs.GraphFilter;
+import com.thinkaurelius.faunus.hdfs.OnlyGraphFilter;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
@@ -85,6 +85,7 @@ import java.util.Map;
 public class FaunusCompiler extends Configured implements Tool {
 
     public static final String PATH_ENABLED = Tokens.makeNamespace(FaunusCompiler.class) + ".pathEnabled";
+    public static final String TESTING = Tokens.makeNamespace(FaunusCompiler.class) + ".testing";
 
     protected final Logger logger = Logger.getLogger(FaunusCompiler.class);
 
@@ -425,8 +426,10 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public void groupCountMapReduce(final Class<? extends Element> klass, final String keyClosure, final String valueClosure) throws IOException {
         this.mapSequenceConfiguration.setClass(GroupCountMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(GroupCountMapReduce.KEY_CLOSURE + "-" + this.mapSequenceClasses.size(), keyClosure);
-        this.mapSequenceConfiguration.set(GroupCountMapReduce.VALUE_CLOSURE + "-" + this.mapSequenceClasses.size(), valueClosure);
+        if (null != keyClosure)
+            this.mapSequenceConfiguration.set(GroupCountMapReduce.KEY_CLOSURE + "-" + this.mapSequenceClasses.size(), keyClosure);
+        if (null != valueClosure)
+            this.mapSequenceConfiguration.set(GroupCountMapReduce.VALUE_CLOSURE + "-" + this.mapSequenceClasses.size(), valueClosure);
         this.mapSequenceClasses.add(GroupCountMapReduce.Map.class);
         this.combinerClass = GroupCountMapReduce.Reduce.class;
         this.reduceClass = GroupCountMapReduce.Reduce.class;
@@ -523,6 +526,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
         if (FileInputFormat.class.isAssignableFrom(this.graph.getGraphInputFormat())) {
             FileInputFormat.setInputPaths(this.jobs.get(0), this.graph.getInputLocation());
+            FileInputFormat.setInputPathFilter(this.jobs.get(0), OnlyGraphFilter.class);
         } else if (this.graph.getGraphInputFormat().equals(RexsterInputFormat.class)) {
             /* do nothing */
         } else if (this.graph.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
@@ -548,7 +552,7 @@ public class FaunusCompiler extends Configured implements Tool {
                 job.setInputFormatClass(this.graph.getGraphInputFormat());
             } else {
                 job.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                FileInputFormat.setInputPathFilter(job, GraphFilter.class);
+                FileInputFormat.setInputPathFilter(job, OnlyGraphFilter.class);
                 FileInputFormat.addInputPath(job, new Path(outputJobPrefix + "-" + (i - 1)));
             }
 

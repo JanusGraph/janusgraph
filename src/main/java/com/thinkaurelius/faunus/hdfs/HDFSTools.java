@@ -59,10 +59,10 @@ public class HDFSTools {
             return new Path(output + "/" + Tokens.JOB + "-" + largest);
     }
 
-    public static void decompressJobData(final FileSystem fs, String path, String dataType, String compressFileSuffix, final CompressionCodec codec) throws IOException {
+    public static void decompressJobData(final FileSystem fs, String path, String dataType, String compressFileSuffix, final CompressionCodec codec, final boolean deletePrevious) throws IOException {
         path = new Path(path).toString();
         for (final FileStatus status : fs.globStatus(new Path(path + FOWARD_SLASH + dataType + ASTERISK + compressFileSuffix))) {
-            HDFSTools.decompressFile(fs, status.getPath().toString(), path + FOWARD_SLASH + status.getPath().getName().split("\\.")[0], codec);
+            HDFSTools.decompressFile(fs, status.getPath().toString(), path + FOWARD_SLASH + status.getPath().getName().split("\\.")[0], codec, deletePrevious);
         }
 
         // delete compressed data
@@ -71,22 +71,22 @@ public class HDFSTools {
         }
     }
 
-    public static void decompressPath(final FileSystem fs, final String in, final String out, final String compressedFileSuffix, final CompressionCodec codec) throws IOException {
+    public static void decompressPath(final FileSystem fs, final String in, final String out, final String compressedFileSuffix, final CompressionCodec codec, final boolean deletePrevious) throws IOException {
         final Path inPath = new Path(in);
         if (fs.isFile(inPath))
-            HDFSTools.decompressFile(fs, in, out, codec);
+            HDFSTools.decompressFile(fs, in, out, codec, deletePrevious);
         else {
             final Path outPath = new Path(out);
             if (!fs.exists(outPath))
                 fs.mkdirs(outPath);
             for (final FileStatus status : fs.listStatus(new Path(in))) {
                 if (status.getPath().getName().contains("." + compressedFileSuffix))
-                    HDFSTools.decompressFile(fs, status.getPath().toString(), outPath.toString() + FOWARD_SLASH + status.getPath().getName().split("\\.")[0], codec);
+                    HDFSTools.decompressFile(fs, status.getPath().toString(), outPath.toString() + FOWARD_SLASH + status.getPath().getName().split("\\.")[0], codec, deletePrevious);
             }
         }
     }
 
-    public static void decompressFile(final FileSystem fs, final String inFile, final String outFile, final CompressionCodec codec) throws IOException {
+    public static void decompressFile(final FileSystem fs, final String inFile, final String outFile, final CompressionCodec codec, boolean deletePrevious) throws IOException {
         final OutputStream out = fs.create(new Path(outFile));
         final InputStream in = codec.createInputStream(fs.open(new Path(inFile)));
         int data;
@@ -95,6 +95,9 @@ public class HDFSTools {
         }
         out.close();
         in.close();
+
+        if (deletePrevious)
+            fs.delete(new Path(inFile), true);
 
     }
 }

@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.transform;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.util.SafeMapperOutputs;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -36,6 +37,8 @@ public class TransformMap {
         private Closure closure;
         private boolean isVertex;
 
+        private SafeMapperOutputs outputs;
+
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
@@ -44,6 +47,8 @@ public class TransformMap {
             } catch (final ScriptException e) {
                 throw new IOException(e.getMessage(), e);
             }
+
+            this.outputs = new SafeMapperOutputs(context);
         }
 
         private final Text textWritable = new Text();
@@ -55,7 +60,7 @@ public class TransformMap {
                     final Object result = this.closure.call(value);
                     this.textWritable.set(null == result ? Tokens.NULL : result.toString());
                     for (int i = 0; i < value.pathCount(); i++) {
-                        context.write(NullWritable.get(), this.textWritable);
+                        this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.textWritable);
                     }
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
@@ -67,13 +72,21 @@ public class TransformMap {
                         final Object result = this.closure.call(edge);
                         this.textWritable.set(null == result ? Tokens.NULL : result.toString());
                         for (int i = 0; i < edge.pathCount(); i++) {
-                            context.write(NullWritable.get(), this.textWritable);
+                            this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.textWritable);
                         }
                         edgesProcessed++;
                     }
                 }
                 context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
             }
+
+            this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
+        }
+
+        @Override
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
+            this.outputs.close();
         }
     }
 }

@@ -4,6 +4,8 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
+import com.thinkaurelius.faunus.mapreduce.util.SafeMapperOutputs;
+import com.thinkaurelius.faunus.mapreduce.util.SafeReducerOutputs;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -13,10 +15,8 @@ import groovy.lang.Closure;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
@@ -44,27 +44,37 @@ public class GroupCountMapReduce {
         private boolean isVertex;
         private CounterMap<Object> map;
 
-        private MultipleOutputs<WritableComparable,WritableComparable> outputs;
+        private SafeMapperOutputs outputs;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             try {
-                this.keyClosure = (Closure) engine.eval(context.getConfiguration().get(KEY_CLOSURE, "{it -> it}"));
-                this.valueClosure = (Closure) engine.eval(context.getConfiguration().get(VALUE_CLOSURE, "{it -> 1}"));
+                final String keyClosureString = context.getConfiguration().get(KEY_CLOSURE, null);
+                if (null == keyClosureString)
+                    this.keyClosure = null;
+                else
+                    this.keyClosure = (Closure) engine.eval(keyClosureString);
+
+                final String valueClosureString = context.getConfiguration().get(VALUE_CLOSURE, null);
+                if (null == valueClosureString)
+                    this.valueClosure = null;
+                else
+                    this.valueClosure = (Closure) engine.eval(valueClosureString);
+
             } catch (final ScriptException e) {
                 throw new IOException(e.getMessage(), e);
             }
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
             this.map = new CounterMap<Object>();
-            this.outputs = new MultipleOutputs<WritableComparable,WritableComparable>(context);
+            this.outputs = new SafeMapperOutputs(context);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    final Object object = this.keyClosure.call(value);
-                    final Number number = (Number) this.valueClosure.call(value);
+                    final Object object = (null == this.keyClosure) ? value : this.keyClosure.call(value);
+                    final Number number = (null == this.valueClosure) ? 1 : (Number) this.valueClosure.call(value);
                     this.map.incr(object, number.longValue() * value.pathCount());
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
@@ -73,8 +83,8 @@ public class GroupCountMapReduce {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
-                        final Object object = this.keyClosure.call(edge);
-                        final Number number = (Number) this.valueClosure.call(edge);
+                        final Object object = (null == this.keyClosure) ? edge : this.keyClosure.call(edge);
+                        final Number number = (null == this.valueClosure) ? 1 : (Number) this.valueClosure.call(edge);
                         this.map.incr(object, number.longValue() * edge.pathCount());
                         edgesProcessed++;
                     }
@@ -110,11 +120,11 @@ public class GroupCountMapReduce {
 
     public static class Reduce extends Reducer<Text, LongWritable, Text, LongWritable> {
 
-        private MultipleOutputs<WritableComparable, LongWritable> outputs;
+        private SafeReducerOutputs outputs;
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.outputs = new MultipleOutputs<WritableComparable, LongWritable>(context);
+            this.outputs = new SafeReducerOutputs(context);
         }
 
         private final LongWritable longWritable = new LongWritable();

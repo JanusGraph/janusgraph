@@ -102,7 +102,7 @@ class HadoopLoader {
         }
 
         FileSystem.metaClass.unzip = { final String from, final String to ->
-            HDFSTools.decompressPath((FileSystem) delegate, from, to, Tokens.BZ2, new BZip2Codec());
+            HDFSTools.decompressPath((FileSystem) delegate, from, to, Tokens.BZ2, new BZip2Codec(), true);
         }
     }
 

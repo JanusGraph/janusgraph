@@ -33,10 +33,12 @@ public class CountMapReduce {
         private final static IntWritable intWritable = new IntWritable(1);
         private boolean isVertex;
         private final LongWritable longWritable = new LongWritable();
+        private SafeMapperOutputs outputs;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
+            this.outputs = new SafeMapperOutputs(context);
         }
 
         @Override
@@ -60,6 +62,14 @@ public class CountMapReduce {
                     context.write(intWritable, this.longWritable);
                 }
             }
+
+            this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
+        }
+
+        @Override
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, IntWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
+            this.outputs.close();
         }
     }
 
@@ -80,13 +90,26 @@ public class CountMapReduce {
 
     public static class Reduce extends Reducer<IntWritable, LongWritable, NullWritable, Text> {
 
+        private SafeReducerOutputs outputs;
+
+        @Override
+        public void setup(final Reducer<IntWritable, LongWritable, NullWritable, Text>.Context context) {
+            this.outputs = new SafeReducerOutputs(context);
+        }
+
         @Override
         public void reduce(final IntWritable key, final Iterable<LongWritable> values, final Reducer<IntWritable, LongWritable, NullWritable, Text>.Context context) throws IOException, InterruptedException {
             long totalCount = 0;
             for (final LongWritable temp : values) {
                 totalCount = totalCount + temp.get();
             }
-            context.write(NullWritable.get(), new Text(String.valueOf(totalCount)));
+            this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), new Text(String.valueOf(totalCount)));
+        }
+
+        @Override
+        public void cleanup(final Reducer<IntWritable, LongWritable, NullWritable, Text>.Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
+            this.outputs.close();
         }
     }
 }

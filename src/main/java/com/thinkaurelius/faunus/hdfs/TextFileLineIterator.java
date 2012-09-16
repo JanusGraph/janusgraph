@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.hdfs;
 
 import com.thinkaurelius.faunus.Tokens;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.BZip2Codec;
@@ -10,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 
@@ -30,6 +32,16 @@ public class TextFileLineIterator implements Iterator<String> {
         this.fs = fs;
         this.totalLines = totalLines;
         this.paths = paths;
+        this.reader = this.getUncompressedInputStream();
+    }
+
+    public TextFileLineIterator(final FileSystem fs, final FileStatus[] statuses, final long totalLines) throws IOException {
+        this.fs = fs;
+        this.totalLines = totalLines;
+        this.paths = new LinkedList<Path>();
+        for (final FileStatus status : statuses) {
+            this.paths.add(status.getPath());
+        }
         this.reader = this.getUncompressedInputStream();
     }
 
