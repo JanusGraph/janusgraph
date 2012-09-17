@@ -23,7 +23,7 @@ public class TextFileLineIterator implements Iterator<String> {
     private final Queue<Path> paths;
     private final long totalLines;
     private long lines = 0;
-    private BufferedReader reader;
+    private BufferedReader reader = null;
     private String line;
     private CompressionCodec codec = new BZip2Codec();
 
@@ -32,7 +32,6 @@ public class TextFileLineIterator implements Iterator<String> {
         this.fs = fs;
         this.totalLines = totalLines;
         this.paths = paths;
-        this.reader = this.getUncompressedInputStream();
     }
 
     public TextFileLineIterator(final FileSystem fs, final FileStatus[] statuses, final long totalLines) throws IOException {
@@ -42,17 +41,22 @@ public class TextFileLineIterator implements Iterator<String> {
         for (final FileStatus status : statuses) {
             this.paths.add(status.getPath());
         }
-        this.reader = this.getUncompressedInputStream();
     }
 
     public boolean hasNext() {
         if (null != line)
             return true;
 
-        if (this.lines >= this.totalLines || this.reader == null)
+        if (this.lines >= this.totalLines)
             return false;
 
         try {
+            if (this.reader == null)
+                if (this.paths.isEmpty())
+                    return false;
+                else
+                    this.reader = this.getUncompressedInputStream();
+
             this.line = this.reader.readLine();
             if (this.line != null) {
                 this.lines++;
