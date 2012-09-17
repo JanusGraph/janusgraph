@@ -10,9 +10,9 @@ import java.io.Serializable;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class OnlyGraphFilter implements PathFilter, Serializable {
+public class GraphFilter implements PathFilter {
 
-    public OnlyGraphFilter() {
+    public GraphFilter() {
     }
 
     public boolean accept(Path path) {

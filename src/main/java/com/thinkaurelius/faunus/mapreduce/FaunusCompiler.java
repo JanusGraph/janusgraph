@@ -6,7 +6,7 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
-import com.thinkaurelius.faunus.hdfs.OnlyGraphFilter;
+import com.thinkaurelius.faunus.hdfs.GraphFilter;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
@@ -526,7 +526,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
         if (FileInputFormat.class.isAssignableFrom(this.graph.getGraphInputFormat())) {
             FileInputFormat.setInputPaths(this.jobs.get(0), this.graph.getInputLocation());
-            FileInputFormat.setInputPathFilter(this.jobs.get(0), OnlyGraphFilter.class);
+            FileInputFormat.setInputPathFilter(this.jobs.get(0), GraphFilter.class);
         } else if (this.graph.getGraphInputFormat().equals(RexsterInputFormat.class)) {
             /* do nothing */
         } else if (this.graph.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
@@ -552,7 +552,7 @@ public class FaunusCompiler extends Configured implements Tool {
                 job.setInputFormatClass(this.graph.getGraphInputFormat());
             } else {
                 job.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                FileInputFormat.setInputPathFilter(job, OnlyGraphFilter.class);
+                FileInputFormat.setInputPathFilter(job, GraphFilter.class);
                 FileInputFormat.addInputPath(job, new Path(outputJobPrefix + "-" + (i - 1)));
             }
 

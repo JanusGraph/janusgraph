@@ -9,7 +9,7 @@ import org.apache.hadoop.fs.FSDataOutputStream
 import org.apache.hadoop.fs.FileStatus
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.io.compress.BZip2Codec
+import org.apache.hadoop.io.IOUtils
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -75,10 +75,7 @@ class HadoopLoader {
 
             HDFSTools.getAllFilePaths(fs, from).each {
                 final FSDataInputStream inA = fs.open(it);
-                int c;
-                while ((c = inA.read()) != -1) {
-                    outA.write(c);
-                }
+                IOUtils.copyBytes(inA, outA, 8192);
                 inA.close();
             }
             outA.close();
@@ -102,7 +99,7 @@ class HadoopLoader {
         }
 
         FileSystem.metaClass.unzip = { final String from, final String to ->
-            HDFSTools.decompressPath((FileSystem) delegate, from, to, Tokens.BZ2, new BZip2Codec(), true);
+            HDFSTools.decompressPath((FileSystem) delegate, from, to, Tokens.BZ2, true);
         }
     }
 
