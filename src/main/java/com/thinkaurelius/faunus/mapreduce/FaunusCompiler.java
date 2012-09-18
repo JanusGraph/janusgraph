@@ -5,7 +5,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
-import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
+import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraInputFormat;
 import com.thinkaurelius.faunus.hdfs.OnlyGraphFilter;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
@@ -33,6 +33,7 @@ import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.WritableComparators;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -530,7 +531,7 @@ public class FaunusCompiler extends Configured implements Tool {
         } else if (this.graph.getGraphInputFormat().equals(RexsterInputFormat.class)) {
             /* do nothing */
         } else if (this.graph.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
-            ConfigHelper.setInputColumnFamily(this.jobs.get(0).getConfiguration(), ConfigHelper.getInputKeyspace(this.graph.getConfiguration()), "edgestore");
+            ConfigHelper.setInputColumnFamily(this.jobs.get(0).getConfiguration(), ConfigHelper.getInputKeyspace(this.graph.getConfiguration()), GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME);
             final SlicePredicate predicate = new SlicePredicate();
             final SliceRange sliceRange = new SliceRange();
             sliceRange.setStart(new byte[0]);

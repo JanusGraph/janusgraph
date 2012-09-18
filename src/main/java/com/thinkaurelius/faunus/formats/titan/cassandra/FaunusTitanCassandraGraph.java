@@ -1,7 +1,8 @@
-package com.thinkaurelius.faunus.formats.titan;
+package com.thinkaurelius.faunus.formats.titan.cassandra;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.titan.FaunusVertexRelationLoader;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -23,24 +24,22 @@ import java.util.SortedMap;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class FaunusTitanGraph extends StandardTitanGraph {
+public class FaunusTitanCassandraGraph extends StandardTitanGraph {
 
     private final InternalTitanTransaction tx;
 
-    public FaunusTitanGraph(final String configFile) throws ConfigurationException {
+    public FaunusTitanCassandraGraph(final String configFile) throws ConfigurationException {
         this(new PropertiesConfiguration(configFile));
     }
 
-    public FaunusTitanGraph(final Configuration configuration) {
+    public FaunusTitanCassandraGraph(final Configuration configuration) {
         super(new GraphDatabaseConfiguration(configuration));
         this.tx = startTransaction(new TransactionConfig(this.getConfiguration()));
     }
 
     public FaunusVertex readFaunusVertex(final Pair<ByteBuffer, SortedMap<ByteBuffer, IColumn>> row) {
-
-        FaunusVertexRelationLoader loader = new FaunusVertexRelationLoader(IDHandler.getKeyID(row.left.duplicate()));
+        FaunusVertexRelationLoader loader = new FaunusVertexRelationLoader(row.left.duplicate());
         loadRelations(new CassandraMapIterable(row.right), loader, tx);
-
         return loader.getVertex();
     }
 

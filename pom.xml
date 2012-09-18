@@ -60,13 +60,8 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan</artifactId>
             <version>0.1.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.hbase</groupId>
-                    <artifactId>hbase</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
+
         <!-- TESTING -->
         <dependency>
             <groupId>junit</groupId>

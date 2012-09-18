@@ -1,10 +1,6 @@
-package com.thinkaurelius.faunus.formats.titan;
+package com.thinkaurelius.faunus.formats.titan.cassandra;
 
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
+import com.google.common.collect.*;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import org.apache.cassandra.auth.IAuthenticator;
@@ -15,22 +11,7 @@ import org.apache.cassandra.db.marshal.TypeParser;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
-import org.apache.cassandra.thrift.AuthenticationRequest;
-import org.apache.cassandra.thrift.Cassandra;
-import org.apache.cassandra.thrift.CfDef;
-import org.apache.cassandra.thrift.Column;
-import org.apache.cassandra.thrift.ColumnOrSuperColumn;
-import org.apache.cassandra.thrift.ColumnParent;
-import org.apache.cassandra.thrift.ConsistencyLevel;
-import org.apache.cassandra.thrift.CounterColumn;
-import org.apache.cassandra.thrift.CounterSuperColumn;
-import org.apache.cassandra.thrift.IndexExpression;
-import org.apache.cassandra.thrift.KeyRange;
-import org.apache.cassandra.thrift.KeySlice;
-import org.apache.cassandra.thrift.KsDef;
-import org.apache.cassandra.thrift.SlicePredicate;
-import org.apache.cassandra.thrift.SuperColumn;
-import org.apache.cassandra.thrift.TBinaryProtocol;
+import org.apache.cassandra.thrift.*;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.Pair;
@@ -51,15 +32,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Adopted from Cassandra's RecordReader source code.
@@ -84,9 +57,9 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     private List<IndexExpression> filter;
     private boolean pathEnabled;
 
-    private final FaunusTitanGraph graph;
+    private final FaunusTitanCassandraGraph graph;
 
-    public TitanCassandraRecordReader(final FaunusTitanGraph graph) {
+    public TitanCassandraRecordReader(final FaunusTitanCassandraGraph graph) {
         super();
         if (graph == null) throw new IllegalArgumentException("Graph cannot be null");
         this.graph = graph;

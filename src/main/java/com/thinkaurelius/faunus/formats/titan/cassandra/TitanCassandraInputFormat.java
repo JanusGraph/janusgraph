@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.formats.titan;
+package com.thinkaurelius.faunus.formats.titan.cassandra;
 /*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -78,39 +78,54 @@ import java.util.concurrent.Future;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusVertex> {
+
     private static final Logger logger = LoggerFactory.getLogger(TitanCassandraInputFormat.class);
+
     private String keyspace;
     private String cfName;
     private IPartitioner partitioner;
 
-    private static void validateConfiguration(final Configuration conf) {
-        if (ConfigHelper.getInputKeyspace(conf) == null)
-            throw new UnsupportedOperationException("The keyspace configuration must be set");
+    private FaunusTitanCassandraGraph graph = null;
 
-        if (ConfigHelper.getInputColumnFamily(conf) == null)
-            throw new UnsupportedOperationException("The columnfamily configuration must be set (with setColumnFamily())");
+    public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
 
-        if (ConfigHelper.getInputSlicePredicate(conf) == null)
-            throw new UnsupportedOperationException("The predicate configuration must be set (with setPredicate())");
+        if (graph == null) {
+            final Configuration conf = taskAttemptContext.getConfiguration();
+            //  ## Instantiate Titan ##
+            final BaseConfiguration titanconfig = new BaseConfiguration();
+            //General Titan configuration for read-only
+            titanconfig.setProperty("storage.read-only", "true");
+            titanconfig.setProperty("autotype", "none");
+            //Cassandra specific configuration
+            titanconfig.setProperty("storage.backend", "cassandra");   // todo: astyanax
+            titanconfig.setProperty("storage.hostname", ConfigHelper.getInputInitialAddress(conf));
+            titanconfig.setProperty("storage.keyspace", ConfigHelper.getInputKeyspace(conf));
+            titanconfig.setProperty("storage.port", ConfigHelper.getInputRpcPort(conf));
+            if (ConfigHelper.getReadConsistencyLevel(conf) != null)
+                titanconfig.setProperty("storage.read-consistency-level", ConfigHelper.getReadConsistencyLevel(conf));
+            if (ConfigHelper.getWriteConsistencyLevel(conf) != null)
+                titanconfig.setProperty("storage.write-consistency-level", ConfigHelper.getWriteConsistencyLevel(conf));
+            graph = new FaunusTitanCassandraGraph(titanconfig);
+        }
+        return new TitanCassandraRecordReader(graph);
+    }
 
-        if (ConfigHelper.getInputInitialAddress(conf) == null)
-            throw new UnsupportedOperationException("The initial input address configuration must be set");
-
-        if (ConfigHelper.getInputPartitioner(conf) == null)
-            throw new UnsupportedOperationException("The Cassandra partitioner class configuration must be set");
+    @Override
+    public void finalize() throws Throwable {
+        super.finalize();
+        if (graph != null) graph.shutdown();
     }
 
     public List<InputSplit> getSplits(final JobContext context) throws IOException {
         final Configuration conf = context.getConfiguration();
-
         validateConfiguration(conf);
 
         // cannonical ranges and nodes holding replicas
         List<TokenRange> masterRangeNodes = getRangeMap(conf);
 
-        keyspace = ConfigHelper.getInputKeyspace(context.getConfiguration());
-        cfName = ConfigHelper.getInputColumnFamily(context.getConfiguration());
-        partitioner = ConfigHelper.getInputPartitioner(context.getConfiguration());
+        keyspace = ConfigHelper.getInputKeyspace(conf);
+        cfName = ConfigHelper.getInputColumnFamily(conf);
+        partitioner = ConfigHelper.getInputPartitioner(conf);
         logger.debug("partitioner is " + partitioner);
 
         // cannonical ranges, split into pieces, fetching the splits in parallel
@@ -250,34 +265,22 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
         return map;
     }
 
-    private FaunusTitanGraph graph = null;
 
-    public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+    private static void validateConfiguration(final Configuration conf) {
+        if (ConfigHelper.getInputKeyspace(conf) == null)
+            throw new UnsupportedOperationException("The keyspace configuration must be set");
 
-        if (graph == null) {
-            final Configuration conf = taskAttemptContext.getConfiguration();
-            //  ## Instantiate Titan ##
-            final BaseConfiguration titanconfig = new BaseConfiguration();
-            //General Titan configuration for read-only
-            titanconfig.setProperty("storage.read-only", "true");
-            titanconfig.setProperty("autotype", "none");
-            //Cassandra specific configuration
-            titanconfig.setProperty("storage.backend", "cassandra");   // todo: astyanax
-            titanconfig.setProperty("storage.hostname", ConfigHelper.getInputInitialAddress(conf));
-            titanconfig.setProperty("storage.keyspace", ConfigHelper.getInputKeyspace(conf));
-            titanconfig.setProperty("storage.port", ConfigHelper.getInputRpcPort(conf));
-            if (ConfigHelper.getReadConsistencyLevel(conf) != null)
-                titanconfig.setProperty("storage.read-consistency-level", ConfigHelper.getReadConsistencyLevel(conf));
-            if (ConfigHelper.getWriteConsistencyLevel(conf) != null)
-                titanconfig.setProperty("storage.write-consistency-level", ConfigHelper.getWriteConsistencyLevel(conf));
-            graph = new FaunusTitanGraph(titanconfig);
-        }
-        return new TitanCassandraRecordReader(graph);
+        if (ConfigHelper.getInputColumnFamily(conf) == null)
+            throw new UnsupportedOperationException("The columnfamily configuration must be set (with setColumnFamily())");
+
+        if (ConfigHelper.getInputSlicePredicate(conf) == null)
+            throw new UnsupportedOperationException("The predicate configuration must be set (with setPredicate())");
+
+        if (ConfigHelper.getInputInitialAddress(conf) == null)
+            throw new UnsupportedOperationException("The initial input address configuration must be set");
+
+        if (ConfigHelper.getInputPartitioner(conf) == null)
+            throw new UnsupportedOperationException("The Cassandra partitioner class configuration must be set");
     }
 
-    @Override
-    public void finalize() throws Throwable {
-        super.finalize();
-        if (graph != null) graph.shutdown();
-    }
 }

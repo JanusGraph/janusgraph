@@ -7,6 +7,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.graphdb.database.VertexRelationLoader;
+import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.tinkerpop.blueprints.Direction;
@@ -27,7 +28,7 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
     private boolean isSystemType = false;
 
     public FaunusVertexRelationLoader(final ByteBuffer key) {
-        this(key.getLong());
+        this(IDHandler.getKeyID(key));
 
     }
 
