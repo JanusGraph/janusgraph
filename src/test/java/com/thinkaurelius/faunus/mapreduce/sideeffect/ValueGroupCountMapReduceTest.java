@@ -32,7 +32,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, WritableComparable, LongWritable, WritableComparable, LongWritable>();
         mapReduceDriver.setMapper(new ValueGroupCountMapReduce.Map());
-        mapReduceDriver.setCombiner(new ValueGroupCountMapReduce.Reduce());
+        mapReduceDriver.setCombiner(new ValueGroupCountMapReduce.Combiner());
         mapReduceDriver.setReducer(new ValueGroupCountMapReduce.Reduce());
     }
 

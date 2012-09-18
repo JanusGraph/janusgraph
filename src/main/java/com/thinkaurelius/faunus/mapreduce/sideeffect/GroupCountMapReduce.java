@@ -120,6 +120,22 @@ public class GroupCountMapReduce {
 
     }
 
+
+    public static class Combiner extends Reducer<Text, LongWritable, Text, LongWritable> {
+
+      private final LongWritable longWritable = new LongWritable();
+
+        @Override
+        public void reduce(final Text key, final Iterable<LongWritable> values, final Reducer<Text, LongWritable, Text, LongWritable>.Context context) throws IOException, InterruptedException {
+            long totalCount = 0;
+            for (final LongWritable token : values) {
+                totalCount = totalCount + token.get();
+            }
+            this.longWritable.set(totalCount);
+            context.write(key, this.longWritable);
+        }
+    }
+
     public static class Reduce extends Reducer<Text, LongWritable, Text, LongWritable> {
 
         private SafeReducerOutputs outputs;

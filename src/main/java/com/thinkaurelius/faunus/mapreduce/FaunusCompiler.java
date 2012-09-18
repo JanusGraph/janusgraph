@@ -407,7 +407,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.set(ValueGroupCountMapReduce.PROPERTY + "-" + this.mapSequenceClasses.size(), property);
         this.mapSequenceConfiguration.setClass(ValueGroupCountMapReduce.TYPE + "-" + this.mapSequenceClasses.size(), type, Writable.class);
         this.mapSequenceClasses.add(ValueGroupCountMapReduce.Map.class);
-        this.combinerClass = ValueGroupCountMapReduce.Reduce.class;
+        this.combinerClass = ValueGroupCountMapReduce.Combiner.class;
         this.reduceClass = ValueGroupCountMapReduce.Reduce.class;
         this.setKeyValueClasses(type, LongWritable.class, type, LongWritable.class);
         this.completeSequence();
@@ -420,7 +420,7 @@ public class FaunusCompiler extends Configured implements Tool {
         if (null != valueClosure)
             this.mapSequenceConfiguration.set(GroupCountMapReduce.VALUE_CLOSURE + "-" + this.mapSequenceClasses.size(), valueClosure);
         this.mapSequenceClasses.add(GroupCountMapReduce.Map.class);
-        this.combinerClass = GroupCountMapReduce.Reduce.class;
+        this.combinerClass = GroupCountMapReduce.Combiner.class;
         this.reduceClass = GroupCountMapReduce.Reduce.class;
         this.setKeyValueClasses(Text.class, LongWritable.class, Text.class, LongWritable.class);
         this.completeSequence();
@@ -575,6 +575,15 @@ public class FaunusCompiler extends Configured implements Tool {
             logger.info("         \\ |");
             logger.info("          |/");
         }
+
+        /*logger.info("Graph: " + this.graph);
+        logger.info("Input location: " + this.graph.getInputLocation());
+        logger.info("Graph input format: " + this.graph.getGraphInputFormat().getName());
+        logger.info("Graph output format: " + this.graph.getGraphOutputFormat().getName());
+        logger.info("Sideeffect output format: " + this.graph.getSideEffectOutputFormat().getName());
+        logger.info("Output location: " + this.graph.getOutputLocation());
+        logger.info("Output location overwrite: " + this.graph.getOutputLocationOverwrite());*/
+
         if (null != script && !script.isEmpty())
             logger.info("Generating job chain: " + script);
 

@@ -24,7 +24,7 @@ public class GroupCountMapReduceTest extends BaseTest {
     public void setUp() throws Exception {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, Text, LongWritable, Text, LongWritable>();
         mapReduceDriver.setMapper(new GroupCountMapReduce.Map());
-        mapReduceDriver.setCombiner(new GroupCountMapReduce.Reduce());
+        mapReduceDriver.setCombiner(new GroupCountMapReduce.Combiner());
         mapReduceDriver.setReducer(new GroupCountMapReduce.Reduce());
     }
 

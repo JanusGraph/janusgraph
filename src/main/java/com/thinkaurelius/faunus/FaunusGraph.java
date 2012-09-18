@@ -75,6 +75,8 @@ public class FaunusGraph {
     // INPUT AND OUTPUT LOCATIONS
 
     public Path getInputLocation() {
+        if (null == this.configuration.get(INPUT_LOCATION))
+            return null;
         return new Path(this.configuration.get(INPUT_LOCATION));
     }
 
@@ -87,6 +89,8 @@ public class FaunusGraph {
     }
 
     public Path getOutputLocation() {
+        if (null == this.configuration.get(OUTPUT_LOCATION))
+            return null;
         return new Path(this.configuration.get(OUTPUT_LOCATION));
     }
 

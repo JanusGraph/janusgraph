@@ -95,6 +95,21 @@ public class ValueGroupCountMapReduce {
         }
     }
 
+    public static class Combiner extends Reducer<WritableComparable, LongWritable, WritableComparable, LongWritable> {
+
+        private final LongWritable longWritable = new LongWritable();
+
+        @Override
+        public void reduce(final WritableComparable key, final Iterable<LongWritable> values, final Reducer<WritableComparable, LongWritable, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
+            long totalCount = 0;
+            for (final LongWritable token : values) {
+                totalCount = totalCount + token.get();
+            }
+            this.longWritable.set(totalCount);
+            context.write(key, this.longWritable);
+        }
+    }
+
     public static class Reduce extends Reducer<WritableComparable, LongWritable, WritableComparable, LongWritable> {
 
         private SafeReducerOutputs outputs;
