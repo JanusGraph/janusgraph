@@ -37,16 +37,16 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
 
 
     public TitanHBaseRecordReader(final HTable table, final Scan scan, FaunusTitanHBaseGraph graph, boolean pathEnabled) {
-        this.htable=table;
-        this.scan=scan;
-        this.graph=graph;
+        this.htable = table;
+        this.scan = scan;
+        this.graph = graph;
         this.pathEnabled = pathEnabled;
     }
-    
+
     /**
      * Restart from survivable exceptions by creating a new scanner.
      *
-     * @param firstRow  The first row to start at.
+     * @param firstRow The first row to start at.
      * @throws IOException When restarting fails.
      */
     public void restart(byte[] firstRow) throws IOException {
@@ -66,8 +66,6 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
 
     /**
      * Closes the split.
-     *
-     *
      */
     public void close() {
         this.scanner.close();
@@ -88,7 +86,7 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
      * Returns the current value.
      *
      * @return The current value.
-     * @throws IOException When the value is faulty.
+     * @throws IOException          When the value is faulty.
      * @throws InterruptedException When the job is aborted.
      */
     public FaunusVertex getCurrentValue() throws IOException, InterruptedException {
@@ -105,7 +103,7 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
      * Positions the record reader to the next record.
      *
      * @return <code>true</code> if there was another record.
-     * @throws IOException When reading the record failed.
+     * @throws IOException          When reading the record failed.
      * @throws InterruptedException When the job was aborted.
      */
     public boolean nextKeyValue() throws IOException, InterruptedException {
@@ -129,12 +127,14 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
             if (result != null && result.size() > 0) {
                 lastRow = result.getRow();
                 //Is this a valid row?
-                final NavigableMap<byte[],NavigableMap<Long,byte[]>> rowMap = result.getMap().get(TitanHBaseInputFormat.EDGE_STORE_FAMILY);
-                if (rowMap!=null) {
+                final NavigableMap<byte[], NavigableMap<Long, byte[]>> rowMap = result.getMap().get(TitanHBaseInputFormat.EDGE_STORE_FAMILY);
+                if (rowMap != null) {
                     //Parse FaunusVertex
-                    currentVertex = graph.readFaunusVertex(lastRow,rowMap);
-                    if (this.pathEnabled) currentVertex.enablePath(true);
-                    if (null != currentVertex) return true;
+                    currentVertex = graph.readFaunusVertex(lastRow, rowMap);
+                    if (null != currentVertex) {
+                        if (this.pathEnabled) currentVertex.enablePath(true);
+                        return true;
+                    }
                 }
             } else {
                 return false;
