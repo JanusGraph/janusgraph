@@ -24,6 +24,7 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new VerticesVerticesMapReduce.Map());
+        mapReduceDriver.setCombiner(new VerticesVerticesMapReduce.Combiner());
         mapReduceDriver.setReducer(new VerticesVerticesMapReduce.Reduce());
     }
 
