@@ -40,11 +40,11 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
     private static final Logger logger = Logger.getLogger(FaunusRexsterExtension.class);
     private static final ElementIdHandler DEFAULT_ID_HANDLER = new DefaultElementIdHandler();
 
-    private static final long WRITE_STATUS_EVERY = 100;
+    private static final long WRITE_STATUS_EVERY = 10000;
     private static final String CONFIG_ID_HANDLER = "id-handler";
 
     public static final String EXTENSION_NAMESPACE = "faunus";
-    public static final String EXTENSION_NAME = "inputformat";
+    public static final String EXTENSION_NAME = "rexsterinputformat";
 
     @ExtensionDefinition(extensionPoint = ExtensionPoint.GRAPH, produces = MediaType.APPLICATION_OCTET_STREAM, method = HttpMethod.GET)
     @ExtensionDescriptor(description = "streaming vertices for faunus")
