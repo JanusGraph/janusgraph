@@ -71,7 +71,7 @@ class HadoopLoader {
 
         FileSystem.metaClass.head = { final String path, final long totalLines ->
             final FileSystem fs = (FileSystem) delegate;
-            List<Path> paths = new LinkedList<Path>();
+            final List<Path> paths = new LinkedList<Path>();
             paths.addAll(HDFSTools.getAllFilePaths(fs, path));
             if (paths.isEmpty())
                 return Collections.emptyList();
@@ -91,8 +91,7 @@ class HadoopLoader {
         }
 
         FileSystem.metaClass.result = { final String output ->
-            return HDFSTools.getOutputsFinalJob((FileSystem) delegate, output);
-
+            return HDFSTools.getOutputsFinalJob((FileSystem) delegate, output).toString();
         }
     }
 

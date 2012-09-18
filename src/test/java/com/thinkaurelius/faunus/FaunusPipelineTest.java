@@ -47,13 +47,13 @@ public class FaunusPipelineTest extends BaseTest {
     public void testPipelineLocking() throws IOException {
         FaunusPipeline pipeline = new FaunusPipeline(new FaunusGraph());
         pipeline.V().out().property("name");
-        /* // TODO: proper locking required
+
         try {
             pipeline.V();
             assertTrue(false);
         } catch (IllegalStateException e) {
             assertTrue(true);
-        }*/
+        }
 
         try {
             pipeline.order(Tokens.Order.INCREASING, "name").V();
