@@ -31,6 +31,8 @@ import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.InvalidRequestException;
 import org.apache.cassandra.thrift.KeyRange;
+import org.apache.cassandra.thrift.SlicePredicate;
+import org.apache.cassandra.thrift.SliceRange;
 import org.apache.cassandra.thrift.TokenRange;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.lang.StringUtils;
@@ -118,6 +120,7 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
 
     public List<InputSplit> getSplits(final JobContext context) throws IOException {
         final Configuration conf = context.getConfiguration();
+        initialize(conf);
         validateConfiguration(conf);
 
         // cannonical ranges and nodes holding replicas
@@ -263,6 +266,16 @@ public class TitanCassandraInputFormat extends InputFormat<NullWritable, FaunusV
             throw new RuntimeException(e);
         }
         return map;
+    }
+
+    private void initialize(final Configuration conf) {
+        ConfigHelper.setInputColumnFamily(conf, ConfigHelper.getInputKeyspace(conf), "edgestore");
+        final SlicePredicate predicate = new SlicePredicate();
+        final SliceRange sliceRange = new SliceRange();
+        sliceRange.setStart(new byte[0]);
+        sliceRange.setFinish(new byte[0]);
+        predicate.setSlice_range(sliceRange);
+        ConfigHelper.setInputSlicePredicate(conf, predicate);
     }
 
 

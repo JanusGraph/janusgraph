@@ -4,9 +4,6 @@ import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
-import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraInputFormat;
-import com.thinkaurelius.faunus.formats.titan.hbase.TitanHbaseInputFormat;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
@@ -39,9 +36,6 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.cassandra.hadoop.ConfigHelper;
-import org.apache.cassandra.thrift.SlicePredicate;
-import org.apache.cassandra.thrift.SliceRange;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileStatus;
@@ -520,31 +514,14 @@ public class FaunusCompiler extends Configured implements Tool {
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConfiguration());
         final String outputJobPrefix = this.graph.getOutputLocation().getName() + "/" + Tokens.JOB;
-        hdfs.mkdirs(new Path(this.graph.getOutputLocation().getName()));
+        hdfs.mkdirs(this.graph.getOutputLocation());
 
-
-        //////// HANDLING FIRST JOB INPUT
+        //////// CHAINING JOBS TOGETHER
 
         if (FileInputFormat.class.isAssignableFrom(this.graph.getGraphInputFormat())) {
             FileInputFormat.setInputPaths(this.jobs.get(0), this.graph.getInputLocation());
             FileInputFormat.setInputPathFilter(this.jobs.get(0), NoSideEffectFilter.class);
-        } else if (this.graph.getGraphInputFormat().equals(RexsterInputFormat.class)) {
-            /* do nothing */
-        } else if (this.graph.getGraphInputFormat().equals(TitanHbaseInputFormat.class)) {
-            /* do nothing */
-        } else if (this.graph.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
-            ConfigHelper.setInputColumnFamily(this.jobs.get(0).getConfiguration(), ConfigHelper.getInputKeyspace(this.graph.getConfiguration()), "edgestore");
-            final SlicePredicate predicate = new SlicePredicate();
-            final SliceRange sliceRange = new SliceRange();
-            sliceRange.setStart(new byte[0]);
-            sliceRange.setFinish(new byte[0]);
-            predicate.setSlice_range(sliceRange);
-            ConfigHelper.setInputSlicePredicate(this.jobs.get(0).getConfiguration(), predicate);
-        } else
-            throw new IOException(this.graph.getGraphInputFormat().getName() + " is not a supported input format");
-
-
-        //////// CHAINING JOBS TOGETHER
+        }
 
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);

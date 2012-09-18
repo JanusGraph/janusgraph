@@ -20,23 +20,23 @@ import java.util.NavigableMap;
  * Iterate over an HBase table data, return (ImmutableBytesWritable, Result)
  * pairs.
  */
-public class TitanHbaseRecordReader extends RecordReader<NullWritable, FaunusVertex> {
+public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
-    private static final Logger logger = LoggerFactory.getLogger(TitanHbaseRecordReader.class);
+    private static final Logger logger = LoggerFactory.getLogger(TitanHBaseRecordReader.class);
 
 
     private Scan scan = null;
     private HTable htable = null;
     private ResultScanner scanner = null;
 
-    private final FaunusTitanHbaseGraph graph;
+    private final FaunusTitanHBaseGraph graph;
     private boolean pathEnabled;
 
     private byte[] lastRow = null;
     private FaunusVertex currentVertex = null;
 
 
-    public TitanHbaseRecordReader(HTable table, Scan scan, FaunusTitanHbaseGraph graph, boolean pathEnabled) {
+    public TitanHBaseRecordReader(final HTable table, final Scan scan, FaunusTitanHBaseGraph graph, boolean pathEnabled) {
         this.htable=table;
         this.scan=scan;
         this.graph=graph;
@@ -129,12 +129,12 @@ public class TitanHbaseRecordReader extends RecordReader<NullWritable, FaunusVer
             if (result != null && result.size() > 0) {
                 lastRow = result.getRow();
                 //Is this a valid row?
-                final NavigableMap<byte[],NavigableMap<Long,byte[]>> rowMap = result.getMap().get(TitanHbaseInputFormat.EDGE_STORE_FAMILY);
+                final NavigableMap<byte[],NavigableMap<Long,byte[]>> rowMap = result.getMap().get(TitanHBaseInputFormat.EDGE_STORE_FAMILY);
                 if (rowMap!=null) {
                     //Parse FaunusVertex
                     currentVertex = graph.readFaunusVertex(lastRow,rowMap);
                     if (this.pathEnabled) currentVertex.enablePath(true);
-                    return true;
+                    if (null != currentVertex) return true;
                 }
             } else {
                 return false;

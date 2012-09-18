@@ -14,7 +14,11 @@ import org.apache.hadoop.hbase.mapreduce.TableSplit;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,23 +27,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public abstract class TitanHbaseInputFormat extends InputFormat<NullWritable, FaunusVertex> {
+public class TitanHBaseInputFormat extends InputFormat<NullWritable, FaunusVertex> {
 
-    private static final Logger logger = LoggerFactory.getLogger(TitanHbaseInputFormat.class);
-    
+    private static final Logger logger = LoggerFactory.getLogger(TitanHBaseInputFormat.class);
+
     private static final String HOSTNAME_KEY = HBaseStorageManager.HBASE_CONFIGURATION_MAP.get(StorageManager.HOSTNAME_KEY);
     private static final String PORT_KEY = HBaseStorageManager.HBASE_CONFIGURATION_MAP.get(StorageManager.PORT_KEY);
 
-    
 
     static final byte[] EDGE_STORE_FAMILY = Bytes.toBytes(GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME);
 
-    /** Holds the details for the internal scanner. */
+    /**
+     * Holds the details for the internal scanner.
+     */
     private Scan scan = null;
-    /** The table to scan. */
+    /**
+     * The table to scan.
+     */
     private HTable table = null;
-    /** The graph interfacing with the same Hbase backend */
-    private FaunusTitanHbaseGraph graph = null;
+    /**
+     * The graph interfacing with the same Hbase backend
+     */
+    private FaunusTitanHBaseGraph graph = null;
     private boolean pathEnabled = false;
 
 
@@ -47,32 +56,30 @@ public abstract class TitanHbaseInputFormat extends InputFormat<NullWritable, Fa
      * Builds a TableRecordReader. If no TableRecordReader was provided, uses
      * the default.
      *
-     * @param split  The split to work with.
-     * @param context  The current context.
+     * @param split   The split to work with.
+     * @param context The current context.
      * @return The newly created record reader.
      * @throws IOException When creating the reader fails.
      * @see org.apache.hadoop.mapreduce.InputFormat#createRecordReader(
-     *   org.apache.hadoop.mapreduce.InputSplit,
-     *   org.apache.hadoop.mapreduce.TaskAttemptContext)
+     *org.apache.hadoop.mapreduce.InputSplit,
+     *      org.apache.hadoop.mapreduce.TaskAttemptContext)
      */
     @Override
     public RecordReader<NullWritable, FaunusVertex> createRecordReader(InputSplit split, TaskAttemptContext context)
             throws IOException {
         if (table == null) {
-            throw new IOException("Cannot create a record reader because of a" +
-                    " previous error. Please look at the previous logs lines from" +
-                    " the task's full log for more details.");
+            initialize(context.getConfiguration());
         }
 
         TableSplit tSplit = (TableSplit) split;
         Scan sc = new Scan(this.scan);
         sc.setStartRow(tSplit.getStartRow());
         sc.setStopRow(tSplit.getEndRow());
-        TitanHbaseRecordReader rr = new TitanHbaseRecordReader(table,scan,graph,pathEnabled);
+        TitanHBaseRecordReader rr = new TitanHBaseRecordReader(table, scan, graph, pathEnabled);
         rr.init();
         return rr;
     }
-    
+
     private void initialize(final Configuration config) throws IOException {
         String tablename = config.get("hbase.input.table");
         table = new HTable(HBaseConfiguration.create(config), tablename);
@@ -89,9 +96,9 @@ public abstract class TitanHbaseInputFormat extends InputFormat<NullWritable, Fa
         titanconfig.setProperty("storage.backend", "hbase");
         titanconfig.setProperty("storage.tablename", tablename);
         titanconfig.setProperty("storage.hostname", config.get(HOSTNAME_KEY));
-        if (config.get(PORT_KEY,null)!=null)
+        if (config.get(PORT_KEY, null) != null)
             titanconfig.setProperty("storage.port", config.get(PORT_KEY));
-        graph = new FaunusTitanHbaseGraph(titanconfig);
+        graph = new FaunusTitanHBaseGraph(titanconfig);
 
         pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
     }
@@ -100,11 +107,11 @@ public abstract class TitanHbaseInputFormat extends InputFormat<NullWritable, Fa
      * Calculates the splits that will serve as input for the map tasks. The
      * number of splits matches the number of regions in a table.
      *
-     * @param context  The current job context.
+     * @param context The current job context.
      * @return The list of input splits.
      * @throws IOException When creating the list of splits fails.
      * @see org.apache.hadoop.mapreduce.InputFormat#getSplits(
-     *   org.apache.hadoop.mapreduce.JobContext)
+     *org.apache.hadoop.mapreduce.JobContext)
      */
     @Override
     public List<InputSplit> getSplits(JobContext context) throws IOException {
@@ -144,7 +151,7 @@ public abstract class TitanHbaseInputFormat extends InputFormat<NullWritable, Fa
                         splitStart, splitStop, regionLocation);
                 splits.add(split);
                 count++;
-                logger.debug("getSplits: split -> {} -> {}",count, split);
+                logger.debug("getSplits: split -> {} -> {}", count, split);
             }
         }
         return splits;

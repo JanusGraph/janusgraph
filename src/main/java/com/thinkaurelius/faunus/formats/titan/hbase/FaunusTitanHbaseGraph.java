@@ -21,15 +21,15 @@ import java.util.NavigableMap;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class FaunusTitanHbaseGraph extends StandardTitanGraph {
+public class FaunusTitanHBaseGraph extends StandardTitanGraph {
 
     private final InternalTitanTransaction tx;
 
-    public FaunusTitanHbaseGraph(final String configFile) throws ConfigurationException {
+    public FaunusTitanHBaseGraph(final String configFile) throws ConfigurationException {
         this(new PropertiesConfiguration(configFile));
     }
 
-    public FaunusTitanHbaseGraph(final Configuration configuration) {
+    public FaunusTitanHBaseGraph(final Configuration configuration) {
         super(new GraphDatabaseConfiguration(configuration));
         this.tx = startTransaction(new TransactionConfig(this.getConfiguration()));
     }
