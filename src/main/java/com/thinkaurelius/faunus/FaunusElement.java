@@ -58,7 +58,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     private MicroElement microVersion = null;
 
     protected boolean pathEnabled = false;
-    protected long pathCounter = 0l;
+    protected int pathCounter = 0;
 
 
     public FaunusElement(final long id) {
@@ -119,7 +119,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         }
     }
 
-    public long incrPath(final long amount) throws IllegalStateException {
+    public long incrPath(final int amount) throws IllegalStateException {
         if (this.pathEnabled)
             throw new IllegalStateException("Path calculations are enabled -- use addPath()");
         else
@@ -145,7 +145,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         if (this.pathEnabled)
             return (null == this.paths) ? 0 : this.paths.size();
         else
-            return ((Long) this.pathCounter).intValue();
+            return this.pathCounter;
     }
 
     public void startPath() {
@@ -211,7 +211,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         if (this.pathEnabled)
             this.paths = ElementPaths.readFields(in);
         else
-            this.pathCounter = in.readLong();
+            this.pathCounter = in.readInt();
         this.properties = ElementProperties.readFields(in);
     }
 
@@ -221,7 +221,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         if (this.pathEnabled)
             ElementPaths.write(this.paths, out);
         else
-            out.writeLong(this.pathCounter);
+            out.writeInt(this.pathCounter);
         ElementProperties.write(this.properties, out);
     }
 

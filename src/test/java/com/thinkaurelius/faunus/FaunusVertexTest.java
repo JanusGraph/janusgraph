@@ -50,11 +50,11 @@ public class FaunusVertexTest extends BaseTest {
 
         // id length is 8 bytes  (long)
         // pathsEnabled boolean 1 byte (boolean)
-        // paths size 8 bytes (long)
+        // paths size 4 bytes (int)
         // properties size 2 bytes (short)
         // out edge types size 2 bytes (short)
         // in edge types size 2 bytes (short)
-        assertEquals(bytes.toByteArray().length, 23);
+        assertEquals(bytes.toByteArray().length, 19);
         FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         assertEquals(vertex1, vertex2);

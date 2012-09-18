@@ -42,9 +42,9 @@ public class DuplicateFilterMapTest extends BaseTest {
 
         Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
 
-        graph.get(1l).incrPath(3l);
-        graph.get(2l).incrPath(1l);
-        graph.get(3l).incrPath(2l);
+        graph.get(1l).incrPath(3);
+        graph.get(2l).incrPath(1);
+        graph.get(3l).incrPath(2);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 3);
