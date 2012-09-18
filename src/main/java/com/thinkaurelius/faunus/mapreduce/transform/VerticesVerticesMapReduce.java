@@ -93,19 +93,19 @@ public class VerticesVerticesMapReduce {
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             this.vertex.reuse(key.get());
-            char tag = 'x';
+            char outTag = 'x';
             for (final Holder holder : values) {
-                final char t = holder.getTag();
-                if (t == 'v') {
+                final char tag = holder.getTag();
+                if (tag == 'v') {
                     this.vertex.addAll((FaunusVertex) holder.get());
-                    tag = 'v';
-                } else if (t == 'p') {
+                    outTag = 'v';
+                } else if (tag == 'p') {
                     this.vertex.getPaths(holder.get(), true);
                 } else {
                     this.vertex.getPaths(holder.get(), false);
                 }
             }
-            context.write(key, this.holder.set(tag, this.vertex));
+            context.write(key, this.holder.set(outTag, this.vertex));
         }
 
     }

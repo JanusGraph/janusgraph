@@ -119,7 +119,6 @@ public class CommitVerticesMapReduce {
                 if (ids.size() > 0)
                     vertex.removeEdgesToFrom(ids);
                 context.write(key, this.holder.set('v', vertex));
-
             } else {
                 // vertex not on the same machine as the vertices being deleted
                 for (final Long id : ids) {

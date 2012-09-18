@@ -136,13 +136,13 @@ public class LinkMapReduce {
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             long edgesCreated = 0;
             this.vertex.reuse(key.get());
-            char tag = 'x';
+            char outTag = 'x';
             for (final Holder holder : values) {
-                final char t = holder.getTag();
-                if (t == 'v') {
+                final char tag = holder.getTag();
+                if (tag == 'v') {
                     this.vertex.addAll((FaunusVertex) holder.get());
-                    tag = 'v';
-                } else if (t == 'e') {
+                    outTag = 'v';
+                } else if (tag == 'e') {
                     this.vertex.addEdge(this.direction, (FaunusEdge) holder.get());
                     edgesCreated++;
                 } else {
@@ -150,7 +150,7 @@ public class LinkMapReduce {
                 }
             }
 
-            context.write(key, this.holder.set(tag, this.vertex));
+            context.write(key, this.holder.set(outTag, this.vertex));
 
             if (this.direction.equals(OUT))
                 context.getCounter(Counters.OUT_EDGES_CREATED).increment(edgesCreated);
