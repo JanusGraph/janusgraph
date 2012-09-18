@@ -17,6 +17,7 @@ public class Imports {
         imports.add("org.apache.hadoop.conf.*");
         imports.add("org.apache.hadoop.fs.*");
         imports.add("org.apache.hadoop.util.*");
+        imports.add("org.apache.hadoop.io.*");
         imports.add("org.apache.hadoop.io.compress.*");
         imports.add("org.apache.hadoop.mapreduce.lib.input.*");
         imports.add("org.apache.hadoop.mapreduce.lib.output.*");

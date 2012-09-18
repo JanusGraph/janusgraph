@@ -48,9 +48,6 @@ public class BackFilterMapReduceTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 1);
         assertEquals(graph.get(6l).pathCount(), 1);
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(FilterMap.Counters.VERTICES_FILTERED).getValue(), 0);
-        assertEquals(mapReduceDriver.getCounters().findCounter(FilterMap.Counters.EDGES_FILTERED).getValue(), 0);
-
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
@@ -63,10 +60,6 @@ public class BackFilterMapReduceTest extends BaseTest {
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
-
-        for(FaunusVertex v : graph.values()) {
-            v.enablePath(true);
-        }
 
         graph.get(1l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(1l)), false);
         graph.get(2l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(2l)), false);
@@ -83,9 +76,6 @@ public class BackFilterMapReduceTest extends BaseTest {
         assertEquals(graph.get(4l).pathCount(), 0);
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
-
-        assertEquals(mapReduceDriver.getCounters().findCounter(FilterMap.Counters.VERTICES_FILTERED).getValue(), 0);
-        assertEquals(mapReduceDriver.getCounters().findCounter(FilterMap.Counters.EDGES_FILTERED).getValue(), 0);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }

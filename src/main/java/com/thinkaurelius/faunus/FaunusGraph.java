@@ -82,12 +82,20 @@ public class FaunusGraph {
         this.configuration.set(INPUT_LOCATION, path.toString());
     }
 
+    public void setInputLocation(final String path) {
+        this.setInputLocation(new Path(path));
+    }
+
     public Path getOutputLocation() {
         return new Path(this.configuration.get(OUTPUT_LOCATION));
     }
 
     public void setOutputLocation(final Path path) {
         this.configuration.set(OUTPUT_LOCATION, path.toString());
+    }
+
+    public void setOutputLocation(final String path) {
+        this.setOutputLocation(new Path(path));
     }
 
     public boolean getOutputLocationOverwrite() {

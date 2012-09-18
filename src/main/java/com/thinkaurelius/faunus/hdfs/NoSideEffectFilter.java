@@ -5,14 +5,12 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 
-import java.io.Serializable;
-
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class OnlyGraphFilter implements PathFilter, Serializable {
+public class NoSideEffectFilter implements PathFilter {
 
-    public OnlyGraphFilter() {
+    public NoSideEffectFilter() {
     }
 
     public boolean accept(Path path) {
@@ -20,7 +18,7 @@ public class OnlyGraphFilter implements PathFilter, Serializable {
             if (!path.getFileSystem(new Configuration()).isFile(path))
                 return true;
             else
-                return path.getName().contains(Tokens.GRAPH) || path.getName().contains(Tokens.PART);
+                return !path.getName().startsWith(Tokens.SIDEEFFECT);
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }

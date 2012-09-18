@@ -91,6 +91,44 @@ public class CommitVerticesMapReduce {
         }
     }
 
+    public static class Combiner extends Reducer<LongWritable, Holder, LongWritable, Holder> {
+
+        private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
+        private FaunusVertex vertex;
+
+        @Override
+        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
+            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+        }
+
+
+        @Override
+        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+            FaunusVertex vertex = null;
+            final Set<Long> ids = new HashSet<Long>();
+            for (final Holder holder : values) {
+                final char tag = holder.getTag();
+                if (tag == 'k') {
+                    ids.add(holder.get().getIdAsLong());
+                    // todo: once vertex is found, do individual removes to save memory
+                } else {
+                    vertex = (FaunusVertex) holder.get();
+                }
+            }
+            if (null != vertex) {
+                if (ids.size() > 0)
+                    vertex.removeEdgesToFrom(ids);
+                context.write(key, this.holder.set('v', vertex));
+            } else {
+                // vertex not on the same machine as the vertices being deleted
+                for (final Long id : ids) {
+                    context.write(key, this.holder.set('k', this.vertex.reuse(id)));
+                }
+            }
+
+        }
+    }
+
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
         @Override

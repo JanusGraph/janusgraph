@@ -31,6 +31,7 @@ public class LinkMapReduceTest extends BaseTest {
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new LinkMapReduce.Map());
+        mapReduceDriver.setCombiner(new LinkMapReduce.Combiner());
         mapReduceDriver.setReducer(new LinkMapReduce.Reduce());
     }
 

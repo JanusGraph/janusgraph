@@ -118,6 +118,48 @@ public class LinkMapReduce {
         }
     }
 
+    public static class Combiner extends Reducer<LongWritable, Holder, LongWritable, Holder> {
+
+        private Direction direction;
+        private FaunusVertex vertex;
+
+        @Override
+        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
+            this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
+            this.direction = this.direction.opposite();
+            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+        }
+
+        private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
+
+        @Override
+        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+            long edgesCreated = 0;
+            this.vertex.reuse(key.get());
+            char outTag = 'x';
+            for (final Holder holder : values) {
+                final char tag = holder.getTag();
+                if (tag == 'v') {
+                    this.vertex.addAll((FaunusVertex) holder.get());
+                    outTag = 'v';
+                } else if (tag == 'e') {
+                    this.vertex.addEdge(this.direction, (FaunusEdge) holder.get());
+                    edgesCreated++;
+                } else {
+                    this.vertex.addEdges(Direction.BOTH, (FaunusVertex) holder.get());
+                }
+            }
+
+            context.write(key, this.holder.set(outTag, this.vertex));
+
+            if (this.direction.equals(OUT))
+                context.getCounter(Counters.OUT_EDGES_CREATED).increment(edgesCreated);
+            else
+                context.getCounter(Counters.IN_EDGES_CREATED).increment(edgesCreated);
+        }
+
+    }
+
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
         private Direction direction;
@@ -135,11 +177,14 @@ public class LinkMapReduce {
             long edgesCreated = 0;
             this.vertex.reuse(key.get());
             for (final Holder holder : values) {
-                if (holder.getTag() == 'v') {
+                final char tag = holder.getTag();
+                if (tag == 'v') {
                     vertex.addAll((FaunusVertex) holder.get());
-                } else {
+                } else if (tag == 'e') {
                     vertex.addEdge(this.direction, (FaunusEdge) holder.get());
                     edgesCreated++;
+                } else {
+                    vertex.addEdges(Direction.BOTH, (FaunusVertex) holder.get());
                 }
             }
             context.write(NullWritable.get(), vertex);

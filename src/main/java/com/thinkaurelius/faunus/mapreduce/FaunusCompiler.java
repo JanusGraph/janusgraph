@@ -6,8 +6,7 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraInputFormat;
-import com.thinkaurelius.faunus.formats.titan.hbase.TitanHbaseInputFormat;
-import com.thinkaurelius.faunus.hdfs.OnlyGraphFilter;
+import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
@@ -34,7 +33,6 @@ import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.WritableComparators;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -528,13 +526,11 @@ public class FaunusCompiler extends Configured implements Tool {
 
         if (FileInputFormat.class.isAssignableFrom(this.graph.getGraphInputFormat())) {
             FileInputFormat.setInputPaths(this.jobs.get(0), this.graph.getInputLocation());
-            FileInputFormat.setInputPathFilter(this.jobs.get(0), OnlyGraphFilter.class);
+            FileInputFormat.setInputPathFilter(this.jobs.get(0), NoSideEffectFilter.class);
         } else if (this.graph.getGraphInputFormat().equals(RexsterInputFormat.class)) {
             /* do nothing */
-        } else if (this.graph.getGraphInputFormat().equals(TitanHbaseInputFormat.class)) {
-            /* do nothing */
         } else if (this.graph.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
-            ConfigHelper.setInputColumnFamily(this.jobs.get(0).getConfiguration(), ConfigHelper.getInputKeyspace(this.graph.getConfiguration()), GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME);
+            ConfigHelper.setInputColumnFamily(this.jobs.get(0).getConfiguration(), ConfigHelper.getInputKeyspace(this.graph.getConfiguration()), "edgestore");
             final SlicePredicate predicate = new SlicePredicate();
             final SliceRange sliceRange = new SliceRange();
             sliceRange.setStart(new byte[0]);
@@ -556,7 +552,7 @@ public class FaunusCompiler extends Configured implements Tool {
                 job.setInputFormatClass(this.graph.getGraphInputFormat());
             } else {
                 job.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                FileInputFormat.setInputPathFilter(job, OnlyGraphFilter.class);
+                FileInputFormat.setInputPathFilter(job, NoSideEffectFilter.class);
                 FileInputFormat.addInputPath(job, new Path(outputJobPrefix + "-" + (i - 1)));
             }
 
