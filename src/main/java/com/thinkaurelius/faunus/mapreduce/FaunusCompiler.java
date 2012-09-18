@@ -344,6 +344,9 @@ public class FaunusCompiler extends Configured implements Tool {
     }
 
     public void backFilterMapReduce(final Class<? extends Element> klass, final int step) throws IOException {
+        if(klass.equals(Edge.class))
+            throw new UnsupportedOperationException("The back step currently does not support edges or going back to edges");
+       
         this.mapSequenceConfiguration.setInt(BackFilterMapReduce.STEP + "-" + this.mapSequenceClasses.size(), step);
         this.mapSequenceConfiguration.setClass(BackFilterMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceClasses.add(BackFilterMapReduce.Map.class);

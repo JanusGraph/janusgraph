@@ -50,9 +50,6 @@ public class IntervalFilterMap {
             } else if (Number.class.isAssignableFrom((valueClass))) {
                 startValue = context.getConfiguration().getFloat(START_VALUE, Float.MIN_VALUE);
                 endValue = context.getConfiguration().getFloat(END_VALUE, Float.MAX_VALUE);
-            } else if (valueClass.equals(Boolean.class)) {
-                startValue = context.getConfiguration().getBoolean(START_VALUE, false);
-                endValue = context.getConfiguration().getBoolean(END_VALUE, true);
             } else {
                 throw new IOException("Class " + valueClass + " is an unsupported value class");
             }

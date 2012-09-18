@@ -24,11 +24,6 @@ public class BackFilterMapReduce {
     public static final String CLASS = Tokens.makeNamespace(BackFilterMapReduce.class) + ".class";
     public static final String STEP = Tokens.makeNamespace(BackFilterMapReduce.class) + ".step";
 
-    public enum Counters {
-        VERTICES_FILTERED,
-        EDGES_FILTERED
-    }
-
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
 
         private int step;
