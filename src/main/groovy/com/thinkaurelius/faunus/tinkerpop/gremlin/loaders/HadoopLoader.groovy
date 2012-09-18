@@ -40,24 +40,12 @@ class HadoopLoader {
         }
 
         FileSystem.metaClass.rm = { final String path ->
-            final FileSystem fs = (FileSystem) delegate;
-            boolean deleted = false;
-            fs.globStatus(new Path(path)).each {
-                fs.delete(it.getPath(), false);
-                deleted = true;
-            }
-            return deleted;
+            HDFSTools.globDelete((FileSystem) delegate, path, false);
 
         }
 
         FileSystem.metaClass.rmr = { final String path ->
-            final FileSystem fs = (FileSystem) delegate;
-            boolean deleted = false;
-            fs.globStatus(new Path(path)).each {
-                fs.delete(it.getPath(), true);
-                deleted = true;
-            }
-            return deleted;
+            HDFSTools.globDelete((FileSystem) delegate, path, true);
         }
 
         FileSystem.metaClass.copyToLocal = { final String from, final String to ->
@@ -98,8 +86,13 @@ class HadoopLoader {
             return ((FileSystem) delegate).head(path, Long.MAX_VALUE);
         }
 
-        FileSystem.metaClass.unzip = { final String from, final String to ->
-            HDFSTools.decompressPath((FileSystem) delegate, from, to, Tokens.BZ2, true);
+        FileSystem.metaClass.unzip = { final String from, final String to, final boolean deleteZip ->
+            HDFSTools.decompressPath((FileSystem) delegate, from, to, Tokens.BZ2, deleteZip);
+        }
+
+        FileSystem.metaClass.result = { final String output ->
+            return HDFSTools.getOutputsFinalJob((FileSystem) delegate, output);
+
         }
     }
 

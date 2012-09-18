@@ -505,7 +505,7 @@ public class FaunusCompiler extends Configured implements Tool {
         }
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConfiguration());
-        final String outputJobPrefix = this.graph.getOutputLocation().getName() + "/" + Tokens.JOB;
+        final String outputJobPrefix = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
         hdfs.mkdirs(this.graph.getOutputLocation());
 
         //////// CHAINING JOBS TOGETHER

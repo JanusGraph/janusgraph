@@ -6,8 +6,8 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.compress.BZip2Codec;
 import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -29,7 +29,7 @@ public class EdgeListOutputFormat extends FileOutputFormat<NullWritable, FaunusV
         CompressionCodec codec = null;
         String extension = "";
         if (isCompressed) {
-            final Class<? extends CompressionCodec> codecClass = getOutputCompressorClass(job, GzipCodec.class);
+            final Class<? extends CompressionCodec> codecClass = getOutputCompressorClass(job, BZip2Codec.class);
             codec = ReflectionUtils.newInstance(codecClass, conf);
             extension = codec.getDefaultExtension();
         }
