@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraInputFormat;
+import com.thinkaurelius.faunus.formats.titan.hbase.TitanHbaseInputFormat;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
@@ -455,6 +456,11 @@ public class FaunusCompiler extends Configured implements Tool {
             this.mapSequenceConfiguration.setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
             final Job job = new Job(this.mapSequenceConfiguration, this.toStringOfJob(MapSequence.class));
 
+            // copy over any global configuration from faunus.properties and -D CLI
+            for (final Map.Entry<String, String> entry : this.graph.getConfiguration()) {
+                job.getConfiguration().set(entry.getKey(), entry.getValue());
+            }
+
             job.setJarByClass(FaunusCompiler.class);
             job.setMapperClass(MapSequence.Map.class);
             if (this.reduceClass != null) {
@@ -466,11 +472,6 @@ public class FaunusCompiler extends Configured implements Tool {
                 job.getConfiguration().setClass("mapred.map.output.compression.codec", DefaultCodec.class, CompressionCodec.class);
             } else {
                 job.setNumReduceTasks(0);
-            }
-
-            // copy over any global configuration from faunus.properties and -D CLI
-            for (final Map.Entry<String, String> entry : this.graph.getConfiguration()) {
-                job.getConfiguration().set(entry.getKey(), entry.getValue());
             }
 
             job.setMapOutputKeyClass(this.mapOutputKey);
@@ -528,6 +529,8 @@ public class FaunusCompiler extends Configured implements Tool {
             FileInputFormat.setInputPaths(this.jobs.get(0), this.graph.getInputLocation());
             FileInputFormat.setInputPathFilter(this.jobs.get(0), NoSideEffectFilter.class);
         } else if (this.graph.getGraphInputFormat().equals(RexsterInputFormat.class)) {
+            /* do nothing */
+        } else if (this.graph.getGraphInputFormat().equals(TitanHbaseInputFormat.class)) {
             /* do nothing */
         } else if (this.graph.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
             ConfigHelper.setInputColumnFamily(this.jobs.get(0).getConfiguration(), ConfigHelper.getInputKeyspace(this.graph.getConfiguration()), "edgestore");
