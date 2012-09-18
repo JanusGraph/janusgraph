@@ -46,12 +46,10 @@ import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
-import org.apache.hadoop.io.compress.BZip2Codec;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DefaultCodec;
 import org.apache.hadoop.mapreduce.InputFormat;
@@ -538,9 +536,9 @@ public class FaunusCompiler extends Configured implements Tool {
                 LazyOutputFormat.setOutputFormatClass(job, INTERMEDIATE_OUTPUT_FORMAT);
             }
 
-            SequenceFileOutputFormat.setCompressOutput(job, true);
-            SequenceFileOutputFormat.setOutputCompressorClass(job, BZip2Codec.class);
-            SequenceFileOutputFormat.setOutputCompressionType(job, SequenceFile.CompressionType.BLOCK);
+            //SequenceFileOutputFormat.setCompressOutput(job, true);
+            //SequenceFileOutputFormat.setOutputCompressorClass(job, BZip2Codec.class);
+            //SequenceFileOutputFormat.setOutputCompressionType(job, SequenceFile.CompressionType.BLOCK);
         }
     }
 

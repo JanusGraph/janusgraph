@@ -70,18 +70,6 @@ public class HDFSTools {
             return new Path(output + "/" + Tokens.JOB + "-" + largest);
     }
 
-    /*public static void decompressJobData(final FileSystem fs, String path, final String dataType, final String compressedFileSuffix, final boolean deletePrevious) throws IOException {
-        path = new Path(path).toString();
-        for (final Path p : FileUtil.stat2Paths(fs.globStatus(new Path(path + FOWARD_SLASH + dataType + ASTERISK + compressedFileSuffix)))) {
-            HDFSTools.decompressFile(fs, p.toString(), path + FOWARD_SLASH + p.getName().split("\\.")[0], deletePrevious);
-        }
-
-        // delete compressed data
-        for (FileStatus temp : fs.globStatus(new Path(path + FOWARD_SLASH + dataType + ASTERISK + compressedFileSuffix))) {
-            fs.delete(temp.getPath(), true);
-        }
-    }*/
-
     public static void decompressPath(final FileSystem fs, final String in, final String out, final String compressedFileSuffix, final boolean deletePrevious) throws IOException {
         final Path inPath = new Path(in);
 
