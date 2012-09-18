@@ -7,6 +7,7 @@ import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.TitanCassandraInputFormat;
 import com.thinkaurelius.faunus.hdfs.GraphFilter;
+import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
@@ -532,7 +533,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
         if (FileInputFormat.class.isAssignableFrom(this.graph.getGraphInputFormat())) {
             FileInputFormat.setInputPaths(this.jobs.get(0), this.graph.getInputLocation());
-            FileInputFormat.setInputPathFilter(this.jobs.get(0), GraphFilter.class);
+            FileInputFormat.setInputPathFilter(this.jobs.get(0), NoSideEffectFilter.class);
         } else if (this.graph.getGraphInputFormat().equals(RexsterInputFormat.class)) {
             /* do nothing */
         } else if (this.graph.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
