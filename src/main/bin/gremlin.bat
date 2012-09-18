@@ -1,4 +1,4 @@
-@ECHO ON
+@ECHO OFF
 setlocal enabledelayedexpansion
 
 SET LIBDIR=..\lib
@@ -24,7 +24,7 @@ SET K=
 IF "%1" EQU "-e" (
   FOR %%A IN (%*) DO (
     IF "%%A" NEQ "-e" (
-      SET K=%%A
+      SET K=!K! %%A
     )
   )
 
@@ -34,8 +34,8 @@ IF "%1" EQU "-e" (
 
 IF "%1" EQU "-i" (
   FOR %%A IN (%*) DO (
-    IF "%%A" NEQ "-e" (
-      SET K=%%A
+    IF "%%A" NEQ "-i" (
+      SET K=!K! %%A
     )
   )
 

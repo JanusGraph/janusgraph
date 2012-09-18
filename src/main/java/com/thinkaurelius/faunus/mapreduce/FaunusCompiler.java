@@ -487,6 +487,9 @@ public class FaunusCompiler extends Configured implements Tool {
         final String hadoopFileJar;
         if (new File("target/" + Tokens.FAUNUS_JOB_JAR).exists())
             hadoopFileJar = "target/" + Tokens.FAUNUS_JOB_JAR;
+        else if (new File("../../" + Tokens.FAUNUS_JOB_JAR).exists())
+            // this path is here when running the .bat from mvn clean install
+            hadoopFileJar = "../../" + Tokens.FAUNUS_JOB_JAR;
         else if (new File("lib/" + Tokens.FAUNUS_JOB_JAR).exists())
             hadoopFileJar = "lib/" + Tokens.FAUNUS_JOB_JAR;
         else if (new File("../lib/" + Tokens.FAUNUS_JOB_JAR).exists())
