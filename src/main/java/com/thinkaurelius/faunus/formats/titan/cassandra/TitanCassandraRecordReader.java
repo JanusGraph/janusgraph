@@ -40,6 +40,7 @@ import java.util.*;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class TitanCassandraRecordReader extends RecordReader<NullWritable, FaunusVertex> {
+
     private static final Logger logger = LoggerFactory.getLogger(TitanCassandraRecordReader.class);
 
     private ColumnFamilySplit split;

@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat;
 import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraInputFormat;
+import com.thinkaurelius.faunus.formats.titan.hbase.TitanHbaseInputFormat;
 import com.thinkaurelius.faunus.hdfs.OnlyGraphFilter;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
@@ -529,6 +530,8 @@ public class FaunusCompiler extends Configured implements Tool {
             FileInputFormat.setInputPaths(this.jobs.get(0), this.graph.getInputLocation());
             FileInputFormat.setInputPathFilter(this.jobs.get(0), OnlyGraphFilter.class);
         } else if (this.graph.getGraphInputFormat().equals(RexsterInputFormat.class)) {
+            /* do nothing */
+        } else if (this.graph.getGraphInputFormat().equals(TitanHbaseInputFormat.class)) {
             /* do nothing */
         } else if (this.graph.getGraphInputFormat().equals(TitanCassandraInputFormat.class)) {
             ConfigHelper.setInputColumnFamily(this.jobs.get(0).getConfiguration(), ConfigHelper.getInputKeyspace(this.graph.getConfiguration()), GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME);
