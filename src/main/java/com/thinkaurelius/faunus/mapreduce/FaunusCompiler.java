@@ -213,6 +213,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.set(VerticesVerticesMapReduce.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
         this.mapSequenceConfiguration.setStrings(VerticesVerticesMapReduce.LABELS + "-" + this.mapSequenceClasses.size(), labels);
         this.mapSequenceClasses.add(VerticesVerticesMapReduce.Map.class);
+        this.combinerClass = VerticesVerticesMapReduce.Combiner.class;
         this.reduceClass = VerticesVerticesMapReduce.Reduce.class;
         this.comparatorClass = LongWritable.Comparator.class;
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
@@ -393,6 +394,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
         this.mapSequenceConfiguration.set(LinkMapReduce.DIRECTION, direction.name());  // TODO: make model more robust
         this.comparatorClass = LongWritable.Comparator.class;
+        this.combinerClass = LinkMapReduce.Combiner.class;
         this.reduceClass = LinkMapReduce.Reduce.class;
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
@@ -407,6 +409,7 @@ public class FaunusCompiler extends Configured implements Tool {
     public void commitVerticesMapReduce(final Tokens.Action action) throws IOException {
         this.mapSequenceConfiguration.set(CommitVerticesMapReduce.ACTION + "-" + mapSequenceClasses.size(), action.name());
         this.mapSequenceClasses.add(CommitVerticesMapReduce.Map.class);
+        this.combinerClass = CommitVerticesMapReduce.Combiner.class;
         this.reduceClass = CommitVerticesMapReduce.Reduce.class;
         this.comparatorClass = LongWritable.Comparator.class;
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);

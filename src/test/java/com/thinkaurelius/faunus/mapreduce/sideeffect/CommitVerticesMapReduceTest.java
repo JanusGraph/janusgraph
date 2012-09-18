@@ -24,6 +24,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new CommitVerticesMapReduce.Map());
+        mapReduceDriver.setCombiner(new CommitVerticesMapReduce.Combiner());
         mapReduceDriver.setReducer(new CommitVerticesMapReduce.Reduce());
     }
 

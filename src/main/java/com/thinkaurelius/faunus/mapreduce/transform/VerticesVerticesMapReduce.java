@@ -95,15 +95,16 @@ public class VerticesVerticesMapReduce {
             this.vertex.reuse(key.get());
             char tag = 'x';
             for (final Holder holder : values) {
-                if (holder.getTag() == 'v') {
+                final char t = holder.getTag();
+                if (t == 'v') {
                     this.vertex.addAll((FaunusVertex) holder.get());
                     tag = 'v';
-                } else {
+                } else if (t == 'p') {
                     this.vertex.getPaths(holder.get(), true);
+                } else {
+                    this.vertex.getPaths(holder.get(), false);
                 }
-
             }
-
             context.write(key, this.holder.set(tag, this.vertex));
         }
 
