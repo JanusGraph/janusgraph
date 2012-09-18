@@ -85,7 +85,6 @@ public class FaunusCompiler extends Configured implements Tool {
     protected final Logger logger = Logger.getLogger(FaunusCompiler.class);
 
     private FaunusGraph graph;
-    private boolean derivationJob = true;
 
     private final List<Job> jobs = new ArrayList<Job>();
 
@@ -151,10 +150,6 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public void setPathEnabled(final boolean pathEnabled) {
         this.pathEnabled = pathEnabled;
-    }
-
-    public boolean isDerivationJob() {
-        return this.derivationJob;
     }
 
     ////////////// STEP
@@ -475,9 +470,6 @@ public class FaunusCompiler extends Configured implements Tool {
 
             if (null != this.comparatorClass)
                 job.setSortComparatorClass(this.comparatorClass);
-
-            if (!(this.outputKey.equals(NullWritable.class) && this.outputValue.equals(FaunusVertex.class)))
-                this.derivationJob = false;
 
             this.jobs.add(job);
 
