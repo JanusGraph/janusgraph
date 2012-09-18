@@ -531,13 +531,13 @@ public class FaunusCompiler extends Configured implements Tool {
             }
 
             if (i == this.jobs.size() - 1) {
+                LazyOutputFormat.setOutputFormatClass(job, this.graph.getGraphOutputFormat());
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
                 MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, this.graph.getGraphOutputFormat(), NullWritable.class, FaunusVertex.class);
-                LazyOutputFormat.setOutputFormatClass(job, this.graph.getGraphOutputFormat());
             } else {
+                LazyOutputFormat.setOutputFormatClass(job, INTERMEDIATE_OUTPUT_FORMAT);
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
                 MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, FaunusVertex.class);
-                LazyOutputFormat.setOutputFormatClass(job, INTERMEDIATE_OUTPUT_FORMAT);
             }
 
             //SequenceFileOutputFormat.setCompressOutput(job, true);
@@ -615,6 +615,4 @@ public class FaunusCompiler extends Configured implements Tool {
 
         return 0;
     }
-
-
 }

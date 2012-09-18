@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.util;
 
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.faunus.mapreduce.MemoryMapper;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
@@ -19,7 +20,10 @@ public class SafeMapperOutputs {
 
     public SafeMapperOutputs(final Mapper.Context context) {
         this.context = context;
-        this.outputs = new MultipleOutputs(this.context);
+        if (this.context instanceof MemoryMapper.MemoryMapContext)
+            this.outputs = new MultipleOutputs(((MemoryMapper.MemoryMapContext) this.context).getRawContext());
+        else
+            this.outputs = new MultipleOutputs(this.context);
         this.testing = this.context.getConfiguration().getBoolean(FaunusCompiler.TESTING, false);
     }
 

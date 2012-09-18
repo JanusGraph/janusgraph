@@ -70,6 +70,10 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
             return this.currentConfiguration;
         }
 
+        public Mapper.Context getRawContext() {
+            return this.context;
+        }
+
         public void stageConfiguration(final int step) {
             this.currentConfiguration.clear();
             for (final Map.Entry<String, String> entry : this.globalConfiguration) {
