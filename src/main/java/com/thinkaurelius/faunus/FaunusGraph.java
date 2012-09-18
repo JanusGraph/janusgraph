@@ -17,7 +17,7 @@ import java.util.Map;
  */
 public class FaunusGraph {
 
-    public static final String GRAPH_INPUT_FORMAT_CLASS = "faunus.graph.input.format.class";
+    public static final String GRAPH_INPUT_FORMAT = "faunus.graph.input.format";
     public static final String INPUT_LOCATION = "faunus.input.location";
 
     // TODO: data source pre-filters
@@ -25,8 +25,8 @@ public class FaunusGraph {
     // public static final String GRAPH_INPUT_EDGE_LABEL_FILTER_LABELS = "faunus.graph.input.edge.label.filter.labels";
     // public static final String GRAPH_INPUT_EDGE_LABEL_FILTER_ACTION = "faunus.graph.input.edge.label.filter.action";
 
-    public static final String GRAPH_OUTPUT_FORMAT_CLASS = "faunus.graph.output.format.class";
-    public static final String SIDEEFFECT_OUTPUT_FORMAT_CLASS = "faunus.sideeffect.output.format.class";
+    public static final String GRAPH_OUTPUT_FORMAT = "faunus.graph.output.format";
+    public static final String SIDEEFFECT_OUTPUT_FORMAT = "faunus.sideeffect.output.format";
     public static final String OUTPUT_LOCATION = "faunus.output.location";
     public static final String OUTPUT_LOCATION_OVERWRITE = "faunus.output.location.overwrite";
 
@@ -47,29 +47,29 @@ public class FaunusGraph {
     // GRAPH INPUT AND OUTPUT FORMATS
 
     public Class<? extends InputFormat> getGraphInputFormat() {
-        return this.configuration.getClass(GRAPH_INPUT_FORMAT_CLASS, InputFormat.class, InputFormat.class);
+        return this.configuration.getClass(GRAPH_INPUT_FORMAT, InputFormat.class, InputFormat.class);
     }
 
-    public void setGraphInputFormatClass(final Class<? extends InputFormat> format) {
-        this.configuration.setClass(GRAPH_INPUT_FORMAT_CLASS, format, InputFormat.class);
+    public void setGraphInputFormat(final Class<? extends InputFormat> format) {
+        this.configuration.setClass(GRAPH_INPUT_FORMAT, format, InputFormat.class);
     }
 
     public Class<? extends OutputFormat> getGraphOutputFormat() {
-        return this.configuration.getClass(GRAPH_OUTPUT_FORMAT_CLASS, OutputFormat.class, OutputFormat.class);
+        return this.configuration.getClass(GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
     }
 
-    public void setGraphOutputFormatClass(final Class<? extends OutputFormat> format) {
-        this.configuration.setClass(GRAPH_OUTPUT_FORMAT_CLASS, format, OutputFormat.class);
+    public void setGraphOutputFormat(final Class<? extends OutputFormat> format) {
+        this.configuration.setClass(GRAPH_OUTPUT_FORMAT, format, OutputFormat.class);
     }
 
     // SIDE-EFFECT OUTPUT FORMAT
 
     public Class<? extends OutputFormat> getSideEffectOutputFormat() {
-        return this.configuration.getClass(SIDEEFFECT_OUTPUT_FORMAT_CLASS, OutputFormat.class, OutputFormat.class);
+        return this.configuration.getClass(SIDEEFFECT_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
     }
 
-    public void setSideEffectOutputFormatClass(final Class<? extends OutputFormat> format) {
-        this.configuration.setClass(SIDEEFFECT_OUTPUT_FORMAT_CLASS, format, OutputFormat.class);
+    public void setSideEffectOutputFormat(final Class<? extends OutputFormat> format) {
+        this.configuration.setClass(SIDEEFFECT_OUTPUT_FORMAT, format, OutputFormat.class);
     }
 
     // INPUT AND OUTPUT LOCATIONS
@@ -107,15 +107,15 @@ public class FaunusGraph {
     }
 
     public String toString() {
-        return "faunusgraph[" + this.configuration.getClass(GRAPH_INPUT_FORMAT_CLASS, InputFormat.class).getSimpleName().toLowerCase() + "]";
+        return "faunusgraph[" + this.configuration.getClass(GRAPH_INPUT_FORMAT, InputFormat.class).getSimpleName().toLowerCase() + "]";
     }
 
     public Map<String, Object> getProperties() {
         Map<String, Object> map = new LinkedHashMap<String, Object>();
-        map.put(GRAPH_INPUT_FORMAT_CLASS, this.configuration.get(GRAPH_INPUT_FORMAT_CLASS));
+        map.put(GRAPH_INPUT_FORMAT, this.configuration.get(GRAPH_INPUT_FORMAT));
         map.put(INPUT_LOCATION, this.configuration.get(INPUT_LOCATION));
-        map.put(GRAPH_OUTPUT_FORMAT_CLASS, this.configuration.get(GRAPH_OUTPUT_FORMAT_CLASS));
-        map.put(SIDEEFFECT_OUTPUT_FORMAT_CLASS, this.configuration.get(SIDEEFFECT_OUTPUT_FORMAT_CLASS));
+        map.put(GRAPH_OUTPUT_FORMAT, this.configuration.get(GRAPH_OUTPUT_FORMAT));
+        map.put(SIDEEFFECT_OUTPUT_FORMAT, this.configuration.get(SIDEEFFECT_OUTPUT_FORMAT));
         map.put(OUTPUT_LOCATION, this.configuration.get(OUTPUT_LOCATION));
         map.put(OUTPUT_LOCATION_OVERWRITE, this.configuration.getBoolean(OUTPUT_LOCATION_OVERWRITE, false));
         return map;
@@ -124,7 +124,7 @@ public class FaunusGraph {
     public FaunusGraph getNextGraph() throws IOException {
         FaunusGraph graph = new FaunusGraph(this.getConfiguration());
         if (null != this.getGraphOutputFormat())
-            graph.setGraphInputFormatClass(Inverter.invertOutputFormat(this.getGraphOutputFormat()));
+            graph.setGraphInputFormat(Inverter.invertOutputFormat(this.getGraphOutputFormat()));
         if (null != this.getOutputLocation()) {
             graph.setInputLocation(HDFSTools.getOutputsFinalJob(FileSystem.get(this.configuration), this.getOutputLocation().toString()));
             graph.setOutputLocation(new Path(this.getOutputLocation().toString() + "_"));

@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.hdfs.GraphFilter;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
@@ -525,7 +526,7 @@ public class FaunusCompiler extends Configured implements Tool {
                 job.setInputFormatClass(this.graph.getGraphInputFormat());
             } else {
                 job.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                FileInputFormat.setInputPathFilter(job, NoSideEffectFilter.class);
+                FileInputFormat.setInputPathFilter(job, GraphFilter.class);
                 FileInputFormat.addInputPath(job, new Path(outputJobPrefix + "-" + (i - 1)));
             }
 
