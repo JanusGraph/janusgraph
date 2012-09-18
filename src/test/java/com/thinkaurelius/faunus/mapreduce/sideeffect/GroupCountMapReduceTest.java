@@ -2,7 +2,6 @@ package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
@@ -80,5 +79,42 @@ public class GroupCountMapReduceTest extends BaseTest {
 
         assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
         assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
+    }
+
+    public void testVertexDistribution() throws IOException {
+        Configuration config = new Configuration();
+        config.set(GroupCountMapReduce.CLASS, Vertex.class.getName());
+        config.set(GroupCountMapReduce.VALUE_CLOSURE, "{ it -> 3.2}");
+        this.mapReduceDriver.withConfiguration(config);
+        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Vertex.class), this.mapReduceDriver);
+        //System.out.println(results);
+        assertEquals(results.size(), 12);
+        for (final Pair<Text, LongWritable> result : results) {
+            assertTrue(result.getFirst().toString().startsWith("v["));
+            assertEquals(result.getSecond().get(), 3);
+        }
+
+
+        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
+        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
+
+    }
+
+    public void testEdgeDistribution() throws IOException {
+        Configuration config = new Configuration();
+        config.set(GroupCountMapReduce.CLASS, Edge.class.getName());
+        this.mapReduceDriver.withConfiguration(config);
+        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Edge.class), this.mapReduceDriver);
+        //System.out.println(results);
+        assertEquals(results.size(), 17);
+        for (final Pair<Text, LongWritable> result : results) {
+            assertTrue(result.getFirst().toString().startsWith("e["));
+            assertEquals(result.getSecond().get(), 1);
+        }
+
+
+        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
+        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
+
     }
 }
