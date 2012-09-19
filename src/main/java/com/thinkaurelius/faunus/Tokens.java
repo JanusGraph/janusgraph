@@ -42,4 +42,6 @@ public class Tokens {
     public static final String JOB = "job";
 
     public static final String BZ2 = "bz2";
+    
+    public static int MAP_SPILL_OVER = 500;
 }

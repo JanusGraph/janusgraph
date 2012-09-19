@@ -95,7 +95,7 @@ public class GroupCountMapReduce {
             }
 
             // protected against memory explosion
-            if (this.map.size() > 1000) {
+            if (this.map.size() > Tokens.MAP_SPILL_OVER) {
                 this.dischargeMap(context);
             }
 
