@@ -34,7 +34,7 @@ public class CyclicPathFilterMapTest extends BaseTest {
 
     public void testVertices() throws IOException {
         Configuration config = new Configuration();
-        config.setClass(FilterMap.CLASS, Vertex.class, Element.class);
+        config.setClass(CyclicPathFilterMap.CLASS, Vertex.class, Element.class);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
@@ -77,7 +77,7 @@ public class CyclicPathFilterMapTest extends BaseTest {
 
     public void testEdges() throws IOException {
         Configuration config = new Configuration();
-        config.setClass(FilterMap.CLASS, Edge.class, Element.class);
+        config.setClass(CyclicPathFilterMap.CLASS, Edge.class, Element.class);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
@@ -120,5 +120,4 @@ public class CyclicPathFilterMapTest extends BaseTest {
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
-
 }

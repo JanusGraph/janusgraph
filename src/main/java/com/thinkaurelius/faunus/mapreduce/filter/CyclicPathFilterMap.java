@@ -21,7 +21,7 @@ import java.util.List;
  */
 public class CyclicPathFilterMap {
 
-    public static final String CLASS = Tokens.makeNamespace(FilterMap.class) + ".class";
+    public static final String CLASS = Tokens.makeNamespace(CyclicPathFilterMap.class) + ".class";
 
     public enum Counters {
         PATHS_FILTERED

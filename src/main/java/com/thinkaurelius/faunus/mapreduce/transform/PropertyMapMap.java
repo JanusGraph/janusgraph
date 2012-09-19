@@ -21,7 +21,7 @@ import java.io.IOException;
  */
 public class PropertyMapMap {
 
-    public static final String CLASS = Tokens.makeNamespace(PropertyMap.class) + ".class";
+    public static final String CLASS = Tokens.makeNamespace(PropertyMapMap.class) + ".class";
 
     public enum Counters {
         VERTICES_PROCESSED,
