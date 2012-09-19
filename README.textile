@@ -5,14 +5,19 @@ Faunus is a "Hadoop":http://hadoop.apache.org/ based distributed computing frame
 h2. Features
 
 * Support for various graph-based data sources/sinks
-  ** "Titan 0.1":http://thinkaurelius.github.com/titan/ distributed graph database
-  ** "Rexster 2.x":http://rexster.tinkerpop.com fronted graph databases that support vertex iteration
-  ** "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library text format stored in "HDFS":http://hadoop.apache.org/hdfs/
-  **  EdgeList multi-relational text format stored in "HDFS":http://hadoop.apache.org/hdfs/
-* Natively implements the "Blueprints":http://blueprints.tinkerpop.com graph API
-  ** "Gremlin":http://gremlin.tinkerpop.com graph traversal language (backed by MapReduce)
-* Open source with the liberal "Apache 2":http://www.apache.org/licenses/LICENSE-2.0.html license
+  ** "Titan 0.1.0":http://thinkaurelius.github.com/titan/ distributed graph database
+  *** "Apache Cassandra":http://cassandra.apache.org/
+  *** "Apache HBase":http://hbase.apache.org/
+  ** "Rexster 2.1.0":http://rexster.tinkerpop.com fronted graph databases
+  ** "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library text format stored in HDFS.
+  **  EdgeList multi-relational text format stored in HDFS.
+  ** Hadoop binary "sequence files":http://wiki.apache.org/hadoop/SequenceFile stored in HDFS.
+* Native integration with the "TinkerPop":http://www.tinkerpop.com graph stack:
+** "Gremlin":http://gremlin.tinkerpop.com graph query language
+** "Blueprints":http://blueprints.tinkerpop.com standard graph API
+* Open source with the liberal "Apache 2 license":http://www.apache.org/licenses/LICENSE-2.0.html.
+
 
 h2. Getting Started
 
-Documentation and examples are provided on the "Faunus wiki":http://github.com/thinkaurelius/faunus/wiki.
+Read the "Faunus documentation":https://github.com/thinkaurelius/faunus/wiki and join the "mailing list":https://groups.google.com/forum/#!forum/aureliusgraphs.
