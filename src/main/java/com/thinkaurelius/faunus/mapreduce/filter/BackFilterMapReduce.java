@@ -1,11 +1,15 @@
 package com.thinkaurelius.faunus.mapreduce.filter;
 
+import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.faunus.util.MicroEdge;
 import com.thinkaurelius.faunus.util.MicroElement;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.io.LongWritable;
@@ -45,20 +49,63 @@ public class BackFilterMapReduce {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     for (final List<MicroElement> path : value.getPaths()) {
+                        if (path.get(this.step) instanceof MicroEdge)
+                            throw new IOException("Back does not support backing up to previous edges");
+
                         final long backElementId = path.get(this.step).getId();
                         this.longWritable.set(backElementId);
                         this.vertex.reuse(backElementId);
                         this.vertex.addPath(path, false);
                         context.write(this.longWritable, this.holder.set('p', this.vertex));
                     }
+                    value.clearPaths();
                 }
             } else {
-                // TODO: back up edges
+                for (final Edge e : value.getEdges(Direction.OUT)) {
+                    final FaunusEdge edge = (FaunusEdge) e;
+                    if (edge.hasPaths()) {
+                        for (final List<MicroElement> path : edge.getPaths()) {
+                            if (path.get(this.step) instanceof MicroEdge)
+                                throw new IOException("Back does not support backing up to previous edges");
+
+                            final long backElementId = path.get(this.step).getId();
+                            this.longWritable.set(backElementId);
+                            this.vertex.reuse(backElementId);
+                            this.vertex.addPath(path, false);
+                            context.write(this.longWritable, this.holder.set('p', this.vertex));
+                        }
+                        edge.clearPaths();
+                    }
+                }
             }
 
-            value.clearPaths();
             this.longWritable.set(value.getIdAsLong());
             context.write(this.longWritable, this.holder.set('v', value));
+        }
+    }
+
+    public static class Combiner extends Reducer<LongWritable, Holder, LongWritable, Holder> {
+        private FaunusVertex vertex;
+        private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
+
+        @Override
+        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
+            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+        }
+
+        @Override
+        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+            this.vertex.reuse(key.get());
+            char tag = 'p';
+            for (final Holder holder : values) {
+                if (holder.getTag() == 'v') {
+                    this.vertex.addAll((FaunusVertex) holder.get());
+                    tag = 'v';
+                } else {
+                    this.vertex.getPaths(holder.get(), true);
+                }
+            }
+            context.write(key, this.holder.set(tag, this.vertex));
         }
     }
 
@@ -77,9 +124,9 @@ public class BackFilterMapReduce {
             this.vertex.reuse(key.get());
             for (final Holder holder : values) {
                 if (holder.getTag() == 'v') {
-                    vertex.addAll((FaunusVertex) holder.get());
+                    this.vertex.addAll((FaunusVertex) holder.get());
                 } else {
-                    vertex.getPaths(holder.get(), true);
+                    this.vertex.getPaths(holder.get(), true);
                 }
             }
             context.write(NullWritable.get(), vertex);

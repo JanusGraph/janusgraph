@@ -274,10 +274,6 @@ public class FaunusCompiler extends Configured implements Tool {
     ///////////// FILTERS
 
     public void filterMap(final Class<? extends Element> klass, final String closure) {
-        if (!klass.equals(Vertex.class) && !klass.equals(Edge.class)) {
-            throw new RuntimeException("Unsupported element class: " + klass.getName());
-        }
-
         this.mapSequenceConfiguration.setClass(FilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceConfiguration.set(FilterMap.CLOSURE + "-" + this.mapSequenceClasses.size(), closure);
         this.mapSequenceClasses.add(FilterMap.Map.class);
@@ -335,6 +331,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceConfiguration.setInt(BackFilterMapReduce.STEP + "-" + this.mapSequenceClasses.size(), step);
         this.mapSequenceConfiguration.setClass(BackFilterMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceClasses.add(BackFilterMapReduce.Map.class);
+        this.combinerClass = BackFilterMapReduce.Combiner.class;
         this.reduceClass = BackFilterMapReduce.Reduce.class;
 
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
@@ -342,10 +339,6 @@ public class FaunusCompiler extends Configured implements Tool {
     }
 
     public void duplicateFilterMap(final Class<? extends Element> klass) {
-        if (!klass.equals(Vertex.class) && !klass.equals(Edge.class)) {
-            throw new RuntimeException("Unsupported element class: " + klass.getName());
-        }
-
         this.mapSequenceConfiguration.setClass(DuplicateFilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceClasses.add(DuplicateFilterMap.Map.class);
         this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
