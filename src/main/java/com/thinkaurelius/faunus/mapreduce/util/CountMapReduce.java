@@ -45,12 +45,15 @@ public class CountMapReduce {
                 if (value.hasPaths()) {
                     this.longWritable.set(value.pathCount());
                     context.write(NullWritable.get(), this.longWritable);
+                    context.getCounter(Counters.VERTICES_COUNTED).increment(1);
                 }
             } else {
+                long edgesCounted = 0;
                 long pathCount = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
+                        edgesCounted++;
                         pathCount = pathCount + edge.pathCount();
                     }
                 }
@@ -58,6 +61,7 @@ public class CountMapReduce {
                     this.longWritable.set(pathCount);
                     context.write(NullWritable.get(), this.longWritable);
                 }
+                context.getCounter(Counters.EDGES_COUNTED).increment(edgesCounted);
             }
 
             this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);

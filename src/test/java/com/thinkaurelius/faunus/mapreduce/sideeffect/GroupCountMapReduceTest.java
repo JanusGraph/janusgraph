@@ -13,6 +13,7 @@ import org.apache.hadoop.mrunit.types.Pair;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -33,7 +34,8 @@ public class GroupCountMapReduceTest extends BaseTest {
         config.set(GroupCountMapReduce.CLASS, Vertex.class.getName());
         config.set(GroupCountMapReduce.KEY_CLOSURE, "{ it -> it.outE.count() }");
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Vertex.class), this.mapReduceDriver);
+        final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
+        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Vertex.class), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 5);
         for (final Pair<Text, LongWritable> result : results) {
@@ -52,7 +54,7 @@ public class GroupCountMapReduceTest extends BaseTest {
             }
         }
 
-
+        identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
         assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
         assertEquals(12, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
     }
@@ -63,7 +65,8 @@ public class GroupCountMapReduceTest extends BaseTest {
         config.set(GroupCountMapReduce.KEY_CLOSURE, "{ it -> it.map.next().size() }");
         config.set(GroupCountMapReduce.VALUE_CLOSURE, "{ it -> 2}");
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Edge.class), this.mapReduceDriver);
+        final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
+        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Edge.class), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 2);
         for (final Pair<Text, LongWritable> result : results) {
@@ -76,7 +79,7 @@ public class GroupCountMapReduceTest extends BaseTest {
             }
         }
 
-
+        identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
         assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
         assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
     }
@@ -86,7 +89,8 @@ public class GroupCountMapReduceTest extends BaseTest {
         config.set(GroupCountMapReduce.CLASS, Vertex.class.getName());
         config.set(GroupCountMapReduce.VALUE_CLOSURE, "{ it -> 3.2}");
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Vertex.class), this.mapReduceDriver);
+        final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
+        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Vertex.class), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 12);
         for (final Pair<Text, LongWritable> result : results) {
@@ -94,7 +98,7 @@ public class GroupCountMapReduceTest extends BaseTest {
             assertEquals(result.getSecond().get(), 3);
         }
 
-
+        identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
         assertEquals(12, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
         assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
 
@@ -104,7 +108,8 @@ public class GroupCountMapReduceTest extends BaseTest {
         Configuration config = new Configuration();
         config.set(GroupCountMapReduce.CLASS, Edge.class.getName());
         this.mapReduceDriver.withConfiguration(config);
-        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Edge.class), this.mapReduceDriver);
+        final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
+        final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Edge.class), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 17);
         for (final Pair<Text, LongWritable> result : results) {
@@ -112,7 +117,7 @@ public class GroupCountMapReduceTest extends BaseTest {
             assertEquals(result.getSecond().get(), 1);
         }
 
-
+        identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
         assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
         assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
 

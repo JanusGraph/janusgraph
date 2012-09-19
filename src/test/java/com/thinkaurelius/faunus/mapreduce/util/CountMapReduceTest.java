@@ -2,19 +2,16 @@ package com.thinkaurelius.faunus.mapreduce.util;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -37,11 +34,16 @@ public class CountMapReduceTest extends BaseTest {
         config.setClass(CountMapReduce.CLASS, Vertex.class, Element.class);
         mapReduceDriver.withConfiguration(config);
 
-        final List<Pair<NullWritable, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), this.mapReduceDriver);
+        final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
+        final List<Pair<NullWritable, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Vertex.class), this.mapReduceDriver);
         assertEquals(results.size(), 1);
         for (final Pair<NullWritable, LongWritable> result : results) {
             assertEquals(result.getSecond().get(), 6);
         }
+        
+        assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.VERTICES_COUNTED).getValue(), 6l);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.EDGES_COUNTED).getValue(), 0l);
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
     public void testEdgeCount() throws IOException {
@@ -49,11 +51,16 @@ public class CountMapReduceTest extends BaseTest {
         config.setClass(CountMapReduce.CLASS, Edge.class, Element.class);
         mapReduceDriver.withConfiguration(config);
 
-        final List<Pair<NullWritable, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Edge.class), this.mapReduceDriver);
+        final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
+        final List<Pair<NullWritable, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Edge.class), this.mapReduceDriver);
         assertEquals(results.size(), 1);
         for (final Pair<NullWritable, LongWritable> result : results) {
             assertEquals(result.getSecond().get(), 6);
         }
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.VERTICES_COUNTED).getValue(), 0l);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.EDGES_COUNTED).getValue(), 6l);
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
     public void testMultiVertexCount() throws IOException {
@@ -70,11 +77,13 @@ public class CountMapReduceTest extends BaseTest {
         assertEquals(graph.get(4l).incrPath(7), 7);
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
-                            
-        List<Pair<NullWritable,LongWritable>> results = runWithGraphNoIndex(graph, mapReduceDriver);
+
+        List<Pair<NullWritable, LongWritable>> results = runWithGraphNoIndex(graph, mapReduceDriver);
         assertEquals(results.size(), 1);
         assertEquals(results.get(0).getSecond().get(), 23l);
 
-        
+        assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.VERTICES_COUNTED).getValue(), 4l);
+        assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.EDGES_COUNTED).getValue(), 0l);
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 }

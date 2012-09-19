@@ -85,7 +85,7 @@ public abstract class BaseTest extends TestCase {
 
     public static Map<Long, FaunusVertex> runWithGraph(Map<Long, FaunusVertex> graph, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
-        driver.getConfiguration().setBoolean(FaunusCompiler.TESTING,true);
+        driver.getConfiguration().setBoolean(FaunusCompiler.TESTING, true);
         for (final FaunusVertex vertex : graph.values()) {
             driver.withInput(NullWritable.get(), vertex);
         }
@@ -99,7 +99,7 @@ public abstract class BaseTest extends TestCase {
 
     public static List runWithGraphNoIndex(Map<Long, FaunusVertex> graph, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
-        driver.getConfiguration().setBoolean(FaunusCompiler.TESTING,true);
+        driver.getConfiguration().setBoolean(FaunusCompiler.TESTING, true);
         for (final Vertex vertex : graph.values()) {
             driver.withInput(NullWritable.get(), vertex);
         }
@@ -145,8 +145,9 @@ public abstract class BaseTest extends TestCase {
             assertEquals(vertices.get(5l).getEdges(Direction.IN).iterator().next().getProperty("weight"), 1);
         } else if (exampleGraph.equals(ExampleGraph.GRAPH_OF_THE_GODS)) {
             assertEquals(vertices.get(9l).getEdges(Direction.IN, "battled").iterator().next().getProperty("time"), 1);
-            assertEquals(vertices.get(10l).getEdges(Direction.IN, "battled").iterator().next().getProperty("time"), 2);
-            assertEquals(vertices.get(11l).getEdges(Direction.IN).iterator().next().getProperty("time"), 12);
+            assertEquals(vertices.get(10l).getEdges(Direction.IN).iterator().next().getProperty("time"), 2);
+            assertEquals(asList(vertices.get(11l).getEdges(Direction.IN)).size(), 2);
+            assertEquals(vertices.get(11l).getEdges(Direction.IN, "battled").iterator().next().getProperty("time"), 12);
         }
     }
 
