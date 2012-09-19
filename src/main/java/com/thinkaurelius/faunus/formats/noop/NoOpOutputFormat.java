@@ -9,7 +9,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import java.io.IOException;
 
 /**
- * USe NoOpOutputFormat to ensure that sideeffect data is outputted, but not graph data
+ * Use NoOpOutputFormat to ensure that sideeffect data is outputted, but not graph data.
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */

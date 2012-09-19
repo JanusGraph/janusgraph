@@ -30,6 +30,6 @@ public class Inverter {
         else if (outputFormat.equals(SequenceFileOutputFormat.class))
             return SequenceFileInputFormat.class;
 
-        throw new UnsupportedOperationException("There currently is no inverse for " + outputFormat.getClass());
+        throw new UnsupportedOperationException("There currently is no inverse for " + outputFormat.getName());
     }
 }
