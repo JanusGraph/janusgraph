@@ -96,7 +96,7 @@ public class GroupCountMapReduce {
 
             // protected against memory explosion
             if (this.map.size() > 1000) {
-                this.cleanup(context);
+                this.dischargeMap(context);
             }
 
             this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
@@ -106,15 +106,18 @@ public class GroupCountMapReduce {
         private final Text textWritable = new Text();
         private final LongWritable longWritable = new LongWritable();
 
-        @Override
-        public void cleanup(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
-            super.cleanup(context);
+        public void dischargeMap(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             for (final java.util.Map.Entry<Object, Long> entry : this.map.entrySet()) {
                 this.textWritable.set(null == entry.getKey() ? Tokens.NULL : entry.getKey().toString());
                 this.longWritable.set(entry.getValue());
                 context.write(this.textWritable, this.longWritable);
             }
             this.map.clear();
+        }
+
+        @Override
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
+            this.dischargeMap(context);
             this.outputs.close();
         }
 
@@ -123,7 +126,7 @@ public class GroupCountMapReduce {
 
     public static class Combiner extends Reducer<Text, LongWritable, Text, LongWritable> {
 
-      private final LongWritable longWritable = new LongWritable();
+        private final LongWritable longWritable = new LongWritable();
 
         @Override
         public void reduce(final Text key, final Iterable<LongWritable> values, final Reducer<Text, LongWritable, Text, LongWritable>.Context context) throws IOException, InterruptedException {
@@ -159,7 +162,6 @@ public class GroupCountMapReduce {
 
         @Override
         public void cleanup(final Reducer<Text, LongWritable, Text, LongWritable>.Context context) throws IOException, InterruptedException {
-            super.cleanup(context);
             this.outputs.close();
         }
     }

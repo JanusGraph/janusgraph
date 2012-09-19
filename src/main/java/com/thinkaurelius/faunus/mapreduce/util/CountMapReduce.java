@@ -68,7 +68,6 @@ public class CountMapReduce {
 
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, IntWritable, LongWritable>.Context context) throws IOException, InterruptedException {
-            super.cleanup(context);
             this.outputs.close();
         }
     }
@@ -108,7 +107,6 @@ public class CountMapReduce {
 
         @Override
         public void cleanup(final Reducer<IntWritable, LongWritable, NullWritable, Text>.Context context) throws IOException, InterruptedException {
-            super.cleanup(context);
             this.outputs.close();
         }
     }

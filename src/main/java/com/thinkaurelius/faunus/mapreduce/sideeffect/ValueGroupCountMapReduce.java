@@ -74,7 +74,7 @@ public class ValueGroupCountMapReduce {
 
             // protected against memory explosion
             if (this.map.size() > 1000) {
-                this.cleanup(context);
+                this.dischargeMap(context);
             }
 
             this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
@@ -83,14 +83,17 @@ public class ValueGroupCountMapReduce {
 
         private final LongWritable longWritable = new LongWritable();
 
-        @Override
-        public void cleanup(final Mapper<NullWritable, FaunusVertex, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
-            super.cleanup(context);
+        public void dischargeMap(final Mapper<NullWritable, FaunusVertex, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
             for (final java.util.Map.Entry<Object, Long> entry : this.map.entrySet()) {
                 this.longWritable.set(entry.getValue());
                 context.write(this.handler.set(entry.getKey()), this.longWritable);
             }
             this.map.clear();
+        }
+
+        @Override
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
+            this.dischargeMap(context);
             this.outputs.close();
         }
     }
@@ -134,7 +137,6 @@ public class ValueGroupCountMapReduce {
 
         @Override
         public void cleanup(final Reducer<WritableComparable, LongWritable, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
-            super.cleanup(context);
             this.outputs.close();
         }
     }

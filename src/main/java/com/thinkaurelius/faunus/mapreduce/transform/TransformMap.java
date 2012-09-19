@@ -85,7 +85,6 @@ public class TransformMap {
 
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
-            super.cleanup(context);
             this.outputs.close();
         }
     }

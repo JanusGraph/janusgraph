@@ -87,7 +87,6 @@ public class OrderMapReduce {
 
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, WritableComparable, Text>.Context context) throws IOException, InterruptedException {
-            super.cleanup(context);
             this.outputs.close();
         }
     }
@@ -110,7 +109,6 @@ public class OrderMapReduce {
 
         @Override
         public void cleanup(final Reducer<WritableComparable, Text, Text, WritableComparable>.Context context) throws IOException, InterruptedException {
-            super.cleanup(context);
             this.outputs.close();
         }
     }

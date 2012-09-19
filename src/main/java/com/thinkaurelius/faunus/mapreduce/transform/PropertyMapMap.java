@@ -73,7 +73,6 @@ public class PropertyMapMap {
 
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, LongWritable, Text>.Context context) throws IOException, InterruptedException {
-            super.cleanup(context);
             this.outputs.close();
         }
     }
