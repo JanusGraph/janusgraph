@@ -69,6 +69,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
             }
         }
 
+        noPaths(graph, Vertex.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 4);
     }
@@ -100,6 +101,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
             }
         }
 
+        noPaths(graph, Vertex.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 6);
     }
@@ -134,6 +136,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
             }
         }
 
+        noPaths(graph, Vertex.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 6);
     }
@@ -162,6 +165,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
             }
         }
 
+        noPaths(graph, Vertex.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 8);
     }

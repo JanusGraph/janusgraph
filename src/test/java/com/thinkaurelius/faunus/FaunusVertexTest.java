@@ -311,19 +311,19 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(asList(vertices.get(4l).getEdges(Direction.BOTH, "knows", "created")).size(), 3);
         assertEquals(asList(vertices.get(4l).getEdges(Direction.BOTH, "blah")).size(), 0);
     }
-    
+
     public void testVertexReuse() throws Exception {
         FaunusVertex vertex = new FaunusVertex();
         assertEquals(vertex.getId(), -1l);
         assertFalse(vertex.pathEnabled);
         assertFalse(vertex.getEdges(BOTH).iterator().hasNext());
-        vertex.addEdge(OUT, new FaunusEdge(1,2,"knows"));
+        vertex.addEdge(OUT, new FaunusEdge(1, 2, "knows"));
         assertTrue(vertex.getEdges(BOTH).iterator().hasNext());
         assertEquals(vertex.getPropertyKeys().size(), 0);
-        vertex.setProperty("name","marko");
-        assertEquals(vertex.getProperty("name"),"marko");
+        vertex.setProperty("name", "marko");
+        assertEquals(vertex.getProperty("name"), "marko");
         assertEquals(vertex.getPropertyKeys().size(), 1);
-        
+
         vertex.reuse(10);
         assertEquals(vertex.getId(), 10l);
         assertFalse(vertex.getEdges(BOTH).iterator().hasNext());
@@ -333,7 +333,7 @@ public class FaunusVertexTest extends BaseTest {
 
         vertex.enablePath(true);
         assertTrue(vertex.pathEnabled);
-        assertEquals(vertex.getPaths().size(),0);
+        assertEquals(vertex.getPaths().size(), 0);
 
         vertex.reuse(220);
         assertEquals(vertex.getId(), 220l);
@@ -342,16 +342,21 @@ public class FaunusVertexTest extends BaseTest {
         assertNull(vertex.getProperty("name"));
         assertTrue(vertex.pathEnabled);
         vertex.startPath();
-        assertEquals(vertex.getPaths().size(),1);
-        assertEquals(vertex.getPaths().get(0).size(),1);
-        assertEquals(vertex.getPaths().get(0).get(0).getId(),220);
+        assertEquals(vertex.getPaths().size(), 1);
+        assertEquals(vertex.getPaths().get(0).size(), 1);
+        assertEquals(vertex.getPaths().get(0).get(0).getId(), 220);
 
         vertex.reuse(34);
         assertTrue(vertex.pathEnabled);
-        assertEquals(vertex.getPaths().size(),0);
+        assertEquals(vertex.getPaths().size(), 0);
         vertex.startPath();
-        assertEquals(vertex.getPaths().size(),1);
-        assertEquals(vertex.getPaths().get(0).size(),1);
-        assertEquals(vertex.getPaths().get(0).get(0).getId(),34);
+        assertEquals(vertex.getPaths().size(), 1);
+        assertEquals(vertex.getPaths().get(0).size(), 1);
+        assertEquals(vertex.getPaths().get(0).get(0).getId(), 34);
+    }
+
+    public void testNoPathsOnConstruction() throws Exception {
+        noPaths(generateGraph(ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class);
+        noPaths(generateGraph(ExampleGraph.TINKERGRAPH, new Configuration()), Edge.class);
     }
 }

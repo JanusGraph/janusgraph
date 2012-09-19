@@ -1,7 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.transform;
 
 import com.thinkaurelius.faunus.BaseTest;
-import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -45,6 +44,7 @@ public class EdgesVerticesMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.IN_EDGES_PROCESSED).getValue(), 6);
         assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
 
+        noPaths(graph, Edge.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
@@ -64,9 +64,11 @@ public class EdgesVerticesMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 1);
 
+
         assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED).getValue(), 6);
         assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.IN_EDGES_PROCESSED).getValue(), 0);
 
+        noPaths(graph, Edge.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
@@ -89,6 +91,7 @@ public class EdgesVerticesMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED).getValue(), 6);
         assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.IN_EDGES_PROCESSED).getValue(), 6);
 
+        noPaths(graph, Edge.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 

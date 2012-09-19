@@ -172,4 +172,19 @@ public abstract class BaseTest extends TestCase {
             temp.mkdir();
         return temp;
     }
+
+    public static void noPaths(final Map<Long, FaunusVertex> graph, final Class<? extends Element> klass) {
+        for (FaunusVertex vertex : graph.values()) {
+            if (klass.equals(Vertex.class)) {
+                assertFalse(vertex.hasPaths());
+                assertEquals(vertex.pathCount(), 0);
+            } else {
+                for (Edge e : vertex.getEdges(Direction.BOTH)) {
+                    FaunusEdge edge = (FaunusEdge) e;
+                    assertFalse(edge.hasPaths());
+                    assertEquals(edge.pathCount(), 0);
+                }
+            }
+        }
+    }
 }

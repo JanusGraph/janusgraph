@@ -49,6 +49,13 @@ public class EdgesVerticesMap {
                     }
                 }
                 context.getCounter(Counters.IN_EDGES_PROCESSED).increment(edgesProcessed);
+            } else {
+                for (final Edge e : value.getEdges(IN)) {
+                    final FaunusEdge edge = (FaunusEdge) e;
+                    if (edge.hasPaths()) {
+                        edge.clearPaths();
+                    }
+                }
             }
 
             if (this.direction.equals(OUT) || this.direction.equals(BOTH)) {
@@ -62,6 +69,13 @@ public class EdgesVerticesMap {
                     }
                 }
                 context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
+            } else {
+                for (final Edge e : value.getEdges(OUT)) {
+                    final FaunusEdge edge = (FaunusEdge) e;
+                    if (edge.hasPaths()) {
+                        edge.clearPaths();
+                    }
+                }
             }
 
             context.write(NullWritable.get(), value);
