@@ -7,10 +7,8 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
@@ -28,9 +26,8 @@ public class CountMapReduce {
         EDGES_COUNTED
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, IntWritable, LongWritable> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable> {
 
-        private final static IntWritable intWritable = new IntWritable(1);
         private boolean isVertex;
         private final LongWritable longWritable = new LongWritable();
         private SafeMapperOutputs outputs;
@@ -42,12 +39,12 @@ public class CountMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, IntWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
 
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     this.longWritable.set(value.pathCount());
-                    context.write(intWritable, this.longWritable);
+                    context.write(NullWritable.get(), this.longWritable);
                 }
             } else {
                 long pathCount = 0;
@@ -59,7 +56,7 @@ public class CountMapReduce {
                 }
                 if (pathCount > 0) {
                     this.longWritable.set(pathCount);
-                    context.write(intWritable, this.longWritable);
+                    context.write(NullWritable.get(), this.longWritable);
                 }
             }
 
@@ -67,17 +64,17 @@ public class CountMapReduce {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, FaunusVertex, IntWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
             this.outputs.close();
         }
     }
 
-    public static class Combiner extends Reducer<IntWritable, LongWritable, IntWritable, LongWritable> {
+    public static class Combiner extends Reducer<NullWritable, LongWritable, NullWritable, LongWritable> {
 
         private final LongWritable longWritable = new LongWritable();
 
         @Override
-        public void reduce(final IntWritable key, final Iterable<LongWritable> values, final Reducer<IntWritable, LongWritable, IntWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void reduce(final NullWritable key, final Iterable<LongWritable> values, final Reducer<NullWritable, LongWritable, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
             long totalCount = 0;
             for (final LongWritable temp : values) {
                 totalCount = totalCount + temp.get();
@@ -87,26 +84,28 @@ public class CountMapReduce {
         }
     }
 
-    public static class Reduce extends Reducer<IntWritable, LongWritable, NullWritable, Text> {
+    public static class Reduce extends Reducer<NullWritable, LongWritable, NullWritable, LongWritable> {
 
         private SafeReducerOutputs outputs;
+        private LongWritable longWritable = new LongWritable();
 
         @Override
-        public void setup(final Reducer<IntWritable, LongWritable, NullWritable, Text>.Context context) {
+        public void setup(final Reducer<NullWritable, LongWritable, NullWritable, LongWritable>.Context context) {
             this.outputs = new SafeReducerOutputs(context);
         }
 
         @Override
-        public void reduce(final IntWritable key, final Iterable<LongWritable> values, final Reducer<IntWritable, LongWritable, NullWritable, Text>.Context context) throws IOException, InterruptedException {
+        public void reduce(final NullWritable key, final Iterable<LongWritable> values, final Reducer<NullWritable, LongWritable, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
             long totalCount = 0;
             for (final LongWritable temp : values) {
                 totalCount = totalCount + temp.get();
             }
-            this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), new Text(String.valueOf(totalCount)));
+            this.longWritable.set(totalCount);
+            this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.longWritable);
         }
 
         @Override
-        public void cleanup(final Reducer<IntWritable, LongWritable, NullWritable, Text>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Reducer<NullWritable, LongWritable, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
             this.outputs.close();
         }
     }

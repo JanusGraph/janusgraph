@@ -98,16 +98,16 @@ public class VerticesEdgesMapReduce {
                     }
                 }
 
-
+                value.clearPaths();
                 context.getCounter(Counters.EDGES_TRAVERSED).increment(edgesTraversed);
             }
 
-            value.clearPaths();
+
             this.longWritable.set(value.getIdAsLong());
             context.write(this.longWritable, this.holder.set('v', value));
         }
 
-        // TODO: this is horribly inefficient and due to an efficiency of object reuse in path calculations
+        // TODO: this is horribly inefficient due to an efficiency of object reuse in path calculations
         private List<List<MicroElement>> clonePaths(final FaunusVertex vertex, final MicroEdge edge) {
             final List<List<MicroElement>> paths = new ArrayList<List<MicroElement>>();
             for (List<MicroElement> path : vertex.getPaths()) {

@@ -45,6 +45,7 @@ public class EdgesVerticesMap {
                     if (edge.hasPaths()) {
                         value.getPaths(edge, true);
                         edgesProcessed++;
+                        edge.clearPaths();
                     }
                 }
                 context.getCounter(Counters.IN_EDGES_PROCESSED).increment(edgesProcessed);
@@ -57,6 +58,7 @@ public class EdgesVerticesMap {
                     if (edge.hasPaths()) {
                         value.getPaths(edge, true);
                         edgesProcessed++;
+                        edge.clearPaths();
                     }
                 }
                 context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
