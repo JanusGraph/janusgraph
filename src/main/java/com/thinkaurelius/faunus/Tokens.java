@@ -11,7 +11,14 @@ public class Tokens {
 
 
     public static enum F {
-        decr, incr
+        /**
+         * decreasing order
+         */
+        decr,
+        /**
+         * increasing order
+         */
+        incr
     }
 
     private static final String NAMESPACE = "faunus.mapreduce";

@@ -55,6 +55,9 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 
 
 /**
+ * A FaunusPipeline is used to construct a Gremlin expression which, in turn, is ultimately represented as a series
+ * of MapReduce jobs in Hadoop.
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class FaunusPipeline {
@@ -65,7 +68,7 @@ public class FaunusPipeline {
     protected final FaunusCompiler compiler;
     protected final FaunusGraph graph;
     protected final State state;
-    
+
     protected final List<String> stringRepresentation = new ArrayList<String>();
 
     private Query.Compare opposite(final Query.Compare compare) {
@@ -158,7 +161,7 @@ public class FaunusPipeline {
         public void checkLocked() {
             if (this.locked) throw new IllegalStateException(PIPELINE_IS_LOCKED);
         }
-        
+
         public void checkProperty() {
             if (this.property != null) throw new IllegalStateException("This step can not follow a property reference");
         }
@@ -192,6 +195,11 @@ public class FaunusPipeline {
     ////////////////////////////////
     ////////////////////////////////
 
+    /**
+     * Construct a FaunusPipeline
+     *
+     * @param graph the FaunusGraph that is the source of the traversal
+     */
     public FaunusPipeline(final FaunusGraph graph) {
         this.graph = graph;
         this.compiler = new FaunusCompiler(this.graph);
@@ -200,6 +208,18 @@ public class FaunusPipeline {
 
     ///////// STEP
 
+    /**
+     * An arbitrary map/reduce computation (the most generic step possible)
+     *
+     * @param mapClosure    the map function
+     * @param reduceClosure the reduce function
+     * @param key1          the map output key class
+     * @param value1        the map output value class
+     * @param key2          the reduce output key class
+     * @param value2        the reduce output value class
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline step(final String mapClosure, final String reduceClosure,
                                final Class<? extends WritableComparable> key1,
                                final Class<? extends WritableComparable> value1,
@@ -216,6 +236,12 @@ public class FaunusPipeline {
 
     //////// TRANSFORMS
 
+    /**
+     * The identity step does not alter the graph in anyway.
+     * It has the benefit of emitting various usefual counters.
+     *
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline _() {
         this.state.checkLocked();
         this.compiler._();
@@ -223,6 +249,13 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Apply the provided closure to the current element and emit the result.
+     *
+     * @param closure the closure to apply to the element
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline transform(final String closure) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -232,6 +265,11 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Start a traversal at all vertices in the graph.
+     *
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline V() {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -245,6 +283,11 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Start a traversal at all edges in the graph.
+     *
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline E() {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -259,6 +302,12 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Start a traversal at the vertices identified by the provided ids.
+     *
+     * @param ids the ids of the vertices to start the traversal from
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline v(final long... ids) {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -271,6 +320,13 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Take outgoing labeled edges to adjacent vertices.
+     *
+     * @param labels the labels of the edges to traverse over
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline out(final String... labels) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -284,6 +340,13 @@ public class FaunusPipeline {
             throw new IllegalStateException("This step can not follow an edge-based step");
     }
 
+    /**
+     * Take incoming labeled edges to adjacent vertices.
+     *
+     * @param labels the labels of the edges to traverse over
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline in(final String... labels) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -297,6 +360,13 @@ public class FaunusPipeline {
             throw new IllegalStateException("This step can not follow an edge-based step");
     }
 
+    /**
+     * Take both incoming and outgoing labeled edges to adjacent vertices.
+     *
+     * @param labels the labels of the edges to traverse over
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline both(final String... labels) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -310,6 +380,13 @@ public class FaunusPipeline {
             throw new IllegalStateException("This step can not follow an edge-based step");
     }
 
+    /**
+     * Take outgoing labeled edges to incident edges.
+     *
+     * @param labels the labels of the edges to traverse over
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline outE(final String... labels) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -324,6 +401,13 @@ public class FaunusPipeline {
             throw new IllegalStateException("This step can not follow an edge-based step");
     }
 
+    /**
+     * Take incoming labeled edges to incident edges.
+     *
+     * @param labels the labels of the edges to traverse over
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline inE(final String... labels) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -338,6 +422,13 @@ public class FaunusPipeline {
             throw new IllegalStateException("This step can not follow an edge-based step");
     }
 
+    /**
+     * Take both incoming and outgoing labeled edges to incident edges.
+     *
+     * @param labels the labels of the edges to traverse over
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline bothE(final String... labels) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -352,6 +443,12 @@ public class FaunusPipeline {
             throw new IllegalStateException("This step can not follow an edge-based step");
     }
 
+    /**
+     * Go to the outgoing/tail vertex of the edge.
+     *
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline outV() throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -366,6 +463,12 @@ public class FaunusPipeline {
             throw new IllegalStateException("This step can not follow a vertex-based step");
     }
 
+    /**
+     * Go to the incoming/head vertex of the edge.
+     *
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline inV() throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -380,6 +483,12 @@ public class FaunusPipeline {
             throw new IllegalStateException("This step can not follow a vertex-based step");
     }
 
+    /**
+     * Go to both the incoming/head and outgoing/tail vertices of the edge.
+     *
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline bothV() throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -394,6 +503,13 @@ public class FaunusPipeline {
             throw new IllegalStateException("This step can not follow a vertex-based step");
     }
 
+    /**
+     * Emit the property value of an element.
+     *
+     * @param key  the key identifying the property
+     * @param type the class of the property value (so Hadoop can intelligently handle the result)
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline property(final String key, final Class type) {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -402,10 +518,21 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Emit the property value of an element.
+     *
+     * @param key the key identifying the property
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline property(final String key) {
         return this.property(key, String.class);
     }
 
+    /**
+     * Emit a string representation of the property map.
+     *
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline map() {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -416,6 +543,11 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Emit the label of the current edge.
+     *
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline label() {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -427,6 +559,12 @@ public class FaunusPipeline {
             throw new IllegalStateException("This step can not follow a vertex-based step");
     }
 
+    /**
+     * Emit the path taken from start to current element.
+     *
+     * @return
+     * @throws IOException
+     */
     public FaunusPipeline path() throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -438,6 +576,15 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Order the previous property value results and emit them with another element property value.
+     * It is important to emit the previous property with a provided type else it is ordered lexigraphically.
+     *
+     * @param order      increasing and descending order
+     * @param elementKey the key of the element to associate it with
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline order(final Tokens.Order order, final String elementKey) throws IOException {
         this.state.checkLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
@@ -451,14 +598,37 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Order the previous property value results.
+     *
+     * @param order increasing and descending order
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline order(final Tokens.Order order) throws IOException {
         return this.order(order, Tokens.ID);
     }
 
+    /**
+     * Order the previous property value results and emit them with another element property value.
+     * It is important to emit the previous property with a provided type else it is ordered lexigraphically.
+     *
+     * @param order      increasing and descending order
+     * @param elementKey the key of the element to associate it with
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline order(final Tokens.F order, final String elementKey) throws IOException {
         return this.order(convert(order), elementKey);
     }
 
+    /**
+     * Order the previous property value results.
+     *
+     * @param order increasing and descending order
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline order(final Tokens.F order) throws IOException {
         return this.order(convert(order));
     }
@@ -466,6 +636,12 @@ public class FaunusPipeline {
 
     //////// FILTERS
 
+    /**
+     * Emit or deny the current element based upon the provided boolean-based closure.
+     *
+     * @param closure return true to emit and false to remove.
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline filter(final String closure) {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -475,14 +651,38 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Emit the current element if it has a property value comparable to the provided values.
+     *
+     * @param key     the property key of the element
+     * @param compare the comparator
+     * @param values  the values to compare against where only one needs to succeed (or'd)
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline has(final String key, final com.tinkerpop.gremlin.Tokens.T compare, final Object... values) {
         return this.has(key, convert(compare), values);
     }
 
+    /**
+     * Emit the current element if it does not have a property value comparable to the provided values.
+     *
+     * @param key     the property key of the element
+     * @param compare the comparator (will be not'd)
+     * @param values  the values to compare against where only one needs to succeed (or'd)
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline hasNot(final String key, final com.tinkerpop.gremlin.Tokens.T compare, final Object... values) {
         return this.hasNot(key, convert(compare), values);
     }
 
+    /**
+     * Emit the current element if it has a property value comparable to the provided values.
+     *
+     * @param key     the property key of the element
+     * @param compare the comparator
+     * @param values  the values to compare against where only one needs to succeed (or'd)
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline has(final String key, final Query.Compare compare, final Object... values) {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -492,18 +692,48 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Emit the current element if it does not have a property value comparable to the provided values.
+     *
+     * @param key     the property key of the element
+     * @param compare the comparator (will be not'd)
+     * @param values  the values to compare against where only one needs to succeed (or'd)
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline hasNot(final String key, final Query.Compare compare, final Object... values) {
         return this.has(key, this.opposite(compare), values);
     }
 
+    /**
+     * Emit the current element it has a property value equal to the provided values.
+     *
+     * @param key    the property key of the element
+     * @param values the values to compare against where only one needs to succeed (or'd)
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline has(final String key, final Object... values) {
         return this.has(key, Query.Compare.EQUAL, values);
     }
 
+    /**
+     * Emit the current element it does not have a property value equal to the provided values.
+     *
+     * @param key    the property key of the element
+     * @param values the values to compare against where only one needs to succeed (or'd)
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline hasNot(final String key, final Object... values) {
         return this.has(key, Query.Compare.NOT_EQUAL, values);
     }
 
+    /**
+     * Emit the current element it has a property value equal within the provided range.
+     *
+     * @param key        the property key of the element
+     * @param startValue the start of the range (inclusive)
+     * @param endValue   the end of the range (exclusive)
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline interval(final String key, final Object startValue, final Object endValue) {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -513,6 +743,11 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Remove any duplicate traversers at a single element.
+     *
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline dedup() {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -522,7 +757,14 @@ public class FaunusPipeline {
         return this;
     }
 
-
+    /**
+     * Go back to an element a named step ago.
+     * Currently only backing up to vertices is supported.
+     *
+     * @param step the name of the step to back up to
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline back(final String step) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -541,6 +783,11 @@ public class FaunusPipeline {
         return this;
     }*/
 
+    /**
+     * Emit the element only if it was arrived at via a path that does not have cycles in it.
+     *
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline simplePath() {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -553,6 +800,13 @@ public class FaunusPipeline {
 
     //////// SIDEEFFECTS
 
+    /**
+     * Emit the element, but compute some sideeffect in the process.
+     * For example, mutate the properties of the element.
+     *
+     * @param closure the sideeffect closure whose results are ignored.
+     * @return the extended FaunusPipeline
+     */
     public FaunusPipeline sideEffect(final String closure) {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -562,6 +816,12 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Name a step in order to reference it later in the expression.
+     *
+     * @param name the string representation of the name
+     * @return the extended FaunusPipeline¬
+     */
     public FaunusPipeline as(final String name) {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -573,6 +833,17 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Have the elements for the named step previous project an edge to the current vertex with provided label.
+     * If a merge weight key is provided, then count the number of duplicate edges between the same two vertices and add a weight.
+     * No weight key is specified by "_" and then all duplicates are merged, but no weight is added to the resultant edge.
+     *
+     * @param step           the name of the step where the source vertices were
+     * @param label          the label of the edge to project
+     * @param mergeWeightKey the property key to use for weight
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline linkIn(final String step, final String label, final String mergeWeightKey) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -583,10 +854,29 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Have the elements for the named step previous project an edge to the current vertex with provided label.
+     *
+     * @param step  the name of the step where the source vertices were
+     * @param label the label of the edge to project
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline linkIn(final String step, final String label) throws IOException {
         return this.linkIn(step, label, null);
     }
 
+    /**
+     * Have the elements for the named step previous project an edge from the current vertex with provided label.
+     * If a merge weight key is provided, then count the number of duplicate edges between the same two vertices and add a weight.
+     * No weight key is specified by "_" and then all duplicates are merged, but no weight is added to the resultant edge.
+     *
+     * @param step           the name of the step where the source vertices were
+     * @param label          the label of the edge to project
+     * @param mergeWeightKey the property key to use for weight
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline linkOut(final String step, final String label, final String mergeWeightKey) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
@@ -597,10 +887,25 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Have the elements for the named step previous project an edge from the current vertex with provided label.
+     *
+     * @param step  the name of the step where the source vertices were
+     * @param label the label of the edge to project
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline linkOut(final String step, final String label) throws IOException {
         return this.linkOut(step, label, null);
     }
 
+    /**
+     * Count the number of times the previous element (or property) has been traversed to.
+     * The results are stored in the jobs sideeffect file in HDFS.
+     *
+     * @return the extended FaunusPipeline.
+     * @throws IOException
+     */
     public FaunusPipeline groupCount() throws IOException {
         this.state.checkLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
@@ -614,6 +919,14 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Apply the provided closure to the incoming element to determine the grouping key.
+     * Then apply the value closure to the current element to determine the count increment.
+     * The results are stored in the jobs sideeffect file in HDFS.
+     *
+     * @return the extended FaunusPipeline.
+     * @throws IOException
+     */
     public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) throws IOException {
         this.state.checkLocked();
         this.compiler.groupCountMapReduce(this.state.getElementType(), this.validateClosure(keyClosure), this.validateClosure(valueClosure));
@@ -621,6 +934,14 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Apply the provided closure to the incoming element to determine the grouping key.
+     * The value of the count is incremented by 1
+     * The results are stored in the jobs sideeffect file in HDFS.
+     *
+     * @return the extended FaunusPipeline.
+     * @throws IOException
+     */
     public FaunusPipeline groupCount(final String keyClosure) throws IOException {
         this.state.checkLocked();
         this.compiler.groupCountMapReduce(this.state.getElementType(), this.validateClosure(keyClosure), null);
@@ -642,21 +963,45 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Drop all the elements of respective type at the current step. Keep all others.
+     *
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline drop() throws IOException {
         return this.commit(Tokens.Action.DROP);
     }
 
+    /**
+     * Keep all the elements of the respetive type at the current step. Drop all others.
+     *
+     * @return the extended FaunusPipeline
+     * @throws IOException
+     */
     public FaunusPipeline keep() throws IOException {
         return this.commit(Tokens.Action.KEEP);
     }
 
     /////////////// UTILITIES
 
+    /**
+     * By default, paths are disabled. Computing paths is very expensive in terms of both space and time.
+     * When a path-based step is added to the pipeline, this method is automatically called.
+     *
+     * @return the FaunusPipeline with path cacluations enabled
+     */
     public FaunusPipeline enablePath() {
         this.compiler.setPathEnabled(true);
         return this;
     }
 
+    /**
+     * Count the number of traversers currently in the graph
+     *
+     * @return the count
+     * @throws IOException
+     */
     public FaunusPipeline count() throws IOException {
         this.state.checkLocked();
         this.compiler.countMapReduce(this.state.getElementType());
@@ -682,15 +1027,32 @@ public class FaunusPipeline {
         return this;
     }
 
+    /**
+     * Submit the FaunusPipeline to the Hadoop cluster.
+     *
+     * @throws Exception
+     */
     public void submit() throws Exception {
         submit(Tokens.EMPTY_STRING, false);
     }
 
+    /**
+     * Submit the FaunusPipeline to the Hadoop cluster and ensure that a header is emitted in the logs.
+     *
+     * @param script     the Gremlin script
+     * @param showHeader the Faunus header
+     * @throws Exception
+     */
     public void submit(final String script, final Boolean showHeader) throws Exception {
         this.done();
         ToolRunner.run(this.compiler, new String[]{script, showHeader.toString()});
     }
 
+    /**
+     * Get a reference to the graph currently being used in this FaunusPipeline.
+     *
+     * @return
+     */
     public FaunusGraph getGraph() {
         return this.graph;
     }
