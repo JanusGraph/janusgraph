@@ -166,7 +166,12 @@ public class OrderedKeyColumnValueIDManager {
                      */
                 }
             } catch (TemporaryStorageException e) {
-                log.debug("Temporary storage exception while acquiring lock: {}",e);
+                log.debug("Temporary storage exception while acquiring lock - retrying in {} ms: {}",lockWaitMS,e);
+                try {
+                    Thread.sleep(lockWaitMS);
+                } catch (InterruptedException ex) {
+                    throw new PermanentLockingException("Interupted while waiting for lock retry",ex);
+                }
             }
 		}
 		
