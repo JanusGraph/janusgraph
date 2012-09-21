@@ -51,6 +51,8 @@ public class TitanHBaseInputFormat extends InputFormat implements Configurable {
 
     @Override
     public void setConf(final Configuration config) {
+        if (null == config.get("hbase.input.table"))
+            throw new RuntimeException("No HBase input table provided");
         config.set("hbase.mapreduce.inputtable", config.get("hbase.input.table"));
         config.set("hbase.mapreduce.scan.column.family", GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME);
         this.tableInputFormat.setConf(config);
