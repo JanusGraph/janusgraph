@@ -1,5 +1,5 @@
 ==============================================================
- Faunus: A Library of Hadoop-Based Graph Tools
+ Faunus: Graph Computing with Hadoop
  Copyright 2012 and onwards Aurelius
 ==============================================================
 

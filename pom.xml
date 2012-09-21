@@ -12,7 +12,7 @@
     <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <url>http://thinkaurelius.github.com/faunus/</url>
-    <name>Faunus: A Library of Hadoop-Based Graph Tools</name>
+    <name>Faunus: Graph Computing with Hadoop</name>
     <description>
     </description>
     <properties>

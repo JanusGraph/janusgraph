@@ -552,7 +552,7 @@ public class FaunusCompiler extends Configured implements Tool {
         }
 
         if (showHeader) {
-            logger.info("Faunus: A Library of Hadoop-Based Graph Tools");
+            logger.info("Faunus: Graph Computing with Hadoop");
             logger.info("        ,");
             logger.info("    ,   |\\ ,__");
             logger.info("    |\\   \\/   `\\");
