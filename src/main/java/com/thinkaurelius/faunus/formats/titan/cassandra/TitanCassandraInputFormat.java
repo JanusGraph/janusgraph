@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.formats.titan.cassandra;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.cassandra.hadoop.ConfigHelper;
@@ -47,11 +48,12 @@ public class TitanCassandraInputFormat extends InputFormat implements Configurab
 
     @Override
     public void setConf(final Configuration config) {
-        ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), "edgestore", false);
+        ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME);
         final SlicePredicate predicate = new SlicePredicate();
         final SliceRange sliceRange = new SliceRange();
         sliceRange.setStart(new byte[0]);
         sliceRange.setFinish(new byte[0]);
+        sliceRange.setCount(Integer.MAX_VALUE);
         predicate.setSlice_range(sliceRange);
         ConfigHelper.setInputSlicePredicate(config, predicate);
 
