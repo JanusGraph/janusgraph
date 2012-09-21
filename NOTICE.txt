@@ -17,6 +17,7 @@ It also includes software from other open source projects including, but not lim
  * TinkerPop Rexster [http://rexster.tinkerpop.com]
  * Aurelius Titan [http://thinkaurelius.github.com/titan/]
  * Apache Cassandra [http://cassandra.apache.org/]
+ * Apache HBase [http://hbase.apache.org/]
  * Codehaus Groovy [http://groovy.codehaus.org/]
  * Apache MRUnit [http://mrunit.apache.org/]
  * JUnit [http://www.junit.org/]
