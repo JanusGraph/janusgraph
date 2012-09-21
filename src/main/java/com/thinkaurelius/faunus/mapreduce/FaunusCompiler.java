@@ -33,10 +33,8 @@ import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.WritableComparators;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
-import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileStatus;
@@ -426,7 +424,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceClasses.add(CountMapReduce.Map.class);
         this.combinerClass = CountMapReduce.Combiner.class;
         this.reduceClass = CountMapReduce.Reduce.class;
-        this.setKeyValueClasses(IntWritable.class, LongWritable.class, IntWritable.class, Text.class);
+        this.setKeyValueClasses(NullWritable.class, LongWritable.class, NullWritable.class, LongWritable.class);
         this.completeSequence();
     }
 
