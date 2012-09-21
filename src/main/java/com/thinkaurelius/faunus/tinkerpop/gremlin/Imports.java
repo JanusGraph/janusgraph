@@ -30,6 +30,8 @@ public class Imports {
         imports.add("com.thinkaurelius.faunus.formats.noop.*");
         imports.add("com.thinkaurelius.faunus.formats.rexster.*");
         imports.add("com.thinkaurelius.faunus.formats.titan.*");
+        imports.add("com.thinkaurelius.faunus.formats.titan.hbase.*");
+        imports.add("com.thinkaurelius.faunus.formats.titan.cassandra.*");
         imports.add("com.thinkaurelius.faunus.hdfs.*");
         imports.add("com.thinkaurelius.faunus.tinkerpop.gremlin.*");
         imports.add("com.tinkerpop.gremlin.Tokens.T");
