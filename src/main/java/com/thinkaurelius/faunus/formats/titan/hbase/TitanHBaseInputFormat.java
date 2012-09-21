@@ -52,7 +52,7 @@ public class TitanHBaseInputFormat extends InputFormat implements Configurable {
     @Override
     public void setConf(final Configuration config) {
 
-        config.set("hbase.mapreduce.scan.column.family", GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME);
+        config.set(TableInputFormat.SCAN_COLUMN_FAMILY, GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME);
         this.tableInputFormat.setConf(config);
 
         final BaseConfiguration titanconfig = new BaseConfiguration();
