@@ -20,9 +20,6 @@ public abstract class MicroElement {
     }
 
     public boolean equals(final Object object) {
-        if (object.getClass().equals(this.getClass()))
-            return this.id == ((MicroElement) object).getId();
-        else
-            return false;
+        return (object.getClass().equals(this.getClass()) && this.id == ((MicroElement) object).getId());
     }
 }

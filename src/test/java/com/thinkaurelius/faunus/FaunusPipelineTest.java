@@ -1,7 +1,5 @@
 package com.thinkaurelius.faunus;
 
-import org.apache.hadoop.conf.Configuration;
-
 import java.io.IOException;
 
 /**
@@ -79,12 +77,12 @@ public class FaunusPipelineTest extends BaseTest {
         pipeline.outE("battled");
         assertEquals(pipeline.state.getStep(), 2);
         pipeline.as("c");
-        assertEquals(pipeline.state.getStep(), 2);       
+        assertEquals(pipeline.state.getStep(), 2);
         pipeline.inV();
         assertEquals(pipeline.state.getStep(), 3);
         pipeline.as("d");
         assertEquals(pipeline.state.getStep(), 3);
-        
+
         assertEquals(pipeline.state.getStep("a"), 0);
         assertEquals(pipeline.state.getStep("b"), 1);
         assertEquals(pipeline.state.getStep("c"), 2);

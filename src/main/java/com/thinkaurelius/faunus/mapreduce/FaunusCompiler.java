@@ -50,7 +50,7 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.hadoop.io.compress.DefaultCodec;
+import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -448,7 +448,7 @@ public class FaunusCompiler extends Configured implements Tool {
                     job.setCombinerClass(this.combinerClass);
                 // if there is a reduce task, compress the map output to limit network traffic
                 job.getConfiguration().setBoolean("mapred.compress.map.output", true);
-                job.getConfiguration().setClass("mapred.map.output.compression.codec", DefaultCodec.class, CompressionCodec.class);
+                job.getConfiguration().setClass("mapred.map.output.compression.codec", SnappyCodec.class, CompressionCodec.class);
             } else {
                 job.setNumReduceTasks(0);
             }

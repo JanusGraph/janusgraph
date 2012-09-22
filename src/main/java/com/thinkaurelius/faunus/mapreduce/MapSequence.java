@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.mapreduce;
 import com.thinkaurelius.faunus.Tokens;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -26,39 +25,39 @@ public class MapSequence {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            if(mappers.size() == 0)
-            try {
-                final MemoryMapContext memoryContext = new MemoryMapContext(context);
-                final String[] mapClassNames = context.getConfiguration().getStrings(MAP_CLASSES, new String[0]);
-                if (mapClassNames.length > 0) {
-                    for (int i = 0; i < mapClassNames.length; i++) {
-                        memoryContext.stageConfiguration(i);
-                        final Class<Mapper<Writable, Writable, Writable, Writable>> mapClass = (Class) Class.forName(mapClassNames[i]);
-                        final Mapper<Writable, Writable, Writable, Writable> mapper = mapClass.getConstructor().newInstance();
-                        try {
-                            mapClass.getMethod(Tokens.SETUP, Mapper.Context.class).invoke(mapper, memoryContext);
-                        } catch (NoSuchMethodException e) {
-                            // there is no setup method and that is okay.
-                        }
-                        this.mappers.add(mapper);
-                        for (final Method method : mapClass.getMethods()) {
-                            if (method.getName().equals(Tokens.MAP)) {
-                                this.mapMethods.add(method);
-                                break;
+            if (mappers.size() == 0)
+                try {
+                    final MemoryMapContext memoryContext = new MemoryMapContext(context);
+                    final String[] mapClassNames = context.getConfiguration().getStrings(MAP_CLASSES, new String[0]);
+                    if (mapClassNames.length > 0) {
+                        for (int i = 0; i < mapClassNames.length; i++) {
+                            memoryContext.stageConfiguration(i);
+                            final Class<Mapper<Writable, Writable, Writable, Writable>> mapClass = (Class) Class.forName(mapClassNames[i]);
+                            final Mapper<Writable, Writable, Writable, Writable> mapper = mapClass.getConstructor().newInstance();
+                            try {
+                                mapClass.getMethod(Tokens.SETUP, Mapper.Context.class).invoke(mapper, memoryContext);
+                            } catch (NoSuchMethodException e) {
+                                // there is no setup method and that is okay.
                             }
-                        }
-                        try {
-                            this.cleanupMethods.add(mapClass.getMethod(Tokens.CLEANUP, Mapper.Context.class));
-                        } catch (NoSuchMethodException e) {
-                            this.cleanupMethods.add(null);
-                        }
+                            this.mappers.add(mapper);
+                            for (final Method method : mapClass.getMethods()) {
+                                if (method.getName().equals(Tokens.MAP)) {
+                                    this.mapMethods.add(method);
+                                    break;
+                                }
+                            }
+                            try {
+                                this.cleanupMethods.add(mapClass.getMethod(Tokens.CLEANUP, Mapper.Context.class));
+                            } catch (NoSuchMethodException e) {
+                                this.cleanupMethods.add(null);
+                            }
 
+                        }
                     }
+                    //this.outputs = new MultipleOutputs(context);
+                } catch (Exception e) {
+                    throw new IOException(e);
                 }
-                //this.outputs = new MultipleOutputs(context);
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
         }
 
 

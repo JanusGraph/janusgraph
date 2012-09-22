@@ -34,7 +34,7 @@ public class FaunusTitanHBaseGraph extends StandardTitanGraph {
         this.tx = startTransaction(new TransactionConfig(this.getConfiguration()));
     }
 
-    public FaunusVertex readFaunusVertex(byte[] key, final NavigableMap<byte[],NavigableMap<Long,byte[]>> rowMap) {
+    public FaunusVertex readFaunusVertex(byte[] key, final NavigableMap<byte[], NavigableMap<Long, byte[]>> rowMap) {
         FaunusVertexRelationLoader loader = new FaunusVertexRelationLoader(ByteBuffer.wrap(key));
         loadRelations(new HBaseMapIterable(rowMap), loader, tx);
         return loader.getVertex();
@@ -48,9 +48,9 @@ public class FaunusTitanHBaseGraph extends StandardTitanGraph {
 
     private static class HBaseMapIterable implements Iterable<Entry> {
 
-        private final NavigableMap<byte[],NavigableMap<Long,byte[]>> columnValues;
+        private final NavigableMap<byte[], NavigableMap<Long, byte[]>> columnValues;
 
-        public HBaseMapIterable(final NavigableMap<byte[],NavigableMap<Long,byte[]>> columnValues) {
+        public HBaseMapIterable(final NavigableMap<byte[], NavigableMap<Long, byte[]>> columnValues) {
             Preconditions.checkNotNull(columnValues);
             this.columnValues = columnValues;
         }
@@ -64,9 +64,9 @@ public class FaunusTitanHBaseGraph extends StandardTitanGraph {
 
     private static class HBaseMapIterator implements Iterator<Entry> {
 
-        private final Iterator<Map.Entry<byte[], NavigableMap<Long,byte[]>>> iterator;
+        private final Iterator<Map.Entry<byte[], NavigableMap<Long, byte[]>>> iterator;
 
-        public HBaseMapIterator(final Iterator<Map.Entry<byte[], NavigableMap<Long,byte[]>>> iterator) {
+        public HBaseMapIterator(final Iterator<Map.Entry<byte[], NavigableMap<Long, byte[]>>> iterator) {
             this.iterator = iterator;
         }
 
@@ -77,7 +77,7 @@ public class FaunusTitanHBaseGraph extends StandardTitanGraph {
 
         @Override
         public Entry next() {
-            final Map.Entry<byte[], NavigableMap<Long,byte[]>> entry = iterator.next();
+            final Map.Entry<byte[], NavigableMap<Long, byte[]>> entry = iterator.next();
             return new Entry(ByteBuffer.wrap(entry.getKey()), ByteBuffer.wrap(entry.getValue().lastEntry().getValue()));
         }
 

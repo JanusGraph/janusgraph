@@ -84,7 +84,7 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
             this.pos += newSize;
             if (newSize < this.maxLineLength) {
                 this.value = GraphSONUtility.fromJSON(text.toString());
-                if(this.pathEnabled)
+                if (this.pathEnabled)
                     this.value.enablePath(true);
                 break;
             }

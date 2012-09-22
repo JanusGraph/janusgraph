@@ -102,8 +102,8 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
         final String idHandlerName = map.get(CONFIG_ID_HANDLER);
 
         if (idHandlerName.equals("orientdb"))
-          return new OrientElementIdHandler();
+            return new OrientElementIdHandler();
         else
-          return DEFAULT_ID_HANDLER;
+            return DEFAULT_ID_HANDLER;
     }
 }

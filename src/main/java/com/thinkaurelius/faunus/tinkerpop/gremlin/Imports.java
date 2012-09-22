@@ -12,6 +12,7 @@ public class Imports {
     private static final List<String> evaluates = new ArrayList<String>();
 
     static {
+
         // hadoop
         imports.add("org.apache.hadoop.hdfs.*");
         imports.add("org.apache.hadoop.conf.*");
@@ -42,6 +43,7 @@ public class Imports {
         imports.add("com.thinkaurelius.titan.core.*");
         //imports.add("org.apache.commons.configuration.*");
 
+        // tinkerpop
         imports.addAll(com.tinkerpop.gremlin.Imports.getImports());
 
         evaluates.add("hdfs = FileSystem.get(new Configuration())");

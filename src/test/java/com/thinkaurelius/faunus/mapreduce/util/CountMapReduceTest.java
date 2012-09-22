@@ -40,7 +40,7 @@ public class CountMapReduceTest extends BaseTest {
         for (final Pair<NullWritable, LongWritable> result : results) {
             assertEquals(result.getSecond().get(), 6);
         }
-        
+
         assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.VERTICES_COUNTED).getValue(), 6l);
         assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.EDGES_COUNTED).getValue(), 0l);
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);

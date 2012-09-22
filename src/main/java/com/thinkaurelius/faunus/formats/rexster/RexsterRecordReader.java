@@ -27,7 +27,7 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
     /**
      * The current vertex in the reader.
      */
-    private FaunusVertex value  = new FaunusVertex();
+    private FaunusVertex value = new FaunusVertex();
 
     private DataInputStream rexsterInputStream;
 
@@ -57,7 +57,7 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
 
         try {
             this.value.readFields(this.rexsterInputStream);
-            if(this.pathEnabled)
+            if (this.pathEnabled)
                 this.value.enablePath(true);
             itemsIterated++;
             isNext = true;

@@ -1,6 +1,5 @@
 package com.thinkaurelius.faunus.mapreduce.util;
 
-import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
 import junit.framework.TestCase;
 
 /**

@@ -53,8 +53,8 @@ class GraphLoader {
         FaunusGraph.metaClass.E = { final String key, final Object value ->
             return new FaunusPipeline((FaunusGraph) delegate).E().has(key, value);
         }
-        
-        FaunusGraph.metaClass._ = { ->
+
+        FaunusGraph.metaClass._ = {->
             return new FaunusPipeline((FaunusGraph) delegate)._();
         }
     }

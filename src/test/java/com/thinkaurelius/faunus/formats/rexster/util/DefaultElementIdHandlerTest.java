@@ -1,6 +1,5 @@
 package com.thinkaurelius.faunus.formats.rexster.util;
 
-import com.thinkaurelius.faunus.formats.rexster.util.DefaultElementIdHandler;
 import org.junit.Assert;
 import org.junit.Test;
 

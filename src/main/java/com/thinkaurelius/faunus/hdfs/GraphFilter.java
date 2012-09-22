@@ -5,8 +5,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 
-import java.io.Serializable;
-
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */

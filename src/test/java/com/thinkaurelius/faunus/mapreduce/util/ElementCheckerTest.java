@@ -1,7 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.util;
 
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.util.ElementChecker;
 import com.tinkerpop.blueprints.Query;
 import junit.framework.TestCase;
 

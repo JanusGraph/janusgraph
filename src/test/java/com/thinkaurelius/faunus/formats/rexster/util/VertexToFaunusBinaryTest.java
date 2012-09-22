@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.formats.rexster.util;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.formats.rexster.util.VertexToFaunusBinary;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
@@ -32,7 +31,7 @@ public class VertexToFaunusBinaryTest extends BaseTest {
         Vertex stephen = graph.addVertex(3);
         stephen.setProperty("name", "stephen");
         stephen.setProperty("weight", 160.42);
-        stephen.setProperty("male",true);
+        stephen.setProperty("male", true);
         Edge e = graph.addEdge(null, marko, stephen, "knows");
         e.setProperty("weight", 0.2);
         e.setProperty("type", "coworker");
@@ -59,11 +58,11 @@ public class VertexToFaunusBinaryTest extends BaseTest {
         assertEquals(edge.getPropertyKeys().size(), 2);
         assertEquals(edge.getVertex(Direction.IN).getId(), 3l);
         assertEquals(edge.getVertex(Direction.OUT).getId(), 1l);
-        
+
         FaunusVertex stephenFaunus = new FaunusVertex(in);
         assertEquals(stephenFaunus.getProperty("name"), "stephen");
         assertEquals(stephenFaunus.getProperty("weight"), 160.42);
-        assertTrue((Boolean)stephenFaunus.getProperty("male"));
+        assertTrue((Boolean) stephenFaunus.getProperty("male"));
         assertEquals(stephenFaunus.getPropertyKeys().size(), 3);
         assertEquals(asList(stephenFaunus.getEdges(Direction.IN)).size(), 1);
         assertFalse(stephenFaunus.getEdges(Direction.OUT).iterator().hasNext());
