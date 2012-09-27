@@ -1,5 +1,8 @@
 package com.thinkaurelius.faunus.formats.rexster.util;
 
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
+import com.tinkerpop.blueprints.impls.tg.TinkerGraphFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -8,24 +11,29 @@ import org.junit.Test;
  */
 public class DefaultElementIdHandlerTest {
     private DefaultElementIdHandler handler = new DefaultElementIdHandler();
+    private TinkerGraph graph = new TinkerGraph();
 
     @Test
     public void shouldConvertLong() {
-        Assert.assertEquals(1l, handler.convertIdentifier(1l));
+        final Vertex v = graph.addVertex(1l);
+        Assert.assertEquals(1l, handler.convertIdentifier(v));
     }
 
     @Test
     public void shouldConvertLongWrapped() {
-        Assert.assertEquals(1l, handler.convertIdentifier(new Long(1)));
+        final Vertex v = graph.addVertex(new Long(1));
+        Assert.assertEquals(1l, handler.convertIdentifier(v));
     }
 
     @Test
     public void shouldConvertNumeric() {
-        Assert.assertEquals(1l, handler.convertIdentifier(1));
+        final Vertex v = graph.addVertex(1);
+        Assert.assertEquals(1l, handler.convertIdentifier(v));
     }
 
     @Test
     public void shouldConvertString() {
-        Assert.assertEquals(1l, handler.convertIdentifier("1"));
+        final Vertex v = graph.addVertex("1");
+        Assert.assertEquals(1l, handler.convertIdentifier(v));
     }
 }

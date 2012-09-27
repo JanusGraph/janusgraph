@@ -37,7 +37,7 @@ public class VertexToFaunusBinary {
     }
 
     public void writeVertex(final Vertex vertex, final DataOutput out) throws IOException {
-        out.writeLong(elementIdHandler.convertIdentifier(vertex.getId()));
+        out.writeLong(elementIdHandler.convertIdentifier(vertex));
         out.writeBoolean(false);
         out.writeInt(0);
         writeProperties(vertex, out);
@@ -57,11 +57,11 @@ public class VertexToFaunusBinary {
             out.writeUTF(entry.getKey());
             out.writeInt(entry.getValue().intValue());
             for (final Edge edge : vertex.getEdges(direction, entry.getKey())) {
-                out.writeLong(elementIdHandler.convertIdentifier(edge.getId()));
+                out.writeLong(elementIdHandler.convertIdentifier(edge));
                 out.writeBoolean(false);
                 out.writeInt(0);
                 writeProperties(edge, out);
-                out.writeLong(elementIdHandler.convertIdentifier(edge.getVertex(direction.opposite()).getId()));
+                out.writeLong(elementIdHandler.convertIdentifier(edge.getVertex(direction.opposite())));
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.thinkaurelius.faunus.formats.rexster.util;
 
+import com.tinkerpop.blueprints.Element;
+
 /**
  * ElementIdHandler implementation for OrientGraph usage.
  * <p/>
@@ -21,8 +23,8 @@ public class OrientElementIdHandler implements ElementIdHandler {
     private static final String SEPARATOR = ":";
 
     @Override
-    public long convertIdentifier(final Object identifier) {
-        final String rid = identifier.toString();
+    public long convertIdentifier(final Element element) {
+        final String rid = element.getId().toString();
         final int splitPosition = rid.indexOf(SEPARATOR) + 1;
 
         if (splitPosition > 0)
