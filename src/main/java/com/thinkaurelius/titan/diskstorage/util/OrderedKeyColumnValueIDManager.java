@@ -33,6 +33,9 @@ public class OrderedKeyColumnValueIDManager {
 	
 	private final long lockWaitMS;
 	private final int lockRetryCount;
+    
+    private final int maxReadAttempts = 5;
+    private final int readWaitTime = 200;
 	
 	private final byte[] rid;
 
@@ -78,7 +81,22 @@ public class OrderedKeyColumnValueIDManager {
                 // Read the latest counter value from the store
                 ByteBuffer partitionKey = ByteBuffer.allocate(4);
                 partitionKey.putInt(partition).rewind();
-                List<Entry> blocks = store.getSlice(partitionKey, empty, empty, null);
+
+                List<Entry> blocks = null;
+                for (int readAttempt=0;readAttempt<maxReadAttempts;readAttempt++) {
+                    try {
+                        blocks = store.getSlice(partitionKey, empty, empty, null);
+                        break;
+                    } catch (TemporaryStorageException e) {
+                        if (readAttempt+1>=maxReadAttempts) throw e;
+                        else {
+                            try { Thread.sleep(readWaitTime);
+                            } catch (InterruptedException r) {
+                                throw new PermanentStorageException("Got interrupted attempting to retry read",r);
+                            }
+                        }
+                    }
+                }
 
                 long latest = BASE_ID - blockSize;
 
