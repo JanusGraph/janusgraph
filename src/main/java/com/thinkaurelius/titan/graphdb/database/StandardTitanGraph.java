@@ -68,8 +68,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     private final boolean bufferMutations;
     private final int bufferSize;
 
-    private final int maxSaveRetryAttempts;
-    private final int retrySaveWaitTime;
+    private final int maxWriteRetryAttempts;
+    private final int maxReadRetryAttempts;
+    private final int retryStorageWaitTime;
 
 	
 	private final Serializer serializer;
@@ -85,8 +86,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         this.bufferMutations = configuration.hasBufferMutations();
         this.bufferSize = configuration.getBufferSize();
         Preconditions.checkArgument(bufferSize>0);
-        this.maxSaveRetryAttempts=config.getPersistAttempts();
-        this.retrySaveWaitTime=config.getPersistWaittime();
+        this.maxWriteRetryAttempts =config.getWriteAttempts();
+        this.maxReadRetryAttempts = config.getReadAttempts();
+        this.retryStorageWaitTime =config.getStorageWaittime();
+        
 
         this.idAssigner = config.getIDAssigner(this.storage);
         this.idManager = idAssigner.getIDManager();
@@ -154,15 +157,44 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     // ################### READ #########################
 
     private final TitanException readException(StorageException e) {
-        return new TitanException("Could not read from storage",e);
+        return readException(e,0);
+    }
+
+    private final TitanException readException(StorageException e, int attempts) {
+        if (attempts==0)
+            return new TitanException("Could not read from storage",e);
+        else
+            return new TitanException("Could not read from storage after "+attempts+" attempts",e);
+    }
+
+    private final void temporaryStorageException(Throwable e) {
+        Preconditions.checkArgument(e instanceof TemporaryStorageException);
+        log.info("Temporary exception in storage backend. Attempting retry in {} ms. {}", retryStorageWaitTime,e);
+        //Wait before retry
+        if (retryStorageWaitTime >0) {
+            try {
+                Thread.sleep(retryStorageWaitTime);
+            } catch (InterruptedException r) {
+                throw new TitanException("Interrupted while waiting to retry failed storage operation",e);
+            }
+        }
     }
 
 	@Override
 	public boolean containsVertexID(long id, InternalTitanTransaction tx) {
 		log.trace("Checking node existence for {}", id);
-        try {
-		    return edgeStore.containsKey(IDHandler.getKey(id), tx.getTxHandle());
-        } catch(StorageException e) {throw readException(e); }
+
+        for (int readAttempt=0;readAttempt<maxReadRetryAttempts;readAttempt++) {
+            try {
+                return edgeStore.containsKey(IDHandler.getKey(id), tx.getTxHandle());
+            } catch (StorageException e) {
+                if (e instanceof TemporaryStorageException) {
+                    if (readAttempt<maxReadRetryAttempts-1) temporaryStorageException(e);
+                    else throw readException(e,maxReadRetryAttempts);
+                } else throw readException(e);
+            }
+        }
+        throw new AssertionError("Illegal program state");
 	}
 
     @Override
@@ -170,26 +202,34 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         if (!(edgeStore instanceof ScanKeyColumnValueStore))
             throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
 
-        try {
-            final RecordIterator<ByteBuffer> keyiter = ((ScanKeyColumnValueStore)edgeStore).getKeys(tx.getTxHandle());
-            return new RecordIterator<Long>() {
+        for (int readAttempt=0;readAttempt<maxReadRetryAttempts;readAttempt++) {
+            try {
+                final RecordIterator<ByteBuffer> keyiter = ((ScanKeyColumnValueStore)edgeStore).getKeys(tx.getTxHandle());
+                return new RecordIterator<Long>() {
 
-                @Override
-                public boolean hasNext() throws StorageException {
-                    return keyiter.hasNext();
-                }
+                    @Override
+                    public boolean hasNext() throws StorageException {
+                        return keyiter.hasNext();
+                    }
 
-                @Override
-                public Long next() throws StorageException {
-                    return IDHandler.getKeyID(keyiter.next());
-                }
+                    @Override
+                    public Long next() throws StorageException {
+                        return IDHandler.getKeyID(keyiter.next());
+                    }
 
-                @Override
-                public void close() throws StorageException {
-                    keyiter.close();
-                }
-            };
-        } catch (StorageException e) { throw readException(e); }
+                    @Override
+                    public void close() throws StorageException {
+                        keyiter.close();
+                    }
+                };
+            } catch (StorageException e) {
+                if (e instanceof TemporaryStorageException) {
+                    if (readAttempt<maxReadRetryAttempts-1) temporaryStorageException(e);
+                    else throw readException(e,maxReadRetryAttempts);
+                } else throw readException(e);
+            }
+        }
+        throw new AssertionError("Illegal program state");
     }
 
     @Override
@@ -203,24 +243,34 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 			
         Preconditions.checkArgument(pt.getDataType().isInstance(key),"Specified object is incompatible with property data type ["+pt.getName()+"]");
 
-        try {
-            if (pt.isUnique()) {
-                ByteBuffer value = propertyIndex.get(getIndexKey(key), getKeyedIndexColumn(pt), tx.getTxHandle());
-                if (value!=null) {
-                    vertices = new long[1];
-                    vertices[0]=VariableLong.readPositive(value);
+
+        for (int readAttempt=0;readAttempt<maxReadRetryAttempts;readAttempt++) {
+            try {
+                if (pt.isUnique()) {
+                    ByteBuffer value = propertyIndex.get(getIndexKey(key), getKeyedIndexColumn(pt), tx.getTxHandle());
+                    if (value!=null) {
+                        vertices = new long[1];
+                        vertices[0]=VariableLong.readPositive(value);
+                    }
+                } else {
+                    ByteBuffer startColumn = VariableLong.positiveByteBuffer(pt.getID());
+                    List<Entry> entries = propertyIndex.getSlice(getIndexKey(key), startColumn,
+                            ByteBufferUtil.nextBiggerBuffer(startColumn), tx.getTxHandle());
+                    vertices = new long[entries.size()];
+                    int i = 0;
+                    for (Entry ent : entries) {
+                        vertices[i++] = VariableLong.readPositive(ent.getValue());
+                    }
                 }
-            } else {
-                ByteBuffer startColumn = VariableLong.positiveByteBuffer(pt.getID());
-                List<Entry> entries = propertyIndex.getSlice(getIndexKey(key), startColumn,
-                                                            ByteBufferUtil.nextBiggerBuffer(startColumn), tx.getTxHandle());
-                vertices = new long[entries.size()];
-                int i = 0;
-                for (Entry ent : entries) {
-                    vertices[i++] = VariableLong.readPositive(ent.getValue());
-                }
+
+                break;
+            } catch (StorageException e) {
+                if (e instanceof TemporaryStorageException) {
+                    if (readAttempt<maxReadRetryAttempts-1) temporaryStorageException(e);
+                    else throw readException(e,maxReadRetryAttempts);
+                } else throw readException(e);
             }
-        } catch (StorageException e) { throw readException(e); }
+        }
 
 		if (vertices==null) return new long[0];
 		else return vertices;
@@ -543,9 +593,19 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                                       List<Entry> entries, LimitTracker limit, TransactionHandle txh) {
 		if (limit.limitExhausted()) return null;
 		List<Entry> results = null;
-        try {
-            results = edgeStore.getSlice(key, columnStart, columnEnd, limit.getLimit(), txh);
-        } catch (StorageException e) { throw readException(e); }
+        
+        for (int readAttempt=0;readAttempt<maxReadRetryAttempts;readAttempt++) {
+            try {
+                results = edgeStore.getSlice(key, columnStart, columnEnd, limit.getLimit(), txh);
+                break;
+            } catch (StorageException e) {
+                if (e instanceof TemporaryStorageException) {
+                    if (readAttempt<maxReadRetryAttempts-1) temporaryStorageException(e);
+                    else throw readException(e,maxReadRetryAttempts);
+                } else throw readException(e);
+            }
+        }
+        
         limit.retrieved(results.size());
 
 		if (entries==null) return results;
@@ -608,9 +668,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         //1. Assign TitanVertex IDs
         assignIDs(addedRelations,tx);
 
-        int saveAttempts = 0;
-
-        while (true) { //Indefinite loop, broken if no exception occurs, otherwise retried or failed immediately
+        for (int saveAttempt=0;saveAttempt<maxWriteRetryAttempts;saveAttempt++) {
+//        while (true) { //Indefinite loop, broken if no exception occurs, otherwise retried or failed immediately
         try {    
             //2. Collect deleted edges
             ListMultimap<InternalTitanVertex,InternalRelation> mutations = ArrayListMultimap.create();
@@ -689,24 +748,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
             if (!mutations.isEmpty()) persist(mutations,signatures,tx,mutator);
             mutator.flush();
             
-            //Successfully completed - break out of indefinite loop
+            //Successfully completed - return to break out of loop
             break;
         } catch (Throwable e) {
             if (e instanceof TemporaryStorageException) {
-                if (saveAttempts<maxSaveRetryAttempts) {
-                    saveAttempts++;
-                    log.info("Temporary exception during commit. Attempting retry in {} ms. {}",retrySaveWaitTime,e);
-                    //Wait before retry
-                    if (retrySaveWaitTime>0) {
-                        try {
-                            Thread.sleep(retrySaveWaitTime);
-                        } catch (InterruptedException r) {
-                            throw new PermanentStorageException("Interrupted while waiting to retry failed persistence",e);
-                        }
-                    }
-                } else {
-                    throw new PermanentStorageException("Retried "+maxSaveRetryAttempts+" on temporary exception without success",e);
-                }
+                if (saveAttempt<maxWriteRetryAttempts-1) temporaryStorageException(e);
+                else throw new PermanentStorageException("Tried committing "+ maxWriteRetryAttempts +" times on temporary exception without success",e);
             } else if (e instanceof StorageException) {
                 throw (StorageException)e;
             } else {
@@ -714,7 +761,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
             }
         }
         }
-            
 	}
 	
 	private void commitEdgeTypes(Iterable<InternalTitanType> edgeTypes) {

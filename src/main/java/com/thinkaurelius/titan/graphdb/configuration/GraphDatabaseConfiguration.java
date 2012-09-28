@@ -117,14 +117,23 @@ public class GraphDatabaseConfiguration {
      * temporary such as network failures. For temporary failures, Titan will re-attempt to persist the
      * state up to the number of times specified.
      */
-    public static final String PERSIST_ATTEMPTS_KEY = "persist-attempts";
-    public static final int PERSIST_ATTEMPTS_DEFAULT = 3;
+    public static final String WRITE_ATTEMPTS_KEY = "write-attempts";
+    public static final int WRITE_ATTEMPTS_DEFAULT = 5;
 
     /**
-     * Time in milliseconds that Titan waits after an unsuccessful persistence attempt before retrying.
+     * Number of times the database attempts to execute a read operation against the storage layer in the current transaction.
+     * A read operation might fail for various reasons, some of which are
+     * temporary such as network failures. For temporary failures, Titan will re-attempt to read the
+     * state up to the number of times specified before failing the transaction
      */
-    public static final String PERSIST_WAITTIME_KEY = "persist-wait-time";
-    public static final int PERSIST_WAITTIME_DEFAULT = 250;
+    public static final String READ_ATTEMPTS_KEY = "read-attempts";
+    public static final int READ_ATTEMPTS_DEFAULT = 3;
+
+    /**
+     * Time in milliseconds that Titan waits after an unsuccessful storage attempt before retrying.
+     */
+    public static final String STORAGE_ATTEMPT_WAITTIME_KEY = "attempt-wait";
+    public static final int STORAGE_ATTEMPT_WAITTIME_DEFAULT = 250;
 
 
     /**
@@ -290,15 +299,21 @@ public class GraphDatabaseConfiguration {
         return size;
     }
     
-    public int getPersistAttempts() {
-        int attempts = configuration.getInt(PERSIST_ATTEMPTS_KEY,PERSIST_ATTEMPTS_DEFAULT);
-        Preconditions.checkArgument(attempts>0,"Persistence attempts must be positive");
+    public int getWriteAttempts() {
+        int attempts = configuration.subset(STORAGE_NAMESPACE).getInt(WRITE_ATTEMPTS_KEY, WRITE_ATTEMPTS_DEFAULT);
+        Preconditions.checkArgument(attempts>0,"Write attempts must be positive");
         return attempts;
     }
 
-    public int getPersistWaittime() {
-        int time = configuration.getInt(PERSIST_WAITTIME_KEY,PERSIST_WAITTIME_DEFAULT);
-        Preconditions.checkArgument(time>0,"Persistence retry wait time must be positive");
+    public int getReadAttempts() {
+        int attempts = configuration.subset(STORAGE_NAMESPACE).getInt(READ_ATTEMPTS_KEY, READ_ATTEMPTS_DEFAULT);
+        Preconditions.checkArgument(attempts>0,"Read attempts must be positive");
+        return attempts;
+    }
+
+    public int getStorageWaittime() {
+        int time = configuration.subset(STORAGE_NAMESPACE).getInt(STORAGE_ATTEMPT_WAITTIME_KEY, STORAGE_ATTEMPT_WAITTIME_DEFAULT);
+        Preconditions.checkArgument(time>0,"Persistence attempt retry wait time must be positive");
         return time;
     }
 
