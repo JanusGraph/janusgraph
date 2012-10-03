@@ -1,11 +1,16 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -275,4 +280,58 @@ public abstract class LockKeyColumnValueStoreTest {
 		s2.mutate(k, Arrays.asList(new Entry(c2, v2)), null, tx2);
 
 	}
+
+    @Test
+    public void testIDAcquisition() throws StorageException, InterruptedException {
+        final int numPartitions = 2;
+        final int numThreads = 2;
+        final int numAcquisitionsPerThreadPartition = 10;
+        final int blockSize = GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_DEFAULT;
+        final List<List<Long>> ids = new ArrayList<List<Long>>(numPartitions);
+        for (int i=0;i<numPartitions;i++) {
+            ids.add(Collections.synchronizedList(new ArrayList<Long>(numAcquisitionsPerThreadPartition*numThreads)));
+        }
+        
+        Thread[] threads = new Thread[numThreads];
+        for (int i=0;i<numThreads;i++) {
+            Preconditions.checkArgument(i==0 || i==1);
+            final StorageManager manager = i==0?manager1:manager2;
+            threads[i] = new Thread(new Runnable(){
+                
+                @Override
+                public void run() {
+                    try {
+                    for (int j=0;j<numAcquisitionsPerThreadPartition;j++) {
+                        for (int p=1;p<=numPartitions;p++) {
+                            long[] block = manager.getIDBlock(p);
+                            assertEquals(block[0]+blockSize,block[1]);
+                            ids.get(p-1).add(block[0]);
+                        }
+                    }
+                    } catch (StorageException e) { throw new RuntimeException(e); }
+                }
+            });
+            threads[i].start();
+        }
+
+        for (int i=0;i<numThreads;i++) {
+            threads[i].join();
+        }
+
+        for (int i=0;i<numPartitions;i++) {
+            List<Long> list = ids.get(i);
+            assertEquals(numAcquisitionsPerThreadPartition*numThreads,list.size());
+            Collections.sort(list);
+            int pos = 0;
+            int id = 1;
+            while (pos<list.size()) {
+                assertEquals(id,list.get(pos).longValue());
+                id+=blockSize;
+                pos++;
+            }
+        }
+        
+        
+
+    }
 }

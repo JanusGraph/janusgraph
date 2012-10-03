@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.graphdb.database.idassigner.DefaultIDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
@@ -34,8 +35,8 @@ public class OrderedKeyColumnValueIDManager {
 	private final long lockWaitMS;
 	private final int lockRetryCount;
     
-    private final int maxReadAttempts = 5;
-    private final int readWaitTime = 200;
+    private final int rollbackAttempts = 5;
+    private final int rollbackWaitTime = 200;
 	
 	private final byte[] rid;
 
@@ -78,34 +79,18 @@ public class OrderedKeyColumnValueIDManager {
 		for (int retry = 0; retry < lockRetryCount; retry++) {
 
             try {
-                // Read the latest counter value from the store
+                // Read the latest counter values from the store
                 ByteBuffer partitionKey = ByteBuffer.allocate(4);
                 partitionKey.putInt(partition).rewind();
-
-                List<Entry> blocks = null;
-                for (int readAttempt=0;readAttempt<maxReadAttempts;readAttempt++) {
-                    try {
-                        blocks = store.getSlice(partitionKey, empty, empty, null);
-                        break;
-                    } catch (TemporaryStorageException e) {
-                        if (readAttempt+1>=maxReadAttempts) throw e;
-                        else {
-                            try { Thread.sleep(readWaitTime);
-                            } catch (InterruptedException r) {
-                                throw new PermanentStorageException("Got interrupted attempting to retry read",r);
-                            }
-                        }
-                    }
-                }
+                List<Entry> blocks = store.getSlice(partitionKey, empty, empty, 5, null);
+                if (blocks==null) throw new TemporaryStorageException("Could not read from storage");
 
                 long latest = BASE_ID - blockSize;
 
-                if (null != blocks) {
-                    for (Entry e : blocks) {
-                        long counterVal = e.getColumn().getLong();
-                        if (latest < counterVal) {
-                            latest = counterVal;
-                        }
+                for (Entry e : blocks) {
+                    long counterVal = getBlockValue(e.getColumn());
+                    if (latest < counterVal) {
+                        latest = counterVal;
                     }
                 }
 
@@ -115,80 +100,91 @@ public class OrderedKeyColumnValueIDManager {
 
                 ByteBuffer target = getBlockApplication(nextStart);
 
+
                 // attempt to write our claim on the next id block
-                long before = System.currentTimeMillis();
-                store.mutate(partitionKey, Arrays.asList(new Entry(target, empty)), null, null);
-                long after = System.currentTimeMillis();
+                boolean success = false;
+                try {
+                    long before = System.currentTimeMillis();
+                    store.mutate(partitionKey, Arrays.asList(new Entry(target, empty)), null, null);
+                    long after = System.currentTimeMillis();
 
-                if (lockWaitMS < after - before) {
-                    // Too slow
-                    // Delete block claim and loop again
-                    log.warn("Wrote claim for id block [{}, {}) in {} ms: too slow, retrying",
-                            new Object[] { nextStart, nextEnd, after - before });
-                    store.mutate(partitionKey, null, Arrays.asList(target), null);
-                } else {
+                    if (lockWaitMS < after - before) {
+                        throw new TemporaryStorageException("Wrote claim for id block ["+nextStart+", "+nextEnd+") in "+(after-before)+" ms => too slow, threshold is: "+lockWaitMS);
+                    } else {
 
-                    /* At this point we've written our claim on [nextStart, nextEnd),
-                     * but we haven't yet guaranteed the absence of a contending claim on
-                     * the same id block from another machine
-                     */
+                        assert 0 != target.remaining();
+                        ByteBuffer[] slice = getBlockSlice(nextStart);
 
-                    while (true) {
-                        // Wait until lockWaitMS has passed since our claim
-                        final long sinceLock = System.currentTimeMillis() - after;
-                        if (sinceLock >= lockWaitMS) {
-                            break;
+                        /* At this point we've written our claim on [nextStart, nextEnd),
+                         * but we haven't yet guaranteed the absence of a contending claim on
+                         * the same id block from another machine
+                         */
+
+                        while (true) {
+                            // Wait until lockWaitMS has passed since our claim
+                            final long sinceLock = System.currentTimeMillis() - after;
+                            if (sinceLock >= lockWaitMS) {
+                                break;
+                            } else {
+                                try {
+                                    Thread.sleep(lockWaitMS - sinceLock);
+                                } catch (InterruptedException e) {
+                                    throw new PermanentLockingException("Interupted while waiting for lock confirmation",e);
+                                }
+                            }
+                        }
+
+                        // Read all id allocation claims on this partition, for the counter value we're claiming
+                        blocks = store.getSlice(partitionKey, slice[0], slice[1], null);
+                        if (blocks==null) throw new TemporaryStorageException("Could not read from storage");
+                        if (blocks.isEmpty()) throw new PermanentStorageException("It seems there is a race-condition in the block application. " +
+                                "If you have multiple Titan instances running on one physical machine, ensure that they have unique machine ids");
+
+                        /* If our claim is the lexicographically first one, then our claim
+                         * is the most senior one and we own this id block
+                         */
+                        if (target.equals(blocks.get(0).getColumn())) {
+
+                            long result[] = new long[2];
+                            result[0] = nextStart;
+                            result[1] = nextEnd;
+
+                            if (log.isDebugEnabled()) {
+                                log.debug("Acquired ID block [{},{}) on partition {} (my rid is {})",
+                                        new Object[] { nextStart, nextEnd, partition, new String(Hex.encodeHex(rid)) });
+                            }
+
+                            success = true;
+                            return result;
                         } else {
+                            // Another claimant beat us to this id block -- try again.
+                            log.debug("Failed to acquire ID block [{},{}) (another host claimed it first)", nextStart, nextEnd);
+                        }
+                    }
+                } finally {
+                    if (!success) {
+                        //Delete claim to not pollute id space
+                        try {
+                            for (int attempt=0;attempt<rollbackAttempts;attempt++) {
+                                store.mutate(partitionKey, null, Arrays.asList(target), null);
+                                break;
+                            }
+                        } catch (StorageException e) {
+                            log.warn("Storage exception while deleting old block application - retrying in {} ms: {}",rollbackWaitTime,e);
                             try {
-                                Thread.sleep(lockWaitMS - sinceLock);
-                            } catch (InterruptedException e) {
-                                throw new PermanentLockingException("Interupted while waiting for lock confirmation",e);
+                                Thread.sleep(rollbackWaitTime);
+                            } catch (InterruptedException ex) {
+                                throw new PermanentLockingException("Interrupted while waiting for old id block removal retry",ex);
                             }
                         }
                     }
-
-                    assert 0 != target.remaining();
-
-                    // Read all id allocation claims on this partition, for the counter value we're claiming
-                    ByteBuffer nextStartBB = ByteBuffer.allocate(8);
-                    ByteBuffer nextEndBB = ByteBuffer.allocate(8);
-                    nextStartBB.putLong(nextStart).rewind();
-                    nextEndBB.putLong(nextEnd).rewind();
-                    blocks = store.getSlice(partitionKey, nextStartBB, nextEndBB, null);
-
-                    /* If our claim is the lexicographically last one, then our claim
-                     * is the most senior one and we own this id block
-                     */
-                    if (target.equals(blocks.get(blocks.size() - 1).getColumn())) {
-
-                        long result[] = new long[2];
-                        result[0] = nextStart;
-                        result[1] = nextEnd;
-
-                        if (log.isDebugEnabled()) {
-                            log.debug("Acquired ID block [{},{}) on partition {} (my rid is {})",
-                                    new Object[] { nextStart, nextEnd, partition, new String(Hex.encodeHex(rid)) });
-                        }
-
-                        return result;
-                    }
-
-                    log.debug("Failed to acquire ID block [{},{}) (another host claimed it first)", nextStart, nextEnd);
-
-                    /* Another claimant beat us to this id block -- try again.
-                     *
-                     * Note that we don't have to delete our failed claim; it
-                     * is lexicographically prior to, and therefore considered
-                     * junior to, some other machine's claim.  We could delete
-                     * it, but doing so isn't necessary.
-                     */
                 }
             } catch (TemporaryStorageException e) {
-                log.debug("Temporary storage exception while acquiring lock - retrying in {} ms: {}",lockWaitMS,e);
+                log.warn("Temporary storage exception while acquiring id block - retrying in {} ms: {}",lockWaitMS,e);
                 try {
                     Thread.sleep(lockWaitMS);
                 } catch (InterruptedException ex) {
-                    throw new PermanentLockingException("Interupted while waiting for lock retry",ex);
+                    throw new PermanentLockingException("Interrupted while waiting for id block acquisition retry",ex);
                 }
             }
 		}
@@ -196,14 +192,28 @@ public class OrderedKeyColumnValueIDManager {
 		throw new TemporaryLockingException("Exceeded timeout count ["+lockRetryCount+"] when attempting to allocate id block");
     }
 	
-	private ByteBuffer getBlockApplication(long counter) {
+    private final ByteBuffer[] getBlockSlice(long blockValue) {
+        ByteBuffer[] slice = new ByteBuffer[2];
+        slice[0] = ByteBuffer.allocate(16);
+        slice[1] = ByteBuffer.allocate(16);
+        slice[0].putLong(-blockValue).putLong(0).rewind();
+        slice[1].putLong(-blockValue).putLong(-1).rewind();
+        return slice;
+    }
+    
+	private final ByteBuffer getBlockApplication(long blockValue) {
 		ByteBuffer bb = ByteBuffer.allocate(
 				8 // counter long
 				+ 8 // time in ms
 				+ rid.length);
 		
-		bb.putLong(counter).putLong(System.currentTimeMillis()).put(rid);
+		bb.putLong(-blockValue).putLong(System.currentTimeMillis()).put(rid);
 		bb.rewind();
 		return bb;
 	}
+    
+    private final long getBlockValue(ByteBuffer column) {
+        return -column.getLong();
+    }
+    
 }
