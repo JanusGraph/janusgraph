@@ -8,6 +8,14 @@ import java.util.List;
 import java.util.Map;
 
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.MultiWriteKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LockConfig;
+import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.Column;
 import org.apache.cassandra.thrift.ColumnOrSuperColumn;
@@ -28,16 +36,13 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
-import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.UncheckedGenericKeyedObjectPool;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
 
 /**
- * A Titan {@code OrderedKeyColumnValueStore} backed by Cassandra.
+ * A Titan {@code KeyColumnValueStore} backed by Cassandra.
  * This uses the Cassandra Thrift API.
  * 
  * @see CassandraThriftStorageManager
@@ -45,7 +50,7 @@ import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnV
  * 
  */
 public class CassandraThriftOrderedKeyColumnValueStore
-	implements OrderedKeyColumnValueStore, MultiWriteKeyColumnValueStore {
+	implements KeyColumnValueStore, MultiWriteKeyColumnValueStore {
 	
 	private final String keyspace;
 	private final String columnFamily;
@@ -78,7 +83,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		this.writeConsistencyLevel = writeConsistencyLevel;
 		
 		if (null != llm && null != lockStore) {
-			this.internals = new SimpleLockConfig(this, lockStore, llm,
+			this.internals = new ConsistentKeyLockStore(this, lockStore, llm,
 					rid, lockRetryCount, lockWaitMS, lockExpireMS);
 		} else {
 			this.internals = null;
@@ -90,7 +95,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	 * 
 	 * When columnEnd equals columnStart, and both startInclusive
 	 * and endInclusive are true, then this method calls
-	 * {@link #get(java.nio.ByteBuffer, java.nio.ByteBuffer, TransactionHandle)}
+	 * {@link #get(java.nio.ByteBuffer, java.nio.ByteBuffer, com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle)}
 	 * instead of calling Thrift's getSlice() method and returns
 	 * a one-element list containing the result.
 	 * 
@@ -110,7 +115,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	 */
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, int limit, TransactionHandle txh) throws StorageException {
+			ByteBuffer columnEnd, int limit, StoreTransactionHandle txh) throws StorageException {
 		// Sanity check the limit argument
 		if (0 > limit) {
 			logger.warn("Setting negative limit ({}) to 0", limit);
@@ -179,7 +184,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, TransactionHandle txh) throws StorageException {
+			ByteBuffer columnEnd, StoreTransactionHandle txh) throws StorageException {
 		return getSlice(key, columnStart, columnEnd, Integer.MAX_VALUE, txh);
 	}
 
@@ -189,7 +194,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	}
 
 	@Override
-	public boolean containsKey(ByteBuffer key, TransactionHandle txh) throws StorageException {
+	public boolean containsKey(ByteBuffer key, StoreTransactionHandle txh) throws StorageException {
 		ColumnParent parent = new ColumnParent(columnFamily);
 		ConsistencyLevel consistency = getConsistencyLevel(txh, Operation.READ);
 		SlicePredicate predicate = new SlicePredicate();
@@ -214,13 +219,13 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	}
 
     @Override
-    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, TransactionHandle txh) throws StorageException {
+    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransactionHandle txh) throws StorageException {
 
-    	Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations =
-    			new HashMap<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation>(1);
+    	Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation> mutations =
+    			new HashMap<ByteBuffer, com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation>(1);
     	
-    	com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation m = new
-    			com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation(additions, deletions);
+    	com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation m = new
+                com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation(additions, deletions);
     	
     	mutations.put(key, m);
     	
@@ -229,7 +234,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
 	@Override
 	public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) throws StorageException {
+			StoreTransactionHandle txh) throws StorageException {
 		ColumnPath path = new ColumnPath(columnFamily);
 		path.setColumn(column);
 		CTConnection conn = null;
@@ -254,7 +259,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
         return true;
 	}
 	
-	private ConsistencyLevel getConsistencyLevel(TransactionHandle txh, Operation op) {
+	private ConsistencyLevel getConsistencyLevel(StoreTransactionHandle txh, Operation op) {
 		
 		if (null == txh) {
 			return ConsistencyLevel.QUORUM;
@@ -269,7 +274,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
 	@Override
 	public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) throws StorageException {
+			StoreTransactionHandle txh) throws StorageException {
 		ColumnParent parent = new ColumnParent(columnFamily);
 		ConsistencyLevel consistency = getConsistencyLevel(txh, Operation.READ);
 		SlicePredicate predicate = new SlicePredicate();
@@ -290,7 +295,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 
 	@Override
 	public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue,
-			TransactionHandle txh) throws StorageException {
+			StoreTransactionHandle txh) throws StorageException {
 		
 		CassandraTransaction ctxh = (CassandraTransaction)txh;
 		if (ctxh.isMutationStarted()) {
@@ -301,7 +306,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 	}
 
     @Override
-    public void mutateMany(Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations, TransactionHandle txh) throws StorageException {
+    public void mutateMany(Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation> mutations, StoreTransactionHandle txh) throws StorageException {
 		
     	if (null == mutations)
     		return;
@@ -318,8 +323,8 @@ public class CassandraThriftOrderedKeyColumnValueStore
     		}
     	}
     	
-		long deletionTimestamp = TimestampProvider.getApproxNSSinceEpoch(false);
-		long additionTimestamp = TimestampProvider.getApproxNSSinceEpoch(true);
+		long deletionTimestamp = TimeUtility.getApproxNSSinceEpoch(false);
+		long additionTimestamp = TimeUtility.getApproxNSSinceEpoch(true);
 		
 		ConsistencyLevel consistency = getConsistencyLevel(txh, Operation.WRITE);
 		
@@ -328,7 +333,7 @@ public class CassandraThriftOrderedKeyColumnValueStore
 		Map<ByteBuffer, Map<String, List<Mutation>>> batch =
 			new HashMap<ByteBuffer, Map<String, List<Mutation>>>(mutations.size());
 
-		for (Map.Entry<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> e : mutations.entrySet()) {
+		for (Map.Entry<ByteBuffer, com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation> e : mutations.entrySet()) {
 
 			Map<String, List<Mutation>> cfs = new HashMap<String, List<Mutation>>(1);
 			List<Mutation> muts = new ArrayList<Mutation>(mutations.size());

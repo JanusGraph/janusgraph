@@ -3,9 +3,10 @@ package com.thinkaurelius.titan.diskstorage.cassandra;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
-import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionFactory;
-import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.thrift.transport.TTransportException;
@@ -35,7 +36,7 @@ public class CassandraProcessStarter {
 	
 	private static final String cassandraCommand = "cassandra";
 	private static final int port =
-            CassandraThriftStorageManager.PORT_DEFAULT;
+            AbstractCassandraStoreManager.PORT_DEFAULT;
 	private static final Logger log =
 		LoggerFactory.getLogger(CassandraProcessStarter.class);
 	private static final long CASSANDRA_STARTUP_TIMEOUT = 10000L;
@@ -174,7 +175,7 @@ public class CassandraProcessStarter {
 			 */
 			log.debug("Clearing pooled Thrift connections for {}:{}",
 					address, port);
-			CTConnectionPool.getPool(address, port, CassandraThriftStorageManager.THRIFT_TIMEOUT_DEFAULT).clear();
+			CTConnectionPool.getPool(address, port, GraphDatabaseConfiguration.COMMUNICATION_TIMEOUT_DEFAULT).clear();
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new TitanException(e);
@@ -206,7 +207,7 @@ public class CassandraProcessStarter {
 	}
 
 	public void waitForClusterSize(int minSize) throws InterruptedException, StorageException {
-		CTConnectionFactory f = CTConnectionPool.getFactory(address, port, CassandraThriftStorageManager.THRIFT_TIMEOUT_DEFAULT);
+		CTConnectionFactory f = CTConnectionPool.getFactory(address, port, GraphDatabaseConfiguration.COMMUNICATION_TIMEOUT_DEFAULT);
 		CTConnection conn = null;
 		try {
 			conn = f.makeRawConnection();

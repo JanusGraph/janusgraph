@@ -6,7 +6,12 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.util.StorageFeaturesImplementation;
+import com.thinkaurelius.titan.diskstorage.idmanagement.OrderedKeyColumnValueIDManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -23,10 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
-import com.thinkaurelius.titan.diskstorage.util.OrderedKeyColumnValueIDManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
@@ -36,7 +40,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  * 
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
-public class HBaseStorageManager implements StorageManager {
+public class HBaseStorageManager implements KeyColumnValueStoreManager {
 
 	private static final Logger log = LoggerFactory.getLogger(HBaseStorageManager.class);
 	
@@ -48,8 +52,8 @@ public class HBaseStorageManager implements StorageManager {
     public static final String HBASE_CONFIGURATION_NAMESPACE = "hbase-config";
 
     public static final Map<String,String> HBASE_CONFIGURATION_MAP = new ImmutableMap.Builder<String,String>().
-            put(HOSTNAME_KEY,"hbase.zookeeper.quorum").
-            put(PORT_KEY, "hbase.zookeeper.property.clientPort").
+            put(GraphDatabaseConfiguration.HOSTNAME_KEY,"hbase.zookeeper.quorum").
+            put(GraphDatabaseConfiguration.PORT_KEY, "hbase.zookeeper.property.clientPort").
             build();
 
 	private final String tableName;
@@ -71,7 +75,7 @@ public class HBaseStorageManager implements StorageManager {
 		
         this.llmPrefix =
 				config.getString(
-						LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
+						ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
 						LOCAL_LOCK_MEDIATOR_PREFIX_DEFAULT);
         
 		this.lockRetryCount =
@@ -121,7 +125,7 @@ public class HBaseStorageManager implements StorageManager {
 
     @Override
     public StorageFeatures getFeatures() {
-        return new StorageFeaturesImplementation(false,false);
+        return new StoreFeatures(false,false);
     }
 
     @Override
@@ -135,19 +139,19 @@ public class HBaseStorageManager implements StorageManager {
     }
 
 	@Override
-	public OrderedKeyColumnValueStore openDatabase(String name)
+	public KeyColumnValueStore openDatabase(String name)
 			throws StorageException {
 		
-		OrderedKeyColumnValueStore lockStore =
+		KeyColumnValueStore lockStore =
 				openDatabase(name + "_locks", null, null);
 		LocalLockMediator llm = LocalLockMediators.INSTANCE.get(llmPrefix + ":" + name);
-		OrderedKeyColumnValueStore dataStore =
+		KeyColumnValueStore dataStore =
 				openDatabase(name, llm, lockStore);
 		
 		return dataStore;
 	}
 
-	private OrderedKeyColumnValueStore openDatabase(String name, LocalLockMediator llm, OrderedKeyColumnValueStore lockStore)
+	private KeyColumnValueStore openDatabase(String name, LocalLockMediator llm, KeyColumnValueStore lockStore)
 			throws StorageException {
 		
 		HBaseAdmin adm = null;
@@ -204,7 +208,7 @@ public class HBaseStorageManager implements StorageManager {
 	}
 
 	@Override
-	public TransactionHandle beginTransaction() throws StorageException {
+	public StoreTransactionHandle beginTransaction() throws StorageException {
 		return new HBaseTransaction();
 	}
 

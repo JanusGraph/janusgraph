@@ -6,22 +6,18 @@ import static org.junit.Assert.assertNull;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation;
 
 public abstract class MultiWriteKeyColumnValueStoreTest {
 	
@@ -32,8 +28,8 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
     protected String storeName = "testStore1";
 	
-	public StorageManager manager;
-	public TransactionHandle tx;
+	public KeyColumnValueStoreManager manager;
+	public StoreTransactionHandle tx;
 	public MultiWriteKeyColumnValueStore store;
 	
 
@@ -45,7 +41,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         open();
 	}
 
-    public abstract StorageManager openStorageManager() throws StorageException;
+    public abstract KeyColumnValueStoreManager openStorageManager() throws StorageException;
 
 	public void open() throws StorageException {
         manager = openStorageManager();
@@ -210,7 +206,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 	 * @param additionCount
 	 *            Add exactly this many entries to state
 	 * @return A Mutation map compatible with
-	 *         {@link MultiWriteKeyColumnValueStore#mutateMany(Map, TransactionHandle)}
+	 *         {@link com.thinkaurelius.titan.diskstorage.keycolumnvalue.MultiWriteKeyColumnValueStore#mutateMany(Map, com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle)}
 	 */
 	public Map<ByteBuffer, Mutation> mutateState(
 			Map<ByteBuffer, Map<ByteBuffer, ByteBuffer>> state,

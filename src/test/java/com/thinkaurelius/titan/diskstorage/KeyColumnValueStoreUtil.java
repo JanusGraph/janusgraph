@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
@@ -10,13 +10,13 @@ import java.util.Arrays;
 
 public class KeyColumnValueStoreUtil {
 
-	public static void delete(KeyColumnValueStore store, TransactionHandle txn, long key, String col) throws StorageException {
+	public static void delete(KeyColumnValueStore store, StoreTransactionHandle txn, long key, String col) throws StorageException {
 		ByteBuffer k = longToByteBuffer(key);
 		ByteBuffer c = stringToByteBuffer(col);
 		store.mutate(k, null, Arrays.asList(c), txn);
 	}
 	
-	public static String get(KeyColumnValueStore store, TransactionHandle txn, long key, String col) throws StorageException {
+	public static String get(KeyColumnValueStore store, StoreTransactionHandle txn, long key, String col) throws StorageException {
 		ByteBuffer k = longToByteBuffer(key);
 		ByteBuffer c = stringToByteBuffer(col);
 		ByteBuffer valBytes = store.get(k, c, txn);
@@ -25,7 +25,7 @@ public class KeyColumnValueStoreUtil {
 		return byteBufferToString(valBytes);
 	}
 	
-	public static void insert(KeyColumnValueStore store, TransactionHandle txn, long key, String col, String val) throws StorageException {
+	public static void insert(KeyColumnValueStore store, StoreTransactionHandle txn, long key, String col, String val) throws StorageException {
 		ByteBuffer k = longToByteBuffer(key);
 		ByteBuffer c = stringToByteBuffer(col);
 		ByteBuffer v = stringToByteBuffer(val);

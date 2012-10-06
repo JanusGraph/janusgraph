@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.testutil;
 
+import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +12,6 @@ import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
-import com.thinkaurelius.titan.diskstorage.astyanax.AstyanaxStorageManager;
 
 public class CassandraUtil {
 	

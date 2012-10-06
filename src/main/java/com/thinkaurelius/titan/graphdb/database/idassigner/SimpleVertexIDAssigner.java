@@ -6,7 +6,6 @@ import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;

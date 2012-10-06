@@ -1,15 +1,15 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.apache.commons.configuration.Configuration;
 
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
 
 public class ExternalHBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
 
-    public StorageManager openStorageManager() throws StorageException {
+    public KeyColumnValueStoreManager openStorageManager() throws StorageException {
         return new HBaseStorageManager(getConfig());
     }
 	

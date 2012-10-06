@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanQuery;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.RelationLoader;
@@ -25,7 +25,7 @@ public interface InternalTitanTransaction extends TitanTransaction {
 	 * Returns the storage backend transaction handle issued to this transaction
 	 * @return The storage backend transaction handle issued to this transaction
 	 */
-	TransactionHandle getTxHandle();
+	StoreTransactionHandle getTxHandle();
 
     /**
      * Returns the configuration used by this graph transaction

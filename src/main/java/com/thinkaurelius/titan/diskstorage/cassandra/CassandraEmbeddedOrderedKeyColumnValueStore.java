@@ -10,6 +10,14 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.MultiWriteKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LockConfig;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.ColumnFamily;
 import org.apache.cassandra.db.IColumn;
@@ -28,14 +36,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
-import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 
 public class CassandraEmbeddedOrderedKeyColumnValueStore 
-	implements OrderedKeyColumnValueStore, MultiWriteKeyColumnValueStore {
+	implements KeyColumnValueStore, MultiWriteKeyColumnValueStore {
 		
 	private final String keyspace;
 	private final String columnFamily;
@@ -68,7 +73,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
         this.requestScheduler = DatabaseDescriptor.getRequestScheduler();
 		
 		if (null != llm && null != lockStore) {
-			this.internals = new SimpleLockConfig(this, lockStore, llm,
+			this.internals = new ConsistentKeyLockStore(this, lockStore, llm,
 					rid, lockRetryCount, lockWaitMS, lockExpireMS);
 		} else {
 			this.internals = null;
@@ -82,7 +87,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
 	@Override
 	public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) throws StorageException {
+			StoreTransactionHandle txh) throws StorageException {
 		
 		QueryPath slicePath = new QueryPath(columnFamily);
 
@@ -128,7 +133,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
 	@Override
 	public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) throws StorageException {
+			StoreTransactionHandle txh) throws StorageException {
 		return null != get(key, column, txh);
 	}
 
@@ -139,13 +144,13 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
 	@Override
 	public void mutate(ByteBuffer key, List<Entry> additions,
-			List<ByteBuffer> deletions, TransactionHandle txh) throws StorageException {
+			List<ByteBuffer> deletions, StoreTransactionHandle txh) throws StorageException {
 
-    	Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations =
-    			new HashMap<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation>(1);
+    	Map<ByteBuffer, Mutation> mutations =
+    			new HashMap<ByteBuffer, Mutation>(1);
     	
-    	com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation m = new
-    			com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation(additions, deletions);
+    	Mutation m = new
+                Mutation(additions, deletions);
     	
     	mutations.put(key, m);
     	
@@ -154,7 +159,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
 	@Override
 	public void acquireLock(ByteBuffer key, ByteBuffer column,
-			ByteBuffer expectedValue, TransactionHandle txh) throws StorageException {
+			ByteBuffer expectedValue, StoreTransactionHandle txh) throws StorageException {
 		
 		CassandraETransaction ctxh = (CassandraETransaction)txh;
 		if (ctxh.isMutationStarted()) {
@@ -165,7 +170,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 	}
 
 	@Override
-	public boolean containsKey(ByteBuffer key, TransactionHandle txh) throws StorageException {
+	public boolean containsKey(ByteBuffer key, StoreTransactionHandle txh) throws StorageException {
 		
 		QueryPath slicePath = new QueryPath(columnFamily);
         ReadCommand sliceCmd = new SliceFromReadCommand(
@@ -208,7 +213,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, int limit, TransactionHandle txh) throws StorageException {
+			ByteBuffer columnEnd, int limit, StoreTransactionHandle txh) throws StorageException {
 
 		QueryPath slicePath = new QueryPath(columnFamily);
         ReadCommand sliceCmd = new SliceFromReadCommand(
@@ -253,7 +258,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, TransactionHandle txh) throws StorageException {
+			ByteBuffer columnEnd, StoreTransactionHandle txh) throws StorageException {
 		return getSlice(key, columnStart, columnEnd, Integer.MAX_VALUE, txh);
 	}
 
@@ -265,7 +270,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 	 */
 	@Override
 	public void mutateMany(Map<ByteBuffer, Mutation> mutations,
-			TransactionHandle txh) throws StorageException {
+			StoreTransactionHandle txh) throws StorageException {
     	if (null == mutations)
     		return;
 
@@ -281,8 +286,8 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
     		}
     	}
     	
-		long deletionTimestamp = TimestampProvider.getApproxNSSinceEpoch(false);
-		long additionTimestamp = TimestampProvider.getApproxNSSinceEpoch(true);
+		long deletionTimestamp = TimeUtility.getApproxNSSinceEpoch(false);
+		long additionTimestamp = TimeUtility.getApproxNSSinceEpoch(true);
 		
 		List<RowMutation> commands = new ArrayList<RowMutation>(mutations.size());
 		
@@ -334,7 +339,7 @@ public class CassandraEmbeddedOrderedKeyColumnValueStore
 		}
 	}
 	
-	private ConsistencyLevel getConsistencyLevel(TransactionHandle txh, Operation op) {
+	private ConsistencyLevel getConsistencyLevel(StoreTransactionHandle txh, Operation op) {
 		
 		if (null == txh) {
 			return ConsistencyLevel.QUORUM;

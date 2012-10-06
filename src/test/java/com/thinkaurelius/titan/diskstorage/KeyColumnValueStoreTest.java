@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
 
-import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.diskstorage.util.KeyValueStorageManagerAdapter;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.ScanKeyValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Assert;
@@ -27,9 +24,9 @@ public abstract class KeyColumnValueStoreTest {
 
     protected String storeName = "testStore1";
 	
-	public StorageManager manager;
-	public TransactionHandle tx;
-	public OrderedKeyColumnValueStore store;
+	public KeyColumnValueStoreManager manager;
+	public StoreTransactionHandle tx;
+	public KeyColumnValueStore store;
 	
 	@Before
 	public void setUp() throws Exception {
@@ -37,7 +34,7 @@ public abstract class KeyColumnValueStoreTest {
         open();
 	}
 
-    public abstract StorageManager openStorageManager() throws StorageException;
+    public abstract KeyColumnValueStoreManager openStorageManager() throws StorageException;
 
 	public void open() throws StorageException {
         manager = openStorageManager();
@@ -280,7 +277,7 @@ public abstract class KeyColumnValueStoreTest {
 
 	@Test
 	public void getNonExistentKeyReturnsNull() throws Exception {
-		TransactionHandle txn = manager.beginTransaction();
+		StoreTransactionHandle txn = manager.beginTransaction();
 		assertEquals(null, KeyColumnValueStoreUtil.get(store, txn, 0, "col0"));
 		assertEquals(null, KeyColumnValueStoreUtil.get(store, txn, 0, "col1"));
 		txn.commit();
@@ -288,7 +285,7 @@ public abstract class KeyColumnValueStoreTest {
 	
 	@Test
 	public void insertingGettingAndDeletingSimpleDataWorks() throws Exception {
-		TransactionHandle txn = manager.beginTransaction();
+		StoreTransactionHandle txn = manager.beginTransaction();
 		KeyColumnValueStoreUtil.insert(store, txn, 0, "col0", "val0");
 		KeyColumnValueStoreUtil.insert(store, txn, 0, "col1", "val1");
 		txn.commit();
@@ -312,7 +309,7 @@ public abstract class KeyColumnValueStoreTest {
 //		CassandraThriftOrderedKeyColumnValueStore store =
 //			manager.openDatabase(dbName);
 //		
-//		TransactionHandle txn = manager.beginTransaction();
+//		StoreTransactionHandle txn = manager.beginTransaction();
 //		KeyColumnValueStoreUtil.insert(store, txn, "key0", "col0", "val0");
 //		KeyColumnValueStoreUtil.insert(store, txn, "key0", "col1", "val1");
 //		txn.commit();
@@ -337,7 +334,7 @@ public abstract class KeyColumnValueStoreTest {
 
 	@Test
 	public void getSliceRespectsColumnLimit() throws Exception {
-		TransactionHandle txn = manager.beginTransaction();
+		StoreTransactionHandle txn = manager.beginTransaction();
 		ByteBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(0);
 		
 		final int cols = 1024;
@@ -393,7 +390,7 @@ public abstract class KeyColumnValueStoreTest {
 		ByteBuffer columnAfterEnd = KeyColumnValueStoreUtil.longToByteBuffer(779);
 		
 		// First insert four test Entries
-		TransactionHandle txn = manager.beginTransaction();
+		StoreTransactionHandle txn = manager.beginTransaction();
 		List<Entry> entries = Arrays.asList(
 				new Entry(columnBeforeStart, columnBeforeStart),
 				new Entry(columnStart, columnStart),
@@ -415,7 +412,7 @@ public abstract class KeyColumnValueStoreTest {
     @Test
     public void containsKeyReturnsTrueOnExtantKey() throws Exception {
         ByteBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
-        TransactionHandle txn = manager.beginTransaction();
+        StoreTransactionHandle txn = manager.beginTransaction();
         assertFalse(store.containsKey(key1.duplicate(), txn));
         KeyColumnValueStoreUtil.insert(store, txn, 1, "c", "v");
         txn.commit();
@@ -428,7 +425,7 @@ public abstract class KeyColumnValueStoreTest {
 	
 	@Test
 	public void containsKeyReturnsFalseOnNonexistentKey() throws Exception {
-        TransactionHandle txn = manager.beginTransaction();
+        StoreTransactionHandle txn = manager.beginTransaction();
         ByteBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
         assertFalse(store.containsKey(key1.duplicate(), txn));
         txn.commit();
@@ -438,7 +435,7 @@ public abstract class KeyColumnValueStoreTest {
 	
 	@Test
 	public void containsKeyColumnReturnsFalseOnNonexistentInput() throws Exception {
-		TransactionHandle txn = manager.beginTransaction();
+		StoreTransactionHandle txn = manager.beginTransaction();
 		ByteBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
 		ByteBuffer c = KeyColumnValueStoreUtil.stringToByteBuffer("c");
 		assertFalse(store.containsKeyColumn(key1.duplicate(), c.duplicate(), txn));
@@ -447,7 +444,7 @@ public abstract class KeyColumnValueStoreTest {
 	
 	@Test
 	public void containsKeyColumnReturnsTrueOnExtantInput() throws Exception {
-		TransactionHandle txn = manager.beginTransaction();
+		StoreTransactionHandle txn = manager.beginTransaction();
 		KeyColumnValueStoreUtil.insert(store, txn, 1, "c", "v");
 		txn.commit();
 

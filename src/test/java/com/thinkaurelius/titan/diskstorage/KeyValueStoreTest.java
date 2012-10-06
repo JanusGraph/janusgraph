@@ -1,7 +1,12 @@
 package com.thinkaurelius.titan.diskstorage;
 
 
-import com.thinkaurelius.titan.diskstorage.util.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.ScanKeyValueStore;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -25,9 +30,9 @@ public abstract class KeyValueStoreTest {
     private String storeName = "testStore1";
 
 	
-	protected KeyValueStorageManager manager;
-	protected TransactionHandle tx;
-	protected OrderedKeyValueStore store;
+	protected KeyValueStoreManager manager;
+	protected StoreTransactionHandle tx;
+	protected KeyValueStore store;
 	
 	@Before
 	public void setUp() throws Exception {
@@ -41,7 +46,7 @@ public abstract class KeyValueStoreTest {
         store = manager.openDatabase(storeName);
     }
 
-    public abstract KeyValueStorageManager openStorageManager() throws StorageException;
+    public abstract KeyValueStoreManager openStorageManager() throws StorageException;
 	
 	@After
 	public void tearDown() throws Exception {

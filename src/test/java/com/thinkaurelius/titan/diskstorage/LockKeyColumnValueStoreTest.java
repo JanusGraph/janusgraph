@@ -1,7 +1,11 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
@@ -10,6 +14,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import com.thinkaurelius.titan.diskstorage.locking.LockingException;
+import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.After;
 import org.junit.Before;
@@ -19,9 +25,9 @@ import static org.junit.Assert.*;
 
 public abstract class LockKeyColumnValueStoreTest {
 
-	public StorageManager manager1, manager2;
-	public TransactionHandle host1tx1, host1tx2, host2tx1;
-	public OrderedKeyColumnValueStore store1, store2;
+	public KeyColumnValueStoreManager manager1, manager2;
+	public StoreTransactionHandle host1tx1, host1tx2, host2tx1;
+	public KeyColumnValueStore store1, store2;
 	public static final String dbName = "test";
     
 	protected final byte[] rid1 = new byte[] { 'a' };
@@ -49,7 +55,7 @@ public abstract class LockKeyColumnValueStoreTest {
 		return b;
 	}
 
-    public abstract StorageManager openStorageManager(short hostIndex) throws StorageException;
+    public abstract KeyColumnValueStoreManager openStorageManager(short hostIndex) throws StorageException;
 
     public void open() throws StorageException {
         manager1 = openStorageManager((short)1);
@@ -231,9 +237,9 @@ public abstract class LockKeyColumnValueStoreTest {
 		}
 	}
 	
-	private void tryWrites(OrderedKeyColumnValueStore store1, StorageManager checkmgr,
-			TransactionHandle tx1, OrderedKeyColumnValueStore store2,
-			TransactionHandle tx2) throws StorageException {
+	private void tryWrites(KeyColumnValueStore store1, KeyColumnValueStoreManager checkmgr,
+			StoreTransactionHandle tx1, KeyColumnValueStore store2,
+			StoreTransactionHandle tx2) throws StorageException {
 		assertNull(store1.get(k, c1, tx1));
 		assertNull(store2.get(k, c2, tx2));
 		
@@ -247,15 +253,15 @@ public abstract class LockKeyColumnValueStoreTest {
 		if (tx2 != tx1)
 			tx2.commit();
 		
-		TransactionHandle checktx = checkmgr.beginTransaction();
+		StoreTransactionHandle checktx = checkmgr.beginTransaction();
 		assertEquals(v1, store1.get(k, c1, checktx));
 		assertEquals(v2, store1.get(k, c2, checktx));
 		checktx.commit();
 	}
 	
-	private void tryLocks(OrderedKeyColumnValueStore s1,
-			TransactionHandle tx1, OrderedKeyColumnValueStore s2,
-			TransactionHandle tx2, boolean detectLocally) throws StorageException, InterruptedException {
+	private void tryLocks(KeyColumnValueStore s1,
+			StoreTransactionHandle tx1, KeyColumnValueStore s2,
+			StoreTransactionHandle tx2, boolean detectLocally) throws StorageException, InterruptedException {
 		
 		s1.acquireLock(k, k, null, tx1);
 		
@@ -295,7 +301,7 @@ public abstract class LockKeyColumnValueStoreTest {
         Thread[] threads = new Thread[numThreads];
         for (int i=0;i<numThreads;i++) {
             Preconditions.checkArgument(i==0 || i==1);
-            final StorageManager manager = i==0?manager1:manager2;
+            final KeyColumnValueStoreManager manager = i==0?manager1:manager2;
             threads[i] = new Thread(new Runnable(){
                 
                 @Override

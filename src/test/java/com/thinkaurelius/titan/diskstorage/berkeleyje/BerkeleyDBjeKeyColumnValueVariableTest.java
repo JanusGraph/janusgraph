@@ -3,18 +3,18 @@ package com.thinkaurelius.titan.diskstorage.berkeleyje;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
-import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageManager;
-import com.thinkaurelius.titan.diskstorage.util.KeyValueStorageManagerAdapter;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManagerAdapter;
 import org.apache.commons.configuration.Configuration;
 
 
 public class BerkeleyDBjeKeyColumnValueVariableTest extends KeyColumnValueStoreTest {
 
-    public StorageManager openStorageManager() throws StorageException {
+    public KeyColumnValueStoreManager openStorageManager() throws StorageException {
         Configuration config = StorageSetup.getBerkeleyJEStorageConfiguration();
-		BerkeleyJEStorageManager sm = new BerkeleyJEStorageManager(config);
-		return new KeyValueStorageManagerAdapter(sm,config);
+		BerkeleyJEStoreManager sm = new BerkeleyJEStoreManager(config);
+		return new KeyValueStoreManagerAdapter(sm,config);
 	}
 
 }

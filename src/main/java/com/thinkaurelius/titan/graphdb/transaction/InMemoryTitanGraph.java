@@ -4,8 +4,8 @@ import cern.colt.list.AbstractLongList;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
@@ -87,7 +87,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 	}
 	
 	@Override
-	public TransactionHandle getTxHandle() {
+	public StoreTransactionHandle getTxHandle() {
 		throw new UnsupportedOperationException("InMemory Transactions do not have transaction handles");
 	}
 

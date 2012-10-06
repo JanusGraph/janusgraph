@@ -5,6 +5,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.idmanagement.OrderedKeyColumnValueIDManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.ConfigurationException;
@@ -19,13 +24,12 @@ import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
-import com.thinkaurelius.titan.diskstorage.util.OrderedKeyColumnValueIDManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
-public class CassandraEmbeddedStorageManager implements StorageManager {
+public class CassandraEmbeddedStorageManager implements KeyColumnValueStoreManager {
 
 	private final String keyspace;
 
@@ -92,18 +96,18 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
 		this.rid = ConfigHelper.getRid(config);
 		
 		this.keyspace = config.getString(
-				CassandraThriftStorageManager.KEYSPACE_KEY,
-				CassandraThriftStorageManager.KEYSPACE_DEFAULT);
+				AbstractCassandraStoreManager.KEYSPACE_KEY,
+				AbstractCassandraStoreManager.KEYSPACE_DEFAULT);
 				
 		this.llmPrefix =
 				config.getString(
-						LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
+						ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
 						getClass().getName());
 		
 		this.replicationFactor = 
 				config.getInt(
-						CassandraThriftStorageManager.REPLICATION_FACTOR_KEY,
-						CassandraThriftStorageManager.REPLICATION_FACTOR_DEFAULT);
+						AbstractCassandraStoreManager.REPLICATION_FACTOR_KEY,
+						AbstractCassandraStoreManager.REPLICATION_FACTOR_DEFAULT);
 		
 		this.lockRetryCount =
 				config.getInt(
@@ -156,7 +160,7 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
 	}
 
 	@Override
-	public OrderedKeyColumnValueStore openDatabase(String name)
+	public KeyColumnValueStore openDatabase(String name)
 			throws StorageException {
 		
 		CassandraEmbeddedOrderedKeyColumnValueStore lockStore =
@@ -169,7 +173,7 @@ public class CassandraEmbeddedStorageManager implements StorageManager {
 	}
 
 	@Override
-	public TransactionHandle beginTransaction() throws StorageException {
+	public StoreTransactionHandle beginTransaction() throws StorageException {
 		return new CassandraETransaction();
 	}
 

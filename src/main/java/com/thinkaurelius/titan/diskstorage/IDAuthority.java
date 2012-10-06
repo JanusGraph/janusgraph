@@ -22,6 +22,15 @@ public interface IDAuthority {
     public long[] getIDBlock(int partition) throws StorageException;
 
     /**
+     * Returns the smallest not yet allocated id for the given partition
+     *
+     * @param partition
+     * @return
+     * @throws StorageException
+     */
+    public long peekNextID(int partition) throws StorageException;
+
+    /**
      * Sets the {@link IDBlockSizer} to be used by this IDAuthority. The IDBlockSizer specifies the block size for 
      * each partition guaranteeing that the same partition will always be assigned the same block size.
      * 
@@ -30,5 +39,7 @@ public interface IDAuthority {
      * @param sizer The IDBlockSizer to be used by this IDAuthority
      */
     public void setIDBlockSizer(IDBlockSizer sizer);
+    
+    
 
 }

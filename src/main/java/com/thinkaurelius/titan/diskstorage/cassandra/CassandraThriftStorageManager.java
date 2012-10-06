@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.idmanagement.OrderedKeyColumnValueIDManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.CfDef;
@@ -19,14 +22,11 @@ import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnection;
-import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionFactory;
-import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.CTConnectionPool;
-import com.thinkaurelius.titan.diskstorage.cassandra.thriftpool.UncheckedGenericKeyedObjectPool;
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.UncheckedGenericKeyedObjectPool;
 import com.thinkaurelius.titan.diskstorage.util.ConfigHelper;
-import com.thinkaurelius.titan.diskstorage.util.OrderedKeyColumnValueIDManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
@@ -37,7 +37,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  * @author Dan LaRocque <dalaro@hopcount.org>
  * 
  */
-public class CassandraThriftStorageManager implements StorageManager {
+public class CassandraThriftStorageManager extends AbstractCassandraStoreManager {
 
     private static final Logger log =
             LoggerFactory.getLogger(CassandraThriftStorageManager.class);
@@ -46,40 +46,6 @@ public class CassandraThriftStorageManager implements StorageManager {
     
     public static ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore> stores =
     		new ConcurrentHashMap<String, CassandraThriftOrderedKeyColumnValueStore>();
-    
-    /**
-     * Default name for the Cassandra keyspace
-     * <p>
-     * Value = {@value}
-     */
-    public static final String KEYSPACE_DEFAULT = "titan";
-    public static final String KEYSPACE_KEY = "keyspace";
-
-
-    /**
-     * Default hostname at which to attempt Cassandra Thrift connection.
-     * <p>
-     * Value = {@value}
-     */
-    public static final String HOSTNAME_DEFAULT = "127.0.0.1";
-
-
-    /**
-     * Default timeout for Thrift TSocket objects used to
-     * connect to the Cassandra cluster.
-     * <p>
-     * Value = {@value}
-     */
-    public static final int THRIFT_TIMEOUT_DEFAULT = 10000;
-    public static final String THRIFT_TIMEOUT_KEY = "thrift-timeout";
-
-    /**
-     * Default port at which to attempt Cassandra Thrift connection.
-     * <p>
-     * Value = {@value}
-     */
-    public static final int PORT_DEFAULT = 9160;
-
 
 
     /**
@@ -88,27 +54,8 @@ public class CassandraThriftStorageManager implements StorageManager {
      * Value = {@value}
      */
     public static final String idCfName = "id_allocations";
-    
-    public static final String READ_CONSISTENCY_LEVEL_KEY = "read-consistency-level";
-    public static final String READ_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
-    
-    public static final String WRITE_CONSISTENCY_LEVEL_KEY = "write-consistency-level";
-    /*
-     * Any operation attempted with ConsistencyLevel.TWO
-     * against a single-node Cassandra cluster (like the one
-     * we use in a lot of our test cases) will fail with
-     * an UnavailableException.  In other words, if you
-     * set TWO here, Cassandra will require TWO nodes, even
-     * if only one node has ever been a member of the
-     * cluster in question.
-     */
-    public static final String WRITE_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
-    
-    public static final String REPLICATION_FACTOR_KEY = "replication-factor";
-    public static final int REPLICATION_FACTOR_DEFAULT  = 1;
 
-	private final String keyspace;
-	
+
 	private final UncheckedGenericKeyedObjectPool
 			<String, CTConnection> pool;
 
@@ -122,69 +69,21 @@ public class CassandraThriftStorageManager implements StorageManager {
     private final ConsistencyLevel writeConsistencyLevel;
     
     private final String llmPrefix;
-    
-    private final byte[] rid;
-    
-    private final String hostname;
-    private final int port;
-    
-    private final int replicationFactor;
 
-	private final StorageFeatures features;
 
 	public CassandraThriftStorageManager(Configuration config) throws StorageException {
-		
-		this.rid = ConfigHelper.getRid(config);
-		
-		this.keyspace = config.getString(KEYSPACE_KEY, KEYSPACE_DEFAULT);
-		
-		this.hostname = config.getString(HOSTNAME_KEY, HOSTNAME_DEFAULT);
-		this.port = config.getInt(PORT_KEY, PORT_DEFAULT);
+		super(config);
+
 		
 		this.pool = CTConnectionPool.getPool(
 				hostname,
 				port,
-				config.getInt(THRIFT_TIMEOUT_KEY, THRIFT_TIMEOUT_DEFAULT));
+				config.getInt(GraphDatabaseConfiguration.COMMUNICATION_TIMEOUT_KEY, GraphDatabaseConfiguration.COMMUNICATION_TIMEOUT_DEFAULT));
 		
-		this.llmPrefix =
-				config.getString(
-						LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
-						getClass().getName());
-		
-		this.replicationFactor = 
-				config.getInt(
-						REPLICATION_FACTOR_KEY,
-						REPLICATION_FACTOR_DEFAULT);
-		
-		this.lockRetryCount =
-				config.getInt(
-						GraphDatabaseConfiguration.LOCK_RETRY_COUNT,
-						GraphDatabaseConfiguration.LOCK_RETRY_COUNT_DEFAULT);
-		
-		this.lockWaitMS =
-				config.getLong(
-						GraphDatabaseConfiguration.LOCK_WAIT_MS,
-						GraphDatabaseConfiguration.LOCK_WAIT_MS_DEFAULT);
-		
-		this.lockExpireMS =
-				config.getLong(
-						GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
-						GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
-		
-		this.readConsistencyLevel = ConsistencyLevel.valueOf(
-				config.getString(
-						READ_CONSISTENCY_LEVEL_KEY,
-						READ_CONSISTENCY_LEVEL_DEFAULT));
-		
-		log.debug("Set read consistency level to {}", this.readConsistencyLevel);
-		
-		this.writeConsistencyLevel = ConsistencyLevel.valueOf(
-				config.getString(
-						WRITE_CONSISTENCY_LEVEL_KEY,
-						WRITE_CONSISTENCY_LEVEL_DEFAULT));
-		
-		log.debug("Set write consistency level to {}", this.writeConsistencyLevel);
-		
+
+
+
+
         idmanager = new OrderedKeyColumnValueIDManager(
         		openDatabase("titan_ids", keyspace, null, null), rid, config);
 
@@ -207,7 +106,7 @@ public class CassandraThriftStorageManager implements StorageManager {
     }
 
 	@Override
-	public TransactionHandle beginTransaction() {
+	public StoreTransactionHandle beginTransaction() {
 		return new CassandraTransaction();
 	}
 
@@ -222,7 +121,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 		
 		CassandraThriftOrderedKeyColumnValueStore lockStore =
 				openDatabase(name + "_locks", keyspace, null, null);
-		LocalLockMediator llm = LocalLockMediators.INSTANCE.get(llmPrefix + ":" + name);
+
 		CassandraThriftOrderedKeyColumnValueStore dataStore =
 				openDatabase(name, keyspace, lockStore, llm);
 		
@@ -300,14 +199,14 @@ public class CassandraThriftStorageManager implements StorageManager {
 	public void clearStorage() throws StorageException {
 		CTConnection conn = null;
 		try {
-			conn = CTConnectionPool.getFactory(hostname, port, THRIFT_TIMEOUT_DEFAULT).makeRawConnection();
+			conn = CTConnectionPool.getFactory(hostname, port, GraphDatabaseConfiguration.COMMUNICATION_TIMEOUT_DEFAULT).makeRawConnection();
 
 			Cassandra.Client client = conn.getClient();
 			
 			try {
                 stores.clear();
 
-				CTConnectionPool.getPool(hostname, port, THRIFT_TIMEOUT_DEFAULT).clear(keyspace);
+				CTConnectionPool.getPool(hostname, port, GraphDatabaseConfiguration.COMMUNICATION_TIMEOUT_DEFAULT).clear(keyspace);
                 
 				client.describe_keyspace(keyspace);
 				// Keyspace must exist
@@ -335,7 +234,7 @@ public class CassandraThriftStorageManager implements StorageManager {
 			SchemaDisagreementException, StorageException {
 		
 		CTConnectionFactory fac = 
-				CTConnectionPool.getFactory(hostname, port, THRIFT_TIMEOUT_DEFAULT);
+				CTConnectionPool.getFactory(hostname, port, GraphDatabaseConfiguration.COMMUNICATION_TIMEOUT_DEFAULT);
 		
 		CTConnection conn = fac.makeRawConnection();
 		Cassandra.Client client = conn.getClient();
@@ -410,4 +309,18 @@ public class CassandraThriftStorageManager implements StorageManager {
 	public String toString() {
 		return "CassandraThriftStorageManager[ks=" + keyspace + "]";
 	}
+
+    static com.netflix.astyanax.model.ConsistencyLevel getConsistency(CassandraTransaction.Consistency consistency) {
+        switch (consistency) {
+            case ONE: return com.netflix.astyanax.model.ConsistencyLevel.CL_ONE;
+            case TWO: return com.netflix.astyanax.model.ConsistencyLevel.CL_TWO;
+            case THREE: return com.netflix.astyanax.model.ConsistencyLevel.CL_THREE;
+            case ANY: return com.netflix.astyanax.model.ConsistencyLevel.CL_ANY;
+            case ALL: return com.netflix.astyanax.model.ConsistencyLevel.CL_ALL;
+            case QUORUM: return com.netflix.astyanax.model.ConsistencyLevel.CL_QUORUM;
+            case LOCAL_QUORUM: return com.netflix.astyanax.model.ConsistencyLevel.CL_LOCAL_QUORUM;
+            case EACH_QUORUM: return com.netflix.astyanax.model.ConsistencyLevel.CL_EACH_QUORUM;
+            default: throw new IllegalArgumentException("Unknown consistency level: " + consistency);
+        }
+    }
 }

@@ -9,6 +9,14 @@ import java.util.List;
 import java.util.Map;
 
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.MultiWriteKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LockConfig;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Delete;
@@ -26,9 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
-import com.thinkaurelius.titan.diskstorage.util.SimpleLockConfig;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
 
 /**
  * Experimental HBase store.
@@ -49,7 +55,7 @@ import com.thinkaurelius.titan.diskstorage.writeaggregation.MultiWriteKeyColumnV
  * There may be other problem areas.  These are just the ones of which I'm aware.
  */
 public class HBaseOrderedKeyColumnValueStore implements
-		OrderedKeyColumnValueStore, MultiWriteKeyColumnValueStore {
+        KeyColumnValueStore, MultiWriteKeyColumnValueStore {
 	
 	private static final Logger log = LoggerFactory.getLogger(HBaseOrderedKeyColumnValueStore.class);
 	
@@ -63,7 +69,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 	private final byte[] famBytes;
 	
 	HBaseOrderedKeyColumnValueStore(Configuration config, String tableName,
-			String columnFamily, OrderedKeyColumnValueStore lockStore,
+			String columnFamily, KeyColumnValueStore lockStore,
 			LocalLockMediator llm, byte[] rid, int lockRetryCount,
 			long lockWaitMS, long lockExpireMS) {
 //		this.config = config;
@@ -74,7 +80,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 		this.famBytes = columnFamily.getBytes();
 		
 		if (null != llm && null != lockStore) {
-			this.internals = new SimpleLockConfig(this, lockStore, llm,
+			this.internals = new ConsistentKeyLockStore(this, lockStore, llm,
 					rid, lockRetryCount, lockWaitMS, lockExpireMS);
 		} else {
 			this.internals = null;
@@ -92,7 +98,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 
 	@Override
 	public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) throws StorageException {
+			StoreTransactionHandle txh) throws StorageException {
 		
 		byte[] keyBytes = toArray(key);
 		byte[] colBytes = toArray(column);
@@ -139,7 +145,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 
 	@Override
 	public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-			TransactionHandle txh) throws StorageException {
+			StoreTransactionHandle txh) throws StorageException {
 		return null != get(key, column, txh);
 	}
 
@@ -150,7 +156,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 	}
 
 	@Override
-	public boolean containsKey(ByteBuffer key, TransactionHandle txh) throws StorageException {
+	public boolean containsKey(ByteBuffer key, StoreTransactionHandle txh) throws StorageException {
 		
 		byte[] keyBytes = toArray(key);
 		
@@ -173,7 +179,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, int limit, TransactionHandle txh) throws StorageException {
+			ByteBuffer columnEnd, int limit, StoreTransactionHandle txh) throws StorageException {
 
 		byte[] colStartBytes = columnEnd.hasRemaining() ? toArray(columnStart) : null;
 		byte[] colEndBytes = columnEnd.hasRemaining() ? toArray(columnEnd) : null;
@@ -189,7 +195,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, TransactionHandle txh) throws StorageException {
+			ByteBuffer columnEnd, StoreTransactionHandle txh) throws StorageException {
 
 		byte[] colStartBytes = columnEnd.hasRemaining() ? toArray(columnStart) : null;
 		byte[] colEndBytes = columnEnd.hasRemaining() ? toArray(columnEnd) : null;
@@ -276,9 +282,9 @@ public class HBaseOrderedKeyColumnValueStore implements
 
 	@Override
 	public void mutate(ByteBuffer key, List<Entry> additions,
-			List<ByteBuffer> deletions, TransactionHandle txh) throws StorageException {
+			List<ByteBuffer> deletions, StoreTransactionHandle txh) throws StorageException {
 		
-    	// null txh means a LockingTransactionHandle is calling this method
+    	// null txh means a ConsistentKeyLockTransaction is calling this method
     	if (null != txh) {
     		// non-null txh -> make sure locks are valid
     		HBaseTransaction lt = (HBaseTransaction)txh;
@@ -348,10 +354,10 @@ public class HBaseOrderedKeyColumnValueStore implements
 
 	@Override
 	public void mutateMany(
-			Map<ByteBuffer, com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation> mutations,
-			TransactionHandle txh) throws StorageException {
+			Map<ByteBuffer, Mutation> mutations,
+			StoreTransactionHandle txh) throws StorageException {
 		
-    	// null txh means a LockingTransactionHandle is calling this method
+    	// null txh means a ConsistentKeyLockTransaction is calling this method
     	if (null != txh) {
     		// non-null txh -> make sure locks are valid
     		HBaseTransaction lt = (HBaseTransaction)txh;
@@ -374,7 +380,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 		for (ByteBuffer keyBB : mutations.keySet()) {
 			byte[] keyBytes = toArray(keyBB);
 			
-			com.thinkaurelius.titan.diskstorage.writeaggregation.Mutation m = mutations.get(keyBB);
+			Mutation m = mutations.get(keyBB);
 			
 			if (m.hasDeletions()) {
 				Delete d = dels.get(keyBytes);
@@ -437,7 +443,7 @@ public class HBaseOrderedKeyColumnValueStore implements
 
 	@Override
 	public void acquireLock(ByteBuffer key, ByteBuffer column,
-			ByteBuffer expectedValue, TransactionHandle txh) throws StorageException {
+			ByteBuffer expectedValue, StoreTransactionHandle txh) throws StorageException {
 		HBaseTransaction lt = (HBaseTransaction)txh;
 		if (lt.isMutationStarted()) {
 			throw new PermanentLockingException("Attempted to obtain a lock after one or more mutations");

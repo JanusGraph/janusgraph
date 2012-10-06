@@ -4,11 +4,13 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.OrderedKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.EdgeStore;
+import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStorageManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
-import com.thinkaurelius.titan.diskstorage.astyanax.AstyanaxStorageManager;
-import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageAdapter;
+import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStoreAdapter;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraEmbeddedStorageManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStorageManager;
@@ -53,9 +55,9 @@ public class GraphDatabaseConfiguration {
 	private static final Logger log =
 		LoggerFactory.getLogger(GraphDatabaseConfiguration.class);
 
-    private static final Map<String,Class<? extends StorageManager>> preregisteredStorageManagers = new HashMap<String,Class<? extends StorageManager>>() {{
-        put("local", BerkeleyJEStorageAdapter.class);
-        put("berkeleyje", BerkeleyJEStorageAdapter.class);
+    private static final Map<String,Class<? extends KeyColumnValueStoreManager>> preregisteredStorageManagers = new HashMap<String,Class<? extends KeyColumnValueStoreManager>>() {{
+        put("local", BerkeleyJEStoreAdapter.class);
+        put("berkeleyje", BerkeleyJEStoreAdapter.class);
         put("cassandra", AstyanaxStorageManager.class);
         put("cassandrathrift", CassandraThriftStorageManager.class);
         put("astyanax", AstyanaxStorageManager.class);
@@ -223,8 +225,34 @@ public class GraphDatabaseConfiguration {
      */
     public static final String STORAGE_EDGESTORE_NAME = "edgestore";
     public static final String STORAGE_PROPERTYINDEX_NAME = "propertyindex";
-    
-    
+    /**
+     * Configuration key for the hostname or list of hostname of remote storage backend servers to connect to.
+     * <p>
+     * Value = {@value}
+     */
+    public static final String HOSTNAME_KEY = "hostname";
+    /**
+     * Default hostname at which to attempt connecting to remote storage backend
+     * <p>
+     * Value = {@value}
+     */
+    public static final String HOSTNAME_DEFAULT = "127.0.0.1";
+    /**
+     * Configuration key for the port on which to connect to remote storage backend servers.
+     * <p>
+     * Value = {@value}
+     */
+    public static final String PORT_KEY = "port";
+    /**
+     * Default timeout for Thrift TSocket objects used to
+     * connect to the Cassandra cluster.
+     * <p>
+     * Value = {@value}
+     */
+    public static final int COMMUNICATION_TIMEOUT_DEFAULT = 10000;
+    public static final String COMMUNICATION_TIMEOUT_KEY = "communication-timeout";
+
+
     private final Configuration configuration;
     
     private boolean readOnly;
@@ -365,7 +393,7 @@ public class GraphDatabaseConfiguration {
         return all;
     }
 
-	public VertexIDAssigner getIDAssigner(StorageManager storage) {
+	public VertexIDAssigner getIDAssigner(EdgeStore storage) {
         IDManager idmanager = new IDManager();
 		return new SimpleVertexIDAssigner(idmanager, storage,
                 configuration.getInt(ID_RANDOMIZER_BITS_KEY,ID_RANDOMIZER_BITS_DEFAULT),
@@ -374,19 +402,21 @@ public class GraphDatabaseConfiguration {
                         GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_DEFAULT));
 	}
 
-    public String getStorageManagerDescription() {
+    public String getBackendDescription() {
         Configuration storageconfig = configuration.subset(STORAGE_NAMESPACE);
         String clazzname = storageconfig.getString(STORAGE_BACKEND_KEY,STORAGE_BACKEND_DEFAULT);
-        if (storageconfig.containsKey(StorageManager.HOSTNAME_KEY)) {
-            return clazzname + ":" + storageconfig.getString(StorageManager.HOSTNAME_KEY);
+        if (storageconfig.containsKey(HOSTNAME_KEY)) {
+            return clazzname + ":" + storageconfig.getString(HOSTNAME_KEY);
         } else {
             return clazzname + ":" + storageconfig.getString(STORAGE_DIRECTORY_KEY);
         }
     }
     
+    public Backend getBackend() {
 
+    }
     
-	public StorageManager getStorageManager() {
+	public KeyColumnValueStoreManager getStorageManager() {
 		Configuration storageconfig = configuration.subset(STORAGE_NAMESPACE);
         String clazzname = storageconfig.getString(STORAGE_BACKEND_KEY,STORAGE_BACKEND_DEFAULT);
         if (preregisteredStorageManagers.containsKey(clazzname.toLowerCase())) {
@@ -396,7 +426,7 @@ public class GraphDatabaseConfiguration {
         try {
             Class clazz = Class.forName(clazzname);
             Constructor constructor = clazz.getConstructor(Configuration.class);
-            StorageManager storage = (StorageManager)constructor.newInstance(storageconfig);
+            KeyColumnValueStoreManager storage = (KeyColumnValueStoreManager)constructor.newInstance(storageconfig);
             return storage;
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Could not find storage manager class" + clazzname);
@@ -413,15 +443,15 @@ public class GraphDatabaseConfiguration {
         }
 	}
     
-    public OrderedKeyColumnValueStore getEdgeStore(StorageManager m) {
+    public KeyColumnValueStore getEdgeStore(KeyColumnValueStoreManager m) {
         return openDatabase(m,STORAGE_EDGESTORE_NAME);
     }
     
-    public OrderedKeyColumnValueStore getPropertyIndex(StorageManager m) {
+    public KeyColumnValueStore getPropertyIndex(KeyColumnValueStoreManager m) {
         return openDatabase(m,STORAGE_PROPERTYINDEX_NAME);
     }
 
-    private OrderedKeyColumnValueStore openDatabase(StorageManager m, String name) {
+    private KeyColumnValueStore openDatabase(KeyColumnValueStoreManager m, String name) {
         try {
             return m.openDatabase(name);
         } catch (StorageException e) {

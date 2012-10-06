@@ -7,7 +7,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.writeaggregation.*;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
@@ -62,9 +62,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	private final IDManager idManager;
 	private final TypeManager etManager;
 	
-	private final StorageManager storage;
-	private final OrderedKeyColumnValueStore edgeStore;
-	private final OrderedKeyColumnValueStore propertyIndex;
+	private final KeyColumnValueStoreManager storage;
+	private final KeyColumnValueStore edgeStore;
+	private final KeyColumnValueStore propertyIndex;
     private final boolean bufferMutations;
     private final int bufferSize;
 
@@ -462,7 +462,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         return dirs;
     }
 
-	private List<Entry> queryForEntries(AtomicQuery query, TransactionHandle txh) {
+	private List<Entry> queryForEntries(AtomicQuery query, StoreTransactionHandle txh) {
 		ByteBuffer key = IDHandler.getKey(query.getVertexID());
 		List<Entry> entries = null;
 		LimitTracker limit = new LimitTracker(query);
@@ -585,12 +585,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	}
 
     private List<Entry> appendResults(ByteBuffer key, ByteBuffer columnPrefix,
-                                      List<Entry> entries, LimitTracker limit, TransactionHandle txh) {
+                                      List<Entry> entries, LimitTracker limit, StoreTransactionHandle txh) {
         return appendResults(key,columnPrefix,ByteBufferUtil.nextBiggerBuffer(columnPrefix),entries,limit,txh);
     }
 
     private List<Entry> appendResults(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd,
-                                      List<Entry> entries, LimitTracker limit, TransactionHandle txh) {
+                                      List<Entry> entries, LimitTracker limit, StoreTransactionHandle txh) {
 		if (limit.limitExhausted()) return null;
 		List<Entry> results = null;
         
@@ -617,7 +617,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
     // ################### WRITE #########################
 	
-	private final StoreMutator getStoreMutator(TransactionHandle txh) {
+	private final StoreMutator getStoreMutator(StoreTransactionHandle txh) {
         if (edgeStore instanceof MultiWriteKeyColumnValueStore &&
                 propertyIndex instanceof MultiWriteKeyColumnValueStore) {
             if (config.isBatchLoading()) {
@@ -660,7 +660,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		//Setup
         log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
 		final Map<TitanType,TypeSignature> signatures = new HashMap<TitanType,TypeSignature>();
-		final TransactionHandle txh = tx.getTxHandle();
+		final StoreTransactionHandle txh = tx.getTxHandle();
 
 		final StoreMutator mutator = getStoreMutator(txh);
         final boolean acquireLocks = tx.getTxConfiguration().hasAcquireLocks();

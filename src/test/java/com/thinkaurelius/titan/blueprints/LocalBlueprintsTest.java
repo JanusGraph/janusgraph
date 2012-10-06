@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStorageManager;
+import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStoreManager;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.GraphTest;
 import com.tinkerpop.blueprints.util.io.gml.GMLReaderTestSuite;
@@ -99,7 +99,7 @@ public class LocalBlueprintsTest extends GraphTest {
     }
 
     public void cleanUp() throws StorageException {
-        BerkeleyJEStorageManager s = new BerkeleyJEStorageManager(
+        BerkeleyJEStoreManager s = new BerkeleyJEStoreManager(
                 StorageSetup.getBerkeleyJEStorageConfiguration());
         s.clearStorage();
         assertFalse(StorageSetup.getHomeDirFile().exists() && StorageSetup.getHomeDirFile().listFiles().length>0);

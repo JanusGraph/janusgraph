@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
@@ -18,7 +18,6 @@ import com.thinkaurelius.titan.graphdb.relations.factory.StandardPersistedRelati
 import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.factory.StandardVertexFactories;
-import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,14 +32,14 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 
 	private static final Logger log = LoggerFactory.getLogger(StandardPersistTitanTx.class);
 
-	private final TransactionHandle txHandle;
+	private final StoreTransactionHandle txHandle;
 		
 	private Set<InternalRelation> deletedEdges;
 	private List<InternalRelation> addedEdges;
 
 
 	public StandardPersistTitanTx(InternalTitanGraph g, TypeManager etManage, TransactionConfig config,
-                                  TransactionHandle tx) {
+                                  StoreTransactionHandle tx) {
 		super(g, StandardVertexFactories.DefaultPersisted,new StandardPersistedRelationFactory(),
 				etManage,config);
 		Preconditions.checkNotNull(g);
@@ -198,7 +197,7 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 	}
 	
 	@Override
-	public TransactionHandle getTxHandle() {
+	public StoreTransactionHandle getTxHandle() {
 		return txHandle;
 	}
 

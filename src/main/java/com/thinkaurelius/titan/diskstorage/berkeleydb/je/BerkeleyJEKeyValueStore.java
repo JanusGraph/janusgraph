@@ -1,17 +1,21 @@
 package com.thinkaurelius.titan.diskstorage.berkeleydb.je;
 
 import com.sleepycat.je.*;
-import com.thinkaurelius.titan.diskstorage.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeySelector;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.LimitedSelector;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.ScanKeyValueStore;
 import com.thinkaurelius.titan.diskstorage.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -21,9 +25,9 @@ public class BerkeleyJEKeyValueStore implements ScanKeyValueStore {
 	
 	private final Database db;
 	private final String name;
-	private final BerkeleyJEStorageManager manager;
+	private final BerkeleyJEStoreManager manager;
 	
-	public BerkeleyJEKeyValueStore(String n, Database data, BerkeleyJEStorageManager m) {
+	public BerkeleyJEKeyValueStore(String n, Database data, BerkeleyJEStoreManager m) {
 		db = data;
 		name = n;
 		manager = m;
@@ -41,12 +45,12 @@ public class BerkeleyJEKeyValueStore implements ScanKeyValueStore {
 		return name;
 	}
 	
-	private static final Transaction getTransaction(TransactionHandle txh) {
+	private static final Transaction getTransaction(StoreTransactionHandle txh) {
 		return (txh==null?null:((BerkeleyJETxHandle)txh).getTransaction());
 	}
 	
 	@Override
-	public boolean containsKey(ByteBuffer key, TransactionHandle txh) throws StorageException {
+	public boolean containsKey(ByteBuffer key, StoreTransactionHandle txh) throws StorageException {
 		log.trace("Contains query");
 		Transaction tx = getTransaction(txh);
 		try {
@@ -73,7 +77,7 @@ public class BerkeleyJEKeyValueStore implements ScanKeyValueStore {
 
 
 	@Override
-	public ByteBuffer get(ByteBuffer key, TransactionHandle txh) throws StorageException {
+	public ByteBuffer get(ByteBuffer key, StoreTransactionHandle txh) throws StorageException {
 		log.trace("Get query");
 		Transaction tx = getTransaction(txh);
 		try {
@@ -97,7 +101,7 @@ public class BerkeleyJEKeyValueStore implements ScanKeyValueStore {
 	}
 	
 	@Override
-	public void acquireLock(ByteBuffer key, ByteBuffer expectedValue, TransactionHandle txh) throws StorageException {
+	public void acquireLock(ByteBuffer key, ByteBuffer expectedValue, StoreTransactionHandle txh) throws StorageException {
         log.trace("Acquiring lock.");
 		if (getTransaction(txh)==null) {
             throw new PermanentLockingException("Enable transaction for locking in BerkeleyDB!");
@@ -106,18 +110,18 @@ public class BerkeleyJEKeyValueStore implements ScanKeyValueStore {
 
 
 	@Override
-	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, TransactionHandle txh) throws StorageException {
+	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, StoreTransactionHandle txh) throws StorageException {
 		return getSlice(keyStart,keyEnd,Integer.MAX_VALUE,txh);
 	}
 	
 	@Override
-	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, int limit, TransactionHandle txh) throws StorageException {
+	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, int limit, StoreTransactionHandle txh) throws StorageException {
 		return getSlice(keyStart,keyEnd,new LimitedSelector(limit),txh);
 	}
 	
 	@Override
 	public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, 
-			KeySelector selector, TransactionHandle txh) throws StorageException {
+			KeySelector selector, StoreTransactionHandle txh) throws StorageException {
 		log.trace("Get slice query");
 		Transaction tx =getTransaction(txh);
 		Cursor cursor = null;
@@ -170,14 +174,14 @@ public class BerkeleyJEKeyValueStore implements ScanKeyValueStore {
 
     private static class KeysIterator implements RecordIterator<ByteBuffer> {
 
-        final TransactionHandle txh;
+        final StoreTransactionHandle txh;
         Cursor cursor;
         final DatabaseEntry foundValue;
         final DatabaseEntry foundKey;
 
         ByteBuffer nextKey;
 
-        public KeysIterator(TransactionHandle txh, Database db) throws StorageException {
+        public KeysIterator(StoreTransactionHandle txh, Database db) throws StorageException {
             this.txh=txh;
             foundKey = new DatabaseEntry();
             foundValue = new DatabaseEntry();
@@ -248,18 +252,18 @@ public class BerkeleyJEKeyValueStore implements ScanKeyValueStore {
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(final TransactionHandle txh) throws StorageException {
+    public RecordIterator<ByteBuffer> getKeys(final StoreTransactionHandle txh) throws StorageException {
         log.trace("Get keys iterator");
         KeysIterator iterator = new KeysIterator(txh,db);
         return iterator;
     }
 
 	@Override
-	public void insert(List<KeyValueEntry> entries, TransactionHandle txh) throws StorageException {
+	public void insert(List<KeyValueEntry> entries, StoreTransactionHandle txh) throws StorageException {
 		insert(entries,txh,true);
 	}
 	
-	public void insert(List<KeyValueEntry> entries, TransactionHandle txh, boolean allowOverwrite) throws StorageException {
+	public void insert(List<KeyValueEntry> entries, StoreTransactionHandle txh, boolean allowOverwrite) throws StorageException {
 		Transaction tx = getTransaction(txh);
         log.trace("Inserting multiple entries: {}",entries.size());
         for (KeyValueEntry entry : entries) {
@@ -291,7 +295,7 @@ public class BerkeleyJEKeyValueStore implements ScanKeyValueStore {
 
 
 	@Override
-	public void delete(List<ByteBuffer> keys, TransactionHandle txh) throws StorageException {
+	public void delete(List<ByteBuffer> keys, StoreTransactionHandle txh) throws StorageException {
 		log.trace("Deletion");
 		Transaction tx = getTransaction(txh);
 		try {
