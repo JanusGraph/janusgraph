@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.util.datastructures.IntHashSet;
 import com.thinkaurelius.titan.util.datastructures.IntSet;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,7 +27,7 @@ public class IDPoolTest {
     public void testStandardIDPool() {
         int noIds = 2000000;
         MockIDAuthority idauth = new MockIDAuthority(200,0);
-        StandardIDPool pool = new StandardIDPool(idauth,0);
+        StandardIDPool pool = new StandardIDPool(idauth,0,Integer.MAX_VALUE);
         IntSet ids = new IntHashSet(noIds);
         for (int i=0;i<noIds;i++) {
             long id = pool.nextID();
@@ -62,8 +63,23 @@ public class IDPoolTest {
         }
 
         @Override
+        public long peekNextID(int partition) throws StorageException {
+            return idcounter;
+        }
+
+        @Override
+        public ByteBuffer[] getLocalIDPartition() throws StorageException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void setIDBlockSizer(IDBlockSizer sizer) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void close() throws StorageException {
+
         }
     }
 

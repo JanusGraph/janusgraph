@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
-import com.thinkaurelius.titan.diskstorage.StorageFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Features;
 
@@ -46,7 +46,7 @@ public class TitanFeatures {
         return features;
     }
     
-    public static Features getFeatures(GraphDatabaseConfiguration config, StorageFeatures storageFeatures) {
+    public static Features getFeatures(GraphDatabaseConfiguration config, StoreFeatures storageFeatures) {
         Features features = TitanFeatures.getBaselineTitanFeatures();
         features.supportsSerializableObjectProperty = config.hasSerializeAll();
         if (storageFeatures!=null) {

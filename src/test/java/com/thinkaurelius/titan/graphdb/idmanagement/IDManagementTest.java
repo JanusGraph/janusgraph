@@ -57,8 +57,9 @@ public class IDManagementTest {
 		assertTrue(eid.isNodeID(id));
 		assertEquals(eid.getPartitionID(id),partition);
 		
-		id = eid.getEdgeID(count);
+		id = eid.getEdgeID(count,partition);
 		assertTrue(eid.isEdgeID(id));
+        assertEquals(eid.getPartitionID(id),partition);
 
 		id = eid.getPropertyTypeID(count, group, partition);
 		assertTrue(eid.isPropertyTypeID(id));

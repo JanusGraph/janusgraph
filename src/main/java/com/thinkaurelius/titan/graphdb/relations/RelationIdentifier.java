@@ -91,7 +91,7 @@ public final class RelationIdentifier {
     public static final RelationIdentifier get(long[] ids) {
         if (ids.length!=3) return null;
         for (int i=0;i<3;i++) {
-            //Preconditions.checkArgument(ids[i]>=0,"Non-negative numbers expected");
+            //Preconditions.checkArgument(idAuthorities[i]>=0,"Non-negative numbers expected");
             if (ids[i]<0) return null;
         }
         return new RelationIdentifier(ids[0],ids[1],ids[2]);
@@ -100,7 +100,7 @@ public final class RelationIdentifier {
     public static final RelationIdentifier get(int[] ids) {
         if (ids.length!=3) return null;
         for (int i=0;i<3;i++) {
-            //Preconditions.checkArgument(ids[i]>=0,"Non-negative numbers expected");
+            //Preconditions.checkArgument(idAuthorities[i]>=0,"Non-negative numbers expected");
             if (ids[i]<0) return null;
         }
         return new RelationIdentifier(ids[0],ids[1],ids[2]);

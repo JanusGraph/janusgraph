@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.idmanagement;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.common.RemoteStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.idassigner.DefaultIDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.commons.configuration.Configuration;
 
@@ -15,8 +15,6 @@ import java.nio.ByteBuffer;
  */
 
 public abstract class AbstractIDManager implements IDAuthority {
-
-    protected static final String ID_STORE_NAME = "titan_ids";
 
     /* This value can't be changed without either
       * corrupting existing ID allocations or taking
@@ -36,9 +34,6 @@ public abstract class AbstractIDManager implements IDAuthority {
     public AbstractIDManager(Configuration config) {
         this.rid = RemoteStoreManager.getRid(config);
 
-        this.blockSizer = new DefaultIDBlockSizer(config.getLong(
-                GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_KEY,
-                GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_DEFAULT));
         this.isActive = false;
 
         this.idApplicationWaitMS =
@@ -54,6 +49,7 @@ public abstract class AbstractIDManager implements IDAuthority {
 
     @Override
     public synchronized void setIDBlockSizer(IDBlockSizer sizer) {
+        Preconditions.checkNotNull(sizer);
         if (isActive) throw new IllegalStateException("IDBlockSizer cannot be changed after IDAuthority is in use");
         this.blockSizer=sizer;
     }
@@ -63,6 +59,7 @@ public abstract class AbstractIDManager implements IDAuthority {
     }
 
     protected long getBlockSize(int partition) {
+        Preconditions.checkArgument(blockSizer!=null,"Blocksizer has not yet been initialized");
         isActive=true;
         return blockSizer.getBlockSize(partition);
     }

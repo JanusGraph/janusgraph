@@ -25,14 +25,15 @@ public class RemoteStoreManager {
 
     protected final String hostname;
     protected final int port;
-    protected final int communicationTimeout;
+    protected final int connectionTimeout;
+    protected final int connectionPoolSize;
 
     public RemoteStoreManager(Configuration storageConfig, int portDefault) {
         this.hostname = storageConfig.getString(GraphDatabaseConfiguration.HOSTNAME_KEY, GraphDatabaseConfiguration.HOSTNAME_DEFAULT);
         this.port = storageConfig.getInt(GraphDatabaseConfiguration.PORT_KEY, portDefault);
         this.rid = getRid(storageConfig);
-        this.communicationTimeout = storageConfig.getInt(GraphDatabaseConfiguration.COMMUNICATION_TIMEOUT_KEY, GraphDatabaseConfiguration.COMMUNICATION_TIMEOUT_DEFAULT);
-
+        this.connectionTimeout = storageConfig.getInt(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
+        this.connectionPoolSize = storageConfig.getInt(GraphDatabaseConfiguration.CONNECTION_POOL_SIZE_KEY, GraphDatabaseConfiguration.CONNECTION_POOL_SIZE_DEFAULT);
     }
 
     @Override

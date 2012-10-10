@@ -79,7 +79,7 @@ public class SimpleTypeManager implements TypeManager {
                 throw new InvalidElementException("TitanRelation Type with name does already exist: " + type.getName()
                         + " | " + type.isEdgeLabel(), type);
             nameIndex.put(type.getName(), id);
-            // Determine system edge ids
+            // Determine system edge idAuthorities
             long nameEdgeID = QueryUtil.queryHiddenFunctionalProperty(type, SystemKey.TypeName).getID();
             long defEdgeID = -1;
             if (type.isPropertyKey()) {

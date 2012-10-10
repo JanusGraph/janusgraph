@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 import com.google.common.base.Preconditions;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -13,31 +14,38 @@ import java.util.Map;
 
 public class StoreFeatures {
 
-    private boolean supportsScan;
-    private boolean isTransactional;
-    private boolean supportsConsistentKeyOperations;
-    private boolean supportsLocking;
-    private boolean supportsBatchMutation;
+    public Boolean supportsScan;
+    public Boolean supportsBatchMutation;
+
+    public Boolean isTransactional;
+    public Boolean supportsConsistentKeyOperations;
+    public Boolean supportsLocking;
+
+    public Boolean isKeyOrdered;
+    public Boolean isDistributed;
+    public Boolean hasLocalKeyPartition;
     
-    public StoreFeatures(boolean supportsScan, boolean isTransactional, boolean supportsConsistentKeyOperations, boolean supportsLocking, boolean supportsBatchMutation) {
-        this.supportsScan=supportsScan;
-        this.isTransactional=isTransactional;
-        this.supportsConsistentKeyOperations=supportsConsistentKeyOperations;
-        this.supportsLocking=supportsLocking;
-        this.supportsBatchMutation = supportsBatchMutation;
-    }
-    
-    public StoreFeatures(Map<String, Boolean> settings) {
+    private void verify() {
         for (Field f : getClass().getDeclaredFields()) {
-            Preconditions.checkArgument(settings.containsKey(f.getName()),"Settings do not contain: " + f.getName());
-            Boolean value = settings.get(f.getName());
-            Preconditions.checkNotNull(value,"Value may not be null for setting: "+f.getName());
             try {
-                f.setBoolean(this,value);
+                Preconditions.checkArgument(f.get(this)!=null,"Setting has not been specified: " + f.getName());
             } catch (IllegalAccessException e) {
-                throw new IllegalArgumentException("Could not change setting: " + f.getName(),e);
+                throw new IllegalArgumentException("Could not inspect setting: " + f.getName(),e);
             }
         }
+    }
+
+    @Override
+    public StoreFeatures clone() {
+        StoreFeatures newfeatures = new StoreFeatures();
+        for (Field f : getClass().getDeclaredFields()) {
+            try {
+                f.set(newfeatures,f.get(this));
+            } catch (IllegalAccessException e) {
+                throw new IllegalArgumentException("Could not copy setting: " + f.getName(),e);
+            }
+        }
+        return newfeatures;
     }
 
     /**
@@ -46,6 +54,7 @@ public class StoreFeatures {
      * @return
      */
     public boolean supportsScan() {
+        verify();
         return supportsScan;
     }
 
@@ -55,6 +64,7 @@ public class StoreFeatures {
      * @return
      */
     public boolean isTransactional() {
+        verify();
         return isTransactional;
     }
 
@@ -64,19 +74,37 @@ public class StoreFeatures {
      * @return
      */
     public boolean supportsConsistentKeyOperations() {
+        verify();
         return supportsConsistentKeyOperations;
     }
 
     /**
-     * Whether this store supports locking via {@link KeyColumnValueStore#acquireLock(java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer, StoreTransactionHandle)}
+     * Whether this store supports locking via {@link KeyColumnValueStore#acquireLock(java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer, StoreTransaction)}
      *
      * @return
      */
     public boolean supportsLocking() {
+        verify();
         return supportsLocking;
     }
 
     public boolean supportsBatchMutation() {
+        verify();
         return supportsBatchMutation;
+    }
+
+    public boolean isKeyOrdered() {
+        verify();
+        return isKeyOrdered;
+    }
+
+    public boolean isDistributed() {
+        verify();
+        return isDistributed;
+    }
+
+    public boolean hasLocalKeyPartition() {
+        verify();
+        return hasLocalKeyPartition;
     }
 }

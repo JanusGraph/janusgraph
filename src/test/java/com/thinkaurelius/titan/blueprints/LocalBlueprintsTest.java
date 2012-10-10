@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStoreManager;
+import com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.GraphTest;
 import com.tinkerpop.blueprints.util.io.gml.GMLReaderTestSuite;

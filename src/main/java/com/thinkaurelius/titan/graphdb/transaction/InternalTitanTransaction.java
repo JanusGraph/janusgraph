@@ -5,7 +5,8 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanQuery;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.RelationLoader;
@@ -25,7 +26,7 @@ public interface InternalTitanTransaction extends TitanTransaction {
 	 * Returns the storage backend transaction handle issued to this transaction
 	 * @return The storage backend transaction handle issued to this transaction
 	 */
-	StoreTransactionHandle getTxHandle();
+    TransactionHandle getTxHandle();
 
     /**
      * Returns the configuration used by this graph transaction
@@ -59,10 +60,10 @@ public interface InternalTitanTransaction extends TitanTransaction {
 	void loadRelations(AtomicQuery query);
 	
 	/**
-	 * Retrieves the node ids for the neighboring vertices addresed in the given neighborhood query
+	 * Retrieves the node idAuthorities for the neighboring vertices addresed in the given neighborhood query
 	 * 
-	 * @param query Neighborhood query for which to retrieve neighboring node ids
-	 * @return TitanVertex ids of neighbors
+	 * @param query Neighborhood query for which to retrieve neighboring node idAuthorities
+	 * @return TitanVertex idAuthorities of neighbors
 	 */
 	AbstractLongList getRawNeighborhood(AtomicQuery query);
 			
@@ -127,13 +128,13 @@ public interface InternalTitanTransaction extends TitanTransaction {
     public void deleteVertex(InternalTitanVertex n);
 
     /**
-     * Retrieves all ids for vertices which have an incident property of the given type with the specified attribute value
+     * Retrieves all idAuthorities for vertices which have an incident property of the given type with the specified attribute value
      *
      * The given property key must have an hasIndex defined for this retrieval to succeed.
      *
      * @param type Property key for which to retrieve vertices
      * @param attribute Attribute value for which to retrieve vertices
-     * @return	All ids for vertices which have an incident property of the given type with the specified attribute value
+     * @return	All idAuthorities for vertices which have an incident property of the given type with the specified attribute value
      * @throws	IllegalArgumentException if the property type is not indexed.
      * @see com.thinkaurelius.titan.util.interval.AtomicInterval
      */

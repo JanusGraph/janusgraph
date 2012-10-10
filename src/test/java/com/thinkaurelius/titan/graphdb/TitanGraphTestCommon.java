@@ -21,7 +21,7 @@ public abstract class TitanGraphTestCommon {
 	@Before
 	public void setUp() throws Exception {
         GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(config);
-        graphconfig.getStorageManager().clearStorage();
+        graphconfig.getBackend().clearStorage();
 		open();
 	}
 	

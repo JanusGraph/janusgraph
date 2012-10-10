@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
 /**
  * This class overrides and adds nothing compared with
@@ -12,7 +13,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
  * 
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
-public class CassandraTransaction extends AbstractStoreTransactionHandle {
+public class CassandraTransaction extends AbstractStoreTransaction {
 
     public enum Consistency { 
         ONE, TWO, THREE, ANY, ALL, QUORUM, LOCAL_QUORUM, EACH_QUORUM;
@@ -29,6 +30,26 @@ public class CassandraTransaction extends AbstractStoreTransactionHandle {
                 }
             }
             throw new IllegalArgumentException("Unrecognized cassandra consistency level: " + value);
+        }
+
+        public com.netflix.astyanax.model.ConsistencyLevel getAstyanaxConsistency() {
+            switch(this) {
+                case ONE: return com.netflix.astyanax.model.ConsistencyLevel.CL_ONE;
+                case TWO: return com.netflix.astyanax.model.ConsistencyLevel.CL_TWO;
+                case THREE: return com.netflix.astyanax.model.ConsistencyLevel.CL_THREE;
+                case ALL: return com.netflix.astyanax.model.ConsistencyLevel.CL_ALL;
+                case ANY: return com.netflix.astyanax.model.ConsistencyLevel.CL_ANY;
+                case QUORUM: return com.netflix.astyanax.model.ConsistencyLevel.CL_QUORUM;
+                case LOCAL_QUORUM: return com.netflix.astyanax.model.ConsistencyLevel.CL_LOCAL_QUORUM;
+                case EACH_QUORUM: return com.netflix.astyanax.model.ConsistencyLevel.CL_EACH_QUORUM;
+                default: throw new IllegalArgumentException("Unrecognized consistency level: " + this);
+            }
+        }
+
+        public org.apache.cassandra.thrift.ConsistencyLevel getThriftConsistency() {
+            org.apache.cassandra.thrift.ConsistencyLevel level = org.apache.cassandra.thrift.ConsistencyLevel.valueOf(this.toString());
+            Preconditions.checkArgument(level!=null);
+            return level;
         }
     
         
@@ -56,6 +77,11 @@ public class CassandraTransaction extends AbstractStoreTransactionHandle {
     
     public Consistency getWriteConsistencyLevel() {
         return writeConsistency;
+    }
+
+    public static CassandraTransaction getTx(StoreTransaction txh) {
+        Preconditions.checkArgument(txh!=null && (txh instanceof CassandraTransaction));
+        return (CassandraTransaction)txh;
     }
 
 

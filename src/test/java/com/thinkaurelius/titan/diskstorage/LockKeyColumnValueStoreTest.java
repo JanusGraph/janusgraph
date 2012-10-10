@@ -1,10 +1,12 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
+import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockConfiguration;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 
 import java.io.UnsupportedEncodingException;
@@ -16,7 +18,11 @@ import java.util.List;
 
 import com.thinkaurelius.titan.diskstorage.locking.LockingException;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,20 +31,25 @@ import static org.junit.Assert.*;
 
 public abstract class LockKeyColumnValueStoreTest {
 
-	public KeyColumnValueStoreManager manager1, manager2;
-	public StoreTransactionHandle host1tx1, host1tx2, host2tx1;
-	public KeyColumnValueStore store1, store2;
-	public static final String dbName = "test";
+    public final int concurrency = 2;
+    public final int numTx = 2;
+	public KeyColumnValueStoreManager[] manager;
+	public StoreTransaction[][] tx;
+	public KeyColumnValueStore[] store;
+
+    public IDAuthority[] idAuthorities;
+
+    public static final String dbName = "test";
     
-	protected final byte[] rid1 = new byte[] { 'a' };
-	protected final byte[] rid2 = new byte[] { 'b' };
+	protected final byte[][] rid1 = new byte[][] {{'a'} ,{ 'b' }};
     protected static final long EXPIRE_MS = 1000;
     
     private ByteBuffer k, c1, c2, v1, v2;
 	
 	@Before
 	public void setUp() throws Exception {
-        openStorageManager((short)1).clearStorage();
+        for (int i=0;i<concurrency;i++)
+            openStorageManager(0).clearStorage();
 
 		open();
 		k  = strToByteBuffer("key");
@@ -55,16 +66,52 @@ public abstract class LockKeyColumnValueStoreTest {
 		return b;
 	}
 
-    public abstract KeyColumnValueStoreManager openStorageManager(short hostIndex) throws StorageException;
+    public abstract KeyColumnValueStoreManager openStorageManager(int id) throws StorageException;
 
     public void open() throws StorageException {
-        manager1 = openStorageManager((short)1);
-        manager2 = openStorageManager((short)2);
-        store1 = manager1.openDatabase(dbName);
-        store2 = manager2.openDatabase(dbName);
-        host1tx1 = manager1.beginTransaction();
-        host1tx2 = manager1.beginTransaction();
-        host2tx1 = manager2.beginTransaction();
+        manager = new KeyColumnValueStoreManager[concurrency];
+        tx = new StoreTransaction[concurrency][numTx];
+        store = new KeyColumnValueStore[concurrency];
+        idAuthorities = new IDAuthority[concurrency];
+
+
+        
+        for (int i=0;i<concurrency;i++) {
+            manager[i] = openStorageManager(i);
+            StoreFeatures storeFeatures = manager[i].getFeatures();
+            store[i] = manager[i].openDatabase(dbName);
+            for (int j=0;j<numTx;j++) tx[i][j]=manager[i].beginTransaction(ConsistencyLevel.DEFAULT);
+
+            Configuration sc = new BaseConfiguration();
+            sc.addProperty(ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, "store"+i);
+            sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, (short)i);
+            sc.addProperty(GraphDatabaseConfiguration.LOCK_EXPIRE_MS, EXPIRE_MS);
+            
+            if (!storeFeatures.supportsLocking()) {
+                if (storeFeatures.isTransactional()) {
+                    store[i] = new TransactionalLockStore(store[i]);
+                } else if (storeFeatures.supportsConsistentKeyOperations()) {
+                    ConsistentKeyLockConfiguration lockConfiguration = new ConsistentKeyLockConfiguration(sc,"store"+i);
+                    store[i] = new ConsistentKeyLockStore(store[i],manager[i].openDatabase(dbName+":lock"),lockConfiguration);
+                    for (int j=0;j<numTx;j++) tx[i][j]=new ConsistentKeyLockTransaction(tx[i][j],manager[i].beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
+                } else throw new IllegalArgumentException("Store needs to support some form of locking");
+            }
+
+            KeyColumnValueStore idStore = manager[i].openDatabase("ids");
+            if (storeFeatures.isTransactional())
+                idAuthorities[i] = new TransactionalIDManager(idStore,manager[i],sc);
+            else if (storeFeatures.supportsConsistentKeyOperations())
+                idAuthorities[i] = new ConsistentKeyIDManager(idStore,manager[i],sc);
+            else throw new IllegalArgumentException("Cannot open id store");
+        }
+    }
+
+    public StoreTransaction newTransaction(KeyColumnValueStoreManager manager) throws StorageException {
+        StoreTransaction transaction = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        if (!manager.getFeatures().supportsLocking() && manager.getFeatures().supportsConsistentKeyOperations()) {
+            transaction=new ConsistentKeyLockTransaction(transaction,manager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
+        }
+        return transaction;
     }
 
 	@After
@@ -73,76 +120,82 @@ public abstract class LockKeyColumnValueStoreTest {
 	}
 
     public void close() throws StorageException {
-        store1.close();
-        store2.close();
-        manager1.close();
-        manager2.close();
+        for (int i=0;i<concurrency;i++) {
+            store[i].close();
+            idAuthorities[i].close();
+
+            for(int j=0;j<numTx;j++) {
+                if (tx[i][j]!=null) tx[i][j].commit();
+            }
+
+            manager[i].close();
+        }
         LocalLockMediators.INSTANCE.clear();
     }
 	
 	@Test
 	public void singleLockAndUnlock() throws StorageException {
-		store1.acquireLock(k, c1, null, host1tx1);
-		store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
-		host1tx1.commit();
+		store[0].acquireLock(k, c1, null, tx[0][0]);
+		store[0].mutate(k, Arrays.asList(new Entry(c1, v1)), null, tx[0][0]);
+		tx[0][0].commit();
 		
-		host1tx1 = manager1.beginTransaction();
-		assertEquals(v1, store1.get(k, c1, host1tx1));
+		tx[0][0] = newTransaction(manager[0]);
+		assertEquals(v1, store[0].get(k, c1, tx[0][0]));
 	}
 	
 	@Test
 	public void transactionMayReenterLock() throws StorageException {
-		store1.acquireLock(k, c1, null, host1tx1);
-		store1.acquireLock(k, c1, null, host1tx1);
-		store1.acquireLock(k, c1, null, host1tx1);
-		store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
-		host1tx1.commit();
+		store[0].acquireLock(k, c1, null, tx[0][0]);
+		store[0].acquireLock(k, c1, null, tx[0][0]);
+		store[0].acquireLock(k, c1, null, tx[0][0]);
+		store[0].mutate(k, Arrays.asList(new Entry(c1, v1)), null, tx[0][0]);
+		tx[0][0].commit();
 		
-		host1tx1 = manager1.beginTransaction();
-		assertEquals(v1, store1.get(k, c1, host1tx1));
+		tx[0][0] = newTransaction(manager[0]);
+		assertEquals(v1, store[0].get(k, c1, tx[0][0]));
 	}
 	
 	@Test(expected=PermanentLockingException.class)
 	public void expectedValueMismatchCausesMutateFailure() throws StorageException {
-		store1.acquireLock(k, c1, v1, host1tx1);
-		store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
-		host1tx1.commit();
+		store[0].acquireLock(k, c1, v1, tx[0][0]);
+		store[0].mutate(k, Arrays.asList(new Entry(c1, v1)), null, tx[0][0]);
+		tx[0][0].commit();
 	}
 	
 	@Test
 	public void testLocalLockContention() throws StorageException {
-		store1.acquireLock(k, c1, null, host1tx1);
+		store[0].acquireLock(k, c1, null, tx[0][0]);
 		
 		try {
-			store1.acquireLock(k, c1, null, host1tx2);
+			store[0].acquireLock(k, c1, null, tx[0][1]);
 			fail("Lock contention exception not thrown");
 		} catch (StorageException e) {
 			assertTrue(e instanceof LockingException);
 		}
 		
 		try {
-			store1.acquireLock(k, c1, null, host1tx2);
+			store[0].acquireLock(k, c1, null, tx[0][1]);
 			fail("Lock contention exception not thrown (2nd try)");
 		} catch (StorageException e) {
             assertTrue(e instanceof LockingException);
 		}
 		
-		host1tx1.commit();
+		tx[0][0].commit();
 	}
 	
 	@Test
 	public void testRemoteLockContention() throws InterruptedException, StorageException {
 		// acquire lock on "host1"
-		store1.acquireLock(k, c1, null, host1tx1);
+		store[0].acquireLock(k, c1, null, tx[0][0]);
 		
 		Thread.sleep(50L);
 		
 		try {
 			// acquire same lock on "host2"
-			store2.acquireLock(k, c1, null, host2tx1);
+			store[1].acquireLock(k, c1, null, tx[1][0]);
 		} catch (StorageException e) {
 			/* Lock attempts between hosts with different LocalLockMediators,
-			 * such as host1tx1 and host2tx1 in this example, should
+			 * such as tx[0][0] and tx[1][0] in this example, should
 			 * not generate locking failures until one of them tries
 			 * to issue a mutate or mutateMany call.  An exception
 			 * thrown during the acquireLock call above suggests that
@@ -157,46 +210,46 @@ public abstract class LockKeyColumnValueStoreTest {
 		
 		try {
 			// This must fail since "host1" took the lock first
-			store2.mutate(k, Arrays.asList(new Entry(c1, v2)), null, host2tx1);
+			store[1].mutate(k, Arrays.asList(new Entry(c1, v2)), null, tx[1][0]);
 			fail("Expected lock contention between remote transactions did not occur");
 		} catch (StorageException e) {
             assertTrue(e instanceof LockingException);
 		}
 		
 		// This should succeed
-		store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, host1tx1);
+		store[0].mutate(k, Arrays.asList(new Entry(c1, v1)), null, tx[0][0]);
 		
-		host1tx1.commit();
-		host1tx1 = manager1.beginTransaction();
-		assertEquals(v1, store1.get(k, c1, host1tx1));
+		tx[0][0].commit();
+		tx[0][0] = newTransaction(manager[0]);
+		assertEquals(v1, store[0].get(k, c1, tx[0][0]));
 	}
 	
 	@Test
 	public void singleTransactionWithMultipleLocks() throws StorageException {
 		
-		tryWrites(store1, manager1, host1tx1, store1, host1tx1);
+		tryWrites(store[0], manager[0], tx[0][0], store[0], tx[0][0]);
 	}
 	
 	@Test
 	public void twoLocalTransactionsWithIndependentLocks() throws StorageException {
 
-		tryWrites(store1, manager1, host1tx1, store1, host1tx2);
+		tryWrites(store[0], manager[0], tx[0][0], store[0], tx[0][1]);
 	}
 	
 	@Test
 	public void twoTransactionsWithIndependentLocks() throws StorageException {
 		
-		tryWrites(store1, manager1, host1tx1, store2, host2tx1);
+		tryWrites(store[0], manager[0], tx[0][0], store[1], tx[1][0]);
 	}
 
 	@Test
 	public void expiredLocalLockIsIgnored() throws StorageException, InterruptedException {
-		tryLocks(store1, host1tx1, store1, host1tx2, true);
+		tryLocks(store[0], tx[0][0], store[0], tx[0][1], true);
 	}
 	
 	@Test
 	public void expiredRemoteLockIsIgnored() throws StorageException, InterruptedException {
-		tryLocks(store1, host1tx1, store2, host2tx1, false);
+		tryLocks(store[0], tx[0][0], store[1], tx[1][0], false);
 	}
 	
 	@Test
@@ -221,47 +274,47 @@ public abstract class LockKeyColumnValueStoreTest {
 		long target = start + targetDelta;
 		int steps = 20;
 		
-		store1.acquireLock(k, k, null, host1tx1);
+		store[0].acquireLock(k, k, null, tx[0][0]);
 		for (int i = 0; i <= steps; i++) {
 			if (target <= System.currentTimeMillis()) {
 				break;
 			}
-			store1.acquireLock(k, k, null, host1tx1);
+			store[0].acquireLock(k, k, null, tx[0][0]);
 			Thread.sleep(targetDelta/steps);
 		}
 		
 		try {
-			store1.acquireLock(k, k, null, host1tx2);
+			store[0].acquireLock(k, k, null, tx[0][1]);
 		} catch (StorageException e) {
 			assertTrue(e instanceof LockingException);
 		}
 	}
 	
 	private void tryWrites(KeyColumnValueStore store1, KeyColumnValueStoreManager checkmgr,
-			StoreTransactionHandle tx1, KeyColumnValueStore store2,
-			StoreTransactionHandle tx2) throws StorageException {
-		assertNull(store1.get(k, c1, tx1));
-		assertNull(store2.get(k, c2, tx2));
+			StoreTransaction tx1, KeyColumnValueStore store2,
+			StoreTransaction tx2) throws StorageException {
+        assertNull(store1.get(k, c1, tx1));
+        assertNull(store2.get(k, c2, tx2));
 		
 		store1.acquireLock(k, c1, null, tx1);
 		store2.acquireLock(k, c2, null, tx2);
 
-		store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, tx1);
-		store2.mutate(k, Arrays.asList(new Entry(c2, v2)), null, tx2);
+        store1.mutate(k, Arrays.asList(new Entry(c1, v1)), null, tx1);
+        store2.mutate(k, Arrays.asList(new Entry(c2, v2)), null, tx2);
 		
 		tx1.commit();
 		if (tx2 != tx1)
 			tx2.commit();
 		
-		StoreTransactionHandle checktx = checkmgr.beginTransaction();
-		assertEquals(v1, store1.get(k, c1, checktx));
-		assertEquals(v2, store1.get(k, c2, checktx));
+		StoreTransaction checktx = newTransaction(checkmgr);
+        assertEquals(v1, store1.get(k, c1, checktx));
+        assertEquals(v2, store2.get(k, c2, checktx));
 		checktx.commit();
 	}
 	
 	private void tryLocks(KeyColumnValueStore s1,
-			StoreTransactionHandle tx1, KeyColumnValueStore s2,
-			StoreTransactionHandle tx2, boolean detectLocally) throws StorageException, InterruptedException {
+			StoreTransaction tx1, KeyColumnValueStore s2,
+			StoreTransaction tx2, boolean detectLocally) throws StorageException, InterruptedException {
 		
 		s1.acquireLock(k, k, null, tx1);
 		
@@ -290,18 +343,23 @@ public abstract class LockKeyColumnValueStoreTest {
     @Test
     public void testIDAcquisition() throws StorageException, InterruptedException {
         final int numPartitions = 2;
-        final int numThreads = 2;
         final int numAcquisitionsPerThreadPartition = 10;
-        final int blockSize = GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_DEFAULT;
+        final int blockSize = 250;
+        final IDBlockSizer blockSizer = new IDBlockSizer() {
+            @Override
+            public long getBlockSize(int partitionID) {
+                return blockSize;
+            }
+        };
+        for (int i=0;i<concurrency;i++) idAuthorities[i].setIDBlockSizer(blockSizer);
         final List<List<Long>> ids = new ArrayList<List<Long>>(numPartitions);
         for (int i=0;i<numPartitions;i++) {
-            ids.add(Collections.synchronizedList(new ArrayList<Long>(numAcquisitionsPerThreadPartition*numThreads)));
+            ids.add(Collections.synchronizedList(new ArrayList<Long>(numAcquisitionsPerThreadPartition*concurrency)));
         }
         
-        Thread[] threads = new Thread[numThreads];
-        for (int i=0;i<numThreads;i++) {
-            Preconditions.checkArgument(i==0 || i==1);
-            final KeyColumnValueStoreManager manager = i==0?manager1:manager2;
+        Thread[] threads = new Thread[concurrency];
+        for (int i=0;i<concurrency;i++) {
+            final IDAuthority idAuthority = idAuthorities[i];
             threads[i] = new Thread(new Runnable(){
                 
                 @Override
@@ -309,7 +367,9 @@ public abstract class LockKeyColumnValueStoreTest {
                     try {
                     for (int j=0;j<numAcquisitionsPerThreadPartition;j++) {
                         for (int p=1;p<=numPartitions;p++) {
-                            long[] block = manager.getIDBlock(p);
+                            long nextId = idAuthority.peekNextID(p);
+                            long[] block = idAuthority.getIDBlock(p);
+                            assertTrue(nextId<=block[0]);
                             assertEquals(block[0]+blockSize,block[1]);
                             ids.get(p-1).add(block[0]);
                         }
@@ -320,13 +380,13 @@ public abstract class LockKeyColumnValueStoreTest {
             threads[i].start();
         }
 
-        for (int i=0;i<numThreads;i++) {
+        for (int i=0;i<concurrency;i++) {
             threads[i].join();
         }
 
         for (int i=0;i<numPartitions;i++) {
             List<Long> list = ids.get(i);
-            assertEquals(numAcquisitionsPerThreadPartition*numThreads,list.size());
+            assertEquals(numAcquisitionsPerThreadPartition*concurrency,list.size());
             Collections.sort(list);
             int pos = 0;
             int id = 1;
@@ -336,8 +396,25 @@ public abstract class LockKeyColumnValueStoreTest {
                 pos++;
             }
         }
-        
-        
-
     }
+
+
+    @Test
+    public void testLocalPartitionAcquisition() throws StorageException {
+        for (int i=0;i<concurrency;i++) {
+            if (manager[i].getFeatures().hasLocalKeyPartition()) {
+                try {
+                    ByteBuffer[] partition = idAuthorities[i].getLocalIDPartition();
+                    assertTrue(partition[0].remaining()>=4);
+                    assertTrue(partition[1].remaining()>=4);
+                    int val1=partition[0].getInt();
+                    int val2=partition[1].getInt();
+                    assertTrue(val1<val2);
+                } catch (UnsupportedOperationException e) {
+                    fail();
+                }
+            }
+        }
+    }
+
 }

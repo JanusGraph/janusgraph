@@ -14,14 +14,27 @@ public class StorageFeaturesTest {
     
     @Test
     public void testFeaturesImplementation() {
-        StoreFeatures f1 = new StoreFeatures(ImmutableMap.of("supportsScan",false,"isTransactional",true));
-        assertNotNull(f1);
-        assertFalse(f1.supportsScan());
-        assertTrue(f1.isTransactional());
+        StoreFeatures features;
         try {
-            f1 = new StoreFeatures(ImmutableMap.of("supportsScan",true,"something",false));
+            features = new StoreFeatures();
+            features.supportsBatchMutation();
             fail();
         } catch (IllegalArgumentException e) {}
+        
+        try {
+            features = new StoreFeatures();
+            features.hasLocalKeyPartition=true;
+            features.hasLocalKeyPartition();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        features = new StoreFeatures();
+        features.supportsScan=false; features.supportsBatchMutation=true; features.isTransactional=false;
+        features.supportsConsistentKeyOperations=true; features.supportsLocking=false; features.isKeyOrdered=false;
+        features.isDistributed=true; features.hasLocalKeyPartition=false;
+        assertNotNull(features);
+        assertFalse(features.supportsScan());
+        assertFalse(features.isTransactional());
+        assertTrue(features.isDistributed());
     }
     
     

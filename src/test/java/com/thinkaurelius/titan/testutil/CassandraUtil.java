@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.testutil;
 
-import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStorageManager;
+import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +19,7 @@ public class CassandraUtil {
 
 	public static void dropKeyspace(String name, String hostname, int port) {
 		AstyanaxContext<Cluster> ctx = new AstyanaxContext.Builder()
-				.forCluster(AstyanaxStorageManager.CLUSTER_DEFAULT)
+				.forCluster(AstyanaxStoreManager.CLUSTER_DEFAULT)
 				.withAstyanaxConfiguration(
 						new AstyanaxConfigurationImpl()
 								.setDiscoveryType(NodeDiscoveryType.RING_DESCRIBE))

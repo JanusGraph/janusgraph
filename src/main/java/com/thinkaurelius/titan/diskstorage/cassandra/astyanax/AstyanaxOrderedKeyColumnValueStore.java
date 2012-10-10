@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.OperationResult;
@@ -9,14 +8,13 @@ import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ColumnList;
-import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.query.RowQuery;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -33,11 +31,11 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 	private final String columnFamilyName;
 	private final ColumnFamily<ByteBuffer, ByteBuffer> columnFamily;
 	private final RetryPolicy retryPolicy;
-    private final AstyanaxStorageManager storeManager;
+    private final AstyanaxStoreManager storeManager;
 	
 
 	AstyanaxOrderedKeyColumnValueStore(String columnFamilyName, Keyspace keyspace,
-                      AstyanaxStorageManager storeManager, RetryPolicy retryPolicy) {
+                      AstyanaxStoreManager storeManager, RetryPolicy retryPolicy) {
 		this.keyspace = keyspace;
 		this.columnFamilyName = columnFamilyName;
 		this.retryPolicy = retryPolicy;
@@ -49,24 +47,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 				ByteBufferSerializer.get());
 	}
 	
-    static CassandraTransaction getTx(StoreTransactionHandle txh) {
-        Preconditions.checkArgument(txh!=null && (txh instanceof CassandraTransaction));
-        return (CassandraTransaction)txh;
-    }
-    
-    static final ConsistencyLevel getConsistencyLevel(CassandraTransaction.Consistency consistency) {
-        switch(consistency) {
-            case ONE: return ConsistencyLevel.CL_ONE;
-            case TWO: return ConsistencyLevel.CL_TWO;
-            case THREE: return ConsistencyLevel.CL_THREE;
-            case ALL: return ConsistencyLevel.CL_ALL;
-            case ANY: return ConsistencyLevel.CL_ANY;
-            case QUORUM: return ConsistencyLevel.CL_QUORUM;
-            case LOCAL_QUORUM: return ConsistencyLevel.CL_LOCAL_QUORUM;
-            case EACH_QUORUM: return ConsistencyLevel.CL_EACH_QUORUM;
-            default: throw new IllegalArgumentException("Unrecognized consistency level: " + consistency);
-        }
-    }
+
 
     ColumnFamily<ByteBuffer,ByteBuffer> getColumnFamily() {
         return columnFamily;
@@ -79,11 +60,11 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
 	@Override
 	public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-			StoreTransactionHandle txh) throws StorageException {
+			StoreTransaction txh) throws StorageException {
 		try {
 			OperationResult<Column<ByteBuffer>> result = 
 				keyspace.prepareQuery(columnFamily)
-					.setConsistencyLevel(getConsistencyLevel(getTx(txh).getReadConsistencyLevel()))
+					.setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
 					.withRetryPolicy(retryPolicy.duplicate())
 					.getKey(key).getColumn(column).execute();
 			return result.getResult().getByteBufferValue();
@@ -96,18 +77,18 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
 	@Override
 	public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-			StoreTransactionHandle txh) throws StorageException {
+			StoreTransaction txh) throws StorageException {
 		return null != get(key, column, txh);
 	}
 
 	@Override
-	public boolean containsKey(ByteBuffer key, StoreTransactionHandle txh) throws StorageException {
+	public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
 		try {
 			// See getSlice() below for a warning suppression justification
 			@SuppressWarnings("rawtypes")
 			RowQuery rq = (RowQuery)keyspace.prepareQuery(columnFamily)
 								.withRetryPolicy(retryPolicy.duplicate())
-								.setConsistencyLevel(getConsistencyLevel(getTx(txh).getReadConsistencyLevel()))
+								.setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
 								.getKey(key);
 			@SuppressWarnings("unchecked")
 			OperationResult<ColumnList<ByteBuffer>> r = rq.withColumnRange(EMPTY, EMPTY, false, 1).execute();
@@ -119,7 +100,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, int limit, StoreTransactionHandle txh) throws StorageException {
+			ByteBuffer columnEnd, int limit, StoreTransaction txh) throws StorageException {
 		
 		/*
 		 * The following hideous cast dance avoids a type-erasure error in the
@@ -152,7 +133,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 		 */
 		@SuppressWarnings("rawtypes")
 		RowQuery rq = (RowQuery)keyspace.prepareQuery(columnFamily)
-						.setConsistencyLevel(getConsistencyLevel(getTx(txh).getReadConsistencyLevel()))
+						.setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
 						.withRetryPolicy(retryPolicy.duplicate())
 						.getKey(key);
 //		RowQuery<ByteBuffer, ByteBuffer> rq = keyspace.prepareQuery(columnFamily).getKey(key);
@@ -190,30 +171,35 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-			ByteBuffer columnEnd, StoreTransactionHandle txh) throws StorageException {
+			ByteBuffer columnEnd, StoreTransaction txh) throws StorageException {
 		return getSlice(key, columnStart, columnEnd, Integer.MAX_VALUE - 1, txh);
 	}
 
     @Override
     public void mutate(ByteBuffer key, List<Entry> additions,
-                       List<ByteBuffer> deletions, StoreTransactionHandle txh) throws StorageException {
+                       List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
         Map<ByteBuffer, Mutation> mutations = ImmutableMap.of(key,new
                 Mutation(additions, deletions));
         mutateMany(mutations, txh);
     }
 
     public void mutateMany(Map<ByteBuffer, Mutation> mutations,
-			StoreTransactionHandle txh) throws StorageException {
+			StoreTransaction txh) throws StorageException {
         storeManager.mutateMany(ImmutableMap.of(columnFamilyName,mutations),txh);
 	}
 
     @Override
-    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, StoreTransactionHandle txh) throws StorageException {
+    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(StoreTransactionHandle txh) throws StorageException {
+    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteBuffer[] getLocalKeyPartition() throws StorageException {
         throw new UnsupportedOperationException();
     }
 

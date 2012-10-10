@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.diskstorage.MultiWriteKeyColumnValueStoreTest;
 public class ExternalHBaseMultiWriteKeyColumnValueStoreTest extends MultiWriteKeyColumnValueStoreTest {
 
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        return new HBaseStorageManager(getConfig());
+        return new HBaseStoreManager(getConfig());
     }
 
 	private Configuration getConfig() {

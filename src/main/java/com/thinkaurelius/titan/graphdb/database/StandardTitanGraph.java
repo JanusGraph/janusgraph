@@ -3,51 +3,49 @@ package com.thinkaurelius.titan.graphdb.database;
 import cern.colt.list.AbstractLongList;
 import cern.colt.list.LongArrayList;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.*;
+import com.google.common.base.Predicate;
+import com.google.common.collect.*;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.DirectStoreMutator;
-import com.thinkaurelius.titan.diskstorage.writeaggregation.StoreMutator;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.util.TypeSignature;
 import com.thinkaurelius.titan.graphdb.database.util.LimitTracker;
+import com.thinkaurelius.titan.graphdb.database.util.TypeSignature;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
-import com.thinkaurelius.titan.graphdb.query.SimpleAtomicQuery;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
+import com.thinkaurelius.titan.graphdb.query.SimpleAtomicQuery;
+import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.RelationLoader;
+import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
+import com.thinkaurelius.titan.graphdb.transaction.StandardPersistTitanTx;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinition;
 import com.thinkaurelius.titan.graphdb.types.manager.SimpleTypeManager;
 import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
-import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
-import com.thinkaurelius.titan.util.interval.AtomicInterval;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.types.TypeDefinition;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.transaction.StandardPersistTitanTx;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.util.interval.AtomicInterval;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Features;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -62,11 +60,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	private final IDManager idManager;
 	private final TypeManager etManager;
 	
-	private final KeyColumnValueStoreManager storage;
+	private final Backend backend;
 	private final KeyColumnValueStore edgeStore;
 	private final KeyColumnValueStore propertyIndex;
-    private final boolean bufferMutations;
-    private final int bufferSize;
 
     private final int maxWriteRetryAttempts;
     private final int maxReadRetryAttempts;
@@ -80,18 +76,15 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	
 	public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
 		this.config=configuration;
-		this.storage = configuration.getStorageManager();
-		this.edgeStore = configuration.getEdgeStore(this.storage);
-		this.propertyIndex = configuration.getPropertyIndex(this.storage);
-        this.bufferMutations = configuration.hasBufferMutations();
-        this.bufferSize = configuration.getBufferSize();
-        Preconditions.checkArgument(bufferSize>0);
+        this.backend = configuration.getBackend();
+		this.edgeStore = backend.getEdgeStore();
+		this.propertyIndex = backend.getVertexIndexStore();
         this.maxWriteRetryAttempts =config.getWriteAttempts();
         this.maxReadRetryAttempts = config.getReadAttempts();
         this.retryStorageWaitTime =config.getStorageWaittime();
         
 
-        this.idAssigner = config.getIDAssigner(this.storage);
+        this.idAssigner = config.getIDAssigner(backend);
         this.idManager = idAssigner.getIDManager();
 		
 		this.serializer = config.getSerializer();
@@ -122,9 +115,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         idAssigner.close();
 
         try {
-            edgeStore.close();
-            propertyIndex.close();
-            storage.close();
+            backend.close();
         } catch (StorageException e) {
             throw new TitanException("Could not close storage backend",e);
         }
@@ -137,7 +128,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
     @Override
     public Features getFeatures() {
-        return TitanFeatures.getFeatures(getConfiguration(),storage.getFeatures());
+        return TitanFeatures.getFeatures(getConfiguration(),backend.getStoreFeatures());
     }
 
 	@Override
@@ -148,7 +139,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	@Override
 	public InternalTitanTransaction startTransaction(TransactionConfig configuration) {
         try {
-		    return new StandardPersistTitanTx(this,etManager, configuration,storage.beginTransaction());
+		    return new StandardPersistTitanTx(this,etManager, configuration, backend.beginTransaction());
         } catch (StorageException e) {
             throw new TitanException("Could not start new transaction",e);
         }
@@ -156,6 +147,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
     // ################### READ #########################
 
+    private static final StoreTransaction getStoreTransaction(InternalTitanTransaction tx) {
+        assert tx.getTxHandle() instanceof BackendTransaction;
+        return ((BackendTransaction)tx.getTxHandle()).getStoreTransactionHandle();
+    }
+    
     private final TitanException readException(StorageException e) {
         return readException(e,0);
     }
@@ -186,7 +182,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
         for (int readAttempt=0;readAttempt<maxReadRetryAttempts;readAttempt++) {
             try {
-                return edgeStore.containsKey(IDHandler.getKey(id), tx.getTxHandle());
+                return edgeStore.containsKey(IDHandler.getKey(id), getStoreTransaction(tx));
             } catch (StorageException e) {
                 if (e instanceof TemporaryStorageException) {
                     if (readAttempt<maxReadRetryAttempts-1) temporaryStorageException(e);
@@ -199,12 +195,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
     @Override
     public RecordIterator<Long> getVertexIDs(final InternalTitanTransaction tx) {
-        if (!(edgeStore instanceof ScanKeyColumnValueStore))
+        if (!backend.getStoreFeatures().supportsScan())
             throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
 
         for (int readAttempt=0;readAttempt<maxReadRetryAttempts;readAttempt++) {
             try {
-                final RecordIterator<ByteBuffer> keyiter = ((ScanKeyColumnValueStore)edgeStore).getKeys(tx.getTxHandle());
+                final RecordIterator<ByteBuffer> keyiter = edgeStore.getKeys(getStoreTransaction(tx));
                 return new RecordIterator<Long>() {
 
                     @Override
@@ -247,7 +243,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         for (int readAttempt=0;readAttempt<maxReadRetryAttempts;readAttempt++) {
             try {
                 if (pt.isUnique()) {
-                    ByteBuffer value = propertyIndex.get(getIndexKey(key), getKeyedIndexColumn(pt), tx.getTxHandle());
+                    ByteBuffer value = propertyIndex.get(getIndexKey(key), getKeyedIndexColumn(pt), getStoreTransaction(tx));
                     if (value!=null) {
                         vertices = new long[1];
                         vertices[0]=VariableLong.readPositive(value);
@@ -255,7 +251,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 } else {
                     ByteBuffer startColumn = VariableLong.positiveByteBuffer(pt.getID());
                     List<Entry> entries = propertyIndex.getSlice(getIndexKey(key), startColumn,
-                            ByteBufferUtil.nextBiggerBuffer(startColumn), tx.getTxHandle());
+                            ByteBufferUtil.nextBiggerBuffer(startColumn), getStoreTransaction(tx));
                     vertices = new long[entries.size()];
                     int i = 0;
                     for (Entry ent : entries) {
@@ -289,7 +285,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	public AbstractLongList getRawNeighborhood(AtomicQuery query, InternalTitanTransaction tx) {
         Preconditions.checkArgument(QueryUtil.queryCoveredByDiskIndexes(query),
                 "Raw retrieval is currently does not support in-memory filtering");
-		List<Entry> entries = queryForEntries(query,tx.getTxHandle());
+		List<Entry> entries = queryForEntries(query,getStoreTransaction(tx));
 		
         InternalTitanVertex node = query.getNode();
 		TitanType titanType = null;
@@ -319,7 +315,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 	@Override
 	public void loadRelations(AtomicQuery query, InternalTitanTransaction tx) {
-        List<Entry> entries = queryForEntries(query,tx.getTxHandle());
+        List<Entry> entries = queryForEntries(query,getStoreTransaction(tx));
         RelationLoader factory = tx.getRelationFactory();
         VertexRelationLoader loader = new StandardVertexRelationLoader(query.getNode(),factory);
         loadRelations(entries,loader,tx);
@@ -462,7 +458,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         return dirs;
     }
 
-	private List<Entry> queryForEntries(AtomicQuery query, StoreTransactionHandle txh) {
+	private List<Entry> queryForEntries(AtomicQuery query, StoreTransaction txh) {
 		ByteBuffer key = IDHandler.getKey(query.getVertexID());
 		List<Entry> entries = null;
 		LimitTracker limit = new LimitTracker(query);
@@ -585,12 +581,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	}
 
     private List<Entry> appendResults(ByteBuffer key, ByteBuffer columnPrefix,
-                                      List<Entry> entries, LimitTracker limit, StoreTransactionHandle txh) {
+                                      List<Entry> entries, LimitTracker limit, StoreTransaction txh) {
         return appendResults(key,columnPrefix,ByteBufferUtil.nextBiggerBuffer(columnPrefix),entries,limit,txh);
     }
 
     private List<Entry> appendResults(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd,
-                                      List<Entry> entries, LimitTracker limit, StoreTransactionHandle txh) {
+                                      List<Entry> entries, LimitTracker limit, StoreTransaction txh) {
 		if (limit.limitExhausted()) return null;
 		List<Entry> results = null;
         
@@ -617,31 +613,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
     // ################### WRITE #########################
 	
-	private final StoreMutator getStoreMutator(StoreTransactionHandle txh) {
-        if (edgeStore instanceof MultiWriteKeyColumnValueStore &&
-                propertyIndex instanceof MultiWriteKeyColumnValueStore) {
-            if (config.isBatchLoading()) {
-//                return new BatchStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize, 8);
-                return new BufferStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize);
-            } else if (bufferMutations) {
-                return new BufferStoreMutator(txh, (MultiWriteKeyColumnValueStore)edgeStore, (MultiWriteKeyColumnValueStore)propertyIndex, bufferSize);
-            }
-        }
-		return new DirectStoreMutator(txh, edgeStore, propertyIndex);
-	}
-
-
     @Override
     public void assignID(InternalTitanVertex vertex) {
-        assert !vertex.hasID();
-        vertex.setID(idAssigner.getNewID(vertex));
+        idAssigner.assignID(vertex);
     }
 
-	private void assignIDs(Collection<InternalRelation> addedEdges,InternalTitanTransaction tx) {
+	private void assignIDs(Iterable<InternalRelation> addedEdges, InternalTitanTransaction tx) {
 		for (InternalRelation edge : addedEdges) {
-			if (edge.isRemoved()) continue;
-			if (edge.hasID()) continue;
-			
+
 			for (int i=0;i<edge.getArity();i++) {
 				InternalTitanVertex node = edge.getVertex(i);
 				if (!node.hasID()) {
@@ -653,6 +632,22 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 			assignID(edge);
 		}
 	}
+
+    /**
+     * Some edges might have been deleted after they were first added (i.e. in the same transaction they were created in.
+     * In case the transaction has not filtered out those edge, we need to do it now.
+     * 
+     * @param added
+     * @return
+     */
+    private final Iterable<InternalRelation> preprocessAddedRelations(Iterable<InternalRelation> added) {
+        return Iterables.filter(added,new Predicate<InternalRelation>() {
+            @Override
+            public boolean apply(@Nullable InternalRelation relation) {
+                return !relation.isRemoved();
+            }
+        });
+    }
 	
 	@Override
 	public void save(final Collection<InternalRelation> addedRelations,
@@ -660,13 +655,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 		//Setup
         log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
 		final Map<TitanType,TypeSignature> signatures = new HashMap<TitanType,TypeSignature>();
-		final StoreTransactionHandle txh = tx.getTxHandle();
 
-		final StoreMutator mutator = getStoreMutator(txh);
+		final BackendMutator mutator = new BackendMutator(backend,tx.getTxHandle());
         final boolean acquireLocks = tx.getTxConfiguration().hasAcquireLocks();
-
+        final Iterable<InternalRelation> addedRelationsIter = preprocessAddedRelations(addedRelations);
+        
         //1. Assign TitanVertex IDs
-        assignIDs(addedRelations,tx);
+        if (!tx.getTxConfiguration().hasAssignIDsImmediately())
+            idAssigner.assignIDs(addedRelations);
 
         for (int saveAttempt=0;saveAttempt<maxWriteRetryAttempts;saveAttempt++) {
 //        while (true) { //Indefinite loop, broken if no exception occurs, otherwise retried or failed immediately
@@ -698,8 +694,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
             ListMultimap<InternalTitanType,InternalRelation> otherEdgeTypes = null;
             
             //3. Sort Added Edges
-            for (InternalRelation edge : addedRelations) {
-                if (edge.isRemoved()) continue;
+            for (InternalRelation edge : addedRelationsIter) {
                 assert edge.isNew();
                 
                 TitanType et = edge.getType();
@@ -769,7 +764,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	
 
 	private<N extends InternalTitanVertex> void persist(ListMultimap<N,InternalRelation> mutatedEdges, Map<TitanType,TypeSignature> signatures,
-			InternalTitanTransaction tx, StoreMutator mutator) throws StorageException {
+			InternalTitanTransaction tx, BackendMutator mutator) throws StorageException {
 		assert mutatedEdges!=null && !mutatedEdges.isEmpty();
 
 		Collection<N> vertices = mutatedEdges.keySet();
@@ -982,44 +977,44 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     // ################### PROPERTY INDEX HANDLING #########################
 
 	
-    private void lockKeyedProperty(TitanProperty prop, StoreMutator mutator) throws StorageException {
+    private void lockKeyedProperty(TitanProperty prop, BackendMutator mutator) throws StorageException {
         TitanKey pt = prop.getPropertyKey();
         assert pt.isSimple();
         if (pt.hasIndex() && pt.isUnique()) {
             if (prop.isNew()) {
-                mutator.acquireIndexLock(getIndexKey(prop.getAttribute()), getKeyedIndexColumn(pt), null);
+                mutator.acquireVertexIndexLock(getIndexKey(prop.getAttribute()), getKeyedIndexColumn(pt), null);
             } else {
                 assert prop.isRemoved();
-                mutator.acquireIndexLock(getIndexKey(prop.getAttribute()), getKeyedIndexColumn(pt), getIndexValue(prop));
+                mutator.acquireVertexIndexLock(getIndexKey(prop.getAttribute()), getKeyedIndexColumn(pt), getIndexValue(prop));
             }
         }
     }
     
     
-	private void deleteIndexEntry(TitanProperty prop, StoreMutator mutator) throws StorageException  {
+	private void deleteIndexEntry(TitanProperty prop, BackendMutator mutator) throws StorageException  {
 		TitanKey pt = prop.getPropertyKey();
 		assert pt.isSimple();
 		if (pt.hasIndex()) {
             if (pt.isUnique()) {
-                mutator.mutateIndex(getIndexKey(prop.getAttribute()), null,
+                mutator.mutateVertexIndex(getIndexKey(prop.getAttribute()), null,
                         Lists.newArrayList(getKeyedIndexColumn(prop.getPropertyKey())));
             } else {
-                mutator.mutateIndex(getIndexKey(prop.getAttribute()), null,
+                mutator.mutateVertexIndex(getIndexKey(prop.getAttribute()), null,
                         Lists.newArrayList(getIndexColumn(prop.getPropertyKey(), prop.getID())));
             }
 
 		}
 	}
 	
-	private void addIndexEntry(TitanProperty prop, StoreMutator mutator) throws StorageException  {
+	private void addIndexEntry(TitanProperty prop, BackendMutator mutator) throws StorageException  {
 		TitanKey pt = prop.getPropertyKey();
 		assert pt.isSimple();
 		if (pt.hasIndex()) {
             if (pt.isUnique()) {
-                mutator.mutateIndex(getIndexKey(prop.getAttribute()),
+                mutator.mutateVertexIndex(getIndexKey(prop.getAttribute()),
                         Lists.newArrayList(new Entry(getKeyedIndexColumn(pt), getIndexValue(prop))), null);
             } else {
-                mutator.mutateIndex(getIndexKey(prop.getAttribute()),
+                mutator.mutateVertexIndex(getIndexKey(prop.getAttribute()),
                         Lists.newArrayList(new Entry(getIndexColumn(pt, prop.getID()), getIndexValue(prop))), null);
             }
 		}

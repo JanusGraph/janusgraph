@@ -64,7 +64,7 @@ public class TransactionConfig {
 
     /**
      *
-     * @return Whether this transaction is configured to assign ids immediately.
+     * @return Whether this transaction is configured to assign idAuthorities immediately.
      */
     public boolean hasAssignIDsImmediately() {
         return assignIDsImmediately;

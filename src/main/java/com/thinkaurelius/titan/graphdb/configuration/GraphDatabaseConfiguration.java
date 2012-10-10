@@ -3,23 +3,11 @@ package com.thinkaurelius.titan.graphdb.configuration;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
-import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.EdgeStore;
-import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStorageManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.berkeleydb.je.BerkeleyJEStoreAdapter;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraEmbeddedStorageManager;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraThriftStorageManager;
-import com.thinkaurelius.titan.diskstorage.hbase.HBaseStorageManager;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
-import com.thinkaurelius.titan.graphdb.database.idassigner.SimpleVertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.types.DisableDefaultTypeMaker;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
@@ -29,8 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
@@ -55,21 +41,21 @@ public class GraphDatabaseConfiguration {
 	private static final Logger log =
 		LoggerFactory.getLogger(GraphDatabaseConfiguration.class);
 
-    private static final Map<String,Class<? extends KeyColumnValueStoreManager>> preregisteredStorageManagers = new HashMap<String,Class<? extends KeyColumnValueStoreManager>>() {{
-        put("local", BerkeleyJEStoreAdapter.class);
-        put("berkeleyje", BerkeleyJEStoreAdapter.class);
-        put("cassandra", AstyanaxStorageManager.class);
-        put("cassandrathrift", CassandraThriftStorageManager.class);
-        put("astyanax", AstyanaxStorageManager.class);
-        put("hbase", HBaseStorageManager.class);
-        put("embeddedcassandra", CassandraEmbeddedStorageManager.class);
-    }};
+    /**
+     * Configures the {@link DefaultTypeMaker} to be used by this graph. If left empty, automatic creation of types
+     * is disabled.
+     */
+    public static final String AUTO_TYPE_KEY = "autotype";
+    public static final String AUTO_TYPE_DEFAULT = "blueprints";
 
     private static final Map<String,DefaultTypeMaker> preregisteredAutoType = new HashMap<String,DefaultTypeMaker>() {{
         put("none", DisableDefaultTypeMaker.INSTANCE);
         put("blueprints", BlueprintsDefaultTypeMaker.INSTANCE);
     }};
 
+
+    // ################ STORAGE #######################
+    // ################################################
 
     public static final String STORAGE_NAMESPACE = "storage";
 
@@ -103,9 +89,6 @@ public class GraphDatabaseConfiguration {
     public static final String STORAGE_TRANSACTIONAL_KEY = "transactions";
     public static final boolean STORAGE_TRANSACTIONAL_DEFAULT = true;
 
-
-
-
     /**
      * Buffers graph mutations locally up to the specified number before persisting them against the storage backend.
      * Set to 0 to disable buffering. Buffering is disabled automatically if the storage backend does not support buffered mutations.
@@ -136,45 +119,6 @@ public class GraphDatabaseConfiguration {
      */
     public static final String STORAGE_ATTEMPT_WAITTIME_KEY = "attempt-wait";
     public static final int STORAGE_ATTEMPT_WAITTIME_DEFAULT = 250;
-
-
-    /**
-     * If flush ids is enabled, vertices and edges are assigned ids immediately upon creation. If not, then ids are only
-     * assigned when the transaction is committed.
-     */
-    public static final String FLUSH_IDS_KEY = "flush-ids";
-    public static final boolean FLUSH_IDS_DEFAULT = true;
-
-    /**
-     * Configures the {@link DefaultTypeMaker} to be used by this graph. If left empty, automatic creation of types
-     * is disabled.
-     */
-    public static final String AUTO_TYPE_KEY = "autotype";
-    public static final String AUTO_TYPE_DEFAULT = "blueprints";
-    
-    private static final String ID_RANDOMIZER_BITS_KEY = "id-random-bits";
-    private static final int ID_RANDOMIZER_BITS_DEFAULT = 0;
-
-    /**
-     * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.
-     * Also, the time waited after the application before verifying that the application was successful.
-     */
-    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
-    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
-    /**
-     * Number of times the system attempts to acquire a unique id block before giving up and throwing an exception.
-     */
-    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
-    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
-    /**
-     * Size of the block to be acquired. Larger block sizes require fewer block applications but also leave a larger
-     * fraction of the id pool occupied and potentially lost. For write heavy applications, larger block sizes should
-     * be chosen.
-     */
-    public static final String IDAUTHORITY_BLOCK_SIZE_KEY = "idauthority-block-size";
-    public static final int IDAUTHORITY_BLOCK_SIZE_DEFAULT = 10000;
-
-
     /**
      *  A unique identifier for the machine running the @TitanGraph@ instance.
      *  It must be ensured that no other machine accessing the storage backend can have the same identifier.
@@ -208,23 +152,18 @@ public class GraphDatabaseConfiguration {
     public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
     public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
 
-    public static final String ATTRIBUTE_NAMESPACE = "attributes";
-
-    public static final String ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY = "allow-all";
-    public static final boolean ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT = true;
-    private static final String ATTRIBUTE_PREFIX = "attribute";
-    private static final String SERIALIZER_PREFIX = "serializer";
-
     /**
-     * These are the names for the edge store and property index databases, respectively.
-     * The edge store contains all edges and properties. The property index contains an
-     * inverted index from attribute value to vertex.
-     *
-     * These names are fixed and should NEVER be changed. Changing these strings can
-     * disrupt storage adapters that rely on these names for specific configurations.
+     * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.
+     * Also, the time waited after the application before verifying that the application was successful.
      */
-    public static final String STORAGE_EDGESTORE_NAME = "edgestore";
-    public static final String STORAGE_PROPERTYINDEX_NAME = "propertyindex";
+    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
+    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
+    /**
+     * Number of times the system attempts to acquire a unique id block before giving up and throwing an exception.
+     */
+    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
+    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
+
     /**
      * Configuration key for the hostname or list of hostname of remote storage backend servers to connect to.
      * <p>
@@ -244,13 +183,53 @@ public class GraphDatabaseConfiguration {
      */
     public static final String PORT_KEY = "port";
     /**
-     * Default timeout for Thrift TSocket objects used to
-     * connect to the Cassandra cluster.
+     * Default timeout whne connecting to a remote database instance
      * <p>
      * Value = {@value}
      */
-    public static final int COMMUNICATION_TIMEOUT_DEFAULT = 10000;
-    public static final String COMMUNICATION_TIMEOUT_KEY = "communication-timeout";
+    public static final int CONNECTION_TIMEOUT_DEFAULT = 10000;
+    public static final String CONNECTION_TIMEOUT_KEY = "connection-timeout";
+
+    /**
+     * Default number of connections to pool when connecting to a remote database.
+     * <p>
+     * Value = {@value}
+     */
+    public static final int CONNECTION_POOL_SIZE_DEFAULT = 32;
+    public static final String CONNECTION_POOL_SIZE_KEY = "connection-pool-size";
+
+
+    // ################ IDS ###########################
+    // ################################################
+
+    public static final String IDS_NAMESPACE = "idAuthorities";
+    
+    /**
+     * Size of the block to be acquired. Larger block sizes require fewer block applications but also leave a larger
+     * fraction of the id pool occupied and potentially lost. For write heavy applications, larger block sizes should
+     * be chosen.
+     */
+    public static final String IDS_BLOCK_SIZE_KEY = "idauthority-block-size";
+    public static final int IDS_BLOCK_SIZE_DEFAULT = 10000;
+
+    /**
+     * If flush idAuthorities is enabled, vertices and edges are assigned idAuthorities immediately upon creation. If not, then idAuthorities are only
+     * assigned when the transaction is committed.
+     */
+    public static final String IDS_FLUSH_KEY = "flush-idAuthorities";
+    public static final boolean IDS_FLUSH_DEFAULT = true;
+
+
+    // ############## Attributes ######################
+    // ################################################
+
+    public static final String ATTRIBUTE_NAMESPACE = "attributes";
+
+    public static final String ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY = "allow-all";
+    public static final boolean ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT = true;
+    private static final String ATTRIBUTE_PREFIX = "attribute";
+    private static final String SERIALIZER_PREFIX = "serializer";
+
 
 
     private final Configuration configuration;
@@ -295,7 +274,7 @@ public class GraphDatabaseConfiguration {
     private void preLoadConfiguration() {
         Configuration storageConfig = configuration.subset(STORAGE_NAMESPACE);
         readOnly = storageConfig.getBoolean(STORAGE_READONLY_KEY,STORAGE_READONLY_DEFAULT);
-        flushIDs = configuration.getBoolean(FLUSH_IDS_KEY,FLUSH_IDS_DEFAULT);
+        flushIDs = configuration.getBoolean(IDS_FLUSH_KEY, IDS_FLUSH_DEFAULT);
         batchLoading = storageConfig.getBoolean(STORAGE_BATCH_KEY,STORAGE_BATCH_DEFAULT);
         defaultTypeMaker = preregisteredAutoType.get(configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
         Preconditions.checkNotNull(defaultTypeMaker,"Invalid "+AUTO_TYPE_KEY+" option: " + configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
@@ -315,16 +294,6 @@ public class GraphDatabaseConfiguration {
 
     public DefaultTypeMaker getDefaultTypeMaker() {
         return defaultTypeMaker;
-    }
-
-    public boolean hasBufferMutations() {
-        return configuration.getInt(BUFFER_SIZE_KEY, BUFFER_SIZE_DEFAULT)>0;
-    }
-    
-    public int getBufferSize() {
-        int size = configuration.getInt(BUFFER_SIZE_KEY, BUFFER_SIZE_DEFAULT);
-        Preconditions.checkArgument(size>0,"Buffer size must be positive");
-        return size;
     }
     
     public int getWriteAttempts() {
@@ -393,13 +362,8 @@ public class GraphDatabaseConfiguration {
         return all;
     }
 
-	public VertexIDAssigner getIDAssigner(EdgeStore storage) {
-        IDManager idmanager = new IDManager();
-		return new SimpleVertexIDAssigner(idmanager, storage,
-                configuration.getInt(ID_RANDOMIZER_BITS_KEY,ID_RANDOMIZER_BITS_DEFAULT),
-                configuration.subset(STORAGE_NAMESPACE).getLong(
-                        GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_KEY,
-                        GraphDatabaseConfiguration.IDAUTHORITY_BLOCK_SIZE_DEFAULT));
+	public VertexIDAssigner getIDAssigner(Backend backend) {
+		return new VertexIDAssigner(configuration.subset(IDS_NAMESPACE),backend);
 	}
 
     public String getBackendDescription() {
@@ -413,50 +377,10 @@ public class GraphDatabaseConfiguration {
     }
     
     public Backend getBackend() {
-
-    }
-    
-	public KeyColumnValueStoreManager getStorageManager() {
-		Configuration storageconfig = configuration.subset(STORAGE_NAMESPACE);
-        String clazzname = storageconfig.getString(STORAGE_BACKEND_KEY,STORAGE_BACKEND_DEFAULT);
-        if (preregisteredStorageManagers.containsKey(clazzname.toLowerCase())) {
-            clazzname = preregisteredStorageManagers.get(clazzname.toLowerCase()).getCanonicalName();
-        }
-
-        try {
-            Class clazz = Class.forName(clazzname);
-            Constructor constructor = clazz.getConstructor(Configuration.class);
-            KeyColumnValueStoreManager storage = (KeyColumnValueStoreManager)constructor.newInstance(storageconfig);
-            return storage;
-        } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Could not find storage manager class" + clazzname);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException("Configured storage manager does not have required constructor: " + clazzname);
-        } catch (InstantiationException e) {
-            throw new IllegalArgumentException("Could not instantiate storage manager class " + clazzname,e);
-        } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException("Could not instantiate storage manager class " + clazzname,e);
-        } catch (InvocationTargetException e) {
-            throw new IllegalArgumentException("Could not instantiate storage manager class " + clazzname,e);
-        } catch (ClassCastException e) {
-            throw new IllegalArgumentException("Could not instantiate storage manager class " + clazzname,e);
-        }
-	}
-    
-    public KeyColumnValueStore getEdgeStore(KeyColumnValueStoreManager m) {
-        return openDatabase(m,STORAGE_EDGESTORE_NAME);
-    }
-    
-    public KeyColumnValueStore getPropertyIndex(KeyColumnValueStoreManager m) {
-        return openDatabase(m,STORAGE_PROPERTYINDEX_NAME);
-    }
-
-    private KeyColumnValueStore openDatabase(KeyColumnValueStoreManager m, String name) {
-        try {
-            return m.openDatabase(name);
-        } catch (StorageException e) {
-            throw new TitanException("Could not open database: "+name,e);
-        }
+        Configuration storageconfig = configuration.subset(STORAGE_NAMESPACE);
+        Backend backend = new Backend(storageconfig);
+        backend.initialize(storageconfig);
+        return backend;
     }
 	
 	public Serializer getSerializer() {

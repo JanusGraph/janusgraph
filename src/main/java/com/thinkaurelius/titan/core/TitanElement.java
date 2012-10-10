@@ -31,7 +31,7 @@ public interface TitanElement {
      * 
      * The unique identifier may only be set when the transaction in which entity is created commits.
      * The <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a> explains
-     * how to configure when entity ids are assigned.
+     * how to configure when entity idAuthorities are assigned.
      * Some entities are never assigned a unique identifier if they depend on a parent entity.
      * 
      * Note: Edges cannot be retrieved by the unique identifier returned by {@link #getID()}. Use the identifier returned

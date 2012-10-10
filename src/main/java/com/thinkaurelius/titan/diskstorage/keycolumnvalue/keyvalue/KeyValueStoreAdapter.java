@@ -4,11 +4,15 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.*;
 
 public class KeyValueStoreAdapter implements KeyColumnValueStore {
+
+    private final Logger log = LoggerFactory.getLogger(KeyValueStoreAdapter.class);
 
     public static final int variableKeyLength = 0;
 
@@ -27,10 +31,11 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
         Preconditions.checkArgument(keyLength>=0);
         this.store=store;
         this.keyLength = keyLength;
+        log.debug("Used key length {} for database {}",keyLength,store.getName());
 	}
 	
 	@Override
-	public boolean containsKey(ByteBuffer key, StoreTransactionHandle txh) throws StorageException {
+	public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
 		ContainsSelector select = new ContainsSelector(key);
 		store.getSlice(key, ByteBufferUtil.nextBiggerBuffer(key), select, txh);
 		return select.contains();
@@ -38,19 +43,19 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, 
-			int limit, StoreTransactionHandle txh) throws StorageException {
+			int limit, StoreTransaction txh) throws StorageException {
 		return convert(store.getSlice(concatenatePrefix(key,columnStart), concatenatePrefix(key,columnEnd), new KeyColumnSliceSelector(key,limit), txh));
 	}
 
 	@Override
 	public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, 
-			StoreTransactionHandle txh) throws StorageException {
+			StoreTransaction txh) throws StorageException {
 		return convert(store.getSlice(concatenatePrefix(key,columnStart), concatenatePrefix(key,columnEnd), new KeyColumnSliceSelector(key), txh));
 	}
 
 
     @Override
-    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransactionHandle txh) throws StorageException {
+    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
         if (deletions!=null && !deletions.isEmpty()) {
             for (ByteBuffer column : deletions) {
                 ByteBuffer del = concatenate(key,column);
@@ -68,19 +73,24 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 
     @Override
     public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-                                     StoreTransactionHandle txh) throws StorageException {
+                                     StoreTransaction txh) throws StorageException {
         return store.containsKey(concatenate(key,column), txh);
     }
 
     @Override
     public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-                          StoreTransactionHandle txh) throws StorageException {
+                          StoreTransaction txh) throws StorageException {
         return store.get(concatenate(key,column), txh);
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(StoreTransactionHandle txh) throws StorageException {
+    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
         return new KeysIterator(store.getKeys(txh));
+    }
+
+    @Override
+    public ByteBuffer[] getLocalKeyPartition() throws StorageException {
+        return store.getLocalKeyPartition();
     }
 
     @Override
@@ -90,7 +100,7 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 
     @Override
     public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue,
-                            StoreTransactionHandle txh) throws StorageException {
+                            StoreTransaction txh) throws StorageException {
         store.acquireLock(concatenate(key,column), expectedValue, txh);
     }
 

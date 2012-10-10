@@ -3,53 +3,48 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.Iterator;
+import java.util.Map;
 
 public class KeyValueStoreManagerAdapter implements KeyColumnValueStoreManager {
 
-    private final Logger log = LoggerFactory.getLogger(KeyValueStoreManagerAdapter.class);
-    
-    public static final String KEYLENGTH_NAMESPACE = "keylengths";
-    
+
 	private final KeyValueStoreManager manager;
 	
 	private final ImmutableMap<String,Integer> keyLengths;
-	
-	public KeyValueStoreManagerAdapter(KeyValueStoreManager manager, Configuration config) {
+
+    private final StoreFeatures features;
+
+    public KeyValueStoreManagerAdapter(KeyValueStoreManager manager) {
+        this(manager,null);
+    }
+
+	public KeyValueStoreManagerAdapter(KeyValueStoreManager manager, Map<String,Integer> keyLengths) {
 		this.manager = manager;
-		Configuration keylen = config.subset(KEYLENGTH_NAMESPACE);
-        ImmutableMap.Builder<String,Integer> builder = ImmutableMap.builder();
-        builder.put(GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME,8);
-        Iterator<String> keys = keylen.getKeys();
-        while(keys.hasNext()) {
-            String name = keys.next();
-            int length = keylen.getInt(name);
-            Preconditions.checkArgument(length>=0,"Positive keylength expected for database: " + name);
-            builder.put(name,Integer.valueOf(length));
-        }
-        keyLengths = builder.build();
-        
+        ImmutableMap.Builder<String,Integer> mb = ImmutableMap.builder();
+        if (keyLengths!=null && !keyLengths.isEmpty()) mb.putAll(keyLengths);
+        this.keyLengths=mb.build();
+        features = manager.getFeatures().clone();
+        features.supportsBatchMutation=false;
 	}
 
     public StoreFeatures getFeatures() {
-        return manager.getFeatures();
+        return features;
     }
 		
 	@Override
-	public StoreTransactionHandle beginTransaction() throws StorageException {
-		return manager.beginTransaction();
+	public StoreTransaction beginTransaction(ConsistencyLevel level) throws StorageException {
+		return manager.beginTransaction(level);
 	}
 
-	@Override
+    @Override
 	public void close() throws StorageException {
 		manager.close();
 	}
@@ -62,12 +57,22 @@ public class KeyValueStoreManagerAdapter implements KeyColumnValueStoreManager {
     @Override
 	public KeyColumnValueStore openDatabase(String name)
 			throws StorageException {
-        int keyLength = KeyValueStoreAdapter.variableKeyLength;
-        if (keyLengths.containsKey(name)) keyLength = keyLengths.get(name).intValue();
-        log.debug("Used key length {} for database {}",keyLength,name);
-        KeyValueStore store = manager.openDatabase(name);
-        return new KeyValueStoreAdapter(store,keyLength);
+        return wrapKeyValueStore(manager.openDatabase(name),keyLengths);
 	}
 
-
+    @Override
+    public void mutateMany(Map<String, Map<ByteBuffer, Mutation>> mutations, StoreTransaction txh) throws StorageException {
+        throw new UnsupportedOperationException();
+    }
+    
+    public static final KeyColumnValueStore wrapKeyValueStore(KeyValueStore store, Map<String,Integer> keyLengths) {
+        String name = store.getName();
+        if (keyLengths.containsKey(name)) {
+            int keyLength = keyLengths.get(name);
+            Preconditions.checkArgument(keyLength>0);
+            return new KeyValueStoreAdapter(store,keyLength);
+        } else {
+            return new KeyValueStoreAdapter(store);
+        }
+    }
 }

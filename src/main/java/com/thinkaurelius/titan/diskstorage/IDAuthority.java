@@ -2,6 +2,8 @@ package com.thinkaurelius.titan.diskstorage;
 
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 
+import java.nio.ByteBuffer;
+
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
@@ -9,15 +11,15 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 public interface IDAuthority {
 
     /**
-     * Returns an array that specifies a block of ids, i.e. the ids between return[0] (inclusive) and return[1] (exclusive).
-     * It is guaranteed that the block of ids for the particular partition id is uniquely assigned, that is,
-     * the block of ids has not been previously and will not subsequently be assigned again when invoking this method
+     * Returns an array that specifies a block of idAuthorities, i.e. the idAuthorities between return[0] (inclusive) and return[1] (exclusive).
+     * It is guaranteed that the block of idAuthorities for the particular partition id is uniquely assigned, that is,
+     * the block of idAuthorities has not been previously and will not subsequently be assigned again when invoking this method
      * on the local or any remote machine that is connected to the underlying storage backend.
      *
-     * In other words, this method has to ensure that ids are uniquely assigned per partition.
+     * In other words, this method has to ensure that idAuthorities are uniquely assigned per partition.
      *
      * @param partition Partition for which to request an id block. Must be bigger or equal to 0
-     * @return a range of ids for the particular partition
+     * @return a range of idAuthorities for the particular partition
      */
     public long[] getIDBlock(int partition) throws StorageException;
 
@@ -29,6 +31,8 @@ public interface IDAuthority {
      * @throws StorageException
      */
     public long peekNextID(int partition) throws StorageException;
+    
+    public ByteBuffer[] getLocalIDPartition() throws StorageException;
 
     /**
      * Sets the {@link IDBlockSizer} to be used by this IDAuthority. The IDBlockSizer specifies the block size for 
@@ -39,6 +43,13 @@ public interface IDAuthority {
      * @param sizer The IDBlockSizer to be used by this IDAuthority
      */
     public void setIDBlockSizer(IDBlockSizer sizer);
+
+    /**
+     * Closes the IDAuthority and any underlying storage backend.
+     *
+     * @throws StorageException
+     */
+    public void close() throws StorageException;
     
     
 

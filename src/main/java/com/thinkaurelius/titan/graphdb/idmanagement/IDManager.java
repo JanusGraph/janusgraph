@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
 
-
+import com.google.common.base.Preconditions;
 
 public class IDManager implements IDInspector {
 	
@@ -93,6 +93,8 @@ public class IDManager implements IDInspector {
 	private final long maxPartitionID;
 
 	public IDManager(long partitionBits, long groupBits) {
+        Preconditions.checkArgument(partitionBits>=0);
+        Preconditions.checkArgument(groupBits>=0);
 		if (partitionBits>maxPartitionBits)
 			throw new IllegalArgumentException("Partition bits can be at most " + maxPartitionBits);
 		if (groupBits>maxGroupBits)
@@ -107,7 +109,7 @@ public class IDManager implements IDInspector {
         maxPartitionID= (1l<<(partitionBits))-1;
 		maxGroupID = (1l<<groupBits)-2; //Need extra number for bounding
 
-		maxEdgeID = (1l<<(totalNoBits- IDType.Edge.offset()))-1;
+		maxEdgeID = (1l<<(totalNoBits-partitionBits- IDType.Edge.offset()))-1;
 		maxEdgeTypeID = (1l<<(totalNoBits-partitionBits- IDType.RelationshipType.offset()
 										 -groupBits-edgeTypeDirectionBits))-1;
 		maxNodeID = (1l<<(totalNoBits-partitionBits- IDType.Node.offset()))-1;
@@ -164,10 +166,10 @@ public class IDManager implements IDInspector {
      */
 
 
-	public long getEdgeID(long count) {
+	public long getEdgeID(long count, long partition) {
 		if (count<0 || count>maxEdgeID) 
 			throw new IllegalArgumentException("Invalid count for bound:" + maxEdgeID);
-		return IDType.Edge.addPadding(count);
+		return addPartition(IDType.Edge.addPadding(count), partition);
 	}
 
 
@@ -236,7 +238,6 @@ public class IDManager implements IDInspector {
 	
 	@Override
 	public long getPartitionID(long id) {
-		assert !isEdgeID(id);
 		return (id>>>partitionOffset);
 	}
 

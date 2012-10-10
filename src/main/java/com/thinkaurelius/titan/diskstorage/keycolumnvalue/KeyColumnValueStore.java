@@ -15,7 +15,7 @@ public interface KeyColumnValueStore {
      * @param txh Transaction
      * @return TRUE, if key has at least one column-value pair, else FALSE
      */
-    public boolean containsKey(ByteBuffer key, StoreTransactionHandle txh) throws StorageException;
+    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException;
 
     /**
      * Retrieves the list of entries (i.e. column-value pairs) for a specified key which
@@ -33,7 +33,7 @@ public interface KeyColumnValueStore {
      *         {@link com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil#isSmallerThan(ByteBuffer,ByteBuffer)}
      * @return List of entries up to a maximum of "limit" entries
      */
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, int limit, StoreTransactionHandle txh) throws StorageException;
+    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, int limit, StoreTransaction txh) throws StorageException;
 
 
     /**
@@ -51,7 +51,7 @@ public interface KeyColumnValueStore {
      *         {@link com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil#isSmallerThan(ByteBuffer,ByteBuffer)}
      * @return List of entries
      */
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, StoreTransactionHandle txh) throws StorageException;
+    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, StoreTransaction txh) throws StorageException;
 
     /**
      * Retrieves the value for the specified column and key under the given transaction
@@ -62,7 +62,7 @@ public interface KeyColumnValueStore {
      * @param txh Transaction
      * @return Value for key and column or NULL
      */
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransactionHandle txh) throws StorageException;
+    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException;
 
     /**
      * Returns true if the specified key-column pair exists in the store.
@@ -72,7 +72,7 @@ public interface KeyColumnValueStore {
      * @param txh Transaction
      * @return TRUE, if key has at least one column-value pair, else FALSE
      */
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransactionHandle txh) throws StorageException;
+    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException;
 
     /**
      * Applies the specified insertion and deletion mutations to the provided key.
@@ -83,7 +83,7 @@ public interface KeyColumnValueStore {
      * @param deletions List of columns to be removed
      * @param txh Transaction under which to execute the operation
      */
-    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransactionHandle txh) throws StorageException;
+    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException;
 
     /**
      * Acquires a lock for the key-column pair which ensures that nobody else can take a lock on that
@@ -101,7 +101,7 @@ public interface KeyColumnValueStore {
      * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
      * @param txh Transaction
      */
-    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, StoreTransactionHandle txh) throws StorageException;
+    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException;
 
 
     /**
@@ -109,8 +109,22 @@ public interface KeyColumnValueStore {
      * ordered but not necessarily.
      *
      * @return An iterator over all keys in this store.
+     * @throws UnsupportedOperationException if the underlying store does not support this operation. Check {@link StoreFeatures#supportsScan()} first.
      */
-    public RecordIterator<ByteBuffer> getKeys(StoreTransactionHandle txh) throws StorageException;
+    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException;
+
+
+    /**
+     * Returns an array that describes the key boundaries of the locally hosted partition of this store.
+     * 
+     * The array has two entries: the first marks the lower bound for the keys stored locally (inclusive) and the other
+     * marks the upper bound (exclusive).
+     * 
+     * @return An array with two entries describing the locally hosted partition of this store.
+     * @throws StorageException
+     * @throws UnsupportedOperationException if the underlying store does not support this operation. Check {@link StoreFeatures#hasLocalKeyPartition()} first.
+     */
+    public ByteBuffer[] getLocalKeyPartition() throws StorageException;
 
     /**
      * Returns the name of this store. Each store has a unique name which is used to open it.

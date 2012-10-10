@@ -9,7 +9,7 @@ import cern.colt.list.AbstractLongList;
  * but does not support modification.
  *
  * VertexList is returned by {@link TitanQuery}. Depending on how the query was executed that returned this VertexList,
- * getting vertex ids might be significantly faster than retrieving vertex objects.
+ * getting vertex idAuthorities might be significantly faster than retrieving vertex objects.
  *
  * @author	Matthias Br&ouml;cheler (http://www.matthiasb.com)
  *
@@ -33,7 +33,7 @@ public interface VertexList extends Iterable<TitanVertex> {
 	public TitanVertex get(int pos);
 	
 	/**
-	 * Sorts this list according to vertex ids in increasing order.
+	 * Sorts this list according to vertex idAuthorities in increasing order.
      * If the list is already sorted, invoking this method incurs no cost.
 	 *
 	 * 
@@ -42,11 +42,11 @@ public interface VertexList extends Iterable<TitanVertex> {
 	public void sort();
 
     /**
-     * Returns a list of ids of all vertices in this list of vertices in the same order of the original vertex list.
+     * Returns a list of idAuthorities of all vertices in this list of vertices in the same order of the original vertex list.
      *
      * Uses an efficient primitive variable-sized array.
      *
-     * @return A list of ids of all vertices in this list of vertices in the same order of the original vertex list.
+     * @return A list of idAuthorities of all vertices in this list of vertices in the same order of the original vertex list.
      * @see AbstractLongList
      */
     public AbstractLongList getIDs();

@@ -11,7 +11,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
-public class ConsistentKeyLockTransaction implements StoreTransactionHandle {
+public class ConsistentKeyLockTransaction implements StoreTransaction {
 
     private static final Logger log = LoggerFactory.getLogger(ConsistentKeyLockTransaction.class);
 
@@ -44,7 +44,7 @@ public class ConsistentKeyLockTransaction implements StoreTransactionHandle {
 	
 	/**
 	 * This variable holds the last time we successfully wrote a
-	 * lock via the {@link #writeBlindLockClaim(LockConfig, java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer)}
+	 * lock via the {@link #writeBlindLockClaim(ConsistentKeyLockStore, java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer)}
      * method.
 	 */
 	private final Map<ConsistentKeyLockStore, Long> lastLockApplicationTimesMS =
@@ -54,21 +54,21 @@ public class ConsistentKeyLockTransaction implements StoreTransactionHandle {
 	 * All locks currently claimed by this transaction.  Note that locks
 	 * in this set may not necessarily be actually held; membership in the
 	 * set only signifies that we've attempted to claim the lock via the
-	 * {@link #writeBlindLockClaim(LockConfig, java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer)} method.
+	 * {@link #writeBlindLockClaim(ConsistentKeyLockStore, java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer)} method.
 	 */
 	private final LinkedHashSet<LockClaim> lockClaims =
 			new LinkedHashSet<LockClaim>();
 
-    private final StoreTransactionHandle baseTx;
-    private final StoreTransactionHandle consistentTx;
+    private final StoreTransaction baseTx;
+    private final StoreTransaction consistentTx;
 
-	public ConsistentKeyLockTransaction(StoreTransactionHandle baseTx, StoreTransactionHandle consistentTx) {
+	public ConsistentKeyLockTransaction(StoreTransaction baseTx, StoreTransaction consistentTx) {
         Preconditions.checkArgument(consistentTx.getConsistencyLevel()==ConsistencyLevel.KEY_CONSISTENT);
         this.baseTx = baseTx;
         this.consistentTx=consistentTx;
 	}
 
-    StoreTransactionHandle getWrappedTransaction() {
+    StoreTransaction getWrappedTransaction() {
         return baseTx;
     }
 

@@ -4,7 +4,7 @@ import cern.colt.list.AbstractLongList;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
@@ -87,7 +87,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 	}
 	
 	@Override
-	public StoreTransactionHandle getTxHandle() {
+	public StoreTransaction getTxHandle() {
 		throw new UnsupportedOperationException("InMemory Transactions do not have transaction handles");
 	}
 
@@ -134,7 +134,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
         int id = idCounter.incrementAndGet();
         long newid = -1;
         if (vertex instanceof InternalRelation) {
-            newid = idManager.getEdgeID(id);
+            newid = idManager.getEdgeID(id,0);
         } else if (vertex instanceof TitanKey) {
             newid = idManager.getPropertyTypeID(id,0,0);
         } else if (vertex instanceof TitanLabel) {

@@ -137,7 +137,7 @@ public interface TitanQuery extends Query {
      *
      * By default, an implementation of TitanQuery chooses the most efficient way to retrieve a vertex's incident relations.
      * In some cases, it may be most efficient to NOT create the object graph in memory but only retrieve what is asked
-     * for (e.g. vertex ids) directly from the storage backend. However, when the same or similar queries are repeatedly
+     * for (e.g. vertex idAuthorities) directly from the storage backend. However, when the same or similar queries are repeatedly
      * executed, creating the object graph in memory first is more efficient.
      * Calling this method signals such cases to the TitanQuery implementation.
      *
@@ -209,7 +209,7 @@ public interface TitanQuery extends Query {
      * matching the conditions defined in this query.
      *
      * No guarantee is made as to the order in which the vertices are listed. Use {@link com.thinkaurelius.titan.core.VertexList#sort()}
-     * to sort by vertex ids most efficiently.
+     * to sort by vertex idAuthorities most efficiently.
      *
      * The query engine will determine the most efficient way to retrieve the vertices that match this query.
      *

@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
+import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
 
 /**
@@ -10,10 +12,9 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
  * 
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
-public class HBaseTransaction extends ConsistentKeyLockTransaction {
+public class HBaseTransaction extends AbstractStoreTransaction {
 
-	public HBaseTransaction() {
-		super();
-	}
-	
+    public HBaseTransaction(ConsistencyLevel level) {
+        super(ConsistencyLevel.KEY_CONSISTENT);
+    }
 }

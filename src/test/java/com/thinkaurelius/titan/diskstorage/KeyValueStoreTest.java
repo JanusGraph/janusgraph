@@ -1,12 +1,12 @@
 package com.thinkaurelius.titan.diskstorage;
 
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.ScanKeyValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -31,7 +31,7 @@ public abstract class KeyValueStoreTest {
 
 	
 	protected KeyValueStoreManager manager;
-	protected StoreTransactionHandle tx;
+	protected StoreTransaction tx;
 	protected KeyValueStore store;
 	
 	@Before
@@ -42,7 +42,7 @@ public abstract class KeyValueStoreTest {
 	
 	public void open() throws StorageException {
         manager = openStorageManager();
-        tx = manager.beginTransaction();
+        tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
         store = manager.openDatabase(storeName);
     }
 
@@ -77,9 +77,8 @@ public abstract class KeyValueStoreTest {
 	public void loadValues(String[] values) throws StorageException {
 		List<KeyValueEntry> entries = new ArrayList<KeyValueEntry>();
 		for (int i=0;i<numKeys;i++) {
-			entries.add(new KeyValueEntry(KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(values[i])));
+            store.insert(KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(values[i]),tx);
 		}
-		store.insert(entries, tx);
 	}
 	
 	public Set<Integer> deleteValues(int start, int every) throws StorageException {
@@ -87,9 +86,8 @@ public abstract class KeyValueStoreTest {
 		List<ByteBuffer> keys = new ArrayList<ByteBuffer>();
 		for (int i=start;i<numKeys;i=i+every) {
 			removed.add(i);
-			keys.add(KeyValueStoreUtil.getBuffer(i));
+            store.delete(KeyValueStoreUtil.getBuffer(i),tx);
 		}
-		store.delete(keys, tx);
 		return removed;
 	}
 	
@@ -172,16 +170,14 @@ public abstract class KeyValueStoreTest {
     @Test
     public void scanTest() throws StorageException {
         if (manager.getFeatures().supportsScan()) {
-            ScanKeyValueStore scanstore = (ScanKeyValueStore)store;
             String[] values = generateValues();
             loadValues(values);
-            RecordIterator<ByteBuffer> iterator0 = scanstore.getKeys(tx);
+            RecordIterator<ByteBuffer> iterator0 = store.getKeys(tx);
             assertEquals(numKeys,KeyValueStoreUtil.count(iterator0));
             clopen();
-            scanstore = (ScanKeyValueStore)store;
-            RecordIterator<ByteBuffer> iterator1 = scanstore.getKeys(tx);
-            RecordIterator<ByteBuffer> iterator2 = scanstore.getKeys(tx);
-            RecordIterator<ByteBuffer> iterator3 = scanstore.getKeys(tx);
+            RecordIterator<ByteBuffer> iterator1 = store.getKeys(tx);
+            RecordIterator<ByteBuffer> iterator2 = store.getKeys(tx);
+            RecordIterator<ByteBuffer> iterator3 = store.getKeys(tx);
             assertEquals(numKeys,KeyValueStoreUtil.count(iterator1));
             assertEquals(numKeys,KeyValueStoreUtil.count(iterator2));
         }

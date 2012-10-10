@@ -15,7 +15,7 @@ import com.thinkaurelius.titan.graphdb.types.group.StandardTypeGroup;
  * TitanTypes are assigned to TypeGroups when they are first created using {@link TypeMaker#group(TypeGroup)}.
  * <br />
  * A TitanGroup is defined with a name and an id, however, two groups with the same id are considered equivalent.
- * The name is only used for recognition has is not persisted in the database. Group ids must be positive (>0)
+ * The name is only used for recognition has is not persisted in the database. Group idAuthorities must be positive (>0)
  * and the maximum group id allowed is configurable.
  *
  * @author	Matthias Br&ouml;cheler (http://www.matthiasb.com)

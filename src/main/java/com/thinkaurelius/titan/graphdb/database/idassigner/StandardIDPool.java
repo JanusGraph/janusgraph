@@ -21,11 +21,11 @@ public class StandardIDPool implements IDPool {
     private static final int MAX_WAIT_TIME = 2000;
     
     private final IDAuthority idAuthority;
-    //private final int blockSize;
+    private final long maxID;
     private final int partitionID;
         
     private long nextID;
-    private long maxID;
+    private long currentMaxID;
     private long renewBufferID;
     
     private volatile long bufferNextID;
@@ -34,14 +34,16 @@ public class StandardIDPool implements IDPool {
 
     private boolean initialized;
     
-    public StandardIDPool(IDAuthority idAuthority, long partitionID) {
+    public StandardIDPool(IDAuthority idAuthority, long partitionID, long maximumID) {
         Preconditions.checkArgument(partitionID>=0);
         Preconditions.checkArgument(partitionID<Integer.MAX_VALUE);
+        Preconditions.checkArgument(maximumID >0);
         this.idAuthority = idAuthority;
         this.partitionID=(int)partitionID;
-        
+        this.maxID = maximumID;
+
         nextID = 0;
-        maxID = 0;
+        currentMaxID = 0;
         renewBufferID = 0;
         
         bufferNextID = -1;
@@ -52,7 +54,7 @@ public class StandardIDPool implements IDPool {
     }
     
     private synchronized void nextBlock() throws InterruptedException {
-        assert nextID == maxID;
+        assert nextID == currentMaxID;
         
         long time = System.currentTimeMillis();
         if (idBlockRenewer!=null && idBlockRenewer.isAlive()) {
@@ -63,19 +65,19 @@ public class StandardIDPool implements IDPool {
         Preconditions.checkArgument(bufferMaxID>0 && bufferNextID>0,bufferMaxID+" vs. " + bufferNextID);
         
         nextID = bufferNextID;
-        maxID = bufferMaxID;
+        currentMaxID = bufferMaxID;
         
-        log.debug("[{}] Next/Max ID: {}",partitionID,new long[]{nextID,maxID});
+        log.debug("[{}] Next/Max ID: {}",partitionID,new long[]{nextID, currentMaxID});
 
-        assert nextID>0 && maxID>nextID;
+        assert nextID>0 && currentMaxID >nextID;
         
         bufferNextID = -1;
         bufferMaxID = -1;
         
-        renewBufferID = maxID - RENEW_ID_COUNT;
-        if (renewBufferID>=maxID) renewBufferID = maxID-1;
+        renewBufferID = currentMaxID - RENEW_ID_COUNT;
+        if (renewBufferID>= currentMaxID) renewBufferID = currentMaxID -1;
         if (renewBufferID<nextID) renewBufferID = nextID;
-        assert renewBufferID>=nextID && renewBufferID<maxID;
+        assert renewBufferID>=nextID && renewBufferID< currentMaxID;
     }
     
     private void renewBuffer() {
@@ -93,17 +95,17 @@ public class StandardIDPool implements IDPool {
 
     @Override
     public synchronized long nextID() {
-        assert nextID<=maxID;
+        assert nextID<= currentMaxID;
         if (!initialized) {
             renewBuffer();
             initialized=true;
         }
 
-        if (nextID==maxID) {
+        if (nextID== currentMaxID) {
             try {
                 nextBlock();
             } catch (InterruptedException e) {
-                throw new TitanException("Could not renew id block",e);
+                throw new TitanException("Could not renew id block due to interruption",e);
             }
         }
 
@@ -116,13 +118,14 @@ public class StandardIDPool implements IDPool {
         }
         long returnId = nextID;
         nextID++;
+        if (returnId>=maxID) throw new IDPoolExhaustedException("Exhausted max id of " + maxID);
         log.trace("[{}] Returned id: {}",partitionID,returnId);
         return returnId;
     }
 
     @Override
     public synchronized void close() {
-        //TODO: release unused ids, current and buffer
+        //TODO: release unused idAuthorities, current and buffer
         if (idBlockRenewer!=null && idBlockRenewer.isAlive()) {
             log.debug("ID renewal thread still alive on close");
 

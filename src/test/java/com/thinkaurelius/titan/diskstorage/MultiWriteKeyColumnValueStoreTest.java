@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -12,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.junit.After;
 import org.junit.Before;
@@ -25,13 +25,18 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
 	int numKeys = 500;
 	int numColumns = 50;
+    
+    int bufferSize = 20;
 
-    protected String storeName = "testStore1";
+    protected String storeName1 = "testStore1";
+    private KeyColumnValueStore store1;
+    protected String storeName2 = "testStore2";
+    private KeyColumnValueStore store2;
+
 	
 	public KeyColumnValueStoreManager manager;
-	public StoreTransactionHandle tx;
-	public MultiWriteKeyColumnValueStore store;
-	
+	public StoreTransaction tx;
+
 
 	private Random rand = new Random(10);
 	
@@ -45,8 +50,11 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
 	public void open() throws StorageException {
         manager = openStorageManager();
-        tx = manager.beginTransaction();
-        store = (MultiWriteKeyColumnValueStore)manager.openDatabase(storeName);
+        assertTrue(manager.getFeatures().supportsBatchMutation());
+        tx = new BufferTransaction(manager.beginTransaction(ConsistencyLevel.DEFAULT),manager,bufferSize);
+        store1 = new BufferedKeyColumnValueStore(manager.openDatabase(storeName1),true);
+        store2 = new BufferedKeyColumnValueStore(manager.openDatabase(storeName2),true);
+        
     }
     
     public void clopen() throws StorageException {
@@ -61,7 +69,8 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
     public void close() throws StorageException {
         if (tx!=null) tx.commit();
-        if (null != store) ((KeyColumnValueStore)store).close();
+        if (null != store1) store1.close();
+        if (null != store2) store2.close();
         if (null != manager) manager.close();
     }
     
@@ -71,8 +80,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     	ByteBuffer b1 = ByteBuffer.allocate(1);
     	b1.put((byte)1).rewind();
     	
-    	assertNull("The store's initial state is not empty",
-    			((KeyColumnValueStore)store).get(b1, b1, tx));
+    	assertNull(store1.get(b1, b1, tx));
     	
     	List<Entry> additions = Arrays.asList(new Entry(b1, b1));
     	
@@ -86,32 +94,35 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     	deleteOnly.put(b1, new Mutation(null, deletions));
     	addOnly.put(b1, new Mutation(additions, null));
     	
-    	store.mutateMany(combination, tx);
-    	
-    	ByteBuffer result = ((KeyColumnValueStore)store).get(b1, b1, tx);
+    	store1.mutate(b1,additions,deletions,tx);
+        tx.flush();
+        
+    	ByteBuffer result = store1.get(b1, b1, tx);
     	
     	assertEquals(b1, result);
     	
-    	store.mutateMany(deleteOnly, tx);
+        store1.mutate(b1,null,deletions,tx);
+        tx.flush();
     	
     	for (int i = 0; i < 100; i++) {
-    		ByteBuffer n = ((KeyColumnValueStore)store).get(b1, b1, tx);
+    		ByteBuffer n = store1.get(b1, b1, tx);
     		assertNull(n);
-    		store.mutateMany(addOnly, tx);
-    		store.mutateMany(deleteOnly, tx);
-    		n = ((KeyColumnValueStore)store).get(b1, b1, tx);
+            store1.mutate(b1,additions,null,tx); tx.flush();
+    		store1.mutate(b1,null,deletions,tx); tx.flush();
+    		n = store1.get(b1, b1, tx);
     		assertNull(n);
     	}
     	
     	for (int i = 0; i < 100; i++) {
-    		store.mutateMany(deleteOnly, tx);
-    		store.mutateMany(addOnly, tx);
-    		assertEquals(b1, ((KeyColumnValueStore)store).get(b1, b1, tx));
+            store1.mutate(b1,null,deletions,tx); tx.flush();
+            store1.mutate(b1,additions,null,tx); tx.flush();
+    		assertEquals(b1, store1.get(b1, b1, tx));
     	}
     	
     	for (int i = 0; i < 100; i++) {
-    		store.mutateMany(combination, tx);
-    		assertEquals(b1, ((KeyColumnValueStore)store).get(b1, b1, tx));
+            store1.mutate(b1,additions,deletions,tx);
+            tx.flush();
+    		assertEquals(b1, store1.get(b1, b1, tx));
     	}
     }
     
@@ -126,16 +137,27 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     	
     	for (int round = 0; round < 10; round++) {
     		Map<ByteBuffer, Mutation> changes = mutateState(state, dels, adds);
-    	
-    		store.mutateMany(changes, tx);
-    	
+
+            applyChanges(changes,store1,tx);
+            applyChanges(changes,store2,tx);
+            tx.flush();
+
     		int deletesExpected = 0 == round ? 0 : dels;
     		
     		int stateSizeExpected = adds + (adds - dels) * round;
     		
-    		assertEquals(stateSizeExpected, checkThatStateExistsInStore(state, (KeyColumnValueStore)store, round));
-    		assertEquals(deletesExpected, checkThatDeletionsApplied(changes, (KeyColumnValueStore)store, round));
+    		assertEquals(stateSizeExpected, checkThatStateExistsInStore(state, store1, round));
+    		assertEquals(deletesExpected, checkThatDeletionsApplied(changes, store1, round));
+
+            assertEquals(stateSizeExpected, checkThatStateExistsInStore(state, store2, round));
+            assertEquals(deletesExpected, checkThatDeletionsApplied(changes, store2, round));
     	}
+    }
+    
+    public void applyChanges(Map<ByteBuffer, Mutation> changes, KeyColumnValueStore store, StoreTransaction tx) throws StorageException {
+        for (Map.Entry<ByteBuffer,Mutation> change : changes.entrySet()) {
+            store.mutate(change.getKey(),change.getValue().getAdditions(),change.getValue().getDeletions(),tx);
+        }
     }
     
     public int checkThatStateExistsInStore(Map<ByteBuffer, Map<ByteBuffer, ByteBuffer>> state, KeyColumnValueStore store, int round) throws StorageException {
@@ -205,8 +227,8 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 	 *            Remove at most this many entries from state
 	 * @param additionCount
 	 *            Add exactly this many entries to state
-	 * @return A Mutation map compatible with
-	 *         {@link com.thinkaurelius.titan.diskstorage.keycolumnvalue.MultiWriteKeyColumnValueStore#mutateMany(Map, com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle)}
+	 * @return A Mutation map
+	 *
 	 */
 	public Map<ByteBuffer, Mutation> mutateState(
 			Map<ByteBuffer, Map<ByteBuffer, ByteBuffer>> state,

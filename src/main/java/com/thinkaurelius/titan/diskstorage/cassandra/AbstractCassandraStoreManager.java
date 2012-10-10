@@ -4,8 +4,11 @@ import com.thinkaurelius.titan.diskstorage.common.RemoteStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import org.apache.commons.configuration.Configuration;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -53,20 +56,20 @@ public abstract class AbstractCassandraStoreManager extends RemoteStoreManager i
     
     private final CassandraTransaction.Consistency readConsistencyLevel;
     private final CassandraTransaction.Consistency writeConsistencyLevel;
-
-
-
-    private final StoreFeatures features;
-
+    
+    protected StoreFeatures features;
 
     public AbstractCassandraStoreManager(Configuration storageConfig) {
         super(storageConfig, PORT_DEFAULT);
 
+        features = new StoreFeatures();
+        features.supportsScan=false; features.supportsBatchMutation=true; features.isTransactional=false;
+        features.supportsConsistentKeyOperations=true; features.supportsLocking=false; features.isKeyOrdered=false;
+        features.isDistributed=true; features.hasLocalKeyPartition=false;
+        
         this.keySpaceName = storageConfig.getString(KEYSPACE_KEY, KEYSPACE_DEFAULT);
 
         this.replicationFactor = storageConfig.getInt(REPLICATION_FACTOR_KEY, REPLICATION_FACTOR_DEFAULT);
-
-        this.features=getFeatures(storageConfig);
 
         this.readConsistencyLevel = CassandraTransaction.Consistency.parse(storageConfig.getString(
                 READ_CONSISTENCY_LEVEL_KEY, READ_CONSISTENCY_LEVEL_DEFAULT));
@@ -74,9 +77,10 @@ public abstract class AbstractCassandraStoreManager extends RemoteStoreManager i
         this.writeConsistencyLevel = CassandraTransaction.Consistency.parse(storageConfig.getString(
                 WRITE_CONSISTENCY_LEVEL_KEY, WRITE_CONSISTENCY_LEVEL_DEFAULT));
     }
+    
 
     @Override
-    public StoreTransactionHandle beginTransaction(ConsistencyLevel level) {
+    public StoreTransaction beginTransaction(ConsistencyLevel level) {
         return new CassandraTransaction(level,readConsistencyLevel,writeConsistencyLevel);
     }
 
@@ -90,10 +94,5 @@ public abstract class AbstractCassandraStoreManager extends RemoteStoreManager i
         return features;
     }
 
-    private static final StoreFeatures INSTANCE = new StoreFeatures(false,false,true,false,true);
-
-    public static final StoreFeatures getFeatures(Configuration storageConfig) {
-        return INSTANCE;
-    }
 
 }

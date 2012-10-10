@@ -13,7 +13,7 @@ public interface StoreManager {
      *
      * @return New Transaction Hanlde
      */
-    public StoreTransactionHandle beginTransaction(ConsistencyLevel consistencyLevel) throws StorageException;
+    public StoreTransaction beginTransaction(ConsistencyLevel consistencyLevel) throws StorageException;
 
     /**
      * Closes the Storage Manager and all databases that have been opened.

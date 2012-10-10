@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransactionHandle;
 
 public interface KeyValueStoreManager extends StoreManager {
 

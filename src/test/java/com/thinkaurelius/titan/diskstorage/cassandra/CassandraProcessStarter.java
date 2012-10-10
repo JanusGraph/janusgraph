@@ -175,7 +175,7 @@ public class CassandraProcessStarter {
 			 */
 			log.debug("Clearing pooled Thrift connections for {}:{}",
 					address, port);
-			CTConnectionPool.getPool(address, port, GraphDatabaseConfiguration.COMMUNICATION_TIMEOUT_DEFAULT).clear();
+			CTConnectionPool.getPool(address, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT).clear();
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new TitanException(e);
@@ -207,7 +207,7 @@ public class CassandraProcessStarter {
 	}
 
 	public void waitForClusterSize(int minSize) throws InterruptedException, StorageException {
-		CTConnectionFactory f = CTConnectionPool.getFactory(address, port, GraphDatabaseConfiguration.COMMUNICATION_TIMEOUT_DEFAULT);
+		CTConnectionFactory f = CTConnectionPool.getFactory(address, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
 		CTConnection conn = null;
 		try {
 			conn = f.makeRawConnection();

@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.graphdb.cassandra;
 
 import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraDaemonWrapper;
+import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraDaemonWrapper;
 import com.thinkaurelius.titan.graphdb.TitanGraphConcurrentTest;
-import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 import org.junit.BeforeClass;
 
 public class InternalCassandraGraphConcurrentTest extends TitanGraphConcurrentTest {
