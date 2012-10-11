@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -92,7 +93,7 @@ public abstract class LockKeyColumnValueStoreTest {
                     store[i] = new TransactionalLockStore(store[i]);
                 } else if (storeFeatures.supportsConsistentKeyOperations()) {
                     ConsistentKeyLockConfiguration lockConfiguration = new ConsistentKeyLockConfiguration(sc,"store"+i);
-                    store[i] = new ConsistentKeyLockStore(store[i],manager[i].openDatabase(dbName+":lock"),lockConfiguration);
+                    store[i] = new ConsistentKeyLockStore(store[i],manager[i].openDatabase(dbName+"_lock_"),lockConfiguration);
                     for (int j=0;j<numTx;j++) tx[i][j]=new ConsistentKeyLockTransaction(tx[i][j],manager[i].beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
                 } else throw new IllegalArgumentException("Store needs to support some form of locking");
             }
@@ -339,9 +340,23 @@ public abstract class LockKeyColumnValueStoreTest {
 		s2.mutate(k, Arrays.asList(new Entry(c2, v2)), null, tx2);
 
 	}
+    
+    @Test
+    public void testSimpleIDAcquisition() throws StorageException {
+        final int blockSize = 400;
+        final IDBlockSizer blockSizer = new IDBlockSizer() {
+            @Override
+            public long getBlockSize(int partitionID) {
+                return blockSize;
+            }
+        };
+        idAuthorities[0].setIDBlockSizer(blockSizer);
+        long[] block = idAuthorities[0].getIDBlock(0);
+        assertEquals(block[1],block[0]+blockSize);
+    }
 
     @Test
-    public void testIDAcquisition() throws StorageException, InterruptedException {
+    public void testMultiIDAcquisition() throws StorageException, InterruptedException {
         final int numPartitions = 2;
         final int numAcquisitionsPerThreadPartition = 10;
         final int blockSize = 250;
@@ -366,15 +381,17 @@ public abstract class LockKeyColumnValueStoreTest {
                 public void run() {
                     try {
                     for (int j=0;j<numAcquisitionsPerThreadPartition;j++) {
-                        for (int p=1;p<=numPartitions;p++) {
+                        for (int p=0;p<numPartitions;p++) {
                             long nextId = idAuthority.peekNextID(p);
                             long[] block = idAuthority.getIDBlock(p);
-                            assertTrue(nextId<=block[0]);
-                            assertEquals(block[0]+blockSize,block[1]);
-                            ids.get(p-1).add(block[0]);
+                            assertTrue(nextId <= block[0]);
+                            assertEquals(block[0] + blockSize, block[1]);
+                            ids.get(p).add(block[0]);
                         }
                     }
-                    } catch (StorageException e) { throw new RuntimeException(e); }
+                    } catch (StorageException e) {
+                        e.printStackTrace();
+                        throw new RuntimeException(e); }
                 }
             });
             threads[i].start();
@@ -401,15 +418,14 @@ public abstract class LockKeyColumnValueStoreTest {
 
     @Test
     public void testLocalPartitionAcquisition() throws StorageException {
-        for (int i=0;i<concurrency;i++) {
-            if (manager[i].getFeatures().hasLocalKeyPartition()) {
+        for (int c=0;c<concurrency;c++) {
+            if (manager[c].getFeatures().hasLocalKeyPartition()) {
                 try {
-                    ByteBuffer[] partition = idAuthorities[i].getLocalIDPartition();
-                    assertTrue(partition[0].remaining()>=4);
-                    assertTrue(partition[1].remaining()>=4);
-                    int val1=partition[0].getInt();
-                    int val2=partition[1].getInt();
-                    assertTrue(val1<val2);
+                    ByteBuffer[] partition = idAuthorities[c].getLocalIDPartition();
+                    assertEquals(partition[0].remaining(),partition[1].remaining());
+                    for (int i=0;i<2;i++) {
+                        assertTrue(partition[i].remaining()>=4);
+                    }
                 } catch (UnsupportedOperationException e) {
                     fail();
                 }

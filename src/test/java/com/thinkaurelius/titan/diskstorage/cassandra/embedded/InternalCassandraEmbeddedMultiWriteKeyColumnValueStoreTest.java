@@ -10,6 +10,6 @@ public class InternalCassandraEmbeddedMultiWriteKeyColumnValueStoreTest extends 
 
     @Override
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        return new CassandraThriftStoreManager(StorageSetup.getEmbeddedCassandraStorageConfiguration());
+        return new CassandraEmbeddedStoreManager(StorageSetup.getEmbeddedCassandraStorageConfiguration());
     }
 }

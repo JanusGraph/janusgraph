@@ -11,34 +11,54 @@ import java.nio.ByteBuffer;
 
 public class VariableLong {
 
-    private static final byte mask = (1<<7)-1;
+    private static final byte mask = 127;
     private static final byte stopMask = -128;
 
-    public static long readPositive(ByteBuffer in) {
+    private static long readUnsigned(ByteBuffer in) {
+        int offset = 0;
         long value = 0;
         byte b = 0;
         do {
             b = in.get();
-            value = value << 7;
-            value = value | (b & mask);
+            long add = (b & mask);
+            add = add<<offset;
+            offset+=7;
+            value = value | add;
         } while (b>=0);
         return value;
     }
-    
+
+
+    private static void writeUnsigned(ByteBuffer out, long value) {
+        boolean first = true;
+        while (value!=0 || first) {
+            first = false;
+            byte b = (byte)(value & mask);
+            value = value >>> 7;
+            if (value==0) b = (byte)(b | stopMask);
+            out.put(b);
+        }
+    }
+
+    private static int unsignedLength(long value) {
+        int length = 1;
+        value = (value>>>7);
+        while (value!=0) {
+            value = (value>>>7);
+            length++;
+        }
+        return length;
+    }
+
+    public static long readPositive(ByteBuffer in) {
+        long value = readUnsigned(in);
+        assert value>=0;
+        return value;
+    }
+
     public static void writePositive(ByteBuffer out, final long value) {
         Preconditions.checkArgument(value>=0,"Positive value expected: " + value);
-        int offset = 63;
-        while (offset>0) {
-            offset -= 7;
-            long cut = value>>offset;
-            if (cut>0 || offset==0) {
-                byte b= (byte)(cut%128);
-                if (offset==0) {
-                    b = (byte) (b | stopMask);
-                }
-                out.put(b);
-            }
-        }
+        writeUnsigned(out,value);
     }
     
     public static ByteBuffer positiveByteBuffer(final long value) {
@@ -60,29 +80,26 @@ public class VariableLong {
     
     public static int positiveLength(long value) {
         assert value>=0;
-        int length = 1;
-        value = (value>>7);
-        while (value>0) {
-            value = (value>>7);
-            length++;
-        }
-        return length;
+        return unsignedLength(value);
+    }
+    
+    private static long convert2Unsigned(long value) {
+        assert value>=0 || value>Long.MIN_VALUE;
+        return Math.abs(value)<<1 | (value<0?1:0);
     }
 
     public static int length(long value) {
-        return positiveLength(Math.abs(value)*2 + (value<0?1:0));
+        return unsignedLength(convert2Unsigned(value));
     }
     
     public static void write(ByteBuffer out, final long value) {
-        writePositive(out,Math.abs(value)*2 + (value<0?1:0));
+        writeUnsigned(out,convert2Unsigned(value));
     }
 
     public static long read(ByteBuffer in) {
-        long value = readPositive(in);
-        boolean neg = value%2==1;
-        value = value/2;
-        if (neg) value = -value;
-        return value;
+        long value = readUnsigned(in);
+        if ((value & 1) == 1) return -(value>>>1);
+        else return value>>>1;
     }
 
     public static ByteBuffer byteBuffer(final long value) {
@@ -104,23 +121,23 @@ public class VariableLong {
     // =============== THIS IS A COPY&PASTE OF THE ABOVE =================
     // Using DataOutput instead of ByteBuffer
 
-    public static void writePositive(DataOutput out, final long value) {
-        Preconditions.checkArgument(value>=0,"Positive value expected: " + value);
-        int offset = 63;
-        while (offset>0) {
-            offset -= 7;
-            long cut = value>>offset;
-            if (cut>0 || offset==0) {
-                byte b= (byte)(cut%128);
-                if (offset==0) {
-                    b = (byte) (b | stopMask);
-                }
-                out.putByte(b);
-            }
+    public static void writeUnsigned(DataOutput out, long value) {
+        boolean first = true;
+        while (value!=0 || first) {
+            first = false;
+            byte b = (byte)(value & mask);
+            value = value >>> 7;
+            if (value==0) b = (byte)(b | stopMask);
+            out.putByte(b);
         }
     }
 
+    public static void writePositive(DataOutput out, long value) {
+        Preconditions.checkArgument(value>=0,"Positive value expected: " + value);
+        writeUnsigned(out,value);
+    }
+
     public static void write(DataOutput out, final long value) {
-        writePositive(out,Math.abs(value)*2 + (value<0?1:0));
+        writeUnsigned(out,convert2Unsigned(value));
     }
 }

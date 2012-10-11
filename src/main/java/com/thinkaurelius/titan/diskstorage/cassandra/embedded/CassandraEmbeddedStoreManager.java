@@ -147,14 +147,13 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             BigInteger le = new BigInteger(1, l.token);
             BigInteger ri = new BigInteger(1, r.token);
 
-            BigInteger max = BigInteger.ONE.shiftLeft(8 * tokenLength);
-            le.add(BigInteger.ONE);
-            Preconditions.checkArgument(le.compareTo(max)<0);
-            ri.add(BigInteger.ONE);
-            if (ri.compareTo(max)>=0) ri.subtract(BigInteger.ONE);
+            BigInteger modulo = BigInteger.ONE.shiftLeft(8 * tokenLength);
 
-            ByteBuffer lb = ByteBuffer.wrap(le.toByteArray());
-            ByteBuffer rb = ByteBuffer.wrap(ri.toByteArray());
+            BigInteger leftInclusive = le.add(BigInteger.ONE).mod(modulo);
+            BigInteger rightExclusive = ri.add(BigInteger.ONE).mod(modulo);
+
+            ByteBuffer lb = ByteBuffer.wrap(leftInclusive.toByteArray());
+            ByteBuffer rb = ByteBuffer.wrap(rightExclusive.toByteArray());
             Preconditions.checkArgument(lb.remaining()==tokenLength);
             Preconditions.checkArgument(rb.remaining()==tokenLength);
 
@@ -247,7 +246,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 	public void clearStorage() throws StorageException {
 		openStores.clear();
 		try {
-			MigrationManager.announceKeyspaceDrop(keySpaceName);
+            if (Schema.instance.getTableInstance(keySpaceName)!=null)
+			    MigrationManager.announceKeyspaceDrop(keySpaceName);
 		} catch (ConfigurationException e) {
 			throw new PermanentStorageException(e);
 		}

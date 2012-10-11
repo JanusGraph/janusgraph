@@ -66,11 +66,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     @Override
     public void close() throws StorageException {
         openStores.clear();
-        try {
-        pool.close();
-        } catch (Exception e) {
-            throw new PermanentStorageException("Could not close thrift connection pool",e);
-        }
+        //Do NOT close pool as this may cause subsequent pool operations to fail!
     }
 
     @Override

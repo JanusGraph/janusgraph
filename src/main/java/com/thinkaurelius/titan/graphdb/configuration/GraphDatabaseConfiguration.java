@@ -363,7 +363,7 @@ public class GraphDatabaseConfiguration {
     }
 
 	public VertexIDAssigner getIDAssigner(Backend backend) {
-		return new VertexIDAssigner(configuration.subset(IDS_NAMESPACE),backend);
+		return new VertexIDAssigner(configuration.subset(IDS_NAMESPACE),backend.getIDAuthority(),backend.getStoreFeatures());
 	}
 
     public String getBackendDescription() {

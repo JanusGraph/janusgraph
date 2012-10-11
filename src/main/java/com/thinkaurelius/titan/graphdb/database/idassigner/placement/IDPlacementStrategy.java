@@ -11,9 +11,9 @@ import java.util.Map;
 public interface IDPlacementStrategy {
 
     /**
-     * Individually assigns an id to the given vertex.
+     * Individually assigns an id to the given vertex or relation.
      * 
-     * @param vertex Vertex to assign id to.
+     * @param vertex Vertex or relation to assign id to.
      * @return
      */
     public long getPartition(InternalTitanVertex vertex);
@@ -45,10 +45,15 @@ public interface IDPlacementStrategy {
      * This method can be called at any time while Titan is running. It is typically called right
      * after construction and when the id space is redistributed.
      *
+     * Note, that the portion of the locally hosted keyspace may "wrap around", meaning that the lowerID>upperID
+     * which describes the id block starting at lowerID (inclusive) than wrapping around idLimit (exclusive) to
+     * upperID (exclusive).
+     *
      * @param lowerID lower bound of the locally hosted id space (inclusive)
      * @param upperID upper bound of the locally hosted id space (exclusive)
+     * @param idLimit any valid partition id must be smaller than this limit. Used to compute wrap arounds.
      */
-    public void setLocalPartitionBounds(int lowerID, int upperID);
+    public void setLocalPartitionBounds(int lowerID, int upperID, int idLimit);
 
     /**
      * Called when there are no more idAuthorities left in the given partition. It is expected that the

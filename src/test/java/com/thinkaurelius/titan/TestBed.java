@@ -3,14 +3,21 @@ package com.thinkaurelius.titan;
 import cern.colt.function.LongObjectProcedure;
 import cern.colt.map.AbstractLongObjectMap;
 import cern.colt.map.OpenLongObjectHashMap;
+import com.google.common.base.Preconditions;
 import com.sleepycat.je.util.DbCacheSize;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class TestBed {
 
@@ -19,6 +26,12 @@ public class TestBed {
 	 * @throws java.io.IOException
 	 */
 	public static void main(String[] args) throws Exception {
+        int[] localPartition = { 0, 200};
+        ByteBuffer lower = ByteBuffer.allocate(4);
+        ByteBuffer upper = ByteBuffer.allocate(4);
+        lower.putInt(localPartition[0]);
+        upper.putInt(localPartition[1]);
+        lower.rewind(); upper.rewind();
 
 
         byte b = (byte)(15 | (1<<7));

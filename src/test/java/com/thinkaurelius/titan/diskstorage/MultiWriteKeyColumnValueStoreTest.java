@@ -135,7 +135,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     	int dels = 1024;
     	int adds = 4096;
     	
-    	for (int round = 0; round < 10; round++) {
+    	for (int round = 0; round < 5; round++) {
     		Map<ByteBuffer, Mutation> changes = mutateState(state, dels, adds);
 
             applyChanges(changes,store1,tx);

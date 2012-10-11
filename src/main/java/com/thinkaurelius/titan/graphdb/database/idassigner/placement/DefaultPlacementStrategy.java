@@ -40,8 +40,14 @@ public class DefaultPlacementStrategy implements IDPlacementStrategy {
     }
 
     @Override
-    public void setLocalPartitionBounds(int lowerID, int upperID) {
-        //Ignore
+    public void setLocalPartitionBounds(int lowerID, int upperID, int idLimit) {
+        if (lowerID<upperID) {
+            Preconditions.checkArgument(lowerID<=partitionID);
+            Preconditions.checkArgument(upperID>partitionID);
+        } else {
+            Preconditions.checkArgument((lowerID<=partitionID && partitionID<idLimit) ||
+            (upperID>partitionID && partitionID>=0));
+        }
     }
 
     @Override

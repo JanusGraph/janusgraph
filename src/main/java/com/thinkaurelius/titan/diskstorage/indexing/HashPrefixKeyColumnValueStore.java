@@ -34,7 +34,9 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     private final ByteBuffer prefixKey(ByteBuffer key) {
         try {
             MessageDigest m = MessageDigest.getInstance(algorithm);
+            key.mark();
             m.update(key);
+            key.reset();
             byte[] hash = m.digest();
             ByteBuffer newKey = ByteBuffer.allocate(key.remaining()+numPrefixBytes);
             for (int i=0;i<numPrefixBytes;i++) {

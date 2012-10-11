@@ -50,7 +50,7 @@ public class Backend {
     public static final String ID_STORE_NAME = "titan_ids";
 
 
-    public static final String LOCK_STORE_SUFFIX = ":lock$";
+    public static final String LOCK_STORE_SUFFIX = "_lock_";
 
     public static final String STORE_LOCAL = "local";
     public static final String STORE_BERKELEYDB = "berkeleyje";
@@ -93,9 +93,13 @@ public class Backend {
         isKeyColumnValueStore = storeManager instanceof KeyColumnValueStoreManager;
         storeFeatures = storeManager.getFeatures();
 
-        bufferSize = storageConfig.getInt(GraphDatabaseConfiguration.BUFFER_SIZE_KEY,
+        int bufferSizeTmp = storageConfig.getInt(GraphDatabaseConfiguration.BUFFER_SIZE_KEY,
                                           GraphDatabaseConfiguration.BUFFER_SIZE_DEFAULT);
-        Preconditions.checkArgument(bufferSize >= 0, "Buffer size must be non-negative (use 0 to disable)");
+        Preconditions.checkArgument(bufferSizeTmp >= 0, "Buffer size must be non-negative (use 0 to disable)");
+        if (!storeFeatures.supportsBatchMutation()) {
+            bufferSize=0;
+            log.warn("Buffering disabled because backend does not support batch mutations");
+        } else bufferSize=bufferSizeTmp;
 
         if (!storeFeatures.supportsLocking() && storeFeatures.supportsConsistentKeyOperations()) {
             lockConfiguration = new ConsistentKeyLockConfiguration(storageConfig,storeManager.toString());
@@ -105,6 +109,7 @@ public class Backend {
 
 
         if (storeFeatures.isDistributed() && storeFeatures.isKeyOrdered()) {
+            log.debug("Wrapping index store with HashPrefix");
             hashPrefixIndex = true;
         } else {
             hashPrefixIndex = false;
@@ -160,11 +165,14 @@ public class Backend {
             //EdgeStore & VertexIndexStore
             KeyColumnValueStore idStore = getStore(ID_STORE_NAME);
             idAuthority = null;
-            if (storeFeatures.isTransactional())
+            if (storeFeatures.isTransactional()) {
                 idAuthority = new TransactionalIDManager(idStore,storeManager,config);
-            else if (storeFeatures.supportsConsistentKeyOperations())
+            } else if (storeFeatures.supportsConsistentKeyOperations()) {
                 idAuthority = new ConsistentKeyIDManager(idStore,storeManager,config);
-            Preconditions.checkNotNull(idAuthority,"Store needs to support consistent key or transactional operations for ID manager to work");
+            } else {
+                idAuthority = new TransactionalIDManager(idStore,storeManager,config);
+                log.warn("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
+            }
             edgeStore = getLockStore(getBufferStore(EDGESTORE_NAME));
             vertexIndexStore = getLockStore(getBufferStore(VERTEXINDEX_STORE_NAME));
 

@@ -90,7 +90,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 // Read the latest counter values from the idStore
                 ByteBuffer partitionKey = getPartitionKey(partition);
                 // calculate the start (inclusive) and end (exclusive) of the allocation we're about to attempt
-                long nextStart = getNextID(partitionKey,blockSize,null);
+                long nextStart = getNextID(partitionKey,blockSize,txh);
                 long nextEnd = nextStart + blockSize;
 
                 ByteBuffer target = getBlockApplication(nextStart);
@@ -100,7 +100,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 boolean success = false;
                 try {
                     long before = System.currentTimeMillis();
-                    idStore.mutate(partitionKey, Arrays.asList(new Entry(target, EMPTY_BUFFER)), null, null);
+                    idStore.mutate(partitionKey, Arrays.asList(new Entry(target, EMPTY_BUFFER)), null, txh);
                     long after = System.currentTimeMillis();
 
                     if (idApplicationWaitMS < after - before) {
@@ -118,7 +118,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                         TimeUtility.sleepUntil(after+idApplicationWaitMS,log);
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
-                        List<Entry> blocks = idStore.getSlice(partitionKey, slice[0], slice[1], null);
+                        List<Entry> blocks = idStore.getSlice(partitionKey, slice[0], slice[1], txh);
                         if (blocks==null) throw new TemporaryStorageException("Could not read from storage");
                         if (blocks.isEmpty()) throw new PermanentStorageException("It seems there is a race-condition in the block application. " +
                                 "If you have multiple Titan instances running on one physical machine, ensure that they have unique machine idAuthorities");
@@ -149,7 +149,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                         //Delete claim to not pollute id space
                         try {
                             for (int attempt=0;attempt<rollbackAttempts;attempt++) {
-                                idStore.mutate(partitionKey, null, Arrays.asList(target), null);
+                                idStore.mutate(partitionKey, null, Arrays.asList(target), txh);
                                 break;
                             }
                         } catch (StorageException e) {

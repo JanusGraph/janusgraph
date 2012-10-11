@@ -21,6 +21,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
+
 public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
 	private Logger log = LoggerFactory.getLogger(TitanGraphTest.class);
@@ -595,7 +597,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(4, v.query().labels("friend").direction(Direction.OUT).has("time", 10, Query.Compare.LESS_THAN_EQUAL).count());
         vl = v.query().labels().direction(Direction.OUT).interval("time",3,31).vertexIds();
         vl.sort();
-        for (int i=0;i<vl.size();i++) assertEquals(vs[i+3].getID(),vl.getID(i));
+        long[] vidsubset = new long[31-3];
+        for (int i=0;i<vidsubset.length;i++) vidsubset[i]=vs[i+3].getID();
+        Arrays.sort(vidsubset);
+        for (int i=0;i<vl.size();i++) assertEquals(vidsubset[i],vl.getID(i));
         assertEquals(7,v.query().labels("knows").direction(Direction.OUT).has("author",v).count());
         assertEquals(7,v.query().labels("knows").direction(Direction.OUT).has("author",v).interval("weight",0.0,2.0).count());
         assertEquals(3,v.query().labels("knows").direction(Direction.OUT).has("author",v).interval("weight",0.0,1.0).count());
@@ -622,7 +627,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(4, v.query().labels("friend").direction(Direction.OUT).has("time", 10, Query.Compare.LESS_THAN_EQUAL).count());
         vl = v.query().labels().direction(Direction.OUT).interval("time",3,31).vertexIds();
         vl.sort();
-        for (int i=0;i<vl.size();i++) assertEquals(vs[i+3].getID(),vl.getID(i));
+        for (int i=0;i<vl.size();i++) assertEquals(vidsubset[i],vl.getID(i));
         assertEquals(7,v.query().labels("knows").direction(Direction.OUT).has("author",v).count());
         assertEquals(7,v.query().labels("knows").direction(Direction.OUT).has("author",v).interval("weight",0.0,2.0).count());
         assertEquals(3,v.query().labels("knows").direction(Direction.OUT).has("author",v).interval("weight",0.0,1.0).count());
@@ -665,6 +670,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		String[] names = new String[noNodes];
 		int[] ids = new int[noNodes];
 		TitanVertex[] nodes = new TitanVertex[noNodes];
+        long[] nodeIds = new long[noNodes];
+        List[] nodeEdges = new List[noNodes];
 		for (int i=0;i<noNodes;i++) {
 			names[i]=RandomGenerator.randomString();
 			ids[i] = RandomGenerator.randomInt(1, Integer.MAX_VALUE / 2);
@@ -678,8 +685,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		int[] knowsOff = {-400, -18, 8, 232, 334};
 		for (int i=0;i<noNodes;i++) {
 			TitanVertex n = nodes[i];
+            nodeEdges[i]=new ArrayList(10);
 			for (int c : connectOff) {
-				n.addEdge(connect, nodes[wrapAround(i + c, noNodes)]);
+                TitanEdge r = n.addEdge(connect, nodes[wrapAround(i + c, noNodes)]);
+                nodeEdges[i].add(r);
 			}
 			for (int k : knowsOff) {
 				TitanVertex n2 = nodes[wrapAround(i+k,noNodes)];
@@ -687,10 +696,20 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 				r.addProperty(id, n.getProperty(id,Number.class).intValue() + n2.getProperty(id,Number.class).intValue());
 				r.addProperty(weight, k * 1.5);
 				r.addProperty(name, i + "-" + k);
+                nodeEdges[i].add(r);
 			}
 			if (i%100==99) log.debug(".");
 		}
-		
+
+        tx.commit(); tx=null;
+        Set[] nodeEdgeIds = new Set[noNodes];
+        for (int i=0;i<noNodes;i++) {
+            nodeIds[i]=nodes[i].getID();
+            nodeEdgeIds[i] = new HashSet(10);
+            for (Object r : nodeEdges[i]) {
+                nodeEdgeIds[i].add(((TitanEdge)r).getID());
+            }
+        }
 		clopen();
 		
 		nodes = new TitanVertex[noNodes];
@@ -704,6 +723,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 			assertEquals(n,tx.getVertex(name, names[i]));
 			assertEquals(names[i],n.getProperty(name, String.class));
 			nodes[i]=n;
+            assertEquals(nodeIds[i],n.getID());
 		}
 		knows = tx.getEdgeLabel("knows");
 		assertTrue(!knows.isSimple());
@@ -723,6 +743,12 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 				int ki = (int)k;
 				assertEquals(i+"-"+ki,r.getProperty(name, String.class));
 			}
+            
+            Set edgeIds = new HashSet(10);
+            for (TitanEdge r: n.getTitanEdges(Direction.OUT)) {
+                edgeIds.add(r.getID());
+            }
+            assertTrue(edgeIds.equals(nodeEdgeIds[i]));
 		}
 	}
 	

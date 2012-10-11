@@ -15,13 +15,16 @@ public class StandardIDPool implements IDPool {
 
     private static final Logger log =
             LoggerFactory.getLogger(StandardIDPool.class);
+
+    private static final long BUFFER_EMPTY = -1;
+    private static final long BUFFER_POOL_EXHAUSTION = -100;
     
     private static final int RENEW_ID_COUNT = 100;
     
     private static final int MAX_WAIT_TIME = 2000;
     
     private final IDAuthority idAuthority;
-    private final long maxID;
+    private final long maxID; //inclusive
     private final int partitionID;
         
     private long nextID;
@@ -35,9 +38,7 @@ public class StandardIDPool implements IDPool {
     private boolean initialized;
     
     public StandardIDPool(IDAuthority idAuthority, long partitionID, long maximumID) {
-        Preconditions.checkArgument(partitionID>=0);
-        Preconditions.checkArgument(partitionID<Integer.MAX_VALUE);
-        Preconditions.checkArgument(maximumID >0);
+        Preconditions.checkArgument(maximumID>0);
         this.idAuthority = idAuthority;
         this.partitionID=(int)partitionID;
         this.maxID = maximumID;
@@ -46,8 +47,8 @@ public class StandardIDPool implements IDPool {
         currentMaxID = 0;
         renewBufferID = 0;
         
-        bufferNextID = -1;
-        bufferMaxID = -1;
+        bufferNextID = BUFFER_EMPTY;
+        bufferMaxID = BUFFER_EMPTY;
         idBlockRenewer = null;
 
         initialized=false;
@@ -62,7 +63,11 @@ public class StandardIDPool implements IDPool {
             log.debug("Waiting for id renewal thread");
             idBlockRenewer.join(MAX_WAIT_TIME);
         }
-        Preconditions.checkArgument(bufferMaxID>0 && bufferNextID>0,bufferMaxID+" vs. " + bufferNextID);
+        if (bufferMaxID==BUFFER_POOL_EXHAUSTION || bufferNextID==BUFFER_POOL_EXHAUSTION)
+            throw new IDPoolExhaustedException("Exhausted ID Pool for partition: " + partitionID);
+
+        Preconditions.checkArgument(bufferMaxID>0,bufferMaxID);
+        Preconditions.checkArgument(bufferNextID>0,bufferNextID);
         
         nextID = bufferNextID;
         currentMaxID = bufferMaxID;
@@ -71,8 +76,8 @@ public class StandardIDPool implements IDPool {
 
         assert nextID>0 && currentMaxID >nextID;
         
-        bufferNextID = -1;
-        bufferMaxID = -1;
+        bufferNextID = BUFFER_EMPTY;
+        bufferMaxID = BUFFER_EMPTY;
         
         renewBufferID = currentMaxID - RENEW_ID_COUNT;
         if (renewBufferID>= currentMaxID) renewBufferID = currentMaxID -1;
@@ -81,16 +86,20 @@ public class StandardIDPool implements IDPool {
     }
     
     private void renewBuffer() {
-        Preconditions.checkArgument(bufferNextID==-1 && bufferMaxID==-1,bufferMaxID+" vs. " + bufferNextID);
+        Preconditions.checkArgument(bufferNextID==BUFFER_EMPTY,bufferNextID);
+        Preconditions.checkArgument(bufferMaxID==BUFFER_EMPTY,bufferMaxID);
         try {
             long[] idblock = idAuthority.getIDBlock(partitionID);
             bufferNextID = idblock[0];
             bufferMaxID = idblock[1];
+            Preconditions.checkArgument(bufferNextID>0,bufferNextID);
+            Preconditions.checkArgument(bufferMaxID>bufferNextID,bufferMaxID);
         } catch (StorageException e) {
             throw new TitanException("Could not acquire new ID block from storage",e);
+        } catch (IDPoolExhaustedException e) {
+            bufferNextID=BUFFER_POOL_EXHAUSTION;
+            bufferMaxID=BUFFER_POOL_EXHAUSTION;
         }
-        Preconditions.checkArgument(bufferNextID>0,bufferNextID);
-        Preconditions.checkArgument(bufferMaxID>bufferNextID,bufferMaxID+" vs. " + bufferNextID);
     }
 
     @Override
@@ -118,14 +127,13 @@ public class StandardIDPool implements IDPool {
         }
         long returnId = nextID;
         nextID++;
-        if (returnId>=maxID) throw new IDPoolExhaustedException("Exhausted max id of " + maxID);
+        if (returnId>maxID) throw new IDPoolExhaustedException("Exhausted max id of " + maxID);
         log.trace("[{}] Returned id: {}",partitionID,returnId);
         return returnId;
     }
 
     @Override
     public synchronized void close() {
-        //TODO: release unused idAuthorities, current and buffer
         if (idBlockRenewer!=null && idBlockRenewer.isAlive()) {
             log.debug("ID renewal thread still alive on close");
 

@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.StandardIDPool;
 import com.thinkaurelius.titan.util.datastructures.IntHashSet;
 import com.thinkaurelius.titan.util.datastructures.IntSet;
@@ -12,8 +13,10 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -24,62 +27,74 @@ import static org.junit.Assert.assertTrue;
 public class IDPoolTest {
 
     @Test
-    public void testStandardIDPool() {
-        int noIds = 2000000;
-        MockIDAuthority idauth = new MockIDAuthority(200,0);
-        StandardIDPool pool = new StandardIDPool(idauth,0,Integer.MAX_VALUE);
-        IntSet ids = new IntHashSet(noIds);
-        for (int i=0;i<noIds;i++) {
-            long id = pool.nextID();
-            assertTrue(id<Integer.MAX_VALUE);
-            assertFalse(ids.contains((int)id));
-            ids.add((int)id);
+    public void testStandardIDPool() throws InterruptedException {
+        final int numPartitions = 1000;
+        final int numThreads = 6;
+        final int attemptsPerThread = 100000;
+        final Random random = new Random();
+
+        MockIDAuthority idauth = new MockIDAuthority(200);
+        final int[] partitions = new int[numPartitions];
+        final IntSet[] ids = new IntSet[numPartitions];
+        final StandardIDPool[] idPools = new StandardIDPool[numPartitions];
+        for (int i=0;i<numPartitions;i++) {
+            partitions[i]=random.nextInt();
+            ids[i] = new IntHashSet(attemptsPerThread*numThreads/numPartitions);
+            idPools[i] = new StandardIDPool(idauth,partitions[i],Integer.MAX_VALUE);
+        }
+        
+        Thread[] threads = new Thread[numThreads];
+        for (int i=0;i<numThreads;i++) {
+            threads[i]=new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    for (int attempt=0;attempt<attemptsPerThread;attempt++) {
+                        int offset = random.nextInt(numPartitions);
+                        int partition = partitions[offset];
+                        long id = idPools[offset].nextID();
+                        assertTrue(id<Integer.MAX_VALUE);
+                        IntSet idset = ids[offset];
+                        synchronized (idset) {
+                            assertFalse(idset.contains((int)id));
+                            idset.add((int)id);
+                        }
+                    }
+                }
+            });
+            threads[i].run();
+        }
+        for (int i=0;i<numThreads;i++) threads[i].join();
+    }
+    
+    @Test
+    public void testPoolExhaustion1() {
+        MockIDAuthority idauth = new MockIDAuthority(200);
+        int maxID = 10000;
+        StandardIDPool pool = new StandardIDPool(idauth,0,maxID);
+        for (int i=1;i<maxID*2;i++) {
+            try {
+                long id = pool.nextID();
+                assertTrue(id<=maxID);
+            } catch (IDPoolExhaustedException e) {
+                assertEquals(maxID+1,i);
+                break;
+            }
         }
     }
 
-    static class MockIDAuthority implements IDAuthority {
-        
-        private int idcounter = 1;
-        private final int incrementBy;
-        private final int partitionID;
-
-        public MockIDAuthority() {
-            this(200,0);
-        }
-
-        public MockIDAuthority(int increment, int partitionID) {
-            this.incrementBy=increment;
-            this.partitionID=partitionID;
-        }
-        
-        
-        @Override
-        public synchronized long[] getIDBlock(int partition) throws StorageException {
-            Preconditions.checkArgument(partition==partitionID);
-            int lower = idcounter;
-            idcounter += incrementBy;
-            int upper = idcounter;
-            return new long[]{lower,upper};
-        }
-
-        @Override
-        public long peekNextID(int partition) throws StorageException {
-            return idcounter;
-        }
-
-        @Override
-        public ByteBuffer[] getLocalIDPartition() throws StorageException {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setIDBlockSizer(IDBlockSizer sizer) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void close() throws StorageException {
-
+    @Test
+    public void testPoolExhaustion2() {
+        int maxID = 10000;
+        MockIDAuthority idauth = new MockIDAuthority(200,maxID+1);
+        StandardIDPool pool = new StandardIDPool(idauth,0,Integer.MAX_VALUE);
+        for (int i=1;i<maxID*2;i++) {
+            try {
+                long id = pool.nextID();
+                assertTrue(id<=maxID);
+            } catch (IDPoolExhaustedException e) {
+                assertEquals(maxID+1,i);
+                break;
+            }
         }
     }
 
