@@ -39,7 +39,9 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
 
 	public BerkeleyJEStoreManager(Configuration configuration) throws StorageException {
 		stores = new HashMap<String, BerkeleyJEKeyValueStore>();
-		directory=new File(configuration.getString(STORAGE_DIRECTORY_KEY));
+        String storageDir = configuration.getString(STORAGE_DIRECTORY_KEY);
+        Preconditions.checkArgument(storageDir!=null,"Need to specify storage directory");
+		directory=new File(storageDir);
         Preconditions.checkArgument(directory.isDirectory() && directory.canWrite(),"Cannot open or write to directory: " + directory);
 		isReadOnly= configuration.getBoolean(STORAGE_READONLY_KEY,STORAGE_READONLY_DEFAULT);
 		batchLoading=configuration.getBoolean(STORAGE_BATCH_KEY,STORAGE_BATCH_DEFAULT);
