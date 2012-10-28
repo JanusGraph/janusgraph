@@ -14,7 +14,7 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.48.2 r9819"
-   sodipodi:docname="titan-logo-pieces-darkred.svg"
+   sodipodi:docname="titan-logo-pieces-darkred.pdf"
    inkscape:export-filename="C:\Users\Ketrina\Pictures\Tinkerpop\TitanLogo-v2.png"
    inkscape:export-xdpi="72.00943"
    inkscape:export-ydpi="72.00943">
@@ -124,7 +124,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
