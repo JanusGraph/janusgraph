@@ -6,7 +6,8 @@
     <fileSets>
         <fileSet>
             <fileMode>0775</fileMode>
-            <directory>target/${project.artifactId}-${project.version}-standalone/bin</directory>
+            <!--<directory>target/${project.artifactId}-${project.version}-standalone/bin</directory>-->
+	    <directory>src/main/bin</directory>
             <outputDirectory>bin</outputDirectory>
             <includes>
                 <include>*.sh</include>
