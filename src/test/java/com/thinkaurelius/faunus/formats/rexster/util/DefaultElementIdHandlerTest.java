@@ -2,7 +2,6 @@ package com.thinkaurelius.faunus.formats.rexster.util;
 
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
-import com.tinkerpop.blueprints.impls.tg.TinkerGraphFactory;
 import org.junit.Assert;
 import org.junit.Test;
 

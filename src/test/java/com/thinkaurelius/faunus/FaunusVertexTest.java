@@ -40,7 +40,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(0, new FaunusVertex.Comparator().compare(bytes1.toByteArray(), 0, bytes1.size(), bytes1.toByteArray(), 0, bytes1.size()));
     }
 
-    public void testSimpleVertexSerialization() throws IOException {
+    public void testSimpleSerialization() throws IOException {
 
         FaunusVertex vertex1 = new FaunusVertex(10l);
 
@@ -48,13 +48,13 @@ public class FaunusVertexTest extends BaseTest {
         DataOutputStream out = new DataOutputStream(bytes);
         vertex1.write(out);
 
-        // id length is 8 bytes  (long)
+        // id length is 1 byte (variable long)
         // pathsEnabled boolean 1 byte (boolean)
-        // paths size 4 bytes (int)
+        // paths size 1 byte (variable int)
         // properties size 2 bytes (short)
         // out edge types size 2 bytes (short)
         // in edge types size 2 bytes (short)
-        assertEquals(bytes.toByteArray().length, 19);
+        assertEquals(bytes.toByteArray().length, 9);
         FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         assertEquals(vertex1, vertex2);

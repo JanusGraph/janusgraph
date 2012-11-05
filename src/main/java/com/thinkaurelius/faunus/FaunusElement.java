@@ -6,11 +6,11 @@ import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Element;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
+import org.apache.hadoop.io.WritableUtils;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -206,22 +206,22 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     }
 
     public void readFields(final DataInput in) throws IOException {
-        this.id = in.readLong();
+        this.id = WritableUtils.readVLong(in);
         this.pathEnabled = in.readBoolean();
         if (this.pathEnabled)
             this.paths = ElementPaths.readFields(in);
         else
-            this.pathCounter = in.readInt();
+            this.pathCounter = WritableUtils.readVInt(in);
         this.properties = ElementProperties.readFields(in);
     }
 
     public void write(final DataOutput out) throws IOException {
-        out.writeLong(this.id);
+        WritableUtils.writeVLong(out, this.id);
         out.writeBoolean(this.pathEnabled);
         if (this.pathEnabled)
             ElementPaths.write(this.paths, out);
         else
-            out.writeInt(this.pathCounter);
+            WritableUtils.writeVInt(out, this.pathCounter);
         ElementProperties.write(this.properties, out);
     }
 
@@ -233,6 +233,10 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     @Override
     public int hashCode() {
         return ((Long) this.id).hashCode();
+    }
+
+    public int compareTo(final FaunusElement other) {
+        return new Long(this.id).compareTo((Long) other.getId());
     }
 
     public static class ElementProperties {
@@ -262,10 +266,10 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                     final Object valueObject = entry.getValue();
                     if (valueClass.equals(Integer.class)) {
                         out.writeByte(PropertyType.INT.val);
-                        out.writeInt((Integer) valueObject);
+                        WritableUtils.writeVInt(out, (Integer) valueObject);
                     } else if (valueClass.equals(Long.class)) {
                         out.writeByte(PropertyType.LONG.val);
-                        out.writeLong((Long) valueObject);
+                        WritableUtils.writeVLong(out, (Long) valueObject);
                     } else if (valueClass.equals(Float.class)) {
                         out.writeByte(PropertyType.FLOAT.val);
                         out.writeFloat((Float) valueObject);
@@ -296,9 +300,9 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                     final byte valueClass = in.readByte();
                     final Object valueObject;
                     if (valueClass == PropertyType.INT.val) {
-                        valueObject = in.readInt();
+                        valueObject = WritableUtils.readVInt(in);
                     } else if (valueClass == PropertyType.LONG.val) {
-                        valueObject = in.readLong();
+                        valueObject = WritableUtils.readVLong(in);
                     } else if (valueClass == PropertyType.FLOAT.val) {
                         valueObject = in.readFloat();
                     } else if (valueClass == PropertyType.DOUBLE.val) {
@@ -322,37 +326,37 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
         public static void write(final List<List<MicroElement>> paths, final DataOutput out) throws IOException {
             if (null == paths) {
-                out.writeInt(0);
+                WritableUtils.writeVInt(out, 0);
             } else {
-                out.writeInt(paths.size());
+                WritableUtils.writeVInt(out, paths.size());
                 for (final List<MicroElement> path : paths) {
-                    out.writeInt(path.size());
+                    WritableUtils.writeVInt(out, path.size());
                     for (MicroElement element : path) {
                         if (element instanceof MicroVertex)
                             out.writeChar('v');
                         else
                             out.writeChar('e');
-                        out.writeLong(element.getId());
+                        WritableUtils.writeVLong(out, element.getId());
                     }
                 }
             }
         }
 
         public static List<List<MicroElement>> readFields(final DataInput in) throws IOException {
-            int pathsSize = in.readInt();
+            int pathsSize = WritableUtils.readVInt(in);
             if (pathsSize == 0)
                 return null;
             else {
                 final List<List<MicroElement>> paths = new ArrayList<List<MicroElement>>(pathsSize);
                 for (int i = 0; i < pathsSize; i++) {
-                    int pathSize = in.readInt();
+                    int pathSize = WritableUtils.readVInt(in);
                     List<MicroElement> path = new ArrayList<MicroElement>(pathSize);
                     for (int j = 0; j < pathSize; j++) {
                         char type = in.readChar();
                         if (type == 'v')
-                            path.add(new MicroVertex(in.readLong()));
+                            path.add(new MicroVertex(WritableUtils.readVLong(in)));
                         else
-                            path.add(new MicroEdge(in.readLong()));
+                            path.add(new MicroEdge(WritableUtils.readVLong(in)));
                     }
                     paths.add(path);
                 }
@@ -368,11 +372,12 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         }
 
         @Override
-        public int compare(final byte[] vertex1, final int start1, final int length1, final byte[] vertex2, final int start2, final int length2) {
-            // the first 8 bytes are the long id
-            final ByteBuffer buffer1 = ByteBuffer.wrap(vertex1);
-            final ByteBuffer buffer2 = ByteBuffer.wrap(vertex2);
-            return (((Long) buffer1.getLong()).compareTo(buffer2.getLong()));
+        public int compare(final byte[] element1, final int start1, final int length1, final byte[] element2, final int start2, final int length2) {
+            try {
+                return Long.valueOf(readVLong(element1, start1)).compareTo(readVLong(element2, start2));
+            } catch (IOException e) {
+                return -1;
+            }
         }
 
         @Override

@@ -3,11 +3,13 @@ package com.thinkaurelius.faunus;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.thinkaurelius.faunus.util.MicroVertex;
 import junit.framework.TestCase;
+import org.apache.hadoop.io.WritableUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -18,20 +20,87 @@ import java.util.List;
  */
 public class FaunusElementTest extends TestCase {
 
-    public void testByteComparisonAlgorithm() throws IOException {
+    public void testBasicSerialization() throws IOException {
         FaunusVertex vertex1 = new FaunusVertex(10);
-        FaunusVertex vertex2 = new FaunusVertex(11);
+        FaunusVertex vertex2 = new FaunusVertex(Long.MAX_VALUE);
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes1));
+        assertEquals(bytes1.size(), 9);
+        // 1 long id + 1 boolean path + 1 variable int paths + 1 short properties + 2 shorts edge types (4)
+        // ? + 1 + 1 + 2 + 2 + 2 = 11 bytes + 1 byte long id
+
         ByteArrayOutputStream bytes2 = new ByteArrayOutputStream();
         vertex2.write(new DataOutputStream(bytes2));
+        assertEquals(bytes2.size(), 17);
+        // 1 long id + 1 boolean path + 1 int paths + 1 short properties + 2 shorts edge types (4)
+        // ? + 1 + 1 + 2 + 2 + 2 = 11 bytes + 9 byte long id
 
-        final Long id1 = ByteBuffer.wrap(bytes1.toByteArray(), 0, 8).getLong();
-        final Long id2 = ByteBuffer.wrap(bytes2.toByteArray(), 0, 8).getLong();
+        final Long id1 = WritableUtils.readVLong(new DataInputStream(new ByteArrayInputStream(bytes1.toByteArray())));
+        final Long id2 = WritableUtils.readVLong(new DataInputStream(new ByteArrayInputStream(bytes2.toByteArray())));
 
         assertEquals(id1, new Long(10l));
-        assertEquals(id2, new Long(11l));
+        assertEquals(id2, new Long(Long.MAX_VALUE));
+    }
+
+    public void testElementComparator() throws IOException {
+        FaunusVertex a = new FaunusVertex(10);
+        FaunusVertex b = new FaunusVertex(Long.MAX_VALUE);
+        FaunusVertex c = new FaunusVertex(10);
+        FaunusVertex d = new FaunusVertex(12);
+
+        assertEquals(a.compareTo(a), 0);
+        assertEquals(a.compareTo(b), -1);
+        assertEquals(a.compareTo(c), 0);
+        assertEquals(a.compareTo(d), -1);
+
+        assertEquals(b.compareTo(a), 1);
+        assertEquals(b.compareTo(b), 0);
+        assertEquals(b.compareTo(c), 1);
+        assertEquals(b.compareTo(d), 1);
+
+        assertEquals(c.compareTo(a), 0);
+        assertEquals(c.compareTo(b), -1);
+        assertEquals(c.compareTo(c), 0);
+        assertEquals(c.compareTo(d), -1);
+
+        assertEquals(d.compareTo(a), 1);
+        assertEquals(d.compareTo(b), -1);
+        assertEquals(d.compareTo(c), 1);
+        assertEquals(d.compareTo(d), 0);
+
+        ByteArrayOutputStream aBytes = new ByteArrayOutputStream();
+        a.write(new DataOutputStream(aBytes));
+        ByteArrayOutputStream bBytes = new ByteArrayOutputStream();
+        b.write(new DataOutputStream(bBytes));
+        ByteArrayOutputStream cBytes = new ByteArrayOutputStream();
+        c.write(new DataOutputStream(cBytes));
+        ByteArrayOutputStream dBytes = new ByteArrayOutputStream();
+        d.write(new DataOutputStream(dBytes));
+
+        //////// test raw byte comparator
+
+        FaunusElement.Comparator comparator = new FaunusElement.Comparator();
+
+        assertEquals(0, comparator.compare(aBytes.toByteArray(), 0, aBytes.size(), aBytes.toByteArray(), 0, aBytes.size()));
+        assertEquals(-1, comparator.compare(aBytes.toByteArray(), 0, aBytes.size(), bBytes.toByteArray(), 0, bBytes.size()));
+        assertEquals(0, comparator.compare(aBytes.toByteArray(), 0, aBytes.size(), cBytes.toByteArray(), 0, cBytes.size()));
+        assertEquals(-1, comparator.compare(aBytes.toByteArray(), 0, aBytes.size(), dBytes.toByteArray(), 0, dBytes.size()));
+
+        assertEquals(1, comparator.compare(bBytes.toByteArray(), 0, bBytes.size(), aBytes.toByteArray(), 0, aBytes.size()));
+        assertEquals(0, comparator.compare(bBytes.toByteArray(), 0, bBytes.size(), bBytes.toByteArray(), 0, bBytes.size()));
+        assertEquals(1, comparator.compare(bBytes.toByteArray(), 0, bBytes.size(), cBytes.toByteArray(), 0, cBytes.size()));
+        assertEquals(1, comparator.compare(bBytes.toByteArray(), 0, bBytes.size(), dBytes.toByteArray(), 0, dBytes.size()));
+
+        assertEquals(0, comparator.compare(cBytes.toByteArray(), 0, cBytes.size(), aBytes.toByteArray(), 0, aBytes.size()));
+        assertEquals(-1, comparator.compare(cBytes.toByteArray(), 0, cBytes.size(), bBytes.toByteArray(), 0, bBytes.size()));
+        assertEquals(0, comparator.compare(cBytes.toByteArray(), 0, cBytes.size(), cBytes.toByteArray(), 0, cBytes.size()));
+        assertEquals(-1, comparator.compare(cBytes.toByteArray(), 0, cBytes.size(), dBytes.toByteArray(), 0, dBytes.size()));
+
+        assertEquals(1, comparator.compare(dBytes.toByteArray(), 0, dBytes.size(), aBytes.toByteArray(), 0, aBytes.size()));
+        assertEquals(-1, comparator.compare(dBytes.toByteArray(), 0, dBytes.size(), bBytes.toByteArray(), 0, bBytes.size()));
+        assertEquals(1, comparator.compare(dBytes.toByteArray(), 0, dBytes.size(), cBytes.toByteArray(), 0, cBytes.size()));
+        assertEquals(0, comparator.compare(dBytes.toByteArray(), 0, dBytes.size(), dBytes.toByteArray(), 0, dBytes.size()));
     }
 
     public void testPathIteratorRemove() {

@@ -6,6 +6,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.hadoop.io.WritableUtils;
 
 import java.io.DataOutput;
 import java.io.IOException;
@@ -37,9 +38,9 @@ public class VertexToFaunusBinary {
     }
 
     public void writeVertex(final Vertex vertex, final DataOutput out) throws IOException {
-        out.writeLong(elementIdHandler.convertIdentifier(vertex));
+        WritableUtils.writeVLong(out, elementIdHandler.convertIdentifier(vertex));
         out.writeBoolean(false);
-        out.writeInt(0);
+        WritableUtils.writeVInt(out, 0);
         writeProperties(vertex, out);
 
         writeEdges(vertex, Direction.IN, out);
@@ -55,13 +56,13 @@ public class VertexToFaunusBinary {
         out.writeShort(map.size());
         for (final Map.Entry<String, Long> entry : map.entrySet()) {
             out.writeUTF(entry.getKey());
-            out.writeInt(entry.getValue().intValue());
+            WritableUtils.writeVInt(out, entry.getValue().intValue());
             for (final Edge edge : vertex.getEdges(direction, entry.getKey())) {
-                out.writeLong(elementIdHandler.convertIdentifier(edge));
+                WritableUtils.writeVLong(out, elementIdHandler.convertIdentifier(edge));
                 out.writeBoolean(false);
-                out.writeInt(0);
+                WritableUtils.writeVInt(out, 0);
                 writeProperties(edge, out);
-                out.writeLong(elementIdHandler.convertIdentifier(edge.getVertex(direction.opposite())));
+                WritableUtils.writeVLong(out, elementIdHandler.convertIdentifier(edge.getVertex(direction.opposite())));
             }
         }
     }
@@ -75,10 +76,10 @@ public class VertexToFaunusBinary {
 
             if (valueClass.equals(Integer.class)) {
                 out.writeByte(FaunusElement.ElementProperties.PropertyType.INT.val);
-                out.writeInt((Integer) valueObject);
+                WritableUtils.writeVInt(out, (Integer) valueObject);
             } else if (valueClass.equals(Long.class)) {
                 out.writeByte(FaunusElement.ElementProperties.PropertyType.LONG.val);
-                out.writeLong((Long) valueObject);
+                WritableUtils.writeVLong(out, (Long) valueObject);
             } else if (valueClass.equals(Float.class)) {
                 out.writeByte(FaunusElement.ElementProperties.PropertyType.FLOAT.val);
                 out.writeFloat((Float) valueObject);

@@ -5,6 +5,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
+import org.apache.hadoop.io.WritableUtils;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -89,24 +90,26 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public void write(final DataOutput out) throws IOException {
         super.write(out);
-        out.writeLong(this.inVertex);
-        out.writeLong(this.outVertex);
-        out.writeUTF(this.getLabel());
+        WritableUtils.writeVLong(out, this.inVertex);
+        WritableUtils.writeVLong(out, this.outVertex);
+        //WritableUtils.writeCompressedString(out,this.getLabel());
+        out.writeUTF(this.label);
     }
 
     public void readFields(final DataInput in) throws IOException {
         super.readFields(in);
-        this.inVertex = in.readLong();
-        this.outVertex = in.readLong();
+        this.inVertex = WritableUtils.readVLong(in);
+        this.outVertex = WritableUtils.readVLong(in);
+        //setLabel(WritableUtils.readCompressedString(in));
         setLabel(in.readUTF());
     }
 
     public void writeCompressed(final DataOutput out, final Direction idToWrite) throws IOException {
         super.write(out);
         if (idToWrite.equals(Direction.IN))
-            out.writeLong(this.inVertex);
+            WritableUtils.writeVLong(out, this.inVertex);
         else if (idToWrite.equals(Direction.OUT))
-            out.writeLong(this.outVertex);
+            WritableUtils.writeVLong(out, this.outVertex);
         else
             throw ExceptionFactory.bothIsNotSupported();
     }
@@ -114,9 +117,9 @@ public class FaunusEdge extends FaunusElement implements Edge {
     public void readFieldsCompressed(final DataInput in, final Direction idToRead) throws IOException {
         super.readFields(in);
         if (idToRead.equals(Direction.IN))
-            this.inVertex = Long.valueOf(in.readLong());
+            this.inVertex = WritableUtils.readVLong(in);
         else if (idToRead.equals(Direction.OUT))
-            this.outVertex = Long.valueOf(in.readLong());
+            this.outVertex = WritableUtils.readVLong(in);
         else
             throw ExceptionFactory.bothIsNotSupported();
         this.label = null;
@@ -124,9 +127,5 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public String toString() {
         return StringFactory.edgeString(this);
-    }
-
-    public int compareTo(final FaunusElement other) {
-        return new Long(this.id).compareTo((Long) other.getId());
     }
 }

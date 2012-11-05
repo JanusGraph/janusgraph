@@ -7,6 +7,7 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.DefaultQuery;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
+import org.apache.hadoop.io.WritableUtils;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -274,10 +275,6 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         this.outEdges = (Map) EdgeMap.readFields(in, Direction.IN, this.id);
     }
 
-    public int compareTo(final FaunusElement other) {
-        return new Long(this.id).compareTo((Long) other.getId());
-    }
-
     public String toString() {
         return StringFactory.vertexString(this);
     }
@@ -360,7 +357,7 @@ public class FaunusVertex extends FaunusElement implements Vertex {
             int edgeTypes = in.readShort();
             for (int i = 0; i < edgeTypes; i++) {
                 final String label = in.readUTF();
-                final int size = in.readInt();
+                final int size = WritableUtils.readVInt(in);
                 final List<FaunusEdge> temp = new ArrayList<FaunusEdge>(size);
                 for (int j = 0; j < size; j++) {
                     final FaunusEdge edge = new FaunusEdge();
@@ -381,7 +378,7 @@ public class FaunusVertex extends FaunusElement implements Vertex {
             out.writeShort(edges.size());
             for (final Map.Entry<String, List<FaunusEdge>> entry : edges.entrySet()) {
                 out.writeUTF(entry.getKey());
-                out.writeInt(entry.getValue().size());
+                WritableUtils.writeVInt(out, entry.getValue().size());
                 for (final FaunusEdge edge : entry.getValue()) {
                     edge.writeCompressed(out, idToWrite);
                 }
