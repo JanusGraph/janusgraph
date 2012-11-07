@@ -278,7 +278,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                         out.writeDouble((Double) valueObject);
                     } else if (valueClass.equals(String.class)) {
                         out.writeByte(PropertyType.STRING.val);
-                        out.writeUTF((String) valueObject);
+                        WritableUtils.writeString(out, (String) valueObject);
                     } else if (valueClass.equals(Boolean.class)) {
                         out.writeByte(PropertyType.BOOLEAN.val);
                         out.writeBoolean((Boolean) valueObject);
@@ -308,7 +308,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                     } else if (valueClass == PropertyType.DOUBLE.val) {
                         valueObject = in.readDouble();
                     } else if (valueClass == PropertyType.STRING.val) {
-                        valueObject = in.readUTF();
+                        valueObject = WritableUtils.readString(in);
                     } else if (valueClass == PropertyType.BOOLEAN.val) {
                         valueObject = in.readBoolean();
                     } else {

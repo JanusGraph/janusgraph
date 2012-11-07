@@ -88,7 +88,7 @@ public class VertexToFaunusBinary {
                 out.writeDouble((Double) valueObject);
             } else if (valueClass.equals(String.class)) {
                 out.writeByte(FaunusElement.ElementProperties.PropertyType.STRING.val);
-                out.writeUTF((String) valueObject);
+                WritableUtils.writeString(out, (String) valueObject);
             } else if (valueClass.equals(Boolean.class)) {
                 out.writeByte(FaunusElement.ElementProperties.PropertyType.BOOLEAN.val);
                 out.writeBoolean((Boolean) valueObject);
