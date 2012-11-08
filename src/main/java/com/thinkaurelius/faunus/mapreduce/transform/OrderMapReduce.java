@@ -61,9 +61,9 @@ public class OrderMapReduce {
                 if (value.hasPaths()) {
                     this.text.set(ElementPicker.getPropertyAsString(value, this.elementKey));
                     this.writable = this.handler.set(ElementPicker.getProperty(value, this.key));
-                    for (int i = 0; i < value.pathCount(); i++) {
-                        context.write(this.writable, this.text);
-                    }
+                    //for (int i = 0; i < value.pathCount(); i++) {
+                    context.write(this.writable, this.text);
+                    //}
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
             } else {
@@ -73,9 +73,9 @@ public class OrderMapReduce {
                     if (edge.hasPaths()) {
                         this.text.set(ElementPicker.getPropertyAsString(edge, this.elementKey));
                         this.writable = this.handler.set(ElementPicker.getProperty(edge, this.key));
-                        for (int i = 0; i < edge.pathCount(); i++) {
-                            context.write(this.writable, this.text);
-                        }
+                        //for (int i = 0; i < edge.pathCount(); i++) {
+                        context.write(this.writable, this.text);
+                        //}
                         edgesProcessed++;
                     }
                 }
