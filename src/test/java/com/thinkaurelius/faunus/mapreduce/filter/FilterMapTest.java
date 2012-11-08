@@ -61,7 +61,7 @@ public class FilterMapTest extends BaseTest {
         Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
 
         assertEquals(results.size(), 6);
-        int counter = 0;
+        long counter = 0;
         for (FaunusVertex vertex : results.values()) {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {

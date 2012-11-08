@@ -25,9 +25,11 @@ public class ElementPicker {
             }
             properties.put(Tokens._ID, element.getId());
             return properties.toString();
-        } else if (key.equals(Tokens.LABEL) && element instanceof FaunusEdge)
+        } else if (key.equals(Tokens.LABEL) && element instanceof FaunusEdge) {
             return ((FaunusEdge) element).getLabel();
-        else {
+        } else if (key.equals(Tokens._COUNT)) {
+            return String.valueOf(element.pathCount());
+        } else {
             final Object value = element.getProperty(key);
             if (null != value)
                 return value.toString();
@@ -46,9 +48,11 @@ public class ElementPicker {
             }
             properties.put(Tokens._ID, element.getId());
             return properties;
-        } else if (key.equals(Tokens.LABEL) && element instanceof FaunusEdge)
+        } else if (key.equals(Tokens.LABEL) && element instanceof FaunusEdge) {
             return ((FaunusEdge) element).getLabel();
-        else {
+        } else if (key.equals(Tokens._COUNT)) {
+            return element.pathCount();
+        } else {
             return element.getProperty(key);
         }
     }

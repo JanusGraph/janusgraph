@@ -67,7 +67,7 @@ public class IntervalFilterMapTest extends BaseTest {
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
         assertEquals(graph.size(), 6);
 
-        int counter = 0;
+        long counter = 0;
         for (FaunusVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
                 if (((FaunusEdge) edge).hasPaths()) {
