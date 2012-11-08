@@ -27,8 +27,6 @@ public class ElementPicker {
             return properties.toString();
         } else if (key.equals(Tokens.LABEL) && element instanceof FaunusEdge) {
             return ((FaunusEdge) element).getLabel();
-        } else if (key.equals(Tokens._COUNT)) {
-            return String.valueOf(element.pathCount());
         } else {
             final Object value = element.getProperty(key);
             if (null != value)
@@ -50,8 +48,6 @@ public class ElementPicker {
             return properties;
         } else if (key.equals(Tokens.LABEL) && element instanceof FaunusEdge) {
             return ((FaunusEdge) element).getLabel();
-        } else if (key.equals(Tokens._COUNT)) {
-            return element.pathCount();
         } else {
             return element.getProperty(key);
         }

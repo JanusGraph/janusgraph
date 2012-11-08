@@ -26,14 +26,14 @@ public class FaunusElementTest extends TestCase {
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes1));
-        assertEquals(bytes1.size(), 9);
-        // 1 long id + 1 boolean path + 1 variable int paths + 1 short properties + 2 shorts edge types (4)
+        assertEquals(bytes1.size(), 6);
+        // 1 long id + 1 boolean path + 1 variable int paths + 1 short properties +  2 vinteger edge types (2)
         // ? + 1 + 1 + 2 + 2 + 2 = 11 bytes + 1 byte long id
 
         ByteArrayOutputStream bytes2 = new ByteArrayOutputStream();
         vertex2.write(new DataOutputStream(bytes2));
-        assertEquals(bytes2.size(), 17);
-        // 1 long id + 1 boolean path + 1 int paths + 1 short properties + 2 shorts edge types (4)
+        assertEquals(bytes2.size(), 14);
+        // 1 long id + 1 boolean path + 1 int paths + 1 short properties + 2 vinteger edge types (2)
         // ? + 1 + 1 + 2 + 2 + 2 = 11 bytes + 9 byte long id
 
         final Long id1 = WritableUtils.readVLong(new DataInputStream(new ByteArrayInputStream(bytes1.toByteArray())));
@@ -101,6 +101,39 @@ public class FaunusElementTest extends TestCase {
         assertEquals(-1, comparator.compare(dBytes.toByteArray(), 0, dBytes.size(), bBytes.toByteArray(), 0, bBytes.size()));
         assertEquals(1, comparator.compare(dBytes.toByteArray(), 0, dBytes.size(), cBytes.toByteArray(), 0, cBytes.size()));
         assertEquals(0, comparator.compare(dBytes.toByteArray(), 0, dBytes.size(), dBytes.toByteArray(), 0, dBytes.size()));
+    }
+
+    public void testSettingIdPropertyException() {
+        FaunusVertex a = new FaunusVertex(10l);
+        try {
+            a.setProperty(Tokens.ID, 11l);
+            assertFalse(true);
+        } catch (IllegalArgumentException e) {
+            assertTrue(true);
+        }
+
+        try {
+            a.setProperty(Tokens._ID, 11l);
+            assertFalse(true);
+        } catch (IllegalArgumentException e) {
+            assertTrue(true);
+        }
+
+        FaunusEdge b = new FaunusEdge(1l, 2l, 13l, "self");
+        try {
+            b.setProperty(Tokens.ID, 10);
+            assertFalse(true);
+        } catch (IllegalArgumentException e) {
+            assertTrue(true);
+        }
+
+        try {
+            b.setProperty(Tokens.ID, 10);
+            assertFalse(true);
+        } catch (IllegalArgumentException e) {
+            assertTrue(true);
+        }
+
     }
 
     public void testPathIteratorRemove() {

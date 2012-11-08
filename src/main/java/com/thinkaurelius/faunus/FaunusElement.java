@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.util.MicroEdge;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.util.ExceptionFactory;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.WritableUtils;
@@ -166,6 +167,13 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     }
 
     public void setProperty(final String key, final Object value) {
+        if (key.equals(Tokens._ID) || key.equals(Tokens.ID))
+            throw ExceptionFactory.propertyKeyIdIsReserved();
+        if (this instanceof FaunusEdge && key.equals(Tokens.LABEL))
+            throw ExceptionFactory.propertyKeyLabelIsReservedForEdges();
+        if (key.equals(Tokens._COUNT))
+            throw new IllegalArgumentException("_count is a reserved property");
+
         if (null == this.properties)
             this.properties = new HashMap<String, Object>();
         this.properties.put(TYPE_MAP.get(key), value);
@@ -176,6 +184,8 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     }
 
     public Object getProperty(final String key) {
+        if (key.equals(Tokens._COUNT))
+            return this.pathCount();
         return null == this.properties ? null : this.properties.get(key);
     }
 
@@ -185,16 +195,6 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
     public Map<String, Object> getProperties() {
         return null == this.properties ? this.properties = new HashMap<String, Object>() : this.properties;
-    }
-
-    public void setProperties(final Map<String, Object> properties) {
-        if (null == this.properties)
-            this.properties = new HashMap<String, Object>();
-        else
-            this.properties.clear();
-        for (final Map.Entry<String, Object> entry : properties.entrySet()) {
-            this.properties.put(TYPE_MAP.get(entry.getKey()), entry.getValue());
-        }
     }
 
     public Object getId() {
@@ -257,9 +257,9 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
         public static void write(final Map<String, Object> properties, final DataOutput out) throws IOException {
             if (null == properties) {
-                out.writeShort(0);
+                WritableUtils.writeVInt(out, 0);
             } else {
-                out.writeShort(properties.size());
+                WritableUtils.writeVInt(out, properties.size());
                 for (final Map.Entry<String, Object> entry : properties.entrySet()) {
                     out.writeUTF(entry.getKey());
                     final Class valueClass = entry.getValue().getClass();
@@ -290,7 +290,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         }
 
         public static Map<String, Object> readFields(final DataInput in) throws IOException {
-            final int numberOfProperties = in.readShort();
+            final int numberOfProperties = WritableUtils.readVInt(in);
             if (numberOfProperties == 0)
                 return null;
             else {

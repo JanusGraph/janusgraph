@@ -354,7 +354,7 @@ public class FaunusVertex extends FaunusElement implements Vertex {
 
         public static Map<String, List<FaunusEdge>> readFields(final DataInput in, final Direction idToRead, final long otherId) throws IOException {
             final Map<String, List<FaunusEdge>> edges = new HashMap<String, List<FaunusEdge>>();
-            int edgeTypes = in.readShort();
+            int edgeTypes = WritableUtils.readVInt(in);
             for (int i = 0; i < edgeTypes; i++) {
                 final String label = in.readUTF();
                 final int size = WritableUtils.readVInt(in);
@@ -375,7 +375,7 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         }
 
         public static void write(final Map<String, List<FaunusEdge>> edges, final DataOutput out, final Direction idToWrite) throws IOException {
-            out.writeShort(edges.size());
+            WritableUtils.writeVInt(out, edges.size());
             for (final Map.Entry<String, List<FaunusEdge>> entry : edges.entrySet()) {
                 out.writeUTF(entry.getKey());
                 WritableUtils.writeVInt(out, entry.getValue().size());

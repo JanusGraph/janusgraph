@@ -53,7 +53,7 @@ public class VertexToFaunusBinary {
         for (final Edge edge : vertex.getEdges(direction)) {
             map.incr(edge.getLabel(), 1);
         }
-        out.writeShort(map.size());
+        WritableUtils.writeVInt(out, map.size());
         for (final Map.Entry<String, Long> entry : map.entrySet()) {
             out.writeUTF(entry.getKey());
             WritableUtils.writeVInt(out, entry.getValue().intValue());
@@ -68,7 +68,7 @@ public class VertexToFaunusBinary {
     }
 
     private static void writeProperties(final Element element, final DataOutput out) throws IOException {
-        out.writeShort(element.getPropertyKeys().size());
+        WritableUtils.writeVInt(out, element.getPropertyKeys().size());
         for (final String key : element.getPropertyKeys()) {
             out.writeUTF(key);
             final Object valueObject = element.getProperty(key);

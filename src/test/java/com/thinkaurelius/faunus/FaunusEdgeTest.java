@@ -24,9 +24,9 @@ public class FaunusEdgeTest extends TestCase {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(bytes);
         edge1.write(out);
-        assertEquals(bytes.size(), 14);
-        // long id (vlong), path counters (vint), long vid (vlong), long vid (vlong), String label
-        // 1 + 1 + 1 + 1 + 10 byte label = 14
+        assertEquals(bytes.size(), 13);
+        // long id (vlong), path counters (vlong), long vid (vlong), long vid (vlong), String label
+        // 1 + 1 + 1 + 1 + 10 byte label = 13
 
 
         FaunusEdge edge2 = new FaunusEdge(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
