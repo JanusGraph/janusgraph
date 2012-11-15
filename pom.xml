@@ -13,7 +13,7 @@
     <prerequisites>
         <maven>2.2.1</maven>
     </prerequisites>
-    <name>Titan: A Highly Scalable, Distributed Graph Database</name>
+    <name>Titan: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     <description>
         Titan is a distributed graph database optimized for processing massive-scale graphs represented over a machine
