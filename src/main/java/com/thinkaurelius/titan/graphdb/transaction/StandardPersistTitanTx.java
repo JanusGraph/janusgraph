@@ -67,6 +67,7 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 	@Override
 	public boolean isDeletedRelation(InternalRelation relation) {
 		if (relation.isRemoved()) return true;
+        else if (relation.isNew() || !relation.hasID()) return false;
 		else return isDeletedRelation(Long.valueOf(relation.getID()));
 	}
 
