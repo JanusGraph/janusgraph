@@ -71,6 +71,12 @@ public class GraphDatabaseConfiguration {
     public static final String STORAGE_BACKEND_DEFAULT = "local";
 
     /**
+     * Define the storage backed to use for persistence
+     */
+    public static final String STORAGE_IS_ORDERED_KEY = "key-ordered";
+    public static final boolean STORAGE_IS_ORDERED_DEFAULT = false;
+
+    /**
      * Specifies whether write operations are supported
      */
     public static final String STORAGE_READONLY_KEY = "read-only";
@@ -202,21 +208,29 @@ public class GraphDatabaseConfiguration {
     // ################ IDS ###########################
     // ################################################
 
-    public static final String IDS_NAMESPACE = "idAuthorities";
+    public static final String IDS_NAMESPACE = "ids";
     
     /**
      * Size of the block to be acquired. Larger block sizes require fewer block applications but also leave a larger
      * fraction of the id pool occupied and potentially lost. For write heavy applications, larger block sizes should
      * be chosen.
      */
-    public static final String IDS_BLOCK_SIZE_KEY = "idauthority-block-size";
+    public static final String IDS_BLOCK_SIZE_KEY = "block-size";
     public static final int IDS_BLOCK_SIZE_DEFAULT = 10000;
+
+    /**
+     * Whether the id space should be partitioned for equal distribution of keys. If the keyspace is ordered, this needs to be
+     * enabled to ensure an even distribution of data. If the keyspace is random/hashed, then enabling this only has the benefit
+     * of de-congesting a single id pool in the database.
+     */
+    public static final String IDS_PARTITION_KEY = "partition";
+    public static final boolean IDS_PARTITION_DEFAULT = false;
 
     /**
      * If flush idAuthorities is enabled, vertices and edges are assigned idAuthorities immediately upon creation. If not, then idAuthorities are only
      * assigned when the transaction is committed.
      */
-    public static final String IDS_FLUSH_KEY = "flush-idAuthorities";
+    public static final String IDS_FLUSH_KEY = "flush";
     public static final boolean IDS_FLUSH_DEFAULT = true;
 
 
@@ -274,7 +288,7 @@ public class GraphDatabaseConfiguration {
     private void preLoadConfiguration() {
         Configuration storageConfig = configuration.subset(STORAGE_NAMESPACE);
         readOnly = storageConfig.getBoolean(STORAGE_READONLY_KEY,STORAGE_READONLY_DEFAULT);
-        flushIDs = configuration.getBoolean(IDS_FLUSH_KEY, IDS_FLUSH_DEFAULT);
+        flushIDs = configuration.subset(IDS_NAMESPACE).getBoolean(IDS_FLUSH_KEY, IDS_FLUSH_DEFAULT);
         batchLoading = storageConfig.getBoolean(STORAGE_BATCH_KEY,STORAGE_BATCH_DEFAULT);
         defaultTypeMaker = preregisteredAutoType.get(configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
         Preconditions.checkNotNull(defaultTypeMaker,"Invalid "+AUTO_TYPE_KEY+" option: " + configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));

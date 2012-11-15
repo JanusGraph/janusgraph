@@ -1,20 +1,17 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
-import com.thinkaurelius.titan.diskstorage.common.RemoteStoreManager;
+import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import org.apache.commons.configuration.Configuration;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public abstract class AbstractCassandraStoreManager extends RemoteStoreManager implements KeyColumnValueStoreManager {
+public abstract class AbstractCassandraStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
 
     //################### CASSANDRA SPECIFIC CONFIGURATION OPTIONS ######################
     public static final String READ_CONSISTENCY_LEVEL_KEY = "read-consistency-level";
@@ -64,7 +61,7 @@ public abstract class AbstractCassandraStoreManager extends RemoteStoreManager i
 
         features = new StoreFeatures();
         features.supportsScan=false; features.supportsBatchMutation=true; features.isTransactional=false;
-        features.supportsConsistentKeyOperations=true; features.supportsLocking=false; features.isKeyOrdered=false;
+        features.supportsConsistentKeyOperations=true; features.supportsLocking=false; features.isKeyOrdered=super.isKeyOrdered;
         features.isDistributed=true; features.hasLocalKeyPartition=false;
         
         this.keySpaceName = storageConfig.getString(KEYSPACE_KEY, KEYSPACE_DEFAULT);

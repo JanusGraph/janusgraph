@@ -8,7 +8,6 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -52,23 +51,27 @@ public class VertexIDAssigner {
 
 	private final int maxPartitionID;
     private final boolean partitionRelationTypes;
-    private final boolean maintainLocalPartitions;
+    private final boolean hasLocalPartitions;
 
 	
 	public VertexIDAssigner(Configuration config, IDAuthority idAuthority, StoreFeatures idAuthFeatures) {
         Preconditions.checkNotNull(idAuthority);
         this.idAuthority = idAuthority;
-        maintainLocalPartitions = idAuthFeatures.isDistributed() && idAuthFeatures.isKeyOrdered() && idAuthFeatures.hasLocalKeyPartition();
+
 
         final long groupBits = IDManager.defaultGroupBits;
         long partitionBits;
-        if (idAuthFeatures.isDistributed() && idAuthFeatures.isKeyOrdered()) {
+        boolean partitionIDs = config.getBoolean(GraphDatabaseConfiguration.IDS_PARTITION_KEY,GraphDatabaseConfiguration.IDS_PARTITION_DEFAULT);
+        if (partitionIDs) {
             //Use a placement strategy that balances partitions
             partitionBits=DEFAULT_PARTITION_BITS;
+            hasLocalPartitions = idAuthFeatures.hasLocalKeyPartition();
             placementStrategy = new SimpleBulkPlacementStrategy(config);
         } else {
+            if (idAuthFeatures.isKeyOrdered && idAuthFeatures.isDistributed()) log.warn("ID Partitioning is disabled which will likely cause uneven data distribution");
             //Use the default placement strategy
             partitionBits=0;
+            hasLocalPartitions = false;
             placementStrategy = new DefaultPlacementStrategy(0);
         }
         idManager = new IDManager(partitionBits,groupBits);
@@ -87,7 +90,7 @@ public class VertexIDAssigner {
 	}
 
     private void setLocalPartitions() {
-        if (!maintainLocalPartitions) {
+        if (!hasLocalPartitions) {
             placementStrategy.setLocalPartitionBounds(0,maxPartitionID+1,maxPartitionID+1);
         } else {
             ByteBuffer[] local = null;
@@ -95,6 +98,7 @@ public class VertexIDAssigner {
                 local = idAuthority.getLocalIDPartition();
             } catch (Exception e) {
                 log.error("Could not read local id partition: {}",e);
+                placementStrategy.setLocalPartitionBounds(0,maxPartitionID+1,maxPartitionID+1);
             }
             if (local!=null) {
                 Preconditions.checkArgument(local[0].remaining()>=4 && local[1].remaining()>=4);
@@ -113,8 +117,6 @@ public class VertexIDAssigner {
                 Preconditions.checkArgument(partition[0]!=partition[1]);
                 log.debug("Setting partition bound [{},{}]",partition[0],partition[1]);
                 placementStrategy.setLocalPartitionBounds(partition[0],partition[1],maxPartitionID+1);
-            } else {
-                placementStrategy.setLocalPartitionBounds(0,maxPartitionID+1,maxPartitionID+1);
             }
         }
     }
@@ -204,7 +206,7 @@ public class VertexIDAssigner {
                 }
                 assignments=leftOvers;
             }
-            if (assignments!=null)
+            if (assignments!=null && !assignments.isEmpty())
                 throw new IDPoolExhaustedException("Could not find non-exhausted partition ID Pool after " + MAX_PARTITION_RENEW_ATTEMPTS + " attempts");
             //Second, assign idAuthorities to relations
             for (InternalRelation relation : addedRelations) {

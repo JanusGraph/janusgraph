@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import com.thinkaurelius.titan.diskstorage.common.RemoteStoreManager;
+import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
@@ -17,7 +17,7 @@ public class ConsistentKeyLockConfiguration {
     final String localLockMediatorPrefix;
     
     public ConsistentKeyLockConfiguration(Configuration config, String storeManagerName) {
-        this.rid = RemoteStoreManager.getRid(config);
+        this.rid = DistributedStoreManager.getRid(config);
 
         this.localLockMediatorPrefix = config.getString(
                 ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY,

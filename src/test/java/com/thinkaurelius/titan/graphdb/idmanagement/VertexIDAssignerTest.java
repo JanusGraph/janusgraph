@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
@@ -50,22 +51,21 @@ public class VertexIDAssignerTest {
 
     }
 
-    public VertexIDAssignerTest(boolean distributedOrdered, int partitionMax, int[] localPartition) {
+    public VertexIDAssignerTest(boolean partition, int partitionMax, int[] localPartition) {
         MockIDAuthority idAuthority = new MockIDAuthority(500,partitionMax);
 
         StoreFeatures features = new StoreFeatures();
         features.supportsScan=false; features.supportsBatchMutation=false; features.isTransactional=false;
         features.supportsConsistentKeyOperations=false; features.supportsLocking=false; features.isKeyOrdered=false;
         features.isDistributed=false; features.hasLocalKeyPartition=false;
-        if (distributedOrdered) {
-            features.isDistributed=true; features.isKeyOrdered=true;
-        }
         if (localPartition!=null) {
             features.hasLocalKeyPartition=true;
             idAuthority.setLocalPartition(localPartition);
         }
-        idAssigner = new VertexIDAssigner(new BaseConfiguration(),idAuthority,features);
-        System.out.println("Distributed+Ordered: " + distributedOrdered);
+        Configuration config = new BaseConfiguration();
+        config.setProperty(GraphDatabaseConfiguration.IDS_PARTITION_KEY,partition);
+        idAssigner = new VertexIDAssigner(config,idAuthority,features);
+        System.out.println("Partition: " + partition);
         System.out.println("partitionMax: " + partitionMax);
         System.out.println("localPartition: " + Arrays.toString(localPartition));
     }

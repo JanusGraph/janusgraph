@@ -662,7 +662,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         
         //1. Assign TitanVertex IDs
         if (!tx.getTxConfiguration().hasAssignIDsImmediately())
-            idAssigner.assignIDs(addedRelations);
+            idAssigner.assignIDs(addedRelationsIter);
 
         for (int saveAttempt=0;saveAttempt<maxWriteRetryAttempts;saveAttempt++) {
 //        while (true) { //Indefinite loop, broken if no exception occurs, otherwise retried or failed immediately

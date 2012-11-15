@@ -19,6 +19,7 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,13 +89,16 @@ public class Backend {
     private final int bufferSize;
     private final boolean hashPrefixIndex;
 
+    private final int writeAttempts;
+    private final int readAttempts;
+    private final int persistAttemptWaittime;
+    
     public Backend(Configuration storageConfig) {
         storeManager = getStorageManager(storageConfig);
         isKeyColumnValueStore = storeManager instanceof KeyColumnValueStoreManager;
         storeFeatures = storeManager.getFeatures();
 
-        int bufferSizeTmp = storageConfig.getInt(GraphDatabaseConfiguration.BUFFER_SIZE_KEY,
-                                          GraphDatabaseConfiguration.BUFFER_SIZE_DEFAULT);
+        int bufferSizeTmp = storageConfig.getInt(BUFFER_SIZE_KEY,BUFFER_SIZE_DEFAULT);
         Preconditions.checkArgument(bufferSizeTmp >= 0, "Buffer size must be non-negative (use 0 to disable)");
         if (!storeFeatures.supportsBatchMutation()) {
             bufferSize=0;
@@ -107,6 +111,12 @@ public class Backend {
             lockConfiguration = null;
         }
 
+        writeAttempts = storageConfig.getInt(WRITE_ATTEMPTS_KEY, WRITE_ATTEMPTS_DEFAULT);
+        Preconditions.checkArgument(writeAttempts>0,"Write attempts must be positive");
+        readAttempts = storageConfig.getInt(READ_ATTEMPTS_KEY, READ_ATTEMPTS_DEFAULT);
+        Preconditions.checkArgument(readAttempts>0,"Read attempts must be positive");
+        persistAttemptWaittime = storageConfig.getInt(STORAGE_ATTEMPT_WAITTIME_KEY, STORAGE_ATTEMPT_WAITTIME_DEFAULT);
+        Preconditions.checkArgument(persistAttemptWaittime>0,"Persistence attempt retry wait time must be non-negative");
 
         if (storeFeatures.isDistributed() && storeFeatures.isKeyOrdered()) {
             log.debug("Wrapping index store with HashPrefix");
@@ -240,7 +250,7 @@ public class Backend {
             assert storeManager.getFeatures().supportsBatchMutation();
             if (isKeyColumnValueStore) {
                 assert storeManager instanceof KeyColumnValueStoreManager;
-                tx = new BufferTransaction(tx,(KeyColumnValueStoreManager)storeManager,bufferSize);
+                tx = new BufferTransaction(tx,(KeyColumnValueStoreManager)storeManager,bufferSize,writeAttempts,persistAttemptWaittime);
             } else {
                 assert storeManager instanceof KeyValueStoreManager;
                 //TODO: support buffer mutations

@@ -111,6 +111,9 @@ public class StorageSetup {
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(
         		CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
         		cassandraYamlPath);
+        config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_PARTITION_KEY,true);
+        config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_FLUSH_KEY,false);
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_IS_ORDERED_KEY,true);
         return config;
     }
 }

@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.diskstorage.idmanagement;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
-import com.thinkaurelius.titan.diskstorage.common.RemoteStoreManager;
+import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
@@ -32,7 +32,7 @@ public abstract class AbstractIDManager implements IDAuthority {
     private volatile boolean isActive;
 
     public AbstractIDManager(Configuration config) {
-        this.rid = RemoteStoreManager.getRid(config);
+        this.rid = DistributedStoreManager.getRid(config);
 
         this.isActive = false;
 

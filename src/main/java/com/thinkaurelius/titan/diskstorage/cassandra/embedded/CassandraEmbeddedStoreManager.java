@@ -93,7 +93,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             Token<?> token = StorageService.instance.getLocalPrimaryRange().left;
             if (token instanceof BytesToken) {
                 features.hasLocalKeyPartition=true;
-                features.isKeyOrdered=true;
+                Preconditions.checkArgument(features.isKeyOrdered(),"Need to define store as key ordered");
             }
         } catch (Exception e) { log.warn("Could not read local token range"); }
 	}
@@ -142,20 +142,28 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             
             Preconditions.checkArgument(l.token.length==r.token.length,"Tokens have unequal length");
             int tokenLength = l.token.length;
+            log.debug("Token length: " + tokenLength);
+
+            byte[][] tokens = new byte[][]{l.token,r.token};
+            byte[][] plusOne = new byte[2][tokenLength];
+
+            for (int j=0;j<2;j++) {
+                boolean carry = true;
+                for (int i=tokenLength-1;i>=0;i--) {
+                    byte b = tokens[j][i];
+                    if (carry) {
+                        b++;
+                        carry=false;
+                    }
+                    if (b==0) carry=true;
+                    plusOne[j][i]=b;
+                }
+            }
             
-            // Convert l and r into unsigned BigIntegers
-            BigInteger le = new BigInteger(1, l.token);
-            BigInteger ri = new BigInteger(1, r.token);
-
-            BigInteger modulo = BigInteger.ONE.shiftLeft(8 * tokenLength);
-
-            BigInteger leftInclusive = le.add(BigInteger.ONE).mod(modulo);
-            BigInteger rightExclusive = ri.add(BigInteger.ONE).mod(modulo);
-
-            ByteBuffer lb = ByteBuffer.wrap(leftInclusive.toByteArray());
-            ByteBuffer rb = ByteBuffer.wrap(rightExclusive.toByteArray());
-            Preconditions.checkArgument(lb.remaining()==tokenLength);
-            Preconditions.checkArgument(rb.remaining()==tokenLength);
+            ByteBuffer lb = ByteBuffer.wrap(plusOne[0]);
+            ByteBuffer rb = ByteBuffer.wrap(plusOne[1]);
+            Preconditions.checkArgument(lb.remaining()==tokenLength,lb.remaining());
+            Preconditions.checkArgument(rb.remaining()==tokenLength,rb.remaining());
 
             return new ByteBuffer[]{ lb, rb };
         } else {

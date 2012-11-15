@@ -21,7 +21,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 
 public class BerkeleyJEStoreManager implements KeyValueStoreManager {
 
-    private final Logger log = LoggerFactory.getLogger(BerkeleyJEStoreManager.class);
+    private static final Logger log = LoggerFactory.getLogger(BerkeleyJEStoreManager.class);
 
 
     public static final String CACHE_KEY = "cache-percentage";

@@ -51,7 +51,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 	public void open() throws StorageException {
         manager = openStorageManager();
         assertTrue(manager.getFeatures().supportsBatchMutation());
-        tx = new BufferTransaction(manager.beginTransaction(ConsistencyLevel.DEFAULT),manager,bufferSize);
+        tx = new BufferTransaction(manager.beginTransaction(ConsistencyLevel.DEFAULT),manager,bufferSize,1,0);
         store1 = new BufferedKeyColumnValueStore(manager.openDatabase(storeName1),true);
         store2 = new BufferedKeyColumnValueStore(manager.openDatabase(storeName2),true);
         

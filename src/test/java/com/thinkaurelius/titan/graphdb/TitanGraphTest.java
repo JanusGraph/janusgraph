@@ -250,10 +250,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		TitanVertex n1 = tx.addVertex(), n3 = tx.addVertex();
 		TitanEdge e=n3.addEdge(knows, n1);
 		e.addProperty(id, 111);
-        Object eid = e.getId();
 		n3.addProperty(id, 445);
 		assertEquals(111, e.getProperty(id));
 		clopen();
+        Object eid = e.getId();
 		long nid = n3.getID();
 		
 		n3 = tx.getVertex(nid);

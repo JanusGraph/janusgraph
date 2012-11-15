@@ -40,7 +40,7 @@ public class BasicElement extends VirtualElement {
 	
 	@Override
 	public void setID(long id) {
-		Preconditions.checkArgument(isNew(), "Illegal lifecycle status for setting id");
+		Preconditions.checkArgument(isNew(), "Illegal lifecycle status for setting id: " + isLoaded() + " | " + isRemoved());
 		Preconditions.checkArgument(id!=NoID,"Illegal id: " + id);
 		if (hasID()) throw new IllegalStateException("The entity has already been assigned an id");
 		this.id = id;

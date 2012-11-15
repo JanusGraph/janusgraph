@@ -16,9 +16,9 @@ import java.net.UnknownHostException;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class RemoteStoreManager {
+public class DistributedStoreManager {
 
-    private static final Logger log = LoggerFactory.getLogger(RemoteStoreManager.class);
+    private static final Logger log = LoggerFactory.getLogger(DistributedStoreManager.class);
 
 
     protected final byte[] rid;
@@ -27,13 +27,15 @@ public class RemoteStoreManager {
     protected final int port;
     protected final int connectionTimeout;
     protected final int connectionPoolSize;
+    protected final boolean isKeyOrdered;
 
-    public RemoteStoreManager(Configuration storageConfig, int portDefault) {
+    public DistributedStoreManager(Configuration storageConfig, int portDefault) {
         this.hostname = storageConfig.getString(GraphDatabaseConfiguration.HOSTNAME_KEY, GraphDatabaseConfiguration.HOSTNAME_DEFAULT);
         this.port = storageConfig.getInt(GraphDatabaseConfiguration.PORT_KEY, portDefault);
         this.rid = getRid(storageConfig);
         this.connectionTimeout = storageConfig.getInt(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
         this.connectionPoolSize = storageConfig.getInt(GraphDatabaseConfiguration.CONNECTION_POOL_SIZE_KEY, GraphDatabaseConfiguration.CONNECTION_POOL_SIZE_DEFAULT);
+        this.isKeyOrdered = storageConfig.getBoolean(GraphDatabaseConfiguration.STORAGE_IS_ORDERED_KEY,GraphDatabaseConfiguration.STORAGE_IS_ORDERED_DEFAULT);
     }
 
     @Override

@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.common.RemoteStoreManager;
+import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -26,7 +26,7 @@ import java.util.*;
  * 
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
-public class HBaseStoreManager extends RemoteStoreManager implements KeyColumnValueStoreManager  {
+public class HBaseStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager  {
 
 	private static final Logger log = LoggerFactory.getLogger(HBaseStoreManager.class);
 	
@@ -83,7 +83,7 @@ public class HBaseStoreManager extends RemoteStoreManager implements KeyColumnVa
 
         features = new StoreFeatures();
         features.supportsScan=false; features.supportsBatchMutation=true; features.isTransactional=false;
-        features.supportsConsistentKeyOperations=true; features.supportsLocking=false; features.isKeyOrdered=false;
+        features.supportsConsistentKeyOperations=true; features.supportsLocking=false; features.isKeyOrdered=super.isKeyOrdered;
         features.isDistributed=true; features.hasLocalKeyPartition=false;
     }
 
