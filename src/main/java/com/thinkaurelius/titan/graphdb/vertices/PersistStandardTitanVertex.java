@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
-import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
 import com.thinkaurelius.titan.graphdb.entitystatus.BasicElement;

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.types;
+package com.thinkaurelius.titan.graphdb.adjacencylist;
 
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
@@ -25,8 +25,6 @@ public class TypeComparator implements Comparator<TitanType> {
 			return et1.getName().compareTo(et2.getName());
 		} else return g1.getID()-g2.getID();
 	}
-	
-	
 	
 	
 	private static final ConcurrentMap<Short,TitanType> groupTypes = new ConcurrentHashMap<Short,TitanType>();

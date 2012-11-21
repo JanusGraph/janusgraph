@@ -13,13 +13,15 @@ public class ArrayAdjacencyList implements AdjacencyList {
 
 	private static final long serialVersionUID = -2868708972683152295L;
 
-	private final ArrayAdjListFactory factory;
+    private static final float UPDATE_FACTOR = 2.0f;
+
+	private final AdjacencyListStrategy strategy;
 	private volatile InternalRelation[] contents;
 
 	
-	ArrayAdjacencyList(ArrayAdjListFactory factory) {
-		this.factory=factory;
-		contents = new InternalRelation[factory.getInitialCapacity()];
+	ArrayAdjacencyList(AdjacencyListStrategy strategy, int initialCapacity) {
+		this.strategy = strategy;
+		contents = new InternalRelation[initialCapacity];
 	}
 	
 	@Override
@@ -45,15 +47,17 @@ public class ArrayAdjacencyList implements AdjacencyList {
 				throw new InvalidElementException("Cannot add functional edge since an edge of that type already exists",e);
 			}
 		}
-		if (emptySlot<0 && contents.length>=factory.getMaxCapacity()) {
-			return factory.extend(this, e, status);
+		if (emptySlot<0 && contents.length> strategy.extensionThreshold()) {
+            AdjacencyList list = strategy.upgrade(this);
+            list.addEdge(e,status);
+            return list;
 		} else {
 			//Add internally
 			if (emptySlot>=0) {
 				contents[emptySlot]=e;
 			} else {
 				//Expand & copy
-				InternalRelation[] contents2 = new InternalRelation[factory.updateCapacity(contents.length)];
+				InternalRelation[] contents2 = new InternalRelation[(int)Math.round(contents.length*UPDATE_FACTOR)];
 				System.arraycopy(contents, 0, contents2, 0, contents.length);
 				contents2[contents.length]=e;
 				contents=contents2;
@@ -94,8 +98,8 @@ public class ArrayAdjacencyList implements AdjacencyList {
 	}
 
 	@Override
-	public AdjacencyListFactory getFactory() {
-		return factory;
+	public AdjacencyListStrategy getStrategy() {
+		return strategy;
 	}
 
 	

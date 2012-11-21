@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types.vertices;
 
 import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.types.PropertyKeyDefinition;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;

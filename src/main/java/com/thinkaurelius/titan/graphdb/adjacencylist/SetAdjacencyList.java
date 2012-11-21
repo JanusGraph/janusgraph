@@ -11,21 +11,19 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 public class SetAdjacencyList implements AdjacencyList {
 
 	
-	private final SetAdjListFactory factory;
 	private final Set<InternalRelation> content;
 
-	SetAdjacencyList(SetAdjListFactory factory) {
-		this.factory = factory;
-		content = Collections.newSetFromMap(new ConcurrentHashMap<InternalRelation,Boolean>
-						(factory.getInitialCapacity(),factory.getLoadFactor(),factory.getConcurrencyLevel()));
+	SetAdjacencyList() {
+		content = new ConcurrentSkipListSet<InternalRelation>(Comparator);
 	}
 	
-	SetAdjacencyList(SetAdjListFactory factory, AdjacencyList base) {
-		this(factory);
+	SetAdjacencyList(AdjacencyList base) {
+		this();
 		for (InternalRelation e : base.getEdges()) {
 			addEdge(e,ModificationStatus.none);
 		}
@@ -38,16 +36,14 @@ public class SetAdjacencyList implements AdjacencyList {
 
 	@Override
 	public synchronized AdjacencyList addEdge(InternalRelation e, boolean checkTypeUniqueness, ModificationStatus status) {
-		if (checkTypeUniqueness) {
+		assert content.isEmpty() || content.iterator().next().getType().equals(e.getType()) : "Set only supports one type";
+        if (checkTypeUniqueness) {
 			if (content.contains(e)) status.nochange();
-			else {
-				if ((factory.isUniformTyped() && !content.isEmpty()) ||
-						(!factory.isUniformTyped() && !Iterables.isEmpty(getEdges(e.getType())) )) {
-					throw new InvalidElementException("Cannot add functional edge since an edge of that type already exists",e);
-				} else {
-					status.change();
-					content.add(e);
-				}
+			else if (!content.isEmpty()) {
+                throw new InvalidElementException("Cannot add functional edge since an edge of that type already exists",e);
+			} else {
+                status.change();
+                content.add(e);
 			}
 		} else {
 			status.setModified(content.add(e));
@@ -67,28 +63,12 @@ public class SetAdjacencyList implements AdjacencyList {
 
 	@Override
 	public Iterable<InternalRelation> getEdges(final TitanType type) {
-		if (factory.isUniformTyped()) return getEdges();
-		else return Iterables.filter(getEdges(), new Predicate<InternalRelation>() {
-
-			@Override
-			public boolean apply(InternalRelation e) {
-				return type.equals(e.getType());
-			}
-			
-		});
+		return getEdges();
 	}
 	
 	@Override
 	public Iterable<InternalRelation> getEdges(final TypeGroup group) {
-		if (factory.isUniformTyped()) return getEdges();
-		else return Iterables.filter(getEdges(), new Predicate<InternalRelation>() {
-
-			@Override
-			public boolean apply(InternalRelation e) {
-				return group.equals(e.getType().getGroup());
-			}
-			
-		});
+        return getEdges();
 	}
 
 	@Override
@@ -98,8 +78,8 @@ public class SetAdjacencyList implements AdjacencyList {
 	}
 
 	@Override
-	public AdjacencyListFactory getFactory() {
-		return factory;
+	public AdjacencyListStrategy getStrategy() {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

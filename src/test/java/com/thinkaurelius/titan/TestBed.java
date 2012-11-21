@@ -6,9 +6,7 @@ import cern.colt.map.OpenLongObjectHashMap;
 import com.sleepycat.je.util.DbCacheSize;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.*;
 
 import java.io.IOException;
 
@@ -19,8 +17,6 @@ public class TestBed {
 	 * @throws java.io.IOException
 	 */
 	public static void main(String[] args) throws Exception {
-
-
         byte b = (byte)(15 | (1<<7));
         System.out.println(b);
         System.out.println(Runtime.getRuntime().maxMemory()/1024);

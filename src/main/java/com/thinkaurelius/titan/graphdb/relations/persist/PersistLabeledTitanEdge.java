@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.relations.persist;
 
 import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.adjacencylist.ModificationStatus;
 import com.thinkaurelius.titan.graphdb.relations.InlineRelation;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
@@ -32,7 +31,7 @@ public class PersistLabeledTitanEdge extends LabeledTitanEdge {
 	public PersistLabeledTitanEdge clone() {
 		assert isLoaded() && hasID();
 		PersistLabeledTitanEdge clone = new PersistLabeledTitanEdge(
-				getTitanLabel(), getVertex(0), getVertex(1),tx,outEdges.getFactory(), getID());
+				getTitanLabel(), getVertex(0), getVertex(1),tx,outEdges.getStrategy(), getID());
 		for (InternalRelation rel : outEdges.getEdges()) {
 			clone.outEdges.addEdge(((InlineRelation)rel).clone(),ModificationStatus.none);
 		}

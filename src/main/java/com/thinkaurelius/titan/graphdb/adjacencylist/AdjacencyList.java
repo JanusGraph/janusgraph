@@ -26,6 +26,6 @@ public interface AdjacencyList extends Iterable<InternalRelation> {
 	public Iterable<InternalRelation> getEdges(TypeGroup group);
 	
 	
-	public AdjacencyListFactory getFactory();
+	public AdjacencyListStrategy getStrategy();
 	
 }

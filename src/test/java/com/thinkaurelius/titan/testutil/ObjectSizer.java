@@ -74,6 +74,14 @@ public final class ObjectSizer {
 			return m;
 		}
 	};
+
+    public static Factory emptyConcurrentSkipList = new Factory() {
+        @Override
+        public Object newInstance() {
+            ConcurrentSkipListMap<String,String> map = new ConcurrentSkipListMap<String, String>();
+            return map;
+        }
+    };
 	
 	
 	public static Map fill(Map m, int size) {
@@ -98,7 +106,7 @@ public final class ObjectSizer {
   public static void main(String... aArguments){
     Factory theClass = null;
     try {
-      theClass = emptyIntIntMap;
+      theClass = emptyConcurrentSkipList;
     }
     catch (Exception ex) {
       System.err.println("Cannot build a Class object: " + aArguments[0]);

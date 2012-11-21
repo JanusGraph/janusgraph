@@ -4,7 +4,6 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
-import com.thinkaurelius.titan.graphdb.types.TypeComparator;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentNavigableMap;
@@ -13,18 +12,18 @@ import java.util.concurrent.ConcurrentSkipListMap;
 public class TypedAdjacencyList implements AdjacencyList {
 
 	
-	private final TypedAdjListFactory factory;
+	private final AdjacencyListStrategy strategy;
 	private final ConcurrentSkipListMap<TitanType,AdjacencyList> content;
 
-	TypedAdjacencyList(TypedAdjListFactory factory) {
-		this.factory = factory;
+	TypedAdjacencyList(AdjacencyListStrategy strategy) {
+		this.strategy = strategy;
 //		content = new ConcurrentHashMap<TitanType,AdjacencyList>
-//						(factory.getInitialCapacity(),factory.getLoadFactor(),factory.getConcurrencyLevel());
+//						(strategy.getInitialCapacity(),strategy.getLoadFactor(),strategy.getConcurrencyLevel());
 		content = new ConcurrentSkipListMap<TitanType,AdjacencyList>(TypeComparator.INSTANCE);
 	}
 	
-	TypedAdjacencyList(TypedAdjListFactory factory, AdjacencyList base) {
-		this(factory);
+	TypedAdjacencyList(AdjacencyListStrategy strategy, AdjacencyList base) {
+		this(strategy);
 		for (InternalRelation e : base.getEdges()) {
 			addEdge(e,ModificationStatus.none);
 		}
@@ -39,7 +38,7 @@ public class TypedAdjacencyList implements AdjacencyList {
 	public synchronized AdjacencyList addEdge(InternalRelation e, boolean checkTypeUniqueness, ModificationStatus status) {
 		AdjacencyList list = content.get(e.getType());
 		if (list==null) {
-			list = factory.getEmptyTypeAdjList();
+			list = strategy.getInnerStrategy().emptyList();
 			checkTypeUniqueness=false;
 			content.put(e.getType(), list);
 		}
@@ -64,7 +63,7 @@ public class TypedAdjacencyList implements AdjacencyList {
 	public Iterable<InternalRelation> getEdges(TitanType type) {
 		AdjacencyList list = content.get(type);		
 		if (list==null) return AdjacencyList.Empty;
-		else return list;
+		else return list.getEdges(type);
 	}
 	
 	@Override
@@ -86,8 +85,8 @@ public class TypedAdjacencyList implements AdjacencyList {
 	}
 
 	@Override
-	public AdjacencyListFactory getFactory() {
-		return factory;
+	public AdjacencyListStrategy getStrategy() {
+		return strategy;
 	}
 
 	@Override

@@ -19,6 +19,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
+
 public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
 	private Logger log = LoggerFactory.getLogger(TitanGraphTest.class);
@@ -591,6 +593,16 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(noVertices-1,Iterables.size(v.getEdges()));
         
         //Queries
+        int lastTime=Integer.MAX_VALUE;
+        for (Edge e : v.query().labels("connect").direction(Direction.OUT).limit(20).edges()) {
+            int nowTime = (Integer)e.getProperty("time");
+            assertTrue(lastTime+" vs. " + nowTime,lastTime>=nowTime);
+            lastTime=nowTime;
+        }
+        Iterator<Edge> outer = v.query().labels("connect").direction(Direction.OUT).limit(20).edges().iterator();
+        for (Edge e : v.query().labels("connect").direction(Direction.OUT).limit(10).edges()) {
+            assertEquals(e,outer.next());
+        }
         assertEquals(10,v.query().labels("connect").direction(Direction.OUT).interval("time",3,31).count());
         assertEquals(33,v.query().labels("connect").direction(Direction.OUT).count());
         assertEquals(33,v.query().labels("connect").has("undefined",null).direction(Direction.OUT).count());
@@ -623,6 +635,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         //Same queries as above but without memory loading        
         assertEquals(0,v.query().labels("follows").has("time",10, Query.Compare.LESS_THAN).count());
+
+
         assertEquals(0,v.query().labels("connect").direction(Direction.OUT).has("time",null).count());
         assertEquals(10,v.query().labels("connect").direction(Direction.OUT).interval("time",3,31).count());
         assertEquals(10,v.query().labels("connect").direction(Direction.OUT).interval("time",3,31).vertexIds().size());
