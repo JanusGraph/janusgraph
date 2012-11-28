@@ -47,8 +47,9 @@ public class TitanGraphConfiguration implements GraphConfiguration {
             }
 
             final Configuration rewriteConfig = new BaseConfiguration();
-            if (properties.containsKey(Tokens.REXSTER_GRAPH_LOCATION)) {
-                File directory = new File(properties.getString(Tokens.REXSTER_GRAPH_LOCATION));
+            final String location = properties.getString(Tokens.REXSTER_GRAPH_LOCATION, "");
+            if (titanConfig.getString("storage.backend").equals("local") && location.trim().length() > 0) {
+                final File directory = new File(properties.getString(Tokens.REXSTER_GRAPH_LOCATION));
                 if (!directory.isDirectory()) {
                     if (!directory.mkdirs()) {
                         throw new IllegalArgumentException("Could not create directory: " + directory);
@@ -56,6 +57,7 @@ public class TitanGraphConfiguration implements GraphConfiguration {
                 }
                 rewriteConfig.setProperty("storage.directory",directory.toString());
             }
+
             if (properties.containsKey(Tokens.REXSTER_GRAPH_READ_ONLY)) {
                 rewriteConfig.setProperty("storage.read-only",properties.getBoolean(Tokens.REXSTER_GRAPH_READ_ONLY));
             }
