@@ -9,13 +9,11 @@ import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
 import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
 import com.thinkaurelius.titan.testutil.MemoryAssess;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.*;
+
 import static com.tinkerpop.blueprints.Direction.*;
 import static org.junit.Assert.*;
 
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Query;
-import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -201,6 +199,22 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(154, ((SpecialInt) v2.getProperty("int")).getValue());
         assertEquals(v2, Iterables.getOnlyElement(tx.getVertices("someid", 200l)));
         assertEquals(v2, Iterables.getOnlyElement(tx.getVertices(id, "v2")));
+    }
+    
+    @Test
+    public void testVertexRemoval() {
+        Vertex v1 = graphdb.addVertex(null);
+        Vertex v2 = graphdb.addVertex(null);
+        
+        Edge e = graphdb.addEdge(null,v1,v2,"knows");
+        clopen();
+        
+        v1 = graphdb.getVertex(v1);
+        v2 = graphdb.getVertex(v2);
+        graphdb.removeVertex(v1);
+        graphdb.removeVertex(v2);
+        
+        graphdb.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     }
 
     @Test

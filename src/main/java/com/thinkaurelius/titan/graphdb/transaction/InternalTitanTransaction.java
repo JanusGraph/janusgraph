@@ -100,6 +100,7 @@ public interface InternalTitanTransaction extends TitanTransaction {
 	 * @return true, if the edge has been deleted, else false
 	 */
 	public boolean isDeletedRelation(InternalRelation relation);
+    public boolean isDeletedRelation(long relationId);
 	
 	// ######## TitanVertex / TitanRelation Loading  ############
 	

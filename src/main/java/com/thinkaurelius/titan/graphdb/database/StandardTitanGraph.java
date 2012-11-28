@@ -361,7 +361,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 long otherid = loader.getVertexId() + nodeIDDiff;
                 assert dirID==3 || dirID==2;
                 Direction dir = dirID==3?Direction.IN:Direction.OUT;
-                loader.loadEdge(edgeid,(TitanLabel)titanType,dir,otherid);
+                if (!tx.isDeletedRelation(edgeid))
+                    loader.loadEdge(edgeid,(TitanLabel)titanType,dir,otherid);
             } else {
                 assert titanType.isPropertyKey();
                 assert dirID == 0;
@@ -377,7 +378,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
                 if (titanType.isFunctional()) edgeid = VariableLong.readPositive(value);
                 assert edgeid>0;
-                loader.loadProperty(edgeid,propType,attribute);
+                if (!tx.isDeletedRelation(edgeid))
+                    loader.loadProperty(edgeid,propType,attribute);
 
             }
             
