@@ -131,7 +131,7 @@ public class FaunusPipeline {
 
         public boolean atVertex() {
             if (null == this.elementType)
-                throw new IllegalStateException("No element type can be inferred: start vertex (or edge) set must be defined");
+                throw new IllegalStateException("No element type can be inferred: start vertices (or edges) set must be defined");
             return this.elementType.equals(Vertex.class);
         }
 
@@ -913,7 +913,7 @@ public class FaunusPipeline {
             this.compiler.groupCountMapReduce(this.state.getElementType(), null, null);
             makeMapReduceString(GroupCountMapReduce.class);
         } else {
-            this.compiler.valueDistribution(this.state.getElementType(), pair.getA(), pair.getB());
+            this.compiler.valueGroupCountMapReduce(this.state.getElementType(), pair.getA(), pair.getB());
             makeMapReduceString(ValueGroupCountMapReduce.class, pair.getA());
         }
         return this;

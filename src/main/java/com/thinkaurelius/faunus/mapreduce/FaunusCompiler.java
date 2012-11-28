@@ -393,7 +393,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.completeSequence();
     }
 
-    public void valueDistribution(final Class<? extends Element> klass, final String property, final Class<? extends WritableComparable> type) throws IOException {
+    public void valueGroupCountMapReduce(final Class<? extends Element> klass, final String property, final Class<? extends WritableComparable> type) throws IOException {
         this.mapSequenceConfiguration.setClass(ValueGroupCountMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceConfiguration.set(ValueGroupCountMapReduce.PROPERTY + "-" + this.mapSequenceClasses.size(), property);
         this.mapSequenceConfiguration.setClass(ValueGroupCountMapReduce.TYPE + "-" + this.mapSequenceClasses.size(), type, Writable.class);
@@ -476,6 +476,7 @@ public class FaunusCompiler extends Configured implements Tool {
             return;
         }
 
+        // TODO: rectify this hell
         final String hadoopFileJar;
         if (new File("target/" + Tokens.FAUNUS_JOB_JAR).exists())
             hadoopFileJar = "target/" + Tokens.FAUNUS_JOB_JAR;
@@ -552,7 +553,7 @@ public class FaunusCompiler extends Configured implements Tool {
         }
 
         if (showHeader) {
-            logger.info("Faunus: Graph Computing with Hadoop");
+            logger.info("Faunus: Graph Analytics Engine");
             logger.info("        ,");
             logger.info("    ,   |\\ ,__");
             logger.info("    |\\   \\/   `\\");
@@ -566,14 +567,6 @@ public class FaunusCompiler extends Configured implements Tool {
             logger.info("         \\ |");
             logger.info("          |/");
         }
-
-        /*logger.info("Graph: " + this.graph);
-        logger.info("Input location: " + this.graph.getInputLocation());
-        logger.info("Graph input format: " + this.graph.getGraphInputFormat().getName());
-        logger.info("Graph output format: " + this.graph.getGraphOutputFormat().getName());
-        logger.info("Sideeffect output format: " + this.graph.getSideEffectOutputFormat().getName());
-        logger.info("Output location: " + this.graph.getOutputLocation());
-        logger.info("Output location overwrite: " + this.graph.getOutputLocationOverwrite());*/
 
         if (null != script && !script.isEmpty())
             logger.info("Generating job chain: " + script);
