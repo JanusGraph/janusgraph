@@ -8,10 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
 
 /**
 * Measures the approximate size of an object in memory, given a Class which
@@ -74,6 +71,26 @@ public final class ObjectSizer {
 			return m;
 		}
 	};
+    
+    public static Factory stringConcurrentSet = new Factory() {
+        @Override
+        public Object newInstance() {
+            ConcurrentSkipListSet<String> set = new ConcurrentSkipListSet<String>();
+            int size = 100;
+            for (int i=0;i<size;i++) set.add("String"+i);
+            return set;
+        }
+    };
+
+    public static Factory stringConcurrenthashmap = new Factory() {
+        @Override
+        public Object newInstance() {
+            ConcurrentHashMap<String,Boolean> set = new ConcurrentHashMap<String,Boolean>(1,1);
+            int size = 1000;
+            for (int i=0;i<size;i++) set.put("String"+i,Boolean.TRUE);
+            return set;
+        }
+    };
 	
 	
 	public static Map fill(Map m, int size) {
@@ -98,7 +115,7 @@ public final class ObjectSizer {
   public static void main(String... aArguments){
     Factory theClass = null;
     try {
-      theClass = emptyIntIntMap;
+      theClass = stringConcurrenthashmap;
     }
     catch (Exception ex) {
       System.err.println("Cannot build a Class object: " + aArguments[0]);

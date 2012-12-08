@@ -100,7 +100,7 @@ public class BerkeleyJEKeyValueStore implements KeyValueStore {
 	public void acquireLock(ByteBuffer key, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
         log.trace("Acquiring lock.");
 		if (getTransaction(txh)==null) {
-            throw new PermanentLockingException("Enable transaction for locking in BerkeleyDB!");
+//            throw new PermanentLockingException("Enable transaction for locking in BerkeleyDB!");
 		} //else we need no locking
 	}
 
