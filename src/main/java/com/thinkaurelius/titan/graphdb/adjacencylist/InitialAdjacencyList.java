@@ -12,20 +12,17 @@ public class InitialAdjacencyList implements AdjacencyList {
 
 	private static final Iterable<InternalRelation> Empty = IterablesUtil.emptyIterable();
 	
-	private final AdjacencyListFactory factory;
+	private final AdjacencyListStrategy strategy;
 	
-	InitialAdjacencyList(AdjacencyListFactory factory) {
-		this.factory=factory;
-	}
-	
-	@Override
-	public synchronized AdjacencyList addEdge(InternalRelation e, ModificationStatus status) {
-		return factory.extend(this, e, status);
+	InitialAdjacencyList(AdjacencyListStrategy strategy) {
+		this.strategy = strategy;
 	}
 
 	@Override
-	public synchronized AdjacencyList addEdge(InternalRelation e, boolean checkTypeUniqueness, ModificationStatus status) {
-		return factory.extend(this, e, status);
+	public synchronized AdjacencyList addEdge(InternalRelation e, ModificationStatus status) {
+        AdjacencyList list = strategy.upgrade(null);
+        list.addEdge(e,status);
+        return list;
 	}
 
 	@Override
@@ -55,7 +52,7 @@ public class InitialAdjacencyList implements AdjacencyList {
 
 	@Override
 	public AdjacencyListFactory getFactory() {
-		return factory;
+		return strategy.getFactory();
 	}
 
 	@Override

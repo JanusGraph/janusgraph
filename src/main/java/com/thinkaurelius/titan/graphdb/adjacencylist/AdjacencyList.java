@@ -11,8 +11,6 @@ public interface AdjacencyList extends Iterable<InternalRelation> {
 	
 	public AdjacencyList addEdge(InternalRelation e, ModificationStatus status);
 	
-	public AdjacencyList addEdge(InternalRelation e, boolean checkTypeUniqueness, ModificationStatus status);
-	
 	public void removeEdge(InternalRelation e, ModificationStatus status);
 
 	public boolean isEmpty();

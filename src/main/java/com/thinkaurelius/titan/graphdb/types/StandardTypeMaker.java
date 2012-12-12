@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
@@ -25,7 +26,7 @@ public class StandardTypeMaker implements TypeMaker {
 	private FunctionalType isFunctional;
 	private Directionality directionality;
 	private TypeCategory category;
-	private List<TitanType> keysig;
+	private List<TitanType> primarySig;
 	private List<TitanType> compactsig;
 	
 	private boolean hasIndex;
@@ -41,7 +42,7 @@ public class StandardTypeMaker implements TypeMaker {
 		name = null;
 		hasIndex = false;
 		isUnique = false;
-		keysig = new ArrayList<TitanType>();
+		primarySig = new ArrayList<TitanType>();
 		compactsig = new ArrayList<TitanType>();
 		category = null;
 		directionality = Directionality.Directed;
@@ -57,17 +58,26 @@ public class StandardTypeMaker implements TypeMaker {
 			throw new IllegalArgumentException("Name starts with a reserved keyword: "+SystemTypeManager.systemETprefix);
         if (RESERVED_NAMES.contains(name.toLowerCase()))
             throw new IllegalArgumentException("Name is reserved: " + name);
-		if ((!keysig.isEmpty() || !compactsig.isEmpty()) && category!= TypeCategory.HasProperties)
+		if ((!primarySig.isEmpty() || !compactsig.isEmpty()) && category!= TypeCategory.HasProperties)
 			throw new IllegalArgumentException("Can only specify signatures for labeled edge types");
-        checkSignature(keysig);
+        checkPrimarySignature(primarySig);
         checkSignature(compactsig);
-        Set<TitanType> intersectSign = Sets.newHashSet(keysig);
+        Set<TitanType> intersectSign = Sets.newHashSet(primarySig);
         intersectSign.retainAll(compactsig);
         if (!intersectSign.isEmpty())
             throw new IllegalArgumentException("The primary key and the compact signature contain identical types: " + intersectSign);
 	}
-	
-	private TitanType[] checkSignature(List<TitanType> sig) {
+
+    private TitanType[] checkPrimarySignature(List<TitanType> sig) {
+        for (TitanType t : sig) {
+            Preconditions.checkArgument(t.isEdgeLabel()
+                    || Comparable.class.isAssignableFrom(((TitanKey)t).getDataType()),
+                    "Type must be a label or a key with comparable data type: " + t);
+        }
+        return checkSignature(sig);
+    }
+
+    private TitanType[] checkSignature(List<TitanType> sig) {
 		TitanType[] signature = new TitanType[sig.size()];
 		for (int i=0;i<sig.size();i++) {
 			TitanType et = sig.get(i);
@@ -97,7 +107,7 @@ public class StandardTypeMaker implements TypeMaker {
 		if (isUnique && !hasIndex)
 			throw new IllegalArgumentException("A unique key must have an index");
 		return etManager.createPropertyKey(tx, name, category, directionality,
-                visibility, isFunctional, checkSignature(keysig), checkSignature(compactsig),
+                visibility, isFunctional, checkSignature(primarySig), checkSignature(compactsig),
                 group, isUnique, hasIndex, objectType);
 	}
 
@@ -108,7 +118,7 @@ public class StandardTypeMaker implements TypeMaker {
 		if (hasIndex)
 			throw new IllegalArgumentException("Cannot declare labels to be indexed");
 		return etManager.createEdgeLabel(tx, name, category, directionality,
-                visibility, isFunctional, checkSignature(keysig), checkSignature(compactsig), group);
+                visibility, isFunctional, checkPrimarySignature(primarySig), checkSignature(compactsig), group);
 
 	}
 
@@ -120,7 +130,7 @@ public class StandardTypeMaker implements TypeMaker {
 
 	@Override
 	public StandardTypeMaker primaryKey(TitanType... types) {
-		keysig = Arrays.asList(types);
+		primarySig = Arrays.asList(types);
 		return this;
 	}
 

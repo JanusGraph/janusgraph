@@ -44,6 +44,11 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 		return relation.isRemoved();
 	}
 
+    @Override
+    public boolean isDeletedRelation(long relationId) {
+        throw new UnsupportedOperationException();
+    }
+
 	public boolean isReferenceVertexID(long vertexid) {
 		return false;
 	}

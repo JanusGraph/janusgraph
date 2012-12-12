@@ -38,7 +38,8 @@ public class RelationFactoryUtil {
 
 		
 		if (loaded>0) {
-			if (notloaded>0) throw new InvalidElementException("Relation already existed on some vertices but not on others",relation);
+			if (notloaded>0)
+                throw new InvalidElementException("Relation already existed on some vertices but not on others",relation);
 			else {
 				graph.loadedRelation(relation);
 			}

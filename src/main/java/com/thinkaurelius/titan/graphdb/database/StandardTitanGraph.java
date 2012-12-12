@@ -29,7 +29,6 @@ import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.SimpleAtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
-import com.thinkaurelius.titan.graphdb.relations.factory.RelationLoader;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.transaction.StandardPersistTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
@@ -316,8 +315,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	@Override
 	public void loadRelations(AtomicQuery query, InternalTitanTransaction tx) {
         List<Entry> entries = queryForEntries(query,getStoreTransaction(tx));
-        RelationLoader factory = tx.getRelationFactory();
-        VertexRelationLoader loader = new StandardVertexRelationLoader(query.getNode(),factory);
+        VertexRelationLoader loader = new StandardVertexRelationLoader(query.getNode());
         loadRelations(entries,loader,tx);
         query.getNode().loadedEdges(query);
     }
@@ -354,6 +352,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 long nodeIDDiff = VariableLong.read(value);
                 if (titanType.isFunctional()) edgeid = VariableLong.readPositive(value);
                 assert edgeid>0;
+                if (tx.isDeletedRelation(edgeid)) continue;
+
                 long otherid = loader.getVertexId() + nodeIDDiff;
                 assert dirID==3 || dirID==2;
                 Direction dir = dirID==3?Direction.IN:Direction.OUT;
@@ -373,6 +373,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
                 if (titanType.isFunctional()) edgeid = VariableLong.readPositive(value);
                 assert edgeid>0;
+                if (tx.isDeletedRelation(edgeid)) continue;
                 loader.loadProperty(edgeid,propType,attribute);
 
             }
@@ -396,6 +397,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 					readLabel(loader,value,type);
 				}
 			}
+            loader.finalizeRelation();
 		}
 	}
 

@@ -12,7 +12,7 @@ import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
  * @author matthias
  *
  */
-public interface RelationFactory extends RelationLoader {
+public interface RelationFactory {
 
 	InternalRelation createNewProperty(TitanKey type, InternalTitanVertex node, Object attribute);
 	

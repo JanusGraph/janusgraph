@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.transaction;
 import cern.colt.list.AbstractLongList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanException;
@@ -24,10 +25,7 @@ import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class StandardPersistTitanTx extends AbstractTitanTx {
@@ -36,7 +34,7 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 
 	private final TransactionHandle txHandle;
 		
-	private Set<InternalRelation> deletedEdges;
+	private Map<Long,InternalRelation> deletedEdges;
 	private List<InternalRelation> addedEdges;
 
 
@@ -48,10 +46,10 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 		txHandle = tx;
 
 		if (config.isReadOnly()) {
-			deletedEdges = ImmutableSet.of();
+			deletedEdges = ImmutableMap.of();
 			addedEdges = ImmutableList.of();
 		} else {
-			deletedEdges = Collections.newSetFromMap(new ConcurrentHashMap<InternalRelation,Boolean>(10,0.75f,1));
+			deletedEdges = new ConcurrentHashMap<Long,InternalRelation>(10,0.75f,1);
 			addedEdges = Collections.synchronizedList(new ArrayList<InternalRelation>());
 		}
 	}
@@ -61,11 +59,17 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 	 * TitanVertex and TitanRelation creation
 	 * ---------------------------------------------------------------
 	 */
+    
+    @Override
+    public boolean isDeletedRelation(long relationId) {
+        return deletedEdges.containsKey(Long.valueOf(relationId));
+    }
 
 	@Override
 	public boolean isDeletedRelation(InternalRelation relation) {
 		if (relation.isRemoved()) return true;
-		else return deletedEdges.contains(relation);
+        else if (relation.isNew() || !relation.hasID()) return false;
+		else return isDeletedRelation(Long.valueOf(relation.getID()));
 	}
 
 	@Override
@@ -78,9 +82,9 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
 	public void deletedRelation(InternalRelation relation) {
 		super.deletedRelation(relation);
 		if (relation.isLoaded() && !relation.isInline()) {
+            Preconditions.checkArgument(relation.hasID());
 			//Only store those deleted edges that matter, i.e. those that we need to erase from memory on their own		
-			boolean success = deletedEdges.add(relation);
-			assert success;
+			deletedEdges.put(Long.valueOf(relation.getID()),relation);
 		}
 	}
 	
@@ -167,7 +171,7 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
         
         try {
             if (!addedEdges.isEmpty() || !deletedEdges.isEmpty()) {
-                graphdb.save(addedEdges, deletedEdges, this);
+                graphdb.save(addedEdges, deletedEdges.values(), this);
             }
             txHandle.commit();
             super.commit();

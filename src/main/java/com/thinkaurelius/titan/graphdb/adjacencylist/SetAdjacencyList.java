@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.adjacencylist;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.InvalidElementException;
@@ -11,21 +12,20 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 public class SetAdjacencyList implements AdjacencyList {
 
-	
-	private final SetAdjListFactory factory;
-	private final Set<InternalRelation> content;
+	private final AdjacencyListStrategy strategy;
+	private final ConcurrentSkipListSet<InternalRelation> content;
 
-	SetAdjacencyList(SetAdjListFactory factory) {
-		this.factory = factory;
-		content = Collections.newSetFromMap(new ConcurrentHashMap<InternalRelation,Boolean>
-						(factory.getInitialCapacity(),factory.getLoadFactor(),factory.getConcurrencyLevel()));
+	SetAdjacencyList(AdjacencyListStrategy strategy) {
+        this.strategy=strategy;
+		content = new ConcurrentSkipListSet<InternalRelation>(strategy.getComparator());
 	}
 	
-	SetAdjacencyList(SetAdjListFactory factory, AdjacencyList base) {
-		this(factory);
+	SetAdjacencyList(AdjacencyListStrategy strategy, AdjacencyList base) {
+		this(strategy);
 		for (InternalRelation e : base.getEdges()) {
 			addEdge(e,ModificationStatus.none);
 		}
@@ -33,25 +33,8 @@ public class SetAdjacencyList implements AdjacencyList {
 	
 	@Override
 	public synchronized AdjacencyList addEdge(InternalRelation e, ModificationStatus status) {
-		return addEdge(e,false,status);
-	}
-
-	@Override
-	public synchronized AdjacencyList addEdge(InternalRelation e, boolean checkTypeUniqueness, ModificationStatus status) {
-		if (checkTypeUniqueness) {
-			if (content.contains(e)) status.nochange();
-			else {
-				if ((factory.isUniformTyped() && !content.isEmpty()) ||
-						(!factory.isUniformTyped() && !Iterables.isEmpty(getEdges(e.getType())) )) {
-					throw new InvalidElementException("Cannot add functional edge since an edge of that type already exists",e);
-				} else {
-					status.change();
-					content.add(e);
-				}
-			}
-		} else {
-			status.setModified(content.add(e));
-		}
+        Preconditions.checkNotNull(e);
+		status.setModified(content.add(e));
 		return this;
 	}
 
@@ -67,39 +50,26 @@ public class SetAdjacencyList implements AdjacencyList {
 
 	@Override
 	public Iterable<InternalRelation> getEdges(final TitanType type) {
-		if (factory.isUniformTyped()) return getEdges();
-		else return Iterables.filter(getEdges(), new Predicate<InternalRelation>() {
-
-			@Override
-			public boolean apply(InternalRelation e) {
-				return type.equals(e.getType());
-			}
-			
-		});
+		return content.subSet(new TypeInternalRelation(type,true),new TypeInternalRelation(type,false));
 	}
 	
 	@Override
 	public Iterable<InternalRelation> getEdges(final TypeGroup group) {
-		if (factory.isUniformTyped()) return getEdges();
-		else return Iterables.filter(getEdges(), new Predicate<InternalRelation>() {
-
-			@Override
-			public boolean apply(InternalRelation e) {
-				return group.equals(e.getType().getGroup());
-			}
-			
-		});
+        return content.subSet(new GroupInternalRelation(group, true), new GroupInternalRelation(group, false));
 	}
 
 	@Override
 	public synchronized void removeEdge(InternalRelation e, ModificationStatus status) {
-		if (content.remove(e)) status.nochange();
-		else status.change();
+        if (content.remove(e)) {
+            status.change();
+        } else {
+            status.nochange();
+        }
 	}
 
 	@Override
 	public AdjacencyListFactory getFactory() {
-		return factory;
+		return strategy.getFactory();
 	}
 
 	@Override

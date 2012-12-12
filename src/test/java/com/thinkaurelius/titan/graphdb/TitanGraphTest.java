@@ -9,13 +9,11 @@ import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
 import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
 import com.thinkaurelius.titan.testutil.MemoryAssess;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.*;
+
 import static com.tinkerpop.blueprints.Direction.*;
 import static org.junit.Assert.*;
 
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Query;
-import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -203,6 +201,22 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(154, ((SpecialInt) v2.getProperty("int")).getValue());
         assertEquals(v2, Iterables.getOnlyElement(tx.getVertices("someid", 200l)));
         assertEquals(v2, Iterables.getOnlyElement(tx.getVertices(id, "v2")));
+    }
+    
+    @Test
+    public void testVertexRemoval() {
+        Vertex v1 = graphdb.addVertex(null);
+        Vertex v2 = graphdb.addVertex(null);
+        
+        Edge e = graphdb.addEdge(null,v1,v2,"knows");
+        clopen();
+        
+        v1 = graphdb.getVertex(v1);
+        v2 = graphdb.getVertex(v2);
+        graphdb.removeVertex(v1);
+        graphdb.removeVertex(v2);
+        
+        graphdb.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     }
 
     @Test
@@ -579,6 +593,17 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(noVertices-1,Iterables.size(v.getEdges()));
         
         //Queries
+        int lastTime=0;
+        for (Edge e : v.query().labels("connect").direction(Direction.OUT).limit(20).edges()) {
+            int nowTime = (Integer)e.getProperty("time");
+            //System.out.println(nowTime);
+            assertTrue(lastTime+" vs. " + nowTime,lastTime<=nowTime);
+            lastTime=nowTime;
+        }
+        Iterator<Edge> outer = v.query().labels("connect").direction(Direction.OUT).limit(20).edges().iterator();
+        for (Edge e : v.query().labels("connect").direction(Direction.OUT).limit(10).edges()) {
+            assertEquals(e,outer.next());
+        }
         assertEquals(10,v.query().labels("connect").direction(Direction.OUT).interval("time",3,31).count());
         assertEquals(33,v.query().labels("connect").direction(Direction.OUT).count());
         assertEquals(33,v.query().labels("connect").has("undefined",null).direction(Direction.OUT).count());
@@ -614,6 +639,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         //Same queries as above but without memory loading        
         assertEquals(0,v.query().labels("follows").has("time",10, Query.Compare.LESS_THAN).count());
+
+
         assertEquals(0,v.query().labels("connect").direction(Direction.OUT).has("time",null).count());
         assertEquals(10,v.query().labels("connect").direction(Direction.OUT).interval("time",3,31).count());
         assertEquals(10,v.query().labels("connect").direction(Direction.OUT).interval("time",3,31).vertexIds().size());
@@ -673,8 +700,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         long[] nodeIds = new long[noNodes];
         List[] nodeEdges = new List[noNodes];
 		for (int i=0;i<noNodes;i++) {
-			names[i]=RandomGenerator.randomString();
-			ids[i] = RandomGenerator.randomInt(1, Integer.MAX_VALUE / 2);
+			names[i]="vertex"+i;//RandomGenerator.randomString();
+			ids[i] = i;//RandomGenerator.randomInt(1, Integer.MAX_VALUE / 4);
 			nodes[i] = tx.addVertex();
 			nodes[i].addProperty(name, names[i]);
 			nodes[i].addProperty(id, ids[i]);

@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,6 +34,10 @@ public class TestBed {
         upper.putInt(localPartition[1]);
         lower.rewind(); upper.rewind();
 
+
+        System.out.println(1-Integer.MIN_VALUE);
+        System.out.println(-2147483647+Integer.MIN_VALUE);
+        System.exit(0);
 
         byte b = (byte)(15 | (1<<7));
         System.out.println(b);

@@ -17,6 +17,16 @@ public class BasicElement extends VirtualElement {
 		Preconditions.checkArgument(_id>NoID);
 		id = _id;
 	}
+    
+    BasicElement(BasicElement clone) {
+        super(clone);
+        this.id=clone.id;
+    }
+    
+    @Override
+    public BasicElement clone() {
+        return new BasicElement(this);
+    }
 
 	/* ---------------------------------------------------------------
 	 * ID Management

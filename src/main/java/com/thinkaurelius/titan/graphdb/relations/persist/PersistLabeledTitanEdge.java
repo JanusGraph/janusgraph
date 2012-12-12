@@ -26,16 +26,20 @@ public class PersistLabeledTitanEdge extends LabeledTitanEdge {
 		super(type, start, end, tx, adjList);
 		entity = new BasicElement(id);
 	}
+    
+    private PersistLabeledTitanEdge(PersistLabeledTitanEdge clone) {
+        super(clone.getTitanLabel(),clone.getVertex(0),clone.getVertex(1),clone.tx,clone.outEdges.getFactory());
+        entity = clone.entity.clone();
+        for (InternalRelation rel : clone.outEdges.getEdges()) {
+            outEdges=outEdges.addEdge(((InlineRelation)rel).clone(),ModificationStatus.none);
+        }
+    }
 
 	
 	@Override
-	public PersistLabeledTitanEdge clone() {
-		assert isLoaded() && hasID();
-		PersistLabeledTitanEdge clone = new PersistLabeledTitanEdge(
-				getTitanLabel(), getVertex(0), getVertex(1),tx,outEdges.getFactory(), getID());
-		for (InternalRelation rel : outEdges.getEdges()) {
-			clone.outEdges.addEdge(((InlineRelation)rel).clone(),ModificationStatus.none);
-		}
+	public PersistLabeledTitanEdge cloneNew() {
+		PersistLabeledTitanEdge clone = new PersistLabeledTitanEdge(this);
+        entity.resetNew();
 		return clone;
 	}
 	
@@ -50,33 +54,33 @@ public class PersistLabeledTitanEdge extends LabeledTitanEdge {
 		entity.remove();
 	}
 	
-	private synchronized void updateLabeledEdge() {
-		if (isLoaded()) {
-			//Copy edge for deletion
-			PersistLabeledTitanEdge clone = clone();
-			tx.deletedRelation(clone);
-			clone.entity.remove();
-			entity.resetNew();
-			tx.addedRelation(this);
-		}
-	}
+//	private synchronized void updateLabeledEdge() {
+//		if (isLoaded()) {
+//			//Copy edge for deletion
+//			PersistLabeledTitanEdge clone = clone();
+//			tx.deletedRelation(clone);
+//			clone.entity.remove();
+//			entity.resetNew();
+//			tx.addedRelation(this);
+//		}
+//	}
 	
-	@Override
-	public void removeRelation(InternalRelation e) {
-		assert isAccessible() && e.isIncidentOn(this) && e.getDirection(this)== Direction.OUT;
-		if (outEdges.containsEdge(e)) {
-			updateLabeledEdge();
-			super.removeRelation(e);
-		}
-	}
+//	@Override
+//	public void removeRelation(InternalRelation e) {
+//		assert isAccessible() && e.isIncidentOn(this) && e.getDirection(this)== Direction.OUT;
+//		if (outEdges.containsEdge(e)) {
+//			updateLabeledEdge();
+//			super.removeRelation(e);
+//		}
+//	}
 	
-	@Override
-	public boolean addRelation(InternalRelation e, boolean isNew) {
-		if (isNew && outEdges!=null && !outEdges.containsEdge(e)) {
-			updateLabeledEdge();
-		}
-		return super.addRelation(e, isNew);
-	}
+//	@Override
+//	public boolean addRelation(InternalRelation e, boolean isNew) {
+//		if (isNew && outEdges!=null && !outEdges.containsEdge(e)) {
+//			updateLabeledEdge();
+//		}
+//		return super.addRelation(e, isNew);
+//	}
 	
 
 	/* ---------------------------------------------------------------

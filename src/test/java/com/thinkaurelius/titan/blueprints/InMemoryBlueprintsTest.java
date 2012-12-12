@@ -94,7 +94,12 @@ public class InMemoryBlueprintsTest extends GraphTest {
         graph = TitanFactory.openInMemoryGraph();
         return graph;
     }
-    
+
+    @Override
+    public Graph generateGraph(String graphDirectoryName) {
+        throw new UnsupportedOperationException();
+    }
+
     private TitanGraph graph = null;
 
     @Override

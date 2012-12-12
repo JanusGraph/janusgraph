@@ -192,7 +192,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     public TitanProperty addProperty(TitanVertex vertex, TitanKey key, Object attribute) {
         verifyWriteAccess(vertex,key);
         // Check that attribute of keyed propertyType is unique and lock if so
-        final boolean isUniqueKey = key.isUnique();
+        final boolean isUniqueKey = key.isUnique() && !(vertex instanceof TitanRelation);
         if (isUniqueKey)
             keyedPropertyCreateLock.lock();
         InternalRelation e = null;
@@ -499,11 +499,6 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     @Override
     public synchronized void abort() {
         close();
-    }
-
-    @Override
-    public RelationFactory getRelationFactory() {
-        return edgeFactory;
     }
 
     @Override

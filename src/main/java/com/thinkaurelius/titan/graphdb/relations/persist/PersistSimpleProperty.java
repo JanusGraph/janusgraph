@@ -27,17 +27,17 @@ public class PersistSimpleProperty extends SimpleProperty {
 		else return super.hashCode();
 	}
 
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		else if (!(oth instanceof InternalRelation)) return false;
-		InternalRelation other = (InternalRelation)oth;
-		if (hasID() || other.hasID()) {
-			if (hasID() && other.hasID()) return VertexUtil.equalIDs(this, other);
-			else return false;
-		}
-		return super.equals(other);
-	}
+//	@Override
+//	public boolean equals(Object oth) {
+//		if (oth==this) return true;
+//		else if (!(oth instanceof InternalRelation)) return false;
+//		InternalRelation other = (InternalRelation)oth;
+//		if (hasID() || other.hasID()) {
+//			if (hasID() && other.hasID()) return VertexUtil.equalIDs(this, other);
+//			else return false;
+//		}
+//		return super.equals(other);
+//	}
 	
 	@Override
 	public synchronized void forceDelete() {

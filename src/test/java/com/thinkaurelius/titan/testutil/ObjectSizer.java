@@ -71,7 +71,7 @@ public final class ObjectSizer {
 			return m;
 		}
 	};
-    
+
     public static Factory stringConcurrentSet = new Factory() {
         @Override
         public Object newInstance() {
@@ -89,6 +89,14 @@ public final class ObjectSizer {
             int size = 1000;
             for (int i=0;i<size;i++) set.put("String"+i,Boolean.TRUE);
             return set;
+        }
+    };
+
+    public static Factory emptyConcurrentSkipList = new Factory() {
+        @Override
+        public Object newInstance() {
+            ConcurrentSkipListMap<String,String> map = new ConcurrentSkipListMap<String, String>();
+            return map;
         }
     };
 	
@@ -130,7 +138,6 @@ public final class ObjectSizer {
   * Return the approximate size in bytes, and return zero if the class
   * has no default constructor.
   *
-  * @param aClass refers to a class which has a no-argument constructor.
   */
   public static long getObjectSize( Factory factory ){
     long result = 0;

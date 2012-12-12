@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
 import com.thinkaurelius.titan.core.TitanLabel;
+import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.graphdb.adjacencylist.RelationComparator;
 import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
 import com.thinkaurelius.titan.graphdb.vertices.NewEmptyTitanVertex;
 
@@ -32,7 +34,23 @@ public abstract class AbstractTypedRelation extends NewEmptyTitanVertex implemen
 
 	@Override
 	public boolean equals(Object oth) {
-		throw new UnsupportedOperationException("Needs to be overwritten");
+        if (oth==this) return true;
+        else if (!(oth instanceof InternalRelation)) return false;
+        InternalRelation other = (InternalRelation)oth;
+        if (hasID() && other.hasID()) return getID()==other.getID();
+        else if (hasID() || other.hasID()) return false;
+        if (!type.equals(other.getType())) return false;
+        if (!getVertex(0).equals(other.getVertex(0))) return false;
+        for (String key : type.getDefinition().getKeySignature()) {
+            int keycompare = RelationComparator.compareOnKey(this, other, key);
+            if (keycompare!=0) return false;
+        }
+        if (type.isFunctional()) return true;
+        if (type.isPropertyKey()) {
+            return ((TitanProperty)this).getAttribute().equals(((TitanProperty)other).getAttribute());
+        } else {
+            return getVertex(1).equals(other.getVertex(1));
+        }
 	}
 	
 	@Override

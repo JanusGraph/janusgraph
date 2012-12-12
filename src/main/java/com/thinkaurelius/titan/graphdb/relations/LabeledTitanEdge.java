@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.QueryException;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
@@ -11,6 +10,7 @@ import com.thinkaurelius.titan.graphdb.adjacencylist.ModificationStatus;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsVertexUtil;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.query.SimpleTitanQuery;
+import com.thinkaurelius.titan.graphdb.relations.factory.RelationFactoryUtil;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.VertexUtil;
@@ -33,8 +33,19 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
 		assert !type.isSimple();
 		assert tx!=null;
 		this.tx=tx;
-		outEdges = adjList.emptyList();
+		outEdges = adjList.emptyList(EdgeDirection.OUT);
 	}
+    
+    private LabeledTitanEdge(LabeledTitanEdge clone) {
+        this(clone.getTitanLabel(), clone.getVertex(0), clone.getVertex(1), clone.tx, clone.outEdges.getFactory());
+        for (InternalRelation rel : clone.outEdges.getEdges()) {
+            outEdges=outEdges.addEdge(((InlineRelation)rel).clone(),ModificationStatus.none);
+        }
+    }
+
+    public LabeledTitanEdge cloneNew() {
+        return new LabeledTitanEdge(this);
+    }
 
 	@Override
 	public boolean addRelation(InternalRelation e, boolean isNew) {
@@ -46,15 +57,29 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
 				"Edge only supports properties or unidirected relationships");
 		Preconditions.checkArgument(e.getVertex(0).equals(this),"This node only supports out edges!");
 
+        boolean reAddEdge = false;
+        if (isNew) {
+            //Clone and remove, later add again
+            LabeledTitanEdge clone = cloneNew();
+            reAddEdge = clone.isLoaded();
+            clone.remove();
+        }
+        
 		ModificationStatus status = new ModificationStatus();
 		adjLock.lock();
         try {
-			outEdges = outEdges.addEdge(e, e.getType().isFunctional(),status);
+			outEdges = outEdges.addEdge(e, status);
 		} finally {
             adjLock.unlock();
         }
-		return status.hasChanged();
 
+        if (isNew) {
+            //Add again
+            RelationFactoryUtil.connectRelation(this, true, tx);
+            if (reAddEdge) tx.addedRelation(this);
+        }
+
+        return status.hasChanged();
 	}
 	
 	@Override
@@ -66,8 +91,15 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
 	
 	@Override
 	public void removeRelation(InternalRelation e) {
-		assert isAccessible() && e.isIncidentOn(this) && e.getDirection(this)==Direction.OUT;
-		outEdges.removeEdge(e,ModificationStatus.none);
+		Preconditions.checkArgument(isAccessible() && e.isIncidentOn(this) && e.getDirection(this)==Direction.OUT);
+        if (!outEdges.containsEdge(e)) return;
+        //Clone and remove
+        LabeledTitanEdge clone = cloneNew();
+        clone.remove();
+        ModificationStatus update = new ModificationStatus();
+		outEdges.removeEdge(e,update);
+        RelationFactoryUtil.connectRelation(this, true, tx);
+        tx.addedRelation(this);
 	}
 
 	@Override
@@ -116,17 +148,17 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
 
     }
 
-    @Override
-    public boolean equals(Object oth) {
-        if (oth==this) return true;
-        else if (!(oth instanceof InternalTitanVertex)) return false;
-        InternalTitanVertex other = (InternalTitanVertex)oth;
-        return VertexUtil.equalIDs(this, other);
-    }
+//    @Override
+//    public boolean equals(Object oth) {
+//        if (oth==this) return true;
+//        else if (!(oth instanceof InternalTitanVertex)) return false;
+//        InternalTitanVertex other = (InternalTitanVertex)oth;
+//        return VertexUtil.equalIDs(this, other);
+//    }
 
     @Override
-    public InternalTitanVertex clone() throws CloneNotSupportedException{
-        throw new CloneNotSupportedException();
+    public Object clone() {
+        throw new UnsupportedOperationException();
     }
 
     /* ---------------------------------------------------------------

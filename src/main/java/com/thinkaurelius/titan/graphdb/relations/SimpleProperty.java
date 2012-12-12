@@ -34,14 +34,14 @@ public class SimpleProperty extends AbstractTypedRelation implements TitanProper
 		return new HashCodeBuilder().append(node).append(attribute).append(type).toHashCode();
 	}
 
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		else if (!(oth instanceof TitanProperty)) return false;
-		TitanProperty other = (TitanProperty)oth;
-		if (!getType().equals(other.getType())) return false;
-		return node.equals(other.getVertex()) && attribute.equals(other.getAttribute());
-	}
+//	@Override
+//	public boolean equals(Object oth) {
+//		if (oth==this) return true;
+//		else if (!(oth instanceof TitanProperty)) return false;
+//		TitanProperty other = (TitanProperty)oth;
+//		if (!getType().equals(other.getType())) return false;
+//		return node.equals(other.getVertex()) && attribute.equals(other.getAttribute());
+//	}
     
     @Override
     public String toString() {
