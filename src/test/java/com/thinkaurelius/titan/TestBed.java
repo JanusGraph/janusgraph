@@ -17,6 +17,9 @@ public class TestBed {
 	 * @throws java.io.IOException
 	 */
 	public static void main(String[] args) throws Exception {
+        System.out.println(1-Integer.MIN_VALUE);
+        System.out.println(-2147483647+Integer.MIN_VALUE);
+        System.exit(0);
         byte b = (byte)(15 | (1<<7));
         System.out.println(b);
         System.out.println(Runtime.getRuntime().maxMemory()/1024);

@@ -5,13 +5,13 @@ package com.thinkaurelius.titan.graphdb.adjacencylist;
  */
 
 public interface AdjacencyListStrategy {
-
-    public AdjacencyList emptyList();
     
     public int extensionThreshold();
     
     public AdjacencyList upgrade(AdjacencyList old);
 
-    public AdjacencyListStrategy getInnerStrategy();
-    
+    public RelationComparator getComparator();
+
+    public AdjacencyListFactory getFactory();
+
 }

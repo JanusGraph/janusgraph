@@ -593,10 +593,11 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(noVertices-1,Iterables.size(v.getEdges()));
         
         //Queries
-        int lastTime=Integer.MAX_VALUE;
+        int lastTime=0;
         for (Edge e : v.query().labels("connect").direction(Direction.OUT).limit(20).edges()) {
             int nowTime = (Integer)e.getProperty("time");
-            assertTrue(lastTime+" vs. " + nowTime,lastTime>=nowTime);
+            //System.out.println(nowTime);
+            assertTrue(lastTime+" vs. " + nowTime,lastTime<=nowTime);
             lastTime=nowTime;
         }
         Iterator<Edge> outer = v.query().labels("connect").direction(Direction.OUT).limit(20).edges().iterator();
@@ -694,8 +695,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 		int[] ids = new int[noNodes];
 		TitanVertex[] nodes = new TitanVertex[noNodes];
 		for (int i=0;i<noNodes;i++) {
-			names[i]=RandomGenerator.randomString();
-			ids[i] = RandomGenerator.randomInt(1, Integer.MAX_VALUE / 2);
+			names[i]="vertex"+i;//RandomGenerator.randomString();
+			ids[i] = i;//RandomGenerator.randomInt(1, Integer.MAX_VALUE / 4);
 			nodes[i] = tx.addVertex();
 			nodes[i].addProperty(name, names[i]);
 			nodes[i].addProperty(id, ids[i]);

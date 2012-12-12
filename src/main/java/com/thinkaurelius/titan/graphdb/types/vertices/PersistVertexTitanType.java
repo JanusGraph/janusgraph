@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types.vertices;
 
+import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.types.Directionality;
 import com.thinkaurelius.titan.graphdb.types.TypeCategory;
 import com.thinkaurelius.titan.core.TypeGroup;

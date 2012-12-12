@@ -21,4 +21,6 @@ public interface VertexRelationLoader {
 
     public long getVertexId();
 
+    public void finalizeRelation();
+
 }

@@ -36,20 +36,20 @@ public class SimpleTitanEdge extends AbstractTypedRelation implements TitanEdge 
 		}
 	}
 
-	@Override
-	public boolean equals(Object oth) {
-		if (oth==this) return true;
-		else if (!(oth instanceof TitanEdge)) return false;
-		TitanEdge other = (TitanEdge)oth;
-		if (!getType().equals(other.getType())) return false;
-		if (isUndirected()) {
-			return (start.equals(other.getVertex(OUT)) && end.equals(other.getVertex(IN)))
-			|| (start.equals(other.getVertex(IN)) && end.equals(other.getVertex(OUT)));
-		} else {
-			assert isDirected() || isUnidirected();
-			return start.equals(other.getVertex(OUT)) && end.equals(other.getVertex(IN));
-		}
-	}
+//	@Override
+//	public boolean equals(Object oth) {
+//		if (oth==this) return true;
+//		else if (!(oth instanceof TitanEdge)) return false;
+//		TitanEdge other = (TitanEdge)oth;
+//		if (!getType().equals(other.getType())) return false;
+//		if (isUndirected()) {
+//			return (start.equals(other.getVertex(OUT)) && end.equals(other.getVertex(IN)))
+//			|| (start.equals(other.getVertex(IN)) && end.equals(other.getVertex(OUT)));
+//		} else {
+//			assert isDirected() || isUnidirected();
+//			return start.equals(other.getVertex(OUT)) && end.equals(other.getVertex(IN));
+//		}
+//	}
     
     @Override
     public String toString() {

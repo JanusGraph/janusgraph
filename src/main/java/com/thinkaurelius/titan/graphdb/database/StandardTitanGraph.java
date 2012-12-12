@@ -29,7 +29,6 @@ import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.query.SimpleAtomicQuery;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
-import com.thinkaurelius.titan.graphdb.relations.factory.RelationLoader;
 import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
 import com.thinkaurelius.titan.graphdb.types.manager.SimpleTypeManager;
 import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
@@ -320,8 +319,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 	@Override
 	public void loadRelations(AtomicQuery query, InternalTitanTransaction tx) {
         List<Entry> entries = queryForEntries(query,tx.getTxHandle());
-        RelationLoader factory = tx.getRelationFactory();
-        VertexRelationLoader loader = new StandardVertexRelationLoader(query.getNode(),factory);
+        VertexRelationLoader loader = new StandardVertexRelationLoader(query.getNode());
         loadRelations(entries,loader,tx);
         query.getNode().loadedEdges(query);
     }
@@ -358,11 +356,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 long nodeIDDiff = VariableLong.read(value);
                 if (titanType.isFunctional()) edgeid = VariableLong.readPositive(value);
                 assert edgeid>0;
+                if (tx.isDeletedRelation(edgeid)) continue;
+
                 long otherid = loader.getVertexId() + nodeIDDiff;
                 assert dirID==3 || dirID==2;
                 Direction dir = dirID==3?Direction.IN:Direction.OUT;
-                if (!tx.isDeletedRelation(edgeid))
-                    loader.loadEdge(edgeid,(TitanLabel)titanType,dir,otherid);
+                loader.loadEdge(edgeid,(TitanLabel)titanType,dir,otherid);
             } else {
                 assert titanType.isPropertyKey();
                 assert dirID == 0;
@@ -378,8 +377,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
                 if (titanType.isFunctional()) edgeid = VariableLong.readPositive(value);
                 assert edgeid>0;
-                if (!tx.isDeletedRelation(edgeid))
-                    loader.loadProperty(edgeid,propType,attribute);
+                if (tx.isDeletedRelation(edgeid)) continue;
+                loader.loadProperty(edgeid,propType,attribute);
 
             }
             
@@ -402,6 +401,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 					readLabel(loader,value,type);
 				}
 			}
+            loader.finalizeRelation();
 		}
 	}
 

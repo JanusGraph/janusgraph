@@ -11,6 +11,7 @@ import com.tinkerpop.blueprints.util.io.gml.GMLReaderTestSuite;
 import com.tinkerpop.blueprints.util.io.graphml.GraphMLReaderTestSuite;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONReaderTestSuite;
 
+import java.io.File;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
@@ -59,7 +60,7 @@ public class LocalBlueprintsTest extends GraphTest {
 
     public void testTransactionalGraphTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new TransactionalTitanGraphTestSuite(this));
+        doTestSuite(new TransactionalTitanGraphTestSuite(this),ImmutableSet.of("testCompetingThreadsOnMultipleDbInstances"));
         printTestPerformance("TransactionalTitanGraphTestSuite", this.stopWatch());
     }
 
@@ -91,6 +92,11 @@ public class LocalBlueprintsTest extends GraphTest {
     public Graph generateGraph() {
         Graph graph = TitanFactory.open(StorageSetup.getHomeDir());
         return graph;
+    }
+    
+    @Override
+    public Graph generateGraph(String uid) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

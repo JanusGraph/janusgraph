@@ -3,9 +3,7 @@ package com.thinkaurelius.titan.graphdb.vertices;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.InvalidElementException;
-import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
-import com.thinkaurelius.titan.graphdb.adjacencylist.InitialAdjListFactory;
-import com.thinkaurelius.titan.graphdb.adjacencylist.ModificationStatus;
+import com.thinkaurelius.titan.graphdb.adjacencylist.*;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
@@ -23,8 +21,8 @@ public class StandardTitanVertex extends AbstractTitanVertex {
 	
 	public StandardTitanVertex(InternalTitanTransaction g, AdjacencyListFactory adjList) {
 		super(g);
-		inEdges = adjList.emptyList();
-		outEdges = adjList.emptyList();
+		inEdges = adjList.emptyList(EdgeDirection.IN);
+		outEdges = adjList.emptyList(EdgeDirection.OUT);
 	}
 	
 	@Override
@@ -48,7 +46,7 @@ public class StandardTitanVertex extends AbstractTitanVertex {
         if (EdgeDirection.OUT.impliedBy(e.getDirection(this))) {
             adjLock.lock();
             try {
-                outEdges = outEdges.addEdge(e, e.getType().isFunctional(), status);
+                outEdges = outEdges.addEdge(e, status);
             } finally {
                 adjLock.unlock();
             }
@@ -103,8 +101,8 @@ public class StandardTitanVertex extends AbstractTitanVertex {
 	@Override
 	public synchronized void remove() {
 		super.remove();
-		inEdges=InitialAdjListFactory.EmptyFactory.emptyList();
-		outEdges=InitialAdjListFactory.EmptyFactory.emptyList();
+		inEdges= EmptyAdjListFactory.INSTANCE.emptyList(EdgeDirection.IN);
+		outEdges= EmptyAdjListFactory.INSTANCE.emptyList(EdgeDirection.OUT);
 	}
 
 

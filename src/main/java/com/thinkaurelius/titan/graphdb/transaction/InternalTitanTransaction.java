@@ -8,7 +8,6 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
-import com.thinkaurelius.titan.graphdb.relations.factory.RelationLoader;
 import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 
 public interface InternalTitanTransaction extends TitanTransaction {
@@ -33,12 +32,6 @@ public interface InternalTitanTransaction extends TitanTransaction {
      * @return The configuration for this transaction
      */
     public TransactionConfig getTxConfiguration();
-
-	/**
-	 * Returns a proxy to load edges into this transaction
-	 * @return Proxy to load edges into this transaction
-	 */
-	RelationLoader getRelationFactory();
 	
 	/**
 	 * Starts a new edge query on the specified node

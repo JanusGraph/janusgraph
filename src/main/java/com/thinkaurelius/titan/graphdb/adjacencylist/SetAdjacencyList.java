@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.adjacencylist;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.InvalidElementException;
@@ -15,15 +16,16 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 public class SetAdjacencyList implements AdjacencyList {
 
-	
-	private final Set<InternalRelation> content;
+	private final AdjacencyListStrategy strategy;
+	private final ConcurrentSkipListSet<InternalRelation> content;
 
-	SetAdjacencyList() {
-		content = new ConcurrentSkipListSet<InternalRelation>(Comparator);
+	SetAdjacencyList(AdjacencyListStrategy strategy) {
+        this.strategy=strategy;
+		content = new ConcurrentSkipListSet<InternalRelation>(strategy.getComparator());
 	}
 	
-	SetAdjacencyList(AdjacencyList base) {
-		this();
+	SetAdjacencyList(AdjacencyListStrategy strategy, AdjacencyList base) {
+		this(strategy);
 		for (InternalRelation e : base.getEdges()) {
 			addEdge(e,ModificationStatus.none);
 		}
@@ -31,23 +33,8 @@ public class SetAdjacencyList implements AdjacencyList {
 	
 	@Override
 	public synchronized AdjacencyList addEdge(InternalRelation e, ModificationStatus status) {
-		return addEdge(e,false,status);
-	}
-
-	@Override
-	public synchronized AdjacencyList addEdge(InternalRelation e, boolean checkTypeUniqueness, ModificationStatus status) {
-		assert content.isEmpty() || content.iterator().next().getType().equals(e.getType()) : "Set only supports one type";
-        if (checkTypeUniqueness) {
-			if (content.contains(e)) status.nochange();
-			else if (!content.isEmpty()) {
-                throw new InvalidElementException("Cannot add functional edge since an edge of that type already exists",e);
-			} else {
-                status.change();
-                content.add(e);
-			}
-		} else {
-			status.setModified(content.add(e));
-		}
+        Preconditions.checkNotNull(e);
+		status.setModified(content.add(e));
 		return this;
 	}
 
@@ -63,23 +50,26 @@ public class SetAdjacencyList implements AdjacencyList {
 
 	@Override
 	public Iterable<InternalRelation> getEdges(final TitanType type) {
-		return getEdges();
+		return content.subSet(new TypeInternalRelation(type,true),new TypeInternalRelation(type,false));
 	}
 	
 	@Override
 	public Iterable<InternalRelation> getEdges(final TypeGroup group) {
-        return getEdges();
+        return content.subSet(new GroupInternalRelation(group, true), new GroupInternalRelation(group, false));
 	}
 
 	@Override
 	public synchronized void removeEdge(InternalRelation e, ModificationStatus status) {
-		if (content.remove(e)) status.nochange();
-		else status.change();
+        if (content.remove(e)) {
+            status.change();
+        } else {
+            status.nochange();
+        }
 	}
 
 	@Override
-	public AdjacencyListStrategy getStrategy() {
-		throw new UnsupportedOperationException();
+	public AdjacencyListFactory getFactory() {
+		return strategy.getFactory();
 	}
 
 	@Override

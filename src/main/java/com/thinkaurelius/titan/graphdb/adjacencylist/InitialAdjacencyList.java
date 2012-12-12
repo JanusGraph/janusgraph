@@ -17,16 +17,11 @@ public class InitialAdjacencyList implements AdjacencyList {
 	InitialAdjacencyList(AdjacencyListStrategy strategy) {
 		this.strategy = strategy;
 	}
-	
-	@Override
-	public synchronized AdjacencyList addEdge(InternalRelation e, ModificationStatus status) {
-        return addEdge(e,false,status);
-	}
 
 	@Override
-	public synchronized AdjacencyList addEdge(InternalRelation e, boolean checkTypeUniqueness, ModificationStatus status) {
+	public synchronized AdjacencyList addEdge(InternalRelation e, ModificationStatus status) {
         AdjacencyList list = strategy.upgrade(null);
-        list.addEdge(e,checkTypeUniqueness,status);
+        list.addEdge(e,status);
         return list;
 	}
 
@@ -56,8 +51,8 @@ public class InitialAdjacencyList implements AdjacencyList {
 	}
 
 	@Override
-	public AdjacencyListStrategy getStrategy() {
-		return strategy;
+	public AdjacencyListFactory getFactory() {
+		return strategy.getFactory();
 	}
 
 	@Override

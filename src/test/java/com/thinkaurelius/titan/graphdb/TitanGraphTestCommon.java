@@ -81,7 +81,7 @@ public abstract class TitanGraphTestCommon {
 	}
 	
 	public TitanKey makeUniqueStringPropertyKey(String name) {
-		return tx.makeType().name(name).simple().
+		return tx.makeType().name(name).simple().functional().
                 unique().indexed().dataType(String.class).makePropertyKey();
 	}
 	
