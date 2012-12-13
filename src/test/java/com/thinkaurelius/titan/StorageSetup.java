@@ -109,6 +109,15 @@ public class StorageSetup {
         Configuration config = StorageSetup.getLocalGraphConfiguration();
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,"embeddedcassandra");
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(
+                CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
+                cassandraYamlPath);
+        return config;
+    }
+
+    public static Configuration getEmbeddedCassandraPartitionGraphConfiguration() {
+        Configuration config = StorageSetup.getLocalGraphConfiguration();
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,"embeddedcassandra");
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(
         		CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
         		cassandraYamlPath);
         config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_PARTITION_KEY,true);
