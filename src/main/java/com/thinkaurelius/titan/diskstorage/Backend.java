@@ -102,7 +102,7 @@ public class Backend {
         Preconditions.checkArgument(bufferSizeTmp >= 0, "Buffer size must be non-negative (use 0 to disable)");
         if (!storeFeatures.supportsBatchMutation()) {
             bufferSize=0;
-            log.warn("Buffering disabled because backend does not support batch mutations");
+            log.debug("Buffering disabled because backend does not support batch mutations");
         } else bufferSize=bufferSizeTmp;
 
         if (!storeFeatures.supportsLocking() && storeFeatures.supportsConsistentKeyOperations()) {
