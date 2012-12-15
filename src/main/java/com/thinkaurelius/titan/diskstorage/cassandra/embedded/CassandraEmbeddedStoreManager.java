@@ -88,16 +88,24 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         this.requestScheduler = DatabaseDescriptor.getRequestScheduler();
 
+
+	}
+
+    @Override
+    public Partitioner getPartitioner() throws StorageException {
         //Determine if key ordered
         try {
             Token<?> token = StorageService.instance.getLocalPrimaryRange().left;
             if (token instanceof BytesToken) {
-                features.hasLocalKeyPartition=true;
-                Preconditions.checkArgument(features.isKeyOrdered(),"Need to define store as key ordered");
+                return Partitioner.LOCALBYTEORDER;
+            } else {
+                return Partitioner.RANDOM;
             }
-        } catch (Exception e) { log.warn("Could not read local token range"); }
-	}
-
+        } catch (Exception e) {
+            log.warn("Could not read local token range: {}",e);
+            throw new PermanentStorageException("Could not read partitioner information on cluster",e);
+        }
+    }
 
 
     @Override

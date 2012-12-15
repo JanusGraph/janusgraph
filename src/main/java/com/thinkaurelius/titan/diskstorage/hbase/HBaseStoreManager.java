@@ -83,7 +83,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         features = new StoreFeatures();
         features.supportsScan=false; features.supportsBatchMutation=true; features.isTransactional=false;
-        features.supportsConsistentKeyOperations=true; features.supportsLocking=false; features.isKeyOrdered=super.isKeyOrdered;
+        features.supportsConsistentKeyOperations=true; features.supportsLocking=false; features.isKeyOrdered=false;
         features.isDistributed=true; features.hasLocalKeyPartition=false;
     }
 

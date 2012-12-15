@@ -70,11 +70,8 @@ public class GraphDatabaseConfiguration {
     public static final String STORAGE_BACKEND_KEY = "backend";
     public static final String STORAGE_BACKEND_DEFAULT = "local";
 
-    /**
-     * Define the storage backed to use for persistence
-     */
-    public static final String STORAGE_IS_ORDERED_KEY = "key-ordered";
-    public static final boolean STORAGE_IS_ORDERED_DEFAULT = false;
+//    public static final String STORAGE_IS_ORDERED_KEY = "key-ordered";
+//    public static final boolean STORAGE_IS_ORDERED_DEFAULT = false;
 
     /**
      * Specifies whether write operations are supported

@@ -68,7 +68,7 @@ public class VertexIDAssigner {
             hasLocalPartitions = idAuthFeatures.hasLocalKeyPartition();
             placementStrategy = new SimpleBulkPlacementStrategy(config);
         } else {
-            if (idAuthFeatures.isKeyOrdered && idAuthFeatures.isDistributed()) log.warn("ID Partitioning is disabled which will likely cause uneven data distribution");
+            if (idAuthFeatures.isKeyOrdered() && idAuthFeatures.isDistributed()) log.warn("ID Partitioning is disabled which will likely cause uneven data distribution");
             //Use the default placement strategy
             partitionBits=0;
             hasLocalPartitions = false;

@@ -61,7 +61,7 @@ authority: org.apache.cassandra.auth.AllowAllAuthority
 #
 # See http://wiki.apache.org/cassandra/Operations for more on
 # partitioners and token selection.
-partitioner: org.apache.cassandra.dht.RandomPartitioner
+partitioner: org.apache.cassandra.dht.ByteOrderedPartitioner
 
 # directories where Cassandra should store data on disk.
 data_file_directories:

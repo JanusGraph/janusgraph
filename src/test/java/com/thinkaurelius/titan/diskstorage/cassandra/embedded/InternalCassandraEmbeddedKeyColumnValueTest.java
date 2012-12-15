@@ -3,10 +3,14 @@ package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import org.apache.commons.configuration.Configuration;
 
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
+import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 public class InternalCassandraEmbeddedKeyColumnValueTest extends KeyColumnValueStoreTest {
 
@@ -19,4 +23,13 @@ public class InternalCassandraEmbeddedKeyColumnValueTest extends KeyColumnValueS
         Configuration config = StorageSetup.getEmbeddedCassandraStorageConfiguration();
         return config;
     }
+    
+    @Test
+    public void testConfiguration() {
+        StoreFeatures features = manager.getFeatures();
+        assertTrue(features.isKeyOrdered());
+        assertTrue(features.hasLocalKeyPartition());
+    }
+
+
 }

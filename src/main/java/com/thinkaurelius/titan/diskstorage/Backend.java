@@ -181,7 +181,7 @@ public class Backend {
                 idAuthority = new ConsistentKeyIDManager(idStore,storeManager,config);
             } else {
                 idAuthority = new TransactionalIDManager(idStore,storeManager,config);
-                log.warn("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
+                log.error("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
             }
             edgeStore = getLockStore(getBufferStore(EDGESTORE_NAME));
             vertexIndexStore = getLockStore(getBufferStore(VERTEXINDEX_STORE_NAME));

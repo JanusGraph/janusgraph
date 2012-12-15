@@ -15,6 +15,10 @@ public class StorageSetup {
 			new String[] { "file://", System.getProperty("user.dir"), "target",
 					"cassandra-tmp", "conf", "127.0.0.1", "cassandra.yaml" },
 			File.separator);
+    public static final String cassandraOrderedYamlPath = StringUtils.join(
+            new String[] { "file://", System.getProperty("user.dir"), "target",
+                    "cassandra-tmp", "conf", "127.0.0.1", "cassandra-ordered.yaml" },
+            File.separator);
 	
     public static final String getHomeDir() {
         String homedir = System.getProperty("titan.testdir");
@@ -62,7 +66,7 @@ public class StorageSetup {
         Configuration config = getLocalStorageConfiguration();
         config.addProperty(
         		CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
-        		cassandraYamlPath);
+                cassandraOrderedYamlPath);
         return config;
     }
 
@@ -119,10 +123,10 @@ public class StorageSetup {
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,"embeddedcassandra");
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(
         		CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
-        		cassandraYamlPath);
+                cassandraOrderedYamlPath);
         config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_PARTITION_KEY,true);
         config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_FLUSH_KEY,false);
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_IS_ORDERED_KEY,true);
+//        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_IS_ORDERED_KEY,true);
         return config;
     }
 }

@@ -143,6 +143,16 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 	}
 
     @Override
+    public Partitioner getPartitioner() throws StorageException {
+        Cluster cl = clusterContext.getEntity();
+        try {
+            return Partitioner.getPartitioner(cl.describePartitioner());
+        } catch (ConnectionException e) {
+            throw new TemporaryStorageException(e);
+        }
+    }
+
+    @Override
     public String toString() {
         return "astyanax"+super.toString();
     }

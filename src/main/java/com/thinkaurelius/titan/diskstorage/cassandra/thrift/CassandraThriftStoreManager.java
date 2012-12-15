@@ -55,7 +55,27 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 		
         this.openStores = new HashMap<String,CassandraThriftKeyColumnValueStore>();
 
+
 	}
+
+    @Override
+    public Partitioner getPartitioner() throws StorageException {
+        CTConnectionFactory fac =
+                CTConnectionPool.getFactory(hostname, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
+        CTConnection conn = null;
+        try {
+            conn = fac.makeRawConnection();
+            Cassandra.Client client = conn.getClient();
+            String partitioner = client.describe_partitioner();
+            return Partitioner.getPartitioner(partitioner);
+        } catch (Exception e ) {
+            throw new TemporaryStorageException(e);
+        } finally {
+            if (null != conn && null != conn.getTransport() && conn.getTransport().isOpen()) {
+                conn.getTransport().close();
+            }
+        }
+    }
 
 
     @Override

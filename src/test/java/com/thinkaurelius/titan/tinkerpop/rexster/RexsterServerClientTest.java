@@ -19,7 +19,7 @@ import static junit.framework.Assert.*;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class RexsterServerClientTest extends TitanGraphTestCommon {
+public abstract class RexsterServerClientTest extends TitanGraphTestCommon {
 
     public final XMLConfiguration rexsterConfig;
     public RexsterTitanServer server;

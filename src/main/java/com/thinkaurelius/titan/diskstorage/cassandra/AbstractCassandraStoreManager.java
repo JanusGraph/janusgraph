@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
+import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -12,6 +14,17 @@ import org.apache.commons.configuration.Configuration;
  */
 
 public abstract class AbstractCassandraStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
+
+    public enum Partitioner { 
+        
+        RANDOM, BYTEORDER, LOCALBYTEORDER;
+    
+        public static Partitioner getPartitioner(String className) {
+            if (className.endsWith("RandomPartitioner")) return Partitioner.RANDOM;
+            else if (className.endsWith("ByteOrderedPartitioner")) return Partitioner.BYTEORDER;
+            else throw new IllegalArgumentException("Unsupported partitioner: " + className);
+        }
+    }
 
     //################### CASSANDRA SPECIFIC CONFIGURATION OPTIONS ######################
     public static final String READ_CONSISTENCY_LEVEL_KEY = "read-consistency-level";
@@ -54,15 +67,12 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     private final CassandraTransaction.Consistency readConsistencyLevel;
     private final CassandraTransaction.Consistency writeConsistencyLevel;
     
-    protected StoreFeatures features;
+    private StoreFeatures features = null;
 
     public AbstractCassandraStoreManager(Configuration storageConfig) {
         super(storageConfig, PORT_DEFAULT);
 
-        features = new StoreFeatures();
-        features.supportsScan=false; features.supportsBatchMutation=true; features.isTransactional=false;
-        features.supportsConsistentKeyOperations=true; features.supportsLocking=false; features.isKeyOrdered=super.isKeyOrdered;
-        features.isDistributed=true; features.hasLocalKeyPartition=false;
+
         
         this.keySpaceName = storageConfig.getString(KEYSPACE_KEY, KEYSPACE_DEFAULT);
 
@@ -75,6 +85,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
                 WRITE_CONSISTENCY_LEVEL_KEY, WRITE_CONSISTENCY_LEVEL_DEFAULT));
     }
     
+    public abstract Partitioner getPartitioner() throws StorageException;
 
     @Override
     public StoreTransaction beginTransaction(ConsistencyLevel level) {
@@ -88,6 +99,29 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     
     @Override
     public StoreFeatures getFeatures() {
+        if (features==null) {
+            features = new StoreFeatures();
+            features.supportsScan=false; features.supportsBatchMutation=true; features.isTransactional=false;
+            features.supportsConsistentKeyOperations=true; features.supportsLocking=false;
+            features.isDistributed=true;
+
+            Partitioner partitioner = null;
+            try {
+                partitioner = getPartitioner();
+            } catch (StorageException e) {
+                throw new TitanException("Could not read partitioner information",e);
+            }
+            if (partitioner==Partitioner.RANDOM) {
+                features.isKeyOrdered = false;
+                features.hasLocalKeyPartition=false;
+            } else if (partitioner==Partitioner.BYTEORDER) {
+                features.isKeyOrdered = true;
+                features.hasLocalKeyPartition=false;
+            } else if (partitioner==Partitioner.LOCALBYTEORDER) {
+                features.isKeyOrdered=true;
+                features.hasLocalKeyPartition=true;
+            } else throw new IllegalArgumentException("Unrecognized partitioner: " + partitioner);
+        }
         return features;
     }
 
