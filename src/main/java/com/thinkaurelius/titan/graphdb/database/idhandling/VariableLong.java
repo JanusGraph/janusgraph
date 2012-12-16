@@ -15,41 +15,64 @@ public class VariableLong {
     private static final byte stopMask = -128;
 
     private static long readUnsigned(ByteBuffer in) {
-        int offset = 0;
         long value = 0;
-        byte b = 0;
+        byte b;
         do {
             b = in.get();
-            long add = (b & mask);
-            add = add<<offset;
-            offset+=7;
-            value = value | add;
+            value = value << 7;
+            value = value | (b & mask);
         } while (b>=0);
         return value;
+//        int offset = 0;
+//        long value = 0;
+//        byte b = 0;
+//        do {
+//            b = in.get();
+//            long add = (b & mask);
+//            add = add<<offset;
+//            offset+=7;
+//            value = value | add;
+//        } while (b>=0);
+//        return value;
     }
 
 
-    private static void writeUnsigned(ByteBuffer out, long value) {
-        boolean first = true;
-        while (value!=0 || first) {
-            first = false;
-            byte b = (byte)(value & mask);
-            value = value >>> 7;
-            if (value==0) b = (byte)(b | stopMask);
+    private static void writeUnsigned(ByteBuffer out, final long value) {
+        int offset = unsignedBitLength(value);
+        while (offset>0) {
+            offset -=7;
+            byte b = (byte)((value>>>offset) & mask);
+            if (offset==0) {
+                b = (byte)(b | stopMask);
+            }
             out.put(b);
         }
+//        boolean first = true;
+//        while (value!=0 || first) {
+//            first = false;
+//            byte b = (byte)(value & mask);
+//            value = value >>> 7;
+//            if (value==0) b = (byte)(b | stopMask);
+//            out.put(b);
+//        }
     }
 
-    private static int unsignedLength(long value) {
-        int length = 1;
-        value = (value>>>7);
-        while (value!=0) {
-            value = (value>>>7);
-            length++;
+    private static int unsignedBitLength(final long value) {
+        int length = 7;
+        while ((value>>>length)>0) {
+            length+=7;
         }
         return length;
     }
 
+
+    private static int unsignedLength(final long value) {
+        assert unsignedBitLength(value)%7==0 && unsignedBitLength(value)>0;
+        return unsignedBitLength(value)/7;
+    }
+    
+
+    
     public static long readPositive(ByteBuffer in) {
         long value = readUnsigned(in);
         assert value>=0;
@@ -121,15 +144,24 @@ public class VariableLong {
     // =============== THIS IS A COPY&PASTE OF THE ABOVE =================
     // Using DataOutput instead of ByteBuffer
 
-    public static void writeUnsigned(DataOutput out, long value) {
-        boolean first = true;
-        while (value!=0 || first) {
-            first = false;
-            byte b = (byte)(value & mask);
-            value = value >>> 7;
-            if (value==0) b = (byte)(b | stopMask);
+    public static void writeUnsigned(DataOutput out, final long value) {
+        int offset = unsignedBitLength(value);
+        while (offset>0) {
+            offset -=7;
+            byte b = (byte)((value>>>offset) & mask);
+            if (offset==0) {
+                b = (byte)(b | stopMask);
+            }
             out.putByte(b);
         }
+//        boolean first = true;
+//        while (value!=0 || first) {
+//            first = false;
+//            byte b = (byte)(value & mask);
+//            value = value >>> 7;
+//            if (value==0) b = (byte)(b | stopMask);
+//            out.putByte(b);
+//        }
     }
 
     public static void writePositive(DataOutput out, long value) {
