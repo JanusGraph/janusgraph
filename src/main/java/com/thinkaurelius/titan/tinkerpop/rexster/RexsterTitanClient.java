@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.tinkerpop.rexster.client.RexsterClient;
 import com.tinkerpop.rexster.client.RexsterClientFactory;
 import com.tinkerpop.rexster.server.RexsterSettings;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.msgpack.MessageTypeException;
 import org.msgpack.template.Template;
@@ -37,13 +38,18 @@ public class RexsterTitanClient  {
     }
 
     public RexsterTitanClient(String host, int port) {
-        this(host,port,DEFAULT_TIMEOUT_MS);
-    }
-    
-    public RexsterTitanClient(String host, int port, int timeoutInMS) {
         Preconditions.checkArgument(!StringUtils.isEmpty(host));
         try {
-            client = RexsterClientFactory.getInstance().createClient(host,port,(int)Math.ceil(timeoutInMS/1000.0));
+            client = RexsterClientFactory.getInstance().createClient(host,port);
+        } catch (Exception e) {
+            throw new RuntimeException("Could not initialize RexsterClient",e);
+        }
+    }
+    
+    public RexsterTitanClient(final Configuration clientConfig) {
+        Preconditions.checkNotNull(clientConfig);
+        try {
+            client = RexsterClientFactory.getInstance().createClient(clientConfig);
         } catch (Exception e) {
             throw new RuntimeException("Could not initialize RexsterClient",e);
         }
@@ -53,7 +59,7 @@ public class RexsterTitanClient  {
         try {
             client.close();
         } catch (IOException e) {
-            throw new RuntimeException("Could not close RexsterClient",e);
+            throw new TitanException("Could not close RexsterClient",e);
         }
     }
 
@@ -94,7 +100,7 @@ public class RexsterTitanClient  {
         query = prefixQuery(query);
         try {
             log.trace("Sending query: {}", query);
-            return client.gremlin(query,parameters,template);
+            return client.execute(query,parameters,template);
         } catch (Throwable e) {
             log.debug("Failure in sending query",e);
             throw new TitanException("Failure in query sending",e);

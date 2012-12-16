@@ -44,7 +44,7 @@ public abstract class RexsterServerClientTest extends TitanGraphTestCommon {
         close();
         server = new RexsterTitanServer(rexsterConfig,config);
         server.start();
-        client = new RexsterTitanClient("127.0.0.1", RexsterSettings.DEFAULT_REXPRO_PORT, 10000);
+        client = new RexsterTitanClient("127.0.0.1", RexsterSettings.DEFAULT_REXPRO_PORT);
     }
 
     @After

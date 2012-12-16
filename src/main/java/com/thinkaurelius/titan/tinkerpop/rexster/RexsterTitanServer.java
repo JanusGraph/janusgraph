@@ -3,11 +3,9 @@ package com.thinkaurelius.titan.tinkerpop.rexster;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.rexster.protocol.EngineController;
+import com.tinkerpop.rexster.server.*;
 import org.apache.commons.configuration.Configuration;
-import com.tinkerpop.rexster.server.DefaultRexsterApplication;
-import com.tinkerpop.rexster.server.RexProRexsterServer;
-import com.tinkerpop.rexster.server.RexsterApplication;
-import com.tinkerpop.rexster.server.ShutdownManager;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
@@ -33,8 +31,8 @@ public class RexsterTitanServer {
     public static final String SHUTDOWN_HOST_KEY = "shutdown-host";
     public static final String SHUTDOWN_HOST_VALUE = "0.0.0.0";
 
-    public static final String SHUTDOWN_PORT_KEY = "shutdown-host";
-    public static final int SHUTDOWN_PORT_VALUE = 8183;
+    public static final String SHUTDOWN_PORT_KEY = "shutdown-port";
+    public static final int SHUTDOWN_PORT_VALUE = RexsterSettings.DEFAULT_SHUTDOWN_PORT;
 
     private final Configuration titanConfig;
     private final Configuration rexsterConfig;
@@ -54,6 +52,7 @@ public class RexsterTitanServer {
     }
 
     public void start() {
+        EngineController.configure(-1, null);
         graph = TitanFactory.open(titanConfig);
         final RexsterApplication ra = new DefaultRexsterApplication(DEFAULT_GRAPH_NAME,graph);
         try {
@@ -109,8 +108,8 @@ public class RexsterTitanServer {
         Iterator<String> keys = config.getKeys();
         while (keys.hasNext()) {
             String key = keys.next();
-            log.debug("Setting RexPro Config Option:{}={}",key,config.getProperty(key));
-            rexsterConfig.addProperty("rexpro."+key,config.getProperty(key));
+            log.debug("Setting Rexster RexPro Config Option:{}={}",key,config.getProperty(key));
+            rexsterConfig.addProperty(key,config.getProperty(key));
         }
         return rexsterConfig;
     }
