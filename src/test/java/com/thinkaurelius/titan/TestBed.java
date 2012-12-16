@@ -15,6 +15,7 @@ import com.tinkerpop.blueprints.*;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,7 +29,12 @@ public class TestBed {
 	 * @throws java.io.IOException
 	 */
 	public static void main(String[] args) throws Exception {
+        for (String s : new String[]{"36028797018963978","5629499534213184","21392098230009920"}) {
+            BigInteger i2 = new BigInteger(s,10);
+            System.out.println(i2.toString(2));
+        }
 
+        System.exit(0);
         
         int[] localPartition = { 0, 200};
         ByteBuffer lower = ByteBuffer.allocate(4);
