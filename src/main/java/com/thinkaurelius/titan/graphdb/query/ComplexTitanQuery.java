@@ -105,7 +105,14 @@ public class ComplexTitanQuery implements TitanQuery {
                 query.limit(remaining);
                 VertexListInternal next = query.vertexIds();
                 if (vertices==null) vertices = next;
-                else vertices.addAll(next);
+                else {
+                    if (next instanceof VertexLongList && !(vertices instanceof VertexLongList)) {
+                        next.addAll(vertices);
+                        vertices=next;
+                    } else {
+                        vertices.addAll(next);
+                    }
+                }
                 remaining -= next.size();
             }
             return vertices;
