@@ -23,17 +23,6 @@ public class VariableLong {
             value = value | (b & mask);
         } while (b>=0);
         return value;
-//        int offset = 0;
-//        long value = 0;
-//        byte b = 0;
-//        do {
-//            b = in.get();
-//            long add = (b & mask);
-//            add = add<<offset;
-//            offset+=7;
-//            value = value | add;
-//        } while (b>=0);
-//        return value;
     }
 
 
@@ -47,14 +36,6 @@ public class VariableLong {
             }
             out.put(b);
         }
-//        boolean first = true;
-//        while (value!=0 || first) {
-//            first = false;
-//            byte b = (byte)(value & mask);
-//            value = value >>> 7;
-//            if (value==0) b = (byte)(b | stopMask);
-//            out.put(b);
-//        }
     }
 
     private static int unsignedBitLength(final long value) {
@@ -154,14 +135,6 @@ public class VariableLong {
             }
             out.putByte(b);
         }
-//        boolean first = true;
-//        while (value!=0 || first) {
-//            first = false;
-//            byte b = (byte)(value & mask);
-//            value = value >>> 7;
-//            if (value==0) b = (byte)(b | stopMask);
-//            out.putByte(b);
-//        }
     }
 
     public static void writePositive(DataOutput out, long value) {
