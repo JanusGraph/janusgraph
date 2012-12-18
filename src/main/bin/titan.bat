@@ -7,8 +7,6 @@ set LIBDIR=..\lib
 set OLD_CLASSPATH=%CLASSPATH%
 set CP=
 
-for %%i in (%LIBDIR%\*.jar) do call :concatsep %%i
-
 set JAVA_OPTIONS=-Xms32m -Xmx512m
 
 :: Launch the application
