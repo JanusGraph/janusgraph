@@ -63,6 +63,10 @@ public interface AtomicQuery extends TitanQuery {
 
     long getLimit();
 
+    boolean hasLimit();
+
+    void removeLimit();
+
     public VertexListInternal vertexIds();
 
 

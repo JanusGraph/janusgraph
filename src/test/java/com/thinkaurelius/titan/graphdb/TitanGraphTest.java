@@ -666,6 +666,20 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(98, v.query().labels("friend", "connect", "knows").direction(Direction.OUT).has("time", 10, Query.Compare.NOT_EQUAL).count());
         assertEquals(99,Iterables.size(v.query().direction(Direction.OUT).vertices()));
 
+        newTx();
+
+        v = (TitanVertex)tx.getVertices("name","v0").iterator().next();
+        assertNotNull(v);
+        assertEquals(2,v.query().has("weight",1.5).interval("time",10,30).limit(2).vertexIds().size());
+        assertEquals(5,v.query().has("weight",1.5).interval("time",10,30).vertexIds().size());
+
+        newTx();
+        
+        v = (TitanVertex)tx.getVertices("name","v0").iterator().next();
+        assertNotNull(v);
+        assertEquals(2,v.query().has("weight",1.5).interval("time",10,30).limit(2).count());
+        assertEquals(5,v.query().has("weight",1.5).interval("time",10,30).count());
+
     }
 
     //Merge above

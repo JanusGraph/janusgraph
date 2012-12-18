@@ -314,10 +314,15 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 	@Override
 	public void loadRelations(AtomicQuery query, InternalTitanTransaction tx) {
-        List<Entry> entries = queryForEntries(query,getStoreTransaction(tx));
-        VertexRelationLoader loader = new StandardVertexRelationLoader(query.getNode());
+        AtomicQuery compiledQuery = query.clone();
+        if (compiledQuery.hasLimit() && compiledQuery.hasConstraints() && !QueryUtil.queryCoveredByDiskIndexes(compiledQuery)) {
+            compiledQuery.removeLimit();
+        }
+
+        List<Entry> entries = queryForEntries(compiledQuery,getStoreTransaction(tx));
+        VertexRelationLoader loader = new StandardVertexRelationLoader(compiledQuery.getNode());
         loadRelations(entries,loader,tx);
-        query.getNode().loadedEdges(query);
+        compiledQuery.getNode().loadedEdges(compiledQuery);
     }
     
     protected void loadRelations(Iterable<Entry> entries, VertexRelationLoader loader, InternalTitanTransaction tx) {

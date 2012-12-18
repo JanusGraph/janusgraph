@@ -42,6 +42,12 @@ public abstract class TitanGraphTestCommon {
 		if (null != graphdb)
 			graphdb.shutdown();
     }
+
+    public void newTx() {
+        if (null != tx && tx.isOpen())
+            tx.commit();
+        tx = graphdb.startTransaction();
+    }
 	
 	public void clopen() {
 		close();
