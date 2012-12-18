@@ -125,6 +125,15 @@ public class EmptyAtomicQuery implements AtomicQuery {
     }
 
     @Override
+    public boolean hasLimit() {
+        return false;
+    }
+
+    @Override
+    public void removeLimit() {
+    }
+
+    @Override
     public TitanQuery types(TitanType... type) {
         return this;
     }

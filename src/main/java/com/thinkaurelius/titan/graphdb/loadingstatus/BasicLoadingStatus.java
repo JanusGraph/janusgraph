@@ -53,7 +53,9 @@ public class BasicLoadingStatus implements LoadingStatus {
 	
 	@Override
 	public LoadingStatus loadedEdges(AtomicQuery query) {
-		if (query.hasEdgeTypeCondition()) {
+		if (query.hasLimit()) {
+          //Nothing
+        } else if (query.hasEdgeTypeCondition()) {
             if (!QueryUtil.hasFirstKeyConstraint(query)) {
                 TitanType type = query.getTypeCondition();
                 if (loadedTypes==null) loadedTypes = new HashMap<TitanType,Byte>();

@@ -55,7 +55,7 @@ public abstract class RexsterServerClientTest extends TitanGraphTestCommon {
     }
 
     @Test
-    public void simpleQuery() throws Exception {
+    public void simpleQuerying() throws Exception {
         List<Map<String,Object>> result;
 //      result = client.query("g.V");
 //      assertEquals(3,result.size());

@@ -66,10 +66,18 @@ public class VertexLongList implements VertexListInternal {
     
     @Override
     public void addAll(VertexList nodelist) {
-        Preconditions.checkArgument(nodelist instanceof VertexLongList,"Only supporting union of identical lists.");
-        VertexLongList other = (VertexLongList)nodelist;
+        AbstractLongList othervertexids = null;
+        if (nodelist instanceof VertexLongList) {
+            othervertexids = ((VertexLongList)nodelist).vertices;
+        } else if (nodelist instanceof VertexArrayList) {
+            VertexArrayList other = (VertexArrayList)nodelist;
+            othervertexids = new LongArrayList(other.size());
+            for (int i=0;i<other.size();i++) othervertexids.add(other.getID(i));
+        } else {
+            throw new IllegalArgumentException("Unsupported nodelist: " + nodelist.getClass());
+        }
         sorted=false;
-        vertices.addAllOfFromTo(other.vertices,0,other.vertices.size()-1);
+        vertices.addAllOfFromTo(othervertexids,0,othervertexids.size()-1);
     }
 
 	@Override

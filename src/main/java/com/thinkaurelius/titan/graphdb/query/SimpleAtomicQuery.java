@@ -21,6 +21,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class SimpleAtomicQuery implements AtomicQuery {
+    
+    private static final long NO_LIMIT = Long.MAX_VALUE;
 
     private static final Map<String,Object> NO_CONSTRAINTS = ImmutableMap.of();
 
@@ -40,7 +42,7 @@ public class SimpleAtomicQuery implements AtomicQuery {
     private boolean queryHidden;
     private boolean queryUnmodifiable;
 
-    private long limit = Long.MAX_VALUE;
+    private long limit = NO_LIMIT;
     
 
     public SimpleAtomicQuery(InternalTitanTransaction tx) {
@@ -419,6 +421,16 @@ public class SimpleAtomicQuery implements AtomicQuery {
     @Override
     public long getLimit() {
         return limit;
+    }
+
+    @Override
+    public boolean hasLimit() {
+        return limit<NO_LIMIT;
+    }
+
+    @Override
+    public void removeLimit() {
+        limit = NO_LIMIT;
     }
 
     @Override
