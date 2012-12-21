@@ -2,6 +2,8 @@ package com.thinkaurelius.titan.tinkerpop.rexster;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.rexster.client.RexsterClient;
 import com.tinkerpop.rexster.client.RexsterClientFactory;
 import com.tinkerpop.rexster.server.RexsterSettings;
@@ -63,8 +65,8 @@ public class RexsterTitanClient  {
         }
     }
 
-    private static final String prefixQuery(String query) {
-        return "g=rexster.getGraph('"+RexsterTitanServer.DEFAULT_GRAPH_NAME+"');"+query;
+    private static final String wrapQuery(String query) {
+        return "g=rexster.getGraph('"+RexsterTitanServer.DEFAULT_GRAPH_NAME+"'); g.stopTransaction(SUCCESS); try { "+query + " } catch (Throwable e) { g.stopTransaction(FAILURE); throw e }";
     }
 
     public List<Map<String, Object>> query(String query) {
@@ -97,7 +99,7 @@ public class RexsterTitanClient  {
     }
 
     public <T> List<T> queryTemplate(String query, final Map<String, Object> parameters, final Template template) {
-        query = prefixQuery(query);
+        query = wrapQuery(query);
         try {
             log.trace("Sending query: {}", query);
             return client.execute(query,parameters,template);
