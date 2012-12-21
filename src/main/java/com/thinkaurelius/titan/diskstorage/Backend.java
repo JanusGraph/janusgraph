@@ -130,7 +130,7 @@ public class Backend {
 
     private KeyColumnValueStore getLockStore(KeyColumnValueStore store) throws StorageException {
         if (!storeFeatures.supportsLocking()) {
-            if (storeFeatures.isTransactional()) {
+            if (storeFeatures.supportsTransactions()) {
                 store = new TransactionalLockStore(store);
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
                 store = new ConsistentKeyLockStore(store,getStore(store.getName()+LOCK_STORE_SUFFIX),lockConfiguration);
@@ -175,13 +175,12 @@ public class Backend {
             //EdgeStore & VertexIndexStore
             KeyColumnValueStore idStore = getStore(ID_STORE_NAME);
             idAuthority = null;
-            if (storeFeatures.isTransactional()) {
+            if (storeFeatures.supportsTransactions()) {
                 idAuthority = new TransactionalIDManager(idStore,storeManager,config);
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
                 idAuthority = new ConsistentKeyIDManager(idStore,storeManager,config);
             } else {
-                idAuthority = new TransactionalIDManager(idStore,storeManager,config);
-                log.error("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
+                throw new IllegalStateException("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
             }
             edgeStore = getLockStore(getBufferStore(EDGESTORE_NAME));
             vertexIndexStore = getLockStore(getBufferStore(VERTEXINDEX_STORE_NAME));
@@ -257,7 +256,7 @@ public class Backend {
             }
         }
         if (!storeFeatures.supportsLocking()) {
-            if (storeFeatures.isTransactional()) {
+            if (storeFeatures.supportsTransactions()) {
                 //No transaction wrapping needed
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
                 tx = new ConsistentKeyLockTransaction(tx,storeManager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT));

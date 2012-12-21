@@ -89,7 +89,7 @@ public abstract class LockKeyColumnValueStoreTest {
             sc.addProperty(GraphDatabaseConfiguration.LOCK_EXPIRE_MS, EXPIRE_MS);
             
             if (!storeFeatures.supportsLocking()) {
-                if (storeFeatures.isTransactional()) {
+                if (storeFeatures.supportsTransactions()) {
                     store[i] = new TransactionalLockStore(store[i]);
                 } else if (storeFeatures.supportsConsistentKeyOperations()) {
                     ConsistentKeyLockConfiguration lockConfiguration = new ConsistentKeyLockConfiguration(sc,"store"+i);
@@ -99,7 +99,7 @@ public abstract class LockKeyColumnValueStoreTest {
             }
 
             KeyColumnValueStore idStore = manager[i].openDatabase("ids");
-            if (storeFeatures.isTransactional())
+            if (storeFeatures.supportsTransactions())
                 idAuthorities[i] = new TransactionalIDManager(idStore,manager[i],sc);
             else if (storeFeatures.supportsConsistentKeyOperations())
                 idAuthorities[i] = new ConsistentKeyIDManager(idStore,manager[i],sc);

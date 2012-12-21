@@ -17,7 +17,7 @@ public class StoreFeatures {
     public Boolean supportsScan;
     public Boolean supportsBatchMutation;
 
-    public Boolean isTransactional;
+    public Boolean supportsTransactions;
     public Boolean supportsConsistentKeyOperations;
     public Boolean supportsLocking;
 
@@ -63,9 +63,9 @@ public class StoreFeatures {
      *
      * @return
      */
-    public boolean isTransactional() {
+    public boolean supportsTransactions() {
         verify();
-        return isTransactional;
+        return supportsTransactions;
     }
 
     /**

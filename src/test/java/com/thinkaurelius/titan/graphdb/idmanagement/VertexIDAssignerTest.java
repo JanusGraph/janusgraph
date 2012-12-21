@@ -55,7 +55,7 @@ public class VertexIDAssignerTest {
         MockIDAuthority idAuthority = new MockIDAuthority(500,partitionMax);
 
         StoreFeatures features = new StoreFeatures();
-        features.supportsScan=false; features.supportsBatchMutation=false; features.isTransactional=false;
+        features.supportsScan=false; features.supportsBatchMutation=false; features.supportsTransactions=false;
         features.supportsConsistentKeyOperations=false; features.supportsLocking=false; features.isKeyOrdered=false;
         features.isDistributed=false; features.hasLocalKeyPartition=false;
         if (localPartition!=null) {

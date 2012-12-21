@@ -51,12 +51,13 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
             transactional=false;
         }
         this.transactional=transactional;
+        if (!transactional) log.warn("Transactions are disabled. Ensure that there is at most one Titan instance interacting with this BerkeleyDB instance, otherwise your database may corrupt.");
         int cachePercentage = configuration.getInt(CACHE_KEY,CACHE_DEFAULT);
 
         initialize(cachePercentage);
 
         features = new StoreFeatures();
-        features.supportsScan=true; features.supportsBatchMutation=false; features.isTransactional=transactional;
+        features.supportsScan=true; features.supportsBatchMutation=false; features.supportsTransactions=true;
         features.supportsConsistentKeyOperations=false; features.supportsLocking=true; features.isKeyOrdered=true;
         features.isDistributed=false; features.hasLocalKeyPartition=false;
 	}

@@ -82,7 +82,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         openStores = new HashMap<String, HBaseKeyColumnValueStore>();
 
         features = new StoreFeatures();
-        features.supportsScan=false; features.supportsBatchMutation=true; features.isTransactional=false;
+        features.supportsScan=false; features.supportsBatchMutation=true; features.supportsTransactions=false;
         features.supportsConsistentKeyOperations=true; features.supportsLocking=false; features.isKeyOrdered=false;
         features.isDistributed=true; features.hasLocalKeyPartition=false;
     }

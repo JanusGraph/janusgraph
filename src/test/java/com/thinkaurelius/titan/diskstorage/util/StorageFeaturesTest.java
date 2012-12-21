@@ -28,12 +28,12 @@ public class StorageFeaturesTest {
             fail();
         } catch (IllegalArgumentException e) {}
         features = new StoreFeatures();
-        features.supportsScan=false; features.supportsBatchMutation=true; features.isTransactional=false;
+        features.supportsScan=false; features.supportsBatchMutation=true; features.supportsTransactions=false;
         features.supportsConsistentKeyOperations=true; features.supportsLocking=false; features.isKeyOrdered=false;
         features.isDistributed=true; features.hasLocalKeyPartition=false;
         assertNotNull(features);
         assertFalse(features.supportsScan());
-        assertFalse(features.isTransactional());
+        assertFalse(features.supportsTransactions());
         assertTrue(features.isDistributed());
     }
     
