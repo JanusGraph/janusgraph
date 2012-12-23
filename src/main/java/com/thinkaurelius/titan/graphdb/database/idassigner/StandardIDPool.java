@@ -62,6 +62,7 @@ public class StandardIDPool implements IDPool {
             //Updating thread has not yet completed, so wait for it
             log.debug("Waiting for id renewal thread");
             idBlockRenewer.join(MAX_WAIT_TIME);
+            if (idBlockRenewer.isAlive()) throw new IllegalStateException("ID renewal thread did not complete in time.");
         }
         if (bufferMaxID==BUFFER_POOL_EXHAUSTION || bufferNextID==BUFFER_POOL_EXHAUSTION)
             throw new IDPoolExhaustedException("Exhausted ID Pool for partition: " + partitionID);
@@ -79,7 +80,7 @@ public class StandardIDPool implements IDPool {
         bufferNextID = BUFFER_EMPTY;
         bufferMaxID = BUFFER_EMPTY;
         
-        renewBufferID = currentMaxID - RENEW_ID_COUNT;
+        renewBufferID = currentMaxID - Math.min(RENEW_ID_COUNT, (currentMaxID - nextID)/10);
         if (renewBufferID>= currentMaxID) renewBufferID = currentMaxID -1;
         if (renewBufferID<nextID) renewBufferID = nextID;
         assert renewBufferID>=nextID && renewBufferID< currentMaxID;
