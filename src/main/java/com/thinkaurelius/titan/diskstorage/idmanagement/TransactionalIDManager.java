@@ -41,10 +41,12 @@ public class TransactionalIDManager extends AbstractIDManager  {
             StoreTransaction txh = null;
             try {
                 txh = manager.beginTransaction(ConsistencyLevel.DEFAULT);
-                long nextID = getNextID(partitionKey,blockSize,txh);
-                idStore.mutate(partitionKey, ImmutableList.of(new Entry(DEFAULT_COLUMN, ByteBufferUtil.getLongByteBuffer(nextID))), null, txh);
+                long current = getCurrentID(partitionKey,txh);
+                Preconditions.checkArgument(Long.MAX_VALUE - blockSize > current, "ID overflow detected");
+                long next = current+blockSize;
+                idStore.mutate(partitionKey, ImmutableList.of(new Entry(DEFAULT_COLUMN, ByteBufferUtil.getLongByteBuffer(next))), null, txh);
                 txh.commit();
-                return new long[]{nextID,nextID+blockSize};
+                return new long[]{current,next};
             } catch (StorageException e) {
                 log.warn("Storage exception while allocating id block - retrying in {} ms: {}", idApplicationWaitMS,e);
                 if (txh!=null) txh.abort();
@@ -64,13 +66,12 @@ public class TransactionalIDManager extends AbstractIDManager  {
         idStore.close();
     }
 
-    private long getNextID(ByteBuffer partitionKey, long blockSize, StoreTransaction txh) throws StorageException {
+    private long getCurrentID(ByteBuffer partitionKey, StoreTransaction txh) throws StorageException {
         if (!idStore.containsKeyColumn(partitionKey,DEFAULT_COLUMN,txh)) {
             return BASE_ID;
         } else {
-            long latest = idStore.get(partitionKey,DEFAULT_COLUMN,txh).getLong();
-            Preconditions.checkArgument(Long.MAX_VALUE - blockSize > latest, "ID overflow detected");
-            return latest+blockSize;
+            long current = idStore.get(partitionKey,DEFAULT_COLUMN,txh).getLong();
+            return current;
         }
     }
 
@@ -80,9 +81,9 @@ public class TransactionalIDManager extends AbstractIDManager  {
             StoreTransaction txh = null;
             try {
                 txh = manager.beginTransaction(ConsistencyLevel.DEFAULT);
-                long nextID = getNextID(getPartitionKey(partition),getBlockSize(partition),txh);
+                long current = getCurrentID(getPartitionKey(partition),txh);
                 txh.commit();
-                return nextID;
+                return current;
         } catch (StorageException e) {
                 log.warn("Storage exception while reading id block - retrying in {} ms: {}", idApplicationWaitMS,e);
                 if (txh!=null) txh.abort();

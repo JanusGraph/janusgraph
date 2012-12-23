@@ -39,7 +39,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
             StoreTransaction txh = null;
             try {
                 txh = manager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT);
-                long nextID = getNextID(getPartitionKey(partition),getBlockSize(partition),txh);
+                long nextID = getCurrentID(getPartitionKey(partition),txh);
                 txh.commit();
                 return nextID;
             } catch (TemporaryStorageException e) {
@@ -61,11 +61,11 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
         idStore.close();
     }
 
-    private long getNextID(ByteBuffer partitionKey, long blockSize, StoreTransaction txh) throws StorageException {
+    private long getCurrentID(ByteBuffer partitionKey, StoreTransaction txh) throws StorageException {
         List<Entry> blocks = idStore.getSlice(partitionKey, EMPTY_BUFFER, EMPTY_BUFFER, 5, txh);
         if (blocks==null) throw new TemporaryStorageException("Could not read from storage");
 
-        long latest = BASE_ID - blockSize;
+        long latest = BASE_ID;
 
         for (Entry e : blocks) {
             long counterVal = getBlockValue(e.getColumn());
@@ -73,8 +73,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 latest = counterVal;
             }
         }
-        Preconditions.checkArgument(Long.MAX_VALUE-blockSize>latest,"ID overflow detected");
-        return latest+blockSize;
+        return latest;
     }
     
 
@@ -90,10 +89,11 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 // Read the latest counter values from the idStore
                 ByteBuffer partitionKey = getPartitionKey(partition);
                 // calculate the start (inclusive) and end (exclusive) of the allocation we're about to attempt
-                long nextStart = getNextID(partitionKey,blockSize,txh);
+                long nextStart = getCurrentID(partitionKey,txh);
+                Preconditions.checkArgument(Long.MAX_VALUE-blockSize>nextStart,"ID overflow detected");
                 long nextEnd = nextStart + blockSize;
 
-                ByteBuffer target = getBlockApplication(nextStart);
+                ByteBuffer target = getBlockApplication(nextEnd);
 
 
                 // attempt to write our claim on the next id block
@@ -108,7 +108,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                     } else {
 
                         assert 0 != target.remaining();
-                        ByteBuffer[] slice = getBlockSlice(nextStart);
+                        ByteBuffer[] slice = getBlockSlice(nextEnd);
 
                         /* At this point we've written our claim on [nextStart, nextEnd),
                          * but we haven't yet guaranteed the absence of a contending claim on

@@ -71,7 +71,7 @@ public class Backend {
         put(STORE_EMBEDDEDCASSANDRA, CassandraEmbeddedStoreManager.class);
     }};
     
-    private static final Map<String,Integer> staticKeyLengths = new HashMap<String,Integer>() {{
+    public static final Map<String,Integer> STATIC_KEY_LENGTHS = new HashMap<String,Integer>() {{
         put(EDGESTORE_NAME,8);
         put(EDGESTORE_NAME +LOCK_STORE_SUFFIX,8);
         put(ID_STORE_NAME,4);
@@ -154,7 +154,7 @@ public class Backend {
             if (bufferSize>1) {
                 //TODO: support buffer mutations for KeyValueStores
             }
-            store = KeyValueStoreManagerAdapter.wrapKeyValueStore(kvstore, staticKeyLengths);
+            store = KeyValueStoreManagerAdapter.wrapKeyValueStore(kvstore, STATIC_KEY_LENGTHS);
         }
         return store;
     }
@@ -164,7 +164,7 @@ public class Backend {
             return ((KeyColumnValueStoreManager)storeManager).openDatabase(name);
         } else {
             return KeyValueStoreManagerAdapter.wrapKeyValueStore(
-                    ((KeyValueStoreManager) storeManager).openDatabase(name), staticKeyLengths);
+                    ((KeyValueStoreManager) storeManager).openDatabase(name), STATIC_KEY_LENGTHS);
         }
     }
 
@@ -191,7 +191,7 @@ public class Backend {
         }
     }
 
-    private final static StoreManager getStorageManager(Configuration storageConfig) {
+    public final static StoreManager getStorageManager(Configuration storageConfig) {
         String clazzname = storageConfig.getString(
                 GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,GraphDatabaseConfiguration.STORAGE_BACKEND_DEFAULT);
         if (preregisteredStorageManagers.containsKey(clazzname.toLowerCase())) {

@@ -258,7 +258,17 @@ public class GraphDatabaseConfiguration {
     }
 
 	public GraphDatabaseConfiguration(File dirOrFile) {
-		Preconditions.checkNotNull(dirOrFile,"Need to specify a configuration file or storage directory");
+        this.configuration = getConfiguration(dirOrFile);
+        preLoadConfiguration();
+	}
+
+	public GraphDatabaseConfiguration(String dirOrFile) {
+		this(new File(dirOrFile));
+	}
+    
+    public static final Configuration getConfiguration(File dirOrFile) {
+        Preconditions.checkNotNull(dirOrFile,"Need to specify a configuration file or storage directory");
+        Configuration configuration = null;
         try {
             if (dirOrFile.isFile()) {
                 configuration = new PropertiesConfiguration(dirOrFile);
@@ -273,14 +283,10 @@ public class GraphDatabaseConfiguration {
                 configuration.setProperty(keyInNamespace(STORAGE_NAMESPACE,STORAGE_DIRECTORY_KEY),dirOrFile.getAbsolutePath());
             }
         } catch (ConfigurationException e) {
-                throw new IllegalArgumentException("Could not load configuration at: " + dirOrFile,e);
+            throw new IllegalArgumentException("Could not load configuration at: " + dirOrFile,e);
         }
-        preLoadConfiguration();
-	}
-
-	public GraphDatabaseConfiguration(String dirOrFile) {
-		this(new File(dirOrFile));
-	}
+        return configuration;
+    }
 
     private void preLoadConfiguration() {
         Configuration storageConfig = configuration.subset(STORAGE_NAMESPACE);
@@ -407,7 +413,7 @@ public class GraphDatabaseConfiguration {
         return configuration.subset(ATTRIBUTE_NAMESPACE).getBoolean(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY,ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT);
     }
 
-	private static final String keyInNamespace(String namespace, String key) {
+	public static final String keyInNamespace(String namespace, String key) {
         return namespace + "." + key;
     }
 
