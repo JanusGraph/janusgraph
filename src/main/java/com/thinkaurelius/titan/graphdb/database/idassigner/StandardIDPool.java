@@ -80,7 +80,7 @@ public class StandardIDPool implements IDPool {
         bufferNextID = BUFFER_EMPTY;
         bufferMaxID = BUFFER_EMPTY;
         
-        renewBufferID = currentMaxID - Math.min(RENEW_ID_COUNT, (currentMaxID - nextID)/10);
+        renewBufferID = currentMaxID - Math.max(RENEW_ID_COUNT, (currentMaxID - nextID)/5);
         if (renewBufferID>= currentMaxID) renewBufferID = currentMaxID -1;
         if (renewBufferID<nextID) renewBufferID = nextID;
         assert renewBufferID>=nextID && renewBufferID< currentMaxID;
