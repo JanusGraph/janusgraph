@@ -107,7 +107,8 @@ public class Upgrade010to020 {
             
             
             KeyColumnValueStoreManager store = (KeyColumnValueStoreManager)Backend.getStorageManager(storeconfig);
-            KeyColumnValueStore idstore = store.openDatabase(idTableMapper.get(backend));
+            KeyColumnValueStore idstoreOld = store.openDatabase(idTableMapper.get(backend));
+            KeyColumnValueStore idstoreNew = store.openDatabase("titan_ids");
             StoreTransaction tx = store.beginTransaction(ConsistencyLevel.KEY_CONSISTENT);
             final ByteBuffer empty = ByteBuffer.allocate(0);
 
@@ -124,7 +125,7 @@ public class Upgrade010to020 {
                 ByteBuffer oldkey = ByteBufferUtil.getIntByteBuffer(partition);
                 ByteBuffer newkey = ByteBufferUtil.getIntByteBuffer(partition+1);
                 //Read old
-                List<Entry> blocks = idstore.getSlice(oldkey, empty, empty, tx);
+                List<Entry> blocks = idstoreOld.getSlice(oldkey, empty, empty, tx);
                 Preconditions.checkArgument(blocks!=null && !blocks.isEmpty());
                 long latest = -1;
 
@@ -136,7 +137,7 @@ public class Upgrade010to020 {
                     if (latest < counterVal) {
                         latest = counterVal;
                     }
-                    idstore.mutate(oldkey,null,ImmutableList.of(e.getColumn()),tx);
+                    idstoreOld.mutate(oldkey,null,ImmutableList.of(e.getColumn()),tx);
                 }
                 Preconditions.checkArgument(latest>0);
                 //Update to new id model
@@ -151,7 +152,7 @@ public class Upgrade010to020 {
 
                 target.putLong(-latest).putLong(System.currentTimeMillis()).put(rid);
                 target.rewind();
-                idstore.mutate(newkey, Arrays.asList(new Entry(target, ByteBuffer.allocate(0))), null, tx);
+                idstoreNew.mutate(newkey, Arrays.asList(new Entry(target, ByteBuffer.allocate(0))), null, tx);
 
             }
             tx.commit();
