@@ -11,6 +11,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -61,6 +62,13 @@ public abstract class RexsterServerClientTest extends TitanGraphTestCommon {
 //      result = client.query("g.V");
 //      assertEquals(3,result.size());
         result = client.query("g.V('name','v1').out('knows').map");
+        assertEquals(2,result.size());
+        for (Map<String,Object> map : result) {
+            assertTrue(map.containsKey("name"));
+        }
+        Map<String,Object> paras = new HashMap<String,Object>();
+        paras.put("name","v1");
+        result = client.query("g.V('name',name).out('knows').map",paras);
         assertEquals(2,result.size());
         for (Map<String,Object> map : result) {
             assertTrue(map.containsKey("name"));
