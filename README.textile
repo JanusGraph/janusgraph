@@ -14,7 +14,7 @@ h2. Features
 * Native integration with the "TinkerPop":http://www.tinkerpop.com graph stack:
 ** "Gremlin":http://gremlin.tinkerpop.com graph query language
 ** "Frames":http://frames.tinkerpop.com object-to-graph mapper
-** "Rexster":http://rexster.tinkerpop.com REST graph server
+** "Rexster":http://rexster.tinkerpop.com graph server
 ** "Blueprints":http://blueprints.tinkerpop.com standard graph API
 * Open source with the liberal "Apache 2 license":http://www.apache.org/licenses/LICENSE-2.0.html.
 
