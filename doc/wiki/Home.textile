@@ -1,19 +1,18 @@
 [[https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-logo.png|width=420px|align=left|float]] 
-Titan is a distributed "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for processing massive-scale "graphs":http://en.wikipedia.org/wiki/Graph_(mathematics) represented over a cluster of machines and can scale elastically as your data or user base grow. Titan is a native "Blueprints":http://blueprints.tinkerpop.com enabled graph database and as such, it supports the full "TinkerPop":http://tinkerpop.com stack of technologies. Titan has a pluggable storage architecture which allows it to build on proven database technology such as "Apache Cassandra":http://cassandra.apache.org/, "Apache HBase":http://hbase.apache.org/, or "Oracle BerkeleyDB":http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html and makes integration into  existing database environments seamless.
+Titan is a distributed "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for storing and querying massive-scale "graphs":http://en.wikipedia.org/wiki/Graph_(mathematics) represented over a cluster of machines. The cluster can elastically scale to support a growing dataset and user base. Titan has a pluggable storage architecture which allows it to build on proven database technology such as "Apache Cassandra":http://cassandra.apache.org/, "Apache HBase":http://hbase.apache.org/, or "Oracle BerkeleyDB":http://www.oracle.com/technetwork/database/berkeleydb/. Titan is a native "Blueprints":http://blueprints.tinkerpop.com enabled graph database and as such, it supports the full "TinkerPop":http://tinkerpop.com stack of technologies.
 
-<a href="https://github.com/thinkaurelius/titan/downloads">[[https://github.com/thinkaurelius/titan/raw/master/doc/images/download-button.png|align=right|float]]</a>
+<a href="https://github.com/thinkaurelius/titan/wiki/Downloads">[[https://github.com/thinkaurelius/titan/raw/master/doc/images/download-button.png|align=right|float]]</a>
 
 <br/><br/><br/><br/><br/>
 
 Please use Aurelius's "mailing list":https://groups.google.com/forum/#!forum/aureliusgraphs for all Titan related questions. For TinkerPop related discussions, use the Gremlin-Users "mailing list":https://groups.google.com/forum/#!forum/gremlin-users.
-For "commercial Titan support":http://thinkaurelius.com/subscription/, please <a href="mailto:info@thinkaurelius.com">contact</a> the graph experts at "Aurelius":http://www.thinkaurelius.com.
-
+For "commercial Titan support":http://thinkaurelius.com/subscription/, please <a href="mailto:info@thinkaurelius.com">contact</a> the graph experts at "Aurelius":http://thinkaurelius.com.
 
 ```xml
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan</artifactId>
-   <version>0.1.0</version>
+   <version>0.2.0</version>
 </dependency>
 ```
 
@@ -29,6 +28,8 @@ h2. Titan Manual
 ** Titan Interfaces ("JavaDoc":http://thinkaurelius.github.com/titan/javadoc/current)
 *** [[Blueprints Interface]] (*"full documentation":http://blueprints.tinkerpop.com*)
 *** [[Gremlin Query Language]] (*"full documentation":http://gremlin.tinkerpop.com*)
+**** "GremlinDocs":http://gremlindocs.com/ (*cheat sheet*)
+*** [[Titan Server]]
 *** [[Rexster Graph Server]] (*"full documentation":http://rexster.tinkerpop.com*)
 *** [[TinkerPop Graph Stack]]
 ** Transactions
@@ -45,16 +46,21 @@ h2. Titan Manual
 *** [[Type Definition Overview]] (*cheat sheet*)
 ** Configuration and Tuning
 *** [[Graph Configuration]] (*cheat sheet*)
+*** [[Datatype and Attribute Serializer Configuration]]
 * Advanced Topics
+** [[Global Graph Analytics]]
 ** [[Building Titan]]
 * Titan Tutorials
 ** [[Generating Artificial Natural Graphs]]
 ** [[Titan Presentations]]
 * [[Upgrade Instructions]]
+* Related Third Party Projects
+** "Blubflow":http://bulbflow.com/ (Python)
+** "Hermes":https://github.com/gameclosure/hermes (Clojure)
 * [[Release Notes]]
 * [[Acknowledgements]]
 
-!https://secure.travis-ci.org/thinkaurelius/titan.png!:http://travis-ci.org/thinkaurelius/titan
+<!-- !https://secure.travis-ci.org/thinkaurelius/titan.png!:http://travis-ci.org/thinkaurelius/titan -->
 
 ==<hr/>==
 

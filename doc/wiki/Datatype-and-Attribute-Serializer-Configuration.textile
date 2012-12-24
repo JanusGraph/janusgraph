@@ -1,0 +1,23 @@
+Titan supports a number of classes for attribute values on properties. Titan efficiently serializes numbers, primitive arrays, @Date@, @ArrayList@ and @HashMap@. By default, Titan allows arbitrary objects as attribute values on properties, but those use default serializer which have significant overhead and may not be as efficient.  
+
+|_. Option |_. Description |_. Value |_. Default |_. Modifiable |
+| attributes.allow-all | If enabled, arbitrary objects can be used as attributes on properties otherwise only pre-configured and configured attributes are allowed | _true_ or _false_ | _true_ | No |
+
+To configure a custom attribute class with a custom serializer, follow these steps:
+
+# Implement a custom @AttributeSerializer@ for the custom attribute class
+# Add the following configuration options where [X] is the custom attribute id that must be larger than all attribute ids for already configured custom attributes:
+## @attributes.attribute[X] = [Full attribute class name]@
+## @attributes.serializer[X] = [Full serializer class name]@
+
+For example, suppose we want to register a special integer attribute class called @SpecialInt@ and have implemented a custom serializer @SpecialIntSerializer@ that implements @AttributeSerializer@. We already have 9 custom attributes configured in the configuration file, so we would add the following lines
+```
+attributes.attribute10 = com.example.SpecialInt
+attributes.serializer10 = com.example.SpecialIntSerializer
+```
+
+h2. Custom Object Serialization
+
+Titan supports arbitrary objects as property attributes and uses "Kryo's":http://code.google.com/p/kryo/ "default serializers":http://code.google.com/p/kryo/#Default_serializers to serialize such objects to disk. This default serializer may not work for your particular class, especially if it does not have a default constructor.
+
+Hence, we highly recommend that you *verify successful serialization and deserialization of all custom classes in Titan* prior to using that class. Should you encounter a (de)serialization failure, you can configure a custom serializer as explained above.

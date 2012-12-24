@@ -35,3 +35,8 @@ When adding this dependency, be sure to add the following repository to the @pom
   </snapshots>
 </repository>
 ```
+
+h2. FAQs
+
+1. *Maven build causes dozens of "[WARNING] We have a duplicate..." errors*
+Make sure to use the maven-assembly-plugin when building or depending on Titan. Please refer to the following "ticket":https://github.com/thinkaurelius/titan/issues/84 for more information

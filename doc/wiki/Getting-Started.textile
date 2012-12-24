@@ -60,8 +60,6 @@ The created Titan database is empty and ready to be loaded with data. Before doi
 ```text
 gremlin> g.createKeyIndex('name', Vertex.class)
 ==>null
-gremlin> g.stopTransaction(SUCCESS)
-==>null
 ```
 
 The following snippet loads _The Graph of the Gods_ dataset which comes packaged with Titan in the @data/@ directory. Given that there is an index on @name@ property, the Saturn vertex can be retrieved. The property map (i.e. the key/value pairs of Saturn) can then be examined. As demonstrated, the Saturn vertex has a @name@ of "saturn" and a @type@ of "titan." Finally, the grandchild of Saturn can be retrieved with a traversal that expresses: "Who is Saturns' childs' child?" (the inverse of "father" is "child"). The result is Hercules.

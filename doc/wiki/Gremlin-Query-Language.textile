@@ -1,16 +1,96 @@
-!https://github.com/tinkerpop/gremlin/raw/master/doc/images/gremlin-logo.png!
+!https://github.com/tinkerpop/gremlin/raw/master/doc/images/gremlin-logo.png!:http://gremlin.tinkerpop.com
 
-Titan supports the standard Gremlin graph query language for complex graph retrieval and mutation operations.  "Gremlin":http://gremlin.tinkerpop.com is a functional language whereby traversal operators are chained together to form path-like expressions. Data (e.g. a vertex) is inserted into the "left" of the function chain and data (e.g. property values) is emitted from the "right" of the function chain. This section of documentation will only briefly overview Gremlin. For more complete documentation on Gremlin, please see the "online documentation":http://gremlin.tinkerpop.com. Moreover, the examples are with respects to Gremlin-Groovy and note that there are other "JVM language implementations of Gremlin":https://github.com/tinkerpop/gremlin/wiki/JVM-Language-Implementations.
+Titan supports the standard "Gremlin":http://gremlin.tinkerpop.com graph query language for complex graph traversal and mutation operations. Gremlin is a "functional language":http://en.wikipedia.org/wiki/Functional_programming whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name." 
 
-h2. Traversing using Functions
+This section of documentation will only briefly overview Gremlin. For more complete documentation on Gremlin, please see the "online documentation":http://gremlin.tinkerpop.com. Moreover, the examples are with respects to Gremlin-Groovy and note that there are other "JVM language implementations":https://github.com/tinkerpop/gremlin/wiki/JVM-Language-Implementations of Gremlin.
 
-The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies").
+h2. Introductory Traversals
+
+When working with Gremlin, it is important to realize the query as a chain of operations/functions that are read from left to right. A simple grandfather query is provided below over the _Graph of the Gods_ "dataset":https://github.com/thinkaurelius/titan/raw/master/doc/images/graph-of-the-gods.png.
 
 ```text
-hercules.out('battled').in('battled').except([hercules]).name
+gremlin> g.V('name','hercules').out('father').out('father').name
+==>saturn
 ```
 
-The example above has 4 chained functions: @out@, @in@, @except@, and @property@ (i.e. @name@ is shorthand for @property('name')@). The function signatures of each are itemized below, where @V@ is vertex and @U@ is any object. 
+The query above can be read:
+  # @g@: for the current graph.
+  # @V('name','hercules')@: get all vertices with name property "hercules" (there is only one).
+  # @out('father')@: traverse outgoing father edge's from Hercules.
+  # @out('father')@: traverse outgoing father edge's from Hercules' father's vertex (i.e. Jupiter).
+  # @name@: get the name property of the "hercules" vertex's grandfather.
+
+Each step can be decomposed and its results demonstrated. This style of building up a traversal/query is useful when constructing larger, complex query chains.
+
+```text
+gremlin> g                                                            
+==>titangraph[cassandrathrift:127.0.0.1]
+gremlin> g.V('name','hercules')
+==>v[24]
+gremlin> g.V('name','hercules').out('father')
+==>v[16]
+gremlin> g.V('name','hercules').out('father').out('father')
+==>v[20]
+gremlin> g.V('name','hercules').out('father').out('father').name
+==>saturn
+```
+
+For a sanity check, it is usually good to look at the properties of each return, not the assigned long id.
+
+```text
+gremlin> g.V('name','hercules').name                            
+==>hercules
+gremlin> g.V('name','hercules').out('father').name              
+==>jupiter
+gremlin> g.V('name','hercules').out('father').out('father').name
+==>saturn
+```
+
+Note the related traversal that shows the entire father family tree branch of Hercules. This more complicated traversal is provided in order to demonstrate the flexibility and expressivity of the language. A competent grasp of Gremlin provides the Titan user the ability to fluently navigate the underlying graph structure.
+
+```text
+gremlin> g.V('name','hercules').out('father').loop(1){true}{true}.name
+==>jupiter
+==>saturn
+```
+
+Some more traversal examples are provided below.
+
+```text
+gremlin> hercules = g.V('name','hercules').next() 
+==>v[24]
+gremlin> hercules.out('father','mother').type
+==>god
+==>human
+gremlin> hercules.out('battled').type
+==>monster
+==>monster
+==>monster
+gremlin> hercules.out('battled').map    
+==>{name=nemean, type=monster}
+==>{name=hydra, type=monster}
+==>{name=cerberus, type=monster}
+```
+
+h2. Traversing with Functions
+
+Each _step_ (denoted by a separating @.@) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see "Gremlin Steps":https://github.com/tinkerpop/gremlin/wiki/Gremlin-Steps). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies"). Given that _The Graph of the Gods_ only has one battler (Hercules), another battler (for the sake of example) is added to the graph with Gremlin.
+
+```text
+gremlin> theseus = g.addVertex([name:'theseus',type:'human'])
+==>v[302]
+gremlin> cerberus = g.V('name','cerberus').next()
+==>v[48]
+gremlin> g.addEdge(theseus,cerberus,'battled')
+==>e[151200009:302:36028797018964038][302-battled->48]
+```
+
+```text
+gremlin> hercules.out('battled').in('battled').except([hercules]).name
+==>theseus
+```
+
+The example above has 4 chained functions: @out@, @in@, @except@, and @property@ (i.e. @name@ is shorthand for @property('name')@). The function signatures of each are itemized below, where @V@ is vertex and @U@ is any object, where @V@ is a subset of @U@.
 
   # @out: V -> V@
   # @in: V -> V@
@@ -44,4 +124,4 @@ TitanFactory.open("bin/hbase.local")
 h2. Next Steps
 
 * Read the "Gremlin Manual":http://gremlin.tinkerpop.com to learn more about this expressive query language.
-* Learn about the [[Rexster Graph Server]] that exposes any Titan graph through a RESTful interface.
+* Learn about the [[Titan Server]] that exposes any Titan graph through a Gremlin query interface.

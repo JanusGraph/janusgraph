@@ -24,6 +24,8 @@ conf.setProperty("storage.hostname","127.0.0.1");
 TitanGraph g = TitanFactory.open(conf);
 ```
 
+In the Gremlin shell, you can not define the type of the variables @conf@ and @g@. Therefore, simply leave off the type declaration.
+
 h3. Remote Server Mode
 
 !https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-modes-distributed.png!
@@ -39,11 +41,13 @@ conf.setProperty("storage.hostname","77.77.77.77");
 TitanGraph g = TitanFactory.open(conf);
 ```
 
+In the Gremlin shell, you can not define the type of the variables @conf@ and @g@. Therefore, simply leave off the type declaration.
+
 h3. Remote Server Mode with Rexster
 
 !https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-modes-rexster.png!
 
-Finally, Rexster can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Rexster over REST. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
+Rexster can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Rexster over REST. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
 
 ```text
 http://rexster.titan.machine1/mygraph/vertices/1
@@ -70,6 +74,17 @@ In this case, each Rexster server would be configured to connect to the Cassandr
     </graph>
 ```
 
+h3. Titan Embedded Mode
+
+!https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-modes-embedded.png!
+
+Finally, Cassandra can be embedded in Titan, which means, that Titan and Cassandra run in the same JVM and communicate via in process calls rather than over the network. This removes the (de)serialization and network protocol overhead and can therefore lead to considerable performance improvements. In this deployment mode, Titan internally starts a cassandra daemon and Titan no longer connects to an existing cluster but is its own cluster.
+
+To use Titan in embedded mode, simply configure @embeddedcassandra@ as the storage backend. The configuration options listed below also apply to embedded Cassandra. In creating a Titan cluster, ensure that the individual nodes can discover each other via the Gossip protocol, so setup a Titan-with-Cassandra-embedded cluster much like you would a stand alone Cassandra cluster.
+
+When running a cluster with Titan and Cassandra embedded, it is advisable to expose Titan through the Rexster server so that applications can remotely connect to the Titan graph database and execute queries. To make this setup easy and simple, Titan comes packaged with [[Titan Server]].
+
+
 h2. Cassandra Specific Configuration
 
 In addition to the general "Titan Graph Configuration":Graph-Configuration, there are the following Cassandra specific Titan configuration options:
@@ -78,10 +93,11 @@ In addition to the general "Titan Graph Configuration":Graph-Configuration, ther
 | storage.keyspace | Name of the keyspace in which to store the Titan specific column families | String | titan | No |
 | storage.hostname | IP address or hostname of the Cassandra cluster node that this Titan instance connects to. Use a list of comma-separated hostnames or IP addresses to seed multiple multiple cassandra nodes. | IP address or hostname | - | Yes |
 | storage.port | Port on which to connect to Cassandra cluster node | Integer | 9160 | Yes |
-| storage.thrift-timeout | Default time out in milliseconds after which to fail a connection attempt with a Cassandra node | Integer | 10000 | Yes |
+| storage.connection-timeout | Default time out in milliseconds after which to fail a connection attempt with a Cassandra node | Integer | 10000 | Yes |
+| storage.connection-pool-size | Maximum size of the connection pool for connections to the Cassandra cluster | Integer | 32 | Yes |
 | storage.read-consistency-level | Cassandra consistency level for read operations | - | QUORUM | Yes |
 | storage.write-consistency-level | Cassandra consistency level for write operations | - | QUORUM | Yes |
-| storage.replication-factor | The replication factor to use. The higher the replication factor, the more robust the graph database is to machine failure at the expense of data duplication. *The default value should be overwritten for production system to ensure robustness. A value of 3 is recommended.* | Integer | 1 | No |
+| storage.replication-factor | The replication factor to use. The higher the replication factor, the more robust the graph database is to machine failure at the expense of data duplication. *The default value should be overwritten for production system to ensure robustness. A value of 3 is recommended.* This replication factor can only be set when the keyspace is initially created. _On an existing keyspace, this value is ignored._ | Integer | 1 | No |
 
 For more information on Cassandra consistency levels and acceptable values, please refer to the "Cassandra documentation":http://wiki.apache.org/cassandra/API. In general, higher levels are more consistent and robust but have higher latency.
 
@@ -150,7 +166,7 @@ h4. Example Titan Instance on Amazon Linux AMI
 
 * Launch the "Amazon Linux AMI":http://aws.amazon.com/amazon-linux-ami in the same zone of the Cassandra cluster. Choose your desired EC2 instance type depending on the amount of resources you need. Use the default configuration options and select the same Key Pair and Security Group as for the Cassandra cluster configured in the previous step.
 
-* SSH into the newly created instance via @ssh -i [your-private-key].pem ec2-user@[public-dns-name-of-the-instance]@. You may have to wait a little for the instance to launch.
+* SSH into the newly created instance via @ssh -i [your-private-key].pem ec2-user[public-dns-name-of-the-instance]@. You may have to wait a little for the instance to launch.
 
 * "Download":https://github.com/thinkaurelius/titan/downloads the current Titan distribution with @wget@ and unpack the archive locally to the home directory. Start the gremlin shell to verify that Titan runs successfully. For more information on how to unpack Titan and start the gremlin shell, please refer to the "Getting Started guide":Getting-Started.
 

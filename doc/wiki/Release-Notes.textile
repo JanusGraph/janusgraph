@@ -1,8 +1,48 @@
-Titan: A Highly Scalable, Distributed Graph Database
+Titan: Distributed Graph Database
 "http://thinkaurelius.github.com/titan/":http://thinkaurelius.github.com/titan/
+
+[[https://raw.github.com/thinkaurelius/titan/master/doc/images/titan-globe.png|width=100px]]
 
 h2. Titan 0.y.z
 
+h3. Version 0.2.0 (December 24, 2012)
+
+```xml
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan</artifactId>
+   <version>0.2.0</version>
+</dependency>
+```
+*Tested Compatibility:*
+
+* Cassandra 1.1.3 & 1.1.4
+* HBase 0.94.1
+* BerkeleyDB 5.0.58
+* TinkerPop (Blueprints, Gremlin, Rexster) 2.2.0
+
+* This version is incompatible with the previous version of Titan. Please follow the [[Upgrade Instructions]] to switch to the new version. *
+
+*Features:*
+
+* Embedded Cassandra: Titan can be embedded with Cassandra, that means, Titan starts a Cassandra node in the same JVM and uses efficient in process communication to store and retrieve data.
+* [[Titan Server]]: Titan comes with a light-weight Gremlin query server.
+* Streamlined configuration settings. Please review the new configuration options if you are upgrading from an older version of Titan.
+* Many small performance improvements throughout the code. Please review the issue tracker and the commit log for more details.
+
+*Bugfixes:*
+
+* Fixed edge sorting bug which caused edges to be returned in a random order even when a vertex centric index was defined.
+* Fixed id allocation bug that causes Titan to read the entire row during id allocation which can lead to id allocation failures.
+* Completely refactored diskstorage package for better code quality and performance.
+* Fixed edge caching bug for composite primary keys on edges.
+* Fixed a number of smaller bugs. Please review the issue tracker and the commit log for more details.
+
+*Special Thanks to:*
+
+* Zack Maril ("zmaril":https://github.com/zmaril)
+* Nicolas LaCasse ("nlacasse":https://github.com/nlacasse)
+* Vadas Gintautas ("vadasg":https://github.com/vadasg)
 
 h3. Version 0.1.0 (September 7, 2012)
 

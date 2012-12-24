@@ -84,7 +84,7 @@ TitanKey time = g.makeType().name("time").dataType(Integer.class).functional().m
 TitanLabel battled = g.makeType().name("battled").primaryKey(time).makeEdgeLabel();
 ```
 
-In this example, the functional property key time is defined with data type @Integer@. This property key is then used as the primary key for the _battled_ edge label. Hence, _battled_ edges will be sorted by time and battles that happened in a certain time range can be queried for more efficiently. Moreover, _battled_ edges are stored more compactly on disk.
+In this example, the functional property key time is defined with data type @Integer@. This property key is then used as the primary key for the _battled_ edge label. Hence, _battled_ edges will be sorted by time in ascending order and battles that happened in a certain time range can be queried for more efficiently. Moreover, _battled_ edges are stored more compactly on disk.
 
 Note, that @TitanTypes@ used in the primary key must be either functional property keys or functional, simple, unidirected edge lables.
 

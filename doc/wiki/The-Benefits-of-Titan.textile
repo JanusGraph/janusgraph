@@ -4,15 +4,15 @@ h2. General Titan Benefits
 
 [[https://github.com/thinkaurelius/titan/raw/master/doc/images/titan-kneeling.png|width=150px|align=right|float]] 
 
-* Support for an "infinite" sized graph via the addition of machines to the cluster.
-* Support for an "unlimited" number of concurrent transactions via the addition of machines to the cluster.
-* Native support for the popular property graph data model exposed by Blueprints.
-* Native support for the graph traversal language Gremlin.
-* Easy integration with the Rexster graph server for programming language agnostic connectivity.
+* Support for very large graphs. Titan graphs scale with the number of machines in the cluster.
+* Support for very many concurrent transactions. Titan's transactional capacity scale with the number of machines in the cluster. 
+* Native support for the popular property graph data model exposed by "Blueprints":http://blueprints.tinkerpop.com.
+* Native support for the graph traversal language "Gremlin":http://gremlin.tinkerpop.com.
+* Easy integration with the "Rexster":http://rexster.tinkerpop.com graph server for programming language agnostic connectivity.
 * Numerous graph-level configurations provide knobs for tuning performance.
-* Vertex-centric indices provide vertex-level querying to alleviate issues with the infamous super node problem.
+* Vertex-centric indices provide vertex-level querying to alleviate issues with the infamous "super node problem":http://thinkaurelius.com/2012/10/25/a-solution-to-the-supernode-problem/.
 * Provides an optimized disk representation to allow for efficient use of storage and speed of access.
-* Open source under the liberal Apache 2 license.
+* Open source under the liberal "Apache 2 license":http://en.wikipedia.org/wiki/Apache_License.
 
 <br/><br/><br/>
 
@@ -20,23 +20,24 @@ h2. Benefits of Titan with Cassandra
 
 !http://cassandra.apache.org/media/img/cassandra_logo.png!:http://cassandra.apache.org/
 
-* Continuously available with no single point of failure.
+* "Continuously available":http://en.wikipedia.org/wiki/Continuous_availability with no single point of failure.
 * No read/write bottlenecks to the graph as there is no master/slave architecture.
-* Elastic scalability allows for the introduction and removal of machines.
+* "Elastic scalability":http://en.wikipedia.org/wiki/Elastic_computing allows for the introduction and removal of machines.
 * Caching layer ensures that continuously accessed data is available in memory.
 * Increase the size of the cache by adding more machines to the cluster.
+* Integration with "Hadoop":http://hadoop.apache.org/.
 * Open source under the liberal Apache 2 license.
 
 h2. Benefits of Titan with HBase
 
 !http://hbase.apache.org/images/hbase_logo.png!:http://hbase.apache.org/
 
-* Tight integration with the Hadoop ecosystem.
-* Native support for strong consistency.
+* Tight integration with the "Hadoop":http://hadoop.apache.org/ ecosystem.
+* Native support for "strong consistency":http://en.wikipedia.org/wiki/Strong_consistency.
 * Linear scalability with the addition of more machines.
-* Strictly consistent reads and writes.
-* Convenient base classes for backing Hadoop MapReduce jobs with HBase tables.
-* Support for exporting metrics via JMX.
+* "Strictly consistent":http://en.wikipedia.org/wiki/Strict_consistency reads and writes.
+* Convenient base classes for backing Hadoop "MapReduce":http://en.wikipedia.org/wiki/MapReduce jobs with HBase tables.
+* Support for exporting metrics via "JMX":http://en.wikipedia.org/wiki/Java_Management_Extensions.
 * Open source under the liberal Apache 2 license.
 
 h2. Titan and the CAP Theorem

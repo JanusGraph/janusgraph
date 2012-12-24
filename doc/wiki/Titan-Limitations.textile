@@ -4,9 +4,13 @@
 
 h2. Design Limitations
 
+h3. Size Limitation
+
+Titan can store up to a quintillion edges (2^60) and half as many vertices. That limitation is imposed by Titan's id scheme.
+
 h3. Global Graph Operations
 
-Titan only supports iteration over all vertices and edges for local storage backends. For distributed storage backends, such iteration will likely cause @OutOfMemoryException@ and is therefore disabled. Use "Faunus":http://thinkaurelius.github.com/faunus/ (coming soon) to implement global graph operations on distributed Titan graphs.
+Titan only supports iteration over all vertices and edges for local storage backends. For distributed storage backends, such iteration will likely cause @OutOfMemoryException@ and is therefore disabled. Use "Faunus":http://thinkaurelius.github.com/faunus/ to implement global graph operations on distributed Titan graphs.
 
 h3. Transactional Scope
 
@@ -31,3 +35,9 @@ h3. Batch Loading Speed
 Titan provides a batch loading mode that can be enabled through the "configuration":Graph-Configuration. However, this batch mode only facilitates faster loading into the storage backend, it does not use storage backend specific batch loading techniques that prepare the data in memory for disk storage. As such, batch loading in Titan is currently slower than batch loading modes provided by single machine databases.
 
 Another limitation related to batch loading is the failure to load millions of edges into a single vertex at once or in a short time of period. Such _supernode loading_ can fail for some storage backends. This limitation also applies to dense index entries. For more information, please refer to "the ticket":https://github.com/thinkaurelius/titan/issues/11
+
+h2. Beware
+
+h3. Custom Class Datatype
+
+Titan supports arbitrary objects as attribute values on properties. However, when using a custom class as data type it is important to either configure a custom serializer or ensure that the default serializer can successfully handle these objects. Please read [[Datatype and Attribute Serializer Configuration]] for more information.

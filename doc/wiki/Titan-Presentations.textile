@@ -1,4 +1,3 @@
-
 * "Titan: The Rise of Big Graph Data":http://www.slideshare.net/slidarko/titan-the-rise-of-big-graph-data (*presentation*): An Introduction to graphs, graph algorithms, and the Titan graph database. Also includes an overview of the graph database landscape. _(June 2012, hosted by "Jive Software":http://www.jivesoftware.com/)_
 
 * "Titan: A Highly Scalable, Distributed Graph Database":http://thinkaurelius.github.com/titan/doc/titan-stress-poster.pdf (*poster*): A presentation of an initial stress test evaluation of Titan using real Twitter network data. _(July 2012, presented at "GraphLab 2012 conference":http://graphlab.org/workshop2012/agenda/)_
@@ -6,3 +5,5 @@
 * "Titan Provides Real-Time Big Graph Data":http://thinkaurelius.com/2012/08/06/titan-provides-real-time-big-graph-data/ (*article*): A thorough evaluation of Titan based on a social network benchmark using real Twitter network data. _(August 2012)_
 
 * "Titan: Big Graph Data with Cassandra":http://www.youtube.com/watch?v=ZkAYA4Kd8JE&feature=youtu.be (*video*, "slides":http://www.slideshare.net/knowfrominfo/titan-big-graph-data-with-cassandra): Presentation of graph database use cases and Titan. Discusses some of Titan's unique features and how Titan uses Cassandra to scale. _(August 2012, presented at "Cassandra 2012 Summit":http://www.datastax.com/events/cassandrasummit2012)_
+
+* "Big Graph Data: Understanding a Complex World":http://www.slideshare.net/knowfrominfo/big-graph-data (*presentation*): Solving 21st century problems with graphs and an overview of Titan and Faunus. _(November 2012, presented at "Bay Area Graph Geeks":http://www.meetup.com/Bay-Area-Graph-Geeks/events/85936692/)_
