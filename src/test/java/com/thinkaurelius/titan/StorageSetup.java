@@ -46,6 +46,7 @@ public class StorageSetup {
     public static Configuration getLocalStorageConfiguration() {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY,getHomeDir());
+        config.addProperty(GraphDatabaseConfiguration.EXISTING_DIRECTORY_KEY, "true");
         return config;
     }
     
@@ -75,6 +76,7 @@ public class StorageSetup {
 
     public static Configuration getLocalGraphConfiguration() {
         BaseConfiguration config = new BaseConfiguration();
+        config.setProperty(GraphDatabaseConfiguration.keyInNamespace(GraphDatabaseConfiguration.STORAGE_NAMESPACE, GraphDatabaseConfiguration.EXISTING_DIRECTORY_KEY), "true");
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY,getHomeDir());
         return config;
     }

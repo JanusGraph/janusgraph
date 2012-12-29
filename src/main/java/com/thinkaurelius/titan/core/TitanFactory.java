@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.core;
 
+import java.io.File;
+
 import com.thinkaurelius.titan.graphdb.blueprints.TitanInMemoryBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.transaction.InMemoryTitanGraph;
-import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import org.apache.commons.configuration.Configuration;
 
 /**
@@ -15,8 +15,6 @@ import org.apache.commons.configuration.Configuration;
  */
 
 public class TitanFactory {
-
-
     /**
      * Opens and returns an in-memory Titan graph database.
      *
@@ -43,8 +41,7 @@ public class TitanFactory {
      *
      */
     public static TitanGraph open(String directoryOrConfigFile) {
-        GraphDatabaseConfiguration config = new GraphDatabaseConfiguration(directoryOrConfigFile);
-        return new StandardTitanGraph(config);
+        return open(GraphDatabaseConfiguration.getConfiguration(new File(directoryOrConfigFile)));
     }
 
     /**
@@ -56,8 +53,7 @@ public class TitanFactory {
      *
      */
     public static TitanGraph open(Configuration configuration) {
-        GraphDatabaseConfiguration config = new GraphDatabaseConfiguration(configuration);
-        return new StandardTitanGraph(config);
+        return new StandardTitanGraph(new GraphDatabaseConfiguration(configuration));
     }
     
 }

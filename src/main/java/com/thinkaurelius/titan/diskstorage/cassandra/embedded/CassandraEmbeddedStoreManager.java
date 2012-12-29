@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.Constants;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -27,12 +28,8 @@ import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
@@ -277,8 +274,11 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 		
 		// Keyspace not found; create it
 		String strategyName = "org.apache.cassandra.locator.SimpleStrategy";
-		Map<String, String> options = new HashMap<String, String>();
-		options.put("replication_factor", String.valueOf(replicationFactor));
+		Map<String, String> options = new HashMap<String, String>() {{
+		    put("replication_factor", String.valueOf(replicationFactor));
+		    put(VERSION_PROPERTY_KEY, Constants.VERSION);
+		}};
+
 		KSMetaData ksm;
 		try {
 			ksm = KSMetaData.newKeyspace(keyspaceName, strategyName, options);
@@ -318,4 +318,25 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 		}
 	}
 
+    @Override
+    public String getLastSeenTitanVersion() {
+        KSMetaData ksMetaData = Schema.instance.getKSMetaData(keySpaceName);
+        Preconditions.checkNotNull(ksMetaData);
+        return ksMetaData.strategyOptions.get(VERSION_PROPERTY_KEY);
+    }
+
+    @Override
+    public void setTitanVersionToLatest() throws StorageException {
+        KSMetaData current = Schema.instance.getKSMetaData(keySpaceName);
+        Preconditions.checkNotNull(current);
+
+        KSMetaData ksUpdate = KSMetaData.cloneWith(current, Collections.<CFMetaData>emptyList());
+        ksUpdate.strategyOptions.put(VERSION_PROPERTY_KEY, Constants.VERSION);
+
+        try {
+            MigrationManager.announceKeyspaceUpdate(ksUpdate);
+        } catch (ConfigurationException e) {
+            throw new PermanentStorageException("Failed to update Titan Version", e);
+        }
+    }
 }

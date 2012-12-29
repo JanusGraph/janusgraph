@@ -48,6 +48,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      */
     public static final String KEYSPACE_DEFAULT = "titan";
     public static final String KEYSPACE_KEY = "keyspace";
+    public static final String VERSION_PROPERTY_KEY = "last-titan-version";
 
     /**
      * Default port at which to attempt Cassandra Thrift connection.
@@ -72,8 +73,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     public AbstractCassandraStoreManager(Configuration storageConfig) {
         super(storageConfig, PORT_DEFAULT);
 
-
-        
         this.keySpaceName = storageConfig.getString(KEYSPACE_KEY, KEYSPACE_DEFAULT);
 
         this.replicationFactor = storageConfig.getInt(REPLICATION_FACTOR_KEY, REPLICATION_FACTOR_DEFAULT);

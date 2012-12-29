@@ -11,7 +11,7 @@ public interface StoreManager {
     /**
      * Returns a transaction handle for a new transaction.
      *
-     * @return New Transaction Hanlde
+     * @return New Transaction Handle
      */
     public StoreTransaction beginTransaction(ConsistencyLevel consistencyLevel) throws StorageException;
 
@@ -37,4 +37,18 @@ public interface StoreManager {
      */
     public StoreFeatures getFeatures();
 
+    /**
+     * Note: client is responsible of calling setTitanVersionToLatest() method when
+     * upgrade process is complete.
+     *
+     * @return The version of Titan service which was used to access this storage last time,
+     *         returns "null" if database was created by using Titan < 0.3.0.
+     *
+     */
+    public String getLastSeenTitanVersion() throws StorageException;
+
+    /**
+     * Reset Titan Version to version provided by Constants.VERSION (possibly persistently).
+     */
+    public void setTitanVersionToLatest() throws StorageException;
 }

@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool;
 
+import java.io.Closeable;
+
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.Cassandra.Client;
 import org.apache.thrift.protocol.TProtocol;
@@ -11,13 +13,12 @@ import org.apache.thrift.transport.TTransport;
  * 
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
-public class CTConnection {
+public class CTConnection implements Closeable {
 	private final TTransport transport;
 	private final TProtocol proto;
 	private final Cassandra.Client client;
 	
-	public CTConnection(TTransport transport,
-			TProtocol proto, Client client) {
+	public CTConnection(TTransport transport, TProtocol proto, Client client) {
 		super();
 		this.transport = transport;
 		this.proto = proto;
@@ -35,6 +36,12 @@ public class CTConnection {
 	public Cassandra.Client getClient() {
 		return client;
 	}
+
+    @Override
+    public void close() {
+        if (transport != null && transport.isOpen())
+            transport.close();
+    }
 
 	@Override
 	public String toString() {

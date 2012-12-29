@@ -3,17 +3,20 @@ package com.thinkaurelius.titan.diskstorage.berkeleyje;
 
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.*;
+import com.thinkaurelius.titan.core.Constants;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.Configuration;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,6 +26,7 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
 
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJEStoreManager.class);
 
+    private static final String VERSION_FILE_NAME = "last-titan-version.dje";
 
     public static final String CACHE_KEY = "cache-percentage";
     public static final int CACHE_DEFAULT = 65;
@@ -54,6 +58,11 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
         if (!transactional) log.warn("Transactions are disabled. Ensure that there is at most one Titan instance interacting with this BerkeleyDB instance, otherwise your database may corrupt.");
         int cachePercentage = configuration.getInt(CACHE_KEY,CACHE_DEFAULT);
 
+        /* If directory was created by this run it's safe to create version file, flag set by GDC.getConfiguration(File) */
+        if (!configuration.getBoolean(GraphDatabaseConfiguration.EXISTING_DIRECTORY_KEY)) {
+            createVersionFile(getVersionFile(directory));
+        }
+
         initialize(cachePercentage);
 
         features = new StoreFeatures();
@@ -73,7 +82,6 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
 				envConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "false");
 				envConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CLEANER, "false");
 			}
-
 			
 			//Open the environment
 			environment = new Environment(directory, envConfig);
@@ -163,5 +171,51 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
         IOUtils.deleteFromDirectory(directory);
     }
 
+    @Override
+    public String getLastSeenTitanVersion() throws StorageException {
+        File versionFile = getVersionFile(directory);
 
+        if (!versionFile.exists())
+            return null; // most certainly created by Titan < 0.3.0
+
+        DataInputStream version = null;
+
+        try {
+            version = new DataInputStream(new FileInputStream(versionFile));
+            return version.readUTF();
+        } catch (IOException e) {
+            throw new PermanentStorageException("Corrupted version file: " + versionFile.getAbsolutePath(), e);
+        } finally {
+            IOUtils.closeQuietly(version);
+        }
+    }
+
+    @Override
+    public void setTitanVersionToLatest() throws StorageException {
+        File versionFile = getVersionFile(directory);
+
+        if (versionFile.exists())
+            versionFile.delete(); // just delete the old one, saves us code
+
+        createVersionFile(versionFile);
+    }
+
+    private static void createVersionFile(File versionFile) throws StorageException {
+        Preconditions.checkArgument(!versionFile.exists());
+
+        DataOutputStream s = null;
+
+        try {
+            s = new DataOutputStream(new FileOutputStream(versionFile));
+            s.writeUTF(Constants.VERSION);
+        } catch (IOException e) {
+            throw new PermanentStorageException(e);
+        } finally {
+            IOUtils.closeQuietly(s);
+        }
+    }
+
+    private static File getVersionFile(File dbDirectory) {
+        return new File(dbDirectory.getAbsolutePath() + File.separator + VERSION_FILE_NAME);
+    }
 }

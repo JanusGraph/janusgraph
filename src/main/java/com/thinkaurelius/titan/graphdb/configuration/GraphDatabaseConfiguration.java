@@ -201,6 +201,8 @@ public class GraphDatabaseConfiguration {
     public static final int CONNECTION_POOL_SIZE_DEFAULT = 32;
     public static final String CONNECTION_POOL_SIZE_KEY = "connection-pool-size";
 
+    /* Check if backend directory was present, @see getConfiguration(File) method */
+    public static final String EXISTING_DIRECTORY_KEY = "is-exiting-backend-directory";
 
     // ################ IDS ###########################
     // ################################################
@@ -249,42 +251,44 @@ public class GraphDatabaseConfiguration {
     private boolean flushIDs;
     private boolean batchLoading;
     private DefaultTypeMaker defaultTypeMaker;
-    
-    
+
+    public GraphDatabaseConfiguration(String dirOrFile) {
+        this(new File(dirOrFile));
+    }
+
+	public GraphDatabaseConfiguration(File dirOrFile) {
+        this(getConfiguration(dirOrFile));
+	}
+
     public GraphDatabaseConfiguration(Configuration config) {
         Preconditions.checkNotNull(config);
         this.configuration = config;
         preLoadConfiguration();
     }
-
-	public GraphDatabaseConfiguration(File dirOrFile) {
-        this.configuration = getConfiguration(dirOrFile);
-        preLoadConfiguration();
-	}
-
-	public GraphDatabaseConfiguration(String dirOrFile) {
-		this(new File(dirOrFile));
-	}
     
     public static final Configuration getConfiguration(File dirOrFile) {
-        Preconditions.checkNotNull(dirOrFile,"Need to specify a configuration file or storage directory");
-        Configuration configuration = null;
+        Preconditions.checkNotNull(dirOrFile, "Need to specify a configuration file or storage directory");
+
+        Configuration configuration;
+
         try {
-            if (dirOrFile.isFile()) {
-                configuration = new PropertiesConfiguration(dirOrFile);
-            } else {
-                if (!dirOrFile.isDirectory()) {
-                    if (!dirOrFile.mkdirs()) {
-                        throw new IllegalArgumentException("Could not create directory: " + dirOrFile);
-                    }
-                }
-                Preconditions.checkArgument(dirOrFile.isDirectory());
-                configuration = new BaseConfiguration();
-                configuration.setProperty(keyInNamespace(STORAGE_NAMESPACE,STORAGE_DIRECTORY_KEY),dirOrFile.getAbsolutePath());
-            }
+            if (dirOrFile.isFile())
+                return new PropertiesConfiguration(dirOrFile);
+
+            boolean exists = dirOrFile.exists();
+
+            if (!exists && !dirOrFile.mkdirs())
+                throw new IllegalArgumentException("Could not create directory: " + dirOrFile);
+
+            Preconditions.checkArgument(dirOrFile.isDirectory());
+
+            configuration = new BaseConfiguration();
+            configuration.setProperty(keyInNamespace(STORAGE_NAMESPACE, STORAGE_DIRECTORY_KEY), dirOrFile.getAbsolutePath());
+            configuration.setProperty(keyInNamespace(STORAGE_NAMESPACE, EXISTING_DIRECTORY_KEY), exists);
         } catch (ConfigurationException e) {
-            throw new IllegalArgumentException("Could not load configuration at: " + dirOrFile,e);
+            throw new IllegalArgumentException("Could not load configuration at: " + dirOrFile, e);
         }
+
         return configuration;
     }
 
