@@ -27,6 +27,6 @@ public class TitanCassandraRecordWriter extends RecordWriter<NullWritable, Faunu
 
     public void write(final NullWritable key, final FaunusVertex value) throws InterruptedException, IOException {
         //this.writer.write(key, value);
-        //TODO: Must be a PUT or DELETE
+        //TODO: Must be a Pair<ByteBuffer,Mutation>
     }
 }
