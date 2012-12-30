@@ -39,21 +39,6 @@ public class FaunusPipeline {
 
     protected final List<String> stringRepresentation = new ArrayList<String>();
 
-    private Query.Compare opposite(final Query.Compare compare) {
-        if (compare.equals(Query.Compare.EQUAL))
-            return Query.Compare.NOT_EQUAL;
-        else if (compare.equals(Query.Compare.NOT_EQUAL))
-            return Query.Compare.EQUAL;
-        else if (compare.equals(Query.Compare.GREATER_THAN))
-            return Query.Compare.LESS_THAN_EQUAL;
-        else if (compare.equals(Query.Compare.GREATER_THAN_EQUAL))
-            return Query.Compare.LESS_THAN;
-        else if (compare.equals(Query.Compare.LESS_THAN))
-            return Query.Compare.GREATER_THAN_EQUAL;
-        else
-            return Query.Compare.GREATER_THAN;
-    }
-
     private Query.Compare convert(final com.tinkerpop.gremlin.Tokens.T compare) {
         if (compare.equals(com.tinkerpop.gremlin.Tokens.T.eq))
             return Query.Compare.EQUAL;
@@ -669,7 +654,7 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline hasNot(final String key, final Query.Compare compare, final Object... values) {
-        return this.has(key, this.opposite(compare), values);
+        return this.has(key, compare.opposite(), values);
     }
 
     /**

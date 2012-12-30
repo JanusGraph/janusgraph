@@ -1,5 +1,5 @@
 ==============================================================
- Faunus: Graph Computing with Hadoop
+ Faunus: Graph Analytics Engine
  Copyright 2012 and onwards Aurelius
 ==============================================================
 
