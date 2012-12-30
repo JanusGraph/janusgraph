@@ -91,4 +91,8 @@ public class FaunusVertexRelationLoader implements VertexRelationLoader {
         else return vertex;
     }
 
+    public void finalizeRelation() {
+        // TODO: Matthias: What is this for?
+    }
+
 }

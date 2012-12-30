@@ -3,7 +3,7 @@ package com.thinkaurelius.faunus.formats.titan.cassandra;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.titan.FaunusVertexRelationLoader;
-import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;

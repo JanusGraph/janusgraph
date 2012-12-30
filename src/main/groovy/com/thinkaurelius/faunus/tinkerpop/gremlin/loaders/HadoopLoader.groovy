@@ -4,11 +4,7 @@ import com.thinkaurelius.faunus.Tokens
 import com.thinkaurelius.faunus.hdfs.HDFSTools
 import com.thinkaurelius.faunus.hdfs.TextFileLineIterator
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.FSDataInputStream
-import org.apache.hadoop.fs.FSDataOutputStream
-import org.apache.hadoop.fs.FileStatus
-import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.*
 import org.apache.hadoop.io.IOUtils
 
 /**
@@ -83,7 +79,7 @@ class HadoopLoader {
 
         FileSystem.metaClass.head = {
             final String path ->
-            return ((FileSystem) delegate).head(path, Long.MAX_VALUE);
+                return ((FileSystem) delegate).head(path, Long.MAX_VALUE);
         }
 
         FileSystem.metaClass.unzip = { final String from, final String to, final boolean deleteZip ->

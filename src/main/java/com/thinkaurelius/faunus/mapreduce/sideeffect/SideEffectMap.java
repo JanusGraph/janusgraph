@@ -50,7 +50,7 @@ public class SideEffectMap {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     //for (int i = 0; i < value.pathCount(); i++) {
-                        this.closure.call(value);
+                    this.closure.call(value);
                     //}
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1);
                 }
@@ -61,7 +61,7 @@ public class SideEffectMap {
                     if (edge.hasPaths()) {
                         edgesProcessed++;
                         //for (int i = 0; i < edge.pathCount(); i++) {
-                            this.closure.call(edge);
+                        this.closure.call(edge);
                         //}
                     }
                 }

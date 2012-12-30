@@ -2,7 +2,7 @@ package com.thinkaurelius.faunus.formats.titan.cassandra;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.diskstorage.Backend;
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.cassandra.hadoop.ConfigHelper;
@@ -12,11 +12,7 @@ import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -48,7 +44,7 @@ public class TitanCassandraInputFormat extends InputFormat implements Configurab
 
     @Override
     public void setConf(final Configuration config) {
-        ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME);
+        ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), Backend.EDGESTORE_NAME);
         final SlicePredicate predicate = new SlicePredicate();
         final SliceRange sliceRange = new SliceRange();
         sliceRange.setStart(new byte[0]);

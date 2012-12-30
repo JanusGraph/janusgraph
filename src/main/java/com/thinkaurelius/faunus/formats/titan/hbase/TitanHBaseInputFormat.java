@@ -2,8 +2,8 @@ package com.thinkaurelius.faunus.formats.titan.hbase;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
-import com.thinkaurelius.titan.diskstorage.StorageManager;
-import com.thinkaurelius.titan.diskstorage.hbase.HBaseStorageManager;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configurable;
@@ -12,11 +12,7 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,9 +22,9 @@ import java.util.List;
  */
 public class TitanHBaseInputFormat extends InputFormat implements Configurable {
 
-    private static final String HOSTNAME_KEY = HBaseStorageManager.HBASE_CONFIGURATION_MAP.get(StorageManager.HOSTNAME_KEY);
-    private static final String PORT_KEY = HBaseStorageManager.HBASE_CONFIGURATION_MAP.get(StorageManager.PORT_KEY);
-    static final byte[] EDGE_STORE_FAMILY = Bytes.toBytes(GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME);
+    private static final String HOSTNAME_KEY = HBaseStoreManager.HBASE_CONFIGURATION_MAP.get(GraphDatabaseConfiguration.HOSTNAME_KEY);
+    private static final String PORT_KEY = HBaseStoreManager.HBASE_CONFIGURATION_MAP.get(GraphDatabaseConfiguration.PORT_KEY);
+    static final byte[] EDGE_STORE_FAMILY = Bytes.toBytes(Backend.EDGESTORE_NAME);
 
     private final TableInputFormat tableInputFormat;
     private FaunusTitanHBaseGraph graph;
@@ -52,7 +48,7 @@ public class TitanHBaseInputFormat extends InputFormat implements Configurable {
     @Override
     public void setConf(final Configuration config) {
 
-        config.set(TableInputFormat.SCAN_COLUMN_FAMILY, GraphDatabaseConfiguration.STORAGE_EDGESTORE_NAME);
+        config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
         this.tableInputFormat.setConf(config);
 
         final BaseConfiguration titanconfig = new BaseConfiguration();

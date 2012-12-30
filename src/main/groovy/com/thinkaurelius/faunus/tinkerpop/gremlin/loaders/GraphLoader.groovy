@@ -14,7 +14,7 @@ class GraphLoader {
 
     public static void load() {
 
-        FaunusGraph.metaClass.propertyMissing = {final String name ->
+        FaunusGraph.metaClass.propertyMissing = { final String name ->
             if (name.equals(V)) {
                 return new FaunusPipeline((FaunusGraph) delegate).V();
             } else if (name.equals(E)) {
@@ -26,7 +26,7 @@ class GraphLoader {
             }
         }
 
-        FaunusGraph.metaClass.methodMissing = {final String name, final def args ->
+        FaunusGraph.metaClass.methodMissing = { final String name, final def args ->
             if (FaunusGremlin.isStep(name)) {
                 return new FaunusPipeline((FaunusGraph) delegate)."$name"(* args);
             } else {
@@ -34,7 +34,7 @@ class GraphLoader {
             }
         }
 
-        FaunusGraph.metaClass.v = {final long ... ids ->
+        FaunusGraph.metaClass.v = { final long ... ids ->
             return new FaunusPipeline((FaunusGraph) delegate).v(ids);
         }
 

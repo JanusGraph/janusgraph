@@ -5,11 +5,7 @@ import com.thinkaurelius.faunus.util.MicroVertex;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.WritableUtils;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;

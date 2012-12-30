@@ -1,23 +1,11 @@
 package com.thinkaurelius.faunus.formats.rexster;
 
-import com.thinkaurelius.faunus.formats.rexster.util.DefaultElementIdHandler;
-import com.thinkaurelius.faunus.formats.rexster.util.ElementIdHandler;
-import com.thinkaurelius.faunus.formats.rexster.util.OrientElementIdHandler;
-import com.thinkaurelius.faunus.formats.rexster.util.TitanBerkleyElementIdHandler;
-import com.thinkaurelius.faunus.formats.rexster.util.VertexToFaunusBinary;
+import com.thinkaurelius.faunus.formats.rexster.util.*;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.rexster.RexsterApplicationGraph;
 import com.tinkerpop.rexster.RexsterResourceContext;
-import com.tinkerpop.rexster.extension.AbstractRexsterExtension;
-import com.tinkerpop.rexster.extension.ExtensionConfiguration;
-import com.tinkerpop.rexster.extension.ExtensionDefinition;
-import com.tinkerpop.rexster.extension.ExtensionDescriptor;
-import com.tinkerpop.rexster.extension.ExtensionNaming;
-import com.tinkerpop.rexster.extension.ExtensionPoint;
-import com.tinkerpop.rexster.extension.ExtensionResponse;
-import com.tinkerpop.rexster.extension.HttpMethod;
-import com.tinkerpop.rexster.extension.RexsterContext;
+import com.tinkerpop.rexster.extension.*;
 import com.tinkerpop.rexster.util.RequestObjectHelper;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;

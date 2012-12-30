@@ -1,11 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.util;
 
-import org.apache.hadoop.io.DoubleWritable;
-import org.apache.hadoop.io.FloatWritable;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.*;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)

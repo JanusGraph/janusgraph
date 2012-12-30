@@ -14,9 +14,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 
-import static com.tinkerpop.blueprints.Direction.BOTH;
-import static com.tinkerpop.blueprints.Direction.IN;
-import static com.tinkerpop.blueprints.Direction.OUT;
+import static com.tinkerpop.blueprints.Direction.*;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)

@@ -9,7 +9,7 @@ import com.thinkaurelius.faunus.tinkerpop.gremlin.FaunusGremlin
 class PipeLoader {
 
     public static void load() {
-        FaunusPipeline.metaClass.propertyMissing = {final String name ->
+        FaunusPipeline.metaClass.propertyMissing = { final String name ->
             if (FaunusGremlin.isStep(name)) {
                 return delegate."$name"();
             } else {

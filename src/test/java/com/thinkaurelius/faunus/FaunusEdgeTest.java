@@ -3,11 +3,7 @@ package com.thinkaurelius.faunus;
 import com.tinkerpop.blueprints.Direction;
 import junit.framework.TestCase;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
