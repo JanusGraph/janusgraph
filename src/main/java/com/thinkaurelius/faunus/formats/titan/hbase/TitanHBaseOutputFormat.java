@@ -55,7 +55,7 @@ public class TitanHBaseOutputFormat extends OutputFormat implements Configurable
 
         final BaseConfiguration titanconfig = new BaseConfiguration();
         //General Titan configuration for read-only
-        //titanconfig.setProperty("storage.read-only", "true");
+        //titanconfig.setProperty("storage.read-only", "true"); // TODO: Should we make this simply false?
         titanconfig.setProperty("autotype", "none");
         // HBase specific configuration
         titanconfig.setProperty("storage.backend", "hbase");
