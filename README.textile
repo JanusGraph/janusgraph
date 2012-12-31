@@ -5,10 +5,10 @@ Faunus is a "Hadoop":http://hadoop.apache.org/ based distributed computing frame
 h2. Features
 
 * Support for various graph-based data sources/sinks
-  ** "Titan 0.1.0":http://thinkaurelius.github.com/titan/ distributed graph database
+  ** "Titan":http://thinkaurelius.github.com/titan/ distributed graph database
   *** "Apache Cassandra":http://cassandra.apache.org/
   *** "Apache HBase":http://hbase.apache.org/
-  ** "Rexster 2.1.0":http://rexster.tinkerpop.com fronted graph databases
+  ** "Rexster":http://rexster.tinkerpop.com fronted graph databases
   ** "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library text format stored in HDFS.
   **  EdgeList multi-relational text format stored in HDFS.
   ** Hadoop binary "sequence files":http://wiki.apache.org/hadoop/SequenceFile stored in HDFS.
