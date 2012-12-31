@@ -75,19 +75,30 @@ public class GraphSONUtilityTest extends TestCase {
         marko.setProperty("name", "marko");
         FaunusVertex stephen = new FaunusVertex(2l);
         stephen.setProperty("name", "stephen");
-        marko.addEdge(OUT, new FaunusEdge(marko.getIdAsLong(), stephen.getIdAsLong(), "knows")).setProperty("weight", 1);
+        FaunusVertex vadas = new FaunusVertex(3l);
+        vadas.setProperty("name", "vadas");
+
+        marko.addEdge(OUT, new FaunusEdge(marko.getIdAsLong(), stephen.getIdAsLong(), "knows")).setProperty("weight", 2);
+        marko.addEdge(IN, new FaunusEdge(vadas.getIdAsLong(), marko.getIdAsLong(), "knows")).setProperty("weight", 1);
 
         JSONObject m = GraphSONUtility.toJSON(marko);
         JSONObject s = GraphSONUtility.toJSON(stephen);
 
         assertEquals(m.getString("name"), "marko");
         assertEquals(m.getLong("_id"), 1l);
+        assertFalse(m.has("_type"));
         assertEquals(m.getJSONArray("_outE").length(), 1);
-        assertEquals(m.getJSONArray("_outE").getJSONObject(0).getLong("weight"), 1);
-        assertNull(m.optJSONArray("_inE"));
+        assertEquals(m.getJSONArray("_outE").getJSONObject(0).getLong("weight"), 2);
+        assertFalse(m.getJSONArray("_outE").getJSONObject(0).has("_type"));
+        assertFalse(m.getJSONArray("_outE").getJSONObject(0).has("_outV"));
+        assertEquals(m.getJSONArray("_inE").length(), 1);
+        assertEquals(m.getJSONArray("_inE").getJSONObject(0).getLong("weight"), 1);
+        assertFalse(m.getJSONArray("_inE").getJSONObject(0).has("_type"));
+        assertFalse(m.getJSONArray("_inE").getJSONObject(0).has("_inV"));
 
         assertEquals(s.getString("name"), "stephen");
         assertEquals(s.getLong("_id"), 2l);
+        assertFalse(m.has("_type"));
         assertNull(s.optJSONArray("_outE"));
         assertNull(s.optJSONArray("_inE"));
 

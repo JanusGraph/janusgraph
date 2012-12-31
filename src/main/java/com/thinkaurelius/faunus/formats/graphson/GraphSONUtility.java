@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.io.graphson.ElementFactory;
 import com.tinkerpop.blueprints.util.io.graphson.ElementPropertyConfig;
@@ -37,6 +38,11 @@ public class GraphSONUtility {
     private static final Set<String> EDGE_IGNORE = new HashSet<String>(Arrays.asList(GraphSONTokens._TYPE, GraphSONTokens._OUT_V, GraphSONTokens._IN_V));
 
     private static final FaunusElementFactory elementFactory = new FaunusElementFactory();
+
+    private static final Map<Set<String>, com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility> graphsonVertexCache
+            = new HashMap<Set<String>, com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility>();
+    private static final Map<Set<String>, com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility> graphsonEdgeCache
+            = new HashMap<Set<String>, com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility>();
 
     private static final com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility graphson
             = new com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility(GraphSONMode.COMPACT, elementFactory,
@@ -92,18 +98,18 @@ public class GraphSONUtility {
 
     public static JSONObject toJSON(final Vertex vertex) throws IOException {
         try {
-            final JSONObject object = com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.jsonFromElement(vertex, vertex.getPropertyKeys(), GraphSONMode.NORMAL);
-            object.remove(GraphSONTokens._TYPE);
+            final JSONObject object = getGraphSONUtility(vertex, false).jsonFromElement(vertex);
+
+            // force the ID to long.  with blueprints, most implementations will send back a long, but
+            // some like TinkerGraph will return a string.  the same is done for edges below
             object.put(GraphSONTokens._ID, Long.valueOf(object.remove(GraphSONTokens._ID).toString()));
 
             List<Edge> edges = (List<Edge>) vertex.getEdges(OUT);
             if (!edges.isEmpty()) {
                 final JSONArray outEdgesArray = new JSONArray();
                 for (final Edge outEdge : edges) {
-                    final JSONObject edgeObject = com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.jsonFromElement(outEdge, outEdge.getPropertyKeys(), GraphSONMode.NORMAL);
+                    final JSONObject edgeObject = getGraphSONUtility(outEdge, true).jsonFromElement(outEdge);
                     edgeObject.put(GraphSONTokens._ID, Long.valueOf(edgeObject.remove(GraphSONTokens._ID).toString()));
-                    edgeObject.remove(GraphSONTokens._TYPE);
-                    edgeObject.remove(GraphSONTokens._OUT_V);
                     edgeObject.put(GraphSONTokens._IN_V, Long.valueOf(edgeObject.remove(GraphSONTokens._IN_V).toString()));
                     outEdgesArray.put(edgeObject);
                 }
@@ -114,10 +120,8 @@ public class GraphSONUtility {
             if (!edges.isEmpty()) {
                 final JSONArray inEdgesArray = new JSONArray();
                 for (final Edge inEdge : edges) {
-                    final JSONObject edgeObject = com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility.jsonFromElement(inEdge, inEdge.getPropertyKeys(), GraphSONMode.NORMAL);
+                    final JSONObject edgeObject = getGraphSONUtility(inEdge, false).jsonFromElement(inEdge);
                     edgeObject.put(GraphSONTokens._ID, Long.valueOf(edgeObject.remove(GraphSONTokens._ID).toString()));
-                    edgeObject.remove(GraphSONTokens._TYPE);
-                    edgeObject.remove(GraphSONTokens._IN_V);
                     edgeObject.put(GraphSONTokens._OUT_V, Long.valueOf(edgeObject.remove(GraphSONTokens._OUT_V).toString()));
                     inEdgesArray.put(edgeObject);
                 }
@@ -127,6 +131,37 @@ public class GraphSONUtility {
             return object;
         } catch (JSONException e) {
             throw new IOException(e);
+        }
+    }
+
+    private static com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility getGraphSONUtility(final Element element, final boolean edgeIn) {
+        // this method and related caching can be replaced at blueprints 2.3.0 which has better key exclusion
+        // support.  at that point the GraphSONUtility can be instantiated statically.  from an object creation
+        // perspective this cached approach is almost as good when property keys are not highly disparate
+        // across the graph.  even without caching the profiler showed that creation of GraphSONUtility is pretty
+        // inexpensive anyway.
+        final Set<String> elementPropertyKeys = new HashSet<String>(element.getPropertyKeys());
+        elementPropertyKeys.add(GraphSONTokens._ID);
+        if (element instanceof Edge) {
+            if (edgeIn) {
+                elementPropertyKeys.add(GraphSONTokens._IN_V);
+            } else {
+                elementPropertyKeys.add(GraphSONTokens._OUT_V);
+            }
+
+            if (!graphsonEdgeCache.containsKey(elementPropertyKeys)) {
+                graphsonEdgeCache.put(elementPropertyKeys, new com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility(
+                        GraphSONMode.COMPACT, elementFactory, ElementPropertyConfig.IncludeProperties(null, elementPropertyKeys)));
+            }
+
+            return graphsonEdgeCache.get(elementPropertyKeys);
+        } else {
+            if (!graphsonVertexCache.containsKey(elementPropertyKeys)) {
+                graphsonVertexCache.put(elementPropertyKeys, new com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility(
+                        GraphSONMode.COMPACT, elementFactory, ElementPropertyConfig.IncludeProperties(elementPropertyKeys, null)));
+            }
+
+            return graphsonVertexCache.get(elementPropertyKeys);
         }
     }
 
