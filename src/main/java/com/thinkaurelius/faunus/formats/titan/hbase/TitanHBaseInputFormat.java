@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanHBaseInputFormat extends InputFormat implements Configurable {
+public class TitanHBaseInputFormat extends InputFormat<NullWritable,FaunusVertex> implements Configurable {
 
     private static final String HOSTNAME_KEY = HBaseStoreManager.HBASE_CONFIGURATION_MAP.get(GraphDatabaseConfiguration.HOSTNAME_KEY);
     private static final String PORT_KEY = HBaseStoreManager.HBASE_CONFIGURATION_MAP.get(GraphDatabaseConfiguration.PORT_KEY);

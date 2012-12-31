@@ -15,7 +15,7 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanCassandraOutputFormat extends OutputFormat implements Configurable {
+public class TitanCassandraOutputFormat extends OutputFormat<NullWritable, FaunusVertex> implements Configurable {
 
     private final ColumnFamilyOutputFormat columnFamilyOutputFormat;
     private FaunusTitanCassandraGraph graph;
@@ -38,7 +38,7 @@ public class TitanCassandraOutputFormat extends OutputFormat implements Configur
 
     @Override
     public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        return new TitanCassandraRecordWriter(this.graph, (RecordWriter) this.columnFamilyOutputFormat.getRecordWriter(taskAttemptContext));
+        return new TitanCassandraRecordWriter(this.graph, this.columnFamilyOutputFormat.getRecordWriter(taskAttemptContext));
     }
 
     @Override

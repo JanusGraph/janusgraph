@@ -1,14 +1,12 @@
 package com.thinkaurelius.faunus.formats.titan.hbase;
 
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.*;
 
@@ -17,11 +15,10 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanHBaseOutputFormat extends OutputFormat implements Configurable {
+public class TitanHBaseOutputFormat extends OutputFormat<NullWritable,FaunusVertex> implements Configurable {
 
     private static final String HOSTNAME_KEY = HBaseStoreManager.HBASE_CONFIGURATION_MAP.get(GraphDatabaseConfiguration.HOSTNAME_KEY);
     private static final String PORT_KEY = HBaseStoreManager.HBASE_CONFIGURATION_MAP.get(GraphDatabaseConfiguration.PORT_KEY);
-    static final byte[] EDGE_STORE_FAMILY = Bytes.toBytes(Backend.EDGESTORE_NAME);
 
     private final TableOutputFormat tableOutputFormat;
     private FaunusTitanHBaseGraph graph;

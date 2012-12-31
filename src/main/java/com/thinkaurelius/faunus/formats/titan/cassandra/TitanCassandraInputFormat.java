@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanCassandraInputFormat extends InputFormat implements Configurable {
+public class TitanCassandraInputFormat extends InputFormat<NullWritable,FaunusVertex> implements Configurable {
 
     private final ColumnFamilyInputFormat columnFamilyInputFormat;
     private FaunusTitanCassandraGraph graph;
