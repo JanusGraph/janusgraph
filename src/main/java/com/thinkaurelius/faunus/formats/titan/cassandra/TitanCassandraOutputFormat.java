@@ -8,7 +8,11 @@ import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.OutputCommitter;
+import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.RecordWriter;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import java.io.IOException;
 
@@ -17,28 +21,24 @@ import java.io.IOException;
  */
 public class TitanCassandraOutputFormat extends OutputFormat<NullWritable, FaunusVertex> implements Configurable {
 
-    private final ColumnFamilyOutputFormat columnFamilyOutputFormat;
     private FaunusTitanCassandraGraph graph;
     private Configuration config;
 
-
     public TitanCassandraOutputFormat() {
-        this.columnFamilyOutputFormat = new ColumnFamilyOutputFormat();
     }
 
     @Override
     public void checkOutputSpecs(final JobContext context) throws InterruptedException, IOException {
-        this.columnFamilyOutputFormat.checkOutputSpecs(context);
     }
 
     @Override
     public OutputCommitter getOutputCommitter(final TaskAttemptContext context) throws InterruptedException, IOException {
-        return this.columnFamilyOutputFormat.getOutputCommitter(context);
+        return new ColumnFamilyOutputFormat.NullOutputCommitter();
     }
 
     @Override
     public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        return new TitanCassandraRecordWriter(this.graph, this.columnFamilyOutputFormat.getRecordWriter(taskAttemptContext));
+        return new TitanCassandraRecordWriter(this.graph);
     }
 
     @Override
@@ -54,13 +54,8 @@ public class TitanCassandraOutputFormat extends OutputFormat<NullWritable, Faunu
         titanconfig.setProperty("storage.hostname", ConfigHelper.getOutputInitialAddress(config));
         titanconfig.setProperty("storage.keyspace", ConfigHelper.getOutputKeyspace(config));
         titanconfig.setProperty("storage.port", ConfigHelper.getOutputRpcPort(config));
-        if (ConfigHelper.getReadConsistencyLevel(config) != null)
-            titanconfig.setProperty("storage.read-consistency-level", ConfigHelper.getReadConsistencyLevel(config));
-        if (ConfigHelper.getWriteConsistencyLevel(config) != null)
-            titanconfig.setProperty("storage.write-consistency-level", ConfigHelper.getWriteConsistencyLevel(config));
 
         this.graph = new FaunusTitanCassandraGraph(titanconfig, false);
-        //this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
         this.config = config;
     }
 
