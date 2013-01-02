@@ -1,9 +1,10 @@
-package com.thinkaurelius.faunus.formats.titan.cassandra;
+package com.thinkaurelius.faunus.formats.titan;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.io.NullWritable;
@@ -20,14 +21,14 @@ import java.util.TreeMap;
  * @author Pavel Yaskevich
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanCassandraRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
+public class TitanRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
 
-    private final FaunusTitanCassandraGraph graph;
+    private final StandardTitanGraph graph;
 
     private final Map<Object, Long> vertexIds = new TreeMap<Object, Long>();
     private final Set<Object> processedEdges = new HashSet<Object>();
 
-    public TitanCassandraRecordWriter(final FaunusTitanCassandraGraph graph) {
+    public TitanRecordWriter(final StandardTitanGraph graph) {
         this.graph = graph;
     }
 
