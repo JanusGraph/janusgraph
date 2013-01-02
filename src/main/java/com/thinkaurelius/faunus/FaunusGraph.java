@@ -90,7 +90,8 @@ public class FaunusGraph {
 
     public Path getOutputLocation() {
         if (null == this.configuration.get(OUTPUT_LOCATION))
-            return null;
+            throw new IllegalStateException("Please set " + OUTPUT_LOCATION + " configuration option.");
+
         return new Path(this.configuration.get(OUTPUT_LOCATION));
     }
 

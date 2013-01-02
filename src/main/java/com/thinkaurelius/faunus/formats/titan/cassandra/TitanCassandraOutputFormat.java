@@ -48,7 +48,7 @@ public class TitanCassandraOutputFormat extends OutputFormat<NullWritable, Faunu
         final BaseConfiguration titanconfig = new BaseConfiguration();
         //General Titan configuration for read-only
         //titanconfig.setProperty("storage.read-only", "true"); // TODO: Should we make this simply false?
-        titanconfig.setProperty("autotype", "none");
+        titanconfig.setProperty("autotype", "blueprints");
         //Cassandra specific configuration
         titanconfig.setProperty("storage.backend", "cassandra");   // todo: astyanax
         titanconfig.setProperty("storage.hostname", ConfigHelper.getOutputInitialAddress(config));
@@ -59,7 +59,7 @@ public class TitanCassandraOutputFormat extends OutputFormat<NullWritable, Faunu
         if (ConfigHelper.getWriteConsistencyLevel(config) != null)
             titanconfig.setProperty("storage.write-consistency-level", ConfigHelper.getWriteConsistencyLevel(config));
 
-        this.graph = new FaunusTitanCassandraGraph(titanconfig);
+        this.graph = new FaunusTitanCassandraGraph(titanconfig, false);
         //this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
         this.config = config;
     }
