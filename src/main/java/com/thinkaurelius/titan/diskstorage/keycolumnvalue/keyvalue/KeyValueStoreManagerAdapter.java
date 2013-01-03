@@ -72,12 +72,12 @@ public class KeyValueStoreManagerAdapter implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public String getLastSeenTitanVersion() throws StorageException {
-        return manager.getLastSeenTitanVersion();
+    public String getConfigurationProperty(final String key) throws StorageException {
+        return manager.getConfigurationProperty(key);
     }
 
     @Override
-    public void setTitanVersionToLatest() throws StorageException {
-        manager.setTitanVersionToLatest();
+    public void setConfigurationProperty(final String key, final String value) throws StorageException {
+        manager.setConfigurationProperty(key,value);
     }
 }

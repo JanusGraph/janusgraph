@@ -275,7 +275,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 				                         .setStrategy_class("org.apache.cassandra.locator.SimpleStrategy")
 				                         .setStrategy_options(new HashMap<String, String>() {{
                                                              put("replication_factor", String.valueOf(replicationFactor));
-                                                             put(VERSION_PROPERTY_KEY, Constants.VERSION);
                                                          }});
 
 				String schemaVer = client.system_add_keyspace(ksdef);
@@ -328,14 +327,14 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public String getLastSeenTitanVersion() throws StorageException {
+    public String getConfigurationProperty(final String key) throws StorageException {
         CTConnection connection = null;
 
         try {
             connection = getCassandraConnection();
 
             // if keyspace doesn't exist or there was a connection problem this will throw an exception different from NPE
-            return connection.getClient().describe_keyspace(keySpaceName).getStrategy_options().get(VERSION_PROPERTY_KEY);
+            return connection.getClient().describe_keyspace(keySpaceName).getStrategy_options().get(key);
         }
         catch (Exception e) {
             throw new PermanentStorageException(e);
@@ -345,7 +344,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public void setTitanVersionToLatest() throws StorageException {
+    public void setConfigurationProperty(final String key, final String value) throws StorageException {
         CTConnection connection = null;
 
         try {
@@ -357,7 +356,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                                                      .setDurable_writes(ksDef.durable_writes)
                                                      .setStrategy_class(ksDef.strategy_class)
                                                      .setStrategy_options(new HashMap<String, String>(ksDef.strategy_options) {{
-                                                         put(VERSION_PROPERTY_KEY, Constants.VERSION);
+                                                         put(key, value);
                                                      }}));
         } catch (Exception e) {
             throw new PermanentStorageException(e);

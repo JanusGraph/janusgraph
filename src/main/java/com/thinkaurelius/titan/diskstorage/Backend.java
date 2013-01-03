@@ -20,6 +20,8 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+
+import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +51,8 @@ public class Backend {
     public static final String VERTEXINDEX_STORE_NAME = "propertyindex";
 
     public static final String ID_STORE_NAME = "titan_ids";
+    
+    public static final String TITAN_BACKEND_VERSION = "titan-version";
 
 
     public static final String LOCK_STORE_SUFFIX = "_lock_";
@@ -97,6 +101,20 @@ public class Backend {
         storeManager = getStorageManager(storageConfig);
         isKeyColumnValueStore = storeManager instanceof KeyColumnValueStoreManager;
         storeFeatures = storeManager.getFeatures();
+
+        try {
+            String version = storeManager.getConfigurationProperty(TITAN_BACKEND_VERSION);
+            if (!TitanConstants.VERSION.equals(version)) {
+                if (version==null || 
+                        (TitanConstants.COMPATIBLE_VERSIONS.contains(version)) ) {
+                    storeManager.setConfigurationProperty(TITAN_BACKEND_VERSION,TitanConstants.VERSION);
+                } else {
+                    throw new TitanException("StorageBackend is incompatible with Titan version: " + TitanConstants.VERSION + " vs. " + version);
+                }
+            }
+        } catch (StorageException e) {
+            throw new TitanException("Could not read/write backend version information",e);
+        }
 
         int bufferSizeTmp = storageConfig.getInt(BUFFER_SIZE_KEY,BUFFER_SIZE_DEFAULT);
         Preconditions.checkArgument(bufferSizeTmp >= 0, "Buffer size must be non-negative (use 0 to disable)");
@@ -279,11 +297,4 @@ public class Backend {
         storeManager.clearStorage();
     }
 
-    public String getLastSeenTitanVersion() throws StorageException {
-        return storeManager.getLastSeenTitanVersion();
-    }
-
-    public void setTitanVersionToLatest() throws StorageException {
-        storeManager.setTitanVersionToLatest();
-    }
 }

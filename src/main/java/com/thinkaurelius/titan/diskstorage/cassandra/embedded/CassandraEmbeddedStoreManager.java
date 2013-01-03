@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.Constants;
+import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -276,7 +276,6 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 		String strategyName = "org.apache.cassandra.locator.SimpleStrategy";
 		Map<String, String> options = new HashMap<String, String>() {{
 		    put("replication_factor", String.valueOf(replicationFactor));
-		    put(VERSION_PROPERTY_KEY, Constants.VERSION);
 		}};
 
 		KSMetaData ksm;
@@ -319,24 +318,24 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 	}
 
     @Override
-    public String getLastSeenTitanVersion() {
+    public String getConfigurationProperty(final String key) {
         KSMetaData ksMetaData = Schema.instance.getKSMetaData(keySpaceName);
         Preconditions.checkNotNull(ksMetaData);
-        return ksMetaData.strategyOptions.get(VERSION_PROPERTY_KEY);
+        return ksMetaData.strategyOptions.get(key);
     }
 
     @Override
-    public void setTitanVersionToLatest() throws StorageException {
+    public void setConfigurationProperty(final String key, final String value) throws StorageException {
         KSMetaData current = Schema.instance.getKSMetaData(keySpaceName);
         Preconditions.checkNotNull(current);
 
         KSMetaData ksUpdate = KSMetaData.cloneWith(current, Collections.<CFMetaData>emptyList());
-        ksUpdate.strategyOptions.put(VERSION_PROPERTY_KEY, Constants.VERSION);
+        ksUpdate.strategyOptions.put(key, value);
 
         try {
             MigrationManager.announceKeyspaceUpdate(ksUpdate);
         } catch (ConfigurationException e) {
-            throw new PermanentStorageException("Failed to update Titan Version", e);
+            throw new PermanentStorageException("Failed to update config property", e);
         }
     }
 }

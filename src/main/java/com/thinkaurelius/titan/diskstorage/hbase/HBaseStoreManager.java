@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.diskstorage.hbase;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.core.Constants;
+import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -35,7 +35,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 	
     public static final String TABLE_NAME_KEY = "tablename";
     public static final String TABLE_NAME_DEFAULT = "titan";
-    public static final String VERSION_PROPERTY_KEY = "last-titan-version";
 
     public static final int PORT_DEFAULT = 9160;
 
@@ -199,8 +198,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 desc = adm.getTableDescriptor(tableName.getBytes());
             } else {
                 desc = new HTableDescriptor(tableName);
-                desc.setValue(VERSION_PROPERTY_KEY, Constants.VERSION);
-
                 adm.createTable(desc);
             }
         } catch (IOException e) {
@@ -284,23 +281,23 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public String getLastSeenTitanVersion() throws StorageException {
+    public String getConfigurationProperty(final String key) throws StorageException {
         try {
-            return getAdminInterface().getTableDescriptor(tableName.getBytes()).getValue(VERSION_PROPERTY_KEY);
+            return getAdminInterface().getTableDescriptor(tableName.getBytes()).getValue(key);
         } catch (IOException e) {
             throw new PermanentStorageException(e);
         }
     }
 
     @Override
-    public void setTitanVersionToLatest() throws StorageException {
+    public void setConfigurationProperty(final String key, final String value) throws StorageException {
         byte[] name = tableName.getBytes();
 
         try {
             HBaseAdmin adm = getAdminInterface();
 
             HTableDescriptor desc = adm.getTableDescriptor(name);
-            desc.setValue(VERSION_PROPERTY_KEY, Constants.VERSION);
+            desc.setValue(key, value);
 
             adm.modifyTable(name, desc);
         } catch (IOException e) {

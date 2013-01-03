@@ -201,9 +201,6 @@ public class GraphDatabaseConfiguration {
     public static final int CONNECTION_POOL_SIZE_DEFAULT = 32;
     public static final String CONNECTION_POOL_SIZE_KEY = "connection-pool-size";
 
-    /* Check if backend directory was present, @see getConfiguration(File) method */
-    public static final String EXISTING_DIRECTORY_KEY = "is-exiting-backend-directory";
-
     // ################ IDS ###########################
     // ################################################
 
@@ -280,11 +277,10 @@ public class GraphDatabaseConfiguration {
             if (!exists && !dirOrFile.mkdirs())
                 throw new IllegalArgumentException("Could not create directory: " + dirOrFile);
 
-            Preconditions.checkArgument(dirOrFile.isDirectory());
+            Preconditions.checkArgument(dirOrFile.isDirectory() && dirOrFile.exists());
 
             configuration = new BaseConfiguration();
             configuration.setProperty(keyInNamespace(STORAGE_NAMESPACE, STORAGE_DIRECTORY_KEY), dirOrFile.getAbsolutePath());
-            configuration.setProperty(keyInNamespace(STORAGE_NAMESPACE, EXISTING_DIRECTORY_KEY), exists);
         } catch (ConfigurationException e) {
             throw new IllegalArgumentException("Could not load configuration at: " + dirOrFile, e);
         }

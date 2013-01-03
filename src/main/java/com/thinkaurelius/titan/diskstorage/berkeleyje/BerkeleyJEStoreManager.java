@@ -3,16 +3,16 @@ package com.thinkaurelius.titan.diskstorage.berkeleyje;
 
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.*;
-import com.thinkaurelius.titan.core.Constants;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.Configuration;
 
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,7 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
 
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJEStoreManager.class);
 
-    private static final String VERSION_FILE_NAME = "last-titan-version.dje";
+    private static final String TITAN_CONFIG_FILE_NAME = "titan-config.properties";
 
     public static final String CACHE_KEY = "cache-percentage";
     public static final int CACHE_DEFAULT = 65;
@@ -57,11 +57,6 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
         this.transactional=transactional;
         if (!transactional) log.warn("Transactions are disabled. Ensure that there is at most one Titan instance interacting with this BerkeleyDB instance, otherwise your database may corrupt.");
         int cachePercentage = configuration.getInt(CACHE_KEY,CACHE_DEFAULT);
-
-        /* If directory was created by this run it's safe to create version file, flag set by GDC.getConfiguration(File) */
-        if (!configuration.getBoolean(GraphDatabaseConfiguration.EXISTING_DIRECTORY_KEY)) {
-            createVersionFile(getVersionFile(directory));
-        }
 
         initialize(cachePercentage);
 
@@ -172,50 +167,35 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
     }
 
     @Override
-    public String getLastSeenTitanVersion() throws StorageException {
-        File versionFile = getVersionFile(directory);
+    public String getConfigurationProperty(String key) throws StorageException {
+        File configFile = getConfigFile(directory);
 
-        if (!versionFile.exists())
-            return null; // most certainly created by Titan < 0.3.0
-
-        DataInputStream version = null;
-
+        if (!configFile.exists()) //property has not been defined
+            return null;
+        
+        Preconditions.checkArgument(configFile.isFile());
         try {
-            version = new DataInputStream(new FileInputStream(versionFile));
-            return version.readUTF();
-        } catch (IOException e) {
-            throw new PermanentStorageException("Corrupted version file: " + versionFile.getAbsolutePath(), e);
-        } finally {
-            IOUtils.closeQuietly(version);
+            Configuration config = new PropertiesConfiguration(configFile);
+            return config.getString(key,null);
+        } catch (ConfigurationException e) {
+            throw new PermanentStorageException("Could not read from configuration file",e);
         }
     }
 
     @Override
-    public void setTitanVersionToLatest() throws StorageException {
-        File versionFile = getVersionFile(directory);
-
-        if (versionFile.exists())
-            versionFile.delete(); // just delete the old one, saves us code
-
-        createVersionFile(versionFile);
-    }
-
-    private static void createVersionFile(File versionFile) throws StorageException {
-        Preconditions.checkArgument(!versionFile.exists());
-
-        DataOutputStream s = null;
+    public void setConfigurationProperty(String key, String value) throws StorageException {
+        File configFile = getConfigFile(directory);
 
         try {
-            s = new DataOutputStream(new FileOutputStream(versionFile));
-            s.writeUTF(Constants.VERSION);
-        } catch (IOException e) {
-            throw new PermanentStorageException(e);
-        } finally {
-            IOUtils.closeQuietly(s);
+            PropertiesConfiguration config = new PropertiesConfiguration(configFile);
+            config.setProperty(key,value);
+            config.save();
+        } catch (ConfigurationException e) {
+            throw new PermanentStorageException("Could not save configuration file",e);
         }
     }
 
-    private static File getVersionFile(File dbDirectory) {
-        return new File(dbDirectory.getAbsolutePath() + File.separator + VERSION_FILE_NAME);
+    private static File getConfigFile(File dbDirectory) {
+        return new File(dbDirectory.getAbsolutePath() + File.separator + TITAN_CONFIG_FILE_NAME);
     }
 }

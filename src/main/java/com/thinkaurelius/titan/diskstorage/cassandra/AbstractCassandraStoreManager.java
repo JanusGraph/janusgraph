@@ -48,7 +48,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      */
     public static final String KEYSPACE_DEFAULT = "titan";
     public static final String KEYSPACE_KEY = "keyspace";
-    public static final String VERSION_PROPERTY_KEY = "last-titan-version";
 
     /**
      * Default port at which to attempt Cassandra Thrift connection.

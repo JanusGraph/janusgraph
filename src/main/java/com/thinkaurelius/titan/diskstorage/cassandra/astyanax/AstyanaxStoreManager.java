@@ -14,7 +14,7 @@ import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
-import com.thinkaurelius.titan.core.Constants;
+import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
@@ -317,7 +317,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         try {
             Map<String, String> stratops = new HashMap<String, String>() {{
                 put("replication_factor", String.valueOf(replicationFactor));
-                put(VERSION_PROPERTY_KEY, Constants.VERSION);
             }};
 
             ksDef = cl.makeKeyspaceDefinition()
@@ -381,20 +380,20 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public String getLastSeenTitanVersion() throws StorageException {
+    public String getConfigurationProperty(final String key) throws StorageException {
         Cluster cl = clusterContext.getEntity();
 
         try {
             KeyspaceDefinition ksDef = cl.describeKeyspace(keySpaceName);
             Preconditions.checkNotNull(ksDef);
-            return ksDef.getStrategyOptions().get(VERSION_PROPERTY_KEY);
+            return ksDef.getStrategyOptions().get(key);
         } catch (ConnectionException e) {
             throw new PermanentStorageException(e);
         }
     }
 
     @Override
-    public void setTitanVersionToLatest() throws StorageException {
+    public void setConfigurationProperty(final String key, final String value) throws StorageException {
         Cluster cl = clusterContext.getEntity();
 
         try {
@@ -405,7 +404,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                     .setName(currentKs.getName())
                                     .setStrategyClass(currentKs.getStrategyClass())
                                     .setStrategyOptions(new HashMap<String, String>(currentKs.getStrategyOptions()) {{
-                                        put(VERSION_PROPERTY_KEY, Constants.VERSION);
+                                        put(key, value);
                                     }}));
         } catch (ConnectionException e) {
             throw new PermanentStorageException(e);

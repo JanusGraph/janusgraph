@@ -38,17 +38,19 @@ public interface StoreManager {
     public StoreFeatures getFeatures();
 
     /**
-     * Note: client is responsible of calling setTitanVersionToLatest() method when
-     * upgrade process is complete.
-     *
-     * @return The version of Titan service which was used to access this storage last time,
-     *         returns "null" if database was created by using Titan < 0.3.0.
-     *
+     * Reads the configuration property for this StoreManager
+     * @param key Key identifying the configuration property
+     * @return Value stored for the key or null if the configuration property has not (yet) been defined.
+     * @throws StorageException
      */
-    public String getLastSeenTitanVersion() throws StorageException;
+    public String getConfigurationProperty(final String key) throws StorageException;
 
     /**
-     * Reset Titan Version to version provided by Constants.VERSION (possibly persistently).
+     * Sets a configuration property for this StoreManager.
+     *
+     * @param key Key identifying the configuration property
+     * @param value Value to be stored for the key
+     * @throws StorageException
      */
-    public void setTitanVersionToLatest() throws StorageException;
+    public void setConfigurationProperty(final String key, final String value) throws StorageException;
 }
