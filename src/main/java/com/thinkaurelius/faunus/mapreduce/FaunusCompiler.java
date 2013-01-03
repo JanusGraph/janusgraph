@@ -6,9 +6,31 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.hdfs.GraphFilter;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
-import com.thinkaurelius.faunus.mapreduce.filter.*;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.*;
-import com.thinkaurelius.faunus.mapreduce.transform.*;
+import com.thinkaurelius.faunus.mapreduce.blueprints.WriteGraphMapReduce;
+import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
+import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.LinkMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.SideEffectMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
+import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.EdgesVerticesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
+import com.thinkaurelius.faunus.mapreduce.transform.OrderMapReduce;
+import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
+import com.thinkaurelius.faunus.mapreduce.transform.PropertyMap;
+import com.thinkaurelius.faunus.mapreduce.transform.PropertyMapMap;
+import com.thinkaurelius.faunus.mapreduce.transform.TransformMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.WritableComparators;
 import com.tinkerpop.blueprints.Direction;
@@ -19,10 +41,22 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.*;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DefaultCodec;
-import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -115,6 +149,16 @@ public class FaunusCompiler extends Configured implements Tool {
     public void setPathEnabled(final boolean pathEnabled) {
         this.pathEnabled = pathEnabled;
     }
+
+    ///////// DEMO BLUEPRINTS
+
+    public void writeGraphMapReduce() throws IOException {
+        this.mapSequenceClasses.add(WriteGraphMapReduce.Map.class);
+        this.reduceClass = WriteGraphMapReduce.Reduce.class;
+        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
+        this.completeSequence();
+    }
+
 
     ////////////// STEP
 
