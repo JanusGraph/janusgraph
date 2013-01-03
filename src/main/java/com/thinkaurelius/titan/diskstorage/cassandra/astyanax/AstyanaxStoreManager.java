@@ -14,6 +14,7 @@ import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
+import com.thinkaurelius.titan.core.Constants;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
@@ -314,8 +315,11 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
         log.debug("Creating keyspace {}...", keySpaceName);
         try {
-            Map<String, String> stratops = new HashMap<String, String>();
-            stratops.put("replication_factor", String.valueOf(replicationFactor));
+            Map<String, String> stratops = new HashMap<String, String>() {{
+                put("replication_factor", String.valueOf(replicationFactor));
+                put(VERSION_PROPERTY_KEY, Constants.VERSION);
+            }};
+
             ksDef = cl.makeKeyspaceDefinition()
                     .setName(keySpaceName)
                     .setStrategyClass("org.apache.cassandra.locator.SimpleStrategy")
@@ -376,7 +380,37 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     	throw new Exception("Failed to identify a class matching the Astyanax Retry Policy config string \"" + raw + "\"");
     }
 
+    @Override
+    public String getLastSeenTitanVersion() throws StorageException {
+        Cluster cl = clusterContext.getEntity();
 
+        try {
+            KeyspaceDefinition ksDef = cl.describeKeyspace(keySpaceName);
+            Preconditions.checkNotNull(ksDef);
+            return ksDef.getStrategyOptions().get(VERSION_PROPERTY_KEY);
+        } catch (ConnectionException e) {
+            throw new PermanentStorageException(e);
+        }
+    }
+
+    @Override
+    public void setTitanVersionToLatest() throws StorageException {
+        Cluster cl = clusterContext.getEntity();
+
+        try {
+            KeyspaceDefinition currentKs = cl.describeKeyspace(keySpaceName);
+            Preconditions.checkNotNull(currentKs);
+
+            cl.updateKeyspace(cl.makeKeyspaceDefinition()
+                                    .setName(currentKs.getName())
+                                    .setStrategyClass(currentKs.getStrategyClass())
+                                    .setStrategyOptions(new HashMap<String, String>(currentKs.getStrategyOptions()) {{
+                                        put(VERSION_PROPERTY_KEY, Constants.VERSION);
+                                    }}));
+        } catch (ConnectionException e) {
+            throw new PermanentStorageException(e);
+        }
+    }
 }
 
 

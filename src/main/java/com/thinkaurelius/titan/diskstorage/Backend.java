@@ -279,4 +279,11 @@ public class Backend {
         storeManager.clearStorage();
     }
 
+    public String getLastSeenTitanVersion() throws StorageException {
+        return storeManager.getLastSeenTitanVersion();
+    }
+
+    public void setTitanVersionToLatest() throws StorageException {
+        storeManager.setTitanVersionToLatest();
+    }
 }

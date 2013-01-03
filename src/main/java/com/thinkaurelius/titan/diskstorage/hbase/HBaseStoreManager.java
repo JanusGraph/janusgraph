@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.core.Constants;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -10,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import static com.thinkaurelius.titan.diskstorage.hbase.HBaseKeyColumnValueStore.*;
+
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.slf4j.Logger;
@@ -32,6 +35,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 	
     public static final String TABLE_NAME_KEY = "tablename";
     public static final String TABLE_NAME_DEFAULT = "titan";
+    public static final String VERSION_PROPERTY_KEY = "last-titan-version";
 
     public static final int PORT_DEFAULT = 9160;
 
@@ -183,62 +187,55 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
 	@Override
 	public KeyColumnValueStore openDatabase(String name) throws StorageException {
-        if (openStores.containsKey(name)) return openStores.get(name);
-        else {
+        if (openStores.containsKey(name))
+            return openStores.get(name);
 
-            HBaseAdmin adm = null;
-            try {
-                adm = new HBaseAdmin(hconf);
-            } catch (IOException e) {
-                throw new TitanException(e);
-            }
+        HBaseAdmin adm = getAdminInterface();
 
-            // Create our table, if necessary
-            HTableDescriptor desc = null;
-            try {
+        HTableDescriptor desc;
+
+        try { // Create our table, if necessary
+            if (adm.tableExists(tableName)) {
+                desc = adm.getTableDescriptor(tableName.getBytes());
+            } else {
                 desc = new HTableDescriptor(tableName);
+                desc.setValue(VERSION_PROPERTY_KEY, Constants.VERSION);
+
                 adm.createTable(desc);
-            } catch (TableExistsException e) {
-                try {
-                    desc = adm.getTableDescriptor(tableName.getBytes());
-                } catch (IOException ee) {
-                    throw new TemporaryStorageException(ee);
-                }
-            } catch (IOException e) {
-                throw new TemporaryStorageException(e);
             }
-
-            assert null != desc;
-
-            // Create our column family, if necessary
-            if (null == desc.getFamily(name.getBytes())) {
-                try {
-                    adm.disableTable(tableName);
-                    desc.addFamily(new HColumnDescriptor(name));
-                    adm.modifyTable(tableName.getBytes(), desc);
-                    log.debug("Added HBase column family {}", name);
-                    try {
-                        Thread.sleep(1000L);
-                    } catch (InterruptedException ie) {
-                        throw new TemporaryStorageException(ie);
-                    }
-                    adm.enableTable(tableName);
-                } catch (TableNotFoundException ee) {
-                    log.error("TableNotFoundException", ee);
-                    throw new PermanentStorageException(ee);
-                } catch (org.apache.hadoop.hbase.TableExistsException ee) {
-                    log.debug("Swallowing exception {}", ee);
-                } catch (IOException ee) {
-                    throw new TemporaryStorageException(ee);
-                }
-            }
-
-            assert null != desc;
-
-            HBaseKeyColumnValueStore store = new HBaseKeyColumnValueStore(connectionPool, tableName, name, this);
-            openStores.put(name,store);
-            return store;
+        } catch (IOException e) {
+            throw new TemporaryStorageException(e);
         }
+
+        Preconditions.checkNotNull(desc);
+
+        // Create our column family, if necessary
+        if (null == desc.getFamily(name.getBytes())) {
+            try {
+                adm.disableTable(tableName);
+                desc.addFamily(new HColumnDescriptor(name));
+                adm.modifyTable(tableName.getBytes(), desc);
+                log.debug("Added HBase column family {}", name);
+                try {
+                    Thread.sleep(1000L);
+                } catch (InterruptedException ie) {
+                    throw new TemporaryStorageException(ie);
+                }
+                adm.enableTable(tableName);
+            } catch (TableNotFoundException ee) {
+                log.error("TableNotFoundException", ee);
+                throw new PermanentStorageException(ee);
+            } catch (org.apache.hadoop.hbase.TableExistsException ee) {
+                log.debug("Swallowing exception {}", ee);
+            } catch (IOException ee) {
+                throw new TemporaryStorageException(ee);
+            }
+        }
+
+        HBaseKeyColumnValueStore store = new HBaseKeyColumnValueStore(connectionPool, tableName, name, this);
+        openStores.put(name,store);
+
+        return store;
 	}
 
 	@Override
@@ -286,4 +283,36 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 		}
     }
 
+    @Override
+    public String getLastSeenTitanVersion() throws StorageException {
+        try {
+            return getAdminInterface().getTableDescriptor(tableName.getBytes()).getValue(VERSION_PROPERTY_KEY);
+        } catch (IOException e) {
+            throw new PermanentStorageException(e);
+        }
+    }
+
+    @Override
+    public void setTitanVersionToLatest() throws StorageException {
+        byte[] name = tableName.getBytes();
+
+        try {
+            HBaseAdmin adm = getAdminInterface();
+
+            HTableDescriptor desc = adm.getTableDescriptor(name);
+            desc.setValue(VERSION_PROPERTY_KEY, Constants.VERSION);
+
+            adm.modifyTable(name, desc);
+        } catch (IOException e) {
+            throw new PermanentStorageException(e);
+        }
+    }
+
+    private HBaseAdmin getAdminInterface() {
+        try {
+            return new HBaseAdmin(hconf);
+        } catch (IOException e) {
+            throw new TitanException(e);
+        }
+    }
 }

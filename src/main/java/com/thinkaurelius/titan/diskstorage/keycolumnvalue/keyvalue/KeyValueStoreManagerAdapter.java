@@ -4,13 +4,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.Iterator;
 import java.util.Map;
 
 public class KeyValueStoreManagerAdapter implements KeyColumnValueStoreManager {
@@ -74,5 +69,15 @@ public class KeyValueStoreManagerAdapter implements KeyColumnValueStoreManager {
         } else {
             return new KeyValueStoreAdapter(store);
         }
+    }
+
+    @Override
+    public String getLastSeenTitanVersion() throws StorageException {
+        return manager.getLastSeenTitanVersion();
+    }
+
+    @Override
+    public void setTitanVersionToLatest() throws StorageException {
+        manager.setTitanVersionToLatest();
     }
 }

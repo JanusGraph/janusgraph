@@ -15,9 +15,12 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.cassandra.thrift.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.thrift.TException;
+import org.apache.thrift.transport.TTransportException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,9 +74,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         } catch (Exception e ) {
             throw new TemporaryStorageException(e);
         } finally {
-            if (null != conn && null != conn.getTransport() && conn.getTransport().isOpen()) {
-                conn.getTransport().close();
-            }
+            IOUtils.closeQuietly(conn);
         }
     }
 
@@ -247,38 +248,38 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 		} catch (Exception e) {
 			throw new TemporaryStorageException(e);
 		} finally {
-			if (null != conn && conn.getTransport().isOpen())
-				conn.getTransport().close();
+		    IOUtils.closeQuietly(conn);
 		}
 	}
 	
 	private KsDef ensureKeyspaceExists(String keyspaceName)
 			throws NotFoundException, InvalidRequestException, TException,
 			SchemaDisagreementException, StorageException {
-		
-		CTConnectionFactory fac = 
-				CTConnectionPool.getFactory(hostname, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
-		
-		CTConnection conn = fac.makeRawConnection();
-		Cassandra.Client client = conn.getClient();
-		
+
+		CTConnection connection = getCassandraConnection();
+
+		Preconditions.checkNotNull(connection);
+
 		try {
-			
+			Cassandra.Client client = connection.getClient();
+
 			try {
 				client.set_keyspace(keyspaceName);
 				log.debug("Found existing keyspace {}", keyspaceName);
 			} catch (InvalidRequestException e) {
 				// Keyspace didn't exist; create it
 				log.debug("Creating keyspace {}...", keyspaceName);
-				KsDef ksdef = new KsDef();
-				ksdef.setName(keyspaceName);
-				ksdef.setStrategy_class("org.apache.cassandra.locator.SimpleStrategy");
-				Map<String, String> stratops = new HashMap<String, String>();
-				stratops.put("replication_factor", String.valueOf(replicationFactor));
-				ksdef.setStrategy_options(stratops);
-				ksdef.setCf_defs(new LinkedList<CfDef>()); // cannot be null but can be empty
+
+				KsDef ksdef = new KsDef().setName(keyspaceName)
+				                         .setCf_defs(new LinkedList<CfDef>()) // cannot be null but can be empty
+				                         .setStrategy_class("org.apache.cassandra.locator.SimpleStrategy")
+				                         .setStrategy_options(new HashMap<String, String>() {{
+                                                             put("replication_factor", String.valueOf(replicationFactor));
+                                                             put(VERSION_PROPERTY_KEY, Constants.VERSION);
+                                                         }});
 
 				String schemaVer = client.system_add_keyspace(ksdef);
+
 				// Try to block until Cassandra converges on the new keyspace
 				try {
 					CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
@@ -290,9 +291,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 			return client.describe_keyspace(keyspaceName);
 			
 		} finally {
-			if (null != conn && null != conn.getTransport() && conn.getTransport().isOpen()) {
-				conn.getTransport().close();
-			}
+		    IOUtils.closeQuietly(connection);
 		}
 	}
     
@@ -328,5 +327,50 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     	
     }
 
+    @Override
+    public String getLastSeenTitanVersion() throws StorageException {
+        CTConnection connection = null;
 
+        try {
+            connection = getCassandraConnection();
+
+            // if keyspace doesn't exist or there was a connection problem this will throw an exception different from NPE
+            return connection.getClient().describe_keyspace(keySpaceName).getStrategy_options().get(VERSION_PROPERTY_KEY);
+        }
+        catch (Exception e) {
+            throw new PermanentStorageException(e);
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
+    }
+
+    @Override
+    public void setTitanVersionToLatest() throws StorageException {
+        CTConnection connection = null;
+
+        try {
+            connection = getCassandraConnection();
+            Cassandra.Client client = connection.getClient();
+            KsDef ksDef = client.describe_keyspace(keySpaceName); // would throw NotFoundException so no need to assert
+
+            client.system_update_keyspace(new KsDef().setName(ksDef.name)
+                                                     .setDurable_writes(ksDef.durable_writes)
+                                                     .setStrategy_class(ksDef.strategy_class)
+                                                     .setStrategy_options(new HashMap<String, String>(ksDef.strategy_options) {{
+                                                         put(VERSION_PROPERTY_KEY, Constants.VERSION);
+                                                     }}));
+        } catch (Exception e) {
+            throw new PermanentStorageException(e);
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
+    }
+
+    private CTConnection getCassandraConnection() throws TTransportException {
+        CTConnectionFactory fac = CTConnectionPool.getFactory(hostname,
+                                                              port,
+                                                              GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
+
+        return fac.makeRawConnection();
+    }
 }
