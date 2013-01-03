@@ -1,8 +1,13 @@
 package com.thinkaurelius.faunus.mapreduce.blueprints;
 
+import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
+import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraOutputFormat;
+import com.thinkaurelius.faunus.formats.titan.hbase.TitanHBaseOutputFormat;
 import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.TransactionalGraph;
@@ -10,9 +15,11 @@ import com.tinkerpop.blueprints.Vertex;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
@@ -46,6 +53,33 @@ public class WriteGraphMapReduce {
         return false;
     }
 
+    private static Graph generateGraph(final Configuration config) {
+        final Class<? extends OutputFormat> format = config.getClass(FaunusGraph.GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
+        if (TitanCassandraOutputFormat.class.isAssignableFrom(format)) {
+            final BaseConfiguration titanconfig = new BaseConfiguration();
+            titanconfig.setProperty("autotype", "blueprints");
+            titanconfig.setProperty("storage.backend", "cassandra");
+            titanconfig.setProperty("storage.hostname", ConfigHelper.getOutputInitialAddress(config));
+            titanconfig.setProperty("storage.keyspace", ConfigHelper.getOutputKeyspace(config));
+            titanconfig.setProperty("storage.port", ConfigHelper.getOutputRpcPort(config));
+            return TitanFactory.open(titanconfig);
+        } else if (TitanHBaseOutputFormat.class.isAssignableFrom(format)) {
+            final BaseConfiguration titanconfig = new BaseConfiguration();
+            titanconfig.setProperty("autotype", "blueprints");
+            titanconfig.setProperty("storage.backend", "hbase");
+            titanconfig.setProperty("storage.tablename", config.get(TableOutputFormat.OUTPUT_TABLE));
+            titanconfig.setProperty("storage.hostname", config.get(HBaseStoreManager.HBASE_CONFIGURATION_MAP.get(GraphDatabaseConfiguration.HOSTNAME_KEY)));
+            if (config.get(HBaseStoreManager.HBASE_CONFIGURATION_MAP.get(GraphDatabaseConfiguration.PORT_KEY), null) != null)
+                titanconfig.setProperty("storage.port", config.get(HBaseStoreManager.HBASE_CONFIGURATION_MAP.get(GraphDatabaseConfiguration.PORT_KEY)));
+            return TitanFactory.open(titanconfig);
+        } else {
+            // TODO: this is where Rexster can come into play here
+            throw new RuntimeException("The provide graph output format is not supported: " + format.getName());
+        }
+    }
+
+    ////////////// MAP/REDUCE WORK FROM HERE ON OUT
+
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
 
         private Graph graph;
@@ -57,14 +91,7 @@ public class WriteGraphMapReduce {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            Configuration config = context.getConfiguration();
-            final BaseConfiguration titanconfig = new BaseConfiguration();
-            titanconfig.setProperty("autotype", "blueprints");
-            titanconfig.setProperty("storage.backend", "cassandra");
-            titanconfig.setProperty("storage.hostname", ConfigHelper.getOutputInitialAddress(config));
-            titanconfig.setProperty("storage.keyspace", ConfigHelper.getOutputKeyspace(config));
-            titanconfig.setProperty("storage.port", ConfigHelper.getOutputRpcPort(config));
-            this.graph = TitanFactory.open(titanconfig);
+            this.graph = WriteGraphMapReduce.generateGraph(context.getConfiguration());
         }
 
         @Override
@@ -109,14 +136,7 @@ public class WriteGraphMapReduce {
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
-            Configuration config = context.getConfiguration();
-            final BaseConfiguration titanconfig = new BaseConfiguration();
-            titanconfig.setProperty("autotype", "blueprints");
-            titanconfig.setProperty("storage.backend", "cassandra");
-            titanconfig.setProperty("storage.hostname", ConfigHelper.getOutputInitialAddress(config));
-            titanconfig.setProperty("storage.keyspace", ConfigHelper.getOutputKeyspace(config));
-            titanconfig.setProperty("storage.port", ConfigHelper.getOutputRpcPort(config));
-            this.graph = TitanFactory.open(titanconfig);
+            this.graph = WriteGraphMapReduce.generateGraph(context.getConfiguration());
         }
 
         @Override
@@ -143,7 +163,7 @@ public class WriteGraphMapReduce {
                 // after so many mutations, successfully commit the transaction (if graph is transactional)
                 // for titan, if the transaction is committed, need to 'reget' the vertex
                 if (WriteGraphMapReduce.commitGraph(this.graph, ++this.counter))
-                    titanVertex = this.graph.getVertex(titanVertex);
+                    titanVertex = this.graph.getVertex(titanVertex.getId());
             }
 
             // this is a sideEffect, thus remove the created blueprints id property

@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.blueprints.WriteGraphMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
@@ -189,14 +190,6 @@ public class FaunusPipeline {
         this.compiler = new FaunusCompiler(this.graph);
         this.state = new State();
     }
-
-    public FaunusPipeline writeGraph() throws IOException {
-        this.state.checkLocked();
-        this.compiler.writeGraphMapReduce();
-        makeMapReduceString(WriteGraphMapReduce.class);
-        return this;
-    }
-
 
     ///////// STEP
 
@@ -1036,6 +1029,11 @@ public class FaunusPipeline {
      * @throws Exception
      */
     public void submit(final String script, final Boolean showHeader) throws Exception {
+        if (TitanOutputFormat.class.isAssignableFrom(this.graph.getGraphOutputFormat())) {
+            this.state.checkLocked();
+            this.compiler.writeGraphMapReduce();
+            makeMapReduceString(WriteGraphMapReduce.class);
+        }
         this.done();
         ToolRunner.run(this.compiler, new String[]{script, showHeader.toString()});
     }
