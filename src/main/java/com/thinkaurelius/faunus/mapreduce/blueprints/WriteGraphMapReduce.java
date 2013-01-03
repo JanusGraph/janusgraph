@@ -36,11 +36,14 @@ public class WriteGraphMapReduce {
     public static final String BLUEPRINTS_ID = "_blueprintsId";
     private static final long MUTATION_COMMITS = 5000;
 
-    private static void commitGraph(final Graph graph, long mutations) {
+    private static boolean commitGraph(final Graph graph, final long mutations) {
         if (mutations % MUTATION_COMMITS == 0) {
-            if (graph instanceof TransactionalGraph)
+            if (graph instanceof TransactionalGraph) {
                 ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+                return true;
+            }
         }
+        return false;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
@@ -67,25 +70,29 @@ public class WriteGraphMapReduce {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
 
-            // Write FaunusVertex (and respective properties) to Titan
-            final Vertex vertex = this.graph.addVertex(null);
+            // Write FaunusVertex (and respective properties) to Blueprints Graph
+            final Vertex titanVertex = this.graph.addVertex(null);
+            context.getCounter(Counters.VERTICES_WRITTEN).increment(1l);
             for (final String property : value.getPropertyKeys()) {
-                vertex.setProperty(property, value.getProperty(property));
+                titanVertex.setProperty(property, value.getProperty(property));
+                context.getCounter(Counters.VERTEX_PROPERTIES_WRITTEN).increment(1l);
             }
-            value.setProperty(BLUEPRINTS_ID, vertex.getId());
+            value.setProperty(BLUEPRINTS_ID, titanVertex.getId());
 
-            // Propagate holders and ids
-            for (Edge edge : value.getEdges(IN)) {
-                this.longWritable.set((Long) edge.getVertex(OUT).getId());
-                this.shellVertex.reuse(value.getIdAsLong());
-                this.shellVertex.setProperty(BLUEPRINTS_ID, vertex.getId());
-                context.write(this.longWritable, vertexHolder.set('s', this.shellVertex));
+            // Propagate shell vertices with Blueprints ids
+            this.shellVertex.reuse(value.getIdAsLong());
+            this.shellVertex.setProperty(BLUEPRINTS_ID, titanVertex.getId());
+            // TODO: Might need to be OUT for the sake of unidirectional edges in Titan
+            for (final Edge faunusEdge : value.getEdges(IN)) {
+                this.longWritable.set((Long) faunusEdge.getVertex(OUT).getId());
+                context.write(this.longWritable, this.vertexHolder.set('s', this.shellVertex));
             }
 
             this.longWritable.set(value.getIdAsLong());
-            context.write(this.longWritable, vertexHolder.set('v', value));
+            context.write(this.longWritable, this.vertexHolder.set('v', value));
 
-            WriteGraphMapReduce.commitGraph(this.graph, this.counter++);
+            // after so many mutations, successfully commit the transaction (if graph is transactional)
+            WriteGraphMapReduce.commitGraph(this.graph, ++this.counter);
         }
 
         @Override
@@ -114,27 +121,34 @@ public class WriteGraphMapReduce {
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            final FaunusVertex vertex = new FaunusVertex();
+            final FaunusVertex faunusVertex = new FaunusVertex();
+            // generate a map of the faunus id with the blueprints id for all shell vertices (vertices incoming adjacent)
             final java.util.Map<Long, Long> faunusTitanIdMap = new HashMap<Long, Long>();
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 's') {
                     faunusTitanIdMap.put(holder.get().getIdAsLong(), (Long) holder.get().getProperty(BLUEPRINTS_ID));
                 } else {
-                    vertex.addAll(holder.get());
+                    faunusVertex.addAll(holder.get());
                 }
             }
 
-            final Vertex root = this.graph.getVertex(vertex.getProperty(BLUEPRINTS_ID));
-            for (final Edge edge : vertex.getEdges(OUT)) {
-                final Edge e = this.graph.addEdge(null, root, this.graph.getVertex(faunusTitanIdMap.get((Long) edge.getVertex(IN).getId())), edge.getLabel());
-                for (final String property : edge.getPropertyKeys()) {
-                    e.setProperty(property, edge.getProperty(property));
+            Vertex titanVertex = this.graph.getVertex(faunusVertex.getProperty(BLUEPRINTS_ID));
+            for (final Edge faunusEdge : faunusVertex.getEdges(OUT)) {
+                final Edge titanEdge = this.graph.addEdge(null, titanVertex, this.graph.getVertex(faunusTitanIdMap.get((Long) faunusEdge.getVertex(IN).getId())), faunusEdge.getLabel());
+                context.getCounter(Counters.EDGES_WRITTEN).increment(1l);
+                for (final String property : faunusEdge.getPropertyKeys()) {
+                    titanEdge.setProperty(property, faunusEdge.getProperty(property));
+                    context.getCounter(Counters.EDGE_PROPERTIES_WRITTEN).increment(1l);
                 }
-                WriteGraphMapReduce.commitGraph(this.graph, this.counter++);
+                // after so many mutations, successfully commit the transaction (if graph is transactional)
+                // for titan, if the transaction is committed, need to 'reget' the vertex
+                if (WriteGraphMapReduce.commitGraph(this.graph, ++this.counter))
+                    titanVertex = this.graph.getVertex(titanVertex);
             }
 
-            vertex.removeProperty(BLUEPRINTS_ID);
-            context.write(NullWritable.get(), vertex);
+            // this is a sideEffect, thus remove the created blueprints id property
+            faunusVertex.removeProperty(BLUEPRINTS_ID);
+            context.write(NullWritable.get(), faunusVertex);
         }
 
         @Override
