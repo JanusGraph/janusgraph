@@ -1,8 +1,11 @@
 package com.thinkaurelius.faunus.formats.titan.hbase;
 
 import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
+import com.thinkaurelius.faunus.formats.titan.TitanRecordWriter;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.tinkerpop.blueprints.TransactionalGraph;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
@@ -30,6 +33,7 @@ public class TitanHBaseOutputFormat extends TitanOutputFormat {
         if (config.get(PORT_KEY, null) != null)
             titanconfig.setProperty("storage.port", config.get(PORT_KEY));
         this.graph = new FaunusTitanHBaseGraph(titanconfig);
-        //this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
+        this.graph.createKeyIndex(TitanRecordWriter.FAUNUS_IDX_ID, Vertex.class);
+        this.graph.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
     }
 }

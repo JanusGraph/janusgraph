@@ -1,7 +1,10 @@
 package com.thinkaurelius.faunus.formats.titan.cassandra;
 
 import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
+import com.thinkaurelius.faunus.formats.titan.TitanRecordWriter;
 import com.thinkaurelius.titan.diskstorage.Backend;
+import com.tinkerpop.blueprints.TransactionalGraph;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configuration;
@@ -25,6 +28,9 @@ public class TitanCassandraOutputFormat extends TitanOutputFormat {
         titanconfig.setProperty("storage.port", ConfigHelper.getOutputRpcPort(config));
 
         this.graph = new FaunusTitanCassandraGraph(titanconfig, false);
+        this.graph.createKeyIndex(TitanRecordWriter.FAUNUS_IDX_ID, Vertex.class);
+        this.graph.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+
         this.config = config;
     }
 }
