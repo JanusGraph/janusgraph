@@ -33,7 +33,15 @@ public class WriteGraphMapReduce {
         EDGE_PROPERTIES_WRITTEN
     }
 
-    public static final String TITAN_ID = "_titanId";
+    public static final String BLUEPRINTS_ID = "_blueprintsId";
+    private static final long MUTATION_COMMITS = 5000;
+
+    private static void commitGraph(final Graph graph, long mutations) {
+        if (mutations % MUTATION_COMMITS == 0) {
+            if (graph instanceof TransactionalGraph)
+                ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+        }
+    }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
 
@@ -64,22 +72,20 @@ public class WriteGraphMapReduce {
             for (final String property : value.getPropertyKeys()) {
                 vertex.setProperty(property, value.getProperty(property));
             }
-            value.setProperty(TITAN_ID, vertex.getId());
+            value.setProperty(BLUEPRINTS_ID, vertex.getId());
 
             // Propagate holders and ids
             for (Edge edge : value.getEdges(IN)) {
                 this.longWritable.set((Long) edge.getVertex(OUT).getId());
                 this.shellVertex.reuse(value.getIdAsLong());
-                this.shellVertex.setProperty(TITAN_ID, vertex.getId());
+                this.shellVertex.setProperty(BLUEPRINTS_ID, vertex.getId());
                 context.write(this.longWritable, vertexHolder.set('s', this.shellVertex));
             }
 
             this.longWritable.set(value.getIdAsLong());
             context.write(this.longWritable, vertexHolder.set('v', value));
 
-            if (this.counter++ > 1000)
-                if (this.graph instanceof TransactionalGraph)
-                    ((TransactionalGraph) this.graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+            WriteGraphMapReduce.commitGraph(this.graph, this.counter++);
         }
 
         @Override
@@ -112,21 +118,22 @@ public class WriteGraphMapReduce {
             final java.util.Map<Long, Long> faunusTitanIdMap = new HashMap<Long, Long>();
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 's') {
-                    faunusTitanIdMap.put(holder.get().getIdAsLong(), (Long) holder.get().getProperty(TITAN_ID));
+                    faunusTitanIdMap.put(holder.get().getIdAsLong(), (Long) holder.get().getProperty(BLUEPRINTS_ID));
                 } else {
                     vertex.addAll(holder.get());
                 }
             }
 
-            final Vertex root = this.graph.getVertex(vertex.getProperty(TITAN_ID));
+            final Vertex root = this.graph.getVertex(vertex.getProperty(BLUEPRINTS_ID));
             for (final Edge edge : vertex.getEdges(OUT)) {
                 final Edge e = this.graph.addEdge(null, root, this.graph.getVertex(faunusTitanIdMap.get((Long) edge.getVertex(IN).getId())), edge.getLabel());
                 for (final String property : edge.getPropertyKeys()) {
                     e.setProperty(property, edge.getProperty(property));
                 }
+                WriteGraphMapReduce.commitGraph(this.graph, this.counter++);
             }
 
-            vertex.removeProperty(TITAN_ID);
+            vertex.removeProperty(BLUEPRINTS_ID);
             context.write(NullWritable.get(), vertex);
         }
 
