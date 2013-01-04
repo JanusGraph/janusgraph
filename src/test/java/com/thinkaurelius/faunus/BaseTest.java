@@ -187,4 +187,12 @@ public abstract class BaseTest extends TestCase {
             }
         }
     }
+
+    public static long count(final Iterable iterable) {
+        long counter = 0;
+        for (Object o : iterable) {
+            counter++;
+        }
+        return counter;
+    }
 }
