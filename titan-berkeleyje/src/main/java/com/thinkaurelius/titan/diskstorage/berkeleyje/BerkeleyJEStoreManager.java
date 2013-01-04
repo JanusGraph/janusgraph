@@ -8,6 +8,7 @@ import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.Transaction;
+import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
@@ -36,7 +37,6 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
     public static final int CACHE_DEFAULT = 65;
 
     private final Map<String, BerkeleyJEKeyValueStore> stores;
-
 
     private Environment environment;
     private final File directory;

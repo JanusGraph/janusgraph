@@ -21,6 +21,7 @@
         Titan separates the concerns of graph processing and manipulation from storing the graph on disk,
         delegating that concern to an extensible set of persistence solutions.
     </description>
+
     <developers>
         <developer>
             <name>Matthias Broecheler</name>
@@ -54,6 +55,7 @@
 
     <properties>
         <titan.version>0.3.0-SNAPSHOT</titan.version>
+        <titan.compatible.versions>0.2.0,0.3.0-SNAPSHOT</titan.compatible.versions>
         <tinkerpop.version>2.2.0</tinkerpop.version>
         <junit.version>4.5</junit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

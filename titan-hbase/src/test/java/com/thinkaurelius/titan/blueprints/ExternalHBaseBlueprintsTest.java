@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.blueprints;
 
-import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
@@ -11,7 +11,7 @@ import com.tinkerpop.blueprints.Graph;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class ExternalHBaseBlueprintsTest extends LocalBlueprintsTest {
+public class ExternalHBaseBlueprintsTest extends TitanBlueprintsTest {
 
 
     @Override
@@ -26,16 +26,27 @@ public class ExternalHBaseBlueprintsTest extends LocalBlueprintsTest {
 
     @Override
     public Graph generateGraph() {
-        Graph graph = TitanFactory.open(StorageSetup.getHBaseGraphConfiguration());
+        Graph graph = TitanFactory.open(HBaseStorageSetup.getHBaseGraphConfiguration());
         return graph;
     }
 
-    // TODO: IT DOES! @Override
+    @Override
     public void cleanUp() throws StorageException {
         HBaseStoreManager s = new HBaseStoreManager(
-                StorageSetup.getHBaseGraphConfiguration().subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE));
+                HBaseStorageSetup.getHBaseGraphConfiguration().subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE));
         s.clearStorage();
     }
+
+    @Override
+    public boolean supportsMultipleGraphs() {
+        return false;
+    }
+
+    @Override
+    public Graph generateGraph(String s) {
+        throw new UnsupportedOperationException();
+    }
+
 
 
 }

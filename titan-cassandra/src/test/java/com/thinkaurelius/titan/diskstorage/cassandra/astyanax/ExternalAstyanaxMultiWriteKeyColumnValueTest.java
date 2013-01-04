@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
 
-import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.MultiWriteKeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
@@ -12,7 +12,7 @@ public class ExternalAstyanaxMultiWriteKeyColumnValueTest extends MultiWriteKeyC
 
     @Override
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        return new AstyanaxStoreManager(StorageSetup.getCassandraStorageConfiguration());
+        return new AstyanaxStoreManager(CassandraStorageSetup.getCassandraStorageConfiguration());
     }
 
     public static CassandraProcessStarter ch = new CassandraProcessStarter();

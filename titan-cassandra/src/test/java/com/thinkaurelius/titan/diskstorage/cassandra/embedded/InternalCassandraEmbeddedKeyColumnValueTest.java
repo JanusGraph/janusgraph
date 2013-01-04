@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
-import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -14,7 +14,7 @@ public class InternalCassandraEmbeddedKeyColumnValueTest extends KeyColumnValueS
     }
 
     private Configuration getConfiguration() {
-        Configuration config = StorageSetup.getEmbeddedCassandraStorageConfiguration();
+        Configuration config = CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(true);
         return config;
     }
 

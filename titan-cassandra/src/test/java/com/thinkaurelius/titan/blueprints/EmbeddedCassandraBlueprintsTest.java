@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.blueprints;
 
-import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager;
@@ -11,7 +11,7 @@ import com.tinkerpop.blueprints.Graph;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class EmbeddedCassandraBlueprintsTest extends LocalBlueprintsTest {
+public class EmbeddedCassandraBlueprintsTest extends TitanBlueprintsTest {
 
     @Override
     public void shutDown() {
@@ -19,16 +19,31 @@ public class EmbeddedCassandraBlueprintsTest extends LocalBlueprintsTest {
     }
 
     @Override
+    public void startUp() {
+        //Do nothing
+    }
+
+    @Override
     public Graph generateGraph() {
-        Graph graph = TitanFactory.open(StorageSetup.getEmbeddedCassandraGraphConfiguration());
+        Graph graph = TitanFactory.open(CassandraStorageSetup.getEmbeddedCassandraGraphConfiguration());
         return graph;
     }
 
-    // TODO: IT DOES! @Override
+    @Override
     public void cleanUp() throws StorageException {
         CassandraEmbeddedStoreManager s = new CassandraEmbeddedStoreManager(
-                StorageSetup.getEmbeddedCassandraGraphConfiguration().subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE));
+                CassandraStorageSetup.getEmbeddedCassandraGraphConfiguration().subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE));
         s.clearStorage();
+    }
+
+    @Override
+    public boolean supportsMultipleGraphs() {
+        return false;
+    }
+
+    @Override
+    public Graph generateGraph(String s) {
+        throw new UnsupportedOperationException();
     }
 
 

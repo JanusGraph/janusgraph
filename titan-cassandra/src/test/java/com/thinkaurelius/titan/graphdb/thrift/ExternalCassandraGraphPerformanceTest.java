@@ -1,17 +1,18 @@
-package com.thinkaurelius.titan.graphdb.cassandra;
+package com.thinkaurelius.titan.graphdb.thrift;
 
-import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
-import com.thinkaurelius.titan.graphdb.TitanGraphTest;
+import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class ExternalCassandraGraphTest extends TitanGraphTest {
+public class ExternalCassandraGraphPerformanceTest extends TitanGraphPerformanceTest {
+
 
     public static CassandraProcessStarter ch = new CassandraProcessStarter();
 
-    public ExternalCassandraGraphTest() {
-        super(StorageSetup.getCassandraThriftGraphConfiguration());
+    public ExternalCassandraGraphPerformanceTest() {
+        super(CassandraStorageSetup.getCassandraThriftGraphConfiguration(), 0, 1, false);
     }
 
     @BeforeClass

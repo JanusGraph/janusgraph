@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
-import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -13,7 +13,7 @@ public class ExternalHBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
     }
 
     private Configuration getConfig() {
-        Configuration c = StorageSetup.getHBaseStorageConfiguration();
+        Configuration c = HBaseStorageSetup.getHBaseStorageConfiguration();
 //		c.setProperty("hbase-config.hbase.zookeeper.quorum", "localhost");
 //		c.setProperty("hbase-config.hbase.zookeeper.property.clientPort", "2181");
         return c;

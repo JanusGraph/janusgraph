@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.blueprints;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.tinkerpop.blueprints.EdgeTestSuite;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphTestSuite;
@@ -26,7 +27,7 @@ import java.util.Set;
  * @author Matthias Broecheler (http://www.matthiasb.com)
  */
 
-public class LocalBlueprintsTest extends GraphTest {
+public abstract class TitanBlueprintsTest extends GraphTest {
 
     /*public void testTitanBenchmarkTestSuite() throws Exception {
         this.stopWatch();
@@ -65,8 +66,10 @@ public class LocalBlueprintsTest extends GraphTest {
     }
 
     public void testTransactionalGraphTestSuite() throws Exception {
-        this.stopWatch();
-        doTestSuite(new TransactionalTitanGraphTestSuite(this), ImmutableSet.of("testCompetingThreadsOnMultipleDbInstances"));
+        this.stopWatch();             
+        Set<String> excludedTests = new HashSet<String>();
+        if (!supportsMultipleGraphs()) excludedTests.add("testCompetingThreadsOnMultipleDbInstances");
+        doTestSuite(new TransactionalTitanGraphTestSuite(this), excludedTests);
         printTestPerformance("TransactionalTitanGraphTestSuite", this.stopWatch());
     }
 
@@ -94,42 +97,26 @@ public class LocalBlueprintsTest extends GraphTest {
         printTestPerformance("GMLReaderTestSuite", this.stopWatch());
     }
 
-    @Override
-    public Graph generateGraph() {
-        Graph graph = TitanFactory.open(StorageSetup.getHomeDir());
-        return graph;
-    }
+    /**
+     *
+     * @return true, if {@link #generateGraph(String)} is supported
+     */
+    public abstract boolean supportsMultipleGraphs();
 
-    @Override
-    public Graph generateGraph(String uid) {
-        //TODO:
-        throw new UnsupportedOperationException();
-    }
+    public abstract void cleanUp() throws StorageException;
+
+    public abstract void startUp();
+
+    public abstract void shutDown();
 
     @Override
     public void doTestSuite(TestSuite testSuite) throws Exception {
         doTestSuite(testSuite, new HashSet<String>());
     }
 
-    // TODO: MAKE ALIVE
-    /*public void cleanUp() throws StorageException {
-        BerkeleyJEStoreManager s = new BerkeleyJEStoreManager(
-                StorageSetup.getBerkeleyJEStorageConfiguration());
-        s.clearStorage();
-        Assert.assertFalse(StorageSetup.getHomeDirFile().exists() && StorageSetup.getHomeDirFile().listFiles().length > 0);
-    }*/
-
-    public void startUp() {
-        //Nothing
-    }
-
-    public void shutDown() {
-        Assert.assertFalse(StorageSetup.getHomeDirFile().exists() && StorageSetup.getHomeDirFile().listFiles().length > 0);
-    }
-
     public void doTestSuite(TestSuite testSuite, Set<String> ignoreTests) throws Exception {
         startUp();
-        // TODO: I KILLED THIS cleanUp();
+        cleanUp();
         for (Method method : testSuite.getClass().getMethods()) {
             if (ignoreTests.contains(method.getName())
                     || !method.getName().startsWith("test")) continue;
@@ -145,7 +132,7 @@ public class LocalBlueprintsTest extends GraphTest {
                 e.printStackTrace();
                 throw new RuntimeException(e);
             } finally {
-                // TODO: I KILLED THIS     cleanUp();
+                cleanUp();
             }
         }
         shutDown();

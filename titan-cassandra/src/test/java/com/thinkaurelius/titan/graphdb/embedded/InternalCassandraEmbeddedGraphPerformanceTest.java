@@ -1,0 +1,16 @@
+package com.thinkaurelius.titan.graphdb.embedded;
+
+import com.thinkaurelius.titan.CassandraStorageSetup;
+import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceTest;
+
+/**
+ * (c) Matthias Broecheler (me@matthiasb.com)
+ */
+
+public class InternalCassandraEmbeddedGraphPerformanceTest extends TitanGraphPerformanceTest {
+
+    public InternalCassandraEmbeddedGraphPerformanceTest() {
+        super(CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration(),0,1,false);
+    }
+
+}

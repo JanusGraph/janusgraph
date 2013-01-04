@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.tinkerpop.rexster;
 
-import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.CassandraStorageSetup;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.StorageSetup;
 
 public class RexsterServerClientCassandraEmbeddedTest extends RexsterServerClientTest {
     public RexsterServerClientCassandraEmbeddedTest() {
-        super(StorageSetup.getEmbeddedCassandraPartitionGraphConfiguration());
+        super(CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration());
     }
 
 }

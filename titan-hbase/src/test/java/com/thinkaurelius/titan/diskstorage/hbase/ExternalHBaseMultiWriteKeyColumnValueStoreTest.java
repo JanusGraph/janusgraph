@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
-import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.diskstorage.MultiWriteKeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -13,7 +13,7 @@ public class ExternalHBaseMultiWriteKeyColumnValueStoreTest extends MultiWriteKe
     }
 
     private Configuration getConfig() {
-        Configuration c = StorageSetup.getHBaseStorageConfiguration();
+        Configuration c = HBaseStorageSetup.getHBaseStorageConfiguration();
         return c;
     }
 }

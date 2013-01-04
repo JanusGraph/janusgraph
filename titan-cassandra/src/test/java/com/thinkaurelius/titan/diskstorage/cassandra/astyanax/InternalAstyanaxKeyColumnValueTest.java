@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
 
-import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraDaemonWrapper;
@@ -15,12 +15,12 @@ public class InternalAstyanaxKeyColumnValueTest extends KeyColumnValueStoreTest 
 
     @BeforeClass
     public static void startCassandra() {
-        CassandraDaemonWrapper.start(StorageSetup.cassandraYamlPath);
+        CassandraDaemonWrapper.start(CassandraStorageSetup.cassandraYamlPath);
     }
 
     @Override
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        return new AstyanaxStoreManager(StorageSetup.getCassandraStorageConfiguration());
+        return new AstyanaxStoreManager(CassandraStorageSetup.getCassandraStorageConfiguration());
     }
 
 

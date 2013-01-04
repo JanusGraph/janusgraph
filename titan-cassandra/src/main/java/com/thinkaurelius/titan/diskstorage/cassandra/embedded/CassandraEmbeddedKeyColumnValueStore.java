@@ -58,7 +58,6 @@ public class CassandraEmbeddedKeyColumnValueStore
 
     @Override
     public void close() throws StorageException {
-        // TODO Auto-generated method stub
     }
 
     @Override

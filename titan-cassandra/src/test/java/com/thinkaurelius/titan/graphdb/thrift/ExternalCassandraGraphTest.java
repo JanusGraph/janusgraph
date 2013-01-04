@@ -1,17 +1,17 @@
-package com.thinkaurelius.titan.graphdb.cassandra;
+package com.thinkaurelius.titan.graphdb.thrift;
 
-import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
-import com.thinkaurelius.titan.graphdb.TitanGraphConcurrentTest;
+import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class ExternalCassandraGraphConcurrentTest extends TitanGraphConcurrentTest {
+public class ExternalCassandraGraphTest extends TitanGraphTest {
 
     public static CassandraProcessStarter ch = new CassandraProcessStarter();
 
-    public ExternalCassandraGraphConcurrentTest() {
-        super(StorageSetup.getCassandraThriftGraphConfiguration());
+    public ExternalCassandraGraphTest() {
+        super(CassandraStorageSetup.getCassandraThriftGraphConfiguration());
     }
 
     @BeforeClass

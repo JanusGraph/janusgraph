@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
@@ -23,13 +25,16 @@ import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLo
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -39,7 +44,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 
 public class Backend {
 
-    private final Logger log = LoggerFactory.getLogger(Backend.class);
+    private static final Logger log = LoggerFactory.getLogger(Backend.class);
 
     /**
      * These are the names for the edge store and property index databases, respectively.
@@ -58,26 +63,6 @@ public class Backend {
 
 
     public static final String LOCK_STORE_SUFFIX = "_lock_";
-
-    public static final String STORE_LOCAL = "local";
-    public static final String STORE_BERKELEYDB = "berkeleyje";
-    public static final String STORE_CASSANDRA = "cassandra";
-    public static final String STORE_CASSANDRATHRIFT = "cassandrathrift";
-    public static final String STORE_ASTYANAX = "astyanax";
-    public static final String STORE_EMBEDDEDCASSANDRA = "embeddedcassandra";
-    public static final String STORE_HBASE = "hbase";
-
-    ////// TODO: THIS NEEDS TO BE BROKEN APART
-    private static final Map<String, Class<? extends StoreManager>> preregisteredStorageManagers =
-            new HashMap<String, Class<? extends StoreManager>>() {{
-                //    put(STORE_LOCAL, BerkeleyJEStoreManager.class);
-                //    put(STORE_BERKELEYDB, BerkeleyJEStoreManager.class);
-                //    put(STORE_CASSANDRA, AstyanaxStoreManager.class);
-                //    put(STORE_CASSANDRATHRIFT, CassandraThriftStoreManager.class);
-                //    put(STORE_ASTYANAX, AstyanaxStoreManager.class);
-                //    put(STORE_HBASE, HBaseStoreManager.class);
-                //    put(STORE_EMBEDDEDCASSANDRA, CassandraEmbeddedStoreManager.class);
-            }};
 
     public static final Map<String, Integer> STATIC_KEY_LENGTHS = new HashMap<String, Integer>() {{
         put(EDGESTORE_NAME, 8);
@@ -210,8 +195,8 @@ public class Backend {
     public final static StoreManager getStorageManager(Configuration storageConfig) {
         String clazzname = storageConfig.getString(
                 GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, GraphDatabaseConfiguration.STORAGE_BACKEND_DEFAULT);
-        if (preregisteredStorageManagers.containsKey(clazzname.toLowerCase())) {
-            clazzname = preregisteredStorageManagers.get(clazzname.toLowerCase()).getCanonicalName();
+        if (REGISTERED_STORAGE_MANAGERS.containsKey(clazzname.toLowerCase())) {
+            clazzname = REGISTERED_STORAGE_MANAGERS.get(clazzname.toLowerCase());
         }
 
         try {
@@ -220,17 +205,17 @@ public class Backend {
             StoreManager storage = (StoreManager) constructor.newInstance(storageConfig);
             return storage;
         } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Could not find storage manager class" + clazzname);
+            throw new IllegalArgumentException("Could not find storage manager class: " + clazzname);
         } catch (NoSuchMethodException e) {
             throw new IllegalArgumentException("Configured storage manager does not have required constructor: " + clazzname);
         } catch (InstantiationException e) {
-            throw new IllegalArgumentException("Could not instantiate storage manager class " + clazzname, e);
+            throw new IllegalArgumentException("Could not instantiate storage manager class: " + clazzname, e);
         } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException("Could not instantiate storage manager class " + clazzname, e);
+            throw new IllegalArgumentException("Could not instantiate storage manager class: " + clazzname, e);
         } catch (InvocationTargetException e) {
-            throw new IllegalArgumentException("Could not instantiate storage manager class " + clazzname, e);
+            throw new IllegalArgumentException("Could not instantiate storage manager class: " + clazzname, e);
         } catch (ClassCastException e) {
-            throw new IllegalArgumentException("Could not instantiate storage manager class " + clazzname, e);
+            throw new IllegalArgumentException("Could not instantiate storage manager class: " + clazzname, e);
         }
     }
 
@@ -294,5 +279,43 @@ public class Backend {
         idAuthority.close();
         storeManager.clearStorage();
     }
+    
+    //############ Registered Storage Managers ##############
 
+    private static final Map<String, String> REGISTERED_STORAGE_MANAGERS =
+            new HashMap<String, String>();
+
+    static {
+        Properties props;
+
+        try {
+            props = new Properties();
+            props.load(TitanFactory.class.getClassLoader().getResourceAsStream(TitanConstants.TITAN_PROPERTIES_FILE));
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
+        String prefix = "storage.";
+        for (String key : props.stringPropertyNames()) {
+            if (key.toLowerCase().startsWith(prefix)) {
+                String shorthand = key.substring(prefix.length()).toLowerCase();
+                String clazz = props.getProperty(key);
+                REGISTERED_STORAGE_MANAGERS.put(shorthand,clazz);
+                log.debug("Registering shorthand {} for: {}",shorthand,clazz);
+            }
+        }
+    }
+//
+//    public synchronized static final void registerStorageManager(String name, Class<? extends StoreManager> clazz) {
+//        Preconditions.checkNotNull(name);
+//        Preconditions.checkNotNull(clazz);
+//        Preconditions.checkArgument(!StringUtils.isEmpty(name));
+//        Preconditions.checkNotNull(!REGISTERED_STORAGE_MANAGERS.containsKey(name),"A storage manager has already been registered for name: " + name);
+//        REGISTERED_STORAGE_MANAGERS.put(name,clazz);
+//    }
+//
+//    public synchronized static final void removeStorageManager(String name) {
+//        Preconditions.checkNotNull(name);
+//        REGISTERED_STORAGE_MANAGERS.remove(name);
+//    }
+    
 }
