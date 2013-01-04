@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -18,12 +17,12 @@ import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.cassandra.dht.BytesToken;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
+import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.cassandra.exceptions.RequestExecutionException;
 import org.apache.cassandra.scheduler.IRequestScheduler;
 import org.apache.cassandra.service.MigrationManager;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.StorageService;
-import org.apache.cassandra.thrift.ConsistencyLevel;
-import org.apache.cassandra.thrift.UnavailableException;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -222,22 +221,20 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             }
         }
 
-        ConsistencyLevel clvl = getTx(txh).getWriteConsistencyLevel().getThriftConsistency();
         List<RowMutation> mutationList = new ArrayList<RowMutation>(rowMutations.values());
-        rowMutations=null;
-        mutate(mutationList, clvl);
+        mutate(mutationList, getTx(txh).getWriteConsistencyLevel().getDBConsistency());
     }
 
-    private void mutate(List<RowMutation> cmds, ConsistencyLevel clvl) throws StorageException {
+    private void mutate(List<RowMutation> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
         try {
             schedule(DatabaseDescriptor.getRpcTimeout());
             try {
                 StorageProxy.mutate(cmds, clvl);
+            } catch (RequestExecutionException e) {
+                throw new TemporaryStorageException(e);
             } finally {
                 release();
             }
-        } catch (UnavailableException ex) {
-            throw new TemporaryStorageException(ex);
         } catch (TimeoutException ex) {
             log.debug("Cassandra TimeoutException", ex);
             throw new TemporaryStorageException(ex);
@@ -280,7 +277,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
 		KSMetaData ksm;
 		try {
-			ksm = KSMetaData.newKeyspace(keyspaceName, strategyName, options);
+			ksm = KSMetaData.newKeyspace(keyspaceName, strategyName, options, true);
 		} catch (ConfigurationException e) {
 			throw new PermanentStorageException("Failed to instantiate keyspace metadata for " + keyspaceName, e);
 		}

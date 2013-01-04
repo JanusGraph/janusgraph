@@ -3,14 +3,12 @@ package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.apache.cassandra.db.*;
+import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.filter.QueryPath;
+import org.apache.cassandra.exceptions.RequestExecutionException;
 import org.apache.cassandra.service.StorageProxy;
-import org.apache.cassandra.thrift.ConsistencyLevel;
-import org.apache.cassandra.thrift.InvalidRequestException;
-import org.apache.cassandra.thrift.UnavailableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeoutException;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
@@ -61,8 +58,7 @@ public class CassandraEmbeddedKeyColumnValueStore
 		SliceByNamesReadCommand namesCmd = new SliceByNamesReadCommand(
 				keyspace, key.duplicate(), slicePath, Arrays.asList(column.duplicate()));
 
-		ConsistencyLevel clvl = getTx(txh).getReadConsistencyLevel().getThriftConsistency();
-		List<Row> rows = read(namesCmd, clvl);
+		List<Row> rows = read(namesCmd, getTx(txh).getReadConsistencyLevel().getDBConsistency());
 		
 		if (null == rows || 0 == rows.size())
 			return null;
@@ -138,9 +134,8 @@ public class CassandraEmbeddedKeyColumnValueStore
                 EMPTY_BYTE_BUFFER, // End column name (empty means max out the count)
                 false,             // Reverse results? (false=no)
                 1);                // Max count of Columns to return
-        ConsistencyLevel clvl = getTx(txh).getReadConsistencyLevel().getThriftConsistency();
-        
-        List<Row> rows = read(sliceCmd, clvl);
+
+        List<Row> rows = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDBConsistency());
         
         if (null == rows || 0 == rows.size())
         	return false;
@@ -182,9 +177,7 @@ public class CassandraEmbeddedKeyColumnValueStore
                 false,           // Reverse results? (false=no)
                 limit);          // Max count of Columns to return
         
-        ConsistencyLevel clvl = getTx(txh).getReadConsistencyLevel().getThriftConsistency();
-        
-        List<Row> slice = read(sliceCmd, clvl);
+        List<Row> slice = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDBConsistency());
 
         if (null == slice || 0 == slice.size())
         	return new ArrayList<Entry>(0);
@@ -242,15 +235,11 @@ public class CassandraEmbeddedKeyColumnValueStore
 	private List<Row> read(List<ReadCommand> cmds, ConsistencyLevel clvl) throws StorageException {
 		try {
 			return StorageProxy.read(cmds, clvl);
+        } catch (RequestExecutionException e) {
+            throw new PermanentStorageException(e);
 		} catch (IOException e) {
 			throw new PermanentStorageException(e);
-		} catch (UnavailableException e) {
-			throw new TemporaryStorageException(e);
-		} catch (TimeoutException e) {
-			throw new TemporaryStorageException(e);
-		} catch (InvalidRequestException e) {
-			throw new PermanentStorageException(e);
-		}
+        }
 	}
 
 	

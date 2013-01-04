@@ -5,9 +5,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import org.apache.cassandra.thrift.CassandraDaemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.cassandra.service.CassandraDaemon;
 
 /**
  * This class starts a Thrift CassandraDaemon inside the current JVM.
