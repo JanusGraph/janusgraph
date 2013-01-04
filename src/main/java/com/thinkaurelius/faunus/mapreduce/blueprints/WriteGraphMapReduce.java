@@ -155,6 +155,7 @@ public class WriteGraphMapReduce {
 
     // WRITE ALL THE EDGES CONNECTING THE VERTICES
     // TODO: If we can safely assume this is always going to be an OutputFormat then make it NullWritable/NullWritable (save memory)
+    // TODO: ...or simply not keep around faunusVertex in the reduce() method and output a shell vertex.
     public static class Reduce extends Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> {
 
         Graph graph;
