@@ -355,6 +355,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             client.system_update_keyspace(new KsDef().setName(ksDef.name)
                                                      .setDurable_writes(ksDef.durable_writes)
                                                      .setStrategy_class(ksDef.strategy_class)
+                                                     .setCf_defs(Collections.EMPTY_LIST)
                                                      .setStrategy_options(new HashMap<String, String>(ksDef.strategy_options) {{
                                                          put(key, value);
                                                      }}));

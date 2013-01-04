@@ -102,20 +102,6 @@ public class Backend {
         isKeyColumnValueStore = storeManager instanceof KeyColumnValueStoreManager;
         storeFeatures = storeManager.getFeatures();
 
-        try {
-            String version = storeManager.getConfigurationProperty(TITAN_BACKEND_VERSION);
-            if (!TitanConstants.VERSION.equals(version)) {
-                if (version==null || 
-                        (TitanConstants.COMPATIBLE_VERSIONS.contains(version)) ) {
-                    storeManager.setConfigurationProperty(TITAN_BACKEND_VERSION,TitanConstants.VERSION);
-                } else {
-                    throw new TitanException("StorageBackend is incompatible with Titan version: " + TitanConstants.VERSION + " vs. " + version);
-                }
-            }
-        } catch (StorageException e) {
-            throw new TitanException("Could not read/write backend version information",e);
-        }
-
         int bufferSizeTmp = storageConfig.getInt(BUFFER_SIZE_KEY,BUFFER_SIZE_DEFAULT);
         Preconditions.checkArgument(bufferSizeTmp >= 0, "Buffer size must be non-negative (use 0 to disable)");
         if (!storeFeatures.supportsBatchMutation()) {
@@ -204,6 +190,16 @@ public class Backend {
             vertexIndexStore = getLockStore(getBufferStore(VERTEXINDEX_STORE_NAME));
 
             if (hashPrefixIndex) vertexIndexStore = new HashPrefixKeyColumnValueStore(vertexIndexStore,4);
+
+            String version = storeManager.getConfigurationProperty(TITAN_BACKEND_VERSION);
+            if (!TitanConstants.VERSION.equals(version)) {
+                if (version==null ||
+                        (TitanConstants.COMPATIBLE_VERSIONS.contains(version)) ) {
+                    storeManager.setConfigurationProperty(TITAN_BACKEND_VERSION,TitanConstants.VERSION);
+                } else {
+                    throw new TitanException("StorageBackend is incompatible with Titan version: " + TitanConstants.VERSION + " vs. " + version);
+                }
+            }
         } catch (StorageException e) {
             throw new TitanException("Could not initialize backend",e);
         }
