@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.formats.titan.hbase;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.diskstorage.Backend;
@@ -53,18 +54,10 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
         config.set(HConstants.ZOOKEEPER_QUORUM, config.get(TITAN_GRAPH_INPUT_STORAGE_HOSTNAME));
         if (config.get(TITAN_GRAPH_INPUT_STORAGE_PORT, null) != null)
             config.set(HConstants.ZOOKEEPER_CLIENT_PORT, config.get(TITAN_GRAPH_INPUT_STORAGE_PORT));
+        config.set("storage.read-only","true");
+        config.set("autotype","none");
         this.tableInputFormat.setConf(config);
-
-        final BaseConfiguration titanconfig = new BaseConfiguration();
-        titanconfig.setProperty("storage.read-only", "true");
-        titanconfig.setProperty("autotype", "none");
-        // HBase specific configuration
-        titanconfig.setProperty("storage.backend", config.get(TITAN_GRAPH_INPUT_STORAGE_BACKEND));
-        titanconfig.setProperty("storage.tablename", config.get(TITAN_GRAPH_INPUT_STORAGE_TABLENAME));
-        titanconfig.setProperty("storage.hostname", config.get(TITAN_GRAPH_INPUT_STORAGE_HOSTNAME));
-        if (config.get(TITAN_GRAPH_INPUT_STORAGE_PORT, null) != null)
-            titanconfig.setProperty("storage.port", config.get(TITAN_GRAPH_INPUT_STORAGE_PORT));
-        this.graph = new FaunusTitanHBaseGraph(titanconfig);
+        this.graph = new FaunusTitanHBaseGraph(GraphFactory.generateTitanConfiguration(config, TITAN_GRAPH_INPUT));
         this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
     }
 

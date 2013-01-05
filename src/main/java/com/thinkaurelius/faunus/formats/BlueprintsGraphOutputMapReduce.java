@@ -3,8 +3,8 @@ package com.thinkaurelius.faunus.formats;
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
-import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraOutputFormat;
-import com.thinkaurelius.faunus.formats.titan.hbase.TitanHBaseOutputFormat;
+import com.thinkaurelius.faunus.formats.titan.GraphFactory;
+import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.TransactionalGraph;
@@ -33,7 +33,8 @@ public class BlueprintsGraphOutputMapReduce {
         VERTICES_WRITTEN,
         VERTEX_PROPERTIES_WRITTEN,
         EDGES_WRITTEN,
-        EDGE_PROPERTIES_WRITTEN
+        EDGE_PROPERTIES_WRITTEN,
+        NULL_VERTEX_EDGES_DROPPED
     }
 
     public static final String BLUEPRINTS_ID = "_blueprintsId";
@@ -51,10 +52,8 @@ public class BlueprintsGraphOutputMapReduce {
 
     public static Graph generateGraph(final Configuration config) {
         final Class<? extends OutputFormat> format = config.getClass(FaunusGraph.GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
-        if (format.equals(TitanCassandraOutputFormat.class)) {
-            return TitanCassandraOutputFormat.generateGraph(config);
-        } else if (format.equals(TitanHBaseOutputFormat.class)) {
-            return TitanHBaseOutputFormat.generateGraph(config);
+        if (TitanOutputFormat.class.isAssignableFrom(format)) {
+            return GraphFactory.generateGraph(config, TitanOutputFormat.TITAN_GRAPH_OUTPUT);
         } else {
             // TODO: this is where Rexster can come into play here
             throw new RuntimeException("The provide graph output format is not supported: " + format.getName());
@@ -163,16 +162,21 @@ public class BlueprintsGraphOutputMapReduce {
             Vertex blueprintsVertex = this.graph.getVertex(faunusVertex.getProperty(BLUEPRINTS_ID));
             for (final Edge faunusEdge : faunusVertex.getEdges(OUT)) {
 
-                final Edge blueprintsEdge = this.graph.addEdge(null, blueprintsVertex, this.graph.getVertex(faunusBlueprintsIdMap.get(faunusEdge.getVertex(IN).getId())), faunusEdge.getLabel());
-                context.getCounter(Counters.EDGES_WRITTEN).increment(1l);
-                for (final String property : faunusEdge.getPropertyKeys()) {
-                    blueprintsEdge.setProperty(property, faunusEdge.getProperty(property));
-                    context.getCounter(Counters.EDGE_PROPERTIES_WRITTEN).increment(1l);
+                final Vertex otherVertex = this.graph.getVertex(faunusBlueprintsIdMap.get(faunusEdge.getVertex(IN).getId()));
+                if (null != blueprintsVertex && null != otherVertex) {
+                    final Edge blueprintsEdge = this.graph.addEdge(null, blueprintsVertex, otherVertex, faunusEdge.getLabel());
+                    context.getCounter(Counters.EDGES_WRITTEN).increment(1l);
+                    for (final String property : faunusEdge.getPropertyKeys()) {
+                        blueprintsEdge.setProperty(property, faunusEdge.getProperty(property));
+                        context.getCounter(Counters.EDGE_PROPERTIES_WRITTEN).increment(1l);
+                    }
+                    // after so many mutations, successfully commit the transaction (if graph is transactional)
+                    // for titan, if the transaction is committed, need to 'reget' the vertex
+                    if (BlueprintsGraphOutputMapReduce.commitGraph(this.graph, ++this.mutations))
+                        blueprintsVertex = this.graph.getVertex(blueprintsVertex.getId());
+                } else {
+                    context.getCounter(Counters.NULL_VERTEX_EDGES_DROPPED).increment(1l);
                 }
-                // after so many mutations, successfully commit the transaction (if graph is transactional)
-                // for titan, if the transaction is committed, need to 'reget' the vertex
-                if (BlueprintsGraphOutputMapReduce.commitGraph(this.graph, ++this.mutations))
-                    blueprintsVertex = this.graph.getVertex(blueprintsVertex.getId());
             }
 
             // this is a sideEffect, thus remove the created blueprints id property

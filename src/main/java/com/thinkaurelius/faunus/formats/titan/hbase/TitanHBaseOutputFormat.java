@@ -11,17 +11,4 @@ import org.apache.hadoop.conf.Configuration;
  */
 public class TitanHBaseOutputFormat extends TitanOutputFormat {
 
-    public static final String TITAN_GRAPH_OUTPUT_STORAGE_TABLENAME = "titan.graph.output.storage.tablename";
-
-    public static Graph generateGraph(final Configuration config) {
-        final BaseConfiguration titanconfig = new BaseConfiguration();
-        titanconfig.setProperty("autotype", "blueprints");
-        titanconfig.setProperty("storage.backend", config.get(TITAN_GRAPH_OUTPUT_STORAGE_BACKEND));
-        titanconfig.setProperty("storage.tablename", config.get(TITAN_GRAPH_OUTPUT_STORAGE_TABLENAME));
-        titanconfig.setProperty("storage.hostname", config.get(TITAN_GRAPH_OUTPUT_STORAGE_HOSTNAME));
-        titanconfig.setProperty("storage.batch-loading", true);
-        if (config.get(TITAN_GRAPH_OUTPUT_STORAGE_PORT, null) != null)
-            titanconfig.setProperty("storage.port", config.get(TITAN_GRAPH_OUTPUT_STORAGE_PORT));
-        return TitanFactory.open(titanconfig);
-    }
 }

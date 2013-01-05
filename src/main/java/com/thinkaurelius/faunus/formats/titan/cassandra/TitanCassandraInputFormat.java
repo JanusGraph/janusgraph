@@ -1,7 +1,9 @@
 package com.thinkaurelius.faunus.formats.titan.cassandra;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
+import com.thinkaurelius.faunus.formats.titan.hbase.FaunusTitanHBaseGraph;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
@@ -61,21 +63,11 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
 
         ConfigHelper.setInputInitialAddress(config, config.get(TITAN_GRAPH_INPUT_STORAGE_HOSTNAME));
         ConfigHelper.setInputRpcPort(config, config.get(TITAN_GRAPH_INPUT_STORAGE_PORT));
+        config.set("storage.read-only","true");
+        config.set("autotype","none");
+        this.graph = new FaunusTitanCassandraGraph(GraphFactory.generateTitanConfiguration(config, TITAN_GRAPH_INPUT));
+        this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
 
-        final BaseConfiguration titanconfig = new BaseConfiguration();
-        titanconfig.setProperty("storage.read-only", "true");
-        titanconfig.setProperty("autotype", "none");
-        titanconfig.setProperty("storage.backend", config.get(TITAN_GRAPH_INPUT_STORAGE_BACKEND));   // todo: astyanax
-        titanconfig.setProperty("storage.hostname", config.get(TITAN_GRAPH_INPUT_STORAGE_HOSTNAME));
-        titanconfig.setProperty("storage.keyspace", config.get(TITAN_GRAPH_INPUT_STORAGE_KEYSPACE));
-        titanconfig.setProperty("storage.port", config.get(TITAN_GRAPH_INPUT_STORAGE_PORT));
-
-        /*if (ConfigHelper.getReadConsistencyLevel(config) != null)
-            titanconfig.setProperty("storage.read-consistency-level", ConfigHelper.getReadConsistencyLevel(config));
-        if (ConfigHelper.getWriteConsistencyLevel(config) != null)
-            titanconfig.setProperty("storage.write-consistency-level", ConfigHelper.getWriteConsistencyLevel(config));*/
-
-        this.graph = new FaunusTitanCassandraGraph(titanconfig);
         this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
         this.config = config;
     }
