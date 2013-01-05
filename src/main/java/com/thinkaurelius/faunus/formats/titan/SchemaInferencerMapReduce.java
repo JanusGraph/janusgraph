@@ -48,6 +48,9 @@ public class SchemaInferencerMapReduce {
 
             for (final Edge edge : value.getEdges(Direction.OUT)) {
                 this.funnyVertex.setProperty("l" + edge.getLabel(), String.class.getName());
+                for (final String property : edge.getPropertyKeys()) {
+                    this.funnyVertex.setProperty("t" + property, Object.class.getName());
+                }
             }
 
             this.longWritable.set(value.getIdAsLong());

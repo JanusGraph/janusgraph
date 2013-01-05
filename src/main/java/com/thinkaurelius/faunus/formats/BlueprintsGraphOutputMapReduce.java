@@ -37,11 +37,11 @@ public class BlueprintsGraphOutputMapReduce {
         NULL_VERTEX_EDGES_DROPPED
     }
 
+    public static final String BLUEPRINTS_GRAPH_OUTPUT_TX_COMMIT = "blueprints.graph.output.tx-commit";
     public static final String BLUEPRINTS_ID = "_blueprintsId";
-    private static final long MUTATION_COMMITS = 5000;
 
-    private static boolean commitGraph(final Graph graph, final long mutations) {
-        if (mutations % MUTATION_COMMITS == 0) {
+    private static boolean commitGraph(final Graph graph, final long mutations, final long txCommit) {
+        if (mutations % txCommit == 0) {
             if (graph instanceof TransactionalGraph) {
                 ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
                 return true;
@@ -67,6 +67,7 @@ public class BlueprintsGraphOutputMapReduce {
 
         Graph graph;
         private long mutations = 0;
+        private long commitTx = 5000;
 
         private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
@@ -75,6 +76,7 @@ public class BlueprintsGraphOutputMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
+            this.commitTx = context.getConfiguration().getLong(BLUEPRINTS_GRAPH_OUTPUT_TX_COMMIT, 5000);
         }
 
         @Override
@@ -102,7 +104,7 @@ public class BlueprintsGraphOutputMapReduce {
             context.write(this.longWritable, this.vertexHolder.set('v', value));
 
             // after so many mutations, successfully commit the transaction (if graph is transactional)
-            BlueprintsGraphOutputMapReduce.commitGraph(this.graph, ++this.mutations);
+            BlueprintsGraphOutputMapReduce.commitGraph(this.graph, ++this.mutations, this.commitTx);
         }
 
         @Override
@@ -140,10 +142,12 @@ public class BlueprintsGraphOutputMapReduce {
 
         Graph graph;
         private long mutations = 0;
+        private long commitTx = 5000;
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
+            this.commitTx = context.getConfiguration().getLong(BLUEPRINTS_GRAPH_OUTPUT_TX_COMMIT, 5000);
         }
 
         @Override
@@ -172,7 +176,7 @@ public class BlueprintsGraphOutputMapReduce {
                     }
                     // after so many mutations, successfully commit the transaction (if graph is transactional)
                     // for titan, if the transaction is committed, need to 'reget' the vertex
-                    if (BlueprintsGraphOutputMapReduce.commitGraph(this.graph, ++this.mutations))
+                    if (BlueprintsGraphOutputMapReduce.commitGraph(this.graph, ++this.mutations, this.commitTx))
                         blueprintsVertex = this.graph.getVertex(blueprintsVertex.getId());
                 } else {
                     context.getCounter(Counters.NULL_VERTEX_EDGES_DROPPED).increment(1l);
