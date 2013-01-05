@@ -108,8 +108,13 @@ public class BlueprintsGraphOutputMapReduce {
 
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
-            if (this.graph instanceof TransactionalGraph)
-                ((TransactionalGraph) this.graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+            try {
+                if (this.graph instanceof TransactionalGraph)
+                    ((TransactionalGraph) this.graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+                context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+            } catch (Exception e) {
+                context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+            }
         }
     }
 
@@ -175,7 +180,6 @@ public class BlueprintsGraphOutputMapReduce {
                     }
                     // after so many mutations, successfully commit the transaction (if graph is transactional)
                     // for titan, if the transaction is committed, need to 'reget' the vertex
-                    // after so many mutations, successfully commit the transaction (if graph is transactional)
                     if (this.graph instanceof TransactionalGraph && (++this.mutations % this.commitTx) == 0) {
                         try {
                             ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
@@ -197,8 +201,13 @@ public class BlueprintsGraphOutputMapReduce {
 
         @Override
         public void cleanup(final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            if (this.graph instanceof TransactionalGraph)
-                ((TransactionalGraph) this.graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+            try {
+                if (this.graph instanceof TransactionalGraph)
+                    ((TransactionalGraph) this.graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+                context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+            } catch (Exception e) {
+                context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+            }
         }
     }
 }
