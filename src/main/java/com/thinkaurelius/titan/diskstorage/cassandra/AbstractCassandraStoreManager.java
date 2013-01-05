@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import org.apache.cassandra.dht.IPartitioner;
 import org.apache.commons.configuration.Configuration;
 
 /**
@@ -18,9 +19,13 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     public enum Partitioner { 
         
         RANDOM, BYTEORDER, LOCALBYTEORDER;
-    
+
+        public static Partitioner getPartitioner(IPartitioner<?> partitioner) {
+            return getPartitioner(partitioner.getClass().getSimpleName());
+        }
+
         public static Partitioner getPartitioner(String className) {
-            if (className.endsWith("RandomPartitioner")) return Partitioner.RANDOM;
+            if (className.endsWith("RandomPartitioner") || className.endsWith("Murmur3Partitioner")) return Partitioner.RANDOM;
             else if (className.endsWith("ByteOrderedPartitioner")) return Partitioner.BYTEORDER;
             else throw new IllegalArgumentException("Unsupported partitioner: " + className);
         }

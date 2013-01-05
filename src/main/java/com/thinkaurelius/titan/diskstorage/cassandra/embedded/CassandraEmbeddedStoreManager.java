@@ -89,14 +89,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
     @Override
     public Partitioner getPartitioner() throws StorageException {
-        //Determine if key ordered
         try {
-            Token<?> token = StorageService.instance.getLocalPrimaryRange().left;
-            if (token instanceof BytesToken) {
-                return Partitioner.LOCALBYTEORDER;
-            } else {
-                return Partitioner.RANDOM;
-            }
+            return Partitioner.getPartitioner(StorageService.getPartitioner());
         } catch (Exception e) {
             log.warn("Could not read local token range: {}",e);
             throw new PermanentStorageException("Could not read partitioner information on cluster",e);
@@ -252,16 +246,24 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         requestScheduler.release();
     }
 
-	@Override
-	public void clearStorage() throws StorageException {
-		openStores.clear();
-		try {
-            if (Schema.instance.getTableInstance(keySpaceName)!=null)
-			    MigrationManager.announceKeyspaceDrop(keySpaceName);
-		} catch (ConfigurationException e) {
-			throw new PermanentStorageException(e);
-		}
-	}
+    @Override
+    public void clearStorage() throws StorageException {
+        openStores.clear();
+        try {
+            KSMetaData ksMetaData = Schema.instance.getKSMetaData(keySpaceName);
+
+            // Not a big deal if Keyspace doesn't not exist (dropped manually by user or tests).
+            // This is called on per test setup basis to make sure that previous test cleaned
+            // everything up, so first invocation would always fail as Keyspace doesn't yet exist.
+            if (ksMetaData == null)
+                return;
+
+            for (String cfName : ksMetaData.cfMetaData().keySet())
+                StorageService.instance.truncate(keySpaceName, cfName);
+        } catch (Exception e) {
+            throw new PermanentStorageException(e);
+        }
+    }
 
 
 	private void ensureKeyspaceExists(String keyspaceName) throws StorageException {
