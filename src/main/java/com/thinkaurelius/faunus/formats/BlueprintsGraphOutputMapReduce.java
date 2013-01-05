@@ -34,21 +34,13 @@ public class BlueprintsGraphOutputMapReduce {
         VERTEX_PROPERTIES_WRITTEN,
         EDGES_WRITTEN,
         EDGE_PROPERTIES_WRITTEN,
-        NULL_VERTEX_EDGES_DROPPED
+        NULL_VERTEX_EDGES_DROPPED,
+        SUCCESSFUL_TRANSACTIONS,
+        FAILED_TRANSACTIONS
     }
 
     public static final String BLUEPRINTS_GRAPH_OUTPUT_TX_COMMIT = "blueprints.graph.output.tx-commit";
     public static final String BLUEPRINTS_ID = "_blueprintsId";
-
-    private static boolean commitGraph(final Graph graph, final long mutations, final long txCommit) {
-        if (mutations % txCommit == 0) {
-            if (graph instanceof TransactionalGraph) {
-                ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
-                return true;
-            }
-        }
-        return false;
-    }
 
     public static Graph generateGraph(final Configuration config) {
         final Class<? extends OutputFormat> format = config.getClass(FaunusGraph.GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
@@ -104,7 +96,14 @@ public class BlueprintsGraphOutputMapReduce {
             context.write(this.longWritable, this.vertexHolder.set('v', value));
 
             // after so many mutations, successfully commit the transaction (if graph is transactional)
-            BlueprintsGraphOutputMapReduce.commitGraph(this.graph, ++this.mutations, this.commitTx);
+            if (this.graph instanceof TransactionalGraph && (++this.mutations % this.commitTx) == 0) {
+                try {
+                    ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+                    context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+                } catch (Exception e) {
+                    context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                }
+            }
         }
 
         @Override
@@ -176,8 +175,16 @@ public class BlueprintsGraphOutputMapReduce {
                     }
                     // after so many mutations, successfully commit the transaction (if graph is transactional)
                     // for titan, if the transaction is committed, need to 'reget' the vertex
-                    if (BlueprintsGraphOutputMapReduce.commitGraph(this.graph, ++this.mutations, this.commitTx))
+                    // after so many mutations, successfully commit the transaction (if graph is transactional)
+                    if (this.graph instanceof TransactionalGraph && (++this.mutations % this.commitTx) == 0) {
+                        try {
+                            ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+                            context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+                        } catch (Exception e) {
+                            context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                        }
                         blueprintsVertex = this.graph.getVertex(blueprintsVertex.getId());
+                    }
                 } else {
                     context.getCounter(Counters.NULL_VERTEX_EDGES_DROPPED).increment(1l);
                 }
