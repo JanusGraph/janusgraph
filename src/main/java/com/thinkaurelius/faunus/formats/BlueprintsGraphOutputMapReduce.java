@@ -169,9 +169,11 @@ public class BlueprintsGraphOutputMapReduce {
 
             Vertex blueprintsVertex = this.graph.getVertex(faunusVertex.getProperty(BLUEPRINTS_ID));
             for (final Edge faunusEdge : faunusVertex.getEdges(OUT)) {
-
-                final Vertex otherVertex = this.graph.getVertex(faunusBlueprintsIdMap.get(faunusEdge.getVertex(IN).getId()));
-                if (null != blueprintsVertex && null != otherVertex) {
+                final Object otherId = faunusBlueprintsIdMap.get(faunusEdge.getVertex(IN).getId());
+                Vertex otherVertex = null;
+                if (null != otherId)
+                    otherVertex = this.graph.getVertex(otherId);
+                if (null != otherVertex) {
                     final Edge blueprintsEdge = this.graph.addEdge(null, blueprintsVertex, otherVertex, faunusEdge.getLabel());
                     context.getCounter(Counters.EDGES_WRITTEN).increment(1l);
                     for (final String property : faunusEdge.getPropertyKeys()) {
