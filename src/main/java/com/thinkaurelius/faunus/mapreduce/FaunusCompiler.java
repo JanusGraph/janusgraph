@@ -4,9 +4,10 @@ import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
+import com.thinkaurelius.faunus.formats.titan.SchemaInferencerMapReduce;
 import com.thinkaurelius.faunus.hdfs.GraphFilter;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
-import com.thinkaurelius.faunus.mapreduce.blueprints.WriteGraphMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
@@ -152,10 +153,17 @@ public class FaunusCompiler extends Configured implements Tool {
 
     ///////// DEMO BLUEPRINTS
 
-    public void writeGraphMapReduce() throws IOException {
-        this.mapSequenceClasses.add(WriteGraphMapReduce.Map.class);
-        this.reduceClass = WriteGraphMapReduce.Reduce.class;
+    public void blueprintsGraphOutputMapReduce() throws IOException {
+        this.mapSequenceClasses.add(BlueprintsGraphOutputMapReduce.Map.class);
+        this.reduceClass = BlueprintsGraphOutputMapReduce.Reduce.class;
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
+        this.completeSequence();
+    }
+
+    public void schemaInferenceMapReduce() throws IOException {
+        this.mapSequenceClasses.add(SchemaInferencerMapReduce.Map.class);
+        this.reduceClass = SchemaInferencerMapReduce.Reduce.class;
+        this.setKeyValueClasses(LongWritable.class, FaunusVertex.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
     }
 
@@ -173,7 +181,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
     ///////////// TRANSFORMS
 
-    public void transform(final Class<? extends Element> klass, final String closure) throws IOException {
+    public void transformMap(final Class<? extends Element> klass, final String closure) throws IOException {
         this.mapSequenceConfiguration.setClass(TransformMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceConfiguration.set(TransformMap.CLOSURE + "-" + this.mapSequenceClasses.size(), closure);
         this.mapSequenceClasses.add(TransformMap.Map.class);

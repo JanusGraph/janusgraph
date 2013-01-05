@@ -1,8 +1,9 @@
-package com.thinkaurelius.faunus.mapreduce.blueprints;
+package com.thinkaurelius.faunus.formats;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
+import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce2;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
@@ -20,22 +21,22 @@ import java.util.Set;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class WriteGraphMapReduceTest extends BaseTest {
+public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new WriteGraphMapReduce2.Map2());
-        mapReduceDriver.setCombiner(new WriteGraphMapReduce2.Combiner());
-        mapReduceDriver.setReducer(new WriteGraphMapReduce2.Reduce2());
+        mapReduceDriver.setMapper(new BlueprintsGraphOutputMapReduce2.Map2());
+        mapReduceDriver.setCombiner(new BlueprintsGraphOutputMapReduce2.Combiner());
+        mapReduceDriver.setReducer(new BlueprintsGraphOutputMapReduce2.Reduce2());
     }
 
     public void testTinkerGraphMapping() throws IOException {
         mapReduceDriver.withConfiguration(new Configuration());
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.TINKERGRAPH);
-        Graph graph2 = ((WriteGraphMapReduce2.Map2) mapReduceDriver.getMapper()).graph;
+        Graph graph2 = ((BlueprintsGraphOutputMapReduce2.Map2) mapReduceDriver.getMapper()).graph;
 
         Vertex marko = null;
         Vertex peter = null;

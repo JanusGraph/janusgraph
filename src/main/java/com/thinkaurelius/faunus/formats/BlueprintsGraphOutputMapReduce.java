@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.mapreduce.blueprints;
+package com.thinkaurelius.faunus.formats;
 
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
@@ -27,7 +27,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class WriteGraphMapReduce {
+public class BlueprintsGraphOutputMapReduce {
 
     public enum Counters {
         VERTICES_WRITTEN,
@@ -49,7 +49,7 @@ public class WriteGraphMapReduce {
         return false;
     }
 
-    private static Graph generateGraph(final Configuration config) {
+    public static Graph generateGraph(final Configuration config) {
         final Class<? extends OutputFormat> format = config.getClass(FaunusGraph.GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
         if (format.equals(TitanCassandraOutputFormat.class)) {
             return TitanCassandraOutputFormat.generateGraph(config);
@@ -75,7 +75,7 @@ public class WriteGraphMapReduce {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.graph = WriteGraphMapReduce.generateGraph(context.getConfiguration());
+            this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
         }
 
         @Override
@@ -103,7 +103,7 @@ public class WriteGraphMapReduce {
             context.write(this.longWritable, this.vertexHolder.set('v', value));
 
             // after so many mutations, successfully commit the transaction (if graph is transactional)
-            WriteGraphMapReduce.commitGraph(this.graph, ++this.mutations);
+            BlueprintsGraphOutputMapReduce.commitGraph(this.graph, ++this.mutations);
         }
 
         @Override
@@ -144,7 +144,7 @@ public class WriteGraphMapReduce {
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
-            this.graph = WriteGraphMapReduce.generateGraph(context.getConfiguration());
+            this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
         }
 
         @Override
@@ -171,7 +171,7 @@ public class WriteGraphMapReduce {
                 }
                 // after so many mutations, successfully commit the transaction (if graph is transactional)
                 // for titan, if the transaction is committed, need to 'reget' the vertex
-                if (WriteGraphMapReduce.commitGraph(this.graph, ++this.mutations))
+                if (BlueprintsGraphOutputMapReduce.commitGraph(this.graph, ++this.mutations))
                     blueprintsVertex = this.graph.getVertex(blueprintsVertex.getId());
             }
 

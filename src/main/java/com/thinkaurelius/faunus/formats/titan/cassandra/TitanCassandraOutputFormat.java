@@ -20,6 +20,7 @@ public class TitanCassandraOutputFormat extends TitanOutputFormat {
         titanconfig.setProperty("storage.hostname", config.get(TITAN_GRAPH_OUTPUT_STORAGE_HOSTNAME));
         titanconfig.setProperty("storage.keyspace", config.get(TITAN_GRAPH_OUTPUT_STORAGE_KEYSPACE));
         titanconfig.setProperty("storage.port", config.get(TITAN_GRAPH_OUTPUT_STORAGE_PORT));
+        titanconfig.setProperty("storage.batch-loading", true);
         return TitanFactory.open(titanconfig);
     }
 }

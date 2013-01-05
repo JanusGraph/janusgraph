@@ -1,8 +1,8 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
 import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
-import com.thinkaurelius.faunus.mapreduce.blueprints.WriteGraphMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
@@ -244,7 +244,7 @@ public class FaunusPipeline {
     public FaunusPipeline transform(final String closure) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
-        this.compiler.transform(this.state.getElementType(), this.validateClosure(closure));
+        this.compiler.transformMap(this.state.getElementType(), this.validateClosure(closure));
         this.state.lock();
         makeMapReduceString(TransformMap.class);
         return this;
@@ -1031,8 +1031,10 @@ public class FaunusPipeline {
     public void submit(final String script, final Boolean showHeader) throws Exception {
         if (TitanOutputFormat.class.isAssignableFrom(this.graph.getGraphOutputFormat())) {
             this.state.checkLocked();
-            this.compiler.writeGraphMapReduce();
-            makeMapReduceString(WriteGraphMapReduce.class);
+            if (this.graph.getConfiguration().getBoolean(TitanOutputFormat.TITAN_GRAPH_OUTPUT_INFER_SCHEMA, true))
+                this.compiler.schemaInferenceMapReduce();
+            this.compiler.blueprintsGraphOutputMapReduce();
+            makeMapReduceString(BlueprintsGraphOutputMapReduce.class);
         }
         this.done();
         ToolRunner.run(this.compiler, new String[]{script, showHeader.toString()});
