@@ -1,0 +1,20 @@
+package com.thinkaurelius.titan.diskstorage.berkeleyje;
+
+import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.BerkeleyJeStorageSetup;
+import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManagerAdapter;
+
+
+public class BerkeleyDBjeKeyColumnValueTest extends KeyColumnValueStoreTest {
+
+    public KeyColumnValueStoreManager openStorageManager() throws StorageException {
+        BerkeleyJEStoreManager sm = new BerkeleyJEStoreManager(BerkeleyJeStorageSetup.getBerkeleyJEStorageConfiguration());
+        KeyValueStoreManagerAdapter smadapter = new KeyValueStoreManagerAdapter(sm, ImmutableMap.of(storeName, 8));
+        return smadapter;
+    }
+
+
+}
