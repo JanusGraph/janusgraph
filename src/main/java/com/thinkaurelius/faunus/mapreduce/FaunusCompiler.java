@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
 import com.thinkaurelius.faunus.formats.titan.SchemaInferencerMapReduce;
+import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
 import com.thinkaurelius.faunus.hdfs.GraphFilter;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
@@ -470,6 +471,16 @@ public class FaunusCompiler extends Configured implements Tool {
                 job.getConfiguration().setClass("mapred.map.output.compression.codec", DefaultCodec.class, CompressionCodec.class);
             } else {
                 job.setNumReduceTasks(0);
+            }
+
+            try {
+                // TODO: This needs to not be hard coded
+                if (TitanOutputFormat.class.isAssignableFrom(job.getOutputFormatClass())) {
+                    job.setMapSpeculativeExecution(false);
+                    job.setReduceSpeculativeExecution(false);
+                }
+            } catch (ClassNotFoundException e) {
+                // no worries
             }
 
             job.setMapOutputKeyClass(this.mapOutputKey);
