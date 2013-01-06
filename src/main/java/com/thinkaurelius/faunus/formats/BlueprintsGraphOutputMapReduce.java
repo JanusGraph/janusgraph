@@ -116,6 +116,7 @@ public class BlueprintsGraphOutputMapReduce {
             } catch (Exception e) {
                 context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
             }
+            this.graph.shutdown();
         }
     }
 
@@ -213,6 +214,7 @@ public class BlueprintsGraphOutputMapReduce {
             } catch (Exception e) {
                 context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
             }
+            this.graph.shutdown();
         }
     }
 }
