@@ -34,13 +34,14 @@ public class BlueprintsGraphOutputMapReduce {
         VERTEX_PROPERTIES_WRITTEN,
         EDGES_WRITTEN,
         EDGE_PROPERTIES_WRITTEN,
-        NULL_VERTEX_EDGES_DROPPED,
-        NULL_VERTEX_DROPPED,
+        NULL_VERTEX_EDGES_IGNORED,
+        NULL_VERTICES_IGNORED,
         SUCCESSFUL_TRANSACTIONS,
         FAILED_TRANSACTIONS
     }
 
     public static final String BLUEPRINTS_GRAPH_OUTPUT_TX_COMMIT = "blueprints.graph.output.tx-commit";
+    // some random property that will 'never' be used by anyone
     public static final String BLUEPRINTS_ID = "_bId0192834";
 
     public static Graph generateGraph(final Configuration config) {
@@ -171,11 +172,13 @@ public class BlueprintsGraphOutputMapReduce {
                     faunusVertex.addEdges(OUT, toClone);
                 }
             }
+            // this means that the vertex receiving adjacent vertex messages wasn't created
             if (null != faunusVertex) {
                 final Object blueprintsId = faunusVertex.getProperty(BLUEPRINTS_ID);
                 Vertex blueprintsVertex = null;
                 if (null != blueprintsId)
                     blueprintsVertex = this.graph.getVertex(blueprintsId);
+                // this means that an adjacent vertex to this vertex wasn't created
                 if (null != blueprintsVertex) {
                     for (final Edge faunusEdge : faunusVertex.getEdges(OUT)) {
                         final Object otherId = faunusBlueprintsIdMap.get(faunusEdge.getVertex(IN).getId());
@@ -201,14 +204,14 @@ public class BlueprintsGraphOutputMapReduce {
                                 blueprintsVertex = this.graph.getVertex(blueprintsVertex.getId());
                             }
                         } else {
-                            context.getCounter(Counters.NULL_VERTEX_EDGES_DROPPED).increment(1l);
+                            context.getCounter(Counters.NULL_VERTEX_EDGES_IGNORED).increment(1l);
                         }
                     }
                 } else {
-                    context.getCounter(Counters.NULL_VERTEX_DROPPED).increment(1l);
+                    context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                 }
             } else {
-                context.getCounter(Counters.NULL_VERTEX_DROPPED).increment(1l);
+                context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
             }
 
             // the emitted vertex is not complete -- assuming this is the end of the stage and vertex is dead
