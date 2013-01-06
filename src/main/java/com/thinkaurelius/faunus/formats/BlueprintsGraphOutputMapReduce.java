@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.formats;
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
+import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
 import com.tinkerpop.blueprints.Edge;
@@ -95,6 +96,7 @@ public class BlueprintsGraphOutputMapReduce {
             }
 
             this.longWritable.set(value.getIdAsLong());
+            value.removeEdges(Tokens.Action.DROP, IN); // no longer needed in reduce phase
             context.write(this.longWritable, this.vertexHolder.set('v', value));
 
             // after so many mutations, successfully commit the transaction (if graph is transactional)
@@ -122,7 +124,7 @@ public class BlueprintsGraphOutputMapReduce {
         }
     }
 
-    // REDUCE THE AMOUNT OF TRAFFIC TO REDUCES BY FILTERING OUT DUPLICATE SHELL VERTICES
+    // REDUCE THE AMOUNT OF TRAFFIC TO REDUCERS BY FILTERING OUT DUPLICATE SHELL VERTICES
     // TODO: THIS IS ONLY USEFUL IF THERE ARE NUMEROUS EDGES BETWEEN THE SAME TWO VERTICES (IF NOT, POINTLESS)
     public static class Combiner extends Reducer<LongWritable, Holder<FaunusVertex>, LongWritable, Holder<FaunusVertex>> {
 
