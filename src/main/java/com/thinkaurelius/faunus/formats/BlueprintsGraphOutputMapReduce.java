@@ -40,7 +40,7 @@ public class BlueprintsGraphOutputMapReduce {
     }
 
     public static final String BLUEPRINTS_GRAPH_OUTPUT_TX_COMMIT = "blueprints.graph.output.tx-commit";
-    public static final String BLUEPRINTS_ID = "_blueprintsId";
+    public static final String BLUEPRINTS_ID = "_bId0192834";
 
     public static Graph generateGraph(final Configuration config) {
         final Class<? extends OutputFormat> format = config.getClass(FaunusGraph.GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
@@ -109,9 +109,10 @@ public class BlueprintsGraphOutputMapReduce {
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
             try {
-                if (this.graph instanceof TransactionalGraph)
+                if (this.graph instanceof TransactionalGraph) {
                     ((TransactionalGraph) this.graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
-                context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+                    context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+                }
             } catch (Exception e) {
                 context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
             }
@@ -119,12 +120,13 @@ public class BlueprintsGraphOutputMapReduce {
     }
 
     // REDUCE THE AMOUNT OF TRAFFIC TO REDUCES BY FILTERING OUT DUPLICATE SHELL VERTICES
+    // TODO: THIS IS ONLY USEFUL IF THERE ARE NUMEROUS EDGES BETWEEN THE SAME TWO VERTICES (IF NOT, POINTLESS)
     public static class Combiner extends Reducer<LongWritable, Holder<FaunusVertex>, LongWritable, Holder<FaunusVertex>> {
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
             // TODO: this should be a bloom filter.
-            final Set seenBefore = new HashSet();
+            final Set<Object> seenBefore = new HashSet<Object>();
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 's') {
                     final Object id = holder.get().getId();
@@ -140,8 +142,6 @@ public class BlueprintsGraphOutputMapReduce {
     }
 
     // WRITE ALL THE EDGES CONNECTING THE VERTICES
-    // TODO: If we can safely assume this is always going to be an OutputFormat then make it NullWritable/NullWritable (save memory)
-    // TODO: ...or simply not keep around faunusVertex in the reduce() method and output a shell vertex.
     public static class Reduce extends Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> {
 
         Graph graph;
@@ -163,7 +163,10 @@ public class BlueprintsGraphOutputMapReduce {
                 if (holder.getTag() == 's') {
                     faunusBlueprintsIdMap.put(holder.get().getIdAsLong(), holder.get().getProperty(BLUEPRINTS_ID));
                 } else {
-                    faunusVertex.addAll(holder.get());
+                    final FaunusVertex toClone = holder.get();
+                    faunusVertex.reuse(toClone.getIdAsLong());
+                    faunusVertex.setProperty(BLUEPRINTS_ID, toClone.getProperty(BLUEPRINTS_ID));
+                    faunusVertex.addEdges(OUT, toClone);
                 }
             }
 
@@ -196,17 +199,17 @@ public class BlueprintsGraphOutputMapReduce {
                 }
             }
 
-            // this is a sideEffect, thus remove the created blueprints id property
-            faunusVertex.removeProperty(BLUEPRINTS_ID);
+            // the emitted vertex is not complete -- assuming this is the end of the stage and vertex is dead
             context.write(NullWritable.get(), faunusVertex);
         }
 
         @Override
         public void cleanup(final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             try {
-                if (this.graph instanceof TransactionalGraph)
+                if (this.graph instanceof TransactionalGraph) {
                     ((TransactionalGraph) this.graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
-                context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+                    context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+                }
             } catch (Exception e) {
                 context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
             }

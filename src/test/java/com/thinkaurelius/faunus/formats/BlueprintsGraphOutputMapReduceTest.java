@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.formats;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
-import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce2;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
@@ -35,7 +34,8 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
     public void testTinkerGraphMapping() throws IOException {
         mapReduceDriver.withConfiguration(new Configuration());
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class), mapReduceDriver);
-        BaseTest.identicalStructure(graph, ExampleGraph.TINKERGRAPH);
+        // Can't assume this as now we have a null structure emitted for sake of speed
+        // BaseTest.identicalStructure(graph, ExampleGraph.TINKERGRAPH);
         Graph graph2 = ((BlueprintsGraphOutputMapReduce2.Map2) mapReduceDriver.getMapper()).graph;
 
         Vertex marko = null;
