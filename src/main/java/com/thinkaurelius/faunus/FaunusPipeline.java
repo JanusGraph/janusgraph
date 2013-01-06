@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
+import com.thinkaurelius.faunus.formats.titan.SchemaInferencerMapReduce;
 import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
@@ -1031,8 +1032,10 @@ public class FaunusPipeline {
     public void submit(final String script, final Boolean showHeader) throws Exception {
         if (TitanOutputFormat.class.isAssignableFrom(this.graph.getGraphOutputFormat())) {
             this.state.checkLocked();
-            if (this.graph.getConfiguration().getBoolean(TitanOutputFormat.TITAN_GRAPH_OUTPUT_INFER_SCHEMA, true))
+            if (this.graph.getConfiguration().getBoolean(TitanOutputFormat.TITAN_GRAPH_OUTPUT_INFER_SCHEMA, true)) {
                 this.compiler.schemaInferenceMapReduce();
+                makeMapReduceString(SchemaInferencerMapReduce.class);
+            }
             this.compiler.blueprintsGraphOutputMapReduce();
             makeMapReduceString(BlueprintsGraphOutputMapReduce.class);
         }
