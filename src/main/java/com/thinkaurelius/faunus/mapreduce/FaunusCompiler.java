@@ -155,7 +155,6 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public void blueprintsGraphOutputMapReduce() throws IOException {
         this.mapSequenceClasses.add(BlueprintsGraphOutputMapReduce.Map.class);
-        this.combinerClass = BlueprintsGraphOutputMapReduce.Combiner.class;
         this.reduceClass = BlueprintsGraphOutputMapReduce.Reduce.class;
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();

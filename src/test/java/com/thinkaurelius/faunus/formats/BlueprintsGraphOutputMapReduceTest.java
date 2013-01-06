@@ -27,7 +27,6 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new BlueprintsGraphOutputMapReduce2.Map2());
-        mapReduceDriver.setCombiner(new BlueprintsGraphOutputMapReduce2.Combiner());
         mapReduceDriver.setReducer(new BlueprintsGraphOutputMapReduce2.Reduce2());
     }
 

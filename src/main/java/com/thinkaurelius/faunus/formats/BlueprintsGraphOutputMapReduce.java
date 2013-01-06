@@ -19,8 +19,6 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -84,7 +82,6 @@ public class BlueprintsGraphOutputMapReduce {
                 blueprintsVertex.setProperty(property, value.getProperty(property));
                 context.getCounter(Counters.VERTEX_PROPERTIES_WRITTEN).increment(1l);
             }
-            value.setProperty(BLUEPRINTS_ID, blueprintsVertex.getId());
 
             // Propagate shell vertices with Blueprints ids
             this.shellVertex.reuse(value.getIdAsLong());
@@ -96,6 +93,8 @@ public class BlueprintsGraphOutputMapReduce {
             }
 
             this.longWritable.set(value.getIdAsLong());
+            value.getProperties().clear();  // no longer needed in reduce phase
+            value.setProperty(BLUEPRINTS_ID, blueprintsVertex.getId()); // need this for id resolution in reduce phase
             value.removeEdges(Tokens.Action.DROP, IN); // no longer needed in reduce phase
             context.write(this.longWritable, this.vertexHolder.set('v', value));
 
@@ -124,34 +123,13 @@ public class BlueprintsGraphOutputMapReduce {
         }
     }
 
-    // REDUCE THE AMOUNT OF TRAFFIC TO REDUCERS BY FILTERING OUT DUPLICATE SHELL VERTICES
-    // TODO: THIS IS ONLY USEFUL IF THERE ARE NUMEROUS EDGES BETWEEN THE SAME TWO VERTICES (IF NOT, POINTLESS)
-    public static class Combiner extends Reducer<LongWritable, Holder<FaunusVertex>, LongWritable, Holder<FaunusVertex>> {
-
-        @Override
-        public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
-            // TODO: this should be a bloom filter.
-            final Set<Object> seenBefore = new HashSet<Object>();
-            for (final Holder<FaunusVertex> holder : values) {
-                if (holder.getTag() == 's') {
-                    final Object id = holder.get().getId();
-                    if (!seenBefore.contains(id)) {
-                        seenBefore.add(id);
-                        context.write(key, holder);
-                    }
-                } else {
-                    context.write(key, holder);
-                }
-            }
-        }
-    }
-
     // WRITE ALL THE EDGES CONNECTING THE VERTICES
     public static class Reduce extends Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> {
 
         Graph graph;
         private long mutations = 0;
         private long commitTx = 5000;
+        private final static FaunusVertex DEAD_FAUNUS_VERTEX = new FaunusVertex();
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
@@ -217,7 +195,7 @@ public class BlueprintsGraphOutputMapReduce {
             }
 
             // the emitted vertex is not complete -- assuming this is the end of the stage and vertex is dead
-            context.write(NullWritable.get(), faunusVertex);
+            context.write(NullWritable.get(), DEAD_FAUNUS_VERTEX);
         }
 
         @Override
