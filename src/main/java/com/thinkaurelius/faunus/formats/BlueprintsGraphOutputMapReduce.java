@@ -35,6 +35,7 @@ public class BlueprintsGraphOutputMapReduce {
         EDGES_WRITTEN,
         EDGE_PROPERTIES_WRITTEN,
         NULL_VERTEX_EDGES_DROPPED,
+        NULL_VERTEX_DROPPED,
         SUCCESSFUL_TRANSACTIONS,
         FAILED_TRANSACTIONS
     }
@@ -157,7 +158,7 @@ public class BlueprintsGraphOutputMapReduce {
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            final FaunusVertex faunusVertex = new FaunusVertex();
+            FaunusVertex faunusVertex = null;
             // generate a map of the faunus id with the blueprints id for all shell vertices (vertices incoming adjacent)
             final java.util.Map<Long, Object> faunusBlueprintsIdMap = new HashMap<Long, Object>();
             for (final Holder<FaunusVertex> holder : values) {
@@ -165,39 +166,49 @@ public class BlueprintsGraphOutputMapReduce {
                     faunusBlueprintsIdMap.put(holder.get().getIdAsLong(), holder.get().getProperty(BLUEPRINTS_ID));
                 } else {
                     final FaunusVertex toClone = holder.get();
-                    faunusVertex.reuse(toClone.getIdAsLong());
+                    faunusVertex = new FaunusVertex(toClone.getIdAsLong());
                     faunusVertex.setProperty(BLUEPRINTS_ID, toClone.getProperty(BLUEPRINTS_ID));
                     faunusVertex.addEdges(OUT, toClone);
                 }
             }
-
-            Vertex blueprintsVertex = this.graph.getVertex(faunusVertex.getProperty(BLUEPRINTS_ID));
-            for (final Edge faunusEdge : faunusVertex.getEdges(OUT)) {
-                final Object otherId = faunusBlueprintsIdMap.get(faunusEdge.getVertex(IN).getId());
-                Vertex otherVertex = null;
-                if (null != otherId)
-                    otherVertex = this.graph.getVertex(otherId);
-                if (null != otherVertex) {
-                    final Edge blueprintsEdge = this.graph.addEdge(null, blueprintsVertex, otherVertex, faunusEdge.getLabel());
-                    context.getCounter(Counters.EDGES_WRITTEN).increment(1l);
-                    for (final String property : faunusEdge.getPropertyKeys()) {
-                        blueprintsEdge.setProperty(property, faunusEdge.getProperty(property));
-                        context.getCounter(Counters.EDGE_PROPERTIES_WRITTEN).increment(1l);
-                    }
-                    // after so many mutations, successfully commit the transaction (if graph is transactional)
-                    // for titan, if the transaction is committed, need to 'reget' the vertex
-                    if (this.graph instanceof TransactionalGraph && (++this.mutations % this.commitTx) == 0) {
-                        try {
-                            ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
-                            context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
-                        } catch (Exception e) {
-                            context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+            if (null != faunusVertex) {
+                final Object blueprintsId = faunusVertex.getProperty(BLUEPRINTS_ID);
+                Vertex blueprintsVertex = null;
+                if (null != blueprintsId)
+                    blueprintsVertex = this.graph.getVertex(blueprintsId);
+                if (null != blueprintsVertex) {
+                    for (final Edge faunusEdge : faunusVertex.getEdges(OUT)) {
+                        final Object otherId = faunusBlueprintsIdMap.get(faunusEdge.getVertex(IN).getId());
+                        Vertex otherVertex = null;
+                        if (null != otherId)
+                            otherVertex = this.graph.getVertex(otherId);
+                        if (null != otherVertex) {
+                            final Edge blueprintsEdge = this.graph.addEdge(null, blueprintsVertex, otherVertex, faunusEdge.getLabel());
+                            context.getCounter(Counters.EDGES_WRITTEN).increment(1l);
+                            for (final String property : faunusEdge.getPropertyKeys()) {
+                                blueprintsEdge.setProperty(property, faunusEdge.getProperty(property));
+                                context.getCounter(Counters.EDGE_PROPERTIES_WRITTEN).increment(1l);
+                            }
+                            // after so many mutations, successfully commit the transaction (if graph is transactional)
+                            // for titan, if the transaction is committed, need to 'reget' the vertex
+                            if (this.graph instanceof TransactionalGraph && (++this.mutations % this.commitTx) == 0) {
+                                try {
+                                    ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+                                    context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+                                } catch (Exception e) {
+                                    context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                                }
+                                blueprintsVertex = this.graph.getVertex(blueprintsVertex.getId());
+                            }
+                        } else {
+                            context.getCounter(Counters.NULL_VERTEX_EDGES_DROPPED).increment(1l);
                         }
-                        blueprintsVertex = this.graph.getVertex(blueprintsVertex.getId());
                     }
                 } else {
-                    context.getCounter(Counters.NULL_VERTEX_EDGES_DROPPED).increment(1l);
+                    context.getCounter(Counters.NULL_VERTEX_DROPPED).increment(1l);
                 }
+            } else {
+                context.getCounter(Counters.NULL_VERTEX_DROPPED).increment(1l);
             }
 
             // the emitted vertex is not complete -- assuming this is the end of the stage and vertex is dead
