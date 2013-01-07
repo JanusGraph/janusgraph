@@ -37,26 +37,26 @@ public class PropertyMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
+        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class);
 
         assertEquals(graph.size(), 6);
-        assertEquals(graph.get(1l).pathCount(), 2);
+        assertEquals(graph.get(1l).pathCount(), 1);
         assertEquals(graph.get(2l).pathCount(), 1);
         assertEquals(graph.get(3l).pathCount(), 1);
         assertEquals(graph.get(4l).pathCount(), 1);
-        assertEquals(graph.get(5l).pathCount(), 0);
-        assertEquals(graph.get(6l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 1);
+        assertEquals(graph.get(6l).pathCount(), 1);
 
         final List<Pair<NullWritable, Text>> results = runWithGraphNoIndex(graph, mapReduceDriver);
-        assertEquals(results.size(), 5);
+        assertEquals(results.size(), 6);
         assertEquals(results.get(0).getSecond().toString(), "marko");
-        assertEquals(results.get(1).getSecond().toString(), "marko");
-        assertEquals(results.get(2).getSecond().toString(), "vadas");
-        assertEquals(results.get(3).getSecond().toString(), "lop");
-        assertEquals(results.get(4).getSecond().toString(), "josh");
+        assertEquals(results.get(1).getSecond().toString(), "vadas");
+        assertEquals(results.get(2).getSecond().toString(), "lop");
+        assertEquals(results.get(3).getSecond().toString(), "josh");
+        assertEquals(results.get(4).getSecond().toString(), "ripple");
+        assertEquals(results.get(5).getSecond().toString(), "peter");
 
-
-        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.VERTICES_PROCESSED).getValue(), 4);
+        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.VERTICES_PROCESSED).getValue(), 6);
         assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
@@ -70,26 +70,27 @@ public class PropertyMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
+        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class);
 
         assertEquals(graph.size(), 6);
-        assertEquals(graph.get(1l).pathCount(), 2);
+        assertEquals(graph.get(1l).pathCount(), 1);
         assertEquals(graph.get(2l).pathCount(), 1);
         assertEquals(graph.get(3l).pathCount(), 1);
         assertEquals(graph.get(4l).pathCount(), 1);
-        assertEquals(graph.get(5l).pathCount(), 0);
-        assertEquals(graph.get(6l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 1);
+        assertEquals(graph.get(6l).pathCount(), 1);
 
         final List<Pair<NullWritable, IntWritable>> results = runWithGraphNoIndex(graph, mapReduceDriver);
-        assertEquals(results.size(), 5);
+        assertEquals(results.size(), 6);
         assertEquals(results.get(0).getSecond().get(), 29);
-        assertEquals(results.get(1).getSecond().get(), 29);
-        assertEquals(results.get(2).getSecond().get(), 27);
-        assertEquals(results.get(3).getSecond().get(), Integer.MIN_VALUE);
-        assertEquals(results.get(4).getSecond().get(), 32);
+        assertEquals(results.get(1).getSecond().get(), 27);
+        assertEquals(results.get(2).getSecond().get(), Integer.MIN_VALUE);
+        assertEquals(results.get(3).getSecond().get(), 32);
+        assertEquals(results.get(4).getSecond().get(), Integer.MIN_VALUE);
+        assertEquals(results.get(5).getSecond().get(), 35);
 
 
-        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.VERTICES_PROCESSED).getValue(), 4);
+        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.VERTICES_PROCESSED).getValue(), 6);
         assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
