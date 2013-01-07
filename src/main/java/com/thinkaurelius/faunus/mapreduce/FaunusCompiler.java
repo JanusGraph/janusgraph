@@ -6,7 +6,6 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
 import com.thinkaurelius.faunus.formats.titan.SchemaInferencerMapReduce;
-import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
 import com.thinkaurelius.faunus.hdfs.GraphFilter;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
@@ -152,7 +151,7 @@ public class FaunusCompiler extends Configured implements Tool {
         this.pathEnabled = pathEnabled;
     }
 
-    ///////// DEMO BLUEPRINTS
+    ///////// SPECIFIC TO THE BLUEPRINTS OUTPUT FORMAT
 
     public void blueprintsGraphOutputMapReduce() throws IOException {
         this.mapSequenceClasses.add(BlueprintsGraphOutputMapReduce.Map.class);
@@ -462,9 +461,9 @@ public class FaunusCompiler extends Configured implements Tool {
 
             job.setJarByClass(FaunusCompiler.class);
             job.setMapperClass(MapSequence.Map.class);
-            if (this.reduceClass != null) {
+            if (null != this.reduceClass) {
                 job.setReducerClass(this.reduceClass);
-                if (this.combinerClass != null)
+                if (null != this.combinerClass)
                     job.setCombinerClass(this.combinerClass);
                 // if there is a reduce task, compress the map output to limit network traffic
                 job.getConfiguration().setBoolean("mapred.compress.map.output", true);
@@ -473,14 +472,9 @@ public class FaunusCompiler extends Configured implements Tool {
                 job.setNumReduceTasks(0);
             }
 
-            try {
-                // TODO: This needs to not be hard coded
-                if (TitanOutputFormat.class.isAssignableFrom(job.getOutputFormatClass())) {
-                    job.setMapSpeculativeExecution(false);
-                    job.setReduceSpeculativeExecution(false);
-                }
-            } catch (ClassNotFoundException e) {
-                // no worries
+            if (this.mapSequenceClasses.contains(BlueprintsGraphOutputMapReduce.Map.class)) {
+                job.setMapSpeculativeExecution(false);
+                job.setReduceSpeculativeExecution(false);
             }
 
             job.setMapOutputKeyClass(this.mapOutputKey);
@@ -561,10 +555,6 @@ public class FaunusCompiler extends Configured implements Tool {
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
                 MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, FaunusVertex.class);
             }
-
-            //SequenceFileOutputFormat.setCompressOutput(job, true);
-            //SequenceFileOutputFormat.setOutputCompressorClass(job, BZip2Codec.class);
-            //SequenceFileOutputFormat.setOutputCompressionType(job, SequenceFile.CompressionType.BLOCK);
         }
     }
 
