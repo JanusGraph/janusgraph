@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.formats.titan.cassandra;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
-import com.thinkaurelius.faunus.formats.titan.hbase.FaunusTitanHBaseGraph;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
@@ -11,7 +10,6 @@ import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -63,8 +61,8 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
 
         ConfigHelper.setInputInitialAddress(config, config.get(TITAN_GRAPH_INPUT_STORAGE_HOSTNAME));
         ConfigHelper.setInputRpcPort(config, config.get(TITAN_GRAPH_INPUT_STORAGE_PORT));
-        config.set("storage.read-only","true");
-        config.set("autotype","none");
+        config.set("storage.read-only", "true");
+        config.set("autotype", "none");
         this.graph = new FaunusTitanCassandraGraph(GraphFactory.generateTitanConfiguration(config, TITAN_GRAPH_INPUT));
         this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
 

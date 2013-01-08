@@ -49,7 +49,7 @@ public class PropertyMapMap {
                     this.longWritable.set(value.getIdAsLong());
                     this.text.set(ElementPicker.getPropertyAsString(value, Tokens._PROPERTIES));
                     //for (int i = 0; i < value.pathCount(); i++) {
-                        this.outputs.write(Tokens.SIDEEFFECT, this.longWritable, this.text);
+                    this.outputs.write(Tokens.SIDEEFFECT, this.longWritable, this.text);
                     //}
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
@@ -61,7 +61,7 @@ public class PropertyMapMap {
                         this.longWritable.set(edge.getIdAsLong());
                         this.text.set(ElementPicker.getPropertyAsString(edge, Tokens._PROPERTIES));
                         //for (int i = 0; i < edge.pathCount(); i++) {
-                            this.outputs.write(Tokens.SIDEEFFECT, this.longWritable, this.text);
+                        this.outputs.write(Tokens.SIDEEFFECT, this.longWritable, this.text);
                         //}
                         edgesProcessed++;
                     }

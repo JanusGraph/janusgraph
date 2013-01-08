@@ -10,8 +10,6 @@ import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import org.apache.cassandra.db.IColumn;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
