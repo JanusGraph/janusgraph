@@ -149,6 +149,8 @@ public class GraphSONUtility {
                 elementPropertyKeys.add(GraphSONTokens._OUT_V);
             }
 
+            elementPropertyKeys.add(GraphSONTokens._LABEL);
+
             if (!graphsonEdgeCache.containsKey(elementPropertyKeys)) {
                 graphsonEdgeCache.put(elementPropertyKeys, new com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility(
                         GraphSONMode.COMPACT, elementFactory, ElementPropertyConfig.IncludeProperties(null, elementPropertyKeys)));

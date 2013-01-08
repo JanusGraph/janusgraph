@@ -91,10 +91,12 @@ public class GraphSONUtilityTest extends TestCase {
         assertEquals(m.getJSONArray("_outE").getJSONObject(0).getLong("weight"), 2);
         assertFalse(m.getJSONArray("_outE").getJSONObject(0).has("_type"));
         assertFalse(m.getJSONArray("_outE").getJSONObject(0).has("_outV"));
+        assertEquals("knows", m.getJSONArray("_outE").getJSONObject(0).optString("_label"));
         assertEquals(m.getJSONArray("_inE").length(), 1);
         assertEquals(m.getJSONArray("_inE").getJSONObject(0).getLong("weight"), 1);
         assertFalse(m.getJSONArray("_inE").getJSONObject(0).has("_type"));
         assertFalse(m.getJSONArray("_inE").getJSONObject(0).has("_inV"));
+        assertEquals("knows", m.getJSONArray("_inE").getJSONObject(0).optString("_label"));
 
         assertEquals(s.getString("name"), "stephen");
         assertEquals(s.getLong("_id"), 2l);
