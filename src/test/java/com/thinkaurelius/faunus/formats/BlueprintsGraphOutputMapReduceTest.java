@@ -7,9 +7,11 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
 import java.io.IOException;
@@ -26,16 +28,21 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
 
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new BlueprintsGraphOutputMapReduce2.Map2());
-        mapReduceDriver.setReducer(new BlueprintsGraphOutputMapReduce2.Reduce2());
+        mapReduceDriver.setMapper(new TinkerGraphOutputMapReduce.Map());
+        mapReduceDriver.setReducer(new TinkerGraphOutputMapReduce.Reduce());
     }
 
     public void testTinkerGraphMapping() throws IOException {
         mapReduceDriver.withConfiguration(new Configuration());
-        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class), mapReduceDriver);
-        // Can't assume this as now we have a null structure emitted for sake of speed
-        // BaseTest.identicalStructure(graph, ExampleGraph.TINKERGRAPH);
-        Graph graph2 = ((BlueprintsGraphOutputMapReduce2.Map2) mapReduceDriver.getMapper()).graph;
+        final Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class), mapReduceDriver);
+        for (FaunusVertex vertex : graph.values()) {
+            assertEquals(count(vertex.getEdges(Direction.IN)), 0);
+            assertEquals(count(vertex.getEdges(Direction.OUT)), 0);
+            assertEquals(vertex.getProperties().size(), 0);
+            assertEquals(vertex.getIdAsLong(), -1);
+        }
+
+        final Graph tinkerGraph = ((TinkerGraphOutputMapReduce.Map) mapReduceDriver.getMapper()).graph;
 
         Vertex marko = null;
         Vertex peter = null;
@@ -44,7 +51,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         Vertex lop = null;
         Vertex ripple = null;
         int count = 0;
-        for (Vertex v : graph2.getVertices()) {
+        for (Vertex v : tinkerGraph.getVertices()) {
             count++;
             String name = v.getProperty("name").toString();
             if (name.equals("marko")) {
@@ -71,7 +78,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         assertTrue(null != lop);
         assertTrue(null != ripple);
 
-        assertEquals(count(graph2.getEdges()), 6);
+        assertEquals(count(tinkerGraph.getEdges()), 6);
 
         // test marko
         Set<Vertex> vertices = new HashSet<Vertex>();
@@ -174,6 +181,29 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         }
         assertEquals(vertices.size(), 1);
         assertTrue(vertices.contains(josh));
+    }
+
+    public static class TinkerGraphOutputMapReduce extends BlueprintsGraphOutputMapReduce {
+
+        private static Graph graph = new TinkerGraph();
+
+        public static Graph getGraph() {
+            return graph;
+        }
+
+        public static class Map extends BlueprintsGraphOutputMapReduce.Map {
+            @Override
+            public void setup(final Mapper.Context context) throws IOException, InterruptedException {
+                this.graph = TinkerGraphOutputMapReduce.getGraph();
+            }
+        }
+
+        public static class Reduce extends BlueprintsGraphOutputMapReduce.Reduce {
+            @Override
+            public void setup(final Reduce.Context context) throws IOException, InterruptedException {
+                this.graph = TinkerGraphOutputMapReduce.getGraph();
+            }
+        }
     }
 }
 

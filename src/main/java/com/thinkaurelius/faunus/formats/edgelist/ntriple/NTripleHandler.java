@@ -17,9 +17,9 @@ import java.security.NoSuchAlgorithmException;
 public class NTripleHandler implements RDFHandler {
 
     private final MessageDigest md;
-    private FaunusVertex subject = new FaunusVertex();
-    private FaunusVertex object = new FaunusVertex();
-    private FaunusEdge predicate = new FaunusEdge();
+    private final FaunusVertex subject = new FaunusVertex();
+    private final FaunusVertex object = new FaunusVertex();
+    private final FaunusEdge predicate = new FaunusEdge();
     private final boolean enablePath;
 
     public NTripleHandler(final boolean enablePath) throws IOException {

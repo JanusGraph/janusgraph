@@ -106,6 +106,15 @@ public abstract class BaseTest extends TestCase {
         return driver.run();
     }
 
+    public static Map<Long, FaunusVertex> run(final MapReduceDriver driver) throws IOException {
+        final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
+        for (final Object object : driver.run()) {
+            Pair<NullWritable, FaunusVertex> pair = (Pair<NullWritable, FaunusVertex>) object;
+            map.put(pair.getSecond().getIdAsLong(), pair.getSecond());
+        }
+        return map;
+    }
+
     public static String getFullString(final Vertex vertex) {
         String string = vertex.toString() + "IN[";
         for (Edge edge : vertex.getEdges(Direction.IN)) {
