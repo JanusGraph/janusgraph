@@ -1,0 +1,8 @@
+<http://tinkerpop.com#marko> <http://tinkerpop.com#knows> <http://tinkerpop.com#vadas> .
+<http://tinkerpop.com#marko> <http://tinkerpop.com#knows> <http://tinkerpop.com#josh> .
+<http://tinkerpop.com#marko> <http://tinkerpop.com#created> <http://tinkerpop.com#lop> .
+
+<http://tinkerpop.com#josh> <http://tinkerpop.com#created> <http://tinkerpop.com#lop> .
+<http://tinkerpop.com#josh> <http://tinkerpop.com#created> <http://tinkerpop.com#ripple> .
+
+<http://tinkerpop.com#peter> <http://tinkerpop.com#created> <http://tinkerpop.com#lop> .

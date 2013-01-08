@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
+import com.thinkaurelius.faunus.formats.edgelist.EdgeListInputMapReduce;
 import com.thinkaurelius.faunus.formats.titan.SchemaInferencerMapReduce;
 import com.thinkaurelius.faunus.hdfs.GraphFilter;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
@@ -164,6 +165,13 @@ public class FaunusCompiler extends Configured implements Tool {
         this.mapSequenceClasses.add(SchemaInferencerMapReduce.Map.class);
         this.reduceClass = SchemaInferencerMapReduce.Reduce.class;
         this.setKeyValueClasses(LongWritable.class, FaunusVertex.class, NullWritable.class, FaunusVertex.class);
+        this.completeSequence();
+    }
+
+    public void edgeListInputMapReduce() throws IOException {
+        this.mapSequenceClasses.add(EdgeListInputMapReduce.Map.class);
+        this.reduceClass = EdgeListInputMapReduce.Reduce.class;
+        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();
     }
 
