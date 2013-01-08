@@ -4,11 +4,35 @@ import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
+import com.thinkaurelius.faunus.formats.edgelist.EdgeListInputMapReduce;
+import com.thinkaurelius.faunus.formats.titan.SchemaInferencerMapReduce;
 import com.thinkaurelius.faunus.hdfs.GraphFilter;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
-import com.thinkaurelius.faunus.mapreduce.filter.*;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.*;
-import com.thinkaurelius.faunus.mapreduce.transform.*;
+import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
+import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.LinkMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.SideEffectMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
+import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.EdgesVerticesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
+import com.thinkaurelius.faunus.mapreduce.transform.OrderMapReduce;
+import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
+import com.thinkaurelius.faunus.mapreduce.transform.PropertyMap;
+import com.thinkaurelius.faunus.mapreduce.transform.PropertyMapMap;
+import com.thinkaurelius.faunus.mapreduce.transform.TransformMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.WritableComparators;
 import com.tinkerpop.blueprints.Direction;
@@ -19,10 +43,22 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.*;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.DefaultCodec;
-import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -116,6 +152,30 @@ public class FaunusCompiler extends Configured implements Tool {
         this.pathEnabled = pathEnabled;
     }
 
+    ///////// SPECIFIC TO THE BLUEPRINTS OUTPUT FORMAT
+
+    public void blueprintsGraphOutputMapReduce() throws IOException {
+        this.mapSequenceClasses.add(BlueprintsGraphOutputMapReduce.Map.class);
+        this.reduceClass = BlueprintsGraphOutputMapReduce.Reduce.class;
+        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
+        this.completeSequence();
+    }
+
+    public void schemaInferenceMapReduce() throws IOException {
+        this.mapSequenceClasses.add(SchemaInferencerMapReduce.Map.class);
+        this.reduceClass = SchemaInferencerMapReduce.Reduce.class;
+        this.setKeyValueClasses(LongWritable.class, FaunusVertex.class, NullWritable.class, FaunusVertex.class);
+        this.completeSequence();
+    }
+
+    public void edgeListInputMapReduce() throws IOException {
+        this.mapSequenceClasses.add(EdgeListInputMapReduce.Map.class);
+        this.reduceClass = EdgeListInputMapReduce.Reduce.class;
+        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
+        this.completeSequence();
+    }
+
+
     ////////////// STEP
 
     public void stepMapReduce(final Class<? extends Element> klass, final String mapClosure, final String reduceClosure, final Class<? extends WritableComparable> key1, final Class<? extends WritableComparable> value1, final Class<? extends WritableComparable> key2, final Class<? extends WritableComparable> value2) throws IOException {
@@ -129,7 +189,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
     ///////////// TRANSFORMS
 
-    public void transform(final Class<? extends Element> klass, final String closure) throws IOException {
+    public void transformMap(final Class<? extends Element> klass, final String closure) throws IOException {
         this.mapSequenceConfiguration.setClass(TransformMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
         this.mapSequenceConfiguration.set(TransformMap.CLOSURE + "-" + this.mapSequenceClasses.size(), closure);
         this.mapSequenceClasses.add(TransformMap.Map.class);
@@ -409,15 +469,20 @@ public class FaunusCompiler extends Configured implements Tool {
 
             job.setJarByClass(FaunusCompiler.class);
             job.setMapperClass(MapSequence.Map.class);
-            if (this.reduceClass != null) {
+            if (null != this.reduceClass) {
                 job.setReducerClass(this.reduceClass);
-                if (this.combinerClass != null)
+                if (null != this.combinerClass)
                     job.setCombinerClass(this.combinerClass);
                 // if there is a reduce task, compress the map output to limit network traffic
                 job.getConfiguration().setBoolean("mapred.compress.map.output", true);
                 job.getConfiguration().setClass("mapred.map.output.compression.codec", DefaultCodec.class, CompressionCodec.class);
             } else {
                 job.setNumReduceTasks(0);
+            }
+
+            if (this.mapSequenceClasses.contains(BlueprintsGraphOutputMapReduce.Map.class)) {
+                job.setMapSpeculativeExecution(false);
+                job.setReduceSpeculativeExecution(false);
             }
 
             job.setMapOutputKeyClass(this.mapOutputKey);
@@ -498,10 +563,6 @@ public class FaunusCompiler extends Configured implements Tool {
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
                 MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, FaunusVertex.class);
             }
-
-            //SequenceFileOutputFormat.setCompressOutput(job, true);
-            //SequenceFileOutputFormat.setOutputCompressorClass(job, BZip2Codec.class);
-            //SequenceFileOutputFormat.setOutputCompressionType(job, SequenceFile.CompressionType.BLOCK);
         }
     }
 

@@ -54,9 +54,9 @@ public class PropertyMap {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     WritableComparable writable = this.handler.set(ElementPicker.getProperty(value, this.key));
-                    for (int i = 0; i < value.pathCount(); i++) {
-                        this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), writable);
-                    }
+                    //for (int i = 0; i < value.pathCount(); i++) {
+                    this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), writable);
+                    //}
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
             } else {
@@ -65,9 +65,9 @@ public class PropertyMap {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
                         WritableComparable writable = this.handler.set(ElementPicker.getProperty(edge, this.key));
-                        for (int i = 0; i < edge.pathCount(); i++) {
-                            this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), writable);
-                        }
+                        //for (int i = 0; i < edge.pathCount(); i++) {
+                        this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), writable);
+                        //}
                         edgesProcessed++;
                     }
                 }

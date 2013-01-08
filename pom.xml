@@ -79,6 +79,12 @@
             <artifactId>titan</artifactId>
             <version>0.2.0</version>
         </dependency>
+        <!-- RDF PARSING -->
+        <dependency>
+            <groupId>org.openrdf.sesame</groupId>
+            <artifactId>sesame-rio-ntriples</artifactId>
+            <version>2.6.4</version>
+        </dependency>
 
         <!-- TESTING -->
         <dependency>
@@ -107,6 +113,15 @@
             </releases>
             <snapshots>
                 <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>aduna-repo</id>
+            <name>Aduna repository</name>
+            <url>http://repo.aduna-software.org/maven2/releases</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
     </repositories>

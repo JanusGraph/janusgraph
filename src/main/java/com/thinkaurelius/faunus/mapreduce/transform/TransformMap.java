@@ -59,9 +59,9 @@ public class TransformMap {
                 if (value.hasPaths()) {
                     final Object result = this.closure.call(value);
                     this.textWritable.set(null == result ? Tokens.NULL : result.toString());
-                    for (int i = 0; i < value.pathCount(); i++) {
-                        this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.textWritable);
-                    }
+                    //for (int i = 0; i < value.pathCount(); i++) {
+                    this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.textWritable);
+                    //}
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
                 }
             } else {
@@ -71,9 +71,9 @@ public class TransformMap {
                     if (edge.hasPaths()) {
                         final Object result = this.closure.call(edge);
                         this.textWritable.set(null == result ? Tokens.NULL : result.toString());
-                        for (int i = 0; i < edge.pathCount(); i++) {
-                            this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.textWritable);
-                        }
+                        //for (int i = 0; i < edge.pathCount(); i++) {
+                        this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.textWritable);
+                        //}
                         edgesProcessed++;
                     }
                 }

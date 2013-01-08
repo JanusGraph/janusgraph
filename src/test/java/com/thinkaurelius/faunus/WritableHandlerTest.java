@@ -2,7 +2,12 @@ package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.mapreduce.util.WritableHandler;
 import junit.framework.TestCase;
-import org.apache.hadoop.io.*;
+import org.apache.hadoop.io.BooleanWritable;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)

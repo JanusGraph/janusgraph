@@ -1,23 +1,57 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
+import com.thinkaurelius.faunus.formats.edgelist.ntriple.NTripleInputFormat;
+import com.thinkaurelius.faunus.formats.titan.SchemaInferencerMapReduce;
+import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
-import com.thinkaurelius.faunus.mapreduce.filter.*;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.*;
-import com.thinkaurelius.faunus.mapreduce.transform.*;
+import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
+import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
+import com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.LinkMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.SideEffectMap;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
+import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.EdgesVerticesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
+import com.thinkaurelius.faunus.mapreduce.transform.OrderMapReduce;
+import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
+import com.thinkaurelius.faunus.mapreduce.transform.PropertyMap;
+import com.thinkaurelius.faunus.mapreduce.transform.TransformMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
+import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.pipes.util.structures.Pair;
-import org.apache.hadoop.io.*;
+import org.apache.hadoop.io.BooleanWritable;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.util.ToolRunner;
 import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.tinkerpop.blueprints.Direction.*;
 
@@ -157,6 +191,15 @@ public class FaunusPipeline {
         this.graph = graph;
         this.compiler = new FaunusCompiler(this.graph);
         this.state = new State();
+
+        // TODO: WE NEED TO GENERALIZE INPUT AND OUTPUT FORMATS THAT REQUIRE MAPREDUCE STEPS
+        if (this.graph.getGraphInputFormat().equals(NTripleInputFormat.class)) {
+            try {
+                this.compiler.edgeListInputMapReduce();
+            } catch (IOException e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
+        }
     }
 
     ///////// STEP
@@ -212,7 +255,7 @@ public class FaunusPipeline {
     public FaunusPipeline transform(final String closure) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
-        this.compiler.transform(this.state.getElementType(), this.validateClosure(closure));
+        this.compiler.transformMap(this.state.getElementType(), this.validateClosure(closure));
         this.state.lock();
         makeMapReduceString(TransformMap.class);
         return this;
@@ -997,6 +1040,15 @@ public class FaunusPipeline {
      * @throws Exception
      */
     public void submit(final String script, final Boolean showHeader) throws Exception {
+        if (TitanOutputFormat.class.isAssignableFrom(this.graph.getGraphOutputFormat())) {
+            this.state.checkLocked();
+            if (this.graph.getConfiguration().getBoolean(TitanOutputFormat.TITAN_GRAPH_OUTPUT_INFER_SCHEMA, true)) {
+                this.compiler.schemaInferenceMapReduce();
+                makeMapReduceString(SchemaInferencerMapReduce.class);
+            }
+            this.compiler.blueprintsGraphOutputMapReduce();
+            makeMapReduceString(BlueprintsGraphOutputMapReduce.class);
+        }
         this.done();
         ToolRunner.run(this.compiler, new String[]{script, showHeader.toString()});
     }

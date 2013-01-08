@@ -10,8 +10,6 @@ import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import org.apache.cassandra.db.IColumn;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -24,15 +22,15 @@ import java.util.SortedMap;
 
 public class FaunusTitanCassandraGraph extends StandardTitanGraph {
 
-    private final InternalTitanTransaction tx;
-
-    public FaunusTitanCassandraGraph(final String configFile) throws ConfigurationException {
-        this(new PropertiesConfiguration(configFile));
-    }
+    private final InternalTitanTransaction tx; /* it's only for reading a Titan graph into Hadoop. */
 
     public FaunusTitanCassandraGraph(final Configuration configuration) {
+        this(configuration, true);
+    }
+
+    public FaunusTitanCassandraGraph(final Configuration configuration, boolean autoTx) {
         super(new GraphDatabaseConfiguration(configuration));
-        this.tx = startTransaction(new TransactionConfig(this.getConfiguration()));
+        this.tx = (autoTx) ? startTransaction(new TransactionConfig(this.getConfiguration())) : null;
     }
 
     public FaunusVertex readFaunusVertex(final ByteBuffer key, final SortedMap<ByteBuffer, IColumn> value) {
@@ -43,7 +41,9 @@ public class FaunusTitanCassandraGraph extends StandardTitanGraph {
 
     @Override
     public void shutdown() {
-        tx.abort();
+        if (tx != null)
+            tx.abort();
+
         super.shutdown();
     }
 
