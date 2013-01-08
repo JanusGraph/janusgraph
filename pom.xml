@@ -61,6 +61,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <cassandra.dir>${project.build.directory}/cassandra-tmp/workdir</cassandra.dir>
+        <cassandra.ordered.dir>${project.build.directory}/cassandra-ordered-tmp/workdir</cassandra.ordered.dir>
         <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
         <!-- Required for PMD plugin. Used for compiler plugin -->
         <targetJdk>1.6</targetJdk>
@@ -72,6 +73,7 @@
         <module>titan-berkeleyje</module>
         <module>titan-cassandra</module>
         <module>titan-hbase</module>
+        <module>titan-all</module>
     </modules>
 
 

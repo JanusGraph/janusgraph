@@ -35,7 +35,6 @@
             <scope>test</scope>
         </dependency>
 
-
         <!-- Storage backends -->
 
         <!-- BerkeleyDB -->
@@ -44,7 +43,6 @@
             <artifactId>je</artifactId>
             <version>5.0.58</version>
         </dependency>
-
 
     </dependencies>
 
@@ -93,8 +91,7 @@
         </resources>
         <testResources>
             <testResource>
-                <directory>${basedir}/src/test/resources
-                </directory>
+                <directory>${basedir}/src/test/resources</directory>
             </testResource>
         </testResources>
         <plugins>
@@ -121,32 +118,6 @@
                     </excludes>
                 </configuration>
             </plugin>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>assembly</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <attach>false</attach>
-                    <descriptors>
-                        <descriptor>src/assembly/standalone.xml</descriptor>
-                        <descriptor>src/assembly/distribution.xml</descriptor>
-                    </descriptors>
-                    <finalName>${project.artifactId}-${project.version}</finalName>
-                    <outputDirectory>target</outputDirectory>
-                    <workDirectory>target/assembly/work</workDirectory>
-                    <tarLongFileMode>warn</tarLongFileMode>
-                    <!--<descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>-->
-                </configuration>
-            </plugin>
-
             <plugin>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <executions>
@@ -206,10 +177,6 @@
                 <plugin>
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>2.4</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <version>2.3</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>

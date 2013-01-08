@@ -26,12 +26,6 @@
             <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.tinkerpop.blueprints</groupId>
-            <artifactId>blueprints-test</artifactId>
-            <version>${tinkerpop.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>com.tinkerpop.gremlin</groupId>
             <artifactId>gremlin-groovy</artifactId>
             <version>${tinkerpop.version}</version>
@@ -70,6 +64,11 @@
             <version>2.0.1</version>
         </dependency>
         <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.7</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>12.0</version>
@@ -83,11 +82,6 @@
             <groupId>com.googlecode</groupId>
             <artifactId>kryo</artifactId>
             <version>1.04</version>
-        </dependency>
-        <dependency>
-            <groupId>com.netflix.astyanax</groupId>
-            <artifactId>astyanax</artifactId>
-            <version>1.0.6</version>
         </dependency>
 
         <!-- Logging -->
@@ -106,21 +100,6 @@
             <artifactId>log4j</artifactId>
             <version>1.2.16</version>
         </dependency>
-
-        <!-- Test Dependencies -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.8.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.8.1</version>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <!-- Profiles -->
@@ -197,32 +176,6 @@
                 </configuration>
             </plugin>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>assembly</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <attach>false</attach>
-                    <descriptors>
-                        <descriptor>src/assembly/standalone.xml</descriptor>
-                        <descriptor>src/assembly/distribution.xml</descriptor>
-                    </descriptors>
-                    <finalName>${project.artifactId}-${project.version}</finalName>
-                    <outputDirectory>target</outputDirectory>
-                    <workDirectory>target/assembly/work</workDirectory>
-                    <tarLongFileMode>warn</tarLongFileMode>
-                    <!--<descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>-->
-                </configuration>
-            </plugin>
-
-            <plugin>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <executions>
                     <execution>
@@ -269,10 +222,6 @@
                     <version>2.4</version>
                 </plugin>
                 <plugin>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <version>2.3</version>
-                </plugin>
-                <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.12.1</version>
                 </plugin>
@@ -306,8 +255,8 @@
     </build>
 
     <reporting>
-        <plugins>
-            <plugin>
+      <plugins>
+          <plugin>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
                 <version>2.4</version>
                 <!-- Turn off default info reports -->

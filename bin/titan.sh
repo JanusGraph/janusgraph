@@ -1,3 +1,3 @@
 #!/bin/bash
 
-`dirname $0`/../target/titan-*-standalone/bin/titan.sh $@
+`dirname $0`/../titan-all/target/titan-all-*-standalone/bin/titan.sh $@

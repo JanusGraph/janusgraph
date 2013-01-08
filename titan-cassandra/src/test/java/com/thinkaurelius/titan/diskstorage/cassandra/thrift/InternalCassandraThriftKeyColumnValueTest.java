@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraDaemonWrapper;
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import org.apache.commons.configuration.Configuration;
@@ -17,7 +17,7 @@ public class InternalCassandraThriftKeyColumnValueTest extends KeyColumnValueSto
 
     @BeforeClass
     public static void startCassandra() {
-        CassandraDaemonWrapper.start(CassandraStorageSetup.cassandraYamlPath);
+        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.cassandraYamlPath);
     }
 
     @Override

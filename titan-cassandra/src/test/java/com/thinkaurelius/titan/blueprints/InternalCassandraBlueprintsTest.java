@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.blueprints;
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraDaemonWrapper;
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Graph;
@@ -19,7 +19,7 @@ public class InternalCassandraBlueprintsTest extends TitanBlueprintsTest {
     @Override
     public synchronized void startUp() {
         if (!isStartedUp) {
-            CassandraDaemonWrapper.start(CassandraStorageSetup.cassandraYamlPath);
+            CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.cassandraYamlPath);
             isStartedUp = true;
         }
     }

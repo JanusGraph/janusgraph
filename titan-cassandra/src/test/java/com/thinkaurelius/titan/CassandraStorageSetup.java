@@ -1,12 +1,7 @@
 package com.thinkaurelius.titan;
 
-
-import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
-import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager;
-import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -14,6 +9,10 @@ import org.apache.commons.lang.StringUtils;
 import java.io.File;
 
 public class CassandraStorageSetup {
+
+    public static final String CASSANDRA_TEMP_PATH = System.getProperty("user.dir")
+                                                     + File.separator + "target"
+                                                     + File.separator + "cassandra-temp";
 
     public static final String cassandraYamlPath = StringUtils.join(
             new String[]{"file://", System.getProperty("user.dir"), "target",
