@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.Holder;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -18,10 +17,10 @@ import java.util.Map;
  */
 public class EdgeListInputMapReduceTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusElement, LongWritable, Holder, NullWritable, FaunusVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusElement, LongWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusElement, LongWritable, Holder, NullWritable, FaunusVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusElement, LongWritable, FaunusVertex, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new EdgeListInputMapReduce.Map());
         mapReduceDriver.setCombiner(new EdgeListInputMapReduce.Combiner());
         mapReduceDriver.setReducer(new EdgeListInputMapReduce.Reduce());
