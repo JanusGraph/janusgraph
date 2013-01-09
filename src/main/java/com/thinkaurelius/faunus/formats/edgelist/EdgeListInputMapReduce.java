@@ -19,6 +19,14 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class EdgeListInputMapReduce {
 
+    public enum Counters {
+        EDGES_EMITTED,
+        VERTICES_EMITTED,
+        IN_EDGES_CREATED,
+        OUT_EDGES_CREATED,
+        VERTICES_CREATED
+    }
+
     public static class Map extends Mapper<NullWritable, FaunusElement, LongWritable, Holder> {
 
         private final LongWritable longWritable = new LongWritable();
@@ -31,9 +39,11 @@ public class EdgeListInputMapReduce {
                 context.write(this.longWritable, this.holder.set('o', value));
                 this.longWritable.set(((FaunusEdge) value).getVertexId(IN));
                 context.write(this.longWritable, this.holder.set('i', value));
+                context.getCounter(Counters.EDGES_EMITTED).increment(1l);
             } else {
                 this.longWritable.set(value.getIdAsLong());
                 context.write(this.longWritable, this.holder.set('v', value));
+                context.getCounter(Counters.VERTICES_EMITTED).increment(1l);
             }
         }
     }
@@ -47,8 +57,10 @@ public class EdgeListInputMapReduce {
             for (final Holder holder : values) {
                 if (holder.getTag() == 'o') {
                     vertex.addEdge(OUT, (FaunusEdge) holder.get());
+                    context.getCounter(Counters.OUT_EDGES_CREATED).increment(1l);
                 } else if (holder.getTag() == 'i') {
                     vertex.addEdge(IN, (FaunusEdge) holder.get());
+                    context.getCounter(Counters.IN_EDGES_CREATED).increment(1l);
                 } else {
                     final FaunusVertex temp = (FaunusVertex) holder.get();
                     for (final String property : temp.getPropertyKeys()) {
@@ -57,6 +69,7 @@ public class EdgeListInputMapReduce {
                 }
             }
             context.write(NullWritable.get(), vertex);
+            context.getCounter(Counters.VERTICES_CREATED).increment(1l);
         }
     }
 }

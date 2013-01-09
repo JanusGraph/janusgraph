@@ -37,7 +37,7 @@ public class NTripleRecordReader extends RecordReader<NullWritable, FaunusElemen
     private LineReader in;
     private int maxLineLength = Integer.MAX_VALUE;
     private final RDFParser parser = Rio.createParser(RDFFormat.NTRIPLES);
-    private NTripleHandler handler;
+    private RDFBlueprintsHandler handler;
     private final Queue<FaunusElement> queue = new LinkedList<FaunusElement>();
 
 
@@ -45,7 +45,7 @@ public class NTripleRecordReader extends RecordReader<NullWritable, FaunusElemen
         final FileSplit split = (FileSplit) genericSplit;
         final Configuration conf = context.getConfiguration();
         this.maxLineLength = conf.getInt("mapred.linerecordreader.maxlength", Integer.MAX_VALUE);
-        this.handler = new NTripleHandler(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+        this.handler = new RDFBlueprintsHandler(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
         this.parser.setRDFHandler(this.handler);
 
         this.start = split.getStart();

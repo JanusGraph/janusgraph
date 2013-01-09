@@ -14,7 +14,7 @@ import java.security.NoSuchAlgorithmException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class NTripleHandler implements RDFHandler {
+public class RDFBlueprintsHandler implements RDFHandler {
 
     private final MessageDigest md;
     private final FaunusVertex subject = new FaunusVertex();
@@ -22,7 +22,7 @@ public class NTripleHandler implements RDFHandler {
     private final FaunusEdge predicate = new FaunusEdge();
     private final boolean enablePath;
 
-    public NTripleHandler(final boolean enablePath) throws IOException {
+    public RDFBlueprintsHandler(final boolean enablePath) throws IOException {
         this.enablePath = enablePath;
         try {
             this.md = MessageDigest.getInstance("MD5");

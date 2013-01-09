@@ -16,7 +16,7 @@ import java.util.UUID;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class NTripleHandlerTest extends TestCase {
+public class RDFBlueprintsHandlerTest extends TestCase {
 
     public void testMD5HashUniqueness() throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("MD5");
@@ -31,7 +31,7 @@ public class NTripleHandlerTest extends TestCase {
 
     public void testURIConversions() throws Exception {
         RDFParser parser = Rio.createParser(RDFFormat.NTRIPLES);
-        NTripleHandler handler = new NTripleHandler(false);
+        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(false);
         parser.setRDFHandler(handler);
         parser.parse(new StringReader("<http://tinkerpop.com#josh> <http://tinkerpop.com#created> <http://tinkerpop.com#ripple> ."), "http://baseURI#");
         assertEquals(handler.getPredicate().getLabel(), "created");
