@@ -170,6 +170,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public void edgeListInputMapReduce() throws IOException {
         this.mapSequenceClasses.add(EdgeListInputMapReduce.Map.class);
+        this.combinerClass = EdgeListInputMapReduce.Combiner.class;
         this.reduceClass = EdgeListInputMapReduce.Reduce.class;
         this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
         this.completeSequence();

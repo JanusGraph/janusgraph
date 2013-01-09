@@ -23,6 +23,7 @@ public class EdgeListInputMapReduceTest extends BaseTest {
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusElement, LongWritable, Holder, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new EdgeListInputMapReduce.Map());
+        mapReduceDriver.setCombiner(new EdgeListInputMapReduce.Combiner());
         mapReduceDriver.setReducer(new EdgeListInputMapReduce.Reduce());
     }
 

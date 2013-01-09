@@ -11,8 +11,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 
-import static com.tinkerpop.blueprints.Direction.IN;
-import static com.tinkerpop.blueprints.Direction.OUT;
+import static com.tinkerpop.blueprints.Direction.*;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -48,6 +47,34 @@ public class EdgeListInputMapReduce {
         }
     }
 
+    public static class Combiner extends Reducer<LongWritable, Holder, LongWritable, Holder> {
+
+        private final Holder holder = new Holder();
+
+        @Override
+        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+            final FaunusVertex vertex = new FaunusVertex(key.get());
+            for (final Holder holder : values) {
+                if (holder.getTag() == 'o') {
+                    vertex.addEdge(OUT, (FaunusEdge) holder.get());
+                    context.getCounter(Counters.OUT_EDGES_CREATED).increment(1l);
+                } else if (holder.getTag() == 'i') {
+                    vertex.addEdge(IN, (FaunusEdge) holder.get());
+                    context.getCounter(Counters.IN_EDGES_CREATED).increment(1l);
+                } else {
+                    final FaunusVertex temp = (FaunusVertex) holder.get();
+                    for (final String property : temp.getPropertyKeys()) {
+                        vertex.setProperty(property, temp.getProperty(property));
+                    }
+                    vertex.addEdges(BOTH, temp);
+                }
+            }
+            context.write(key, holder.set('v', vertex));
+            context.getCounter(Counters.VERTICES_CREATED).increment(1l);
+        }
+
+
+    }
 
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
@@ -66,6 +93,7 @@ public class EdgeListInputMapReduce {
                     for (final String property : temp.getPropertyKeys()) {
                         vertex.setProperty(property, temp.getProperty(property));
                     }
+                    vertex.addEdges(BOTH, temp);
                 }
             }
             context.write(NullWritable.get(), vertex);
