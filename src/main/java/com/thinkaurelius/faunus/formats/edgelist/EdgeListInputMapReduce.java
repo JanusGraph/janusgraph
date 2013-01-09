@@ -31,7 +31,7 @@ public class EdgeListInputMapReduce {
     public static class Map extends Mapper<NullWritable, FaunusElement, LongWritable, FaunusVertex> {
 
         private final HashMap<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
-        private static final int MAX_MAP_SIZE = 10000;
+        private static final int MAX_MAP_SIZE = 5000;
         private final LongWritable longWritable = new LongWritable();
         private int counter = 0;
 
@@ -46,6 +46,7 @@ public class EdgeListInputMapReduce {
                     this.map.put(outId, vertex);
                 }
                 vertex.addEdge(OUT, (FaunusEdge) value);
+                this.counter++;
 
                 vertex = this.map.get(inId);
                 if (null == vertex) {
@@ -112,14 +113,11 @@ public class EdgeListInputMapReduce {
                 this.vertex.addEdges(BOTH, value);
                 this.vertex.getProperties().putAll(value.getProperties());
             }
-            context.write(NullWritable.get(), this.vertex);
             context.getCounter(Counters.VERTICES_CREATED).increment(1l);
             context.getCounter(Counters.VERTEX_PROPERTIES_CREATED).increment(this.vertex.getProperties().size());
             context.getCounter(Counters.OUT_EDGES_CREATED).increment(((List) this.vertex.getEdges(OUT)).size());
             context.getCounter(Counters.IN_EDGES_CREATED).increment(((List) this.vertex.getEdges(IN)).size());
             context.write(NullWritable.get(), this.vertex);
-
-
         }
     }
 }
