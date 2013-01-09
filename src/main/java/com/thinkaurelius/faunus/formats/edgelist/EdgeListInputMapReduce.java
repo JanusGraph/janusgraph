@@ -24,7 +24,8 @@ public class EdgeListInputMapReduce {
         VERTICES_EMITTED,
         IN_EDGES_CREATED,
         OUT_EDGES_CREATED,
-        VERTICES_CREATED
+        VERTICES_CREATED,
+        VERTEX_PROPERTIES_CREATED
     }
 
     public static class Map extends Mapper<NullWritable, FaunusElement, LongWritable, Holder> {
@@ -80,22 +81,23 @@ public class EdgeListInputMapReduce {
             for (final Holder holder : values) {
                 if (holder.getTag() == 'o') {
                     vertex.addEdge(OUT, (FaunusEdge) holder.get());
-                    context.getCounter(Counters.OUT_EDGES_CREATED).increment(1l);
                 } else if (holder.getTag() == 'i') {
                     vertex.addEdge(IN, (FaunusEdge) holder.get());
-                    context.getCounter(Counters.IN_EDGES_CREATED).increment(1l);
                 } else {
                     final FaunusVertex temp = (FaunusVertex) holder.get();
                     for (final String property : temp.getPropertyKeys()) {
                         vertex.setProperty(property, temp.getProperty(property));
                     }
                     vertex.addEdges(BOTH, temp);
-                    context.getCounter(Counters.OUT_EDGES_CREATED).increment(((List) temp.getEdges(OUT)).size());
-                    context.getCounter(Counters.IN_EDGES_CREATED).increment(((List) temp.getEdges(IN)).size());
                 }
             }
-            context.write(NullWritable.get(), vertex);
             context.getCounter(Counters.VERTICES_CREATED).increment(1l);
+            context.getCounter(Counters.VERTEX_PROPERTIES_CREATED).increment(vertex.getProperties().size());
+            context.getCounter(Counters.OUT_EDGES_CREATED).increment(((List) vertex.getEdges(OUT)).size());
+            context.getCounter(Counters.IN_EDGES_CREATED).increment(((List) vertex.getEdges(IN)).size());
+            context.write(NullWritable.get(), vertex);
+
+
         }
     }
 }

@@ -15,8 +15,12 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
  */
 public class NTripleInputFormat extends FileInputFormat<NullWritable, FaunusElement> {
 
+    public static final String USE_LOCALNAME = "faunus.input.format.ntriple.use-localname";
+    public static final String AS_PROPERTIES = "faunus.input.format.ntriple.as-properties";
+
     public static final String URI = "uri";
     public static final String CONTEXT = "context";
+    public static final String NAME = "name";
 
     @Override
     public RecordReader<NullWritable, FaunusElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) {

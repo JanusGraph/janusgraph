@@ -1,7 +1,6 @@
 package com.thinkaurelius.faunus.formats.edgelist.ntriple;
 
 import com.thinkaurelius.faunus.FaunusElement;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -45,7 +44,7 @@ public class NTripleRecordReader extends RecordReader<NullWritable, FaunusElemen
         final FileSplit split = (FileSplit) genericSplit;
         final Configuration conf = context.getConfiguration();
         this.maxLineLength = conf.getInt("mapred.linerecordreader.maxlength", Integer.MAX_VALUE);
-        this.handler = new RDFBlueprintsHandler(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+        this.handler = new RDFBlueprintsHandler(context.getConfiguration());
         this.parser.setRDFHandler(this.handler);
 
         this.start = split.getStart();
@@ -89,9 +88,12 @@ public class NTripleRecordReader extends RecordReader<NullWritable, FaunusElemen
             if (newSize < this.maxLineLength && text.toString().trim().length() > 0) {
                 try {
                     this.parser.parse(new StringReader(text.toString()), "http://thinkaurelius.com/baseUri#");
-                    this.queue.add(this.handler.getSubject());
-                    this.queue.add(this.handler.getPredicate());
-                    this.queue.add(this.handler.getObject());
+                    if (null != this.handler.getSubject())
+                        this.queue.add(this.handler.getSubject());
+                    if (null != this.handler.getPredicate())
+                        this.queue.add(this.handler.getPredicate());
+                    if (null != this.handler.getObject())
+                        this.queue.add(this.handler.getObject());
                 } catch (Exception e) {
                     throw new IOException(e.getMessage(), e);
                 }
