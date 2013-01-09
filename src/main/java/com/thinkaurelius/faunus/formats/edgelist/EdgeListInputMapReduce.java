@@ -10,6 +10,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
+import java.util.List;
 
 import static com.tinkerpop.blueprints.Direction.*;
 
@@ -89,6 +90,8 @@ public class EdgeListInputMapReduce {
                         vertex.setProperty(property, temp.getProperty(property));
                     }
                     vertex.addEdges(BOTH, temp);
+                    context.getCounter(Counters.OUT_EDGES_CREATED).increment(((List) temp.getEdges(OUT)).size());
+                    context.getCounter(Counters.IN_EDGES_CREATED).increment(((List) temp.getEdges(IN)).size());
                 }
             }
             context.write(NullWritable.get(), vertex);
