@@ -57,10 +57,8 @@ public class EdgeListInputMapReduce {
             for (final Holder holder : values) {
                 if (holder.getTag() == 'o') {
                     vertex.addEdge(OUT, (FaunusEdge) holder.get());
-                    context.getCounter(Counters.OUT_EDGES_CREATED).increment(1l);
                 } else if (holder.getTag() == 'i') {
                     vertex.addEdge(IN, (FaunusEdge) holder.get());
-                    context.getCounter(Counters.IN_EDGES_CREATED).increment(1l);
                 } else {
                     final FaunusVertex temp = (FaunusVertex) holder.get();
                     for (final String property : temp.getPropertyKeys()) {
@@ -70,10 +68,7 @@ public class EdgeListInputMapReduce {
                 }
             }
             context.write(key, holder.set('v', vertex));
-            context.getCounter(Counters.VERTICES_CREATED).increment(1l);
         }
-
-
     }
 
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
