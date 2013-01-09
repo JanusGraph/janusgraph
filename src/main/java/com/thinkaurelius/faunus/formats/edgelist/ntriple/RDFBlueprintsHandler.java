@@ -29,6 +29,7 @@ public class RDFBlueprintsHandler implements RDFHandler {
     private final boolean enablePath;
     private final boolean useFragments;
     private final Set<String> asProperties = new HashSet<String>();
+    private boolean onlySubject = false;
 
 
     public RDFBlueprintsHandler(final Configuration configuration) throws IOException {
@@ -78,8 +79,7 @@ public class RDFBlueprintsHandler implements RDFHandler {
             if (this.useFragments)
                 this.subject.setProperty(NTripleInputFormat.NAME, postProcess(s.getSubject()));
             this.subject.enablePath(this.enablePath);
-            this.object = null;
-            this.predicate = null;
+            this.onlySubject = true;
         } else {
             ByteBuffer bb = ByteBuffer.wrap(md.digest(s.getSubject().stringValue().getBytes()));
             long subjectId = bb.getLong();
@@ -102,6 +102,7 @@ public class RDFBlueprintsHandler implements RDFHandler {
             if (null != s.getContext())
                 this.predicate.setProperty(NTripleInputFormat.CONTEXT, s.getContext().stringValue());
             this.predicate.enablePath(this.enablePath);
+            this.onlySubject = false;
         }
     }
 
@@ -119,5 +120,9 @@ public class RDFBlueprintsHandler implements RDFHandler {
 
     public FaunusEdge getPredicate() {
         return this.predicate;
+    }
+
+    public boolean isOnlySubject() {
+        return this.onlySubject;
     }
 }

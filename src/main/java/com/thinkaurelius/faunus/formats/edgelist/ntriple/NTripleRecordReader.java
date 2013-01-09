@@ -88,12 +88,11 @@ public class NTripleRecordReader extends RecordReader<NullWritable, FaunusElemen
             if (newSize < this.maxLineLength && text.toString().trim().length() > 0) {
                 try {
                     this.parser.parse(new StringReader(text.toString()), "http://thinkaurelius.com/baseUri#");
-                    if (null != this.handler.getSubject())
-                        this.queue.add(this.handler.getSubject());
-                    if (null != this.handler.getPredicate())
+                    this.queue.add(this.handler.getSubject());
+                    if (!this.handler.isOnlySubject()) {
                         this.queue.add(this.handler.getPredicate());
-                    if (null != this.handler.getObject())
                         this.queue.add(this.handler.getObject());
+                    }
                 } catch (Exception e) {
                     throw new IOException(e.getMessage(), e);
                 }

@@ -45,6 +45,7 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         assertEquals(handler.getSubject().getProperty("name"), "Abraham_Lincoln");
         assertEquals(handler.getPredicate().getLabel(), "type");
         assertEquals(handler.getObject().getProperty("name"), "Person");
+        assertFalse(handler.isOnlySubject());
     }
 
     public void testAsProperties() throws Exception {
@@ -60,7 +61,6 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         parser.parse(new StringReader("<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person> ."), "http://baseURI#");
         assertEquals(handler.getSubject().getProperty("name"), "Abraham_Lincoln");
         assertEquals(handler.getSubject().getProperty("type"), "Person");
-        assertNull(handler.getPredicate());
-        assertNull(handler.getObject());
+        assertTrue(handler.isOnlySubject());
     }
 }
