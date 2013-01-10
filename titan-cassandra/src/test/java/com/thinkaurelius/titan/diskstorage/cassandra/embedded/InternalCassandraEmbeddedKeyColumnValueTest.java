@@ -4,7 +4,11 @@ import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import org.apache.commons.configuration.Configuration;
+import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 public class InternalCassandraEmbeddedKeyColumnValueTest extends KeyColumnValueStoreTest {
 
@@ -24,12 +28,11 @@ public class InternalCassandraEmbeddedKeyColumnValueTest extends KeyColumnValueS
 //        //Hence this dryRun to smooth things over.
 //    }
 //
-//    @Test
-//    public void testConfiguration() {
-//        StoreFeatures features = manager.getFeatures();
-//        assertTrue(features.isKeyOrdered());
-//        assertTrue(features.hasLocalKeyPartition());
-//    }
+    @Test
+    public void testConfiguration() {
+        StoreFeatures features = manager.getFeatures();
+        assertTrue(features.isKeyOrdered());
+    }
 
 
 }

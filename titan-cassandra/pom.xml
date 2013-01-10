@@ -48,6 +48,12 @@
             <artifactId>astyanax</artifactId>
             <version>1.0.6</version>
         </dependency>
+        <!-- The latest Snappy-java because 1.4.0.1 is broken on Mac OS X with JDK 7 -->
+        <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+            <version>1.0.5-M3</version>
+        </dependency>
     </dependencies>
 
     <!-- Profiles -->
@@ -120,6 +126,7 @@
                         <exclude>**/*PerformanceTest.java</exclude>
                         <exclude>**/*ConcurrentTest.java</exclude>
                     </excludes>
+                    <forkMode>always</forkMode>
                 </configuration>
             </plugin>
             <plugin>
