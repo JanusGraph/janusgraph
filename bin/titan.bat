@@ -1,7 +1,7 @@
 :: Windows launcher script for Titan
 @echo off
 
-cd %CD%\..\target\
+cd %CD%\..titan-all\target\
 
 set TARGET=
 

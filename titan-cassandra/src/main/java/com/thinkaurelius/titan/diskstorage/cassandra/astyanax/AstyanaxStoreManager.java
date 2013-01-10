@@ -18,7 +18,6 @@ import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
-import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
@@ -225,11 +224,23 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public void clearStorage() {
+    public void clearStorage() throws StorageException {
         try {
-            clusterContext.getEntity().dropKeyspace(keySpaceName);
+            Cluster cluster = clusterContext.getEntity();
+
+            Keyspace ks = cluster.getKeyspace(keySpaceName);
+
+            // Not a big deal if Keyspace doesn't not exist (dropped manually by user or tests).
+            // This is called on per test setup basis to make sure that previous test cleaned
+            // everything up, so first invocation would always fail as Keyspace doesn't yet exist.
+            if (ks == null)
+                return;
+
+            for (ColumnFamilyDefinition cf : cluster.describeKeyspace(keySpaceName).getColumnFamilyList()) {
+                ks.truncateColumnFamily(new ColumnFamily<Object, Object>(cf.getName(), null, null));
+            }
         } catch (ConnectionException e) {
-            log.debug("Failed to drop keyspace {}", keySpaceName);
+            throw new PermanentStorageException(e);
         } finally {
             close();
         }

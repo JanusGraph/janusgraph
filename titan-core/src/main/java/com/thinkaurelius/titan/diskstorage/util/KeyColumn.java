@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
-import org.apache.cassandra.utils.ByteBufferUtil;
-
 import java.nio.ByteBuffer;
 
 /**

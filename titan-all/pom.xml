@@ -7,87 +7,27 @@
         <version>0.3.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>titan-cassandra</artifactId>
-    <name>Titan-Cassandra: Distributed Graph Database</name>
+    <artifactId>titan-all</artifactId>
+    <name>Titan-All: All Components of Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
-    <!-- Libraries -->
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-core</artifactId>
+            <artifactId>titan-cassandra</artifactId>
             <version>${titan.version}</version>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-test</artifactId>
+            <artifactId>titan-berkeleyje</artifactId>
             <version>${titan.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Storage backends -->
-
-        <!-- Cassandra -->
-        <dependency>
-            <groupId>org.apache.cassandra</groupId>
-            <artifactId>cassandra-all</artifactId>
-            <version>1.2.0</version>
         </dependency>
         <dependency>
-            <groupId>commons-pool</groupId>
-            <artifactId>commons-pool</artifactId>
-            <version>1.5.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.netty</groupId>
-            <artifactId>netty</artifactId>
-            <version>3.2.7.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>com.netflix.astyanax</groupId>
-            <artifactId>astyanax</artifactId>
-            <version>1.0.6</version>
-        </dependency>
-        <!-- The latest Snappy-java because 1.4.0.1 is broken on Mac OS X with JDK 7 -->
-        <dependency>
-            <groupId>org.xerial.snappy</groupId>
-            <artifactId>snappy-java</artifactId>
-            <version>1.0.5-M3</version>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-hbase</artifactId>
+            <version>${titan.version}</version>
         </dependency>
     </dependencies>
-
-    <!-- Profiles -->
-    <profiles>
-        <profile>
-            <id>comprehensive</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.12</version>
-                        <configuration>
-                            <argLine>-Xms256m -Xmx1024m</argLine>
-                            <includes>
-                                <include>**/*Test.java</include>
-                            </includes>
-                            <excludes>
-                                <exclude>**/Internal*.java</exclude>
-                                <exclude>**/*Suite.java</exclude>
-                            </excludes>
-                            <!-- Forking per class is required for the
-                        Internal and External Cassandra tests
-                        to run in the same suite.  Otherwise,
-                        when an Internal runs before an External,
-                        the Internal Cassandra daemon will hold
-                        all its ports open and the External
-                        Cassandra daemon will fail to bind them.  -->
-                            <forkMode>always</forkMode>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
     <!-- Build Settings -->
     <build>
@@ -126,33 +66,31 @@
                         <exclude>**/*PerformanceTest.java</exclude>
                         <exclude>**/*ConcurrentTest.java</exclude>
                     </excludes>
-                    <forkMode>always</forkMode>
                 </configuration>
             </plugin>
             <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
+                <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>copy-resources-127.0.0.1</id>
-                        <phase>process-test-resources</phase>
+                        <phase>package</phase>
                         <goals>
-                            <goal>copy-resources</goal>
+                            <goal>attached</goal>
                         </goals>
-                        <configuration>
-                            <outputDirectory>target/cassandra-tmp/conf/127.0.0.1</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${basedir}/config/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                            <filters>
-                                <filter>${basedir}/config/cassandra-filters/127.0.0.1.properties</filter>
-                            </filters>
-                        </configuration>
                     </execution>
                 </executions>
+                <configuration>
+                    <attach>false</attach>
+                    <descriptors>
+                        <descriptor>src/assembly/standalone.xml</descriptor>
+                        <descriptor>src/assembly/distribution.xml</descriptor>
+                    </descriptors>
+                    <finalName>${project.artifactId}-${project.version}</finalName>
+                    <outputDirectory>target</outputDirectory>
+                    <workDirectory>target/assembly/work</workDirectory>
+                    <tarLongFileMode>warn</tarLongFileMode>
+                </configuration>
             </plugin>
+
             <plugin>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <executions>
@@ -200,6 +138,10 @@
                     <version>2.4</version>
                 </plugin>
                 <plugin>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>2.3</version>
+                </plugin>
+                <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.12.1</version>
                 </plugin>
@@ -233,8 +175,8 @@
     </build>
 
     <reporting>
-        <plugins>
-            <plugin>
+      <plugins>
+          <plugin>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
                 <version>2.4</version>
                 <!-- Turn off default info reports -->

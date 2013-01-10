@@ -81,9 +81,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         CTConnection conn = null;
         try {
             conn = fac.makeRawConnection();
-            Cassandra.Client client = conn.getClient();
-            String partitioner = client.describe_partitioner();
-            return Partitioner.getPartitioner(partitioner);
+            return Partitioner.getPartitioner(conn.getClient().describe_partitioner());
         } catch (Exception e) {
             throw new TemporaryStorageException(e);
         } finally {
@@ -222,20 +220,22 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             openStores.put(name, store);
             return store;
         }
-
-    }
+	}
 
 
     /**
-     * Connect to Cassandra via Thrift on the specified host and
-     * port and attempt to drop the named keyspace.
-     * <p/>
-     * This is a utility method intended mainly for testing.  It is
-     * equivalent to issuing "drop keyspace {@code <keyspace>};" in
+     * Connect to Cassandra via Thrift on the specified host and port and attempt to truncate the named keyspace.
+     *
+     * This is a utility method intended mainly for testing. It is
+     * equivalent to issuing 'truncate <cf>' for each of the column families in keyspace using
      * the cassandra-cli tool.
      *
-     * @throws RuntimeException if any checked Thrift or UnknownHostException
-     *                          is thrown in the body of this method
+     * Using truncate is better for a number of reasons, most significantly because it doesn't
+     * involve any schema modifications which can take time to propagate across the cluster such
+     * leaves nodes in the inconsistent state and could result in read/write failures.
+     * Any schema modifications are discouraged until there is no traffic to Keyspace or ColumnFamilies.
+     *
+     * @throws StorageException if any checked Thrift or UnknownHostException is thrown in the body of this method
      */
     public void clearStorage() throws StorageException {
         openStores.clear();
@@ -244,19 +244,18 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         try {
             conn = CTConnectionPool.getFactory(hostname, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT).makeRawConnection();
             Cassandra.Client client = conn.getClient();
+
             try {
+                client.set_keyspace(keySpaceName);
+
+                KsDef ksDef = client.describe_keyspace(keySpaceName);
+
+                for (CfDef cfDef : ksDef.getCf_defs())
+                    client.truncate(cfDef.name);
+
                 CTConnectionPool.getPool(hostname, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT).clear(keySpaceName);
-                client.describe_keyspace(keySpaceName);
-                // Keyspace must exist
-                log.debug("Dropping keyspace {}...", keySpaceName);
-                String schemaVer = client.system_drop_keyspace(keySpaceName);
-
-                // Try to let Cassandra converge on the new column family
-                CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
-
-            } catch (NotFoundException e) {
-                // Keyspace doesn't exist yet: return immediately
-                log.debug("Keyspace {} does not exist, not attempting to drop", keySpaceName);
+            } catch (InvalidRequestException e) { // Keyspace doesn't exist yet: return immediately
+                log.debug("Keyspace {} does not exist, not attempting to truncate.", keySpaceName);
             }
         } catch (Exception e) {
             throw new TemporaryStorageException(e);
@@ -322,7 +321,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
 
         log.debug("Adding column family {} to keyspace {}...", columnfamilyName, keyspaceName);
-        String schemaVer = null;
+        String schemaVer;
         try {
             schemaVer = client.system_add_column_family(createColumnFamily);
         } catch (SchemaDisagreementException e) {
@@ -365,12 +364,12 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             KsDef ksDef = client.describe_keyspace(keySpaceName); // would throw NotFoundException so no need to assert
 
             client.system_update_keyspace(new KsDef().setName(ksDef.name)
-                    .setDurable_writes(ksDef.durable_writes)
-                    .setStrategy_class(ksDef.strategy_class)
-                    .setCf_defs(Collections.EMPTY_LIST)
-                    .setStrategy_options(new HashMap<String, String>(ksDef.strategy_options) {{
-                        put(key, value);
-                    }}));
+                                                     .setDurable_writes(ksDef.durable_writes)
+                                                     .setStrategy_class(ksDef.strategy_class)
+                                                     .setCf_defs(Collections.<CfDef>emptyList())
+                                                     .setStrategy_options(new HashMap<String, String>(ksDef.strategy_options) {{
+                                                         put(key, value);
+                                                     }}));
         } catch (Exception e) {
             throw new PermanentStorageException(e);
         } finally {

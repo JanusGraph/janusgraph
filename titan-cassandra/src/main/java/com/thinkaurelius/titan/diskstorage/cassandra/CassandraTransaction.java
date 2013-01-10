@@ -55,13 +55,17 @@ public class CassandraTransaction extends AbstractStoreTransaction {
             }
         }
 
+        public org.apache.cassandra.db.ConsistencyLevel getDBConsistency() {
+            org.apache.cassandra.db.ConsistencyLevel level = org.apache.cassandra.db.ConsistencyLevel.valueOf(this.toString());
+            Preconditions.checkArgument(level!=null);
+            return level;
+        }
+
         public org.apache.cassandra.thrift.ConsistencyLevel getThriftConsistency() {
             org.apache.cassandra.thrift.ConsistencyLevel level = org.apache.cassandra.thrift.ConsistencyLevel.valueOf(this.toString());
             Preconditions.checkArgument(level != null);
             return level;
         }
-
-
     }
 
     private final Consistency readConsistency;

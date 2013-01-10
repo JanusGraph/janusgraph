@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import org.apache.cassandra.utils.ByteBufferUtil;
 
 import java.nio.ByteBuffer;
 
@@ -120,6 +120,4 @@ public class LockClaim {
                 + ", col=0x" + ByteBufferUtil.bytesToHex(kc.getColumn())
                 + ", expectedValue=" + (null == expectedValue ? "null" : "0x" + ByteBufferUtil.bytesToHex(expectedValue)) + "]";
     }
-
-
 }

@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
+import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraDaemonWrapper;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
@@ -229,6 +231,16 @@ public class CassandraProcessStarter {
                 if (conn.getTransport().isOpen())
                     conn.getTransport().close();
         }
+    }
+
+    public static void startCleanEmbedded(String cassandraYamlPath) {
+        try {
+            FileUtils.deleteDirectory(new File(CassandraStorageSetup.CASSANDRA_TEMP_PATH + File.separator + "workdir"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        CassandraDaemonWrapper.start(cassandraYamlPath);
     }
 }
 

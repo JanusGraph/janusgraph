@@ -282,8 +282,7 @@ public class Backend {
     
     //############ Registered Storage Managers ##############
 
-    private static final Map<String, String> REGISTERED_STORAGE_MANAGERS =
-            new HashMap<String, String>();
+    private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>();
 
     static {
         Properties props;

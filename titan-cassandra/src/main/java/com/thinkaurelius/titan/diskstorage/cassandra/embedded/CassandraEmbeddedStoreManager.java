@@ -13,7 +13,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.CFMetaData.Caching;
-import org.apache.cassandra.config.ConfigurationException;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.KSMetaData;
 import org.apache.cassandra.config.Schema;
@@ -24,22 +23,18 @@ import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.cassandra.dht.BytesToken;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
+import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.cassandra.exceptions.RequestExecutionException;
 import org.apache.cassandra.scheduler.IRequestScheduler;
 import org.apache.cassandra.service.MigrationManager;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.StorageService;
-import org.apache.cassandra.thrift.ConsistencyLevel;
-import org.apache.cassandra.thrift.UnavailableException;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
@@ -99,14 +94,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
     @Override
     public Partitioner getPartitioner() throws StorageException {
-        //Determine if key ordered
         try {
-            Token<?> token = StorageService.instance.getLocalPrimaryRange().left;
-            if (token instanceof BytesToken) {
-                return Partitioner.LOCALBYTEORDER;
-            } else {
-                return Partitioner.RANDOM;
-            }
+            return Partitioner.getPartitioner(StorageService.getPartitioner());
         } catch (Exception e) {
             log.warn("Could not read local token range: {}", e);
             throw new PermanentStorageException("Could not read partitioner information on cluster", e);
@@ -188,7 +177,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     /*
       * This implementation can't handle counter columns.
       *
-      * The private method internal_batch_mutate in CassandraServer as of 1.1.3
+      * The private method internal_batch_mutate in CassandraServer as of 1.2.0
       * provided most of the following method after transaction handling.
       */
     @Override
@@ -231,22 +220,19 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             }
         }
 
-        ConsistencyLevel clvl = getTx(txh).getWriteConsistencyLevel().getThriftConsistency();
-        List<RowMutation> mutationList = new ArrayList<RowMutation>(rowMutations.values());
-        rowMutations = null;
-        mutate(mutationList, clvl);
+        mutate(new ArrayList<RowMutation>(rowMutations.values()), getTx(txh).getWriteConsistencyLevel().getDBConsistency());
     }
 
-    private void mutate(List<RowMutation> cmds, ConsistencyLevel clvl) throws StorageException {
+    private void mutate(List<RowMutation> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
         try {
             schedule(DatabaseDescriptor.getRpcTimeout());
             try {
                 StorageProxy.mutate(cmds, clvl);
+            } catch (RequestExecutionException e) {
+                throw new TemporaryStorageException(e);
             } finally {
                 release();
             }
-        } catch (UnavailableException ex) {
-            throw new TemporaryStorageException(ex);
         } catch (TimeoutException ex) {
             log.debug("Cassandra TimeoutException", ex);
             throw new TemporaryStorageException(ex);
@@ -268,13 +254,20 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     public void clearStorage() throws StorageException {
         openStores.clear();
         try {
-            if (Schema.instance.getTableInstance(keySpaceName) != null)
-                MigrationManager.announceKeyspaceDrop(keySpaceName);
-        } catch (ConfigurationException e) {
+            KSMetaData ksMetaData = Schema.instance.getKSMetaData(keySpaceName);
+
+            // Not a big deal if Keyspace doesn't not exist (dropped manually by user or tests).
+            // This is called on per test setup basis to make sure that previous test cleaned
+            // everything up, so first invocation would always fail as Keyspace doesn't yet exist.
+            if (ksMetaData == null)
+                return;
+
+            for (String cfName : ksMetaData.cfMetaData().keySet())
+                StorageService.instance.truncate(keySpaceName, cfName);
+        } catch (Exception e) {
             throw new PermanentStorageException(e);
         }
     }
-
 
     private void ensureKeyspaceExists(String keyspaceName) throws StorageException {
 
@@ -289,7 +282,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         KSMetaData ksm;
         try {
-            ksm = KSMetaData.newKeyspace(keyspaceName, strategyName, options);
+            ksm = KSMetaData.newKeyspace(keyspaceName, strategyName, options, true);
         } catch (ConfigurationException e) {
             throw new PermanentStorageException("Failed to instantiate keyspace metadata for " + keyspaceName, e);
         }

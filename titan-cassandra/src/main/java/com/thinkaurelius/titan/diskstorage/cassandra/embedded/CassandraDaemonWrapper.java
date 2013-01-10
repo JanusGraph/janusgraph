@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
-import org.apache.cassandra.thrift.CassandraDaemon;
+import org.apache.cassandra.service.CassandraDaemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

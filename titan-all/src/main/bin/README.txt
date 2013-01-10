@@ -6,7 +6,7 @@ The primary features of Titan are itemized below.
 
   Support for various distributed storage layers
     * BerkeleyDB 5.0.58
-    * Cassandra 1.1.3
+    * Cassandra 1.2.0
     * HBase 0.94.1
 
   Natively implements the Blueprints graph API
