@@ -88,6 +88,11 @@
                     <outputDirectory>target</outputDirectory>
                     <workDirectory>target/assembly/work</workDirectory>
                     <tarLongFileMode>warn</tarLongFileMode>
+                    <archiverConfig>
+                        <fileMode>420</fileMode> <!-- 420(dec) = 644(oct) -->
+                        <directoryMode>493</directoryMode> <!-- 493(dec) = 755(oct) -->
+                        <defaultDirectoryMode>493</defaultDirectoryMode>
+                    </archiverConfig>
                 </configuration>
             </plugin>
 
