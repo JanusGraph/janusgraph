@@ -521,7 +521,7 @@ public class FaunusCompiler extends Configured implements Tool {
         else if (new File("../lib/" + Tokens.FAUNUS_JOB_JAR).exists())
             hadoopFileJar = "../lib/" + Tokens.FAUNUS_JOB_JAR;
         else
-            throw new IllegalStateException("The Faunus Hadoop job jar could not be found: faunus-" + Tokens.FAUNUS_JOB_JAR);
+            throw new IllegalStateException("The Faunus Hadoop job jar could not be found: " + Tokens.FAUNUS_JOB_JAR);
 
         if (this.pathEnabled)
             logger.warn("Path calculations are enabled for this Faunus job (space and time expensive)");

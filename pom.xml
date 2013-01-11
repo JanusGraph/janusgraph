@@ -50,7 +50,6 @@
         <developerConnection>scm:git:git@github.com:thinkaurelius/faunus.git</developerConnection>
         <url>git@github.com:thinkaurelius/faunus.git</url>
     </scm>
-
     <dependencies>
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
@@ -85,7 +84,6 @@
             <artifactId>sesame-rio-ntriples</artifactId>
             <version>2.6.4</version>
         </dependency>
-
         <!-- TESTING -->
         <dependency>
             <groupId>junit</groupId>
@@ -152,7 +150,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.3</version>
+                <version>2.4</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
