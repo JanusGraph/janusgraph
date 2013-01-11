@@ -150,6 +150,9 @@
                 <version>2.8</version>
                 <configuration>
                     <aggregate>true</aggregate>
+                    <excludePackageNames>
+                        com.thinkaurelius.titan.diskstorage;com.thinkaurelius.titan.graphdb;com.thinkaurelius.titan.tinkerpop;com.thinkaurelius.titan.util;
+                    </excludePackageNames>
                 </configuration>
             </plugin>
             <!-- DO WE NEED THIS?

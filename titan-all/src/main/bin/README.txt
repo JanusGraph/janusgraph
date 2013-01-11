@@ -1,4 +1,4 @@
--= Titan: A Highly Scalable, Distributed Graph Database =-
+-= Titan: Distributed Graph Database =-
 
 Titan is a distributed graph database optimized for storing
 and processing large-scale graphs within a multi-machine cluster.
