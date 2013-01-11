@@ -1,8 +1,6 @@
-package com.thinkaurelius.faunus.formats.graphson;
+package com.thinkaurelius.faunus.formats.edgelist.rdf;
 
-
-import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.faunus.FaunusElement;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -14,28 +12,29 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
+public class RDFRecordReader extends RecordReader<NullWritable, FaunusElement> {
 
-    private boolean pathEnabled;
-    private final LineRecordReader lineRecordReader;
-    private FaunusVertex value = null;
+    private RDFBlueprintsHandler handler;
+    private LineRecordReader lineRecordReader;
 
-    public GraphSONRecordReader() {
+    public RDFRecordReader() {
         this.lineRecordReader = new LineRecordReader();
     }
 
     public void initialize(final InputSplit genericSplit, final TaskAttemptContext context) throws IOException {
         this.lineRecordReader.initialize(genericSplit, context);
-        this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
+        this.handler = new RDFBlueprintsHandler(context.getConfiguration());
     }
 
     public boolean nextKeyValue() throws IOException {
-        if (!this.lineRecordReader.nextKeyValue())
-            return false;
-
-        this.value = GraphSONUtility.fromJSON(this.lineRecordReader.getCurrentValue().toString());
-        this.value.enablePath(this.pathEnabled);
-        return true;
+        if (this.handler.hasNext())
+            return true;
+        while (this.lineRecordReader.nextKeyValue()) {
+            this.handler.parse(this.lineRecordReader.getCurrentValue().toString());
+            if (this.handler.hasNext())
+                return true;
+        }
+        return false;
     }
 
     @Override
@@ -44,8 +43,8 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
     }
 
     @Override
-    public FaunusVertex getCurrentValue() {
-        return this.value;
+    public FaunusElement getCurrentValue() {
+        return this.handler.next();
     }
 
     public float getProgress() {
@@ -55,4 +54,5 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
     public synchronized void close() throws IOException {
         this.lineRecordReader.close();
     }
+
 }

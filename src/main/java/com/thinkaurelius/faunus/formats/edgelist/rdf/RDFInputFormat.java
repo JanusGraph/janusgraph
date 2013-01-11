@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.formats.edgelist.ntriple;
+package com.thinkaurelius.faunus.formats.edgelist.rdf;
 
 import com.thinkaurelius.faunus.FaunusElement;
 import org.apache.hadoop.fs.Path;
@@ -13,11 +13,12 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class NTripleInputFormat extends FileInputFormat<NullWritable, FaunusElement> {
+public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement> {
 
-    public static final String USE_LOCALNAME = "faunus.input.format.ntriple.use-localname";
-    public static final String AS_PROPERTIES = "faunus.input.format.ntriple.as-properties";
-    public static final String LITERAL_AS_PROPERTY = "faunus.input.format.ntriple.literal-as-property";
+    public static final String RDF_FORMAT = "faunus.input.format.rdf.format";
+    public static final String USE_LOCALNAME = "faunus.input.format.rdf.use-localname";
+    public static final String AS_PROPERTIES = "faunus.input.format.rdf.as-properties";
+    public static final String LITERAL_AS_PROPERTY = "faunus.input.format.rdf.literal-as-property";
 
     public static final String URI = "uri";
     public static final String CONTEXT = "context";
@@ -25,7 +26,7 @@ public class NTripleInputFormat extends FileInputFormat<NullWritable, FaunusElem
 
     @Override
     public RecordReader<NullWritable, FaunusElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) {
-        return new NTripleRecordReader();
+        return new RDFRecordReader();
     }
 
     @Override

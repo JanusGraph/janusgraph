@@ -1,7 +1,7 @@
 package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
-import com.thinkaurelius.faunus.formats.edgelist.ntriple.NTripleInputFormat;
+import com.thinkaurelius.faunus.formats.edgelist.rdf.RDFInputFormat;
 import com.thinkaurelius.faunus.formats.titan.SchemaInferencerMapReduce;
 import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
@@ -193,7 +193,7 @@ public class FaunusPipeline {
         this.state = new State();
 
         // TODO: WE NEED TO GENERALIZE INPUT AND OUTPUT FORMATS THAT REQUIRE MAPREDUCE STEPS
-        if (this.graph.getGraphInputFormat().equals(NTripleInputFormat.class)) {
+        if (this.graph.getGraphInputFormat().equals(RDFInputFormat.class)) {
             try {
                 this.compiler.edgeListInputMapReduce();
             } catch (IOException e) {
