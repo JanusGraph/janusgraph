@@ -3,6 +3,16 @@ Titan: A Highly Scalable, Distributed Graph Database
 
 h2. Titan 0.y.z
 
+h3. Version 0.3.0 (NOT OFFICIALLY RELEASED YET)
+
+```xml
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan</artifactId>
+   <version>0.3.0-SNAPSHOT</version>
+</dependency>
+```
+
 h3. Version 0.2.0 (December 24, 2012)
 
 ```xml
