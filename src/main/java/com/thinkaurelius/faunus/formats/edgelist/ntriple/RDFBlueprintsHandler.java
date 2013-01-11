@@ -4,9 +4,11 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import org.apache.hadoop.conf.Configuration;
+import org.openrdf.model.Literal;
 import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
 import org.openrdf.model.Value;
+import org.openrdf.model.datatypes.XMLDatatypeUtil;
 import org.openrdf.rio.RDFHandler;
 import org.openrdf.rio.RDFHandlerException;
 
@@ -30,15 +32,16 @@ public class RDFBlueprintsHandler implements RDFHandler {
     private final boolean useFragments;
     private final Set<String> asProperties = new HashSet<String>();
     private boolean onlySubject = false;
+    private final boolean literalAsProperty;
 
 
     public RDFBlueprintsHandler(final Configuration configuration) throws IOException {
         this.enablePath = configuration.getBoolean(FaunusCompiler.PATH_ENABLED, false);
         this.useFragments = configuration.getBoolean(NTripleInputFormat.USE_LOCALNAME, false);
+        this.literalAsProperty = configuration.getBoolean(NTripleInputFormat.LITERAL_AS_PROPERTY, false);
         for (final String property : configuration.getStringCollection(NTripleInputFormat.AS_PROPERTIES)) {
             this.asProperties.add(property);
         }
-
         try {
             this.md = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
@@ -70,11 +73,31 @@ public class RDFBlueprintsHandler implements RDFHandler {
         }
     }
 
+    public Object castLiteral(final Literal literal) {
+        if (XMLDatatypeUtil.isIntegerDatatype(literal.getDatatype()))
+            return literal.intValue();
+        else if (XMLDatatypeUtil.isFloatingPointDatatype(literal.getDatatype()))
+            return literal.doubleValue();
+        else if (XMLDatatypeUtil.isValidBoolean(literal.getLabel()))
+            return literal.booleanValue();
+        else
+            return literal.getLabel();
+    }
+
     public void handleStatement(final Statement s) throws RDFHandlerException {
         if (this.asProperties.contains(s.getPredicate().toString())) {
             final ByteBuffer bb = ByteBuffer.wrap(md.digest(s.getSubject().stringValue().getBytes()));
             this.subject.reuse(bb.getLong());
             this.subject.setProperty(postProcess(s.getPredicate()), postProcess(s.getObject()));
+            this.subject.setProperty(NTripleInputFormat.URI, s.getSubject().stringValue());
+            if (this.useFragments)
+                this.subject.setProperty(NTripleInputFormat.NAME, postProcess(s.getSubject()));
+            this.subject.enablePath(this.enablePath);
+            this.onlySubject = true;
+        } else if (this.literalAsProperty && (s.getObject() instanceof Literal)) {
+            final ByteBuffer bb = ByteBuffer.wrap(md.digest(s.getSubject().stringValue().getBytes()));
+            this.subject.reuse(bb.getLong());
+            this.subject.setProperty(postProcess(s.getPredicate()), castLiteral((Literal) s.getObject()));
             this.subject.setProperty(NTripleInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
                 this.subject.setProperty(NTripleInputFormat.NAME, postProcess(s.getSubject()));

@@ -111,6 +111,10 @@ public class FaunusGraph {
         this.configuration.setBoolean(OUTPUT_LOCATION_OVERWRITE, overwrite);
     }
 
+    public void shutdown() {
+        // for API sake
+    }
+
     public String toString() {
         return "faunusgraph[" + this.configuration.getClass(GRAPH_INPUT_FORMAT, InputFormat.class).getSimpleName().toLowerCase() + "]";
     }

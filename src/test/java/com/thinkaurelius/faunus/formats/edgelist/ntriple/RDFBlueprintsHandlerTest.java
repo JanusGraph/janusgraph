@@ -63,4 +63,32 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         assertEquals(handler.getSubject().getProperty("type"), "Person");
         assertTrue(handler.isOnlySubject());
     }
+
+
+    public void testLiteralProperties() throws Exception {
+        Configuration config = new Configuration();
+        config.setBoolean(NTripleInputFormat.USE_LOCALNAME, true);
+        config.setBoolean(NTripleInputFormat.LITERAL_AS_PROPERTY, true);
+        RDFParser parser = Rio.createParser(RDFFormat.NTRIPLES);
+        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
+        parser.setRDFHandler(handler);
+
+        parser.parse(new StringReader("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> \"32\"^^<http://www.w3.org/2001/XMLSchema#int> ."), "http://baseURI#");
+        assertTrue(handler.isOnlySubject());
+        assertEquals(handler.getSubject().getProperty("name"), "josh");
+        assertEquals(handler.getSubject().getProperty("age"), 32);
+
+        parser.parse(new StringReader("<http://tinkerpop.com#marko> <http://tinkerpop.com#firstname> \"marko\"^^<http://www.w3.org/2001/XMLSchema#string> ."), "http://baseURI#");
+        assertTrue(handler.isOnlySubject());
+        assertEquals(handler.getSubject().getProperty("name"), "marko");
+        assertEquals(handler.getSubject().getProperty("firstname"), "marko");
+
+        parser.parse(new StringReader("<http://tinkerpop.com#stephen> <http://tinkerpop.com#location> \"1.023\"^^<http://www.w3.org/2001/XMLSchema#double> ."), "http://baseURI#");
+        assertTrue(handler.isOnlySubject());
+        assertEquals(handler.getSubject().getProperty("name"), "stephen");
+        assertEquals(handler.getSubject().getProperty("location"), 1.023);
+
+        parser.parse(new StringReader("<http://tinkerpop.com#stephen> <http://tinkerpop.com#location> <http://www.w3.org/2001/XMLSchema#double> ."), "http://baseURI#");
+        assertFalse(handler.isOnlySubject());
+    }
 }

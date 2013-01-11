@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.WritableUtils;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
@@ -45,7 +46,7 @@ public class EdgeListInputMapReduce {
                     vertex = new FaunusVertex(outId);
                     this.map.put(outId, vertex);
                 }
-                vertex.addEdge(OUT, (FaunusEdge) value);
+                vertex.addEdge(OUT, WritableUtils.clone((FaunusEdge) value, context.getConfiguration()));
                 this.counter++;
 
                 vertex = this.map.get(inId);
@@ -53,7 +54,7 @@ public class EdgeListInputMapReduce {
                     vertex = new FaunusVertex(inId);
                     this.map.put(inId, vertex);
                 }
-                vertex.addEdge(IN, (FaunusEdge) value);
+                vertex.addEdge(IN, WritableUtils.clone((FaunusEdge) value, context.getConfiguration()));
                 context.getCounter(Counters.EDGES_PROCESSED).increment(1l);
                 this.counter++;
             } else {
@@ -64,7 +65,7 @@ public class EdgeListInputMapReduce {
                     this.map.put(id, vertex);
                 }
                 vertex.getProperties().putAll(value.getProperties());
-                vertex.addEdges(BOTH, (FaunusVertex) value);
+                vertex.addEdges(BOTH, WritableUtils.clone((FaunusVertex) value, context.getConfiguration()));
                 this.counter++;
             }
             if (this.counter > MAX_MAP_SIZE)

@@ -17,6 +17,7 @@ public class NTripleInputFormat extends FileInputFormat<NullWritable, FaunusElem
 
     public static final String USE_LOCALNAME = "faunus.input.format.ntriple.use-localname";
     public static final String AS_PROPERTIES = "faunus.input.format.ntriple.as-properties";
+    public static final String LITERAL_AS_PROPERTY = "faunus.input.format.ntriple.literal-as-property";
 
     public static final String URI = "uri";
     public static final String CONTEXT = "context";
