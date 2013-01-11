@@ -18,7 +18,6 @@ h2. Features
 ** "Blueprints":http://blueprints.tinkerpop.com standard graph API
 * Open source with the liberal "Apache 2 license":http://www.apache.org/licenses/LICENSE-2.0.html.
 
-
 h2. Getting Started
 
 Read the comprehensive "Titan documentation":https://github.com/thinkaurelius/titan/wiki and join the "mailing list":https://groups.google.com/forum/#!forum/aureliusgraphs.

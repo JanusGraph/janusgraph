@@ -21,7 +21,6 @@
         Titan separates the concerns of graph processing and manipulation from storing the graph on disk,
         delegating that concern to an extensible set of persistence solutions.
     </description>
-
     <developers>
         <developer>
             <name>Matthias Broecheler</name>
@@ -52,7 +51,6 @@
         <developerConnection>scm:git:git@github.com:thinkaurelius/titan.git</developerConnection>
         <url>git@github.com:thinkaurelius/titan.git</url>
     </scm>
-
     <properties>
         <titan.version>0.3.0-SNAPSHOT</titan.version>
         <titan.compatible.versions>0.2.0,0.3.0-SNAPSHOT</titan.compatible.versions>
@@ -66,7 +64,6 @@
         <!-- Required for PMD plugin. Used for compiler plugin -->
         <targetJdk>1.6</targetJdk>
     </properties>
-
     <modules>
         <module>titan-core</module>
         <module>titan-test</module>
@@ -75,8 +72,6 @@
         <module>titan-hbase</module>
         <module>titan-all</module>
     </modules>
-
-
     <build>
         <directory>${basedir}/target</directory>
         <plugins>
@@ -154,5 +149,4 @@
             </plugin>
         </plugins>
     </reporting>
-
 </project>

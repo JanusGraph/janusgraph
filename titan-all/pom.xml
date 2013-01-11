@@ -8,9 +8,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-all</artifactId>
-    <name>Titan-All: All Components of Distributed Graph Database</name>
+    <name>Titan-All: Full Titan Distribution</name>
     <url>http://thinkaurelius.github.com/titan/</url>
-
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
