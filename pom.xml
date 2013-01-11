@@ -21,7 +21,6 @@
         Titan separates the concerns of graph processing and manipulation from storing the graph on disk,
         delegating that concern to an extensible set of persistence solutions.
     </description>
-
     <developers>
         <developer>
             <name>Matthias Broecheler</name>
@@ -31,6 +30,11 @@
         <developer>
             <name>Daniel LaRocque</name>
             <email>dalaro@hopcount.org</email>
+        </developer>
+        <developer>
+            <name>Pavel Yaskevich</name>
+            <email>povel.y@gmail.com</email>
+            <url>http://github.com/xedin</url>
         </developer>
     </developers>
     <contributors>
@@ -52,7 +56,6 @@
         <developerConnection>scm:git:git@github.com:thinkaurelius/titan.git</developerConnection>
         <url>git@github.com:thinkaurelius/titan.git</url>
     </scm>
-
     <properties>
         <titan.version>0.3.0-SNAPSHOT</titan.version>
         <titan.compatible.versions>0.2.0,0.3.0-SNAPSHOT</titan.compatible.versions>
@@ -66,7 +69,6 @@
         <!-- Required for PMD plugin. Used for compiler plugin -->
         <targetJdk>1.6</targetJdk>
     </properties>
-
     <modules>
         <module>titan-core</module>
         <module>titan-test</module>
@@ -75,8 +77,6 @@
         <module>titan-hbase</module>
         <module>titan-all</module>
     </modules>
-
-
     <build>
         <directory>${basedir}/target</directory>
         <plugins>
@@ -152,7 +152,40 @@
                     <aggregate>true</aggregate>
                 </configuration>
             </plugin>
+            <!-- DO WE NEED THIS?
+            <plugin>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>2.4</version>
+                <reportSets>
+                    <reportSet></reportSet>
+                </reportSets>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <version>2.5.2</version>
+                <configuration>
+                    <effort>Max</effort>
+                    <threshold>Exp</threshold>
+                    <plugins>
+                        <plugin>
+                            <groupId>com.mebigfatguy</groupId>
+                            <artifactId>fb-contrib</artifactId>
+                            <version>4.6.1</version>
+                        </plugin>
+                    </plugins>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>2.7.1</version>
+                <configuration>
+                    <rulesets>
+                        <ruleset>/rulesets/favorites.xml</ruleset>
+                    </rulesets>
+                </configuration>
+            </plugin>
+             -->
         </plugins>
     </reporting>
-
 </project>

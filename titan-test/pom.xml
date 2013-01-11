@@ -8,10 +8,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-test</artifactId>
-    <name>Titan-Test: Distributed Graph Database</name>
+    <name>Titan-Test: Test Suite for Titan</name>
     <url>http://thinkaurelius.github.com/titan/</url>
-
-    <!-- Libraries -->
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -19,20 +17,16 @@
             <version>${titan.version}</version>
         </dependency>
         <!-- TinkerPop -->
-
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
             <artifactId>blueprints-test</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math</artifactId>
             <version>2.2</version>
         </dependency>
-
-
         <!-- Test Dependencies -->
         <dependency>
             <groupId>junit</groupId>
@@ -44,43 +38,7 @@
             <artifactId>mockito-all</artifactId>
             <version>1.8.1</version>
         </dependency>
-
     </dependencies>
-
-    <!-- Profiles -->
-    <profiles>
-        <profile>
-            <id>comprehensive</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.12</version>
-                        <configuration>
-                            <argLine>-Xms256m -Xmx1024m</argLine>
-                            <includes>
-                                <include>**/*Test.java</include>
-                            </includes>
-                            <excludes>
-                                <exclude>**/Internal*.java</exclude>
-                                <exclude>**/*Suite.java</exclude>
-                            </excludes>
-                            <!-- Forking per class is required for the
-                        Internal and External Cassandra tests
-                        to run in the same suite.  Otherwise,
-                        when an Internal runs before an External,
-                        the Internal Cassandra daemon will hold
-                        all its ports open and the External
-                        Cassandra daemon will fail to bind them.  -->
-                            <forkMode>always</forkMode>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
-    <!-- Build Settings -->
     <build>
         <directory>${basedir}/target</directory>
         <finalName>${project.artifactId}-${project.version}</finalName>
@@ -96,145 +54,5 @@
                 </directory>
             </testResource>
         </testResources>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>${targetJdk}</source>
-                    <target>${targetJdk}</target>
-                    <excludes>
-                        <!-- Here go compile excluded src directories or files -->
-                    </excludes>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <argLine>-Xms256m -Xmx756m</argLine>
-                    <excludes>
-                        <exclude>**/External*.java</exclude>
-
-                        <!-- Excluded because these take too long to run and require a lot of memory - see comprehensive profile -->
-                        <exclude>**/*PerformanceTest.java</exclude>
-                        <exclude>**/*ConcurrentTest.java</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <excludePackageNames>
-                        com.thinkaurelius.titan.diskstorage;com.thinkaurelius.titan.graphdb;com.thinkaurelius.titan.tinkerpop;com.thinkaurelius.titan.util;
-                    </excludePackageNames>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-source-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-clean-plugin</artifactId>
-                    <version>2.5</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>2.5.1</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <version>2.5</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.4</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.12.1</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <version>2.2</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.8.1</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-install-plugin</artifactId>
-                    <version>2.3.1</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-deploy-plugin</artifactId>
-                    <version>2.7</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-site-plugin</artifactId>
-                    <version>3.1</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>versions-maven-plugin</artifactId>
-                    <version>1.3.1</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
-
-    <reporting>
-        <plugins>
-            <plugin>
-                <artifactId>maven-project-info-reports-plugin</artifactId>
-                <version>2.4</version>
-                <!-- Turn off default info reports -->
-                <reportSets>
-                    <reportSet></reportSet>
-                </reportSets>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>2.5.2</version>
-                <configuration>
-                    <effort>Max</effort>
-                    <threshold>Exp</threshold>
-                    <plugins>
-                        <plugin>
-                            <groupId>com.mebigfatguy</groupId>
-                            <artifactId>fb-contrib</artifactId>
-                            <version>4.6.1</version>
-                        </plugin>
-                    </plugins>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-pmd-plugin</artifactId>
-                <version>2.7.1</version>
-                <configuration>
-                    <rulesets>
-                        <ruleset>/rulesets/favorites.xml</ruleset>
-                    </rulesets>
-                </configuration>
-            </plugin>
-        </plugins>
-    </reporting>
-
 </project>
