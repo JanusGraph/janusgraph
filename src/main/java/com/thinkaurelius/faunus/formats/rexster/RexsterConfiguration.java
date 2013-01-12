@@ -6,11 +6,11 @@ import org.apache.hadoop.conf.Configuration;
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 public class RexsterConfiguration {
-    public static final String REXSTER_INPUT_ADDRESS = "rexster.input.address";
-    public static final String REXSTER_INPUT_PORT = "rexster.input.port";
-    public static final String REXSTER_INPUT_SSL = "rexster.input.ssl";
-    public static final String REXSTER_INPUT_GRAPH = "rexster.input.graph";
-    public static final String REXSTER_INPUT_V_ESTIMATE = "rexster.input.v.estimate";
+    public static final String FAUNUS_GRAPH_INPUT_REXSTER_HOSTNAME = "faunus.graph.input.rexster.hostname";
+    public static final String FAUNUS_GRAPH_INPUT_REXSTER_PORT = "faunus.graph.input.rexster.port";
+    public static final String FAUNUS_GRAPH_INPUT_REXSTER_SSL = "faunus.graph.input.rexster.ssl";
+    public static final String FAUNUS_GRAPH_INPUT_REXSTER_GRAPH = "faunus.graph.input.rexster.graph";
+    public static final String FAUNUS_GRAPH_INPUT_REXSTER_V_ESTIMATE = "faunus.graph.input.rexster.v-estimate";
 
     private Configuration conf;
 
@@ -23,23 +23,23 @@ public class RexsterConfiguration {
     }
 
     public boolean getSsl() {
-        return this.conf.getBoolean(REXSTER_INPUT_SSL, false);
+        return this.conf.getBoolean(FAUNUS_GRAPH_INPUT_REXSTER_SSL, false);
     }
 
     public String getRestAddress() {
-        return this.conf.get(REXSTER_INPUT_ADDRESS);
+        return this.conf.get(FAUNUS_GRAPH_INPUT_REXSTER_HOSTNAME);
     }
 
     public int getRestPort() {
-        return this.conf.getInt(REXSTER_INPUT_PORT, 8182);
+        return this.conf.getInt(FAUNUS_GRAPH_INPUT_REXSTER_PORT, 8182);
     }
 
     public String getGraph() {
-        return this.conf.get(REXSTER_INPUT_GRAPH);
+        return this.conf.get(FAUNUS_GRAPH_INPUT_REXSTER_GRAPH);
     }
 
     public int getEstimatedVertexCount() {
-        return this.conf.getInt(REXSTER_INPUT_V_ESTIMATE, 10000);
+        return this.conf.getInt(FAUNUS_GRAPH_INPUT_REXSTER_V_ESTIMATE, 10000);
     }
 
     public String getHttpProtocol() {

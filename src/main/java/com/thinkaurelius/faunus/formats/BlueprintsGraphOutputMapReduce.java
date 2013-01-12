@@ -39,14 +39,14 @@ public class BlueprintsGraphOutputMapReduce {
         FAILED_TRANSACTIONS
     }
 
-    public static final String BLUEPRINTS_GRAPH_OUTPUT_TX_COMMIT = "blueprints.graph.output.tx-commit";
+    public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_TX_COMMIT = "faunus.graph.output.blueprints.tx-commit";
     // some random property that will 'never' be used by anyone
     public static final String BLUEPRINTS_ID = "_bId0192834";
 
     public static Graph generateGraph(final Configuration config) {
         final Class<? extends OutputFormat> format = config.getClass(FaunusGraph.GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
         if (TitanOutputFormat.class.isAssignableFrom(format)) {
-            return GraphFactory.generateGraph(config, TitanOutputFormat.TITAN_GRAPH_OUTPUT);
+            return GraphFactory.generateGraph(config, TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN);
         } else {
             // TODO: this is where Rexster can come into play here
             throw new RuntimeException("The provide graph output format is not supported: " + format.getName());
@@ -69,7 +69,7 @@ public class BlueprintsGraphOutputMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
-            this.commitTx = context.getConfiguration().getLong(BLUEPRINTS_GRAPH_OUTPUT_TX_COMMIT, 5000);
+            this.commitTx = context.getConfiguration().getLong(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_TX_COMMIT, 5000);
         }
 
         @Override
@@ -134,7 +134,7 @@ public class BlueprintsGraphOutputMapReduce {
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
-            this.commitTx = context.getConfiguration().getLong(BLUEPRINTS_GRAPH_OUTPUT_TX_COMMIT, 5000);
+            this.commitTx = context.getConfiguration().getLong(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_TX_COMMIT, 5000);
         }
 
         @Override

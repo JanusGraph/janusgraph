@@ -1042,7 +1042,7 @@ public class FaunusPipeline {
     public void submit(final String script, final Boolean showHeader) throws Exception {
         if (TitanOutputFormat.class.isAssignableFrom(this.graph.getGraphOutputFormat())) {
             this.state.checkLocked();
-            if (this.graph.getConfiguration().getBoolean(TitanOutputFormat.TITAN_GRAPH_OUTPUT_INFER_SCHEMA, true)) {
+            if (this.graph.getConfiguration().getBoolean(TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true)) {
                 this.compiler.schemaInferenceMapReduce();
                 makeMapReduceString(SchemaInferencerMapReduce.class);
             }

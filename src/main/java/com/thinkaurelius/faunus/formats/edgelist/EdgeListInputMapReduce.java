@@ -73,11 +73,11 @@ public class EdgeListInputMapReduce {
         }
 
         @Override
-        public void cleanup(final Mapper.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, FaunusElement, LongWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             this.flush(context);
         }
 
-        private void flush(final Mapper.Context context) throws IOException, InterruptedException {
+        private void flush(final Mapper<NullWritable, FaunusElement, LongWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             for (final FaunusVertex vertex : this.map.values()) {
                 this.longWritable.set(vertex.getIdAsLong());
                 context.write(this.longWritable, vertex);

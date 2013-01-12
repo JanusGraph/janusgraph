@@ -24,7 +24,7 @@ import java.util.List;
  */
 public class TitanHBaseInputFormat extends TitanInputFormat {
 
-    public static final String TITAN_GRAPH_INPUT_STORAGE_TABLENAME = "titan.graph.input.storage.tablename";
+    public static final String FAUNUS_GRAPH_INPUT_TITAN_STORAGE_TABLENAME = "faunus.graph.input.titan.storage.tablename";
     static final byte[] EDGE_STORE_FAMILY = Bytes.toBytes(Backend.EDGESTORE_NAME);
 
     private final TableInputFormat tableInputFormat;
@@ -49,14 +49,14 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
     @Override
     public void setConf(final Configuration config) {
         config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
-        config.set(TableInputFormat.INPUT_TABLE, config.get(TITAN_GRAPH_INPUT_STORAGE_TABLENAME));
-        config.set(HConstants.ZOOKEEPER_QUORUM, config.get(TITAN_GRAPH_INPUT_STORAGE_HOSTNAME));
-        if (config.get(TITAN_GRAPH_INPUT_STORAGE_PORT, null) != null)
-            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, config.get(TITAN_GRAPH_INPUT_STORAGE_PORT));
+        config.set(TableInputFormat.INPUT_TABLE, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_TABLENAME));
+        config.set(HConstants.ZOOKEEPER_QUORUM, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
+        if (config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
+            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT));
         config.set("storage.read-only", "true");
         config.set("autotype", "none");
         this.tableInputFormat.setConf(config);
-        this.graph = new FaunusTitanHBaseGraph(GraphFactory.generateTitanConfiguration(config, TITAN_GRAPH_INPUT));
+        this.graph = new FaunusTitanHBaseGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
         this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
     }
 
@@ -64,6 +64,4 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
     public Configuration getConf() {
         return tableInputFormat.getConf();
     }
-
-
 }

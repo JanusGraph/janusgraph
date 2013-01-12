@@ -7,6 +7,6 @@ import com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat;
  */
 public abstract class TitanOutputFormat extends NoOpOutputFormat {
 
-    public static final String TITAN_GRAPH_OUTPUT = "titan.graph.output";
-    public static final String TITAN_GRAPH_OUTPUT_INFER_SCHEMA = "titan.graph.output.infer-schema";
+    public static final String FAUNUS_GRAPH_OUTPUT_TITAN = "faunus.graph.output.titan";
+    public static final String FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA = "faunus.graph.output.titan.infer-schema";
 }

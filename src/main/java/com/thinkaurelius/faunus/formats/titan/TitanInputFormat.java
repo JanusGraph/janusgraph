@@ -10,9 +10,9 @@ import org.apache.hadoop.mapreduce.InputFormat;
  */
 public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusVertex> implements Configurable {
 
-    public static final String TITAN_GRAPH_INPUT_STORAGE_HOSTNAME = "titan.graph.input.storage.hostname";
-    public static final String TITAN_GRAPH_INPUT_STORAGE_PORT = "titan.graph.input.storage.port";
-    public static final String TITAN_GRAPH_INPUT = "titan.graph.input";
+    public static final String FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME = "faunus.graph.input.titan.storage.hostname";
+    public static final String FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT = "faunus.graph.input.titan.storage.port";
+    public static final String FAUNUS_GRAPH_INPUT_TITAN = "faunus.graph.input.titan";
 
 
 }

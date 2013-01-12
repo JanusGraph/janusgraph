@@ -25,7 +25,7 @@ import java.util.List;
  */
 public class TitanCassandraInputFormat extends TitanInputFormat {
 
-    public static final String TITAN_GRAPH_INPUT_STORAGE_KEYSPACE = "titan.graph.input.storage.keyspace";
+    public static final String FAUNUS_GRAPH_INPUT_TITAN_STORAGE_KEYSPACE = "faunus.graph.input.titan.storage.keyspace";
 
     private final ColumnFamilyInputFormat columnFamilyInputFormat;
     private FaunusTitanCassandraGraph graph;
@@ -49,7 +49,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
 
     @Override
     public void setConf(final Configuration config) {
-        config.set("cassandra.input.keyspace", config.get(TITAN_GRAPH_INPUT_STORAGE_KEYSPACE));
+        config.set("cassandra.input.keyspace", config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_KEYSPACE));
         ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), Backend.EDGESTORE_NAME);
         final SlicePredicate predicate = new SlicePredicate();
         final SliceRange sliceRange = new SliceRange();
@@ -59,13 +59,11 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
         predicate.setSlice_range(sliceRange);
         ConfigHelper.setInputSlicePredicate(config, predicate);
 
-        ConfigHelper.setInputInitialAddress(config, config.get(TITAN_GRAPH_INPUT_STORAGE_HOSTNAME));
-        ConfigHelper.setInputRpcPort(config, config.get(TITAN_GRAPH_INPUT_STORAGE_PORT));
+        ConfigHelper.setInputInitialAddress(config, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
+        ConfigHelper.setInputRpcPort(config, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT));
         config.set("storage.read-only", "true");
         config.set("autotype", "none");
-        this.graph = new FaunusTitanCassandraGraph(GraphFactory.generateTitanConfiguration(config, TITAN_GRAPH_INPUT));
-        this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
-
+        this.graph = new FaunusTitanCassandraGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
         this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
         this.config = config;
     }
@@ -74,6 +72,4 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
     public Configuration getConf() {
         return this.config;
     }
-
-
 }
