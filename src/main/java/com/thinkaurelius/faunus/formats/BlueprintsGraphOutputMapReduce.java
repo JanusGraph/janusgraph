@@ -44,7 +44,7 @@ public class BlueprintsGraphOutputMapReduce {
     public static final String BLUEPRINTS_ID = "_bId0192834";
 
     public static Graph generateGraph(final Configuration config) {
-        final Class<? extends OutputFormat> format = config.getClass(FaunusGraph.GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
+        final Class<? extends OutputFormat> format = config.getClass(FaunusGraph.FAUNUS_GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
         if (TitanOutputFormat.class.isAssignableFrom(format)) {
             return GraphFactory.generateGraph(config, TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN);
         } else {

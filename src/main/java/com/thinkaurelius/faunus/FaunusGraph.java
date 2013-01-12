@@ -9,6 +9,7 @@ import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.OutputFormat;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -17,18 +18,13 @@ import java.util.Map;
  */
 public class FaunusGraph {
 
-    public static final String GRAPH_INPUT_FORMAT = "faunus.graph.input.format";
-    public static final String INPUT_LOCATION = "faunus.input.location";
+    public static final String FAUNUS_GRAPH_INPUT_FORMAT = "faunus.graph.input.format";
+    public static final String FAUNUS_INPUT_LOCATION = "faunus.input.location";
 
-    // TODO: data source pre-filters
-    // public static final String GRAPH_INPUT_EDGE_DIRECTION_FILTER = "faunus.graph.input.edge.direction.filter";
-    // public static final String GRAPH_INPUT_EDGE_LABEL_FILTER_LABELS = "faunus.graph.input.edge.label.filter.labels";
-    // public static final String GRAPH_INPUT_EDGE_LABEL_FILTER_ACTION = "faunus.graph.input.edge.label.filter.action";
-
-    public static final String GRAPH_OUTPUT_FORMAT = "faunus.graph.output.format";
-    public static final String SIDEEFFECT_OUTPUT_FORMAT = "faunus.sideeffect.output.format";
-    public static final String OUTPUT_LOCATION = "faunus.output.location";
-    public static final String OUTPUT_LOCATION_OVERWRITE = "faunus.output.location.overwrite";
+    public static final String FAUNUS_GRAPH_OUTPUT_FORMAT = "faunus.graph.output.format";
+    public static final String FAUNUS_SIDEEFFECT_OUTPUT_FORMAT = "faunus.sideeffect.output.format";
+    public static final String FAUNUS_OUTPUT_LOCATION = "faunus.output.location";
+    public static final String FAUNUS_OUTPUT_LOCATION_OVERWRITE = "faunus.output.location.overwrite";
 
     private final Configuration configuration;
 
@@ -47,41 +43,41 @@ public class FaunusGraph {
     // GRAPH INPUT AND OUTPUT FORMATS
 
     public Class<? extends InputFormat> getGraphInputFormat() {
-        return this.configuration.getClass(GRAPH_INPUT_FORMAT, InputFormat.class, InputFormat.class);
+        return this.configuration.getClass(FAUNUS_GRAPH_INPUT_FORMAT, InputFormat.class, InputFormat.class);
     }
 
     public void setGraphInputFormat(final Class<? extends InputFormat> format) {
-        this.configuration.setClass(GRAPH_INPUT_FORMAT, format, InputFormat.class);
+        this.configuration.setClass(FAUNUS_GRAPH_INPUT_FORMAT, format, InputFormat.class);
     }
 
     public Class<? extends OutputFormat> getGraphOutputFormat() {
-        return this.configuration.getClass(GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
+        return this.configuration.getClass(FAUNUS_GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
     }
 
     public void setGraphOutputFormat(final Class<? extends OutputFormat> format) {
-        this.configuration.setClass(GRAPH_OUTPUT_FORMAT, format, OutputFormat.class);
+        this.configuration.setClass(FAUNUS_GRAPH_OUTPUT_FORMAT, format, OutputFormat.class);
     }
 
     // SIDE-EFFECT OUTPUT FORMAT
 
     public Class<? extends OutputFormat> getSideEffectOutputFormat() {
-        return this.configuration.getClass(SIDEEFFECT_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
+        return this.configuration.getClass(FAUNUS_SIDEEFFECT_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
     }
 
     public void setSideEffectOutputFormat(final Class<? extends OutputFormat> format) {
-        this.configuration.setClass(SIDEEFFECT_OUTPUT_FORMAT, format, OutputFormat.class);
+        this.configuration.setClass(FAUNUS_SIDEEFFECT_OUTPUT_FORMAT, format, OutputFormat.class);
     }
 
     // INPUT AND OUTPUT LOCATIONS
 
     public Path getInputLocation() {
-        if (null == this.configuration.get(INPUT_LOCATION))
+        if (null == this.configuration.get(FAUNUS_INPUT_LOCATION))
             return null;
-        return new Path(this.configuration.get(INPUT_LOCATION));
+        return new Path(this.configuration.get(FAUNUS_INPUT_LOCATION));
     }
 
     public void setInputLocation(final Path path) {
-        this.configuration.set(INPUT_LOCATION, path.toString());
+        this.configuration.set(FAUNUS_INPUT_LOCATION, path.toString());
     }
 
     public void setInputLocation(final String path) {
@@ -89,14 +85,14 @@ public class FaunusGraph {
     }
 
     public Path getOutputLocation() {
-        if (null == this.configuration.get(OUTPUT_LOCATION))
-            throw new IllegalStateException("Please set " + OUTPUT_LOCATION + " configuration option.");
+        if (null == this.configuration.get(FAUNUS_OUTPUT_LOCATION))
+            throw new IllegalStateException("Please set " + FAUNUS_OUTPUT_LOCATION + " configuration option.");
 
-        return new Path(this.configuration.get(OUTPUT_LOCATION));
+        return new Path(this.configuration.get(FAUNUS_OUTPUT_LOCATION));
     }
 
     public void setOutputLocation(final Path path) {
-        this.configuration.set(OUTPUT_LOCATION, path.toString());
+        this.configuration.set(FAUNUS_OUTPUT_LOCATION, path.toString());
     }
 
     public void setOutputLocation(final String path) {
@@ -104,11 +100,11 @@ public class FaunusGraph {
     }
 
     public boolean getOutputLocationOverwrite() {
-        return this.configuration.getBoolean(OUTPUT_LOCATION_OVERWRITE, false);
+        return this.configuration.getBoolean(FAUNUS_OUTPUT_LOCATION_OVERWRITE, false);
     }
 
     public void setOutputLocationOverwrite(final boolean overwrite) {
-        this.configuration.setBoolean(OUTPUT_LOCATION_OVERWRITE, overwrite);
+        this.configuration.setBoolean(FAUNUS_OUTPUT_LOCATION_OVERWRITE, overwrite);
     }
 
     public void shutdown() {
@@ -116,17 +112,17 @@ public class FaunusGraph {
     }
 
     public String toString() {
-        return "faunusgraph[" + this.configuration.getClass(GRAPH_INPUT_FORMAT, InputFormat.class).getSimpleName().toLowerCase() + "]";
+        return "faunusgraph[" + this.configuration.getClass(FAUNUS_GRAPH_INPUT_FORMAT, InputFormat.class).getSimpleName().toLowerCase() + "->" + this.configuration.getClass(FAUNUS_GRAPH_OUTPUT_FORMAT, OutputFormat.class).getSimpleName().toLowerCase() + "]";
     }
 
     public Map<String, Object> getProperties() {
-        Map<String, Object> map = new LinkedHashMap<String, Object>();
-        map.put(GRAPH_INPUT_FORMAT, this.configuration.get(GRAPH_INPUT_FORMAT));
-        map.put(INPUT_LOCATION, this.configuration.get(INPUT_LOCATION));
-        map.put(GRAPH_OUTPUT_FORMAT, this.configuration.get(GRAPH_OUTPUT_FORMAT));
-        map.put(SIDEEFFECT_OUTPUT_FORMAT, this.configuration.get(SIDEEFFECT_OUTPUT_FORMAT));
-        map.put(OUTPUT_LOCATION, this.configuration.get(OUTPUT_LOCATION));
-        map.put(OUTPUT_LOCATION_OVERWRITE, this.configuration.getBoolean(OUTPUT_LOCATION_OVERWRITE, false));
+        final Map<String, Object> map = new LinkedHashMap<String, Object>();
+        final Iterator<Map.Entry<String, String>> itty = this.configuration.iterator();
+        while (itty.hasNext()) {
+            final Map.Entry<String, String> entry = itty.next();
+            if (entry.getKey().startsWith("faunus."))
+                map.put(entry.getKey(), entry.getValue());
+        }
         return map;
     }
 
