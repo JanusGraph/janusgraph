@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.impls.sail.SailTokens;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.log4j.Logger;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Statement;
 import org.openrdf.model.URI;
@@ -29,11 +30,13 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement> {
 
+    private final Logger logger = Logger.getLogger(RDFBlueprintsHandler.class);
     private final MessageDigest md;
     private final boolean enablePath;
     private final boolean useFragments;
@@ -195,7 +198,8 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
             this.parser.parse(new StringReader(string), BASE_URI);
             return true;
         } catch (Exception e) {
-            throw new IOException(e.getMessage(), e);
+            this.logger.error(e.getMessage());
+            return false;
         }
     }
 
