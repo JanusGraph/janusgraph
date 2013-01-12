@@ -26,7 +26,6 @@ public class RDFBlueprintsHandlerTest extends TestCase {
             ids.add(ByteBuffer.wrap(md.digest(("http://test#" + UUID.randomUUID().toString()).getBytes())).getLong());
         }
         assertEquals(ids.size(), loops);
-
     }
 
     public void testUseFragments() throws Exception {
@@ -98,7 +97,25 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         handler.parse("<http://tinkerpop.com#stephen> <http://tinkerpop.com#location> \"1.023\"^^<http://www.w3.org/2001/XMLSchema#double> .");
         subject = handler.next();
         assertEquals(subject.getProperty("name"), "stephen");
-        assertEquals(subject.getProperty("location"), 1.023);
+        assertEquals(subject.getProperty("location"), 1.023d);
+        assertFalse(handler.hasNext());
+
+        handler.parse("<http://tinkerpop.com#stephen> <http://tinkerpop.com#alive> \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> .");
+        subject = handler.next();
+        assertEquals(subject.getProperty("name"), "stephen");
+        assertEquals(subject.getProperty("alive"), true);
+        assertFalse(handler.hasNext());
+
+        handler.parse("<http://tinkerpop.com#stephen> <http://tinkerpop.com#ttl> \"1234567890005543\"^^<http://www.w3.org/2001/XMLSchema#long> .");
+        subject = handler.next();
+        assertEquals(subject.getProperty("name"), "stephen");
+        assertEquals(subject.getProperty("ttl"), 1234567890005543l);
+        assertFalse(handler.hasNext());
+
+        handler.parse("<http://tinkerpop.com#stephen> <http://tinkerpop.com#height> \"0.45\"^^<http://www.w3.org/2001/XMLSchema#float> .");
+        subject = handler.next();
+        assertEquals(subject.getProperty("name"), "stephen");
+        assertEquals(subject.getProperty("height"), 0.45f);
         assertFalse(handler.hasNext());
 
     }
@@ -128,7 +145,6 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         assertEquals(knows.getPropertyKeys().size(), 1);
         assertFalse(handler.hasNext());
     }
-
 
     /*
     TODO: Make multiline work with buffering

@@ -48,14 +48,23 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
     private final Queue<FaunusElement> queue = new LinkedList<FaunusElement>();
     public static final Map<String, RDFFormat> formats = new HashMap<String, RDFFormat>();
 
-    private static Map<String, String> dataTypeToClass = new HashMap<String, String>();
+    private static Map<String, Character> dataTypeToClass = new HashMap<String, Character>();
+
+    private static final char STRING = 's';
+    private static final char INTEGER = 'i';
+    private static final char FLOAT = 'f';
+    private static final char DOUBLE = 'd';
+    private static final char LONG = 'l';
+    private static final char BOOLEAN = 'b';
 
     static {
-        dataTypeToClass.put(SailTokens.XSD_NS + "string", "java.lang.String");
-        dataTypeToClass.put(SailTokens.XSD_NS + "int", "java.lang.Integer");
-        dataTypeToClass.put(SailTokens.XSD_NS + "integer", "java.lang.Integer");
-        dataTypeToClass.put(SailTokens.XSD_NS + "float", "java.lang.Float");
-        dataTypeToClass.put(SailTokens.XSD_NS + "double", "java.lang.Double");
+        dataTypeToClass.put(SailTokens.XSD_NS + "string", STRING);
+        dataTypeToClass.put(SailTokens.XSD_NS + "int", INTEGER);
+        dataTypeToClass.put(SailTokens.XSD_NS + "integer", INTEGER);
+        dataTypeToClass.put(SailTokens.XSD_NS + "float", FLOAT);
+        dataTypeToClass.put(SailTokens.XSD_NS + "double", DOUBLE);
+        dataTypeToClass.put(SailTokens.XSD_NS + "long", LONG);
+        dataTypeToClass.put(SailTokens.XSD_NS + "boolean", BOOLEAN);
     }
 
     static {
@@ -111,25 +120,23 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
 
     private static Object castLiteral(final Literal literal) {
         if (null != literal.getDatatype()) {
-            String className = dataTypeToClass.get(literal.getDatatype().stringValue());
-            if (null == className)
+            final Character type = dataTypeToClass.get(literal.getDatatype().stringValue());
+            if (null == type)
                 return literal.getLabel();
             else {
-                try {
-                    Class c = Class.forName(className);
-                    if (c == String.class) {
-                        return literal.getLabel();
-                    } else if (c == Float.class) {
-                        return Float.valueOf(literal.getLabel());
-                    } else if (c == Integer.class) {
-                        return Integer.valueOf(literal.getLabel());
-                    } else if (c == Double.class) {
-                        return Double.valueOf(literal.getLabel());
-                    } else {
-                        return literal.getLabel();
-                    }
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
+                if (STRING == type) {
+                    return literal.getLabel();
+                } else if (FLOAT == type) {
+                    return Float.valueOf(literal.getLabel());
+                } else if (INTEGER == type) {
+                    return Integer.valueOf(literal.getLabel());
+                } else if (DOUBLE == type) {
+                    return Double.valueOf(literal.getLabel());
+                } else if (LONG == type) {
+                    return Long.valueOf(literal.getLabel());
+                } else if (BOOLEAN == type) {
+                    return Boolean.valueOf(literal.getLabel());
+                } else {
                     return literal.getLabel();
                 }
             }
