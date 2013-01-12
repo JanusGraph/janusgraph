@@ -135,6 +135,16 @@ public class FaunusGraph {
             graph.setOutputLocation(new Path(this.getOutputLocation().toString() + "_"));
         }
 
+        /*
+        TODO: This needs to be put into the "input handler" system
+        final Iterator<Map.Entry<String, String>> itty = this.configuration.iterator();
+        while (itty.hasNext()) {
+            final Map.Entry<String, String> entry = itty.next();
+            if (entry.getKey().startsWith("faunus.graph.output.titan."))  {
+                configuration.set("faunus.graph.input.titan." + entry.getKey().substring("faunus.graph.output.titan.".length()+1), entry.getValue());
+            }
+        }*/
+
         return graph;
     }
 }

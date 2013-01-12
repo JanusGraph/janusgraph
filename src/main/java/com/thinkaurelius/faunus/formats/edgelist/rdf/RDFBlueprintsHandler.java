@@ -82,16 +82,16 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
         this.useFragments = configuration.getBoolean(RDFInputFormat.USE_LOCALNAME, false);
         this.literalAsProperty = configuration.getBoolean(RDFInputFormat.LITERAL_AS_PROPERTY, false);
         for (final String property : configuration.getStringCollection(RDFInputFormat.AS_PROPERTIES)) {
-            this.asProperties.add(property);
+            this.asProperties.add(property.trim());
         }
         try {
             this.md = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
             throw new IOException(e.getMessage(), e);
         }
-
         this.parser = Rio.createParser(formats.get(configuration.get(RDFInputFormat.RDF_FORMAT)));
         this.parser.setRDFHandler(this);
+        this.parser.setDatatypeHandling(RDFParser.DatatypeHandling.IGNORE);
     }
 
     public void startRDF() throws RDFHandlerException {
