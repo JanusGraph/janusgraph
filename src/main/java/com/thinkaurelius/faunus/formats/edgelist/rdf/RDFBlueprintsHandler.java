@@ -79,9 +79,9 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
 
     public RDFBlueprintsHandler(final Configuration configuration) throws IOException {
         this.enablePath = configuration.getBoolean(FaunusCompiler.PATH_ENABLED, false);
-        this.useFragments = configuration.getBoolean(RDFInputFormat.USE_LOCALNAME, false);
-        this.literalAsProperty = configuration.getBoolean(RDFInputFormat.LITERAL_AS_PROPERTY, false);
-        for (final String property : configuration.getStringCollection(RDFInputFormat.AS_PROPERTIES)) {
+        this.useFragments = configuration.getBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_USE_LOCALNAME, false);
+        this.literalAsProperty = configuration.getBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, false);
+        for (final String property : configuration.getStringCollection(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_AS_PROPERTIES)) {
             this.asProperties.add(property.trim());
         }
         try {
@@ -89,7 +89,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
         } catch (NoSuchAlgorithmException e) {
             throw new IOException(e.getMessage(), e);
         }
-        this.parser = Rio.createParser(formats.get(configuration.get(RDFInputFormat.RDF_FORMAT)));
+        this.parser = Rio.createParser(formats.get(configuration.get(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_FORMAT)));
         this.parser.setRDFHandler(this);
         this.parser.setDatatypeHandling(RDFParser.DatatypeHandling.IGNORE);
     }

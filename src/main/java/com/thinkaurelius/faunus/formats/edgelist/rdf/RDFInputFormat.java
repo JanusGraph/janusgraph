@@ -15,10 +15,10 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
  */
 public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement> {
 
-    public static final String RDF_FORMAT = "faunus.input.rdf.format";
-    public static final String USE_LOCALNAME = "faunus.input.rdf.use-localname";
-    public static final String AS_PROPERTIES = "faunus.input.rdf.as-properties";
-    public static final String LITERAL_AS_PROPERTY = "faunus.input.rdf.literal-as-property";
+    public static final String FAUNUS_GRAPH_INPUT_RDF_FORMAT = "faunus.graph.input.rdf.format";
+    public static final String FAUNUS_GRAPH_INPUT_RDF_USE_LOCALNAME = "faunus.graph.input.rdf.use-localname";
+    public static final String FAUNUS_GRAPH_INPUT_RDF_AS_PROPERTIES = "faunus.graph.input.rdf.as-properties";
+    public static final String FAUNUS_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY = "faunus.graph.input.rdf.literal-as-property";
 
     public static final String URI = "uri";
     public static final String CONTEXT = "context";

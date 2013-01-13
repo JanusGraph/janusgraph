@@ -30,8 +30,8 @@ public class RDFBlueprintsHandlerTest extends TestCase {
 
     public void testUseFragments() throws Exception {
         Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.USE_LOCALNAME, true);
-        config.setStrings(RDFInputFormat.RDF_FORMAT, "n-triples");
+        config.setBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
+        config.setStrings(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_FORMAT, "n-triples");
         RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#created> <http://tinkerpop.com#ripple> .");
@@ -53,9 +53,9 @@ public class RDFBlueprintsHandlerTest extends TestCase {
 
     public void testAsProperties() throws Exception {
         Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.USE_LOCALNAME, true);
-        config.setStrings(RDFInputFormat.AS_PROPERTIES, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-        config.setStrings(RDFInputFormat.RDF_FORMAT, "n-triples");
+        config.setBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
+        config.setStrings(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_AS_PROPERTIES, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+        config.setStrings(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_FORMAT, "n-triples");
         RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#created> <http://tinkerpop.com#ripple> .");
@@ -77,9 +77,9 @@ public class RDFBlueprintsHandlerTest extends TestCase {
 
     public void testLiteralProperties() throws Exception {
         Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.USE_LOCALNAME, true);
-        config.setBoolean(RDFInputFormat.LITERAL_AS_PROPERTY, true);
-        config.set(RDFInputFormat.RDF_FORMAT, "n-triples");
+        config.setBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
+        config.setBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, true);
+        config.set(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_FORMAT, "n-triples");
         RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> \"32\"^^<http://www.w3.org/2001/XMLSchema#int> .");
@@ -122,9 +122,9 @@ public class RDFBlueprintsHandlerTest extends TestCase {
 
     public void testMultiLineParse() throws Exception {
         Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.USE_LOCALNAME, true);
-        config.setBoolean(RDFInputFormat.LITERAL_AS_PROPERTY, true);
-        config.set(RDFInputFormat.RDF_FORMAT, "n-triples");
+        config.setBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
+        config.setBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, true);
+        config.set(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_FORMAT, "n-triples");
         RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> \"32\"^^<http://www.w3.org/2001/XMLSchema#int> .");
@@ -150,9 +150,9 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     TODO: Make multiline work with buffering
     public void testMultiLineTriple() throws Exception {
         Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.USE_LOCALNAME, true);
-        config.setBoolean(RDFInputFormat.LITERAL_AS_PROPERTY, true);
-        config.set(RDFInputFormat.RDF_FORMAT, "n-triples");
+        config.setBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
+        config.setBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, true);
+        config.set(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_FORMAT, "n-triples");
         RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> ");
