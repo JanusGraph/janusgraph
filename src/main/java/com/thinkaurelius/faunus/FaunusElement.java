@@ -57,7 +57,6 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     protected Map<String, Object> properties = null;
     protected List<List<MicroElement>> paths = null;
     private MicroElement microVersion = null;
-
     protected boolean pathEnabled = false;
     protected long pathCounter = 0;
 
@@ -70,20 +69,22 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         this.id = id;
         this.properties = null;
         this.clearPaths();
-        if (this.pathEnabled)
-            this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
         return this;
     }
 
     public void enablePath(final boolean enablePath) {
         this.pathEnabled = enablePath;
+        if (this.pathEnabled) {
+            if (null == this.microVersion)
+                this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+            if (null == this.paths)
+                this.paths = new ArrayList<List<MicroElement>>();
+        }
+        // TODO: else make pathCounter = paths.size()?
     }
 
     public void addPath(final List<MicroElement> path, final boolean append) throws IllegalStateException {
         if (this.pathEnabled) {
-            if (null == this.microVersion)
-                this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
-            if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
             if (append) path.add(this.microVersion);
             this.paths.add(path);
         } else {
@@ -93,7 +94,6 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
     public void addPaths(final List<List<MicroElement>> paths, final boolean append) throws IllegalStateException {
         if (this.pathEnabled) {
-            if (null == this.paths) this.paths = new ArrayList<List<MicroElement>>();
             if (append) {
                 for (final List<MicroElement> path : paths) {
                     this.addPath(path, append);
@@ -107,7 +107,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
     public List<List<MicroElement>> getPaths() throws IllegalStateException {
         if (this.pathEnabled)
-            return (null == this.paths) ? (List) Collections.emptyList() : this.paths;
+            return this.paths;
         else
             throw new IllegalStateException("Path calculations are not enabled");
     }
@@ -120,7 +120,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         }
     }
 
-    public long incrPath(final int amount) throws IllegalStateException {
+    public long incrPath(final long amount) throws IllegalStateException {
         if (this.pathEnabled)
             throw new IllegalStateException("Path calculations are enabled -- use addPath()");
         else
@@ -130,40 +130,35 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
     public boolean hasPaths() {
         if (this.pathEnabled)
-            return (null != this.paths) && !this.paths.isEmpty();
+            return !this.paths.isEmpty();
         else
             return this.pathCounter > 0;
     }
 
     public void clearPaths() {
-        if (this.pathEnabled)
-            this.paths = null;
-        else
+        if (this.pathEnabled) {
+            this.paths = new ArrayList<List<MicroElement>>();
+            this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+        } else
             this.pathCounter = 0;
     }
 
     public long pathCount() {
         if (this.pathEnabled)
-            return (null == this.paths) ? 0 : this.paths.size();
+            return this.paths.size();
         else
             return this.pathCounter;
     }
 
     public void startPath() {
         if (this.pathEnabled) {
-            if (null == this.microVersion)
-                this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
-            if (null == this.paths)
-                this.paths = new ArrayList<List<MicroElement>>();
-            else
-                this.paths.clear();
+            this.clearPaths();
             final List<MicroElement> startPath = new ArrayList<MicroElement>();
             startPath.add(this.microVersion);
             this.paths.add(startPath);
         } else {
             this.pathCounter = 1;
         }
-
     }
 
     public void setProperty(final String key, final Object value) {
@@ -208,9 +203,10 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     public void readFields(final DataInput in) throws IOException {
         this.id = WritableUtils.readVLong(in);
         this.pathEnabled = in.readBoolean();
-        if (this.pathEnabled)
+        if (this.pathEnabled) {
             this.paths = ElementPaths.readFields(in);
-        else
+            this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+        } else
             this.pathCounter = WritableUtils.readVLong(in);
         this.properties = ElementProperties.readFields(in);
     }
@@ -345,12 +341,12 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         public static List<List<MicroElement>> readFields(final DataInput in) throws IOException {
             int pathsSize = WritableUtils.readVInt(in);
             if (pathsSize == 0)
-                return null;
+                return new ArrayList<List<MicroElement>>();
             else {
                 final List<List<MicroElement>> paths = new ArrayList<List<MicroElement>>(pathsSize);
                 for (int i = 0; i < pathsSize; i++) {
                     int pathSize = WritableUtils.readVInt(in);
-                    List<MicroElement> path = new ArrayList<MicroElement>(pathSize);
+                    final List<MicroElement> path = new ArrayList<MicroElement>(pathSize);
                     for (int j = 0; j < pathSize; j++) {
                         char type = in.readChar();
                         if (type == 'v')
