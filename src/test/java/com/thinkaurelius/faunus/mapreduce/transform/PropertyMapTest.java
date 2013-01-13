@@ -95,4 +95,72 @@ public class PropertyMapTest extends BaseTest {
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
+
+    public void testVertexPropertiesNameDifferingPaths() throws IOException {
+        Configuration config = new Configuration();
+        config.set(PropertyMap.CLASS, Vertex.class.getName());
+        config.set(PropertyMap.KEY, "name");
+        config.setClass(PropertyMap.TYPE, Text.class, WritableComparable.class);
+
+        mapReduceDriver.withConfiguration(config);
+
+        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
+
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 2);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 1);
+        assertEquals(graph.get(4l).pathCount(), 1);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
+
+        final List<Pair<NullWritable, Text>> results = runWithGraphNoIndex(graph, mapReduceDriver);
+        assertEquals(results.size(), 5);
+        assertEquals(results.get(0).getSecond().toString(), "marko");
+        assertEquals(results.get(1).getSecond().toString(), "marko");
+        assertEquals(results.get(2).getSecond().toString(), "vadas");
+        assertEquals(results.get(3).getSecond().toString(), "lop");
+        assertEquals(results.get(4).getSecond().toString(), "josh");
+
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.VERTICES_PROCESSED).getValue(), 4);
+        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
+
+        identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
+    }
+
+    public void testVertexPropertiesAgeDifferingPaths() throws IOException {
+        Configuration config = new Configuration();
+        config.set(PropertyMap.CLASS, Vertex.class.getName());
+        config.set(PropertyMap.KEY, "age");
+        config.setClass(PropertyMap.TYPE, IntWritable.class, WritableComparable.class);
+
+        mapReduceDriver.withConfiguration(config);
+
+        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
+
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 2);
+        assertEquals(graph.get(2l).pathCount(), 1);
+        assertEquals(graph.get(3l).pathCount(), 1);
+        assertEquals(graph.get(4l).pathCount(), 1);
+        assertEquals(graph.get(5l).pathCount(), 0);
+        assertEquals(graph.get(6l).pathCount(), 0);
+
+        final List<Pair<NullWritable, IntWritable>> results = runWithGraphNoIndex(graph, mapReduceDriver);
+        assertEquals(results.size(), 5);
+        assertEquals(results.get(0).getSecond().get(), 29);
+        assertEquals(results.get(1).getSecond().get(), 29);
+        assertEquals(results.get(2).getSecond().get(), 27);
+        assertEquals(results.get(3).getSecond().get(), Integer.MIN_VALUE);
+        assertEquals(results.get(4).getSecond().get(), 32);
+
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.VERTICES_PROCESSED).getValue(), 4);
+        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
+
+        identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
+    }
+
+
 }

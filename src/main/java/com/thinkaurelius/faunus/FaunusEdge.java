@@ -19,7 +19,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class FaunusEdge extends FaunusElement implements Edge {
 
-    private static final String DEFAULT = "_default";
+    private static final String LINK = "_link";
 
     protected long outVertex;
     protected long inVertex;
@@ -27,12 +27,12 @@ public class FaunusEdge extends FaunusElement implements Edge {
 
     public FaunusEdge() {
         super(-1l);
-        this.label = DEFAULT;
+        this.label = LINK;
     }
 
     public FaunusEdge(final boolean enablePaths) {
         super(-1l);
-        this.label = DEFAULT;
+        this.label = LINK;
         this.enablePath(enablePaths);
     }
 
