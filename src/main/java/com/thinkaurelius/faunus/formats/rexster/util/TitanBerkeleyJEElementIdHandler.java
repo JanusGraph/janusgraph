@@ -6,7 +6,7 @@ import com.tinkerpop.blueprints.Element;
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-public class TitanBerkleyElementIdHandler implements ElementIdHandler {
+public class TitanBerkeleyJEElementIdHandler implements ElementIdHandler {
     @Override
     public long convertIdentifier(final Element element) {
         return ((TitanElement) element).getID();

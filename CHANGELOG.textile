@@ -1,15 +1,17 @@
-Faunus: Graph Computing with Hadoop
+Faunus: Graph Analytics Engine
 "http://thinkaurelius.github.com/faunus/":http://thinkaurelius.github.com/faunus/
 
-h2. Faunus 0.x
+!https://raw.github.com/thinkaurelius/titan/master/doc/images/titan-globe.png!
 
-h3. Version 0.1 (NOT OFFICIALLY RELEASED YET)
+h2. Faunus 0.x.y
+
+h3. Version 0.1.0 (January 14, 2013)
 
 ```xml
 <dependency>
-  <groupId>com.thinkaurelius</groupId>
+  <groupId>com.thinkaurelius.faunus</groupId>
   <artifactId>faunus</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.1.0</version>
 </dependency>
 ```
 

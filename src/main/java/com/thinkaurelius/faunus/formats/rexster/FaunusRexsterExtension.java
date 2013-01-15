@@ -3,7 +3,7 @@ package com.thinkaurelius.faunus.formats.rexster;
 import com.thinkaurelius.faunus.formats.rexster.util.DefaultElementIdHandler;
 import com.thinkaurelius.faunus.formats.rexster.util.ElementIdHandler;
 import com.thinkaurelius.faunus.formats.rexster.util.OrientElementIdHandler;
-import com.thinkaurelius.faunus.formats.rexster.util.TitanBerkleyElementIdHandler;
+import com.thinkaurelius.faunus.formats.rexster.util.TitanBerkeleyJEElementIdHandler;
 import com.thinkaurelius.faunus.formats.rexster.util.VertexToFaunusBinary;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
@@ -104,8 +104,8 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
 
         if (idHandlerName.equals("orientdb"))
             return new OrientElementIdHandler();
-        else if (idHandlerName.equals("titan-berkley"))
-            return new TitanBerkleyElementIdHandler();
+        else if (idHandlerName.equals("titan-berkeleyje"))
+            return new TitanBerkeleyJEElementIdHandler();
         else
             return DEFAULT_ID_HANDLER;
     }

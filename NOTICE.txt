@@ -1,6 +1,6 @@
 ==============================================================
  Faunus: Graph Analytics Engine
- Copyright 2012 and onwards Aurelius
+ Copyright 2012-2013 Aurelius
 ==============================================================
 
 This product includes software developed by Aurelius (http://thinkaurelius.com/) and the following individuals:
@@ -19,5 +19,6 @@ It also includes software from other open source projects including, but not lim
  * Apache Cassandra [http://cassandra.apache.org/]
  * Apache HBase [http://hbase.apache.org/]
  * Codehaus Groovy [http://groovy.codehaus.org/]
+ * OpenRDF [http://www.openrdf.org/]
  * Apache MRUnit [http://mrunit.apache.org/]
  * JUnit [http://www.junit.org/]
