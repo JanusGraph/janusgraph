@@ -1,0 +1,14 @@
+[[https://github.com/thinkaurelius/faunus/raw/master/doc/images/faunus-logo.png|width=400px]]
+
+Faunus is an ongoing effort by various developers, contributors, and organizations. Along with this explicit list of contributors, Faunus is also possible because of the excellent open source products that compose Faunus. Please see a list of these projects in the Faunus "pom.xml":https://github.com/thinkaurelius/faunus/blob/master/pom.xml.
+
+h2. People
+
+# "Marko A. Rodriguez":http://markorodriguez.com: Creator and primary developer for Faunus.
+# "Stephen Mallette":http://stephen.genoprime.com/: Provided support for "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library and "Rexster":http://rexster.tinkerpop.com connectivity.
+# "Matthias Broecheler":http://matthiasb.com/: Provided support for "Titan":http://thinkaurelius.github.com/titan/ connectivity.
+# "Ketrina Yim":http://www.ketrinayim.com/: Created the Faunus logo.
+
+h2. Organizations
+
+# "Aurelius":http://thinkaurelius.com: Provided the development team and maintains the Faunus codebase.

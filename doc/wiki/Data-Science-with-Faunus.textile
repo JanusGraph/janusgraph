@@ -1,0 +1,17 @@
+[[http://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Internet_map_1024.jpg/240px-Internet_map_1024.jpg|align=left|float]] "Data science":http://radar.oreilly.com/2010/06/what-is-data-science.html is the exploration of phenomena via the use of "empirical":http://en.wikipedia.org/wiki/Empirical information (i.e. data). Data is gathered when measurements are taken of "some world":http://en.wikipedia.org/wiki/Domain_of_discourse irrespective of that world being natural or synthetic. However, a graph typically represents some real-world system (except for in "pure mathematics":http://en.wikipedia.org/wiki/Pure_mathematics). Examples include social, biological, or technical systems. The study/analyses of graphs that model real-world systems is called "network science":http://en.wikipedia.org/wiki/Network_science. Faunus is a tool that can be utilized for network science on massive-scale graphs -- when the graphs are so large that they no longer fit within the resource confines of a single machine. Moreover, Faunus is seen as a particular tool within the data science tool chain. A typical tool chain is enumerated below:
+
+<br/><br/><br/>
+
+  # *World*: a system that is intended to be understood via measurement and analysis.
+  # *Graph*: a graph representation of the worldly system in terms of "things" and their "connections."
+  # *Hadoop*: a distributed storage and processing environment for analyzing massive-scale data sets.
+  # *Faunus*: a Hadoop-based framework for graph rewriting and/or yielding basic graph statistics.
+  # *Statistics*: mathematical tools for describing patterns in data in as few numbers as possible.
+
+This section will present a real-world analysis of "Wikipedia":http://www.wikipedia.org/ using the following data science tool chain. 
+
+[[https://github.com/thinkaurelius/faunus/raw/master/doc/images/data-science-chain.png|align=center]]
+
+All of the analyses conducted below made use of a 12 machine m1.xlarge "Amazon EC2":http://aws.amazon.com/ec2/ Hadoop cluster constructed using "Whirr":http://whirr.apache.org/ with the following Faunus job properties. For a tutorial on setting up a Hadoop cluster on Amazon EC2, see the following "documentation":https://github.com/thinkaurelius/faunus/wiki/Running-Faunus-on-Amazon-EC2. 
+
+*To be continued...*

@@ -1,0 +1,69 @@
+!http://www.w3.org/RDF/icons/rdf_w3c_icon.128!
+
+* *InputFormat*: @com.thinkaurelius.faunus.formats.edgelist.rdf.RDFInputFormat@
+
+The "Semantic Web":http://en.wikipedia.org/wiki/Semantic_Web community is one of the original promoters of the graph as an approach to data modeling. Their efforts have led to the development of the "RDF":http://www.w3.org/RDF/ format. While there are many RDF formats, an RDF file is (conceptually) composed of triples whereby a subject is connected to an object by a predicate. For instance:
+
+```text
+<http://thinkaurelius.com#hercules> <http://thinkaurelius.com#father> <http://thinkaurelius.com#jupiter> .
+```
+
+In this way, RDF is an edge list format. Faunus, on the other hand, makes use of an "adjacency list":http://en.wikipedia.org/wiki/Adjacency_list in its representation. Therefore, for these two formats to interoperate, the @RDFInputFormat@ provided by Faunus contains a MapReduce job that converts an edge list into a adjacency list.
+
+h2. Conversion Parameters
+
+h3. RDF Format
+
+@faunus.graph.input.rdf.format@
+
+There are numerous RDF formats. Faunus currently supports the following formats.
+
+ * rdf-xml
+ * n-triples
+ * turtle
+ * n3
+ * trix
+ * trig
+
+*NOTE*: Faunus makes use of @LineRecordReader@ to read statements from an RDF file. If a line (@\n@) does not contain a complete legal RDF fragment, then an exception is thrown by the RDF parser.
+
+h3. Literal as Property
+
+@faunus.graph.input.rdf.literal-as-property@
+
+There are two types of triples to be aware of -- one that is a URI connecting to a URI and one that is a URI connecting to a literal. The two types of triples are exemplified below.
+
+```text
+<http://thinkaurelius.com#hercules> <http://thinkaurelius.com#father> <http://thinkaurelius.com#jupiter> .
+<http://thinkaurelius.com#hercules> <http://thinkaurelius.com#age> "32"^^<http://www.w3.org/2001/XMLSchema#int> .
+```
+
+If the above Faunus property is set to @true@, then the Hercules vertex has an age property with an integer values of 32.
+
+h3. Use Local Name
+
+@faunus.graph.input.rdf.use-localname@
+
+The theoretically infinite RDF graph is embedded with the infinite address space of URIs. In many situations, the full URI is not desired and as such, if the above property is set to @true@, then
+
+```text
+<http://thinkaurelius.com#hercules> <http://thinkaurelius.com#father> <http://thinkaurelius.com#jupiter> .
+```
+
+Generates vertices with name @hercules@ and @jupiter@ connected by a @father@ edge.
+
+h3. As Properties
+
+@faunus.graph.input.rdf.as-properties@
+
+RDF is a triple format -- there are no properties, only vertices and edges. In some situations, an object URI should be treated as a property of the vertex. For instance, when @http://www.w3.org/1999/02/22-rdf-syntax-ns#type@ is specified in the @String@ list of the property above, then the triple
+
+```text
+<http://thinkaurelius.com#hercules> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://thinkaurelius.com#demigod>
+```
+
+yields a Hercules vertex with type-property demigod. A typical setting for this property is below.
+
+```text
+faunus.input.format.rdf.as-properties=http://www.w3.org/1999/02/22-rdf-syntax-ns#type,http://www.w3.org/2000/01/rdf-schema#label
+```

@@ -1,0 +1,94 @@
+[[https://github.com/thinkaurelius/faunus/raw/master/doc/images/graph-globe.png|width=125px|align=left|float]] The source of any Faunus job is a @FaunusGraph@. @FaunusGraph@ is simply a wrapper to a collection of Hadoop- and Faunus-specific configurations. Most importantly, it captures the location and type of the input graph and output graph. A @FaunusGraph@ is typically created using one of the @FaunusFactory.open()@ methods.
+
+<br/><br/>
+
+h2. FaunusGraph Construction
+
+A Faunus properties file is used to construct a @FaunusGraph@. Assume a file named @bin/faunus.properties@ as represented below.
+
+```properties
+# input graph parameters
+faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
+faunus.input.location=graph-of-the-gods.json
+# output data parameters
+faunus.graph.output.format=com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat
+faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+faunus.output.location=output
+faunus.output.location.overwrite=true
+```
+
+With @FaunusFactory@, a properties file is turned in a @FaunusGraph@. The @toString()@ of the @FaunusGraph@ denotes the input and output format of the graph. For instance, as seen below, a graph of type GraphSON is the input and a graph of type GraphSON is the output.
+
+```text
+gremlin> g = FaunusFactory.open('bin/faunus.properties')
+==>faunusgraph[graphsoninputformat->graphsonoutputformat]
+```
+
+h3. Hadoop-Specific Configurations
+
+As stated previously, a @FaunusGraph@ is loaded with Hadoop specific configuration information that is percolated from the master cluster configuration (e.g. set up during cluster construction) to various job level configurations.
+
+```text
+gremlin> g.getConfiguration()    
+==>keep.failed.task.files=false
+==>io.seqfile.compress.blocksize=1000000
+==>dfs.df.interval=60000
+==>dfs.datanode.failed.volumes.tolerated=0
+==>mapreduce.reduce.input.limit=-1
+==>mapred.task.tracker.http.address=0.0.0.0:50060
+==>mapred.userlog.retain.hours=24
+==>dfs.max.objects=0
+==>dfs.https.client.keystore.resource=ssl-client.xml
+==>mapred.local.dir.minspacestart=0
+...
+```
+
+h3. Faunus Properties
+
+Within this configuration, there are Faunus-specific configurations called _properties_. These properties can be isolated with @FaunusGraph.getProperties()@.
+
+```text
+gremlin> g.getProperties()        
+==>faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
+==>faunus.input.location=graph-of-the-gods.json
+==>faunus.graph.output.format=com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat
+==>faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+==>faunus.output.location=output
+==>faunus.output.location.overwrite=true
+```
+
+Moreover, @FaunusGraph@ provides getters/setters for mutating the most commonly used properties. 
+
+```text
+gremlin> g.setGraphOutputFormat(NoOpOutputFormat.class)
+==>null
+gremlin> g
+==>faunusgraph[graphsoninputformat->noopoutputformat]
+gremlin> g.getGraphOutputFormat()
+==>class com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat
+gremlin> g.getProperties()       
+==>faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
+==>faunus.input.location=graph-of-the-gods.json
+==>faunus.graph.output.format=com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat
+==>faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+==>faunus.output.location=output
+==>faunus.output.location.overwrite=true
+```
+
+h3. Chaining Graphs
+
+To conclude, a useful @FaunusGraph@ method is @getNextGraph()@. This method generates a new @FaunusGraph@ that is the "inverse" of the current with the input formats and output locations reconfigured to support easy graph chaining.
+
+```text
+gremlin> g = FaunusFactory.open('bin/faunus.properties')
+==>faunusgraph[graphsoninputformat->graphsonoutputformat]
+gremlin> h = g.getNextGraph()
+==>faunusgraph[graphsoninputformat->graphsonoutputformat]
+gremlin> h.getProperties()
+==>faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
+==>faunus.input.location=output/job-1
+==>faunus.graph.output.format=com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat
+==>faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+==>faunus.output.location=output_
+==>faunus.output.location.overwrite=true
+```

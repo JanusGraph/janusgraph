@@ -1,0 +1,18 @@
+Faunus: Graph Analytics Engine
+"http://thinkaurelius.github.com/faunus/":http://thinkaurelius.github.com/faunus/
+
+[[https://raw.github.com/thinkaurelius/titan/master/doc/images/titan-globe.png|width=100px]]
+
+h2. Faunus 0.x.y
+
+h3. Version 0.1.0 (January 14, 2013)
+
+```xml
+<dependency>
+  <groupId>com.thinkaurelius.faunus</groupId>
+  <artifactId>faunus</artifactId>
+  <version>0.1.0</version>
+</dependency>
+```
+
+* First release and therefore, no changes.
