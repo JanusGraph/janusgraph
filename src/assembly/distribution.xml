@@ -22,6 +22,9 @@
             <directory>src</directory>
         </fileSet>
         <fileSet>
+            <directory>doc</directory>
+        </fileSet>
+        <fileSet>
             <directory>target/apidocs</directory>
             <outputDirectory>doc/javadoc</outputDirectory>
         </fileSet>
