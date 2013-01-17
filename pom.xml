@@ -9,7 +9,8 @@
     </parent>
     <groupId>com.thinkaurelius.faunus</groupId>
     <artifactId>faunus</artifactId>
-    <version>0.1.0</version>
+    <!-- DON'T FORGET TO UPDATE Tokens.java -->
+    <version>0.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <url>http://thinkaurelius.github.com/faunus/</url>
     <name>Faunus: Graph Analytics Engine</name>
