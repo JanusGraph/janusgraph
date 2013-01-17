@@ -24,7 +24,7 @@
             <directory>src</directory>
         </fileSet>
         <fileSet>
-            <directory>doc</directory>
+            <directory>../doc</directory>
         </fileSet>
         <fileSet>
             <directory>config</directory>
