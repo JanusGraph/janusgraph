@@ -115,15 +115,19 @@ public class FaunusGraph {
         return "faunusgraph[" + this.configuration.getClass(FAUNUS_GRAPH_INPUT_FORMAT, InputFormat.class).getSimpleName().toLowerCase() + "->" + this.configuration.getClass(FAUNUS_GRAPH_OUTPUT_FORMAT, OutputFormat.class).getSimpleName().toLowerCase() + "]";
     }
 
-    public Map<String, Object> getProperties() {
+    public Map<String, Object> getProperties(final String prefix) {
         final Map<String, Object> map = new LinkedHashMap<String, Object>();
         final Iterator<Map.Entry<String, String>> itty = this.configuration.iterator();
         while (itty.hasNext()) {
             final Map.Entry<String, String> entry = itty.next();
-            if (entry.getKey().startsWith("faunus."))
+            if (entry.getKey().startsWith(prefix + "."))
                 map.put(entry.getKey(), entry.getValue());
         }
         return map;
+    }
+
+    public Map<String, Object> getProperties() {
+        return this.getProperties("faunus");
     }
 
     public FaunusGraph getNextGraph() throws IOException {

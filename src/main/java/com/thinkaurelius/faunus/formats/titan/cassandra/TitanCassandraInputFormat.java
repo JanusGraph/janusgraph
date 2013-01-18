@@ -55,7 +55,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
         final SliceRange sliceRange = new SliceRange();
         sliceRange.setStart(new byte[0]);
         sliceRange.setFinish(new byte[0]);
-        sliceRange.setCount(Integer.MAX_VALUE);
+        sliceRange.setCount(config.getInt("cassandra.range.batch.size", Integer.MAX_VALUE));
         predicate.setSlice_range(sliceRange);
         ConfigHelper.setInputSlicePredicate(config, predicate);
 
