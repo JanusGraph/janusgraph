@@ -1,10 +1,8 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
-import com.thinkaurelius.faunus.formats.edgelist.rdf.RDFInputFormat;
-import com.thinkaurelius.faunus.formats.titan.SchemaInferencerMapReduce;
-import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
+import com.thinkaurelius.faunus.formats.MapReduceFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.faunus.mapreduce.StepMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
@@ -23,24 +21,31 @@ import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
 import com.thinkaurelius.faunus.mapreduce.transform.OrderMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
 import com.thinkaurelius.faunus.mapreduce.transform.PropertyMap;
+import com.thinkaurelius.faunus.mapreduce.transform.PropertyMapMap;
 import com.thinkaurelius.faunus.mapreduce.transform.TransformMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
+import com.thinkaurelius.faunus.mapreduce.util.WritableComparators;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.pipes.util.structures.Pair;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.util.ToolRunner;
 import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
@@ -192,11 +197,10 @@ public class FaunusPipeline {
         this.compiler = new FaunusCompiler(this.graph);
         this.state = new State();
 
-        // TODO: WE NEED TO GENERALIZE INPUT AND OUTPUT FORMATS THAT REQUIRE MAPREDUCE STEPS
-        if (this.graph.getGraphInputFormat().equals(RDFInputFormat.class)) {
+        if (MapReduceFormat.class.isAssignableFrom(this.graph.getGraphInputFormat())) {
             try {
-                this.compiler.edgeListInputMapReduce();
-            } catch (IOException e) {
+                ((Class<? extends MapReduceFormat>) this.graph.getGraphInputFormat()).getConstructor().newInstance().addMapReduceJobs(this.compiler);
+            } catch (Exception e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
         }
@@ -222,9 +226,14 @@ public class FaunusPipeline {
                                final Class<? extends WritableComparable> key2,
                                final Class<? extends WritableComparable> value2) throws IOException {
         this.state.checkLocked();
-        this.compiler.stepMapReduce(this.state.getElementType(), this.validateClosure(mapClosure), this.validateClosure(reduceClosure),
-                convertJavaToHadoop(key1), convertJavaToHadoop(value1),
-                convertJavaToHadoop(key2), convertJavaToHadoop(value2));
+        final Configuration configuration = new Configuration();
+        configuration.setClass(StepMapReduce.CLASS, this.state.getElementType(), Element.class);
+        configuration.set(StepMapReduce.MAP_CLOSURE, this.validateClosure(mapClosure));
+        configuration.set(StepMapReduce.REDUCE_CLOSURE, this.validateClosure(reduceClosure));
+        this.compiler.addMapReduce(StepMapReduce.Map.class,
+                null,
+                StepMapReduce.Reduce.class,
+                key1, value1, key2, value2, configuration);
         this.state.lock();
         return this;
     }
@@ -240,7 +249,7 @@ public class FaunusPipeline {
      */
     public FaunusPipeline _() {
         this.state.checkLocked();
-        this.compiler._();
+        this.compiler.addMap(IdentityMap.Map.class, NullWritable.class, FaunusVertex.class, null);
         makeMapReduceString(IdentityMap.class);
         return this;
     }
@@ -255,7 +264,10 @@ public class FaunusPipeline {
     public FaunusPipeline transform(final String closure) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
-        this.compiler.transformMap(this.state.getElementType(), this.validateClosure(closure));
+        final Configuration configuration = new Configuration();
+        configuration.setClass(TransformMap.CLASS, this.state.getElementType(), Element.class);
+        configuration.set(TransformMap.CLOSURE, this.validateClosure(closure));
+        this.compiler.addMap(TransformMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
         this.state.lock();
         makeMapReduceString(TransformMap.class);
         return this;
@@ -270,11 +282,9 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
         this.state.set(Vertex.class);
-        if (this.state.incrStep() == 0)
-            this.compiler.verticesMap(false);
-        else
-            this.compiler.verticesMap(true);
-
+        final Configuration configuration = new Configuration();
+        configuration.setBoolean(VerticesMap.PROCESS_EDGES, this.state.incrStep() != 0);
+        this.compiler.addMap(VerticesMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
         makeMapReduceString(VerticesMap.class);
         return this;
     }
@@ -289,11 +299,9 @@ public class FaunusPipeline {
         this.state.checkProperty();
 
         this.state.set(Edge.class);
-        if (this.state.incrStep() == 0)
-            this.compiler.edgesMap(false);
-        else
-            this.compiler.edgesMap(true);
-
+        final Configuration configuration = new Configuration();
+        configuration.setBoolean(EdgesMap.PROCESS_VERTICES, this.state.incrStep() != 0);
+        this.compiler.addMap(EdgesMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
         makeMapReduceString(EdgesMap.class);
         return this;
     }
@@ -310,8 +318,15 @@ public class FaunusPipeline {
 
         this.state.set(Vertex.class);
         this.state.incrStep();
-        this.compiler.vertexMap(ids);
 
+        final String[] idStrings = new String[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            idStrings[i] = String.valueOf(ids[i]);
+        }
+        final Configuration configuration = new Configuration();
+        configuration.setStrings(VertexMap.IDS, idStrings);
+
+        this.compiler.addMap(VertexMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
         makeMapReduceString(VertexMap.class);
         return this;
     }
@@ -324,16 +339,7 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline out(final String... labels) throws IOException {
-        this.state.checkLocked();
-        this.state.checkProperty();
-
-        this.state.incrStep();
-        if (this.state.atVertex()) {
-            this.compiler.verticesVerticesMapReduce(OUT, labels);
-            makeMapReduceString(VerticesVerticesMapReduce.class, OUT.name(), Arrays.asList(labels));
-            return this;
-        } else
-            throw new IllegalStateException("This step can not follow an edge-based step");
+        return this.inOutBoth(OUT, labels);
     }
 
     /**
@@ -344,16 +350,7 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline in(final String... labels) throws IOException {
-        this.state.checkLocked();
-        this.state.checkProperty();
-
-        this.state.incrStep();
-        if (this.state.atVertex()) {
-            this.compiler.verticesVerticesMapReduce(IN, labels);
-            makeMapReduceString(VerticesVerticesMapReduce.class, IN.name(), Arrays.asList(labels));
-            return this;
-        } else
-            throw new IllegalStateException("This step can not follow an edge-based step");
+        return this.inOutBoth(IN, labels);
     }
 
     /**
@@ -364,16 +361,32 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline both(final String... labels) throws IOException {
+        return this.inOutBoth(BOTH, labels);
+    }
+
+    private FaunusPipeline inOutBoth(final Direction direction, final String... labels) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
 
         this.state.incrStep();
         if (this.state.atVertex()) {
-            this.compiler.verticesVerticesMapReduce(BOTH, labels);
-            makeMapReduceString(VerticesVerticesMapReduce.class, BOTH.name(), Arrays.asList(labels));
+            final Configuration configuration = new Configuration();
+            configuration.set(VerticesVerticesMapReduce.DIRECTION, direction.name());
+            configuration.setStrings(VerticesVerticesMapReduce.LABELS, labels);
+            this.compiler.addMapReduce(VerticesVerticesMapReduce.Map.class,
+                    VerticesVerticesMapReduce.Combiner.class,
+                    VerticesVerticesMapReduce.Reduce.class,
+                    LongWritable.Comparator.class,
+                    LongWritable.class,
+                    Holder.class,
+                    NullWritable.class,
+                    FaunusVertex.class, configuration);
+            this.state.set(Vertex.class);
+            makeMapReduceString(VerticesVerticesMapReduce.class, direction.name(), Arrays.asList(labels));
             return this;
-        } else
+        } else {
             throw new IllegalStateException("This step can not follow an edge-based step");
+        }
     }
 
     /**
@@ -384,17 +397,7 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline outE(final String... labels) throws IOException {
-        this.state.checkLocked();
-        this.state.checkProperty();
-
-        this.state.incrStep();
-        if (this.state.atVertex()) {
-            this.compiler.verticesEdgesMapReduce(OUT, labels);
-            this.state.set(Edge.class);
-            makeMapReduceString(VerticesEdgesMapReduce.class, OUT.name(), Arrays.asList(labels));
-            return this;
-        } else
-            throw new IllegalStateException("This step can not follow an edge-based step");
+        return this.inOutBothE(OUT, labels);
     }
 
     /**
@@ -405,17 +408,7 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline inE(final String... labels) throws IOException {
-        this.state.checkLocked();
-        this.state.checkProperty();
-
-        this.state.incrStep();
-        if (this.state.atVertex()) {
-            this.compiler.verticesEdgesMapReduce(IN, labels);
-            this.state.set(Edge.class);
-            makeMapReduceString(VerticesEdgesMapReduce.class, IN.name(), Arrays.asList(labels));
-            return this;
-        } else
-            throw new IllegalStateException("This step can not follow an edge-based step");
+        return this.inOutBothE(IN, labels);
     }
 
     /**
@@ -426,17 +419,29 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline bothE(final String... labels) throws IOException {
+        return this.inOutBothE(BOTH, labels);
+    }
+
+    private FaunusPipeline inOutBothE(final Direction direction, final String... labels) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
 
         this.state.incrStep();
         if (this.state.atVertex()) {
-            this.compiler.verticesEdgesMapReduce(BOTH, labels);
+            final Configuration configuration = new Configuration();
+            configuration.set(VerticesEdgesMapReduce.DIRECTION, direction.name());
+            configuration.setStrings(VerticesVerticesMapReduce.LABELS, labels);
+            this.compiler.addMapReduce(VerticesVerticesMapReduce.Map.class,
+                    VerticesVerticesMapReduce.Combiner.class,
+                    VerticesVerticesMapReduce.Reduce.class,
+                    LongWritable.Comparator.class,
+                    LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class, configuration);
             this.state.set(Edge.class);
-            makeMapReduceString(VerticesEdgesMapReduce.class, BOTH.name(), Arrays.asList(labels));
+            makeMapReduceString(VerticesEdgesMapReduce.class, direction.name(), Arrays.asList(labels));
             return this;
-        } else
+        } else {
             throw new IllegalStateException("This step can not follow an edge-based step");
+        }
     }
 
     /**
@@ -446,17 +451,7 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline outV() throws IOException {
-        this.state.checkLocked();
-        this.state.checkProperty();
-
-        this.state.incrStep();
-        if (!this.state.atVertex()) {
-            this.compiler.edgesVerticesMap(OUT);
-            this.state.set(Vertex.class);
-            makeMapReduceString(EdgesVerticesMap.class, OUT.name());
-            return this;
-        } else
-            throw new IllegalStateException("This step can not follow a vertex-based step");
+        return this.inOutBothV(OUT);
     }
 
     /**
@@ -466,17 +461,7 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline inV() throws IOException {
-        this.state.checkLocked();
-        this.state.checkProperty();
-
-        this.state.incrStep();
-        if (!this.state.atVertex()) {
-            this.compiler.edgesVerticesMap(IN);
-            this.state.set(Vertex.class);
-            makeMapReduceString(EdgesVerticesMap.class, IN.name());
-            return this;
-        } else
-            throw new IllegalStateException("This step can not follow a vertex-based step");
+        return this.inOutBothV(IN);
     }
 
     /**
@@ -486,14 +471,20 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline bothV() throws IOException {
+        return this.inOutBothV(BOTH);
+    }
+
+    private FaunusPipeline inOutBothV(final Direction direction, final String... labels) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
 
         this.state.incrStep();
         if (!this.state.atVertex()) {
-            this.compiler.edgesVerticesMap(BOTH);
+            final Configuration configuration = new Configuration();
+            configuration.set(EdgesVerticesMap.DIRECTION, direction.name());
+            this.compiler.addMap(EdgesVerticesMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
             this.state.set(Vertex.class);
-            makeMapReduceString(EdgesVerticesMap.class, BOTH.name());
+            makeMapReduceString(EdgesVerticesMap.class, direction.name());
             return this;
         } else
             throw new IllegalStateException("This step can not follow a vertex-based step");
@@ -532,8 +523,9 @@ public class FaunusPipeline {
     public FaunusPipeline map() {
         this.state.checkLocked();
         this.state.checkProperty();
-
-        this.compiler.propertyMapMap(this.state.getElementType());
+        final Configuration configuration = new Configuration();
+        configuration.setClass(PropertyMapMap.CLASS, this.state.getElementType(), Element.class);
+        this.compiler.addMap(PropertyMapMap.Map.class, LongWritable.class, Text.class, configuration);
         makeMapReduceString(PropertyMap.class);
         this.state.lock();
         return this;
@@ -558,14 +550,15 @@ public class FaunusPipeline {
     /**
      * Emit the path taken from start to current element.
      *
-     * @return
-     * @throws IOException
+     * @return the extended FaunusPipeline
      */
-    public FaunusPipeline path() throws IOException {
+    public FaunusPipeline path() {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        this.compiler.pathMap(this.state.getElementType());
+        final Configuration configuration = new Configuration();
+        configuration.setClass(PathMap.CLASS, this.state.getElementType(), Element.class);
+        this.compiler.addMap(PathMap.Map.class, NullWritable.class, Text.class, configuration);
         this.compiler.setPathEnabled(true);
         this.state.lock();
         makeMapReduceString(PathMap.class);
@@ -585,10 +578,29 @@ public class FaunusPipeline {
         this.state.checkLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null != pair) {
-            this.compiler.orderMapReduce(this.state.getElementType(), elementKey, pair.getA(), pair.getB(), order);
+            final Configuration configuration = new Configuration();
+            configuration.setClass(OrderMapReduce.CLASS, this.state.getElementType(), Element.class);
+            configuration.set(OrderMapReduce.KEY, pair.getA());
+            configuration.setClass(OrderMapReduce.TYPE, pair.getB(), WritableComparable.class);
+            configuration.set(OrderMapReduce.ELEMENT_KEY, elementKey);
+            Class<? extends WritableComparator> comparatorClass = null;
+            if (pair.getB().equals(LongWritable.class))
+                comparatorClass = order.equals(Tokens.Order.INCREASING) ? LongWritable.Comparator.class : LongWritable.DecreasingComparator.class;
+            else if (pair.getB().equals(IntWritable.class))
+                comparatorClass = order.equals(Tokens.Order.INCREASING) ? IntWritable.Comparator.class : WritableComparators.DecreasingIntComparator.class;
+            else if (pair.getB().equals(FloatWritable.class))
+                comparatorClass = order.equals(Tokens.Order.INCREASING) ? FloatWritable.Comparator.class : WritableComparators.DecreasingFloatComparator.class;
+            else if (pair.getB().equals(DoubleWritable.class))
+                comparatorClass = order.equals(Tokens.Order.INCREASING) ? DoubleWritable.Comparator.class : WritableComparators.DecreasingDoubleComparator.class;
+            else if (pair.getB().equals(Text.class))
+                comparatorClass = order.equals(Tokens.Order.INCREASING) ? Text.Comparator.class : WritableComparators.DecreasingTextComparator.class;
+            this.compiler.addMapReduce(OrderMapReduce.Map.class,
+                    null,
+                    OrderMapReduce.Reduce.class,
+                    comparatorClass, pair.getB(), Text.class, Text.class, pair.getB(), configuration);
             makeMapReduceString(OrderMapReduce.class, order.name(), elementKey);
         } else {
-            throw new IllegalArgumentException("There is no specified property to sort on");
+            throw new IllegalArgumentException("There is no specified property to order on");
         }
         this.state.lock();
         return this;
@@ -642,7 +654,10 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        this.compiler.filterMap(this.state.getElementType(), this.validateClosure(closure));
+        final Configuration configuration = new Configuration();
+        configuration.setClass(FilterMap.CLASS, this.state.getElementType(), Element.class);
+        configuration.set(FilterMap.CLOSURE, this.validateClosure(closure));
+        this.compiler.addMap(FilterMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
         makeMapReduceString(FilterMap.class);
         return this;
     }
@@ -683,7 +698,26 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        this.compiler.propertyFilterMap(this.state.getElementType(), false, key, compare, values);
+        final String[] valueStrings = new String[values.length];
+        for (int i = 0; i < values.length; i++) {
+            valueStrings[i] = values[i].toString();
+        }
+        final Configuration configuration = new Configuration();
+        configuration.setClass(PropertyFilterMap.CLASS, this.state.getElementType(), Element.class);
+        configuration.set(PropertyFilterMap.KEY, key);
+        configuration.set(PropertyFilterMap.COMPARE, compare.name());
+        configuration.setStrings(PropertyFilterMap.VALUES, valueStrings);
+        configuration.setBoolean(PropertyFilterMap.NULL_WILDCARD, false); // TODO: parameterize?
+        if (values[0] instanceof String) {
+            configuration.setClass(PropertyFilterMap.VALUE_CLASS, String.class, String.class);
+        } else if (values[0] instanceof Boolean) {
+            configuration.setClass(PropertyFilterMap.VALUE_CLASS, Boolean.class, Boolean.class);
+        } else if (values[0] instanceof Number) {
+            configuration.setClass(PropertyFilterMap.VALUE_CLASS, Number.class, Number.class);
+        } else {
+            throw new RuntimeException("Unknown value class: " + values[0].getClass().getName());
+        }
+        this.compiler.addMap(PropertyFilterMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
         makeMapReduceString(PropertyFilterMap.class, compare.name(), Arrays.asList(values));
         return this;
     }
@@ -734,7 +768,27 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        this.compiler.intervalFilterMap(this.state.getElementType(), false, key, startValue, endValue);
+        final Configuration configuration = new Configuration();
+        configuration.setClass(IntervalFilterMap.CLASS, this.state.getElementType(), Element.class);
+        configuration.set(IntervalFilterMap.KEY, key);
+        configuration.setBoolean(IntervalFilterMap.NULL_WILDCARD, false);  // TODO: Parameterize?
+        if (startValue instanceof String) {
+            configuration.set(IntervalFilterMap.VALUE_CLASS, String.class.getName());
+            configuration.set(IntervalFilterMap.START_VALUE, (String) startValue);
+            configuration.set(IntervalFilterMap.END_VALUE, (String) endValue);
+        } else if (startValue instanceof Number) {
+            configuration.set(IntervalFilterMap.VALUE_CLASS, Float.class.getName());
+            configuration.setFloat(IntervalFilterMap.START_VALUE, ((Number) startValue).floatValue());
+            configuration.setFloat(IntervalFilterMap.END_VALUE, ((Number) endValue).floatValue());
+        } else if (startValue instanceof Boolean) {
+            configuration.set(IntervalFilterMap.VALUE_CLASS, Boolean.class.getName());
+            configuration.setBoolean(IntervalFilterMap.START_VALUE, (Boolean) startValue);
+            configuration.setBoolean(IntervalFilterMap.END_VALUE, (Boolean) endValue);
+        } else {
+            throw new RuntimeException("Unknown value class: " + startValue.getClass().getName());
+        }
+
+        this.compiler.addMap(IntervalFilterMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
         makeMapReduceString(IntervalFilterMap.class, key, startValue, endValue);
         return this;
     }
@@ -748,7 +802,9 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        this.compiler.duplicateFilterMap(this.state.getElementType());
+        final Configuration configuration = new Configuration();
+        configuration.setClass(DuplicateFilterMap.CLASS, this.state.getElementType(), Element.class);
+        this.compiler.addMap(DuplicateFilterMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
         makeMapReduceString(DuplicateFilterMap.class);
         return this;
     }
@@ -765,7 +821,13 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        this.compiler.backFilterMapReduce(this.state.getElementType(), this.state.getStep(step));
+        final Configuration configuration = new Configuration();
+        configuration.setInt(BackFilterMapReduce.STEP, this.state.getStep(step));
+        configuration.setClass(BackFilterMapReduce.CLASS, this.state.getElementType(), Element.class);
+        this.compiler.addMapReduce(BackFilterMapReduce.Map.class,
+                BackFilterMapReduce.Combiner.class,
+                BackFilterMapReduce.Reduce.class,
+                LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class, configuration);
         this.compiler.setPathEnabled(true);
         makeMapReduceString(BackFilterMapReduce.class, step);
         return this;
@@ -788,7 +850,9 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        this.compiler.cyclePathFilterMap(this.state.getElementType());
+        final Configuration configuration = new Configuration();
+        configuration.setClass(CyclicPathFilterMap.CLASS, this.state.getElementType(), Element.class);
+        this.compiler.addMap(CyclicPathFilterMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
         this.compiler.setPathEnabled(true);
         makeMapReduceString(CyclicPathFilterMap.class);
         return this;
@@ -807,7 +871,11 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        this.compiler.sideEffect(this.state.getElementType(), this.validateClosure(closure));
+        final Configuration configuration = new Configuration();
+        configuration.setClass(SideEffectMap.CLASS, this.state.getElementType(), Element.class);
+        configuration.set(SideEffectMap.CLOSURE, this.validateClosure(closure));
+        this.compiler.addMap(SideEffectMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
+
         makeMapReduceString(SideEffectMap.class);
         return this;
     }
@@ -816,7 +884,7 @@ public class FaunusPipeline {
      * Name a step in order to reference it later in the expression.
      *
      * @param name the string representation of the name
-     * @return the extended FaunusPipeline¬
+     * @return the extended FaunusPipeline
      */
     public FaunusPipeline as(final String name) {
         this.state.checkLocked();
@@ -841,13 +909,7 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline linkIn(final String step, final String label, final String mergeWeightKey) throws IOException {
-        this.state.checkLocked();
-        this.state.checkProperty();
-
-        this.compiler.linkMapReduce(this.state.getStep(step), IN, label, mergeWeightKey);
-        this.compiler.setPathEnabled(true);
-        makeMapReduceString(LinkMapReduce.class, IN.name(), step, label, mergeWeightKey);
-        return this;
+        return this.link(IN, step, label, mergeWeightKey);
     }
 
     /**
@@ -859,7 +921,7 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline linkIn(final String step, final String label) throws IOException {
-        return this.linkIn(step, label, null);
+        return this.link(IN, step, label, null);
     }
 
     /**
@@ -874,13 +936,7 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline linkOut(final String step, final String label, final String mergeWeightKey) throws IOException {
-        this.state.checkLocked();
-        this.state.checkProperty();
-
-        this.compiler.linkMapReduce(this.state.getStep(step), OUT, label, mergeWeightKey);
-        this.compiler.setPathEnabled(true);
-        makeMapReduceString(LinkMapReduce.class, OUT.name(), step, label, mergeWeightKey);
-        return this;
+        return link(OUT, step, label, mergeWeightKey);
     }
 
     /**
@@ -892,7 +948,36 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline linkOut(final String step, final String label) throws IOException {
-        return this.linkOut(step, label, null);
+        return this.link(OUT, step, label, null);
+    }
+
+    private FaunusPipeline link(final Direction direction, final String step, final String label, final String mergeWeightKey) throws IOException {
+        this.state.checkLocked();
+        this.state.checkProperty();
+
+        final Configuration configuration = new Configuration();
+        configuration.setInt(LinkMapReduce.STEP, this.state.getStep(step));
+        configuration.set(LinkMapReduce.DIRECTION, direction.name());
+        configuration.set(LinkMapReduce.LABEL, label);
+        if (null == mergeWeightKey) {
+            configuration.setBoolean(LinkMapReduce.MERGE_DUPLICATES, false);
+            configuration.set(LinkMapReduce.MERGE_WEIGHT_KEY, LinkMapReduce.NO_WEIGHT_KEY);
+        } else {
+            configuration.setBoolean(LinkMapReduce.MERGE_DUPLICATES, true);
+            configuration.set(LinkMapReduce.MERGE_WEIGHT_KEY, mergeWeightKey);
+        }
+        this.compiler.addMapReduce(LinkMapReduce.Map.class,
+                LinkMapReduce.Combiner.class,
+                LinkMapReduce.Reduce.class,
+                LongWritable.Comparator.class,
+                LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class, configuration);
+
+        if (null != mergeWeightKey)
+            makeMapReduceString(LinkMapReduce.class, direction.name(), step, label, mergeWeightKey);
+        else
+            makeMapReduceString(LinkMapReduce.class, direction.name(), step, label);
+        this.compiler.setPathEnabled(true);
+        return this;
     }
 
     /**
@@ -906,27 +991,18 @@ public class FaunusPipeline {
         this.state.checkLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null == pair) {
-            this.compiler.groupCountMapReduce(this.state.getElementType(), null, null);
-            makeMapReduceString(GroupCountMapReduce.class);
+            return this.groupCount(null, null);
         } else {
-            this.compiler.valueGroupCountMapReduce(this.state.getElementType(), pair.getA(), pair.getB());
+            final Configuration configuration = new Configuration();
+            configuration.setClass(ValueGroupCountMapReduce.CLASS, this.state.getElementType(), Element.class);
+            configuration.set(ValueGroupCountMapReduce.PROPERTY, pair.getA());
+            configuration.setClass(ValueGroupCountMapReduce.TYPE, pair.getB(), Writable.class);
+            this.compiler.addMapReduce(ValueGroupCountMapReduce.Map.class,
+                    ValueGroupCountMapReduce.Combiner.class,
+                    ValueGroupCountMapReduce.Reduce.class,
+                    pair.getB(), LongWritable.class, pair.getB(), LongWritable.class, configuration);
             makeMapReduceString(ValueGroupCountMapReduce.class, pair.getA());
         }
-        return this;
-    }
-
-    /**
-     * Apply the provided closure to the incoming element to determine the grouping key.
-     * Then apply the value closure to the current element to determine the count increment.
-     * The results are stored in the jobs sideeffect file in HDFS.
-     *
-     * @return the extended FaunusPipeline.
-     * @throws IOException
-     */
-    public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) throws IOException {
-        this.state.checkLocked();
-        this.compiler.groupCountMapReduce(this.state.getElementType(), this.validateClosure(keyClosure), this.validateClosure(valueClosure));
-        makeMapReduceString(GroupCountMapReduce.class);
         return this;
     }
 
@@ -939,21 +1015,52 @@ public class FaunusPipeline {
      * @throws IOException
      */
     public FaunusPipeline groupCount(final String keyClosure) throws IOException {
+        return this.groupCount(keyClosure, null);
+    }
+
+    /**
+     * Apply the provided closure to the incoming element to determine the grouping key.
+     * Then apply the value closure to the current element to determine the count increment.
+     * The results are stored in the jobs sideeffect file in HDFS.
+     *
+     * @return the extended FaunusPipeline.
+     * @throws IOException
+     */
+    public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) throws IOException {
         this.state.checkLocked();
-        this.compiler.groupCountMapReduce(this.state.getElementType(), this.validateClosure(keyClosure), null);
+
+        final Configuration configuration = new Configuration();
+        configuration.setClass(GroupCountMapReduce.CLASS, this.state.getElementType(), Element.class);
+        if (null != keyClosure)
+            configuration.set(GroupCountMapReduce.KEY_CLOSURE, this.validateClosure(keyClosure));
+        if (null != valueClosure)
+            configuration.set(GroupCountMapReduce.VALUE_CLOSURE, this.validateClosure(valueClosure));
+        this.compiler.addMapReduce(GroupCountMapReduce.Map.class,
+                GroupCountMapReduce.Combiner.class,
+                GroupCountMapReduce.Reduce.class,
+                Text.class, LongWritable.class, Text.class, LongWritable.class, configuration);
+
         makeMapReduceString(GroupCountMapReduce.class);
         return this;
     }
+
 
     private FaunusPipeline commit(final Tokens.Action action) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
 
+        final Configuration configuration = new Configuration();
         if (this.state.atVertex()) {
-            this.compiler.commitVerticesMapReduce(action);
+            configuration.set(CommitVerticesMapReduce.ACTION, action.name());
+            this.compiler.addMapReduce(CommitVerticesMapReduce.Map.class,
+                    CommitVerticesMapReduce.Combiner.class,
+                    CommitVerticesMapReduce.Reduce.class,
+                    LongWritable.Comparator.class,
+                    LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class, configuration);
             makeMapReduceString(CommitVerticesMapReduce.class, action.name());
         } else {
-            this.compiler.commitEdgesMap(action);
+            configuration.set(CommitEdgesMap.ACTION, action.name());
+            this.compiler.addMap(CommitEdgesMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
             makeMapReduceString(CommitEdgesMap.class, action.name());
         }
         return this;
@@ -1000,7 +1107,12 @@ public class FaunusPipeline {
      */
     public FaunusPipeline count() throws IOException {
         this.state.checkLocked();
-        this.compiler.countMapReduce(this.state.getElementType());
+        Configuration configuration = new Configuration();
+        configuration.setClass(CountMapReduce.CLASS, this.state.getElementType(), Element.class);
+        this.compiler.addMapReduce(CountMapReduce.Map.class,
+                CountMapReduce.Combiner.class,
+                CountMapReduce.Reduce.class, NullWritable.class, LongWritable.class, NullWritable.class, LongWritable.class, configuration);
+
         makeMapReduceString(CountMapReduce.class);
         this.state.lock();
         return this;
@@ -1014,7 +1126,12 @@ public class FaunusPipeline {
         if (!this.state.isLocked()) {
             final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
             if (null != pair) {
-                this.compiler.propertyMap(this.state.getElementType(), pair.getA(), pair.getB());
+
+                final Configuration configuration = new Configuration();
+                configuration.setClass(PropertyMap.CLASS, this.state.getElementType(), Element.class);
+                configuration.set(PropertyMap.KEY, pair.getA());
+                configuration.setClass(PropertyMap.TYPE, pair.getB(), WritableComparable.class);
+                this.compiler.addMap(PropertyMap.Map.class, LongWritable.class, pair.getB(), configuration);
                 makeMapReduceString(PropertyMap.class, pair.getA());
             }
             this.state.lock();
@@ -1040,14 +1157,9 @@ public class FaunusPipeline {
      * @throws Exception
      */
     public void submit(final String script, final Boolean showHeader) throws Exception {
-        if (TitanOutputFormat.class.isAssignableFrom(this.graph.getGraphOutputFormat())) {
+        if (MapReduceFormat.class.isAssignableFrom(this.graph.getGraphOutputFormat())) {
             this.state.checkLocked();
-            if (this.graph.getConfiguration().getBoolean(TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true)) {
-                this.compiler.schemaInferenceMapReduce();
-                makeMapReduceString(SchemaInferencerMapReduce.class);
-            }
-            this.compiler.blueprintsGraphOutputMapReduce();
-            makeMapReduceString(BlueprintsGraphOutputMapReduce.class);
+            ((Class<? extends MapReduceFormat>) this.graph.getGraphOutputFormat()).getConstructor().newInstance().addMapReduceJobs(this.compiler);
         }
         this.done();
         ToolRunner.run(this.compiler, new String[]{script, showHeader.toString()});

@@ -2,54 +2,16 @@ package com.thinkaurelius.faunus.mapreduce;
 
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
-import com.thinkaurelius.faunus.formats.edgelist.EdgeListInputMapReduce;
-import com.thinkaurelius.faunus.formats.titan.SchemaInferencerMapReduce;
 import com.thinkaurelius.faunus.hdfs.GraphFilter;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
-import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
-import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
-import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
-import com.thinkaurelius.faunus.mapreduce.filter.FilterMap;
-import com.thinkaurelius.faunus.mapreduce.filter.IntervalFilterMap;
-import com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMapReduce;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.LinkMapReduce;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.SideEffectMap;
-import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
-import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
-import com.thinkaurelius.faunus.mapreduce.transform.EdgesVerticesMap;
-import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
-import com.thinkaurelius.faunus.mapreduce.transform.OrderMapReduce;
-import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
-import com.thinkaurelius.faunus.mapreduce.transform.PropertyMap;
-import com.thinkaurelius.faunus.mapreduce.transform.PropertyMapMap;
-import com.thinkaurelius.faunus.mapreduce.transform.TransformMap;
-import com.thinkaurelius.faunus.mapreduce.transform.VertexMap;
-import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
-import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
-import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
-import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
-import com.thinkaurelius.faunus.mapreduce.util.WritableComparators;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Query;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.DoubleWritable;
-import org.apache.hadoop.io.FloatWritable;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -99,7 +61,6 @@ public class FaunusCompiler extends Configured implements Tool {
     private Class<? extends WritableComparator> comparatorClass = null;
     private Class<? extends Reducer> reduceClass = null;
 
-
     private static final Class<? extends InputFormat> INTERMEDIATE_INPUT_FORMAT = SequenceFileInputFormat.class;
     private static final Class<? extends OutputFormat> INTERMEDIATE_OUTPUT_FORMAT = SequenceFileOutputFormat.class;
 
@@ -107,6 +68,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public FaunusCompiler(final FaunusGraph graph) {
         this.graph = graph;
+        this.setConf(this.graph.getConfiguration());
     }
 
     private String toStringOfJob(final Class sequenceClass) {
@@ -128,335 +90,75 @@ public class FaunusCompiler extends Configured implements Tool {
         return list.toArray(new String[list.size()]);
     }
 
-    private void setKeyValueClasses(final Class<? extends WritableComparable> mapOutputKey,
-                                    final Class<? extends WritableComparable> mapOutputValue,
-                                    final Class<? extends WritableComparable> outputKey,
-                                    final Class<? extends WritableComparable> outputValue) {
-
-        this.mapOutputKey = mapOutputKey;
-        this.mapOutputValue = mapOutputValue;
-        this.outputKey = outputKey;
-        this.outputValue = outputValue;
-    }
-
-    private void setKeyValueClasses(final Class<? extends WritableComparable> mapOutputKey,
-                                    final Class<? extends WritableComparable> mapOutputValue) {
-
-        this.mapOutputKey = mapOutputKey;
-        this.mapOutputValue = mapOutputValue;
-        this.outputKey = mapOutputKey;
-        this.outputValue = mapOutputValue;
-    }
-
     public void setPathEnabled(final boolean pathEnabled) {
         this.pathEnabled = pathEnabled;
     }
 
-    ///////// SPECIFIC TO THE BLUEPRINTS OUTPUT FORMAT
-
-    public void blueprintsGraphOutputMapReduce() throws IOException {
-        this.mapSequenceClasses.add(BlueprintsGraphOutputMapReduce.Map.class);
-        this.reduceClass = BlueprintsGraphOutputMapReduce.Reduce.class;
-        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
-        this.completeSequence();
-    }
-
-    public void schemaInferenceMapReduce() throws IOException {
-        this.mapSequenceClasses.add(SchemaInferencerMapReduce.Map.class);
-        this.reduceClass = SchemaInferencerMapReduce.Reduce.class;
-        this.setKeyValueClasses(LongWritable.class, FaunusVertex.class, NullWritable.class, FaunusVertex.class);
-        this.completeSequence();
-    }
-
-    public void edgeListInputMapReduce() throws IOException {
-        this.mapSequenceClasses.add(EdgeListInputMapReduce.Map.class);
-        this.combinerClass = EdgeListInputMapReduce.Combiner.class;
-        this.reduceClass = EdgeListInputMapReduce.Reduce.class;
-        this.setKeyValueClasses(LongWritable.class, FaunusVertex.class, NullWritable.class, FaunusVertex.class);
-        this.completeSequence();
-    }
-
-
-    ////////////// STEP
-
-    public void stepMapReduce(final Class<? extends Element> klass, final String mapClosure, final String reduceClosure, final Class<? extends WritableComparable> key1, final Class<? extends WritableComparable> value1, final Class<? extends WritableComparable> key2, final Class<? extends WritableComparable> value2) throws IOException {
-        this.mapSequenceConfiguration.setClass(StepMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(StepMapReduce.MAP_CLOSURE + "-" + this.mapSequenceClasses.size(), mapClosure);
-        this.mapSequenceConfiguration.set(StepMapReduce.REDUCE_CLOSURE, reduceClosure);
-        this.mapSequenceClasses.add(StepMapReduce.Map.class);
-        this.reduceClass = StepMapReduce.Reduce.class;
-        this.setKeyValueClasses(key1, value1, key2, value2);
-    }
-
-    ///////////// TRANSFORMS
-
-    public void transformMap(final Class<? extends Element> klass, final String closure) throws IOException {
-        this.mapSequenceConfiguration.setClass(TransformMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(TransformMap.CLOSURE + "-" + this.mapSequenceClasses.size(), closure);
-        this.mapSequenceClasses.add(TransformMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
-    }
-
-    public void _() {
-        this.mapSequenceClasses.add(IdentityMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
-    }
-
-    public void vertexMap(final long... ids) {
-        final String[] idStrings = new String[ids.length];
-        for (int i = 0; i < ids.length; i++) {
-            idStrings[i] = String.valueOf(ids[i]);
+    private void addConfiguration(final Configuration configuration) {
+        for (final Map.Entry<String, String> entry : configuration) {
+            this.mapSequenceConfiguration.set(entry.getKey() + "-" + this.mapSequenceClasses.size(), entry.getValue());
+            this.mapSequenceConfiguration.set(entry.getKey(), entry.getValue());
         }
-        this.mapSequenceConfiguration.setStrings(VertexMap.IDS + "-" + this.mapSequenceClasses.size(), idStrings);
-        this.mapSequenceClasses.add(VertexMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
     }
 
-    public void verticesMap(final boolean processEdges) {
-        this.mapSequenceConfiguration.setBoolean(VerticesMap.PROCESS_EDGES + "-" + this.mapSequenceClasses.size(), processEdges);
-        this.mapSequenceClasses.add(VerticesMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
-    }
+    public void addMapReduce(final Class<? extends Mapper> mapper,
+                             final Class<? extends Reducer> combiner,
+                             final Class<? extends Reducer> reducer,
+                             final Class<? extends WritableComparator> comparator,
+                             final Class<? extends WritableComparable> mapOutputKey,
+                             final Class<? extends WritableComparable> mapOutputValue,
+                             final Class<? extends WritableComparable> reduceOutputKey,
+                             final Class<? extends WritableComparable> reduceOutputValue,
+                             final Configuration configuration) throws IOException {
 
-    public void edgesMap(final boolean processVertices) {
-        this.mapSequenceConfiguration.setBoolean(EdgesMap.PROCESS_VERTICES + "-" + this.mapSequenceClasses.size(), processVertices);
-        this.mapSequenceClasses.add(EdgesMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
-    }
-
-    public void verticesVerticesMapReduce(final Direction direction, final String... labels) throws IOException {
-        this.mapSequenceConfiguration.set(VerticesVerticesMapReduce.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
-        this.mapSequenceConfiguration.setStrings(VerticesVerticesMapReduce.LABELS + "-" + this.mapSequenceClasses.size(), labels);
-        this.mapSequenceClasses.add(VerticesVerticesMapReduce.Map.class);
-        this.reduceClass = VerticesVerticesMapReduce.Reduce.class;
-        this.comparatorClass = LongWritable.Comparator.class;
-        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
+        if (null != configuration)
+            this.addConfiguration(configuration);
+        this.mapSequenceClasses.add(mapper);
+        this.combinerClass = combiner;
+        this.reduceClass = reducer;
+        this.comparatorClass = comparator;
+        this.mapOutputKey = mapOutputKey;
+        this.mapOutputValue = mapOutputValue;
+        this.outputKey = reduceOutputKey;
+        this.outputValue = reduceOutputValue;
         this.completeSequence();
     }
 
-    public void verticesEdgesMapReduce(final Direction direction, final String... labels) throws IOException {
-        this.mapSequenceConfiguration.set(VerticesEdgesMapReduce.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
-        this.mapSequenceConfiguration.setStrings(VerticesEdgesMapReduce.LABELS + "-" + this.mapSequenceClasses.size(), labels);
-        this.mapSequenceClasses.add(VerticesEdgesMapReduce.Map.class);
+    public void addMapReduce(final Class<? extends Mapper> mapper,
+                             final Class<? extends Reducer> combiner,
+                             final Class<? extends Reducer> reducer,
+                             final Class<? extends WritableComparable> mapOutputKey,
+                             final Class<? extends WritableComparable> mapOutputValue,
+                             final Class<? extends WritableComparable> reduceOutputKey,
+                             final Class<? extends WritableComparable> reduceOutputValue,
+                             final Configuration configuration) throws IOException {
 
-        this.mapSequenceConfiguration.set(VerticesEdgesMapReduce.DIRECTION, direction.name()); // TODO: make more robust
-        this.mapSequenceConfiguration.setStrings(VerticesEdgesMapReduce.LABELS, labels);
-        this.reduceClass = VerticesEdgesMapReduce.Reduce.class;
-        this.comparatorClass = LongWritable.Comparator.class;
-        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
+        if (null != configuration)
+            this.addConfiguration(configuration);
+        this.mapSequenceClasses.add(mapper);
+        this.combinerClass = combiner;
+        this.reduceClass = reducer;
+        this.mapOutputKey = mapOutputKey;
+        this.mapOutputValue = mapOutputValue;
+        this.outputKey = reduceOutputKey;
+        this.outputValue = reduceOutputValue;
         this.completeSequence();
     }
 
-    public void edgesVerticesMap(final Direction direction) throws IOException {
-        this.mapSequenceConfiguration.set(EdgesVerticesMap.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
-        this.mapSequenceClasses.add(EdgesVerticesMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
+    public void addMap(final Class<? extends Mapper> mapper,
+                       final Class<? extends WritableComparable> mapOutputKey,
+                       final Class<? extends WritableComparable> mapOutputValue,
+                       final Configuration configuration) {
+
+        if (null != configuration)
+            this.addConfiguration(configuration);
+        this.mapSequenceClasses.add(mapper);
+        this.mapOutputKey = mapOutputKey;
+        this.mapOutputValue = mapOutputValue;
+        this.outputKey = mapOutputKey;
+        this.outputValue = mapOutputValue;
+
     }
-
-    public void propertyMap(final Class<? extends Element> klass, final String key, final Class<? extends WritableComparable> type) {
-        this.mapSequenceConfiguration.setClass(PropertyMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(PropertyMap.KEY + "-" + this.mapSequenceClasses.size(), key);
-        this.mapSequenceConfiguration.setClass(PropertyMap.TYPE + "-" + this.mapSequenceClasses.size(), type, WritableComparable.class);
-        this.mapSequenceClasses.add(PropertyMap.Map.class);
-        this.setKeyValueClasses(LongWritable.class, type);
-    }
-
-    public void propertyMapMap(final Class<? extends Element> klass) {
-        this.mapSequenceConfiguration.setClass(PropertyMapMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceClasses.add(PropertyMapMap.Map.class);
-        this.setKeyValueClasses(LongWritable.class, Text.class);
-    }
-
-    public void orderMapReduce(final Class<? extends Element> klass, final String elementKey, final String key, final Class<? extends WritableComparable> type, final Tokens.Order order) throws IOException {
-        this.mapSequenceConfiguration.setClass(OrderMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(OrderMapReduce.KEY + "-" + this.mapSequenceClasses.size(), key);
-        this.mapSequenceConfiguration.setClass(OrderMapReduce.TYPE + "-" + this.mapSequenceClasses.size(), type, WritableComparable.class);
-        this.mapSequenceConfiguration.set(OrderMapReduce.ELEMENT_KEY + "-" + this.mapSequenceClasses.size(), elementKey);
-
-        if (type.equals(LongWritable.class))
-            this.comparatorClass = order.equals(Tokens.Order.INCREASING) ? LongWritable.Comparator.class : LongWritable.DecreasingComparator.class;
-        else if (type.equals(IntWritable.class))
-            this.comparatorClass = order.equals(Tokens.Order.INCREASING) ? IntWritable.Comparator.class : WritableComparators.DecreasingIntComparator.class;
-        else if (type.equals(FloatWritable.class))
-            this.comparatorClass = order.equals(Tokens.Order.INCREASING) ? FloatWritable.Comparator.class : WritableComparators.DecreasingFloatComparator.class;
-        else if (type.equals(DoubleWritable.class))
-            this.comparatorClass = order.equals(Tokens.Order.INCREASING) ? DoubleWritable.Comparator.class : WritableComparators.DecreasingDoubleComparator.class;
-        else if (type.equals(Text.class))
-            this.comparatorClass = order.equals(Tokens.Order.INCREASING) ? Text.Comparator.class : WritableComparators.DecreasingTextComparator.class;
-
-        this.mapSequenceClasses.add(OrderMapReduce.Map.class);
-        this.reduceClass = OrderMapReduce.Reduce.class;
-        this.setKeyValueClasses(type, Text.class, Text.class, type);
-        this.completeSequence();
-    }
-
-
-    public void pathMap(final Class<? extends Element> klass) throws IOException {
-        this.mapSequenceConfiguration.setClass(PathMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceClasses.add(PathMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, Text.class);
-    }
-
-    ///////////// FILTERS
-
-    public void filterMap(final Class<? extends Element> klass, final String closure) {
-        this.mapSequenceConfiguration.setClass(FilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(FilterMap.CLOSURE + "-" + this.mapSequenceClasses.size(), closure);
-        this.mapSequenceClasses.add(FilterMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
-    }
-
-    public void propertyFilterMap(final Class<? extends Element> klass, final boolean nullIsWildcard, final String key, final Query.Compare compare, final Object... values) {
-        final String[] valueStrings = new String[values.length];
-        for (int i = 0; i < values.length; i++) {
-            valueStrings[i] = values[i].toString();
-        }
-        this.mapSequenceConfiguration.setClass(PropertyFilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(PropertyFilterMap.KEY + "-" + this.mapSequenceClasses.size(), key);
-        this.mapSequenceConfiguration.set(PropertyFilterMap.COMPARE + "-" + this.mapSequenceClasses.size(), compare.name());
-        this.mapSequenceConfiguration.setStrings(PropertyFilterMap.VALUES + "-" + this.mapSequenceClasses.size(), valueStrings);
-        this.mapSequenceConfiguration.setBoolean(PropertyFilterMap.NULL_WILDCARD, nullIsWildcard);
-        if (values[0] instanceof String) {
-            this.mapSequenceConfiguration.setClass(PropertyFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), String.class, String.class);
-        } else if (values[0] instanceof Boolean) {
-            this.mapSequenceConfiguration.setClass(PropertyFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Boolean.class, Boolean.class);
-        } else if (values[0] instanceof Number) {
-            this.mapSequenceConfiguration.setClass(PropertyFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Number.class, Number.class);
-        } else {
-            throw new RuntimeException("Unknown value class: " + values[0].getClass().getName());
-        }
-        this.mapSequenceClasses.add(PropertyFilterMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
-    }
-
-    public void intervalFilterMap(final Class<? extends Element> klass, final boolean nullIsWildcard, final String key, final Object startValue, final Object endValue) {
-        this.mapSequenceConfiguration.setClass(IntervalFilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(IntervalFilterMap.KEY + "-" + this.mapSequenceClasses.size(), key);
-        this.mapSequenceConfiguration.setBoolean(IntervalFilterMap.NULL_WILDCARD, nullIsWildcard);
-        if (startValue instanceof String) {
-            this.mapSequenceConfiguration.set(IntervalFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), String.class.getName());
-            this.mapSequenceConfiguration.set(IntervalFilterMap.START_VALUE + "-" + this.mapSequenceClasses.size(), (String) startValue);
-            this.mapSequenceConfiguration.set(IntervalFilterMap.END_VALUE + "-" + this.mapSequenceClasses.size(), (String) endValue);
-        } else if (startValue instanceof Number) {
-            this.mapSequenceConfiguration.set(IntervalFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Float.class.getName());
-            this.mapSequenceConfiguration.setFloat(IntervalFilterMap.START_VALUE + "-" + this.mapSequenceClasses.size(), ((Number) startValue).floatValue());
-            this.mapSequenceConfiguration.setFloat(IntervalFilterMap.END_VALUE + "-" + this.mapSequenceClasses.size(), ((Number) endValue).floatValue());
-        } else if (startValue instanceof Boolean) {
-            this.mapSequenceConfiguration.set(IntervalFilterMap.VALUE_CLASS + "-" + this.mapSequenceClasses.size(), Boolean.class.getName());
-            this.mapSequenceConfiguration.setBoolean(IntervalFilterMap.START_VALUE + "-" + this.mapSequenceClasses.size(), (Boolean) startValue);
-            this.mapSequenceConfiguration.setBoolean(IntervalFilterMap.END_VALUE + "-" + this.mapSequenceClasses.size(), (Boolean) endValue);
-        } else {
-            throw new RuntimeException("Unknown value class: " + startValue.getClass().getName());
-        }
-
-        this.mapSequenceClasses.add(IntervalFilterMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
-    }
-
-    public void backFilterMapReduce(final Class<? extends Element> klass, final int step) throws IOException {
-        this.mapSequenceConfiguration.setInt(BackFilterMapReduce.STEP + "-" + this.mapSequenceClasses.size(), step);
-        this.mapSequenceConfiguration.setClass(BackFilterMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceClasses.add(BackFilterMapReduce.Map.class);
-        this.combinerClass = BackFilterMapReduce.Combiner.class;
-        this.reduceClass = BackFilterMapReduce.Reduce.class;
-
-        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
-        this.completeSequence();
-    }
-
-    public void duplicateFilterMap(final Class<? extends Element> klass) {
-        this.mapSequenceConfiguration.setClass(DuplicateFilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceClasses.add(DuplicateFilterMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
-    }
-
-    public void cyclePathFilterMap(final Class<? extends Element> klass) {
-        this.mapSequenceConfiguration.setClass(CyclicPathFilterMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceClasses.add(CyclicPathFilterMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
-    }
-
-    ///////////// SIDE-EFFECTS
-
-    public void sideEffect(final Class<? extends Element> klass, final String closure) {
-        this.mapSequenceConfiguration.setClass(SideEffectMap.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(SideEffectMap.CLOSURE + "-" + this.mapSequenceClasses.size(), closure);
-        this.mapSequenceClasses.add(SideEffectMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
-    }
-
-
-    public void linkMapReduce(final int step, final Direction direction, final String label, final String mergeWeightKey) throws IOException {
-        this.mapSequenceConfiguration.setInt(LinkMapReduce.STEP + "-" + this.mapSequenceClasses.size(), step);
-        this.mapSequenceConfiguration.set(LinkMapReduce.DIRECTION + "-" + this.mapSequenceClasses.size(), direction.name());
-        this.mapSequenceConfiguration.set(LinkMapReduce.LABEL + "-" + this.mapSequenceClasses.size(), label);
-        if (null == mergeWeightKey) {
-            this.mapSequenceConfiguration.setBoolean(LinkMapReduce.MERGE_DUPLICATES + "-" + this.mapSequenceClasses.size(), false);
-            this.mapSequenceConfiguration.set(LinkMapReduce.MERGE_WEIGHT_KEY + "-" + this.mapSequenceClasses.size(), LinkMapReduce.NO_WEIGHT_KEY);
-        } else {
-            this.mapSequenceConfiguration.setBoolean(LinkMapReduce.MERGE_DUPLICATES + "-" + this.mapSequenceClasses.size(), true);
-            this.mapSequenceConfiguration.set(LinkMapReduce.MERGE_WEIGHT_KEY + "-" + this.mapSequenceClasses.size(), mergeWeightKey);
-        }
-        this.mapSequenceClasses.add(LinkMapReduce.Map.class);
-
-        this.mapSequenceConfiguration.set(LinkMapReduce.DIRECTION, direction.name());  // TODO: make model more robust
-        this.comparatorClass = LongWritable.Comparator.class;
-        this.reduceClass = LinkMapReduce.Reduce.class;
-        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
-        this.completeSequence();
-    }
-
-    public void commitEdgesMap(final Tokens.Action action) {
-        this.mapSequenceConfiguration.set(CommitEdgesMap.ACTION + "-" + mapSequenceClasses.size(), action.name());
-        this.mapSequenceClasses.add(CommitEdgesMap.Map.class);
-        this.setKeyValueClasses(NullWritable.class, FaunusVertex.class);
-    }
-
-    public void commitVerticesMapReduce(final Tokens.Action action) throws IOException {
-        this.mapSequenceConfiguration.set(CommitVerticesMapReduce.ACTION + "-" + mapSequenceClasses.size(), action.name());
-        this.mapSequenceClasses.add(CommitVerticesMapReduce.Map.class);
-        this.reduceClass = CommitVerticesMapReduce.Reduce.class;
-        this.comparatorClass = LongWritable.Comparator.class;
-        this.setKeyValueClasses(LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class);
-        this.completeSequence();
-    }
-
-    public void valueGroupCountMapReduce(final Class<? extends Element> klass, final String property, final Class<? extends WritableComparable> type) throws IOException {
-        this.mapSequenceConfiguration.setClass(ValueGroupCountMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceConfiguration.set(ValueGroupCountMapReduce.PROPERTY + "-" + this.mapSequenceClasses.size(), property);
-        this.mapSequenceConfiguration.setClass(ValueGroupCountMapReduce.TYPE + "-" + this.mapSequenceClasses.size(), type, Writable.class);
-        this.mapSequenceClasses.add(ValueGroupCountMapReduce.Map.class);
-        this.combinerClass = ValueGroupCountMapReduce.Combiner.class;
-        this.reduceClass = ValueGroupCountMapReduce.Reduce.class;
-        this.setKeyValueClasses(type, LongWritable.class, type, LongWritable.class);
-        this.completeSequence();
-    }
-
-    public void groupCountMapReduce(final Class<? extends Element> klass, final String keyClosure, final String valueClosure) throws IOException {
-        this.mapSequenceConfiguration.setClass(GroupCountMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        if (null != keyClosure)
-            this.mapSequenceConfiguration.set(GroupCountMapReduce.KEY_CLOSURE + "-" + this.mapSequenceClasses.size(), keyClosure);
-        if (null != valueClosure)
-            this.mapSequenceConfiguration.set(GroupCountMapReduce.VALUE_CLOSURE + "-" + this.mapSequenceClasses.size(), valueClosure);
-        this.mapSequenceClasses.add(GroupCountMapReduce.Map.class);
-        this.combinerClass = GroupCountMapReduce.Combiner.class;
-        this.reduceClass = GroupCountMapReduce.Reduce.class;
-        this.setKeyValueClasses(Text.class, LongWritable.class, Text.class, LongWritable.class);
-        this.completeSequence();
-    }
-
-    /////////////////// EXTRA
-
-    public void countMapReduce(final Class<? extends Element> klass) throws IOException {
-        this.mapSequenceConfiguration.setClass(CountMapReduce.CLASS + "-" + this.mapSequenceClasses.size(), klass, Element.class);
-        this.mapSequenceClasses.add(CountMapReduce.Map.class);
-        this.combinerClass = CountMapReduce.Combiner.class;
-        this.reduceClass = CountMapReduce.Reduce.class;
-        this.setKeyValueClasses(NullWritable.class, LongWritable.class, NullWritable.class, LongWritable.class);
-        this.completeSequence();
-    }
-
-    /////////////////////////////// UTILITIES
 
     public void completeSequence() throws IOException {
         if (this.mapSequenceClasses.size() > 0) {
