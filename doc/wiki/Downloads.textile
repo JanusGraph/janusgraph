@@ -1,6 +1,0 @@
-[[https://github.com/thinkaurelius/faunus/raw/master/doc/images/faunus-logo.png|width=375px]]
-[[Release Notes]] for all versions
-==<hr/>==
-* *Faunus 0.x.y*
-  ** "Faunus 0.1.0":http://s3.thinkaurelius.com/downloads/faunus/faunus-0.1.0.zip
-  ** "Faunus 0.1-alpha":http://s3.thinkaurelius.com/downloads/faunus/faunus-0.1-alpha.zip
