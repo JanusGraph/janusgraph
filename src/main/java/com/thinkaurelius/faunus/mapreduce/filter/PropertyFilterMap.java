@@ -9,6 +9,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
@@ -29,6 +30,29 @@ public class PropertyFilterMap {
     public enum Counters {
         VERTICES_FILTERED,
         EDGES_FILTERED
+    }
+
+    public static Configuration createConfiguration(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object... values) {
+        final String[] valueStrings = new String[values.length];
+        for (int i = 0; i < values.length; i++) {
+            valueStrings[i] = values[i].toString();
+        }
+        final Configuration configuration = new Configuration();
+        configuration.setClass(CLASS, klass, Element.class);
+        configuration.set(KEY, key);
+        configuration.set(COMPARE, compare.name());
+        configuration.setStrings(VALUES, valueStrings);
+        configuration.setBoolean(NULL_WILDCARD, false); // TODO: parameterize?
+        if (values[0] instanceof String) {
+            configuration.setClass(VALUE_CLASS, String.class, String.class);
+        } else if (values[0] instanceof Boolean) {
+            configuration.setClass(VALUE_CLASS, Boolean.class, Boolean.class);
+        } else if (values[0] instanceof Number) {
+            configuration.setClass(VALUE_CLASS, Number.class, Number.class);
+        } else {
+            throw new RuntimeException("Unknown value class: " + values[0].getClass().getName());
+        }
+        return configuration;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {

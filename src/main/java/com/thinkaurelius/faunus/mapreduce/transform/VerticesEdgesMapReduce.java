@@ -10,6 +10,7 @@ import com.thinkaurelius.faunus.util.MicroEdge;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -31,6 +32,13 @@ public class VerticesEdgesMapReduce {
 
     public enum Counters {
         EDGES_TRAVERSED
+    }
+
+    public static Configuration createConfiguration(final Direction direction, final String... labels) {
+        final Configuration configuration = new Configuration();
+        configuration.set(DIRECTION, direction.name());
+        configuration.setStrings(LABELS, labels);
+        return configuration;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {

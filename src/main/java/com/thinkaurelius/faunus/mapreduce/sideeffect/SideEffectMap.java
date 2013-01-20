@@ -9,6 +9,7 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import groovy.lang.Closure;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
@@ -28,6 +29,13 @@ public class SideEffectMap {
     public enum Counters {
         VERTICES_PROCESSED,
         OUT_EDGES_PROCESSED
+    }
+
+    public static Configuration createConfiguration(final Class<? extends Element> klass, final String closure) {
+        final Configuration configuration = new Configuration();
+        configuration.setClass(CLASS, klass, Element.class);
+        configuration.set(CLOSURE, closure);
+        return configuration;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {

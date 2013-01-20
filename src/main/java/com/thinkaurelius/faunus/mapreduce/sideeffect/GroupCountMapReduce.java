@@ -14,6 +14,7 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import groovy.lang.Closure;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -37,6 +38,16 @@ public class GroupCountMapReduce {
     public enum Counters {
         VERTICES_PROCESSED,
         OUT_EDGES_PROCESSED
+    }
+
+    public static Configuration createConfiguration(final Class<? extends Element> klass, final String keyClosure, final String valueClosure) {
+        final Configuration configuration = new Configuration();
+        configuration.setClass(CLASS, klass, Element.class);
+        if (null != keyClosure)
+            configuration.set(KEY_CLOSURE, keyClosure);
+        if (null != valueClosure)
+            configuration.set(VALUE_CLOSURE, valueClosure);
+        return configuration;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, Text, LongWritable> {

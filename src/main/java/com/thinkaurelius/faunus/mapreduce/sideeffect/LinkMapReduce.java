@@ -9,6 +9,7 @@ import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -36,6 +37,21 @@ public class LinkMapReduce {
     public enum Counters {
         IN_EDGES_CREATED,
         OUT_EDGES_CREATED
+    }
+
+    public static Configuration createConfiguration(final Direction direction, final int step, final String label, final String mergeWeightKey) {
+        final Configuration configuration = new Configuration();
+        configuration.setInt(STEP, step);
+        configuration.set(DIRECTION, direction.name());
+        configuration.set(LABEL, label);
+        if (null == mergeWeightKey) {
+            configuration.setBoolean(MERGE_DUPLICATES, false);
+            configuration.set(MERGE_WEIGHT_KEY, NO_WEIGHT_KEY);
+        } else {
+            configuration.setBoolean(MERGE_DUPLICATES, true);
+            configuration.set(MERGE_WEIGHT_KEY, mergeWeightKey);
+        }
+        return configuration;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {

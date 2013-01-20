@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
@@ -20,6 +21,12 @@ public class VerticesMap {
     public enum Counters {
         VERTICES_PROCESSED,
         EDGES_PROCESSED
+    }
+
+    public static Configuration createConfiguration(final boolean processEdges) {
+        final Configuration configuration = new Configuration();
+        configuration.setBoolean(PROCESS_EDGES, processEdges);
+        return configuration;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {

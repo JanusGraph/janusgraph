@@ -28,7 +28,6 @@ import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
-import com.thinkaurelius.faunus.mapreduce.util.WritableComparators;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -43,9 +42,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.util.ToolRunner;
 import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
@@ -243,13 +240,16 @@ public class FaunusPipeline {
 
     /**
      * The identity step does not alter the graph in anyway.
-     * It has the benefit of emitting various usefual counters.
+     * It has the benefit of emitting various useful graph statistic counters.
      *
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline _() {
         this.state.checkLocked();
-        this.compiler.addMap(IdentityMap.Map.class, NullWritable.class, FaunusVertex.class, null);
+        this.compiler.addMap(IdentityMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                null);
         makeMapReduceString(IdentityMap.class);
         return this;
     }
@@ -259,15 +259,16 @@ public class FaunusPipeline {
      *
      * @param closure the closure to apply to the element
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline transform(final String closure) throws IOException {
+    public FaunusPipeline transform(final String closure) {
         this.state.checkLocked();
         this.state.checkProperty();
-        final Configuration configuration = new Configuration();
-        configuration.setClass(TransformMap.CLASS, this.state.getElementType(), Element.class);
-        configuration.set(TransformMap.CLOSURE, this.validateClosure(closure));
-        this.compiler.addMap(TransformMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
+
+        this.compiler.addMap(TransformMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                TransformMap.createConfiguration(this.state.getElementType(), this.validateClosure(closure)));
+
         this.state.lock();
         makeMapReduceString(TransformMap.class);
         return this;
@@ -282,9 +283,12 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
         this.state.set(Vertex.class);
-        final Configuration configuration = new Configuration();
-        configuration.setBoolean(VerticesMap.PROCESS_EDGES, this.state.incrStep() != 0);
-        this.compiler.addMap(VerticesMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
+
+        this.compiler.addMap(VerticesMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                VerticesMap.createConfiguration(this.state.incrStep() != 0));
+
         makeMapReduceString(VerticesMap.class);
         return this;
     }
@@ -297,11 +301,13 @@ public class FaunusPipeline {
     public FaunusPipeline E() {
         this.state.checkLocked();
         this.state.checkProperty();
-
         this.state.set(Edge.class);
-        final Configuration configuration = new Configuration();
-        configuration.setBoolean(EdgesMap.PROCESS_VERTICES, this.state.incrStep() != 0);
-        this.compiler.addMap(EdgesMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
+
+        this.compiler.addMap(EdgesMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                EdgesMap.createConfiguration(this.state.incrStep() != 0));
+
         makeMapReduceString(EdgesMap.class);
         return this;
     }
@@ -309,7 +315,7 @@ public class FaunusPipeline {
     /**
      * Start a traversal at the vertices identified by the provided ids.
      *
-     * @param ids the ids of the vertices to start the traversal from
+     * @param ids the long ids of the vertices to start the traversal from
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline v(final long... ids) {
@@ -317,16 +323,13 @@ public class FaunusPipeline {
         this.state.checkProperty();
 
         this.state.set(Vertex.class);
-        this.state.incrStep();
+        this.state.incrStep(); // TODO: Are we sure?
 
-        final String[] idStrings = new String[ids.length];
-        for (int i = 0; i < ids.length; i++) {
-            idStrings[i] = String.valueOf(ids[i]);
-        }
-        final Configuration configuration = new Configuration();
-        configuration.setStrings(VertexMap.IDS, idStrings);
+        this.compiler.addMap(VertexMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                VertexMap.createConfiguration(ids));
 
-        this.compiler.addMap(VertexMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
         makeMapReduceString(VertexMap.class);
         return this;
     }
@@ -367,12 +370,9 @@ public class FaunusPipeline {
     private FaunusPipeline inOutBoth(final Direction direction, final String... labels) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
-
         this.state.incrStep();
+
         if (this.state.atVertex()) {
-            final Configuration configuration = new Configuration();
-            configuration.set(VerticesVerticesMapReduce.DIRECTION, direction.name());
-            configuration.setStrings(VerticesVerticesMapReduce.LABELS, labels);
             this.compiler.addMapReduce(VerticesVerticesMapReduce.Map.class,
                     VerticesVerticesMapReduce.Combiner.class,
                     VerticesVerticesMapReduce.Reduce.class,
@@ -380,7 +380,8 @@ public class FaunusPipeline {
                     LongWritable.class,
                     Holder.class,
                     NullWritable.class,
-                    FaunusVertex.class, configuration);
+                    FaunusVertex.class,
+                    VerticesVerticesMapReduce.createConfiguration(direction, labels));
             this.state.set(Vertex.class);
             makeMapReduceString(VerticesVerticesMapReduce.class, direction.name(), Arrays.asList(labels));
             return this;
@@ -428,14 +429,15 @@ public class FaunusPipeline {
 
         this.state.incrStep();
         if (this.state.atVertex()) {
-            final Configuration configuration = new Configuration();
-            configuration.set(VerticesEdgesMapReduce.DIRECTION, direction.name());
-            configuration.setStrings(VerticesVerticesMapReduce.LABELS, labels);
             this.compiler.addMapReduce(VerticesVerticesMapReduce.Map.class,
                     VerticesVerticesMapReduce.Combiner.class,
                     VerticesVerticesMapReduce.Reduce.class,
                     LongWritable.Comparator.class,
-                    LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class, configuration);
+                    LongWritable.class,
+                    Holder.class,
+                    NullWritable.class,
+                    FaunusVertex.class,
+                    VerticesVerticesMapReduce.createConfiguration(direction, labels));
             this.state.set(Edge.class);
             makeMapReduceString(VerticesEdgesMapReduce.class, direction.name(), Arrays.asList(labels));
             return this;
@@ -474,15 +476,16 @@ public class FaunusPipeline {
         return this.inOutBothV(BOTH);
     }
 
-    private FaunusPipeline inOutBothV(final Direction direction, final String... labels) throws IOException {
+    private FaunusPipeline inOutBothV(final Direction direction) throws IOException {
         this.state.checkLocked();
         this.state.checkProperty();
 
         this.state.incrStep();
         if (!this.state.atVertex()) {
-            final Configuration configuration = new Configuration();
-            configuration.set(EdgesVerticesMap.DIRECTION, direction.name());
-            this.compiler.addMap(EdgesVerticesMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
+            this.compiler.addMap(EdgesVerticesMap.Map.class,
+                    NullWritable.class,
+                    FaunusVertex.class,
+                    EdgesVerticesMap.createConfiguration(direction));
             this.state.set(Vertex.class);
             makeMapReduceString(EdgesVerticesMap.class, direction.name());
             return this;
@@ -523,9 +526,11 @@ public class FaunusPipeline {
     public FaunusPipeline map() {
         this.state.checkLocked();
         this.state.checkProperty();
-        final Configuration configuration = new Configuration();
-        configuration.setClass(PropertyMapMap.CLASS, this.state.getElementType(), Element.class);
-        this.compiler.addMap(PropertyMapMap.Map.class, LongWritable.class, Text.class, configuration);
+
+        this.compiler.addMap(PropertyMapMap.Map.class,
+                LongWritable.class,
+                Text.class,
+                PropertyMapMap.createConfiguration(this.state.getElementType()));
         makeMapReduceString(PropertyMap.class);
         this.state.lock();
         return this;
@@ -556,9 +561,10 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        final Configuration configuration = new Configuration();
-        configuration.setClass(PathMap.CLASS, this.state.getElementType(), Element.class);
-        this.compiler.addMap(PathMap.Map.class, NullWritable.class, Text.class, configuration);
+        this.compiler.addMap(PathMap.Map.class,
+                NullWritable.class,
+                Text.class,
+                PathMap.createConfiguration(this.state.getElementType()));
         this.compiler.setPathEnabled(true);
         this.state.lock();
         makeMapReduceString(PathMap.class);
@@ -578,26 +584,15 @@ public class FaunusPipeline {
         this.state.checkLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null != pair) {
-            final Configuration configuration = new Configuration();
-            configuration.setClass(OrderMapReduce.CLASS, this.state.getElementType(), Element.class);
-            configuration.set(OrderMapReduce.KEY, pair.getA());
-            configuration.setClass(OrderMapReduce.TYPE, pair.getB(), WritableComparable.class);
-            configuration.set(OrderMapReduce.ELEMENT_KEY, elementKey);
-            Class<? extends WritableComparator> comparatorClass = null;
-            if (pair.getB().equals(LongWritable.class))
-                comparatorClass = order.equals(Tokens.Order.INCREASING) ? LongWritable.Comparator.class : LongWritable.DecreasingComparator.class;
-            else if (pair.getB().equals(IntWritable.class))
-                comparatorClass = order.equals(Tokens.Order.INCREASING) ? IntWritable.Comparator.class : WritableComparators.DecreasingIntComparator.class;
-            else if (pair.getB().equals(FloatWritable.class))
-                comparatorClass = order.equals(Tokens.Order.INCREASING) ? FloatWritable.Comparator.class : WritableComparators.DecreasingFloatComparator.class;
-            else if (pair.getB().equals(DoubleWritable.class))
-                comparatorClass = order.equals(Tokens.Order.INCREASING) ? DoubleWritable.Comparator.class : WritableComparators.DecreasingDoubleComparator.class;
-            else if (pair.getB().equals(Text.class))
-                comparatorClass = order.equals(Tokens.Order.INCREASING) ? Text.Comparator.class : WritableComparators.DecreasingTextComparator.class;
             this.compiler.addMapReduce(OrderMapReduce.Map.class,
                     null,
                     OrderMapReduce.Reduce.class,
-                    comparatorClass, pair.getB(), Text.class, Text.class, pair.getB(), configuration);
+                    OrderMapReduce.createComparator(order, pair.getB()),
+                    pair.getB(),
+                    Text.class,
+                    Text.class,
+                    pair.getB(),
+                    OrderMapReduce.createConfiguration(this.state.getElementType(), pair.getA(), pair.getB(), elementKey));
             makeMapReduceString(OrderMapReduce.class, order.name(), elementKey);
         } else {
             throw new IllegalArgumentException("There is no specified property to order on");
@@ -654,10 +649,10 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        final Configuration configuration = new Configuration();
-        configuration.setClass(FilterMap.CLASS, this.state.getElementType(), Element.class);
-        configuration.set(FilterMap.CLOSURE, this.validateClosure(closure));
-        this.compiler.addMap(FilterMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
+        this.compiler.addMap(FilterMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                FilterMap.createConfiguration(this.state.getElementType(), this.validateClosure(closure)));
         makeMapReduceString(FilterMap.class);
         return this;
     }
@@ -698,26 +693,10 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        final String[] valueStrings = new String[values.length];
-        for (int i = 0; i < values.length; i++) {
-            valueStrings[i] = values[i].toString();
-        }
-        final Configuration configuration = new Configuration();
-        configuration.setClass(PropertyFilterMap.CLASS, this.state.getElementType(), Element.class);
-        configuration.set(PropertyFilterMap.KEY, key);
-        configuration.set(PropertyFilterMap.COMPARE, compare.name());
-        configuration.setStrings(PropertyFilterMap.VALUES, valueStrings);
-        configuration.setBoolean(PropertyFilterMap.NULL_WILDCARD, false); // TODO: parameterize?
-        if (values[0] instanceof String) {
-            configuration.setClass(PropertyFilterMap.VALUE_CLASS, String.class, String.class);
-        } else if (values[0] instanceof Boolean) {
-            configuration.setClass(PropertyFilterMap.VALUE_CLASS, Boolean.class, Boolean.class);
-        } else if (values[0] instanceof Number) {
-            configuration.setClass(PropertyFilterMap.VALUE_CLASS, Number.class, Number.class);
-        } else {
-            throw new RuntimeException("Unknown value class: " + values[0].getClass().getName());
-        }
-        this.compiler.addMap(PropertyFilterMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
+        this.compiler.addMap(PropertyFilterMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                PropertyFilterMap.createConfiguration(this.state.getElementType(), key, compare, values));
         makeMapReduceString(PropertyFilterMap.class, compare.name(), Arrays.asList(values));
         return this;
     }
@@ -768,27 +747,10 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        final Configuration configuration = new Configuration();
-        configuration.setClass(IntervalFilterMap.CLASS, this.state.getElementType(), Element.class);
-        configuration.set(IntervalFilterMap.KEY, key);
-        configuration.setBoolean(IntervalFilterMap.NULL_WILDCARD, false);  // TODO: Parameterize?
-        if (startValue instanceof String) {
-            configuration.set(IntervalFilterMap.VALUE_CLASS, String.class.getName());
-            configuration.set(IntervalFilterMap.START_VALUE, (String) startValue);
-            configuration.set(IntervalFilterMap.END_VALUE, (String) endValue);
-        } else if (startValue instanceof Number) {
-            configuration.set(IntervalFilterMap.VALUE_CLASS, Float.class.getName());
-            configuration.setFloat(IntervalFilterMap.START_VALUE, ((Number) startValue).floatValue());
-            configuration.setFloat(IntervalFilterMap.END_VALUE, ((Number) endValue).floatValue());
-        } else if (startValue instanceof Boolean) {
-            configuration.set(IntervalFilterMap.VALUE_CLASS, Boolean.class.getName());
-            configuration.setBoolean(IntervalFilterMap.START_VALUE, (Boolean) startValue);
-            configuration.setBoolean(IntervalFilterMap.END_VALUE, (Boolean) endValue);
-        } else {
-            throw new RuntimeException("Unknown value class: " + startValue.getClass().getName());
-        }
-
-        this.compiler.addMap(IntervalFilterMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
+        this.compiler.addMap(IntervalFilterMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                IntervalFilterMap.createConfiguration(this.state.getElementType(), key, startValue, endValue));
         makeMapReduceString(IntervalFilterMap.class, key, startValue, endValue);
         return this;
     }
@@ -802,9 +764,10 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        final Configuration configuration = new Configuration();
-        configuration.setClass(DuplicateFilterMap.CLASS, this.state.getElementType(), Element.class);
-        this.compiler.addMap(DuplicateFilterMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
+        this.compiler.addMap(DuplicateFilterMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                DuplicateFilterMap.createConfiguration(this.state.getElementType()));
         makeMapReduceString(DuplicateFilterMap.class);
         return this;
     }
@@ -821,13 +784,14 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        final Configuration configuration = new Configuration();
-        configuration.setInt(BackFilterMapReduce.STEP, this.state.getStep(step));
-        configuration.setClass(BackFilterMapReduce.CLASS, this.state.getElementType(), Element.class);
         this.compiler.addMapReduce(BackFilterMapReduce.Map.class,
                 BackFilterMapReduce.Combiner.class,
                 BackFilterMapReduce.Reduce.class,
-                LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class, configuration);
+                LongWritable.class,
+                Holder.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                BackFilterMapReduce.createConfiguration(this.state.getElementType(), this.state.getStep(step)));
         this.compiler.setPathEnabled(true);
         makeMapReduceString(BackFilterMapReduce.class, step);
         return this;
@@ -850,9 +814,10 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        final Configuration configuration = new Configuration();
-        configuration.setClass(CyclicPathFilterMap.CLASS, this.state.getElementType(), Element.class);
-        this.compiler.addMap(CyclicPathFilterMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
+        this.compiler.addMap(CyclicPathFilterMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                CyclicPathFilterMap.createConfiguration(this.state.getElementType()));
         this.compiler.setPathEnabled(true);
         makeMapReduceString(CyclicPathFilterMap.class);
         return this;
@@ -871,10 +836,10 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        final Configuration configuration = new Configuration();
-        configuration.setClass(SideEffectMap.CLASS, this.state.getElementType(), Element.class);
-        configuration.set(SideEffectMap.CLOSURE, this.validateClosure(closure));
-        this.compiler.addMap(SideEffectMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
+        this.compiler.addMap(SideEffectMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                SideEffectMap.createConfiguration(this.state.getElementType(), this.validateClosure(closure)));
 
         makeMapReduceString(SideEffectMap.class);
         return this;
@@ -955,22 +920,15 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        final Configuration configuration = new Configuration();
-        configuration.setInt(LinkMapReduce.STEP, this.state.getStep(step));
-        configuration.set(LinkMapReduce.DIRECTION, direction.name());
-        configuration.set(LinkMapReduce.LABEL, label);
-        if (null == mergeWeightKey) {
-            configuration.setBoolean(LinkMapReduce.MERGE_DUPLICATES, false);
-            configuration.set(LinkMapReduce.MERGE_WEIGHT_KEY, LinkMapReduce.NO_WEIGHT_KEY);
-        } else {
-            configuration.setBoolean(LinkMapReduce.MERGE_DUPLICATES, true);
-            configuration.set(LinkMapReduce.MERGE_WEIGHT_KEY, mergeWeightKey);
-        }
         this.compiler.addMapReduce(LinkMapReduce.Map.class,
                 LinkMapReduce.Combiner.class,
                 LinkMapReduce.Reduce.class,
                 LongWritable.Comparator.class,
-                LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class, configuration);
+                LongWritable.class,
+                Holder.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                LinkMapReduce.createConfiguration(direction, this.state.getStep(step), label, mergeWeightKey));
 
         if (null != mergeWeightKey)
             makeMapReduceString(LinkMapReduce.class, direction.name(), step, label, mergeWeightKey);
@@ -993,14 +951,14 @@ public class FaunusPipeline {
         if (null == pair) {
             return this.groupCount(null, null);
         } else {
-            final Configuration configuration = new Configuration();
-            configuration.setClass(ValueGroupCountMapReduce.CLASS, this.state.getElementType(), Element.class);
-            configuration.set(ValueGroupCountMapReduce.PROPERTY, pair.getA());
-            configuration.setClass(ValueGroupCountMapReduce.TYPE, pair.getB(), Writable.class);
             this.compiler.addMapReduce(ValueGroupCountMapReduce.Map.class,
                     ValueGroupCountMapReduce.Combiner.class,
                     ValueGroupCountMapReduce.Reduce.class,
-                    pair.getB(), LongWritable.class, pair.getB(), LongWritable.class, configuration);
+                    pair.getB(),
+                    LongWritable.class,
+                    pair.getB(),
+                    LongWritable.class,
+                    ValueGroupCountMapReduce.createConfiguration(this.state.getElementType(), pair.getA(), pair.getB()));
             makeMapReduceString(ValueGroupCountMapReduce.class, pair.getA());
         }
         return this;
@@ -1029,16 +987,16 @@ public class FaunusPipeline {
     public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) throws IOException {
         this.state.checkLocked();
 
-        final Configuration configuration = new Configuration();
-        configuration.setClass(GroupCountMapReduce.CLASS, this.state.getElementType(), Element.class);
-        if (null != keyClosure)
-            configuration.set(GroupCountMapReduce.KEY_CLOSURE, this.validateClosure(keyClosure));
-        if (null != valueClosure)
-            configuration.set(GroupCountMapReduce.VALUE_CLOSURE, this.validateClosure(valueClosure));
+
         this.compiler.addMapReduce(GroupCountMapReduce.Map.class,
                 GroupCountMapReduce.Combiner.class,
                 GroupCountMapReduce.Reduce.class,
-                Text.class, LongWritable.class, Text.class, LongWritable.class, configuration);
+                Text.class,
+                LongWritable.class,
+                Text.class,
+                LongWritable.class,
+                GroupCountMapReduce.createConfiguration(this.state.getElementType(),
+                        this.validateClosure(keyClosure), this.validateClosure(valueClosure)));
 
         makeMapReduceString(GroupCountMapReduce.class);
         return this;
@@ -1049,18 +1007,22 @@ public class FaunusPipeline {
         this.state.checkLocked();
         this.state.checkProperty();
 
-        final Configuration configuration = new Configuration();
         if (this.state.atVertex()) {
-            configuration.set(CommitVerticesMapReduce.ACTION, action.name());
             this.compiler.addMapReduce(CommitVerticesMapReduce.Map.class,
                     CommitVerticesMapReduce.Combiner.class,
                     CommitVerticesMapReduce.Reduce.class,
                     LongWritable.Comparator.class,
-                    LongWritable.class, Holder.class, NullWritable.class, FaunusVertex.class, configuration);
+                    LongWritable.class,
+                    Holder.class,
+                    NullWritable.class,
+                    FaunusVertex.class,
+                    CommitVerticesMapReduce.createConfiguration(action));
             makeMapReduceString(CommitVerticesMapReduce.class, action.name());
         } else {
-            configuration.set(CommitEdgesMap.ACTION, action.name());
-            this.compiler.addMap(CommitEdgesMap.Map.class, NullWritable.class, FaunusVertex.class, configuration);
+            this.compiler.addMap(CommitEdgesMap.Map.class,
+                    NullWritable.class,
+                    FaunusVertex.class,
+                    CommitEdgesMap.createConfiguration(action));
             makeMapReduceString(CommitEdgesMap.class, action.name());
         }
         return this;
@@ -1107,12 +1069,14 @@ public class FaunusPipeline {
      */
     public FaunusPipeline count() throws IOException {
         this.state.checkLocked();
-        Configuration configuration = new Configuration();
-        configuration.setClass(CountMapReduce.CLASS, this.state.getElementType(), Element.class);
         this.compiler.addMapReduce(CountMapReduce.Map.class,
                 CountMapReduce.Combiner.class,
-                CountMapReduce.Reduce.class, NullWritable.class, LongWritable.class, NullWritable.class, LongWritable.class, configuration);
-
+                CountMapReduce.Reduce.class,
+                NullWritable.class,
+                LongWritable.class,
+                NullWritable.class,
+                LongWritable.class,
+                CountMapReduce.createConfiguration(this.state.getElementType()));
         makeMapReduceString(CountMapReduce.class);
         this.state.lock();
         return this;
@@ -1127,11 +1091,10 @@ public class FaunusPipeline {
             final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
             if (null != pair) {
 
-                final Configuration configuration = new Configuration();
-                configuration.setClass(PropertyMap.CLASS, this.state.getElementType(), Element.class);
-                configuration.set(PropertyMap.KEY, pair.getA());
-                configuration.setClass(PropertyMap.TYPE, pair.getB(), WritableComparable.class);
-                this.compiler.addMap(PropertyMap.Map.class, LongWritable.class, pair.getB(), configuration);
+                this.compiler.addMap(PropertyMap.Map.class,
+                        LongWritable.class,
+                        pair.getB(),
+                        PropertyMap.createConfiguration(this.state.getElementType(), pair.getA(), pair.getB()));
                 makeMapReduceString(PropertyMap.class, pair.getA());
             }
             this.state.lock();
@@ -1157,11 +1120,11 @@ public class FaunusPipeline {
      * @throws Exception
      */
     public void submit(final String script, final Boolean showHeader) throws Exception {
+        this.done();
         if (MapReduceFormat.class.isAssignableFrom(this.graph.getGraphOutputFormat())) {
             this.state.checkLocked();
             ((Class<? extends MapReduceFormat>) this.graph.getGraphOutputFormat()).getConstructor().newInstance().addMapReduceJobs(this.compiler);
         }
-        this.done();
         ToolRunner.run(this.compiler, new String[]{script, showHeader.toString()});
     }
 
@@ -1175,8 +1138,8 @@ public class FaunusPipeline {
     }
 
     private String validateClosure(String closure) {
-        //if (closure == null)
-        //    return null;
+        if (closure == null)
+            return null;
 
         try {
             engine.eval(closure);

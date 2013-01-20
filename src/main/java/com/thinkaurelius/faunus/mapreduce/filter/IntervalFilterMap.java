@@ -9,6 +9,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
@@ -29,6 +30,29 @@ public class IntervalFilterMap {
     public enum Counters {
         VERTICES_FILTERED,
         EDGES_FILTERED
+    }
+
+    public static Configuration createConfiguration(final Class<? extends Element> klass, final String key, final Object startValue, final Object endValue) {
+        final Configuration configuration = new Configuration();
+        configuration.setClass(CLASS, klass, Element.class);
+        configuration.set(KEY, key);
+        configuration.setBoolean(NULL_WILDCARD, false);  // TODO: Parameterize?
+        if (startValue instanceof String) {
+            configuration.set(VALUE_CLASS, String.class.getName());
+            configuration.set(START_VALUE, (String) startValue);
+            configuration.set(END_VALUE, (String) endValue);
+        } else if (startValue instanceof Number) {
+            configuration.set(VALUE_CLASS, Float.class.getName());
+            configuration.setFloat(START_VALUE, ((Number) startValue).floatValue());
+            configuration.setFloat(END_VALUE, ((Number) endValue).floatValue());
+        } else if (startValue instanceof Boolean) {
+            configuration.set(VALUE_CLASS, Boolean.class.getName());
+            configuration.setBoolean(START_VALUE, (Boolean) startValue);
+            configuration.setBoolean(END_VALUE, (Boolean) endValue);
+        } else {
+            throw new RuntimeException("Unknown value class: " + startValue.getClass().getName());
+        }
+        return configuration;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {

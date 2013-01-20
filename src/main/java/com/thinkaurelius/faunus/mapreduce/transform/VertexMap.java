@@ -21,6 +21,16 @@ public class VertexMap {
         VERTICES_PROCESSED
     }
 
+    public static Configuration createConfiguration(final long... ids) {
+        final String[] idStrings = new String[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            idStrings[i] = String.valueOf(ids[i]);
+        }
+        final Configuration configuration = new Configuration();
+        configuration.setStrings(IDS, idStrings);
+        return configuration;
+    }
+
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         private Collection<Long> ids;

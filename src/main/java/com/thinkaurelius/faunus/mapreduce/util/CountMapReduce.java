@@ -7,6 +7,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -24,6 +25,12 @@ public class CountMapReduce {
     public enum Counters {
         VERTICES_COUNTED,
         EDGES_COUNTED
+    }
+
+    public static Configuration createConfiguration(final Class<? extends Element> klass) {
+        final Configuration configuration = new Configuration();
+        configuration.setClass(CLASS, klass, Element.class);
+        return configuration;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable> {

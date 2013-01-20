@@ -10,6 +10,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
@@ -29,6 +30,14 @@ public class PropertyMap {
     public enum Counters {
         VERTICES_PROCESSED,
         OUT_EDGES_PROCESSED
+    }
+
+    public static Configuration createConfiguration(final Class<? extends Element> klass, final String key, final Class<? extends WritableComparable> type) {
+        final Configuration configuration = new Configuration();
+        configuration.setClass(CLASS, klass, Element.class);
+        configuration.set(KEY, key);
+        configuration.setClass(TYPE, type, WritableComparable.class);
+        return configuration;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, WritableComparable> {

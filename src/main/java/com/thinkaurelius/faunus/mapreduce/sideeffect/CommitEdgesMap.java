@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
@@ -24,6 +25,13 @@ public class CommitEdgesMap {
         IN_EDGES_DROPPED,
         IN_EDGES_KEPT
     }
+
+    public static Configuration createConfiguration(final Tokens.Action action) {
+        final Configuration configuration = new Configuration();
+        configuration.set(ACTION, action.name());
+        return configuration;
+    }
+
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
