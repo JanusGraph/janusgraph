@@ -2,8 +2,6 @@ package com.thinkaurelius.faunus.formats;
 
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 
-import java.io.IOException;
-
 /**
  * If an Input- or OutputFormat requires some pre-post processing, then a MapReduceFormat can be implemented.
  * For InputFormats, the MapReduce jobs are prepended to the job pipeline and the final job must yield a FaunusVertex stream.
@@ -13,5 +11,5 @@ import java.io.IOException;
  */
 public interface MapReduceFormat {
 
-    public void addMapReduceJobs(final FaunusCompiler compiler) throws IOException;
+    public void addMapReduceJobs(final FaunusCompiler compiler);
 }

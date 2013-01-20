@@ -53,6 +53,13 @@ public class BlueprintsGraphOutputMapReduce {
         }
     }
 
+    public static Configuration createConfiguration() {
+        final Configuration configuration = new Configuration();
+        configuration.setBoolean("mapred.map.tasks.speculative.execution", false);
+        configuration.setBoolean("mapred.reduce.tasks.speculative.execution", false);
+        return configuration;
+    }
+
     ////////////// MAP/REDUCE WORK FROM HERE ON OUT
 
     // WRITE ALL THE VERTICES AND THEIR PROPERTIES

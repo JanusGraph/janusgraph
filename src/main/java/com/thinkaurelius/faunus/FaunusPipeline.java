@@ -48,7 +48,6 @@ import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -59,13 +58,14 @@ import static com.tinkerpop.blueprints.Direction.*;
 
 
 /**
- * A FaunusPipeline is used to construct a Gremlin expression which, in turn, is ultimately represented as a series
- * of MapReduce jobs in Hadoop.
+ * A FaunusPipeline defines a breadth-first traversal through a property graph represented.
+ * Gremlin/Faunus compiles down to a FaunusPipeline which is ultimately a series of MapReduce jobs.
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class FaunusPipeline {
 
+    // used to validate closure parse tree
     protected static final ScriptEngine engine = new GroovyScriptEngineImpl();
     public static final String PIPELINE_IS_LOCKED = "No more steps are possible as pipeline is locked";
 
@@ -100,7 +100,7 @@ public class FaunusPipeline {
 
     protected class State {
         private Class<? extends Element> elementType;
-        private String property;
+        private String propertyKey;
         private Class<? extends WritableComparable> propertyType;
         private int step = -1;
         private boolean locked = false;
@@ -124,17 +124,17 @@ public class FaunusPipeline {
             return this.elementType.equals(Vertex.class);
         }
 
-        public State setProperty(final String property, final Class type) {
-            this.property = property;
+        public State setProperty(final String key, final Class type) {
+            this.propertyKey = key;
             this.propertyType = convertJavaToHadoop(type);
             return this;
         }
 
         public Pair<String, Class<? extends WritableComparable>> popProperty() {
-            if (null == this.property)
+            if (null == this.propertyKey)
                 return null;
-            Pair<String, Class<? extends WritableComparable>> pair = new Pair<String, Class<? extends WritableComparable>>(this.property, this.propertyType);
-            this.property = null;
+            Pair<String, Class<? extends WritableComparable>> pair = new Pair<String, Class<? extends WritableComparable>>(this.propertyKey, this.propertyType);
+            this.propertyKey = null;
             this.propertyType = null;
             return pair;
         }
@@ -152,7 +152,8 @@ public class FaunusPipeline {
         }
 
         public void checkProperty() {
-            if (this.property != null) throw new IllegalStateException("This step can not follow a property reference");
+            if (this.propertyKey != null)
+                throw new IllegalStateException("This step can not follow a property reference");
         }
 
         public boolean isLocked() {
@@ -215,13 +216,12 @@ public class FaunusPipeline {
      * @param key2          the reduce output key class
      * @param value2        the reduce output value class
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
     public FaunusPipeline step(final String mapClosure, final String reduceClosure,
                                final Class<? extends WritableComparable> key1,
                                final Class<? extends WritableComparable> value1,
                                final Class<? extends WritableComparable> key2,
-                               final Class<? extends WritableComparable> value2) throws IOException {
+                               final Class<? extends WritableComparable> value2) {
         this.state.checkLocked();
         final Configuration configuration = new Configuration();
         configuration.setClass(StepMapReduce.CLASS, this.state.getElementType(), Element.class);
@@ -249,7 +249,7 @@ public class FaunusPipeline {
         this.compiler.addMap(IdentityMap.Map.class,
                 NullWritable.class,
                 FaunusVertex.class,
-                null);
+                IdentityMap.createConfiguration());
         makeMapReduceString(IdentityMap.class);
         return this;
     }
@@ -339,9 +339,8 @@ public class FaunusPipeline {
      *
      * @param labels the labels of the edges to traverse over
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline out(final String... labels) throws IOException {
+    public FaunusPipeline out(final String... labels) {
         return this.inOutBoth(OUT, labels);
     }
 
@@ -350,9 +349,8 @@ public class FaunusPipeline {
      *
      * @param labels the labels of the edges to traverse over
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline in(final String... labels) throws IOException {
+    public FaunusPipeline in(final String... labels) {
         return this.inOutBoth(IN, labels);
     }
 
@@ -361,13 +359,12 @@ public class FaunusPipeline {
      *
      * @param labels the labels of the edges to traverse over
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline both(final String... labels) throws IOException {
+    public FaunusPipeline both(final String... labels) {
         return this.inOutBoth(BOTH, labels);
     }
 
-    private FaunusPipeline inOutBoth(final Direction direction, final String... labels) throws IOException {
+    private FaunusPipeline inOutBoth(final Direction direction, final String... labels) {
         this.state.checkLocked();
         this.state.checkProperty();
         this.state.incrStep();
@@ -395,9 +392,8 @@ public class FaunusPipeline {
      *
      * @param labels the labels of the edges to traverse over
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline outE(final String... labels) throws IOException {
+    public FaunusPipeline outE(final String... labels) {
         return this.inOutBothE(OUT, labels);
     }
 
@@ -406,9 +402,8 @@ public class FaunusPipeline {
      *
      * @param labels the labels of the edges to traverse over
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline inE(final String... labels) throws IOException {
+    public FaunusPipeline inE(final String... labels) {
         return this.inOutBothE(IN, labels);
     }
 
@@ -417,13 +412,12 @@ public class FaunusPipeline {
      *
      * @param labels the labels of the edges to traverse over
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline bothE(final String... labels) throws IOException {
+    public FaunusPipeline bothE(final String... labels) {
         return this.inOutBothE(BOTH, labels);
     }
 
-    private FaunusPipeline inOutBothE(final Direction direction, final String... labels) throws IOException {
+    private FaunusPipeline inOutBothE(final Direction direction, final String... labels) {
         this.state.checkLocked();
         this.state.checkProperty();
 
@@ -450,9 +444,8 @@ public class FaunusPipeline {
      * Go to the outgoing/tail vertex of the edge.
      *
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline outV() throws IOException {
+    public FaunusPipeline outV() {
         return this.inOutBothV(OUT);
     }
 
@@ -460,9 +453,8 @@ public class FaunusPipeline {
      * Go to the incoming/head vertex of the edge.
      *
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline inV() throws IOException {
+    public FaunusPipeline inV() {
         return this.inOutBothV(IN);
     }
 
@@ -470,13 +462,12 @@ public class FaunusPipeline {
      * Go to both the incoming/head and outgoing/tail vertices of the edge.
      *
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline bothV() throws IOException {
+    public FaunusPipeline bothV() {
         return this.inOutBothV(BOTH);
     }
 
-    private FaunusPipeline inOutBothV(final Direction direction) throws IOException {
+    private FaunusPipeline inOutBothV(final Direction direction) {
         this.state.checkLocked();
         this.state.checkProperty();
 
@@ -578,9 +569,8 @@ public class FaunusPipeline {
      * @param order      increasing and descending order
      * @param elementKey the key of the element to associate it with
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline order(final Tokens.Order order, final String elementKey) throws IOException {
+    public FaunusPipeline order(final Tokens.Order order, final String elementKey) {
         this.state.checkLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null != pair) {
@@ -606,9 +596,8 @@ public class FaunusPipeline {
      *
      * @param order increasing and descending order
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline order(final Tokens.Order order) throws IOException {
+    public FaunusPipeline order(final Tokens.Order order) {
         return this.order(order, Tokens.ID);
     }
 
@@ -619,9 +608,8 @@ public class FaunusPipeline {
      * @param order      increasing and descending order
      * @param elementKey the key of the element to associate it with
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline order(final Tokens.F order, final String elementKey) throws IOException {
+    public FaunusPipeline order(final Tokens.F order, final String elementKey) {
         return this.order(convert(order), elementKey);
     }
 
@@ -630,9 +618,8 @@ public class FaunusPipeline {
      *
      * @param order increasing and descending order
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline order(final Tokens.F order) throws IOException {
+    public FaunusPipeline order(final Tokens.F order) {
         return this.order(convert(order));
     }
 
@@ -778,9 +765,8 @@ public class FaunusPipeline {
      *
      * @param step the name of the step to back up to
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline back(final String step) throws IOException {
+    public FaunusPipeline back(final String step) {
         this.state.checkLocked();
         this.state.checkProperty();
 
@@ -797,7 +783,7 @@ public class FaunusPipeline {
         return this;
     }
 
-    /*public FaunusPipeline back(final int numberOfSteps) throws IOException {
+    /*public FaunusPipeline back(final int numberOfSteps) {
         this.state.checkLocked();
         this.compiler.backFilterMapReduce(this.state.getElementType(), this.state.getStep() - numberOfSteps);
         this.compiler.setPathEnabled(true);
@@ -871,9 +857,8 @@ public class FaunusPipeline {
      * @param label          the label of the edge to project
      * @param mergeWeightKey the property key to use for weight
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline linkIn(final String step, final String label, final String mergeWeightKey) throws IOException {
+    public FaunusPipeline linkIn(final String step, final String label, final String mergeWeightKey) {
         return this.link(IN, step, label, mergeWeightKey);
     }
 
@@ -883,9 +868,8 @@ public class FaunusPipeline {
      * @param step  the name of the step where the source vertices were
      * @param label the label of the edge to project
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline linkIn(final String step, final String label) throws IOException {
+    public FaunusPipeline linkIn(final String step, final String label) {
         return this.link(IN, step, label, null);
     }
 
@@ -898,9 +882,8 @@ public class FaunusPipeline {
      * @param label          the label of the edge to project
      * @param mergeWeightKey the property key to use for weight
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline linkOut(final String step, final String label, final String mergeWeightKey) throws IOException {
+    public FaunusPipeline linkOut(final String step, final String label, final String mergeWeightKey) {
         return link(OUT, step, label, mergeWeightKey);
     }
 
@@ -910,13 +893,12 @@ public class FaunusPipeline {
      * @param step  the name of the step where the source vertices were
      * @param label the label of the edge to project
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline linkOut(final String step, final String label) throws IOException {
+    public FaunusPipeline linkOut(final String step, final String label) {
         return this.link(OUT, step, label, null);
     }
 
-    private FaunusPipeline link(final Direction direction, final String step, final String label, final String mergeWeightKey) throws IOException {
+    private FaunusPipeline link(final Direction direction, final String step, final String label, final String mergeWeightKey) {
         this.state.checkLocked();
         this.state.checkProperty();
 
@@ -943,9 +925,8 @@ public class FaunusPipeline {
      * The results are stored in the jobs sideeffect file in HDFS.
      *
      * @return the extended FaunusPipeline.
-     * @throws IOException
      */
-    public FaunusPipeline groupCount() throws IOException {
+    public FaunusPipeline groupCount() {
         this.state.checkLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null == pair) {
@@ -970,9 +951,8 @@ public class FaunusPipeline {
      * The results are stored in the jobs sideeffect file in HDFS.
      *
      * @return the extended FaunusPipeline.
-     * @throws IOException
      */
-    public FaunusPipeline groupCount(final String keyClosure) throws IOException {
+    public FaunusPipeline groupCount(final String keyClosure) {
         return this.groupCount(keyClosure, null);
     }
 
@@ -982,9 +962,8 @@ public class FaunusPipeline {
      * The results are stored in the jobs sideeffect file in HDFS.
      *
      * @return the extended FaunusPipeline.
-     * @throws IOException
      */
-    public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) throws IOException {
+    public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) {
         this.state.checkLocked();
 
 
@@ -1003,7 +982,7 @@ public class FaunusPipeline {
     }
 
 
-    private FaunusPipeline commit(final Tokens.Action action) throws IOException {
+    private FaunusPipeline commit(final Tokens.Action action) {
         this.state.checkLocked();
         this.state.checkProperty();
 
@@ -1032,9 +1011,8 @@ public class FaunusPipeline {
      * Drop all the elements of respective type at the current step. Keep all others.
      *
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline drop() throws IOException {
+    public FaunusPipeline drop() {
         return this.commit(Tokens.Action.DROP);
     }
 
@@ -1042,9 +1020,8 @@ public class FaunusPipeline {
      * Keep all the elements of the respetive type at the current step. Drop all others.
      *
      * @return the extended FaunusPipeline
-     * @throws IOException
      */
-    public FaunusPipeline keep() throws IOException {
+    public FaunusPipeline keep() {
         return this.commit(Tokens.Action.KEEP);
     }
 
@@ -1065,9 +1042,8 @@ public class FaunusPipeline {
      * Count the number of traversers currently in the graph
      *
      * @return the count
-     * @throws IOException
      */
-    public FaunusPipeline count() throws IOException {
+    public FaunusPipeline count() {
         this.state.checkLocked();
         this.compiler.addMapReduce(CountMapReduce.Map.class,
                 CountMapReduce.Combiner.class,
@@ -1086,7 +1062,7 @@ public class FaunusPipeline {
         return this.stringRepresentation.toString();
     }
 
-    private FaunusPipeline done() throws IOException {
+    private FaunusPipeline done() {
         if (!this.state.isLocked()) {
             final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
             if (null != pair) {
@@ -1131,7 +1107,7 @@ public class FaunusPipeline {
     /**
      * Get a reference to the graph currently being used in this FaunusPipeline.
      *
-     * @return
+     * @return the FaunusGraph
      */
     public FaunusGraph getGraph() {
         return this.graph;

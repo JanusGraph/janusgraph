@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
@@ -22,6 +23,10 @@ public class IdentityMap {
         OUT_EDGE_PROPERTY_COUNT,
         IN_EDGE_PROPERTY_COUNT
 
+    }
+
+    public static Configuration createConfiguration() {
+        return new Configuration();
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {

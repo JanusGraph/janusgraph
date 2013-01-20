@@ -315,7 +315,6 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                 return properties;
             }
         }
-
     }
 
     protected static class ElementPaths {

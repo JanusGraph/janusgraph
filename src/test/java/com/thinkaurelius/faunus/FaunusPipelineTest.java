@@ -1,13 +1,11 @@
 package com.thinkaurelius.faunus;
 
-import java.io.IOException;
-
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class FaunusPipelineTest extends BaseTest {
 
-    public void testElementTypeUpdating() throws IOException {
+    public void testElementTypeUpdating() {
         FaunusPipeline pipeline = new FaunusPipeline(new FaunusGraph());
         try {
             pipeline.outE();
@@ -42,7 +40,7 @@ public class FaunusPipelineTest extends BaseTest {
         }
     }
 
-    public void testPipelineLocking() throws IOException {
+    public void testPipelineLocking() {
         FaunusPipeline pipeline = new FaunusPipeline(new FaunusGraph());
         pipeline.V().out().property("name");
 
@@ -61,7 +59,7 @@ public class FaunusPipelineTest extends BaseTest {
         }
     }
 
-    public void testPipelineStepIncr() throws IOException {
+    public void testPipelineStepIncr() {
         FaunusPipeline pipeline = new FaunusPipeline(new FaunusGraph());
         assertEquals(pipeline.state.getStep(), -1);
         pipeline.V();

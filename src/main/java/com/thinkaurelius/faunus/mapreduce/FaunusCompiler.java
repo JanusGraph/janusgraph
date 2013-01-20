@@ -50,7 +50,6 @@ public class FaunusCompiler extends Configured implements Tool {
 
     private final List<Job> jobs = new ArrayList<Job>();
 
-    private final Configuration mapSequenceConfiguration = new Configuration();
     private final List<Class<? extends Mapper>> mapSequenceClasses = new ArrayList<Class<? extends Mapper>>();
     private Class<? extends WritableComparable> mapOutputKey = NullWritable.class;
     private Class<? extends WritableComparable> mapOutputValue = NullWritable.class;
@@ -68,7 +67,8 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public FaunusCompiler(final FaunusGraph graph) {
         this.graph = graph;
-        this.setConf(this.graph.getConfiguration());
+        this.setConf(new Configuration());
+        this.addConfiguration(this.graph.getConfiguration());
     }
 
     private String toStringOfJob(final Class sequenceClass) {
@@ -96,8 +96,8 @@ public class FaunusCompiler extends Configured implements Tool {
 
     private void addConfiguration(final Configuration configuration) {
         for (final Map.Entry<String, String> entry : configuration) {
-            this.mapSequenceConfiguration.set(entry.getKey() + "-" + this.mapSequenceClasses.size(), entry.getValue());
-            this.mapSequenceConfiguration.set(entry.getKey(), entry.getValue());
+            this.getConf().set(entry.getKey() + "-" + this.mapSequenceClasses.size(), entry.getValue());
+            this.getConf().set(entry.getKey(), entry.getValue());
         }
     }
 
@@ -109,10 +109,9 @@ public class FaunusCompiler extends Configured implements Tool {
                              final Class<? extends WritableComparable> mapOutputValue,
                              final Class<? extends WritableComparable> reduceOutputKey,
                              final Class<? extends WritableComparable> reduceOutputValue,
-                             final Configuration configuration) throws IOException {
+                             final Configuration configuration) {
 
-        if (null != configuration)
-            this.addConfiguration(configuration);
+        this.addConfiguration(configuration);
         this.mapSequenceClasses.add(mapper);
         this.combinerClass = combiner;
         this.reduceClass = reducer;
@@ -131,10 +130,9 @@ public class FaunusCompiler extends Configured implements Tool {
                              final Class<? extends WritableComparable> mapOutputValue,
                              final Class<? extends WritableComparable> reduceOutputKey,
                              final Class<? extends WritableComparable> reduceOutputValue,
-                             final Configuration configuration) throws IOException {
+                             final Configuration configuration) {
 
-        if (null != configuration)
-            this.addConfiguration(configuration);
+        this.addConfiguration(configuration);
         this.mapSequenceClasses.add(mapper);
         this.combinerClass = combiner;
         this.reduceClass = reducer;
@@ -150,8 +148,7 @@ public class FaunusCompiler extends Configured implements Tool {
                        final Class<? extends WritableComparable> mapOutputValue,
                        final Configuration configuration) {
 
-        if (null != configuration)
-            this.addConfiguration(configuration);
+        this.addConfiguration(configuration);
         this.mapSequenceClasses.add(mapper);
         this.mapOutputKey = mapOutputKey;
         this.mapOutputValue = mapOutputValue;
@@ -160,10 +157,15 @@ public class FaunusCompiler extends Configured implements Tool {
 
     }
 
-    public void completeSequence() throws IOException {
+    public void completeSequence() {
         if (this.mapSequenceClasses.size() > 0) {
-            this.mapSequenceConfiguration.setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
-            final Job job = new Job(this.mapSequenceConfiguration, this.toStringOfJob(MapSequence.class));
+            this.getConf().setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
+            final Job job;
+            try {
+                job = new Job(this.getConf(), this.toStringOfJob(MapSequence.class));
+            } catch (IOException e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
 
             // copy over any global configuration from faunus.properties and -D CLI
             for (final Map.Entry<String, String> entry : this.graph.getConfiguration()) {
@@ -183,6 +185,7 @@ public class FaunusCompiler extends Configured implements Tool {
                 job.setNumReduceTasks(0);
             }
 
+            // todo: make this part of MapReduceFormat
             if (this.mapSequenceClasses.contains(BlueprintsGraphOutputMapReduce.Map.class)) {
                 job.setMapSpeculativeExecution(false);
                 job.setReduceSpeculativeExecution(false);
@@ -198,7 +201,8 @@ public class FaunusCompiler extends Configured implements Tool {
 
             this.jobs.add(job);
 
-            this.mapSequenceConfiguration.clear();
+            this.setConf(new Configuration());
+            this.addConfiguration(this.graph.getConfiguration());
             this.mapSequenceClasses.clear();
             this.combinerClass = null;
             this.reduceClass = null;
@@ -321,13 +325,11 @@ public class FaunusCompiler extends Configured implements Tool {
                     hdfs.delete(temp.getPath(), true);
                 }
             }
-
             if (!success) {
                 logger.error("Faunus job error -- remaining MapReduce jobs have been canceled");
                 return -1;
             }
         }
-
         return 0;
     }
 }

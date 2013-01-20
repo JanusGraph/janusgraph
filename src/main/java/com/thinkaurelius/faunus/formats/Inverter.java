@@ -42,7 +42,6 @@ public class Inverter {
         else if (outputFormat.equals(TitanCassandraOutputFormat.class))
             return TitanCassandraInputFormat.class;
 
-
         throw new UnsupportedOperationException("There currently is no inverse for " + outputFormat.getName());
     }
 }
