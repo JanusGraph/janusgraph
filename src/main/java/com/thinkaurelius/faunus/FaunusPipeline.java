@@ -323,7 +323,7 @@ public class FaunusPipeline {
         this.state.checkProperty();
 
         this.state.set(Vertex.class);
-        this.state.incrStep(); // TODO: Are we sure?
+        this.state.incrStep();
 
         this.compiler.addMap(VertexMap.Map.class,
                 NullWritable.class,
@@ -420,8 +420,8 @@ public class FaunusPipeline {
     private FaunusPipeline inOutBothE(final Direction direction, final String... labels) {
         this.state.checkLocked();
         this.state.checkProperty();
-
         this.state.incrStep();
+
         if (this.state.atVertex()) {
             this.compiler.addMapReduce(VerticesVerticesMapReduce.Map.class,
                     VerticesVerticesMapReduce.Combiner.class,
@@ -470,8 +470,8 @@ public class FaunusPipeline {
     private FaunusPipeline inOutBothV(final Direction direction) {
         this.state.checkLocked();
         this.state.checkProperty();
-
         this.state.incrStep();
+
         if (!this.state.atVertex()) {
             this.compiler.addMap(EdgesVerticesMap.Map.class,
                     NullWritable.class,
@@ -494,7 +494,6 @@ public class FaunusPipeline {
     public FaunusPipeline property(final String key, final Class type) {
         this.state.checkLocked();
         this.state.checkProperty();
-
         this.state.setProperty(key, type);
         return this;
     }
@@ -1128,7 +1127,7 @@ public class FaunusPipeline {
                 return closure;
             } catch (ScriptException e1) {
             }
-            throw new IllegalArgumentException("The provided closure is in error: " + e.getMessage(), e);
+            throw new IllegalArgumentException("The provided closure does not compile: " + e.getMessage(), e);
         }
     }
 

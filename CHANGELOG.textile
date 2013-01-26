@@ -5,6 +5,20 @@ Faunus: Graph Analytics Engine
 
 h2. Faunus 0.x.y
 
+h3. Version 0.2.0 (NOT OFFICIALLY RELEASE YET)
+
+```xml
+<dependency>
+  <groupId>com.thinkaurelius.faunus</groupId>
+  <artifactId>faunus</artifactId>
+  <version>0.2.0-SNAPSHOT</version>
+</dependency>
+```
+
+* Complete refactoring of @FaunusCompiler@ and @FaunusPipeline@
+* Added support for user defined @Input@- @OutputFormats@
+* Added @MapReduceFormat@ which allows an arbitrary number of MapReduce jobs after/before input/output.
+
 h3. Version 0.1.0 (January 14, 2013)
 
 ```xml
