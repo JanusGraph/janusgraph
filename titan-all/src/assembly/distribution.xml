@@ -27,7 +27,7 @@
             <directory>../doc</directory>
         </fileSet>
         <fileSet>
-            <directory>config</directory>
+            <directory>../config</directory>
         </fileSet>
         <fileSet>
             <directory>../target/site/apidocs</directory>
