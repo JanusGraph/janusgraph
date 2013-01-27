@@ -42,12 +42,15 @@ public class RexsterTitanServer {
     private RexProRexsterServer server;
     private TitanGraph graph;
 
-    public RexsterTitanServer(XMLConfiguration rexsterConfig, Configuration titanConfig) {
+    public RexsterTitanServer(final XMLConfiguration rexsterConfig, final Configuration titanConfig) {
         Preconditions.checkNotNull(rexsterConfig);
         Preconditions.checkNotNull(titanConfig);
+
+        // can drop this check on release of Rexster 2.3.0
         if (!rexsterConfig.subset("security.authentication").getKeys().hasNext()) {
             rexsterConfig.addProperty("security.authentication.type", "none");
         }
+
         server = new RexProRexsterServer(rexsterConfig);
         this.rexsterConfig = rexsterConfig;
         this.titanConfig = titanConfig;
@@ -91,7 +94,7 @@ public class RexsterTitanServer {
     }
 
     public static void main(String[] args) throws Exception {
-        RexsterTitanServer server = null;
+        RexsterTitanServer server;
         if (args.length == 2) {
             Configuration titanConfig = new PropertiesConfiguration(args[1]);
             XMLConfiguration rexsterConfig = new XMLConfiguration(args[0]);
@@ -105,8 +108,8 @@ public class RexsterTitanServer {
         server.startDaemon();
     }
 
-    public static XMLConfiguration convert2RexproConfiguration(Configuration config) {
-        XMLConfiguration rexsterConfig = new XMLConfiguration();
+    public static XMLConfiguration convert2RexproConfiguration(final Configuration config) {
+        final XMLConfiguration rexsterConfig = new XMLConfiguration();
         Iterator<String> keys = config.getKeys();
         while (keys.hasNext()) {
             String key = keys.next();
