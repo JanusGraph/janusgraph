@@ -27,14 +27,9 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
     public static final String FAUNUS_GRAPH_INPUT_TITAN_STORAGE_TABLENAME = "faunus.graph.input.titan.storage.tablename";
     static final byte[] EDGE_STORE_FAMILY = Bytes.toBytes(Backend.EDGESTORE_NAME);
 
-    private final TableInputFormat tableInputFormat;
+    private final TableInputFormat tableInputFormat = new TableInputFormat();
     private FaunusTitanHBaseGraph graph;
     private boolean pathEnabled;
-
-
-    public TitanHBaseInputFormat() {
-        this.tableInputFormat = new TableInputFormat();
-    }
 
     @Override
     public List<InputSplit> getSplits(final JobContext jobContext) throws IOException, InterruptedException {

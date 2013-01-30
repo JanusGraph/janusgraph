@@ -27,15 +27,10 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
 
     public static final String FAUNUS_GRAPH_INPUT_TITAN_STORAGE_KEYSPACE = "faunus.graph.input.titan.storage.keyspace";
 
-    private final ColumnFamilyInputFormat columnFamilyInputFormat;
+    private final ColumnFamilyInputFormat columnFamilyInputFormat = new ColumnFamilyInputFormat();
     private FaunusTitanCassandraGraph graph;
     private boolean pathEnabled;
     private Configuration config;
-
-
-    public TitanCassandraInputFormat() {
-        this.columnFamilyInputFormat = new ColumnFamilyInputFormat();
-    }
 
     @Override
     public List<InputSplit> getSplits(final JobContext jobContext) throws IOException, InterruptedException {
