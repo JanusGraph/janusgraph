@@ -13,8 +13,12 @@ import java.util.Map;
  */
 public class GraphFactory {
 
-    public static Graph generateGraph(final Configuration config, final String prefix) {
-        return TitanFactory.open(generateTitanConfiguration(config, prefix));
+    private static Graph graph;
+
+    public synchronized static Graph generateGraph(final Configuration config, final String prefix) {
+        if (null == graph)
+            graph = TitanFactory.open(generateTitanConfiguration(config, prefix));
+        return graph;
     }
 
     public static BaseConfiguration generateTitanConfiguration(final Configuration config, final String prefix) {

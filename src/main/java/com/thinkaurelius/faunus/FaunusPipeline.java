@@ -1065,16 +1065,14 @@ public class FaunusPipeline {
         if (!this.state.isLocked()) {
             final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
             if (null != pair) {
-
                 this.compiler.addMap(PropertyMap.Map.class,
                         LongWritable.class,
                         pair.getB(),
                         PropertyMap.createConfiguration(this.state.getElementType(), pair.getA(), pair.getB()));
                 makeMapReduceString(PropertyMap.class, pair.getA());
+                this.state.lock();
             }
-            this.state.lock();
         }
-        this.compiler.completeSequence();
         return this;
     }
 
@@ -1100,6 +1098,7 @@ public class FaunusPipeline {
             this.state.checkLocked();
             ((Class<? extends MapReduceFormat>) this.graph.getGraphOutputFormat()).getConstructor().newInstance().addMapReduceJobs(this.compiler);
         }
+        this.compiler.completeSequence();
         ToolRunner.run(this.compiler, new String[]{script, showHeader.toString()});
     }
 
