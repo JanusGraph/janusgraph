@@ -17,22 +17,20 @@ import java.util.concurrent.ThreadFactory;
  */
 public class CassandraDaemonWrapper {
 
-    private static Boolean started = false;
+    private static volatile boolean started = false;
 
     private static final Logger log = LoggerFactory.getLogger(CassandraDaemonWrapper.class);
-    private static final ExecutorService daemonExec =
-            Executors.newSingleThreadExecutor(new DaemonThreadFactory());
+    private static final ExecutorService daemonExec = Executors.newSingleThreadExecutor(new DaemonThreadFactory());
 
     private static String liveCassandraYamlPath;
 
     public static synchronized void start(String cassandraYamlPath) {
         if (started) {
-            if (null != cassandraYamlPath &&
-                    !cassandraYamlPath.equals(liveCassandraYamlPath)) {
+            if (null != cassandraYamlPath && !cassandraYamlPath.equals(liveCassandraYamlPath)) {
                 log.warn("Can't start in-process Cassandra instance " +
-                        "with yaml path {} because an instance was " +
-                        "previously started with yaml path {}",
-                        cassandraYamlPath, liveCassandraYamlPath);
+                         "with yaml path {} because an instance was " +
+                         "previously started with yaml path {}",
+                         cassandraYamlPath, liveCassandraYamlPath);
             }
 
             return;

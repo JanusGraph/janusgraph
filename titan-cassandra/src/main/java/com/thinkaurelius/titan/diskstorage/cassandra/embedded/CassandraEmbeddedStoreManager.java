@@ -63,10 +63,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
      * <p/>
      * Value = {@value}
      */
-    public static final String CASSANDRA_CONFIG_DIR_DEFAULT = "";
+    public static final String CASSANDRA_CONFIG_DIR_DEFAULT = "./config/cassandra.yaml";
     public static final String CASSANDRA_CONFIG_DIR_KEY = "cassandra-config-dir";
-
-    private final String cassandraConfigDir;
 
     private final Map<String, CassandraEmbeddedKeyColumnValueStore> openStores;
 
@@ -74,22 +72,14 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
     public CassandraEmbeddedStoreManager(Configuration config) throws StorageException {
         super(config);
-        this.cassandraConfigDir =
-                config.getString(
-                        CASSANDRA_CONFIG_DIR_KEY,
-                        CASSANDRA_CONFIG_DIR_DEFAULT);
+        String cassandraConfigDir = config.getString(CASSANDRA_CONFIG_DIR_KEY, CASSANDRA_CONFIG_DIR_DEFAULT);
 
+        assert cassandraConfigDir != null && !cassandraConfigDir.isEmpty();
 
-        if (null != cassandraConfigDir && !cassandraConfigDir.isEmpty()) {
-            CassandraDaemonWrapper.start(cassandraConfigDir);
-        }
+        CassandraDaemonWrapper.start(cassandraConfigDir);
 
-
-        openStores = new HashMap<String, CassandraEmbeddedKeyColumnValueStore>(8);
-
+        this.openStores = new HashMap<String, CassandraEmbeddedKeyColumnValueStore>(8);
         this.requestScheduler = DatabaseDescriptor.getRequestScheduler();
-
-
     }
 
     @Override
