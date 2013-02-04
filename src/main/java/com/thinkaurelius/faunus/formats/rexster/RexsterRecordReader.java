@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.formats.rexster;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.rexster.util.HttpHelper;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -95,17 +96,9 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
 
     private void openRexsterStream() {
         try {
-            final String uri = String.format("%s?rexster.offset.start=%s&rexster.offset.end=%s",
-                    this.rexsterConf.getRestStreamEndpoint(), this.splitStart, this.splitEnd);
-            final URL url = new URL(uri);
-            final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setConnectTimeout(0);
-            connection.setReadTimeout(0);
-            connection.setRequestMethod("GET");
-
-            // worry about rexster auth later
-            // connection.setRequestProperty(RexsterTokens.AUTHORIZATION, Authentication.getAuthenticationHeaderValue());
-
+            final HttpURLConnection connection = HttpHelper.createConnection(
+                    String.format("%s?rexster.offset.start=%s&rexster.offset.end=%s",
+                    this.rexsterConf.getRestStreamEndpoint(), this.splitStart, this.splitEnd));
             connection.setDoOutput(true);
 
             this.rexsterInputStream = new DataInputStream(connection.getInputStream());

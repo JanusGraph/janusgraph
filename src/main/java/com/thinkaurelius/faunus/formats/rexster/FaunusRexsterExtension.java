@@ -28,6 +28,7 @@ import javax.ws.rs.core.StreamingOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -46,8 +47,33 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
 
     public static final String EXTENSION_NAMESPACE = "faunus";
     public static final String EXTENSION_NAME = "rexsterinputformat";
+    public static final String EXTENSION_METHOD_STREAM = "stream";
+    public static final String EXTENSION_METHOD_COUNT = "count";
 
-    @ExtensionDefinition(extensionPoint = ExtensionPoint.GRAPH, produces = MediaType.APPLICATION_OCTET_STREAM, method = HttpMethod.GET)
+    @ExtensionDefinition(extensionPoint = ExtensionPoint.GRAPH, produces = MediaType.APPLICATION_JSON,
+            method = HttpMethod.GET, path = EXTENSION_METHOD_COUNT)
+    @ExtensionDescriptor(description = "get true count of vertices to calculate true split size for faunus")
+    public ExtensionResponse getVertexCount(@RexsterContext final Graph graph) {
+        logger.info("Faunus is configured to get the true count of vertices in the graph.");
+
+        int counter = 0;
+        final Iterable<Vertex> vertices = graph.getVertices();
+        for (Vertex v : vertices) {
+            counter++;
+
+            if (logger.isDebugEnabled() && counter % WRITE_STATUS_EVERY == 0) {
+                logger.debug(String.format("True count at: %s", counter));
+            }
+        }
+
+        final Map<String, Integer> m = new HashMap<String, Integer>();
+        m.put(EXTENSION_METHOD_COUNT, counter);
+
+        return ExtensionResponse.ok(m);
+    }
+
+    @ExtensionDefinition(extensionPoint = ExtensionPoint.GRAPH, produces = MediaType.APPLICATION_OCTET_STREAM,
+                         method = HttpMethod.GET, path = EXTENSION_METHOD_STREAM)
     @ExtensionDescriptor(description = "streaming vertices for faunus")
     public ExtensionResponse getVertices(@RexsterContext final RexsterResourceContext context,
                                          @RexsterContext final Graph graph) {
