@@ -98,7 +98,8 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         try {
             final HttpURLConnection connection = HttpHelper.createConnection(
                     String.format("%s?rexster.offset.start=%s&rexster.offset.end=%s",
-                    this.rexsterConf.getRestStreamEndpoint(), this.splitStart, this.splitEnd));
+                    this.rexsterConf.getRestStreamEndpoint(), this.splitStart, this.splitEnd),
+                    this.rexsterConf.getAuthenticationHeaderValue());
             connection.setDoOutput(true);
 
             this.rexsterInputStream = new DataInputStream(connection.getInputStream());

@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.formats.rexster;
 
 import com.thinkaurelius.faunus.formats.rexster.util.HttpHelper;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.conf.Configuration;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -22,6 +23,8 @@ public class RexsterConfiguration {
     public static final String FAUNUS_GRAPH_INPUT_REXSTER_SSL = "faunus.graph.input.rexster.ssl";
     public static final String FAUNUS_GRAPH_INPUT_REXSTER_GRAPH = "faunus.graph.input.rexster.graph";
     public static final String FAUNUS_GRAPH_INPUT_REXSTER_V_ESTIMATE = "faunus.graph.input.rexster.v-estimate";
+    public static final String FAUNUS_GRAPH_INPUT_REXSTER_USERNAME = "faunus.graph.input.rexster.username";
+    public static final String FAUNUS_GRAPH_INPUT_REXSTER_PASSWORD = "faunus.graph.input.rexster.password";
 
     private Configuration conf;
 
@@ -49,6 +52,12 @@ public class RexsterConfiguration {
 
     public String getGraph() {
         return this.conf.get(FAUNUS_GRAPH_INPUT_REXSTER_GRAPH);
+    }
+
+    public String getAuthenticationHeaderValue() {
+        return "Basic " + Base64.encodeBase64URLSafeString(
+                (this.conf.get(FAUNUS_GRAPH_INPUT_REXSTER_USERNAME, "") + ":" + this.conf.get(FAUNUS_GRAPH_INPUT_REXSTER_USERNAME, ""))
+                        .getBytes());
     }
 
     public synchronized long getEstimatedVertexCount() {
@@ -90,7 +99,8 @@ public class RexsterConfiguration {
 
     private long getTrueVertexCount() {
         try {
-            final HttpURLConnection connection = HttpHelper.createConnection(this.getRestCountEndpoint());
+            final HttpURLConnection connection = HttpHelper.createConnection(
+                    this.getRestCountEndpoint(), this.getAuthenticationHeaderValue());
             final JSONObject json = new JSONObject(convertStreamToString(connection.getInputStream()));
 
             return json.optLong(FaunusRexsterExtension.EXTENSION_METHOD_COUNT);

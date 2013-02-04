@@ -8,15 +8,14 @@ import java.net.URL;
  */
 public final class HttpHelper {
 
-    public static HttpURLConnection createConnection(final String uri) throws Exception {
+    public static HttpURLConnection createConnection(final String uri, final String authValue) throws Exception {
         final URL url = new URL(uri);
         final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setConnectTimeout(0);
         connection.setReadTimeout(0);
         connection.setRequestMethod("GET");
 
-        // worry about rexster auth later
-        // connection.setRequestProperty(RexsterTokens.AUTHORIZATION, Authentication.getAuthenticationHeaderValue());
+        connection.setRequestProperty("Authorization", authValue);
 
         connection.setDoOutput(true);
 
