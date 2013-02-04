@@ -18,6 +18,7 @@ h3. Version 0.2.0 (NOT OFFICIALLY RELEASE YET)
 * Complete refactoring of @FaunusCompiler@ and @FaunusPipeline@
 * Added support for user defined @Input@- @OutputFormats@
 * Added @MapReduceFormat@ which allows an arbitrary number of MapReduce jobs after/before input/output.
+* Added configuration to allow Faunus to get the actual vertex count from Rexster when determining split size.
 
 h3. Version 0.1.0 (January 14, 2013)
 
