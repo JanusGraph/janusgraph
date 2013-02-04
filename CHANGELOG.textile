@@ -19,6 +19,7 @@ h3. Version 0.2.0 (NOT OFFICIALLY RELEASE YET)
 * Added support for user defined @Input@- @OutputFormats@
 * Added @MapReduceFormat@ which allows an arbitrary number of MapReduce jobs after/before input/output.
 * Added configuration to allow Faunus to get the actual vertex count from Rexster when determining split size.
+* Added configuration to allow Faunus to authenticate to Rexster, if Rexster security is turned on.
 
 h3. Version 0.1.0 (January 14, 2013)
 
