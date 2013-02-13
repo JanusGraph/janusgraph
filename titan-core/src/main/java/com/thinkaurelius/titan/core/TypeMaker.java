@@ -1,4 +1,3 @@
-
 package com.thinkaurelius.titan.core;
 
 /**
@@ -17,7 +16,7 @@ package com.thinkaurelius.titan.core;
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see TitanType
- * @see <a href="https://github.com/thinkaurelius/titan/wiki/Type-configuration">Titan Type Wiki</a>
+ * @see <a href="https://github.com/thinkaurelius/titan/wiki/Type-Definition-Overview">Titan Type Wiki</a>
  */
 public interface TypeMaker {
 
