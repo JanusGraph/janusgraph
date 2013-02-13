@@ -11,10 +11,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Features;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.PropertyFilteredIterable;
 import com.tinkerpop.blueprints.util.StringFactory;
@@ -42,10 +39,10 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
                 commit();
                 break;
             case FAILURE:
-                abort();
+                rollback();
                 break;
             default:
-                throw new AssertionError("Unrecognized conclusion: " + conclusion);
+                throw new IllegalArgumentException("Unrecognized conclusion: " + conclusion);
         }
     }
 
@@ -148,7 +145,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     }
 
     @Override
-    public <T extends Element> void createKeyIndex(String key, Class<T> elementClass) {
+    public <T extends Element> void createKeyIndex(String key, Class<T> elementClass, final Parameter... indexParameters) {
         Preconditions.checkNotNull(key);
         Preconditions.checkArgument(elementClass.equals(Vertex.class), "Only vertex indexing is supported");
 

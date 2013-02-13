@@ -38,7 +38,7 @@ public abstract class TitanGraphTestCommon {
 
     public void open() {
         graphdb = TitanFactory.open(config);
-        tx = graphdb.startTransaction();
+        tx = graphdb.newTransaction();
     }
 
     public void close() {
@@ -52,7 +52,7 @@ public abstract class TitanGraphTestCommon {
     public void newTx() {
         if (null != tx && tx.isOpen())
             tx.commit();
-        tx = graphdb.startTransaction();
+        tx = graphdb.newTransaction();
     }
 
     public void clopen() {

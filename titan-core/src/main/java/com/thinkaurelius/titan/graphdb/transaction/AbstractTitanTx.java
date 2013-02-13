@@ -509,7 +509,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     }
 
     @Override
-    public synchronized void abort() {
+    public synchronized void rollback() {
         close();
     }
 

@@ -89,7 +89,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
         }
         p.end();
         System.out.println("Time per edge creation+connection in (ns): " + (p.getNanoTime() / noNodes));
-        tx.abort();
+        tx.rollback();
         tx = null;
     }
 

@@ -105,8 +105,8 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
     }
 
     @Override
-    public synchronized void abort() {
-        throw new UnsupportedOperationException("Cannot abort in memory graph transaction");
+    public synchronized void rollback() {
+        throw new UnsupportedOperationException("Cannot rollback in memory graph transaction");
     }
 
 
@@ -128,7 +128,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
     }
 
     @Override
-    public TitanTransaction startTransaction() {
+    public TitanTransaction newTransaction() {
         return this;
     }
 

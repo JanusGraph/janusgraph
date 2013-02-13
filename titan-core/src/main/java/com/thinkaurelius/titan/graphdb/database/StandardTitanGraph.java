@@ -150,7 +150,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     }
 
     @Override
-    public TitanTransaction startTransaction() {
+    public TitanTransaction newTransaction() {
         return startTransaction(new TransactionConfig(config));
     }
 

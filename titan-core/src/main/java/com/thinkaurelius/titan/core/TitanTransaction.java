@@ -254,7 +254,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @throws com.thinkaurelius.titan.diskstorage.StorageException
      *          if an error arises when releasing the transaction handle
      */
-    public void abort();
+    public void rollback();
 
     /**
      * Checks whether the transaction is still open.

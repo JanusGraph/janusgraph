@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Parameter;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.StringFactory;
 
@@ -33,12 +34,11 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
     private final WeakHashMap<TitanTransaction, Boolean> openTx = new WeakHashMap<TitanTransaction, Boolean>(4);
 
     @Override
-    public void stopTransaction(final Conclusion conclusion) {
+    public void commit() {
         TitanTransaction tx = txs.get();
-        if (tx != null) {
-            assert tx.isOpen();
+        if (tx != null && tx.isOpen()) {
             try {
-                tx.stopTransaction(conclusion);
+                tx.commit();
             } finally {
                 txs.remove();
                 openTx.remove(tx);
@@ -46,8 +46,35 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
         }
     }
 
+    @Override
+    public void rollback() {
+        TitanTransaction tx = txs.get();
+        if (tx != null && tx.isOpen()) {
+            try {
+                tx.rollback();
+            } finally {
+                txs.remove();
+                openTx.remove(tx);
+            }
+        }
+    }
+
+    @Override
+    public void stopTransaction(Conclusion conclusion) {
+        switch (conclusion) {
+            case SUCCESS:
+                commit();
+                break;
+            case FAILURE:
+                rollback();
+                break;
+            default:
+                throw new IllegalArgumentException("Unrecognized conclusion: " + conclusion);
+        }
+    }
+
     private TitanTransaction internalStartTransaction() {
-        TitanTransaction tx = (TitanTransaction) startTransaction();
+        TitanTransaction tx = (TitanTransaction) newTransaction();
         txs.set(tx);
         openTx.put(tx, Boolean.TRUE);
         return tx;
@@ -88,7 +115,7 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
     }
 
     @Override
-    public <T extends Element> void createKeyIndex(String key, Class<T> elementClass) {
+    public <T extends Element> void createKeyIndex(String key, Class<T> elementClass, final Parameter... indexParameters) {
         getAutoStartTx().createKeyIndex(key, elementClass);
     }
 

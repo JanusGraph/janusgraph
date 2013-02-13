@@ -24,7 +24,7 @@ public class TitanSpecificBlueprintsTestSuite extends TestSuite {
         Vertex a = graph.addVertex(null);
         Vertex b = graph.addVertex(null);
         Edge e = graph.addEdge(null, a, b, convertId(graph, "friend"));
-        graph.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+        graph.commit();
 
         a = graph.getVertex(a);
         Assert.assertNotNull(a);

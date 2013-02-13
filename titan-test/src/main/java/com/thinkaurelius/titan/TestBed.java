@@ -83,14 +83,14 @@ public class TestBed {
         juno.setProperty("name", "juno");
         juno = g.getVertices("name", "juno").iterator().next();
 
-        TransactionalGraph tx = g.startTransaction();
+        TransactionalGraph tx = g.newTransaction();
         Thread[] threads = new Thread[10];
         for (int i = 0; i < threads.length; i++) {
             //threads[i]=new Thread(new DoSomething(tx));
             threads[i].start();
         }
         for (int i = 0; i < threads.length; i++) threads[i].join();
-        tx.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+        tx.commit();
     }
 
 }

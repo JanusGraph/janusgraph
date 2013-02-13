@@ -256,7 +256,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         graphdb.removeVertex(v1);
         graphdb.removeVertex(v2);
 
-        graphdb.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+        graphdb.commit();
     }
 
     @Test
@@ -286,8 +286,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testTransaction() {
-        TitanTransaction tx1 = graphdb.startTransaction();
-        TitanTransaction tx2 = graphdb.startTransaction();
+        TitanTransaction tx1 = graphdb.newTransaction();
+        TitanTransaction tx2 = graphdb.newTransaction();
 
         TitanVertex v11 = tx1.addVertex();
         TitanVertex v12 = tx1.addVertex();
@@ -307,7 +307,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             fail();
         } catch (IllegalStateException e) {
         }
-        tx1.abort();
+        tx1.rollback();
         try {
             v11.setProperty("test", 5);
             fail();

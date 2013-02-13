@@ -44,7 +44,7 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
                 graphdb.addEdge(null, vertices[i], vertices[wrapAround(i + j, numVertices)], "connect");
             }
         }
-        graphdb.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+        graphdb.commit();
     }
 
     @Test
@@ -88,7 +88,7 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
             System.out.println("Ngh retrieval: " + time);
         }
 
-        graphdb.stopTransaction(TransactionalGraph.Conclusion.FAILURE);
+        graphdb.commit();
     }
 
     private static long time() {

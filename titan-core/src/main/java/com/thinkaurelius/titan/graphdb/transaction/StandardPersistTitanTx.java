@@ -180,9 +180,9 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
                 txHandle.abort();
                 throw new TitanException("Could not commit transaction due to exception during persistence", e);
             } catch (StorageException s) {
-                throw new TitanException("Failure while trying to abort a unsuccessfully committed transaction", s);
+                throw new TitanException("Failure while trying to rollback a unsuccessfully committed transaction", s);
             } finally {
-                super.abort();
+                super.rollback();
             }
         } finally {
             clear();
@@ -190,14 +190,14 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
     }
 
     @Override
-    public synchronized void abort() {
+    public synchronized void rollback() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         try {
             txHandle.abort();
         } catch (StorageException e) {
-            throw new TitanException("Could not abort transaction due to exception during persistence", e);
+            throw new TitanException("Could not rollback transaction due to exception during persistence", e);
         } finally {
-            super.abort();
+            super.rollback();
             clear();
         }
     }
