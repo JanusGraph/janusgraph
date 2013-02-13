@@ -24,12 +24,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 import static com.tinkerpop.blueprints.Direction.*;
 import static org.junit.Assert.*;
@@ -95,6 +92,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         TitanLabel connect = tx.makeType().name("connect").undirected().primaryKey(id).signature(weight).
                 functional(false).makeEdgeLabel();
+
+        TitanLabel parent = tx.makeType().name("parent").functional(true).makeEdgeLabel();
 
         clopen();
 
@@ -190,7 +189,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         } catch (IllegalArgumentException e) {
         }
 
-        // Verify vertex in new transaction
+        // Verify vertex in new transaction and functional edges
         TitanVertex v1 = tx.addVertex();
         v1.setProperty("uid", "v1");
         v1.setProperty("someid", 100l);
@@ -200,6 +199,19 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         } catch (IllegalArgumentException e) {
         }
         v1.setProperty("int", new SpecialInt(77));
+        TitanVertex v12 = tx.addVertex(), v13 = tx.addVertex();
+        v12.setProperty("uid","v12");
+        v13.setProperty("uid","v13");
+        v12.addEdge("parent",v1);
+        v13.addEdge("parent",v1);
+        try {
+            v12.addEdge("parent",v13);
+            fail();
+        } catch(IllegalArgumentException e) {
+        }
+        assertEquals(2,Iterables.size(v1.getEdges(IN,"parent")));
+        assertEquals(1,Iterables.size(v12.getEdges(OUT,"parent")));
+        assertEquals(1,Iterables.size(v13.getEdges(OUT,"parent")));
 
         clopen();
 
@@ -208,6 +220,11 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(77, ((SpecialInt) v1.getProperty("int")).getValue());
         assertEquals(v1, Iterables.getOnlyElement(tx.getVertices("someid", 100l)));
         assertEquals(v1, Iterables.getOnlyElement(tx.getVertices(id, "v1")));
+
+        v12 = (TitanVertex)tx.getVertex(v12);
+        assertEquals(2,Iterables.size(v1.getEdges(IN,"parent")));
+        assertEquals(1,Iterables.size(v12.getEdges(OUT,"parent")));
+
 
         // Verify vertex in current transaction
         TitanVertex v2 = tx.addVertex();
@@ -240,6 +257,24 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         graphdb.removeVertex(v2);
 
         graphdb.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+    }
+
+    @Test
+    public void testDate() throws ParseException {
+        tx.makeType().name("birthday").dataType(GregorianCalendar.class).makePropertyKey();
+
+        Vertex v = tx.addVertex(null);
+        Date date = new SimpleDateFormat("ddMMyyyy").parse("28101978");
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        v.setProperty("birthday", c);
+        System.out.println(c); // prints Sat Oct 28 00:00:00 CET 1978
+
+        clopen();
+
+        v = tx.getVertex(v);
+        System.out.println(v.getProperty("birthday")); // prints Wed Jan 16 18:49:44 CET 2013
+        assertEquals(c,v.getProperty("birthday"));
     }
 
     @Test

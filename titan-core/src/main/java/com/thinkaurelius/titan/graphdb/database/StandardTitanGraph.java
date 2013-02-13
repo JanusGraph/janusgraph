@@ -367,14 +367,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
             }
 
             long edgeid = 0;
-            if (!titanType.isFunctional()) {
+            if (!titanType.isFunctional() || dirID==3) {
                 edgeid = VariableLong.readPositive(column);
             }
 
             ByteBuffer value = entry.getValue();
             if (titanType.isEdgeLabel()) {
                 long nodeIDDiff = VariableLong.read(value);
-                if (titanType.isFunctional()) edgeid = VariableLong.readPositive(value);
+                if (titanType.isFunctional() && dirID==2) edgeid = VariableLong.readPositive(value);
                 assert edgeid > 0;
                 if (tx.isDeletedRelation(edgeid)) continue;
 
@@ -869,7 +869,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
         ByteBuffer column = null, value = null;
         if (et.isSimple()) {
-            if (et.isFunctional()) {
+            if (et.isFunctional() && edge.getVertex(0).equals(perspective)) {
                 column = ByteBuffer.allocate(etIDLength);
                 IDHandler.writeEdgeType(column, etid, dirID, idManager);
             } else {
@@ -882,7 +882,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 if (edge.isEdge()) {
                     long nodeIDDiff = ((TitanEdge) edge).getOtherVertex(perspective).getID() - perspective.getID();
                     int nodeIDDiffLength = VariableLong.length(nodeIDDiff);
-                    if (et.isFunctional()) {
+                    if (et.isFunctional() && edge.getVertex(0).equals(perspective)) {
                         value = ByteBuffer.allocate(nodeIDDiffLength + VariableLong.positiveLength(edge.getID()));
                         VariableLong.write(value, nodeIDDiff);
                         VariableLong.writePositive(value, edge.getID());
@@ -915,7 +915,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
             for (int i = 0; i < keys.length; i++) writeInlineEdge(out, keys[i], ets.getKeyType(i));
 
-            if (!et.isFunctional()) {
+            if (!(et.isFunctional() && edge.getVertex(0).equals(perspective))) {
                 VariableLong.writePositive(out, edge.getID());
             }
             column = out.getByteBuffer();
@@ -931,7 +931,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                     writeAttribute(out, (TitanProperty) edge);
                 }
 
-                if (et.isFunctional()) {
+                if (et.isFunctional() && edge.getVertex(0).equals(perspective)) {
                     assert edge.isEdge();
                     VariableLong.writePositive(out, edge.getID());
                 }
