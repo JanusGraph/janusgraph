@@ -170,22 +170,27 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
 
     private InternalTitanVertex getExisting(long id) {
         synchronized (vertexCache) {
-            InternalTitanVertex node = vertexCache.get(id);
-            if (node == null) {
+            InternalTitanVertex vertex = vertexCache.get(id);
+            if (vertex == null) {
                 IDInspector idspec = graphdb.getIDInspector();
 
                 if (idspec.isEdgeTypeID(id)) {
-                    node = etManager.getType(id, this);
+                    vertex = etManager.getType(id, this);
                 } else if (graphdb.isReferenceVertexID(id)) {
                     throw new UnsupportedOperationException("Reference vertices are currently not supported");
                 } else if (idspec.isNodeID(id)) {
-                    node = vertexFactory.createExisting(this, id);
+                    vertex = vertexFactory.createExisting(this, id);
                 } else
                     throw new IllegalArgumentException("ID could not be recognized");
-                vertexCache.add(node, id);
-            } else if (node.isRemoved()) throw new IllegalArgumentException("Vertex has been removed for id: " + id);
-            return node;
+                vertexCache.add(vertex, id);
+            } else if (vertex.isRemoved()) throw new IllegalArgumentException("Vertex has been removed for id: " + id);
+            return vertex;
         }
+    }
+
+    public boolean isDeletedVertex(long id) {
+        InternalTitanVertex vertex = vertexCache.get(id);
+        return vertex!=null && vertex.isRemoved();
     }
 
     @Override
@@ -471,7 +476,9 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
             long[] nodeids = getVertexIDsFromDisk(key, attribute);
             Set<TitanVertex> vertices = new HashSet<TitanVertex>(nodeids.length);
             for (int i = 0; i < nodeids.length; i++) {
-                vertices.add(getExistingVertex(nodeids[i]));
+                if (!isDeletedVertex(nodeids[i])) {
+                    vertices.add(getExistingVertex(nodeids[i]));
+                }
             }
 
             // Next, the in-memory stuff

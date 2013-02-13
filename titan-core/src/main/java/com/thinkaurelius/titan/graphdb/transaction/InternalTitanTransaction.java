@@ -97,6 +97,8 @@ public interface InternalTitanTransaction extends TitanTransaction {
 
     public boolean isDeletedRelation(long relationId);
 
+    public boolean isDeletedVertex(long vertexId);
+
     // ######## TitanVertex / TitanRelation Loading  ############
 
     /**

@@ -35,7 +35,9 @@ public class VertexIterable implements Iterable<InternalTitanVertex> {
                 InternalTitanVertex v = null;
                 try {
                     while (v == null && iterator.hasNext()) {
-                        v = tx.getExistingVertex(iterator.next().longValue());
+                        long nextId = iterator.next().longValue();
+                        if (tx.isDeletedVertex(nextId)) continue;
+                        v = tx.getExistingVertex(nextId);
                         //Filter out types
                         if (v instanceof TitanType) v = null;
                     }

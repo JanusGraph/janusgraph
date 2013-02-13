@@ -362,7 +362,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testIteration() {
-        int numV = 50;
+        int numV = 50; int deleteV = 5;
         if (graphdb.getFeatures().supportsVertexIteration) {
 
             TitanVertex previous = tx.addVertex();
@@ -393,7 +393,35 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             assertEquals(numE, Iterables.size(edges));
             assertEquals(numE, Iterables.size(edges));
             assertEquals(numE, Iterables.size(tx.getEdges()));
+
+            Iterator<Vertex> viter= tx.getVertices().iterator();
+            for (int i=0;i<deleteV;i++) {
+                Vertex v = viter.next();
+                tx.removeVertex(v);
+            }
+            assertEquals(numV-deleteV, Iterables.size(tx.getVertices()));
+            clopen();
+            assertEquals(numV-deleteV, Iterables.size(tx.getVertices()));
         }
+    }
+
+    @Test
+    public void testVertexDeletionWithIndex() {
+        TitanKey name = makeStringPropertyKey("name");
+        Vertex v1 = tx.addVertex(null);
+        v1.setProperty("name", "v1");
+        Vertex v2 = tx.addVertex(null);
+        v2.setProperty("name", "v2");
+
+        Edge e = tx.addEdge(null, v1, v2, "some_edge");
+
+        clopen();
+
+        v1 = tx.getVertex(v1);
+        tx.removeVertex(v1);
+        v2 = tx.getVertices("name", "v2").iterator().next(); // generates IllegalArgumentException
+        assertNotNull(v2);
+        assertEquals(0,Iterables.size(tx.getVertices("name","v1")));
     }
 
     @Test
