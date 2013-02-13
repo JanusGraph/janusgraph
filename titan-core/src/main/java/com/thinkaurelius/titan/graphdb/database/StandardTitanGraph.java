@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
@@ -712,7 +711,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                             }
                             if (pos == 0 && acquireLocks && del.getType().isFunctional() &&
                                     ((InternalTitanType) del.getType()).isFunctionalLocking()) {
-                                Entry entry = getEntry(tx, del, node, signatures);
+                                Entry entry = getEntry(tx, del, pos, signatures);
                                 mutator.acquireEdgeLock(IDHandler.getKey(node.getID()), entry.getColumn(), entry.getValue());
                             }
                         }
@@ -754,7 +753,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                             }
                             if (pos == 0 && acquireLocks && edge.getType().isFunctional() && !node.isNew()
                                     && ((InternalTitanType) edge.getType()).isFunctionalLocking()) {
-                                Entry entry = getEntry(tx, edge, node, signatures, true);
+                                Entry entry = getEntry(tx, edge, pos, signatures, true);
                                 mutator.acquireEdgeLock(IDHandler.getKey(node.getID()), entry.getColumn(), null);
                             }
                         }
@@ -797,17 +796,17 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     }
 
 
-    private <N extends InternalTitanVertex> void persist(ListMultimap<N, InternalRelation> mutatedEdges, Map<TitanType, TypeSignature> signatures,
+    private <V extends InternalTitanVertex> void persist(ListMultimap<V, InternalRelation> mutatedEdges, Map<TitanType, TypeSignature> signatures,
                                                          InternalTitanTransaction tx, BackendMutator mutator) throws StorageException {
         assert mutatedEdges != null && !mutatedEdges.isEmpty();
 
-        Collection<N> vertices = mutatedEdges.keySet();
+        Collection<V> vertices = mutatedEdges.keySet();
 //		if (sortNodes) {
-//			List<N> sortedvertices = new ArrayList<N>(vertices);
-//			Collections.sort(sortedvertices, new Comparator<N>(){
+//			List<V> sortedvertices = new ArrayList<V>(vertices);
+//			Collections.sort(sortedvertices, new Comparator<V>(){
 //
 //				@Override
-//				public int compare(N o1, N o2) {
+//				public int compare(V o1, V o2) {
 //					assert o1.getID()!=o2.getID();
 //					if (o1.getID()<o2.getID()) return -1;
 //					else return 1;
@@ -817,25 +816,28 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 //			vertices=sortedvertices;
 //		}
 
-        for (N node : vertices) {
-            List<InternalRelation> edges = mutatedEdges.get(node);
+        for (V vertex : vertices) {
+            List<InternalRelation> edges = mutatedEdges.get(vertex);
             List<Entry> additions = new ArrayList<Entry>(edges.size());
             List<ByteBuffer> deletions = new ArrayList<ByteBuffer>(Math.max(10, edges.size() / 10));
             List<TitanProperty> properties = new ArrayList<TitanProperty>();
             for (InternalRelation edge : edges) {
-                if (edge.isRemoved()) {
-                    if (edge.isProperty()) {
-                        deleteIndexEntry((TitanProperty) edge, mutator);
+                for (int pos=0;pos<edge.getArity();pos++) {
+                    if (edge.getVertex(pos).equals(vertex)) {
+                        if (edge.isRemoved()) {
+                            if (edge.isProperty()) {
+                                deleteIndexEntry((TitanProperty) edge, mutator);
+                            }
+                            deletions.add(getEntry(tx, edge, pos, signatures, true).getColumn());
+                        } else {
+                            assert edge.isNew();
+                            if (edge.isProperty()) properties.add((TitanProperty) edge);
+                            additions.add(getEntry(tx, edge, pos, signatures));
+                        }
                     }
-                    deletions.add(getEntry(tx, edge, node, signatures, true).getColumn());
-                } else {
-                    assert edge.isNew();
-                    if (edge.isProperty()) properties.add((TitanProperty) edge);
-                    additions.add(getEntry(tx, edge, node, signatures));
                 }
-
             }
-            mutator.mutateEdges(IDHandler.getKey(node.getID()), additions, deletions);
+            mutator.mutateEdges(IDHandler.getKey(vertex.getID()), additions, deletions);
             //Persist property index for retrieval
             for (TitanProperty prop : properties) {
                 addIndexEntry(prop, mutator);
@@ -844,32 +846,35 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
     }
 
-    private Entry getEntry(InternalTitanTransaction tx, InternalRelation edge, InternalTitanVertex perspective, Map<TitanType, TypeSignature> signatures) {
-        return getEntry(tx, edge, perspective, signatures, false);
+    private Entry getEntry(InternalTitanTransaction tx, InternalRelation edge, int position, Map<TitanType, TypeSignature> signatures) {
+        return getEntry(tx, edge, position, signatures, false);
     }
 
-    private Entry getEntry(InternalTitanTransaction tx, InternalRelation edge, InternalTitanVertex perspective, Map<TitanType, TypeSignature> signatures, boolean columnOnly) {
+    private Entry getEntry(InternalTitanTransaction tx, InternalRelation edge, int position, Map<TitanType, TypeSignature> signatures, boolean columnOnly) {
         TitanType et = edge.getType();
         long etid = et.getID();
 
         int dirID;
         if (edge.isProperty()) {
+            Preconditions.checkArgument(position==0,"Invalid position: " + position);
             dirID = 0;
-        } else if (edge.getVertex(0).equals(perspective)) {
+        } else if (position==0) {
             //Out TitanRelation
-            assert edge.isDirected() || edge.isUnidirected();
+            Preconditions.checkArgument(edge.isEdge() && (edge.isDirected() || edge.isUnidirected()));
             dirID = 2;
-        } else {
+        } else if (position==1) {
             //In TitanRelation
-            assert !edge.isUnidirected() && edge.getVertex(1).equals(perspective);
+            Preconditions.checkArgument(edge.isEdge() && !edge.isUnidirected());
             dirID = 3;
+        } else {
+            throw new IllegalArgumentException("Invalid position: " + position);
         }
 
         int etIDLength = IDHandler.edgeTypeLength(etid, idManager);
 
         ByteBuffer column = null, value = null;
         if (et.isSimple()) {
-            if (et.isFunctional() && edge.getVertex(0).equals(perspective)) {
+            if (et.isFunctional() && position==0) {
                 column = ByteBuffer.allocate(etIDLength);
                 IDHandler.writeEdgeType(column, etid, dirID, idManager);
             } else {
@@ -880,9 +885,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
             column.flip();
             if (!columnOnly) {
                 if (edge.isEdge()) {
-                    long nodeIDDiff = ((TitanEdge) edge).getOtherVertex(perspective).getID() - perspective.getID();
+                    long nodeIDDiff = edge.getVertex((position + 1) % 2).getID() - edge.getVertex(position).getID();
                     int nodeIDDiffLength = VariableLong.length(nodeIDDiff);
-                    if (et.isFunctional() && edge.getVertex(0).equals(perspective)) {
+                    if (et.isFunctional() && position==0) {
                         value = ByteBuffer.allocate(nodeIDDiffLength + VariableLong.positiveLength(edge.getID()));
                         VariableLong.write(value, nodeIDDiff);
                         VariableLong.writePositive(value, edge.getID());
@@ -915,7 +920,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
             for (int i = 0; i < keys.length; i++) writeInlineEdge(out, keys[i], ets.getKeyType(i));
 
-            if (!(et.isFunctional() && edge.getVertex(0).equals(perspective))) {
+            if (!(et.isFunctional() && position==0)) {
                 VariableLong.writePositive(out, edge.getID());
             }
             column = out.getByteBuffer();
@@ -924,14 +929,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 out = serializer.getDataOutput(defaultOutputCapacity, true);
 
                 if (edge.isEdge()) {
-                    long nodeIDDiff = ((TitanEdge) edge).getOtherVertex(perspective).getID() - perspective.getID();
+                    long nodeIDDiff = edge.getVertex((position+1)%2).getID() - edge.getVertex(position).getID();
                     VariableLong.write(out, nodeIDDiff);
                 } else {
                     assert edge.isProperty();
                     writeAttribute(out, (TitanProperty) edge);
                 }
 
-                if (et.isFunctional() && edge.getVertex(0).equals(perspective)) {
+                if (et.isFunctional() && position==0) {
                     assert edge.isEdge();
                     VariableLong.writePositive(out, edge.getID());
                 }

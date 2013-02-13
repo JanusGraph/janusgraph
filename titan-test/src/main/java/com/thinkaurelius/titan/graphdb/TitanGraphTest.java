@@ -15,10 +15,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
 import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Query;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.*;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -347,6 +344,20 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         n3 = tx.getVertex(nid);
         assertEquals(353, n3.getProperty("uid"));
         TitanEdge e2 = n3.addEdge("knows", tx.addVertex());
+    }
+
+    @Test
+    public void testSelfLoop() {
+        Vertex v = tx.addVertex(null);
+        tx.addEdge(null,v,v,"self");
+        assertEquals(1,Iterables.size(v.getEdges(Direction.OUT, "self")));
+        assertEquals(1,Iterables.size(v.getEdges(Direction.IN, "self")));
+        clopen();
+        v = tx.getVertex(v.getId());
+        assertNotNull(v);
+        assertEquals(1,Iterables.size(v.getEdges(Direction.IN, "self")));
+        assertEquals(1,Iterables.size(v.getEdges(Direction.OUT, "self")));
+        assertEquals(1,Iterables.size(v.getEdges(Direction.IN, "self")));
     }
 
     @Test

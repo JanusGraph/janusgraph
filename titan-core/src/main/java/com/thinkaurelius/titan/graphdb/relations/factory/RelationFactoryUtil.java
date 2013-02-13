@@ -16,7 +16,7 @@ public class RelationFactoryUtil {
 
         TitanType et = relation.getType();
         //If functional relation, check that it is indeed unique for that type
-        if (isNew && et.isFunctional() && !relation.getVertex(0).isNew()) {
+        if (isNew && et.isFunctional()) {
 
             InternalTitanVertex start = (InternalTitanVertex) relation.getVertex(0);
 
