@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -64,7 +65,7 @@ public class RexsterTitanClient {
     }
 
     private static final String wrapQuery(String query) {
-        return "g=rexster.getGraph('" + RexsterTitanServer.DEFAULT_GRAPH_NAME + "'); g.stopTransaction(SUCCESS); try { " + query + " } catch (Throwable e) { g.stopTransaction(FAILURE); throw e }";
+        return "g=rexster.getGraph('" + RexsterTitanServer.DEFAULT_GRAPH_NAME + "'); " + query;
     }
 
     public List<Map<String, Object>> query(String query) {
@@ -72,12 +73,10 @@ public class RexsterTitanClient {
     }
 
     public List<Map<String, Object>> query(String query, Map<String, Object> parameters) {
-        List<Map<String, Value>> packResults = queryTemplate(query, parameters, tMap(TString, TValue));
-
-
+        List<List<Map<String,Value>>> packResults = queryTemplate(query, parameters, tList(tMap(TString, TValue)));
         final List<Map<String, Object>> results = new ArrayList<Map<String, Object>>();
         try {
-            for (Map<String, Value> map : packResults) {
+            for (Map<String,Value> map : packResults.get(0)) {
                 //Convert map
                 Map<String, Object> result = new HashMap<String, Object>();
                 for (Map.Entry<String, Value> entry : map.entrySet()) {
@@ -112,6 +111,7 @@ public class RexsterTitanClient {
         else if (v.isBooleanValue()) return v.asBooleanValue().getBoolean();
         else if (v.isIntegerValue()) return v.asIntegerValue().getLong();
         else if (v.isFloatValue()) return v.asFloatValue().getDouble();
+        else if (v.isRawValue()) return v.asRawValue().getString();
         else if (v.isArrayValue()) {
             Value[] arr = v.asArrayValue().getElementArray();
             Object[] result = new Object[arr.length];

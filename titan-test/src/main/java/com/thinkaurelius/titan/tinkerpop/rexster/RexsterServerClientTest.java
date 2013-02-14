@@ -65,6 +65,7 @@ public abstract class RexsterServerClientTest extends TitanGraphTestCommon {
         assertEquals(2, result.size());
         for (Map<String, Object> map : result) {
             assertTrue(map.containsKey("name"));
+            assertTrue(map.get("name").equals("v2") || map.get("name").equals("v3"));
         }
         Map<String, Object> paras = new HashMap<String, Object>();
         paras.put("name", "v1");
