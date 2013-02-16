@@ -4,11 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import org.apache.cassandra.db.ColumnFamily;
 import org.apache.cassandra.db.IColumn;
 import org.apache.cassandra.db.ReadCommand;
@@ -20,7 +17,6 @@ import org.apache.cassandra.exceptions.IsBootstrappingException;
 import org.apache.cassandra.exceptions.RequestTimeoutException;
 import org.apache.cassandra.exceptions.UnavailableException;
 import org.apache.cassandra.service.StorageProxy;
-import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.utils.ByteBufferUtil;
 
 import org.slf4j.Logger;
@@ -225,13 +221,13 @@ public class CassandraEmbeddedKeyColumnValueStore
     @Override
     public void mutate(ByteBuffer key, List<Entry> additions,
                        List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
-        Map<ByteBuffer, Mutation> mutations = ImmutableMap.of(key, new
-                Mutation(additions, deletions));
+        Map<ByteBuffer, KCVMutation> mutations = ImmutableMap.of(key, new
+                KCVMutation(additions, deletions));
         mutateMany(mutations, txh);
     }
 
 
-    public void mutateMany(Map<ByteBuffer, Mutation> mutations,
+    public void mutateMany(Map<ByteBuffer, KCVMutation> mutations,
                            StoreTransaction txh) throws StorageException {
         storeManager.mutateMany(ImmutableMap.of(columnFamily, mutations), txh);
     }

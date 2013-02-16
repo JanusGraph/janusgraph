@@ -23,7 +23,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import org.apache.commons.configuration.Configuration;
@@ -177,7 +177,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public void mutateMany(Map<String, Map<ByteBuffer, Mutation>> batch, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> batch, StoreTransaction txh) throws StorageException {
         MutationBatch m = keyspaceContext.getEntity().prepareMutationBatch()
                 .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanaxConsistency())
                 .withRetryPolicy(retryPolicy.duplicate());
@@ -185,13 +185,13 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         final long delTS = TimeUtility.getApproxNSSinceEpoch(false);
         final long addTS = TimeUtility.getApproxNSSinceEpoch(true);
 
-        for (Map.Entry<String, Map<ByteBuffer, Mutation>> batchentry : batch.entrySet()) {
+        for (Map.Entry<String, Map<ByteBuffer, KCVMutation>> batchentry : batch.entrySet()) {
             String storeName = batchentry.getKey();
             Preconditions.checkArgument(openStores.containsKey(storeName), "Store cannot be found: " + storeName);
             ColumnFamily<ByteBuffer, ByteBuffer> columnFamily = openStores.get(storeName).getColumnFamily();
 
-            Map<ByteBuffer, Mutation> mutations = batchentry.getValue();
-            for (Map.Entry<ByteBuffer, Mutation> ent : mutations.entrySet()) {
+            Map<ByteBuffer, KCVMutation> mutations = batchentry.getValue();
+            for (Map.Entry<ByteBuffer, KCVMutation> ent : mutations.entrySet()) {
                 // The CLMs for additions and deletions are separated because
                 // Astyanax's operation timestamp cannot be set on a per-delete
                 // or per-addition basis.
@@ -200,7 +200,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 ColumnListMutation<ByteBuffer> adds = m.withRow(columnFamily, ent.getKey());
                 adds.setTimestamp(addTS);
 
-                Mutation titanMutation = ent.getValue();
+                KCVMutation titanMutation = ent.getValue();
 
                 if (titanMutation.hasDeletions()) {
                     for (ByteBuffer b : titanMutation.getDeletions()) {

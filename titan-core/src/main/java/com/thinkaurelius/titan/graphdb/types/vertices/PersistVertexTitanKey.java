@@ -4,8 +4,12 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
+import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.PropertyKeyDefinition;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.tinkerpop.blueprints.Element;
+
+import java.util.Collection;
 
 public class PersistVertexTitanKey extends PersistVertexTitanType implements TitanKey {
 
@@ -30,11 +34,6 @@ public class PersistVertexTitanKey extends PersistVertexTitanType implements Tit
     }
 
     @Override
-    public boolean hasIndex() {
-        return getDefinition().hasIndex();
-    }
-
-    @Override
     public boolean isUnique() {
         return getDefinition().isUnique();
     }
@@ -42,6 +41,16 @@ public class PersistVertexTitanKey extends PersistVertexTitanType implements Tit
     @Override
     public Class<?> getDataType() {
         return getDefinition().getDataType();
+    }
+
+    @Override
+    public boolean hasIndex(Class<? extends Element> clazz) {
+        return getDefinition().hasIndex(clazz);
+    }
+
+    @Override
+    public Iterable<IndexType> getIndexes(Class<? extends Element> clazz) {
+        return getDefinition().getIndexes(clazz);
     }
 
     @Override

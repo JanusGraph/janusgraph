@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
@@ -25,7 +24,6 @@ import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLo
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -263,7 +261,7 @@ public class Backend {
                 tx = new ConsistentKeyLockTransaction(tx, storeManager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
             }
         }
-        return new BackendTransaction(tx);
+        return new BackendTransaction(tx, indexTx);
     }
 
     public void close() throws StorageException {

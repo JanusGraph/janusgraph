@@ -30,7 +30,7 @@ public class BufferTransaction implements StoreTransaction {
     private final int attemptWaitTime;
 
     private int numMutations;
-    private final Map<String, Map<ByteBuffer, Mutation>> mutations;
+    private final Map<String, Map<ByteBuffer, KCVMutation>> mutations;
 
     public BufferTransaction(StoreTransaction tx, BufferMutationKeyColumnValueStore store,
                              int bufferSize, int attempts, int waitTime) {
@@ -48,7 +48,7 @@ public class BufferTransaction implements StoreTransaction {
         this.bufferSize = bufferSize;
         this.mutationAttempts = attempts;
         this.attemptWaitTime = waitTime;
-        this.mutations = new HashMap<String, Map<ByteBuffer, Mutation>>(expectedNumStores);
+        this.mutations = new HashMap<String, Map<ByteBuffer, KCVMutation>>(expectedNumStores);
     }
 
     public StoreTransaction getWrappedTransactionHandle() {
@@ -59,13 +59,13 @@ public class BufferTransaction implements StoreTransaction {
         Preconditions.checkNotNull(store);
         if ((additions == null || additions.isEmpty()) && (deletions == null || deletions.isEmpty())) return;
 
-        Mutation m = new Mutation(additions, deletions);
-        Map<ByteBuffer, Mutation> storeMutation = mutations.get(store);
+        KCVMutation m = new KCVMutation(additions, deletions);
+        Map<ByteBuffer, KCVMutation> storeMutation = mutations.get(store);
         if (storeMutation == null) {
-            storeMutation = new HashMap<ByteBuffer, Mutation>();
+            storeMutation = new HashMap<ByteBuffer, KCVMutation>();
             mutations.put(store, storeMutation);
         }
-        Mutation existingM = storeMutation.get(key);
+        KCVMutation existingM = storeMutation.get(key);
         if (existingM != null) {
             existingM.merge(m);
         } else {
@@ -107,7 +107,7 @@ public class BufferTransaction implements StoreTransaction {
     }
 
     private void clear() {
-        for (Map.Entry<String, Map<ByteBuffer, Mutation>> entry : mutations.entrySet()) {
+        for (Map.Entry<String, Map<ByteBuffer, KCVMutation>> entry : mutations.entrySet()) {
             entry.getValue().clear();
         }
         numMutations = 0;

@@ -11,7 +11,7 @@ import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnect
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.UncheckedGenericKeyedObjectPool;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -102,7 +102,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public void mutateMany(Map<String, Map<ByteBuffer, Mutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
         long deletionTimestamp = TimeUtility.getApproxNSSinceEpoch(false);
@@ -113,14 +113,14 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         // Generate Thrift-compatible batch_mutate() datastructure
         // key -> cf -> cassmutation
         int size = 0;
-        for (Map<ByteBuffer, Mutation> mutation : mutations.values()) size += mutation.size();
+        for (Map<ByteBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
         Map<ByteBuffer, Map<String, List<org.apache.cassandra.thrift.Mutation>>> batch =
                 new HashMap<ByteBuffer, Map<String, List<org.apache.cassandra.thrift.Mutation>>>(size);
 
 
-        for (Map.Entry<String, Map<ByteBuffer, Mutation>> keyMutation : mutations.entrySet()) {
+        for (Map.Entry<String, Map<ByteBuffer, KCVMutation>> keyMutation : mutations.entrySet()) {
             String columnFamily = keyMutation.getKey();
-            for (Map.Entry<ByteBuffer, Mutation> mutEntry : keyMutation.getValue().entrySet()) {
+            for (Map.Entry<ByteBuffer, KCVMutation> mutEntry : keyMutation.getValue().entrySet()) {
                 ByteBuffer key = mutEntry.getKey();
 
                 Map<String, List<org.apache.cassandra.thrift.Mutation>> cfmutation = batch.get(key);
@@ -129,7 +129,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                     batch.put(key, cfmutation);
                 }
 
-                Mutation mutation = mutEntry.getValue();
+                KCVMutation mutation = mutEntry.getValue();
                 List<org.apache.cassandra.thrift.Mutation> thriftMutation = new ArrayList<org.apache.cassandra.thrift.Mutation>(mutations.size());
 
                 if (mutation.hasDeletions()) {

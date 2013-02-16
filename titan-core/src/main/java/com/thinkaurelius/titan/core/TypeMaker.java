@@ -1,5 +1,8 @@
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.tinkerpop.blueprints.Element;
+
 /**
  * TypeMaker is a factory for {@link TitanType}s. TitanTypes can be configured to provide data verification,
  * better storage efficiency, and higher performance. The TitanType defines the schema for all {@link TitanRelation}s
@@ -163,14 +166,30 @@ public interface TypeMaker {
     public TypeMaker unique();
 
     /**
-     * Configures instances of this type to be indexed. This only applies to property keys.
+     * Configures instances of this type to be indexed for the specified Element type using the standard Titan index.
+     * One can either index vertices or edges.
      * <p/>
+     * This only applies to property keys.
      * By default, the type is not indexed.
      *
      * @return this type maker
-     * @see com.thinkaurelius.titan.core.TitanKey#hasIndex()
+     * @see com.thinkaurelius.titan.core.TitanKey#hasIndex(Class<? extends Element>)
+     * @since 0.3.0
      */
-    public TypeMaker indexed();
+    public TypeMaker indexed(Class<? extends Element> clazz);
+
+    /**
+     * Configures instances of this type to be indexed for the specified Element type using the external index with the given name.
+     * This index must be configured prior to startup. One can either index vertices or edges.
+     * <p/>
+     * This only applies to property keys.
+     * By default, the type is not indexed.
+     *
+     * @return this type maker
+     * @see com.thinkaurelius.titan.core.TitanKey#hasIndex(Class<? extends Element>)
+     * @since 0.3.0
+     */
+    public TypeMaker indexed(String indexName, Class<? extends Element> clazz);
 
     /**
      * Configures the data type for this type.  This only applies to property keys.

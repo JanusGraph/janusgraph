@@ -3,18 +3,12 @@ package com.thinkaurelius.titan.diskstorage.hbase;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -134,7 +128,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public void mutateMany(Map<String, Map<ByteBuffer, Mutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
 
         Map<ByteBuffer, Put> puts = new HashMap<ByteBuffer, Put>();
         Map<ByteBuffer, Delete> dels = new HashMap<ByteBuffer, Delete>();
@@ -143,11 +137,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         final long delTS = System.currentTimeMillis();
         final long putTS = delTS + 1;
 
-        for (Map.Entry<String, Map<ByteBuffer, Mutation>> mutEntry : mutations.entrySet()) {
+        for (Map.Entry<String, Map<ByteBuffer, KCVMutation>> mutEntry : mutations.entrySet()) {
             byte[] columnFamilyBytes = mutEntry.getKey().getBytes();
-            for (Map.Entry<ByteBuffer, Mutation> rowMutation : mutEntry.getValue().entrySet()) {
+            for (Map.Entry<ByteBuffer, KCVMutation> rowMutation : mutEntry.getValue().entrySet()) {
                 ByteBuffer keyBB = rowMutation.getKey();
-                Mutation mutation = rowMutation.getValue();
+                KCVMutation mutation = rowMutation.getValue();
 
                 if (mutation.hasDeletions()) {
                     Delete d = dels.get(keyBB);

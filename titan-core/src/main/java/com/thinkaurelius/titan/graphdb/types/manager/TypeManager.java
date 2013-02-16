@@ -7,11 +7,7 @@ import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.types.Directionality;
-import com.thinkaurelius.titan.graphdb.types.FunctionalType;
-import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
-import com.thinkaurelius.titan.graphdb.types.TypeCategory;
-import com.thinkaurelius.titan.graphdb.types.TypeVisibility;
+import com.thinkaurelius.titan.graphdb.types.*;
 
 public interface TypeManager {
 
@@ -26,7 +22,7 @@ public interface TypeManager {
                                       Directionality directionality, TypeVisibility visibility,
                                       FunctionalType isfunctional, TitanType[] keysig,
                                       TitanType[] compactsig, TypeGroup group,
-                                      boolean isKey, boolean hasIndex, Class<?> objectType);
+                                      boolean isUnique, IndexType[] indexes, Class<?> objectType);
 
 
     public InternalTitanType getType(long id, InternalTitanTransaction tx);

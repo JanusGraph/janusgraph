@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import org.apache.cassandra.config.CFMetaData;
@@ -171,21 +171,21 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
       * provided most of the following method after transaction handling.
       */
     @Override
-    public void mutateMany(Map<String, Map<ByteBuffer, Mutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
         long deletionTimestamp = TimeUtility.getApproxNSSinceEpoch(false);
         long additionTimestamp = TimeUtility.getApproxNSSinceEpoch(true);
 
         int size = 0;
-        for (Map<ByteBuffer, Mutation> mutation : mutations.values()) size += mutation.size();
+        for (Map<ByteBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
         Map<ByteBuffer, RowMutation> rowMutations = new HashMap<ByteBuffer, RowMutation>(size);
 
-        for (Map.Entry<String, Map<ByteBuffer, Mutation>> mutEntry : mutations.entrySet()) {
+        for (Map.Entry<String, Map<ByteBuffer, KCVMutation>> mutEntry : mutations.entrySet()) {
             String columnFamily = mutEntry.getKey();
-            for (Map.Entry<ByteBuffer, Mutation> titanMutation : mutEntry.getValue().entrySet()) {
+            for (Map.Entry<ByteBuffer, KCVMutation> titanMutation : mutEntry.getValue().entrySet()) {
                 ByteBuffer key = titanMutation.getKey().duplicate();
-                Mutation mut = titanMutation.getValue();
+                KCVMutation mut = titanMutation.getValue();
 
                 RowMutation rm = rowMutations.get(key);
                 if (rm == null) {

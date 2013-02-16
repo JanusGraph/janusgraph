@@ -4,13 +4,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.attribute.DoubleSerial
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.FloatSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.IntegerSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.LongSerializer;
-import com.thinkaurelius.titan.graphdb.types.Directionality;
-import com.thinkaurelius.titan.graphdb.types.FunctionalType;
-import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabel;
-import com.thinkaurelius.titan.graphdb.types.StandardPropertyKey;
-import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
-import com.thinkaurelius.titan.graphdb.types.TypeCategory;
-import com.thinkaurelius.titan.graphdb.types.TypeVisibility;
+import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.group.StandardTypeGroup;
 
 import java.util.ArrayList;
@@ -40,6 +34,8 @@ public class SerializerInitialization {
         serializer.registerClass(Double.class, new DoubleSerializer());
         serializer.registerClass(Float.class, new FloatSerializer());
         serializer.registerClass(Long.class, new LongSerializer());
+        serializer.registerClass(IndexType.class);
+        serializer.registerClass(IndexType[].class);
     }
 
 }

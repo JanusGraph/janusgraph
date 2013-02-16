@@ -1,13 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.BufferTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.BufferedKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -91,13 +85,13 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
         List<ByteBuffer> deletions = Arrays.asList(b1);
 
-        Map<ByteBuffer, Mutation> combination = new HashMap<ByteBuffer, Mutation>(1);
-        Map<ByteBuffer, Mutation> deleteOnly = new HashMap<ByteBuffer, Mutation>(1);
-        Map<ByteBuffer, Mutation> addOnly = new HashMap<ByteBuffer, Mutation>(1);
+        Map<ByteBuffer, KCVMutation> combination = new HashMap<ByteBuffer, KCVMutation>(1);
+        Map<ByteBuffer, KCVMutation> deleteOnly = new HashMap<ByteBuffer, KCVMutation>(1);
+        Map<ByteBuffer, KCVMutation> addOnly = new HashMap<ByteBuffer, KCVMutation>(1);
 
-        combination.put(b1, new Mutation(additions, deletions));
-        deleteOnly.put(b1, new Mutation(null, deletions));
-        addOnly.put(b1, new Mutation(additions, null));
+        combination.put(b1, new KCVMutation(additions, deletions));
+        deleteOnly.put(b1, new KCVMutation(null, deletions));
+        addOnly.put(b1, new KCVMutation(additions, null));
 
         store1.mutate(b1, additions, deletions, tx);
         tx.flush();
@@ -145,7 +139,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         int adds = 4096;
 
         for (int round = 0; round < 5; round++) {
-            Map<ByteBuffer, Mutation> changes = mutateState(state, dels, adds);
+            Map<ByteBuffer, KCVMutation> changes = mutateState(state, dels, adds);
 
             applyChanges(changes, store1, tx);
             applyChanges(changes, store2, tx);
@@ -163,8 +157,8 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         }
     }
 
-    public void applyChanges(Map<ByteBuffer, Mutation> changes, KeyColumnValueStore store, StoreTransaction tx) throws StorageException {
-        for (Map.Entry<ByteBuffer, Mutation> change : changes.entrySet()) {
+    public void applyChanges(Map<ByteBuffer, KCVMutation> changes, KeyColumnValueStore store, StoreTransaction tx) throws StorageException {
+        for (Map.Entry<ByteBuffer, KCVMutation> change : changes.entrySet()) {
             store.mutate(change.getKey(), change.getValue().getAdditions(), change.getValue().getDeletions(), tx);
         }
     }
@@ -187,12 +181,12 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         return checked;
     }
 
-    public int checkThatDeletionsApplied(Map<ByteBuffer, Mutation> changes, KeyColumnValueStore store, int round) throws StorageException {
+    public int checkThatDeletionsApplied(Map<ByteBuffer, KCVMutation> changes, KeyColumnValueStore store, int round) throws StorageException {
         int checked = 0;
         int skipped = 0;
 
         for (ByteBuffer key : changes.keySet()) {
-            Mutation m = changes.get(key);
+            KCVMutation m = changes.get(key);
 
             if (!m.hasDeletions())
                 continue;
@@ -233,16 +227,16 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
      * @param state            Maps keys -> columns -> values
      * @param maxDeletionCount Remove at most this many entries from state
      * @param additionCount    Add exactly this many entries to state
-     * @return A Mutation map
+     * @return A KCVMutation map
      */
-    public Map<ByteBuffer, Mutation> mutateState(
+    public Map<ByteBuffer, KCVMutation> mutateState(
             Map<ByteBuffer, Map<ByteBuffer, ByteBuffer>> state,
             int maxDeletionCount, int additionCount) {
 
         final int keyLength = 8;
         final int colLength = 16;
 
-        Map<ByteBuffer, Mutation> result = new HashMap<ByteBuffer, Mutation>();
+        Map<ByteBuffer, KCVMutation> result = new HashMap<ByteBuffer, KCVMutation>();
 
         // deletion pass
         int dels = 0;
@@ -261,7 +255,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
                 col = colIter.next();
 
                 if (!result.containsKey(key)) {
-                    Mutation m = new Mutation(new LinkedList<Entry>(),
+                    KCVMutation m = new KCVMutation(new LinkedList<Entry>(),
                             new LinkedList<ByteBuffer>());
                     result.put(key, m);
                 }
@@ -304,7 +298,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
             state.get(key).put(col, col);
 
             if (!result.containsKey(key)) {
-                Mutation m = new Mutation(new LinkedList<Entry>(),
+                KCVMutation m = new KCVMutation(new LinkedList<Entry>(),
                         new LinkedList<ByteBuffer>());
                 result.put(key, m);
             }
@@ -316,8 +310,8 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         return result;
     }
 
-    public Map<ByteBuffer, Mutation> generateMutation(int keyCount, int columnCount, Map<ByteBuffer, Mutation> deleteFrom) {
-        Map<ByteBuffer, Mutation> result = new HashMap<ByteBuffer, Mutation>(keyCount);
+    public Map<ByteBuffer, KCVMutation> generateMutation(int keyCount, int columnCount, Map<ByteBuffer, KCVMutation> deleteFrom) {
+        Map<ByteBuffer, KCVMutation> result = new HashMap<ByteBuffer, KCVMutation>(keyCount);
 
         Random keyRand = new Random(keyCount);
         Random colRand = new Random(columnCount);
@@ -325,7 +319,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         final int keyLength = 8;
         final int colLength = 6;
 
-        Iterator<Map.Entry<ByteBuffer, Mutation>> deleteIter = null;
+        Iterator<Map.Entry<ByteBuffer, KCVMutation>> deleteIter = null;
         List<Entry> lastDeleteIterResult = null;
 
         if (null != deleteFrom) {
@@ -347,7 +341,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
                     if (null == lastDeleteIterResult || lastDeleteIterResult.isEmpty()) {
                         while (deleteIter.hasNext()) {
-                            Map.Entry<ByteBuffer, Mutation> ent = deleteIter.next();
+                            Map.Entry<ByteBuffer, KCVMutation> ent = deleteIter.next();
                             if (ent.getValue().hasAdditions() && !ent.getValue().getAdditions().isEmpty()) {
                                 lastDeleteIterResult = ent.getValue().getAdditions();
                                 break;
@@ -374,7 +368,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
             }
 
-            Mutation m = new Mutation(additions, deletions);
+            KCVMutation m = new KCVMutation(additions, deletions);
 
             result.put(key, m);
         }

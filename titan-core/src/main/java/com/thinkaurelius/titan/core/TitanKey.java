@@ -2,6 +2,11 @@
 package com.thinkaurelius.titan.core;
 
 
+import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.tinkerpop.blueprints.Element;
+
+import java.util.Collection;
+
 /**
  * TitanKey is an extension of {@link TitanType} for properties.
  * <p/>
@@ -30,11 +35,14 @@ public interface TitanKey extends TitanType {
     public Class<?> getDataType();
 
     /**
-     * Returns true if properties of this key are indexed.
+     * Returns true if properties of this key are indexed for the given type.
      *
      * @return true if properties of this key are indexed, else false
      */
-    public boolean hasIndex();
+    public boolean hasIndex(Class<? extends Element> clazz);
+
+
+    public Iterable<IndexType> getIndexes(Class<? extends Element> clazz);
 
     /**
      * Checks whether this property key is unique.

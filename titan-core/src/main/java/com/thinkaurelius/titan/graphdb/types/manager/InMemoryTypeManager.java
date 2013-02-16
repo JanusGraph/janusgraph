@@ -6,14 +6,7 @@ import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.types.Directionality;
-import com.thinkaurelius.titan.graphdb.types.FunctionalType;
-import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
-import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabel;
-import com.thinkaurelius.titan.graphdb.types.StandardPropertyKey;
-import com.thinkaurelius.titan.graphdb.types.StandardTypeMaker;
-import com.thinkaurelius.titan.graphdb.types.TypeCategory;
-import com.thinkaurelius.titan.graphdb.types.TypeVisibility;
+import com.thinkaurelius.titan.graphdb.types.*;
 
 import static com.thinkaurelius.titan.graphdb.types.manager.TypeManagerUtil.convertSignature;
 
@@ -30,10 +23,10 @@ public class InMemoryTypeManager implements TypeManager {
     public TitanKey createPropertyKey(InternalTitanTransaction tx, String name,
                                       TypeCategory category, Directionality directionality,
                                       TypeVisibility visibility, FunctionalType isfunctional, TitanType[] keysig, TitanType[] compactsig,
-                                      TypeGroup group, boolean isKey, boolean hasIndex,
+                                      TypeGroup group, boolean isUnique, IndexType[] indexes,
                                       Class<?> objectType) {
         StandardPropertyKey pt = new StandardPropertyKey(name, category, directionality, visibility,
-                isfunctional, convertSignature(keysig), convertSignature(compactsig), group, isKey, hasIndex, objectType);
+                isfunctional, convertSignature(keysig), convertSignature(compactsig), group, isUnique, indexes, objectType);
         return factory.createNewPropertyKey(pt, tx);
     }
 

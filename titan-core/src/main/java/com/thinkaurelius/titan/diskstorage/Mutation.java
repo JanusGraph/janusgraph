@@ -1,21 +1,29 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
+package com.thinkaurelius.titan.diskstorage;
+
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class Mutation {
+public class Mutation<E,K> {
 
-    private List<Entry> additions;
+    private List<E> additions;
 
-    private List<ByteBuffer> deletions;
+    private List<K> deletions;
 
-    public Mutation(List<Entry> additions, List<ByteBuffer> deletions) {
+    public Mutation(List<E> additions, List<K> deletions) {
         this.additions = additions;
         this.deletions = deletions;
+    }
+
+    public Mutation() {
+        this.additions = null;
+        this.deletions = null;
     }
 
     public boolean hasAdditions() {
@@ -26,15 +34,25 @@ public class Mutation {
         return deletions != null && !deletions.isEmpty();
     }
 
-    public List<Entry> getAdditions() {
+    public List<E> getAdditions() {
         return additions;
     }
 
-    public List<ByteBuffer> getDeletions() {
+    public List<K> getDeletions() {
         return deletions;
     }
 
-    public void merge(Mutation m) {
+    public void addition(E entry) {
+        if (additions==null) additions = new ArrayList<E>();
+        additions.add(entry);
+    }
+
+    public void deletion(K key) {
+        if (deletions==null) deletions = new ArrayList<K>();
+        deletions.add(key);
+    }
+
+    public void merge(Mutation<E,K> m) {
 
         if (null == m) {
             return;

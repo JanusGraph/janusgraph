@@ -11,6 +11,6 @@ import java.util.Map;
 
 public interface BufferMutationKeyColumnValueStore {
 
-    public void mutateMany(Map<String, Map<ByteBuffer, Mutation>> mutations, StoreTransaction txh) throws StorageException;
+    public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException;
 
 }

@@ -55,8 +55,16 @@ public class BackendMutator {
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-    public void mutateVertexIndex(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException {
+    public void mutateIndex(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException {
         vertexIndexStore.mutate(key, additions, deletions, stx);
+    }
+
+    public void addExternalIndex(String index, String docid, String key, Object value) throws StorageException {
+        tx.getIndexTransactionHandle(index).add(docid,key,value);
+    }
+
+    public void deleteExternalIndex(String index, String docid, String key) throws StorageException {
+        tx.getIndexTransactionHandle(index).delete(docid,key);
     }
 
     /**

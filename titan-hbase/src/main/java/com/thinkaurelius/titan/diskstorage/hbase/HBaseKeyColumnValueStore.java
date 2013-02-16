@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import org.apache.commons.codec.binary.Hex;
@@ -317,7 +317,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     public void mutateMany(
-            Map<ByteBuffer, Mutation> mutations,
+            Map<ByteBuffer, KCVMutation> mutations,
             StoreTransaction txh) throws StorageException {
         storeManager.mutateMany(ImmutableMap.of(columnFamily, mutations), txh);
     }

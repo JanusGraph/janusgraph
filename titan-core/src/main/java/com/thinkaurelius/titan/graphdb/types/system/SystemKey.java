@@ -3,11 +3,10 @@ package com.thinkaurelius.titan.graphdb.types.system;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.types.Directionality;
-import com.thinkaurelius.titan.graphdb.types.PropertyKeyDefinition;
-import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabel;
-import com.thinkaurelius.titan.graphdb.types.StandardPropertyKey;
-import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
+import com.thinkaurelius.titan.graphdb.types.*;
+import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Vertex;
 
 public class SystemKey extends SystemType implements PropertyKeyDefinition, TitanKey {
 
@@ -62,6 +61,17 @@ public class SystemKey extends SystemType implements PropertyKeyDefinition, Tita
     }
 
     @Override
+    public boolean hasIndex(Class<? extends Element> clazz) {
+        return index && clazz==Vertex.class;
+    }
+
+    @Override
+    public Iterable<IndexType> getIndexes(Class<? extends Element> clazz) {
+        if (index && clazz==Vertex.class) return ImmutableList.of(IndexType.of(clazz));
+        else return IterablesUtil.emptyIterable();
+    }
+
+    @Override
     public boolean isFunctional() {
         return true;
     }
@@ -74,11 +84,6 @@ public class SystemKey extends SystemType implements PropertyKeyDefinition, Tita
     @Override
     public Directionality getDirectionality() {
         return Directionality.Directed;
-    }
-
-    @Override
-    public boolean hasIndex() {
-        return index;
     }
 
     @Override

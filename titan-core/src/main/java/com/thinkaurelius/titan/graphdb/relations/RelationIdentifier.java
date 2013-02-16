@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.tinkerpop.blueprints.Direction;
 
 /**
@@ -59,8 +60,8 @@ public final class RelationIdentifier {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(relationId).append(TOSTRING_DELIMITER).append(outVertexId)
-                .append(TOSTRING_DELIMITER).append(typeId);
+        s.append(LongEncoding.encode(relationId)).append(TOSTRING_DELIMITER).append(LongEncoding.encode(outVertexId))
+                .append(TOSTRING_DELIMITER).append(LongEncoding.encode(typeId));
         return s.toString();
     }
 
@@ -82,9 +83,9 @@ public final class RelationIdentifier {
         String[] elements = id.split(TOSTRING_DELIMITER);
         if (elements.length != 3) return null;
         try {
-            return new RelationIdentifier(Long.parseLong(elements[1]),
-                    Long.parseLong(elements[2]),
-                    Long.parseLong(elements[0]));
+            return new RelationIdentifier(LongEncoding.decode(elements[1]),
+                    LongEncoding.decode(elements[2]),
+                    LongEncoding.decode(elements[0]));
         } catch (NumberFormatException e) {
             //throw new IllegalArgumentException("Invalid id - each token expected to be a number",e);
             return null;

@@ -9,13 +9,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
@@ -771,6 +765,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 //Commit saved EdgeTypes to TypeManager
                 if (simpleEdgeTypes != null) commitEdgeTypes(simpleEdgeTypes.keySet());
                 if (otherEdgeTypes != null) commitEdgeTypes(otherEdgeTypes.keySet());
+                //TODO: register with IndexProvider if necessary
 
                 if (!mutations.isEmpty()) persist(mutations, signatures, tx, mutator);
                 mutator.flush();
@@ -827,11 +822,17 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                         if (edge.isRemoved()) {
                             if (edge.isProperty()) {
                                 deleteIndexEntry((TitanProperty) edge, mutator);
+                            } else {
+                                //TODO: delete all indexed edge properties
                             }
                             deletions.add(getEntry(tx, edge, pos, signatures, true).getColumn());
                         } else {
                             assert edge.isNew();
-                            if (edge.isProperty()) properties.add((TitanProperty) edge);
+                            if (edge.isProperty()) {
+                                if (((TitanProperty)edge).getPropertyKey().hasIndex()) properties.add((TitanProperty) edge);
+                            } else {
+                                //TODO: add all indexed edge properties
+                            }
                             additions.add(getEntry(tx, edge, pos, signatures));
                         }
                     }
@@ -1018,12 +1019,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
     private void lockKeyedProperty(TitanProperty prop, BackendMutator mutator) throws StorageException {
         TitanKey pt = prop.getPropertyKey();
-        assert pt.isSimple();
-        if (pt.hasIndex() && pt.isUnique()) {
+        if (pt.isUnique()) {
+            Preconditions.checkArgument(pt.hasIndex(),"Standard Index needs to be created for property to be declared unique: " + pt.getName());
+            Preconditions.checkArgument(!(prop.getVertex() instanceof TitanRelation),"Can only lock vertex properties: " + prop);
             if (prop.isNew()) {
                 mutator.acquireVertexIndexLock(getIndexKey(prop.getAttribute()), getKeyedIndexColumn(pt), null);
             } else {
-                assert prop.isRemoved();
+                Preconditions.checkArgument(prop.isRemoved());
                 mutator.acquireVertexIndexLock(getIndexKey(prop.getAttribute()), getKeyedIndexColumn(pt), getIndexValue(prop));
             }
         }
@@ -1035,10 +1037,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         assert pt.isSimple();
         if (pt.hasIndex()) {
             if (pt.isUnique()) {
-                mutator.mutateVertexIndex(getIndexKey(prop.getAttribute()), null,
+                mutator.mutateIndex(getIndexKey(prop.getAttribute()), null,
                         Lists.newArrayList(getKeyedIndexColumn(prop.getPropertyKey())));
             } else {
-                mutator.mutateVertexIndex(getIndexKey(prop.getAttribute()), null,
+                mutator.mutateIndex(getIndexKey(prop.getAttribute()), null,
                         Lists.newArrayList(getIndexColumn(prop.getPropertyKey(), prop.getID())));
             }
 
@@ -1050,10 +1052,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         assert pt.isSimple();
         if (pt.hasIndex()) {
             if (pt.isUnique()) {
-                mutator.mutateVertexIndex(getIndexKey(prop.getAttribute()),
+                mutator.mutateIndex(getIndexKey(prop.getAttribute()),
                         Lists.newArrayList(new Entry(getKeyedIndexColumn(pt), getIndexValue(prop))), null);
             } else {
-                mutator.mutateVertexIndex(getIndexKey(prop.getAttribute()),
+                mutator.mutateIndex(getIndexKey(prop.getAttribute()),
                         Lists.newArrayList(new Entry(getIndexColumn(pt, prop.getID()), getIndexValue(prop))), null);
             }
         }
@@ -1066,7 +1068,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     }
 
     private ByteBuffer getIndexValue(TitanProperty prop) {
-        assert prop.getType().isSimple();
         return VariableLong.positiveByteBuffer(prop.getVertex().getID());
     }
 

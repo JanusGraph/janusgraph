@@ -11,11 +11,11 @@ import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Vertex;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class StandardTypeMaker implements TypeMaker {
 
@@ -33,8 +33,8 @@ public class StandardTypeMaker implements TypeMaker {
     private List<TitanType> primarySig;
     private List<TitanType> compactsig;
 
-    private boolean hasIndex;
-    private boolean isUnique;
+    private Set<IndexType> indexes;
+    private boolean isVertexUnique;
     private Class<?> objectType;
 
     public StandardTypeMaker(InternalTitanTransaction tx, TypeManager etManager) {
@@ -44,8 +44,8 @@ public class StandardTypeMaker implements TypeMaker {
         //Default assignments
         objectType = null;
         name = null;
-        hasIndex = false;
-        isUnique = false;
+        indexes = new HashSet<IndexType>(4);
+        isVertexUnique = false;
         primarySig = new ArrayList<TitanType>();
         compactsig = new ArrayList<TitanType>();
         category = null;
@@ -98,6 +98,16 @@ public class StandardTypeMaker implements TypeMaker {
         return signature;
     }
 
+    private IndexType[] checkIndexes(Set<IndexType> indexes) {
+        IndexType[] result = new IndexType[indexes.size()];
+        int i =0;
+        for (IndexType it : indexes) {
+            result[i]=it;
+            i++;
+        }
+        return result;
+    }
+
     @Override
     public TitanKey makePropertyKey() {
         if (category == null) category = TypeCategory.Simple;
@@ -108,18 +118,18 @@ public class StandardTypeMaker implements TypeMaker {
             throw new IllegalArgumentException("Only simple properties are supported");
         if (objectType == null)
             throw new IllegalArgumentException("Need to specify data type");
-        if (isUnique && !hasIndex)
-            throw new IllegalArgumentException("A unique key must have an index");
+        if (isVertexUnique && !indexes.contains(IndexType.of(Vertex.class)))
+            throw new IllegalArgumentException("A unique key requires the existence of a standard vertex index");
         return etManager.createPropertyKey(tx, name, category, directionality,
                 visibility, isFunctional, checkSignature(primarySig), checkSignature(compactsig),
-                group, isUnique, hasIndex, objectType);
+                group, isVertexUnique, checkIndexes(indexes), objectType);
     }
 
     @Override
     public TitanLabel makeEdgeLabel() {
         if (category == null) category = TypeCategory.HasProperties;
         checkGeneralArguments();
-        if (hasIndex)
+        if (!indexes.isEmpty())
             throw new IllegalArgumentException("Cannot declare labels to be indexed");
         return etManager.createEdgeLabel(tx, name, category, directionality,
                 visibility, isFunctional, checkPrimarySignature(primarySig), checkSignature(compactsig), group);
@@ -194,13 +204,29 @@ public class StandardTypeMaker implements TypeMaker {
 
     @Override
     public TypeMaker unique() {
-        isUnique = true;
+        isVertexUnique = true;
         return this;
     }
 
     @Override
-    public TypeMaker indexed() {
-        this.hasIndex = true;
+    public TypeMaker indexed(Class<? extends Element> clazz) {
+        if (clazz==Element.class) {
+            this.indexes.add(IndexType.of(Vertex.class));
+            this.indexes.add(IndexType.of(Edge.class));
+        } else {
+            this.indexes.add(IndexType.of(clazz));
+        }
+        return this;
+    }
+
+    @Override
+    public TypeMaker indexed(String indexName, Class<? extends Element> clazz) {
+        if (clazz==Element.class) {
+            this.indexes.add(IndexType.of(indexName, Vertex.class));
+            this.indexes.add(IndexType.of(indexName, Edge.class));
+        } else {
+            this.indexes.add(IndexType.of(indexName, clazz));
+        }
         return this;
     }
 
