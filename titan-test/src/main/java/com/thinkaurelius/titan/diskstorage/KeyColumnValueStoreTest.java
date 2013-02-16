@@ -16,12 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public abstract class KeyColumnValueStoreTest {
 
@@ -77,9 +72,9 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     public void loadValues(String[][] values) throws StorageException {
-        for (int i = 0; i < numKeys; i++) {
+        for (int i = 0; i < values.length; i++) {
             List<Entry> entries = new ArrayList<Entry>();
-            for (int j = 0; j < numColumns; j++) {
+            for (int j = 0; j < values[i].length; j++) {
                 entries.add(new Entry(KeyValueStoreUtil.getBuffer(j), KeyValueStoreUtil.getBuffer(values[i][j])));
             }
             store.mutate(KeyValueStoreUtil.getBuffer(i), entries, null, tx);
@@ -173,6 +168,28 @@ public abstract class KeyColumnValueStoreTest {
         log.debug("Checking values...");
         checkValueExistence(values);
         checkValues(values);
+    }
+
+    @Test
+    public void storeAndRetrievePerformance() throws StorageException {
+        int keys = 100, columns = 2000;
+        String[][] values = KeyValueStoreUtil.generateData(keys,columns);
+        log.debug("Loading values: "+keys+"x"+columns);
+        long time = System.currentTimeMillis();
+        loadValues(values);
+        System.out.println("Loading time (ms): " + (System.currentTimeMillis()-time));
+        //print(values);
+        Random r = new Random();
+        int trials = 10000;
+        int delta = 10;
+        log.debug("Reading values: "+trials+" trials");
+        time = System.currentTimeMillis();
+        for (int t=0;t<trials;t++) {
+            int key = r.nextInt(keys);
+            int start = r.nextInt(columns-delta);
+            store.getSlice(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(start+delta), tx);
+        }
+        System.out.println("Reading time (ms): " + (System.currentTimeMillis()-time));
     }
 
     @Test

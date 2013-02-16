@@ -126,20 +126,14 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         MAX_CLUSTER_CONNECTIONS_PER_HOST_KEY,
                         MAX_CLUSTER_CONNECTIONS_PER_HOST_DEFAULT);
 
-        AstyanaxContext.Builder ctxbuilder = getContextBuilder(config, maxConnsPerHost);
-
-        final AstyanaxContext.Builder clusterCtxBuilder =
-                getContextBuilder(config, maxClusterConnsPerHost);
-
-        this.clusterContext = createCluster(clusterCtxBuilder);
+        this.clusterContext = createCluster(getContextBuilder(config, maxClusterConnsPerHost, "Cluster"));
 
         ensureKeyspaceExists(clusterContext.getEntity());
 
-        this.keyspaceContext = ctxbuilder.buildKeyspace(ThriftFamilyFactory.getInstance());
+        this.keyspaceContext = getContextBuilder(config, maxConnsPerHost, "Keyspace").buildKeyspace(ThriftFamilyFactory.getInstance());
         this.keyspaceContext.start();
 
         openStores = new HashMap<String, AstyanaxOrderedKeyColumnValueStore>(8);
-
     }
 
     @Override
@@ -270,14 +264,13 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     private static AstyanaxContext<Cluster> createCluster(AstyanaxContext.Builder cb) {
-        AstyanaxContext<Cluster> clusterCtx =
-                cb.buildCluster(ThriftFamilyFactory.getInstance());
+        AstyanaxContext<Cluster> clusterCtx = cb.buildCluster(ThriftFamilyFactory.getInstance());
         clusterCtx.start();
 
         return clusterCtx;
     }
 
-    private AstyanaxContext.Builder getContextBuilder(Configuration config, int maxConnsPerHost) {
+    private AstyanaxContext.Builder getContextBuilder(Configuration config, int maxConnsPerHost, String usedFor) {
 
         final ConnectionPoolType poolType = ConnectionPoolType.valueOf(
                 config.getString(
@@ -298,7 +291,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                         .setConnectionPoolType(poolType)
                                         .setDiscoveryType(discType))
                         .withConnectionPoolConfiguration(
-                                new ConnectionPoolConfigurationImpl("TitanConnectionPool")
+                                new ConnectionPoolConfigurationImpl(usedFor + "TitanConnectionPool")
                                         .setPort(port)
                                         .setMaxConnsPerHost(maxConnsPerHost)
                                         .setRetryBackoffStrategy(new FixedRetryBackoffStrategy(1000, 5000)) // TODO configuration

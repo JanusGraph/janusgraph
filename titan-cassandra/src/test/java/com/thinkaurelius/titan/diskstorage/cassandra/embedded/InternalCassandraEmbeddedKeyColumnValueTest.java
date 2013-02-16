@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
+import com.thinkaurelius.titan.diskstorage.KeyValueStoreUtil;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
@@ -33,6 +34,5 @@ public class InternalCassandraEmbeddedKeyColumnValueTest extends KeyColumnValueS
         StoreFeatures features = manager.getFeatures();
         assertTrue(features.isKeyOrdered());
     }
-
 
 }
