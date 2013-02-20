@@ -225,7 +225,6 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
         return tx.addProperty(this, key, attribute);
     }
 
-
     @Override
     public TitanProperty addProperty(String key, Object attribute) {
         return tx.addProperty(this, key, attribute);
@@ -251,6 +250,12 @@ public abstract class AbstractTitanVertex implements InternalTitanVertex {
     @Override
     public TitanEdge addEdge(String label, TitanVertex vertex) {
         return tx.addEdge(this, vertex, label);
+    }
+
+
+    @Override
+    public Edge addEdge(String label, Vertex vertex) {
+        return addEdge(label,(TitanVertex)vertex);
     }
 
 	

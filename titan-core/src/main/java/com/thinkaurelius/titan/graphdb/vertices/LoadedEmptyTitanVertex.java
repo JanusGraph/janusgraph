@@ -185,6 +185,11 @@ public abstract class LoadedEmptyTitanVertex implements InternalTitanVertex {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }
 
+    @Override
+    public Edge addEdge(String label, Vertex vertex) {
+        throw new UnsupportedOperationException(errorName + " do not support incident edges");
+    }
+
 	
 	/* ---------------------------------------------------------------
 	 * In Memory TitanElement

@@ -219,6 +219,11 @@ abstract class DummyInternalRelation implements InternalRelation {
     }
 
     @Override
+    public Edge addEdge(String label, Vertex vertex) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
     public TitanProperty addProperty(TitanKey key, Object attribute) {
         return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
