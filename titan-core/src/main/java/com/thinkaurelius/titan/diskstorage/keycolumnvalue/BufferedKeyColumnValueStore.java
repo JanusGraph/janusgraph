@@ -32,13 +32,8 @@ public class BufferedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, int limit, StoreTransaction txh) throws StorageException {
-        return store.getSlice(key, columnStart, columnEnd, limit, getTx(txh));
-    }
-
-    @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, StoreTransaction txh) throws StorageException {
-        return store.getSlice(key, columnStart, columnEnd, getTx(txh));
+    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+        return store.getSlice(query, getTx(txh));
     }
 
     @Override

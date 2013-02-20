@@ -39,4 +39,19 @@ public interface TitanEdge extends TitanRelation, Edge {
     public TitanVertex getOtherVertex(TitanVertex vertex);
 
 
+    /**
+     * Checks whether this relation is directed.
+     *
+     * @return true, if this relation is directed, else false.
+     */
+    public boolean isDirected();
+
+    /**
+     * Checks whether this relation is unidirected.
+     *
+     * @return true, if this relation is unidirected, else false.
+     */
+    public boolean isUnidirected();
+
+
 }

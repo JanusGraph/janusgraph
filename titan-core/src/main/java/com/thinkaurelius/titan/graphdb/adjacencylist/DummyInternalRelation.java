@@ -11,9 +11,9 @@ import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -95,7 +95,7 @@ abstract class DummyInternalRelation implements InternalRelation {
     abstract int compareTo(InternalRelation r);
 
     @Override
-    public InternalTitanVertex getVertex(int pos) {
+    public InternalVertex getVertex(int pos) {
         return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 

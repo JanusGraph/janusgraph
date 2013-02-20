@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.graphdb.database.util;
 
 import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinition;
 
 import java.util.Collection;
@@ -19,11 +19,11 @@ public class TypeSignature {
     private TitanType[] valueTypes;
 
     public TypeSignature(TitanType et, InternalTitanTransaction tx) {
-        TypeDefinition def = ((InternalTitanType) et).getDefinition();
-        key = buildIndex(def.getKeySignature());
-        keyTypes = parseTypes(def.getKeySignature(), tx);
-        value = buildIndex(def.getCompactSignature());
-        valueTypes = parseTypes(def.getCompactSignature(), tx);
+        TypeDefinition def = ((InternalType) et).getDefinition();
+        key = buildIndex(def.getPrimaryKey());
+        keyTypes = parseTypes(def.getPrimaryKey(), tx);
+        value = buildIndex(def.getSignature());
+        valueTypes = parseTypes(def.getSignature(), tx);
     }
 
     private static final Map<String, Integer> buildIndex(String[] strs) {

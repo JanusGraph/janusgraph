@@ -6,14 +6,7 @@ import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.BufferTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.BufferedKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManagerAdapter;
@@ -73,7 +66,7 @@ public class Backend {
     private final StoreFeatures storeFeatures;
 
     private KeyColumnValueStore edgeStore;
-    private KeyColumnValueStore vertexIndexStore;
+    private KeyColumnValueStore indexStore;
     private IDAuthority idAuthority;
 
     private final ConsistentKeyLockConfiguration lockConfiguration;
@@ -146,6 +139,8 @@ public class Backend {
             }
             store = KeyValueStoreManagerAdapter.wrapKeyValueStore(kvstore, STATIC_KEY_LENGTHS);
         }
+        //Enable cache
+        store = new CachedKeyColumnValueStore(store);
         return store;
     }
 
@@ -172,9 +167,9 @@ public class Backend {
                 throw new IllegalStateException("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
             }
             edgeStore = getLockStore(getBufferStore(EDGESTORE_NAME));
-            vertexIndexStore = getLockStore(getBufferStore(VERTEXINDEX_STORE_NAME));
+            indexStore = getLockStore(getBufferStore(VERTEXINDEX_STORE_NAME));
 
-            if (hashPrefixIndex) vertexIndexStore = new HashPrefixKeyColumnValueStore(vertexIndexStore, 4);
+            if (hashPrefixIndex) indexStore = new HashPrefixKeyColumnValueStore(indexStore, 4);
 
             String version = storeManager.getConfigurationProperty(TITAN_BACKEND_VERSION);
             if (!TitanConstants.VERSION.equals(version)) {
@@ -224,9 +219,9 @@ public class Backend {
         return edgeStore;
     }
 
-    public KeyColumnValueStore getVertexIndexStore() {
-        Preconditions.checkNotNull(vertexIndexStore, "Backend has not yet been initialized");
-        return vertexIndexStore;
+    public KeyColumnValueStore getIndexStore() {
+        Preconditions.checkNotNull(indexStore, "Backend has not yet been initialized");
+        return indexStore;
     }
 
     public IDAuthority getIDAuthority() {
@@ -266,14 +261,14 @@ public class Backend {
 
     public void close() throws StorageException {
         edgeStore.close();
-        vertexIndexStore.close();
+        indexStore.close();
         idAuthority.close();
         storeManager.close();
     }
 
     public void clearStorage() throws StorageException {
         edgeStore.close();
-        vertexIndexStore.close();
+        indexStore.close();
         idAuthority.close();
         storeManager.clearStorage();
     }

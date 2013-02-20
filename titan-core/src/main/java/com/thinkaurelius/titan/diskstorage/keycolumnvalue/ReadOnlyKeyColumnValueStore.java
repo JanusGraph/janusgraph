@@ -62,15 +62,8 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-                                ByteBuffer columnEnd, int limit, StoreTransaction txh) throws StorageException {
-        return store.getSlice(key, columnStart, columnEnd, limit, txh);
-    }
-
-    @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-                                ByteBuffer columnEnd, StoreTransaction txh) throws StorageException {
-        return store.getSlice(key, columnStart, columnEnd, txh);
+    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+        return store.getSlice(query, txh);
     }
 
 }

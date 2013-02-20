@@ -29,13 +29,6 @@ public interface TitanLabel extends TitanType {
     public boolean isDirected();
 
     /**
-     * Checks whether this labels is defined as undirected.
-     *
-     * @return true, if this label is undirected, else false.
-     */
-    public boolean isUndirected();
-
-    /**
      * Checks whether this labels is defined as unidirected.
      *
      * @return true, if this label is unidirected, else false.

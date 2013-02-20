@@ -3,8 +3,10 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -14,9 +16,12 @@ import java.util.Map;
 
 public class IndexTransaction implements TransactionHandle {
 
+    private static final int DEFAULT_OUTER_MAP_SIZE = 3;
+    private static final int DEFAULT_INNER_MAP_SIZE = 5;
+
     private final IndexProvider index;
     private final TransactionHandle indexTx;
-    private Map<String,IndexMutation> mutations;
+    private Map<String,Map<String,IndexMutation>> mutations;
 
     public IndexTransaction(final IndexProvider index) throws StorageException {
         Preconditions.checkNotNull(index);
@@ -26,22 +31,41 @@ public class IndexTransaction implements TransactionHandle {
         this.mutations = null;
     }
 
-    public void add(String docid, String key, Object value) {
-        getIndexMutation(docid).addition(new IndexEntry(key,value));
+    public void add(String store, String docid, String key, Object value) {
+        getIndexMutation(store,docid).addition(new IndexEntry(key,value));
     }
 
-    public void delete(String docid, String key) {
-        getIndexMutation(docid).deletion(key);
+    public void delete(String store, String docid, String key) {
+        getIndexMutation(store,docid).deletion(key);
     }
 
-    private IndexMutation getIndexMutation(String docid) {
-        if (mutations==null) mutations = new HashMap<String,IndexMutation>();
-        IndexMutation m = mutations.get(docid);
+    private IndexMutation getIndexMutation(String store, String docid) {
+        if (mutations==null) mutations = new HashMap<String,Map<String,IndexMutation>>(DEFAULT_OUTER_MAP_SIZE);
+        Map<String,IndexMutation> storeMutations = mutations.get(store);
+        if (storeMutations==null) {
+            storeMutations = new HashMap<String,IndexMutation>(DEFAULT_INNER_MAP_SIZE);
+            mutations.put(store,storeMutations);
+
+        }
+        IndexMutation m = storeMutations.get(docid);
         if (m==null) {
             m = new IndexMutation();
-            mutations.put(docid,m);
+            storeMutations.put(docid, m);
         }
         return m;
+    }
+
+
+    public void register(String store, String key, Class<?> dataType) throws StorageException {
+        index.register(store,key,dataType,indexTx);
+    }
+
+    public boolean covers(String store, Class<?> dataType, Relation relation) {
+        return index.covers(store,dataType,relation);
+    }
+
+    public List<String> query(IndexQuery query) throws StorageException {
+        return index.query(query,indexTx);
     }
 
     @Override
@@ -68,4 +92,5 @@ public class IndexTransaction implements TransactionHandle {
             mutations=null;
         }
     }
+
 }

@@ -24,8 +24,12 @@ import com.tinkerpop.blueprints.Direction;
  * @see TitanEdge
  * @see TitanProperty
  */
-public interface TitanRelation extends TitanVertex {
+public interface TitanRelation extends TitanElement {
 
+
+    public void setProperty(TitanLabel label, TitanVertex vertex);
+
+    public TitanVertex getProperty(TitanLabel label);
 
     /**
      * Returns the type of this relation.
@@ -55,43 +59,11 @@ public interface TitanRelation extends TitanVertex {
     public boolean isIncidentOn(TitanVertex vertex);
 
     /**
-     * Checks whether this relation is directed.
-     *
-     * @return true, if this relation is directed, else false.
-     */
-    public boolean isDirected();
-
-
-    /**
-     * Checks whether this relation is undirected.
-     *
-     * @return true, if this relation is undirected, else false.
-     */
-    public boolean isUndirected();
-
-    /**
-     * Checks whether this relation is unidirected.
-     *
-     * @return true, if this relation is unidirected, else false.
-     */
-    public boolean isUnidirected();
-
-    /**
      * Checks whether this relation can be modified in the context of this transaction.
      *
      * @return true, if this relation can be modified, else false.
      */
     public boolean isModifiable();
-
-    /**
-     * Checks whether this relation is simple.
-     * <p/>
-     * A simple relation cannot have properties or incident edges.
-     *
-     * @return true, if this relation is simple, else false
-     */
-    public boolean isSimple();
-
 
     /**
      * Checks whether this relation is a loop.

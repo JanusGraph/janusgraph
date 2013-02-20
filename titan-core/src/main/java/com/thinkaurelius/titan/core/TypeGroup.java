@@ -2,7 +2,7 @@
 package com.thinkaurelius.titan.core;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.types.group.StandardTypeGroup;
+import com.thinkaurelius.titan.graphdb.types.StandardTypeGroup;
 
 /**
  * TypeGroup defines a group of {@link TitanType}s. Grouping TitanTypes into a TypeGroup has the benefit

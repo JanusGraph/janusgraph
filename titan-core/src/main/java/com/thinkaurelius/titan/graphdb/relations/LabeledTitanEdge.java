@@ -14,11 +14,12 @@ import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.adjacencylist.ModificationStatus;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsVertexUtil;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.query.SimpleTitanQuery;
 import com.thinkaurelius.titan.graphdb.relations.factory.RelationFactoryUtil;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.vertices.VertexUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -33,8 +34,8 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
     protected volatile AdjacencyList outEdges;
     protected final ReentrantLock adjLock = new ReentrantLock();
 
-    public LabeledTitanEdge(TitanLabel type, InternalTitanVertex start,
-                            InternalTitanVertex end, InternalTitanTransaction tx, AdjacencyListFactory adjList) {
+    public LabeledTitanEdge(TitanLabel type, InternalVertex start,
+                            InternalVertex end, InternalTitanTransaction tx, AdjacencyListFactory adjList) {
         super(type, start, end);
         assert !type.isSimple();
         assert tx != null;
@@ -125,7 +126,7 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
     }
 
 	/* ---------------------------------------------------------------
-	 * ###### The rest is copied verbatim from AbstractTitanVertex ##########
+	 * ###### The rest is copied verbatim from AbstractVertex ##########
 	 * ######### copied everything but "Changing Edges" and "In Memory TitanElement" section ######
 	 * ---------------------------------------------------------------
 	 */
@@ -157,8 +158,8 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
 //    @Override
 //    public boolean equals(Object oth) {
 //        if (oth==this) return true;
-//        else if (!(oth instanceof InternalTitanVertex)) return false;
-//        InternalTitanVertex other = (InternalTitanVertex)oth;
+//        else if (!(oth instanceof InternalVertex)) return false;
+//        InternalVertex other = (InternalVertex)oth;
 //        return VertexUtil.equalIDs(this, other);
 //    }
 
@@ -187,7 +188,7 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
         Iterator<TitanProperty> iter = new SimpleTitanQuery(this).type(key).propertyIterator();
         if (!iter.hasNext()) return null;
         else {
-            Object value = iter.next().getAttribute();
+            Object value = iter.next().getValue();
             if (iter.hasNext()) throw new QueryException("Multiple properties of specified type: " + key);
             return value;
         }
@@ -204,7 +205,7 @@ public class LabeledTitanEdge extends SimpleTitanEdge {
         Iterator<TitanProperty> iter = new SimpleTitanQuery(this).type(key).propertyIterator();
         if (!iter.hasNext()) return null;
         else {
-            O value = iter.next().getAttribute(clazz);
+            O value = iter.next().getValue(clazz);
             if (iter.hasNext()) throw new QueryException("Multiple properties of specified type: " + key);
             return value;
         }

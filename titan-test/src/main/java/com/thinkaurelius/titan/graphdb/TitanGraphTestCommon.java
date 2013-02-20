@@ -9,7 +9,6 @@ import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.types.Directionality;
 import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;

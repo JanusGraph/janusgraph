@@ -5,7 +5,6 @@ import com.thinkaurelius.titan.graphdb.loadingstatus.LoadingStatus;
 import com.thinkaurelius.titan.graphdb.query.SimpleAtomicQuery;
 import com.thinkaurelius.titan.graphdb.transaction.InMemoryTitanGraph;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
-import com.thinkaurelius.titan.graphdb.types.system.SystemLabel;
 import com.tinkerpop.blueprints.Direction;
 import org.junit.Test;
 

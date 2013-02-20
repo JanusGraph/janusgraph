@@ -34,23 +34,11 @@ public interface TitanKey extends TitanType {
      */
     public Class<?> getDataType();
 
-    /**
-     * Returns true if properties of this key are indexed for the given type.
-     *
-     * @return true if properties of this key are indexed, else false
-     */
-    public boolean hasIndex(Class<? extends Element> clazz);
+
+    public Iterable<String> getIndexes(Class<? extends Element> elementType);
 
 
-    public Iterable<IndexType> getIndexes(Class<? extends Element> clazz);
+    public boolean hasIndex(String name, Class<? extends Element> elementType);
 
-    /**
-     * Checks whether this property key is unique.
-     * A property key is <b>unique</b> if all attributes for properties of this key are uniquely associated with the
-     * property's vertex. In other words, there is a functional mapping from attribute values to vertices.
-     *
-     * @return true, if this property key is unique, else false.
-     */
-    public boolean isUnique();
 
 }

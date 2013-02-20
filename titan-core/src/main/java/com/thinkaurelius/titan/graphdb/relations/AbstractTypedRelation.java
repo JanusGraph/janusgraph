@@ -1,103 +1,60 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanType;
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.adjacencylist.RelationComparator;
-import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
-import com.thinkaurelius.titan.graphdb.vertices.NewEmptyTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.*;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.tinkerpop.blueprints.Direction;
 
-public abstract class AbstractTypedRelation extends NewEmptyTitanVertex implements InternalRelation {
+import javax.annotation.Nullable;
+import java.util.Set;
 
-    protected final InternalTitanType type;
+public abstract class AbstractTypedRelation extends AbstractElement implements InternalRelation {
 
-    public AbstractTypedRelation(TitanType type) {
-        assert type != null;
-        assert type instanceof InternalTitanType;
-        this.type = (InternalTitanType) type;
+    protected final InternalType type;
+
+    public AbstractTypedRelation(final long id, final TitanType type) {
+        super(id);
+        Preconditions.checkArgument(type!=null && type instanceof InternalType);
+        this.type = (InternalType) type;
     }
 
-	
+    @Override
+    public final InternalRelation it() {
+        if (!getVertex(0).tx().isClosed()) return this;
+        else return (InternalRelation)getId().findRelation(tx());
+    }
+
+    @Override
+    public final StandardTitanTx tx() {
+        StandardTitanTx tx = getVertex(0).tx();
+        if (!tx.isClosed()) return tx;
+        else return tx.getNextTx();
+    }
+
 	/* ---------------------------------------------------------------
-	 * In memory handling
+	 * Immutable Aspects of Relation
 	 * ---------------------------------------------------------------
 	 */
 
     @Override
-    public int hashCode() {
-        throw new UnsupportedOperationException("Needs to be overwritten");
-    }
-
-    protected final int objectHashCode() {
-        return super.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object oth) {
-        if (oth == this) return true;
-        else if (!(oth instanceof InternalRelation)) return false;
-        InternalRelation other = (InternalRelation) oth;
-        if (hasID() && other.hasID()) return getID() == other.getID();
-        else if (hasID() || other.hasID()) return false;
-        if (!type.equals(other.getType())) return false;
-        if (!getVertex(0).equals(other.getVertex(0))) return false;
-        for (String key : type.getDefinition().getKeySignature()) {
-            int keycompare = RelationComparator.compareOnKey(this, other, key);
-            if (keycompare != 0) return false;
+    public Direction getDirection(TitanVertex vertex) {
+        for (int i=0;i<getArity();i++) {
+            if (getVertex(i).equals(vertex)) return EdgeDirection.fromPosition(i);
         }
-        if (type.isFunctional()) return true;
-        if (type.isPropertyKey()) {
-            return ((TitanProperty) this).getAttribute().equals(((TitanProperty) other).getAttribute());
-        } else {
-            return getVertex(1).equals(other.getVertex(1));
+        throw new IllegalArgumentException("Relation is not incident on vertex");
+    }
+
+    @Override
+    public boolean isIncidentOn(TitanVertex vertex) {
+        for (int i=0;i<getArity();i++) {
+            if (getVertex(i).equals(vertex)) return true;
         }
-    }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        throw new CloneNotSupportedException("To be implemented");
-    }
-
-    @Override
-    public void remove() {
-        if (!isModifiable())
-            throw new UnsupportedOperationException("This edge is unmodifiable and hence cannot be deleted");
-        forceDelete();
-    }
-
-    @Override
-    public synchronized void forceDelete() {
-        getTransaction().deletedRelation(this);
-    }
-
-    @Override
-    public boolean isInline() {
         return false;
-    }
-	
-	/* ---------------------------------------------------------------
-	 * TitanType methods
-	 * ---------------------------------------------------------------
-	 */
-
-    @Override
-    public TitanType getType() {
-        return type;
-    }
-
-    @Override
-    public boolean isUndirected() {
-        return !type.isPropertyKey() && ((TitanLabel) type).isUndirected();
-    }
-
-    @Override
-    public boolean isDirected() {
-        return type.isPropertyKey() || ((TitanLabel) type).isDirected();
-    }
-
-    @Override
-    public boolean isUnidirected() {
-        return !type.isPropertyKey() && ((TitanLabel) type).isUnidirected();
     }
 
     @Override
@@ -111,9 +68,91 @@ public abstract class AbstractTypedRelation extends NewEmptyTitanVertex implemen
     }
 
     @Override
-    public boolean isSimple() {
-        return type.isSimple();
+    public boolean isLoop() {
+        return getArity()==2 && getVertex(0).equals(getVertex(1));
     }
+
+    @Override
+    public TitanType getType() {
+        return type;
+    }
+
+    @Override
+    public RelationIdentifier getId() {
+        return RelationIdentifier.get(this);
+    }
+
+    protected void verifyRemoval() {
+        if (!isModifiable())
+            throw new UnsupportedOperationException("This relation is not modifiable and hence cannot be removed");
+    }
+
+    /* ---------------------------------------------------------------
+	 * Mutable Aspects of Relation
+	 * ---------------------------------------------------------------
+	 */
+
+    @Override
+    public Object removeProperty(String key) {
+        if (!tx().containsType(key)) return null;
+        else return removeProperty(tx().getType(key));
+    }
+
+    @Override
+    public Object removeProperty(TitanType type) {
+        return it().removePropertyDirect(type);
+    }
+
+    @Override
+    public void setProperty(TitanLabel label, TitanVertex vertex) {
+        it().setPropertyDirect(label,vertex);
+    }
+
+    @Override
+    public void setProperty(String key, Object value) {
+        it().setPropertyDirect(tx().getType(key),value);
+    }
+
+    @Override
+    public void setProperty(TitanKey key, Object value) {
+        it().setPropertyDirect(key,value);
+    }
+
+    @Override
+    public Object getProperty(TitanKey key) {
+        return it().getPropertyDirect(key);
+    }
+
+    @Override
+    public Object getProperty(String key) {
+        if (!tx().containsType(key)) return null;
+        else return it().getPropertyDirect(tx().getType(key));
+    }
+
+    @Override
+    public TitanVertex getProperty(TitanLabel label) {
+        return (TitanVertex)it().getPropertyDirect(label);
+    }
+
+    @Override
+    public <O> O getProperty(TitanKey key, Class<O> clazz) {
+        return clazz.cast(getProperty(key));
+    }
+
+    @Override
+    public <O> O getProperty(String key, Class<O> clazz) {
+        return clazz.cast(getProperty(key));
+    }
+
+
+    @Override
+    public Set<String> getPropertyKeys() {
+        Set<String> result = Sets.newHashSet();
+        for (TitanType type : it().getPropertyKeysDirect()) result.add(type.getName());
+        return result;
+    }
+
+
 
 
 }

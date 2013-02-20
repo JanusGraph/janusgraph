@@ -75,28 +75,6 @@ public interface TitanVertex extends TitanElement, Vertex {
      */
     public TitanProperty addProperty(String key, Object attribute);
 
-    /**
-     * Add a property with the given key and value to this vertex.
-     * If the key is functional, then a possibly existing value is replaced. If it is not functional, then
-     * a new property is added.
-     *
-     * @param key   the string key of the property
-     * @param value the object value o the property
-     * @see #addProperty(String, Object)
-     */
-    public void setProperty(String key, Object value);
-
-    /**
-     * Removes all properties with the given key from this vertex.
-     *
-     * @param key the key of the properties to remove from the element
-     * @return the object value (or null) associated with that key prior to removal if the key is functional,
-     *         or an {@link Iterable} over all values (which may be empty) if it is not functional
-     */
-    public Object removeProperty(String key);
-
-
-	
 	/* ---------------------------------------------------------------
      * Incident TitanRelation Access methods
 	 * ---------------------------------------------------------------
@@ -112,53 +90,6 @@ public interface TitanVertex extends TitanElement, Vertex {
      */
     public TitanQuery query();
 
-    /**
-     * Retrieves the attribute value for the only property of the specified property key incident on this vertex.
-     * <p/>
-     * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
-     * If there could be multiple properties (i.e. for non-functional property keys), then use {@link #getProperties(TitanKey)}
-     *
-     * @param key key of the property for which to retrieve the attribute value
-     * @return Attribute value of the property with the specified type or null if no such property exists
-     * @throws IllegalArgumentException if more than one property of the specified key are incident on this vertex.
-     */
-    public Object getProperty(TitanKey key);
-
-    /**
-     * Retrieves the attribute value for the only property of the specified property key incident on this vertex.
-     * <p/>
-     * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
-     * If there could be multiple properties (i.e. for non-functional property keys), then use {@link #getProperties(String)}
-     *
-     * @param key key name of the property for which to retrieve the attribute value
-     * @return Attribute value of the property with the specified type or null if no such property exists
-     * @throws IllegalArgumentException if more than one property of the specified key are incident on this vertex.
-     */
-    public Object getProperty(String key);
-
-    /**
-     * Retrieves the attribute value for the only property of the specified property key incident on this vertex and casts
-     * it to the specified {@link Class}.
-     * <p/>
-     * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
-     *
-     * @param key key name of the property for which to retrieve the attribute value
-     * @return Attribute value of the property with the specified type
-     * @throws IllegalArgumentException if more than one property of the specified key are incident on this vertex.
-     */
-    public <O> O getProperty(TitanKey key, Class<O> clazz);
-
-    /**
-     * Retrieves the attribute value for the only property of the specified property key incident on this vertex and casts
-     * it to the specified {@link Class}.
-     * <p/>
-     * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
-     *
-     * @param key key of the property for which to retrieve the attribute value
-     * @return Attribute value of the property with the specified type
-     * @throws IllegalArgumentException if more than one property of the specified key are incident on this vertex.
-     */
-    public <O> O getProperty(String key, Class<O> clazz);
 
     /**
      * Returns an iterable over all properties incident on this vertex.
@@ -262,5 +193,13 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @return true, if this vertex has at least one incident edge, else false
      */
     public boolean isConnected();
+
+
+    /**
+     * Checks whether this entity has been loaded into the current transaction and modified.
+     *
+     * @return True, has been loaded and modified, else false.
+     */
+    public boolean isModified();
 
 }

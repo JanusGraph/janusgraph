@@ -6,17 +6,17 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 public class SimpleProperty extends AbstractTypedRelation implements TitanProperty {
 
-    private final InternalTitanVertex node;
+    private final InternalVertex node;
     private final Object attribute;
 
-    public SimpleProperty(TitanKey type, InternalTitanVertex node, Object attribute) {
+    public SimpleProperty(TitanKey type, InternalVertex node, Object attribute) {
         super(type);
         attribute = AttributeUtil.verifyAttribute(type, attribute);
         Preconditions.checkNotNull(node);
@@ -41,18 +41,18 @@ public class SimpleProperty extends AbstractTypedRelation implements TitanProper
 //		else if (!(oth instanceof TitanProperty)) return false;
 //		TitanProperty other = (TitanProperty)oth;
 //		if (!getType().equals(other.getType())) return false;
-//		return node.equals(other.getVertex()) && attribute.equals(other.getAttribute());
+//		return node.equals(other.getVertex()) && attribute.equals(other.getValue());
 //	}
 
     @Override
     public String toString() {
         return "p" + StringFactory.L_BRACKET + getId() + StringFactory.R_BRACKET +
                 StringFactory.L_BRACKET + getVertex().getId() + StringFactory.DASH +
-                getPropertyKey().getName() + StringFactory.ARROW + getAttribute() + StringFactory.R_BRACKET;
+                getPropertyKey().getName() + StringFactory.ARROW + getValue() + StringFactory.R_BRACKET;
     }
 
     @Override
-    public InternalTitanVertex getVertex(int pos) {
+    public InternalVertex getVertex(int pos) {
         if (pos == 0) return node;
         throw new ArrayIndexOutOfBoundsException("Exceeded number of vertices of 1 with given position: " + pos);
     }
@@ -85,12 +85,12 @@ public class SimpleProperty extends AbstractTypedRelation implements TitanProper
     }
 
     @Override
-    public Object getAttribute() {
+    public Object getValue() {
         return attribute;
     }
 
     @Override
-    public <O> O getAttribute(Class<O> clazz) {
+    public <O> O getValue(Class<O> clazz) {
         return clazz.cast(attribute);
     }
 

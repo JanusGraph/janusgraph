@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.Titan;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -10,8 +11,6 @@ import com.tinkerpop.blueprints.Vertex;
  */
 
 public class IndexType {
-
-    public static final String STANDARD = "standard";
 
     private String indexName;
     private Class<? extends Element> element;
@@ -31,7 +30,7 @@ public class IndexType {
     }
 
     public final static IndexType of(final Class<? extends Element> element) {
-        return new IndexType(STANDARD,element);
+        return new IndexType(Titan.Token.STANDARD_INDEX,element);
     }
 
     public String getIndexName() {
@@ -43,7 +42,7 @@ public class IndexType {
     }
 
     public boolean isStandardIndex() {
-        return indexName.equals(STANDARD);
+        return indexName.equals(Titan.Token.STANDARD_INDEX);
     }
 
     @Override

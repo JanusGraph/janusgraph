@@ -8,10 +8,8 @@ public interface PropertyKeyDefinition extends TypeDefinition {
 
     public Class<?> getDataType();
 
-    public boolean hasIndex(Class<? extends Element> clazz);
+    public Iterable<String> getIndexes(Class<? extends Element> clazz);
 
-    public Iterable<IndexType> getIndexes(Class<? extends Element> clazz);
-
-    public boolean isUnique();
+    public boolean hasIndex(String name, Class<? extends Element> elementType);
 
 }

@@ -6,8 +6,8 @@ import com.thinkaurelius.titan.core.TitanQuery;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.tinkerpop.blueprints.Direction;
 
 import java.util.Iterator;
@@ -34,7 +34,7 @@ public interface AtomicQuery extends TitanQuery {
     AtomicQuery clone();
 
 
-    InternalTitanVertex getNode();
+    InternalVertex getNode();
 
     public long getVertexID();
 

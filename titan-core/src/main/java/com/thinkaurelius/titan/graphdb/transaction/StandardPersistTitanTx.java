@@ -11,12 +11,11 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.StandardPersistedRelationFactory;
-import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.factory.StandardVertexFactories;
 import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
@@ -123,7 +122,7 @@ public class StandardPersistTitanTx extends AbstractTitanTx {
                 return null;
             } else {
                 assert ids.length == 1;
-                InternalTitanVertex n = getExistingVertex(ids[0]);
+                InternalVertex n = getExistingVertex(ids[0]);
                 addProperty2Index(key, value, n);
                 return n;
             }

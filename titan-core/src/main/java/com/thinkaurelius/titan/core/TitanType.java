@@ -2,6 +2,8 @@
 package com.thinkaurelius.titan.core;
 
 
+import com.tinkerpop.blueprints.Direction;
+
 /**
  * TitanType defines the schema for {@link TitanRelation}. TitanType can be configured through {@link TypeMaker} to
  * provide data verification, better storage efficiency, and higher retrieval performance.
@@ -48,7 +50,14 @@ public interface TitanType extends TitanVertex {
      *
      * @return true, if the type is functional, else false
      */
-    public boolean isFunctional();
+    /**
+     * Checks whether this property key is unique.
+     * A property key is <b>unique</b> if all attributes for properties of this key are uniquely associated with the
+     * property's vertex. In other words, there is a functional mapping from attribute values to vertices.
+     *
+     * @return true, if this property key is unique, else false.
+     */
+    public boolean isUnique(Direction direction);
 
     /**
      * Checks whether relations of this type are modifiable after creation.
@@ -59,16 +68,6 @@ public interface TitanType extends TitanVertex {
      * @return true, if relations of this type are modifiable, else false.
      */
     public boolean isModifiable();
-
-    /**
-     * Checks whether relations of this type are simple.
-     * <p/>
-     * If a TitanType is simple, all of its relations are defined to be simple, which means that they do not accept
-     * incident properties. Simple relations are more storage efficient.
-     *
-     * @return true, if relations of this type are simple, else false.
-     */
-    public boolean isSimple();
 
     /**
      * Returns the type group of this type.

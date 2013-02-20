@@ -6,10 +6,10 @@ import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.transaction.InMemoryTitanGraph;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
@@ -87,7 +87,7 @@ public class VertexIDAssignerTest {
                     }
                     InternalRelation property = (InternalRelation) next.addProperty("age", 25);
                     if (flush) {
-                        idAssigner.assignID((InternalTitanVertex) next);
+                        idAssigner.assignID((InternalVertex) next);
                         idAssigner.assignID(property);
                         if (edge != null) idAssigner.assignID(edge);
                     } else {

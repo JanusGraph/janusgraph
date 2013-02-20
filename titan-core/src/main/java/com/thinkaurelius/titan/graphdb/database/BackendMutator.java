@@ -29,7 +29,7 @@ public class BackendMutator {
         Preconditions.checkNotNull(backend);
         this.backend = backend;
         this.edgeStore = backend.getEdgeStore();
-        this.vertexIndexStore = backend.getVertexIndexStore();
+        this.vertexIndexStore = backend.getIndexStore();
         this.tx = (BackendTransaction) txh;
         this.stx = tx.getStoreTransactionHandle();
     }
@@ -60,11 +60,11 @@ public class BackendMutator {
     }
 
     public void addExternalIndex(String index, String docid, String key, Object value) throws StorageException {
-        tx.getIndexTransactionHandle(index).add(docid,key,value);
+        tx.getIndexTransactionHandle(index).add(docid, key, value);
     }
 
     public void deleteExternalIndex(String index, String docid, String key) throws StorageException {
-        tx.getIndexTransactionHandle(index).delete(docid,key);
+        tx.getIndexTransactionHandle(index).delete(docid, key);
     }
 
     /**

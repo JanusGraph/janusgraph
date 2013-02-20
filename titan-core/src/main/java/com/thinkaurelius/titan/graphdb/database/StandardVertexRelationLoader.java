@@ -4,15 +4,13 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.graphdb.adjacencylist.StandardAdjListFactory;
-import com.thinkaurelius.titan.graphdb.relations.InlineProperty;
-import com.thinkaurelius.titan.graphdb.relations.InlineTitanEdge;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.RelationFactoryUtil;
 import com.thinkaurelius.titan.graphdb.relations.persist.PersistLabeledTitanEdge;
 import com.thinkaurelius.titan.graphdb.relations.persist.PersistSimpleProperty;
 import com.thinkaurelius.titan.graphdb.relations.persist.PersistSimpleTitanEdge;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.tinkerpop.blueprints.Direction;
 
 /**
@@ -21,12 +19,12 @@ import com.tinkerpop.blueprints.Direction;
 
 public class StandardVertexRelationLoader implements VertexRelationLoader {
 
-    private final InternalTitanVertex vertex;
+    private final InternalVertex vertex;
     private final InternalTitanTransaction tx;
 
     private InternalRelation relation = null;
 
-    public StandardVertexRelationLoader(final InternalTitanVertex vertex) {
+    public StandardVertexRelationLoader(final InternalVertex vertex) {
         this.vertex = vertex;
         this.tx = vertex.getTransaction();
     }
@@ -43,8 +41,8 @@ public class StandardVertexRelationLoader implements VertexRelationLoader {
     @Override
     public void loadEdge(long edgeid, TitanLabel label, Direction dir, long otherVertexId) {
         Preconditions.checkArgument(relation == null, "Need to finalize previous relation");
-        InternalTitanVertex otherVertex = tx.getExistingVertex(otherVertexId);
-        InternalTitanVertex start, end;
+        InternalVertex otherVertex = tx.getExistingVertex(otherVertexId);
+        InternalVertex start, end;
         switch (dir) {
             case IN:
                 start = otherVertex;
@@ -89,7 +87,7 @@ public class StandardVertexRelationLoader implements VertexRelationLoader {
         Preconditions.checkArgument(!relation.getType().isSimple());
         Preconditions.checkArgument(label.isUnidirected() && label.isSimple());
 
-        InternalTitanVertex otherVertex = tx.getExistingVertex(vertexId);
+        InternalVertex otherVertex = tx.getExistingVertex(vertexId);
         InternalRelation inline = new InlineTitanEdge(label, relation, otherVertex);
         RelationFactoryUtil.connectRelation(inline, false, tx);
     }

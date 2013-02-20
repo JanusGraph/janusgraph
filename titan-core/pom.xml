@@ -77,6 +77,11 @@
             <version>1.2.0</version>
         </dependency>
         <dependency>
+            <groupId>com.carrotsearch</groupId>
+            <artifactId>hppc</artifactId>
+            <version>0.4.2</version>
+        </dependency>
+        <dependency>
             <groupId>com.googlecode</groupId>
             <artifactId>kryo</artifactId>
             <version>1.04</version>

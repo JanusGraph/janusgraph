@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.graphdb.relations.persist;
 
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.graphdb.entitystatus.BasicElement;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.SimpleTitanEdge;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.VertexUtil;
 
 public class PersistSimpleTitanEdge extends SimpleTitanEdge {
@@ -11,13 +11,13 @@ public class PersistSimpleTitanEdge extends SimpleTitanEdge {
     protected BasicElement entity;
 
     public PersistSimpleTitanEdge(TitanLabel type,
-                                  InternalTitanVertex start, InternalTitanVertex end) {
+                                  InternalVertex start, InternalVertex end) {
         super(type, start, end);
         entity = new BasicElement();
     }
 
     public PersistSimpleTitanEdge(TitanLabel type,
-                                  InternalTitanVertex start, InternalTitanVertex end, long id) {
+                                  InternalVertex start, InternalVertex end, long id) {
         super(type, start, end);
         entity = new BasicElement(id);
     }

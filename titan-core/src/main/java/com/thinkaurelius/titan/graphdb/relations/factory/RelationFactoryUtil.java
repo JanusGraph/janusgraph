@@ -2,10 +2,10 @@ package com.thinkaurelius.titan.graphdb.relations.factory;
 
 import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.SimpleTitanQuery;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.tinkerpop.blueprints.Direction;
 
 public class RelationFactoryUtil {
@@ -18,7 +18,7 @@ public class RelationFactoryUtil {
         //If functional relation, check that it is indeed unique for that type
         if (isNew && et.isFunctional()) {
 
-            InternalTitanVertex start = (InternalTitanVertex) relation.getVertex(0);
+            InternalVertex start = (InternalVertex) relation.getVertex(0);
 
             if (hasRelationOfType(start, et, Direction.OUT)) {
                 throw new IllegalArgumentException("Cannot create functional relation since an relation of that type already exists");
@@ -49,7 +49,7 @@ public class RelationFactoryUtil {
     }
 
 
-    public static final boolean hasRelationOfType(InternalTitanVertex vertex, TitanType type, Direction dir) {
+    public static final boolean hasRelationOfType(InternalVertex vertex, TitanType type, Direction dir) {
         SimpleTitanQuery q = new SimpleTitanQuery(vertex);
         q.includeHidden().type(type).direction(dir);
         if (vertex.getRelations(q, true).iterator().hasNext()) {

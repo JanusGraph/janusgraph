@@ -16,8 +16,8 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.placement.IDPlacement
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionAssignment;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,7 +139,7 @@ public class VertexIDAssigner {
         }
     }
 
-    public void assignID(InternalTitanVertex vertex) {
+    public void assignID(InternalVertex vertex) {
         for (int attempt = 0; attempt < MAX_PARTITION_RENEW_ATTEMPTS; attempt++) {
             long partitionID = -1;
             if (vertex instanceof InternalRelation) {
@@ -163,7 +163,7 @@ public class VertexIDAssigner {
         if (!placementStrategy.supportsBulkPlacement()) {
             for (InternalRelation relation : addedRelations) {
                 for (int i = 0; i < relation.getArity(); i++) {
-                    InternalTitanVertex vertex = relation.getVertex(i);
+                    InternalVertex vertex = relation.getVertex(i);
                     if (!vertex.hasID()) {
                         assignID(vertex);
                     }
@@ -172,10 +172,10 @@ public class VertexIDAssigner {
             }
         } else {
             //First, only assign idAuthorities to (real) vertices and types
-            Map<InternalTitanVertex, PartitionAssignment> assignments = new HashMap<InternalTitanVertex, PartitionAssignment>();
+            Map<InternalVertex, PartitionAssignment> assignments = new HashMap<InternalVertex, PartitionAssignment>();
             for (InternalRelation relation : addedRelations) {
                 for (int i = 0; i < relation.getArity(); i++) {
-                    InternalTitanVertex vertex = relation.getVertex(i);
+                    InternalVertex vertex = relation.getVertex(i);
                     if (!vertex.hasID()) {
                         if (!(vertex instanceof TitanType) || partitionRelationTypes) {
                             assignments.put(vertex, PartitionAssignment.EMPTY);
@@ -188,15 +188,15 @@ public class VertexIDAssigner {
             log.trace("Bulk id assignment for {} vertices", assignments.size());
             for (int attempt = 0; attempt < MAX_PARTITION_RENEW_ATTEMPTS && (assignments != null && !assignments.isEmpty()); attempt++) {
                 placementStrategy.getPartitions(assignments);
-                Map<InternalTitanVertex, PartitionAssignment> leftOvers = null;
-                Iterator<Map.Entry<InternalTitanVertex, PartitionAssignment>> iter = assignments.entrySet().iterator();
+                Map<InternalVertex, PartitionAssignment> leftOvers = null;
+                Iterator<Map.Entry<InternalVertex, PartitionAssignment>> iter = assignments.entrySet().iterator();
                 while (iter.hasNext()) {
-                    Map.Entry<InternalTitanVertex, PartitionAssignment> entry = iter.next();
+                    Map.Entry<InternalVertex, PartitionAssignment> entry = iter.next();
                     try {
                         assignID(entry.getKey(), entry.getValue().getPartitionID());
                         Preconditions.checkArgument(entry.getKey().hasID());
                     } catch (IDPoolExhaustedException e) {
-                        if (leftOvers == null) leftOvers = new HashMap<InternalTitanVertex, PartitionAssignment>();
+                        if (leftOvers == null) leftOvers = new HashMap<InternalVertex, PartitionAssignment>();
                         leftOvers.put(entry.getKey(), PartitionAssignment.EMPTY);
                         break;
                     }
@@ -224,7 +224,7 @@ public class VertexIDAssigner {
         }
     }
 
-    private void assignID(final InternalTitanVertex vertex, final long partitionIDl) {
+    private void assignID(final InternalVertex vertex, final long partitionIDl) {
         Preconditions.checkNotNull(vertex);
         Preconditions.checkArgument(!vertex.hasID());
         Preconditions.checkArgument(partitionIDl >= 0 && partitionIDl <= maxPartitionID, partitionIDl);

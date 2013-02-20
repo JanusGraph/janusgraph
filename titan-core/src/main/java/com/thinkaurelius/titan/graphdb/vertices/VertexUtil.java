@@ -9,9 +9,10 @@ import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyList;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.query.SimpleAtomicQuery;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.util.interval.AtomicInterval;
 import com.thinkaurelius.titan.util.interval.DoesNotExist;
@@ -21,20 +22,6 @@ import java.util.Map;
 
 public class VertexUtil {
 
-    public static void checkAccessbility(InternalTitanVertex v) {
-        Preconditions.checkArgument(v.isAccessible(), "TitanVertex is not accessible!");
-    }
-
-    public static void checkAvailability(InternalTitanVertex v) {
-        Preconditions.checkArgument(v.isAvailable(), "TitanVertex is not available!");
-    }
-
-    public static void prepareForRemoval(InternalTitanVertex v) {
-        for (TitanRelation r : SimpleAtomicQuery.queryAll(v).relations()) {
-            if (r.getType().equals(SystemKey.VertexState)) r.remove();
-            else throw new IllegalStateException("Cannot remove node since it is still connected");
-        }
-    }
 
     public static Iterable<InternalRelation> filterByQuery(final AtomicQuery query, Iterable<InternalRelation> iter) {
         if (iter == AdjacencyList.Empty) return iter;
@@ -91,7 +78,7 @@ public class VertexUtil {
                             } else {
                                 assert o != null;
                                 assert ie.isProperty();
-                                Object attribute = ((TitanProperty) ie).getAttribute();
+                                Object attribute = ((TitanProperty) ie).getValue();
                                 assert attribute != null;
                                 assert o instanceof AtomicInterval;
                                 AtomicInterval iv = (AtomicInterval) o;
@@ -111,7 +98,7 @@ public class VertexUtil {
     }
 
 
-    public static final Iterable<InternalRelation> filterLoopEdges(Iterable<InternalRelation> iter, final InternalTitanVertex v) {
+    public static final Iterable<InternalRelation> filterLoopEdges(Iterable<InternalRelation> iter, final InternalVertex v) {
         if (iter == AdjacencyList.Empty) return iter;
         else return Iterables.filter(iter, new Predicate<InternalRelation>() {
 
@@ -135,28 +122,6 @@ public class VertexUtil {
         } else {
             return edges.getEdges();
         }
-    }
-
-
-    /**
-     * Checks whether the two given vertices have the same id(s).
-     * Note that this method assumes that both v1,v2 are not NULL.
-     *
-     * @param v1
-     * @param v2
-     * @return
-     */
-    public static final boolean equalIDs(InternalTitanVertex v1, InternalTitanVertex v2) {
-        if (v1.hasID() && v2.hasID()) {
-            return v1.getID() == v2.getID();
-        } else return false;
-    }
-
-    public static final int getIDHashCode(InternalTitanVertex v1) {
-        if (v1.hasID()) {
-            long id = v1.getID();
-            return 37 * 31 + (int) (id ^ (id >>> 32));
-        } else throw new IllegalArgumentException("Given node does not have an id");
     }
 
 

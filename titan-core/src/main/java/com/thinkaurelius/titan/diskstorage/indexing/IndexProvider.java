@@ -13,9 +13,11 @@ import java.util.Map;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public interface IndexProvider {
+public interface IndexProvider extends IndexInformation {
 
-    public void mutate(Map<String, IndexMutation> mutations, TransactionHandle tx) throws StorageException;
+    public void mutate(Map<String,Map<String, IndexMutation>> mutations, TransactionHandle tx) throws StorageException;
+
+    public List<String> query(IndexQuery query, TransactionHandle tx) throws StorageException;
 
     /**
      * Returns a transaction handle for a new transaction.

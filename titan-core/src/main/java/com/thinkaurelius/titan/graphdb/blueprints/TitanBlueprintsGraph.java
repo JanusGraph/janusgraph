@@ -88,6 +88,10 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
         return tx;
     }
 
+    public TitanTransaction getCurrentThreadTx() {
+        return getAutoStartTx();
+    }
+
 
     @Override
     public synchronized void shutdown() {

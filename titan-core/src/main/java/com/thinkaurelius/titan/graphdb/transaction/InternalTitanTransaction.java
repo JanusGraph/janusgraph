@@ -7,8 +7,8 @@ import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
 public interface InternalTitanTransaction extends TitanTransaction {
 
@@ -40,7 +40,7 @@ public interface InternalTitanTransaction extends TitanTransaction {
      * @param n TitanVertex for which to create a new edge query
      * @return New edge query
      */
-    TitanQuery query(InternalTitanVertex n);
+    TitanQuery query(InternalVertex n);
 
 
     // ######## TitanVertex / TitanRelation Loading  ############
@@ -107,7 +107,7 @@ public interface InternalTitanTransaction extends TitanTransaction {
      * @param id TitanVertex id
      * @return TitanVertex associated with the specified id
      */
-    InternalTitanVertex getExistingVertex(long id);
+    InternalVertex getExistingVertex(long id);
 
     /**
      * Whenever a new entity gets created within the current transaction,
@@ -115,7 +115,7 @@ public interface InternalTitanTransaction extends TitanTransaction {
      *
      * @param n Newly created entity
      */
-    void registerNewEntity(InternalTitanVertex n);
+    void registerNewEntity(InternalVertex n);
 
 
     /**
@@ -123,7 +123,7 @@ public interface InternalTitanTransaction extends TitanTransaction {
      *
      * @param n Deleted node
      */
-    public void deleteVertex(InternalTitanVertex n);
+    public void deleteVertex(InternalVertex n);
 
     /**
      * Retrieves all idAuthorities for vertices which have an incident property of the given type with the specified attribute value

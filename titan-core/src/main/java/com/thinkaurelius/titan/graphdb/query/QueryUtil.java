@@ -3,16 +3,16 @@ package com.thinkaurelius.titan.graphdb.query;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.util.interval.AtomicInterval;
 
 import java.util.Map;
 
 public class QueryUtil {
 
-    public static final TitanProperty queryHiddenFunctionalProperty(InternalTitanVertex node, TitanKey propType) {
-        assert ((InternalTitanType) propType).isHidden() : "Expected hidden property key";
+    public static final TitanProperty queryHiddenFunctionalProperty(InternalVertex node, TitanKey propType) {
+        assert ((InternalType) propType).isHidden() : "Expected hidden property key";
         assert propType.isFunctional() : "Expected functional property  type";
         return Iterators.getOnlyElement(
                 new SimpleAtomicQuery(node).
@@ -31,7 +31,7 @@ public class QueryUtil {
     public static boolean queryCoveredByDiskIndexes(AtomicQuery query) {
         if (!query.hasConstraints()) return true;
         if (!query.hasEdgeTypeCondition()) return false;
-        String[] keysig = ((InternalTitanType) query.getTypeCondition()).getDefinition().getKeySignature();
+        String[] keysig = ((InternalType) query.getTypeCondition()).getDefinition().getPrimaryKey();
         Map<String, Object> constraints = query.getConstraints();
         int num = 0;
         for (String key : keysig) {
@@ -61,7 +61,7 @@ public class QueryUtil {
     public static boolean hasFirstKeyConstraint(AtomicQuery query) {
         if (!query.hasConstraints()) return false;
         if (!query.hasEdgeTypeCondition()) return false;
-        String[] keysig = ((InternalTitanType) query.getTypeCondition()).getDefinition().getKeySignature();
+        String[] keysig = ((InternalType) query.getTypeCondition()).getDefinition().getPrimaryKey();
         return keysig.length > 0 && query.getConstraints().containsKey(keysig[0]);
     }
 

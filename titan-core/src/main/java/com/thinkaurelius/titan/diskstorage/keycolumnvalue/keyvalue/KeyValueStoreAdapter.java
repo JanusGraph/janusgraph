@@ -2,10 +2,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,17 +46,10 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
     }
 
     @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd,
-                                int limit, StoreTransaction txh) throws StorageException {
-        return convert(store.getSlice(concatenatePrefix(key, columnStart), concatenatePrefix(key, columnEnd), new KeyColumnSliceSelector(key, limit), txh));
+    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+        return convert(store.getSlice(concatenatePrefix(query.getKey(), query.getSliceStart()), concatenatePrefix(query.getKey(), query.getSliceEnd()),
+                new KeyColumnSliceSelector(query.getKey(), query.getLimit()), txh));
     }
-
-    @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd,
-                                StoreTransaction txh) throws StorageException {
-        return convert(store.getSlice(concatenatePrefix(key, columnStart), concatenatePrefix(key, columnEnd), new KeyColumnSliceSelector(key), txh));
-    }
-
 
     @Override
     public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {

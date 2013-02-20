@@ -8,92 +8,94 @@ import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.core.TypeMaker;
-import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
+import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 
 public class StandardTypeMaker implements TypeMaker {
 
-    private static final Set<String> RESERVED_NAMES = ImmutableSet.of("id", "label");
+    private static final Set<String> RESERVED_NAMES = ImmutableSet.of("id", "label", "key");
 
-    private final InternalTitanTransaction tx;
-    private final TypeManager etManager;
+    private final StandardTitanTx tx;
 
-    private TypeVisibility visibility;
     private String name;
     private TypeGroup group;
-    private FunctionalType isFunctional;
-    private Directionality directionality;
-    private TypeCategory category;
-    private List<TitanType> primarySig;
-    private List<TitanType> compactsig;
+    private boolean[] isUnique;
+    private boolean[] hasUniqueLock;
+    private boolean[] isStatic;
+    private boolean isHidden;
+    private boolean isModifiable;
+    private List<TitanType> primaryKey;
+    private List<TitanType> signature;
+
+    private boolean isUnidirectional;
 
     private Set<IndexType> indexes;
-    private boolean isVertexUnique;
-    private Class<?> objectType;
+    private Class<?> dataType;
 
-    public StandardTypeMaker(InternalTitanTransaction tx, TypeManager etManager) {
+
+    public StandardTypeMaker(StandardTitanTx tx) {
         this.tx = tx;
-        this.etManager = etManager;
 
         //Default assignments
-        objectType = null;
         name = null;
-        indexes = new HashSet<IndexType>(4);
-        isVertexUnique = false;
-        primarySig = new ArrayList<TitanType>();
-        compactsig = new ArrayList<TitanType>();
-        category = null;
-        directionality = Directionality.Directed;
-        isFunctional = FunctionalType.NON_FUNCTIONAL;
         group = TypeGroup.DEFAULT_GROUP;
-        visibility = TypeVisibility.Modifiable;
+        isUnique = new boolean[2]; //false
+        hasUniqueLock = new boolean[2]; //false
+        isStatic = new boolean[2]; //false
+        isHidden = false;
+        isModifiable = true;
+        primaryKey = new ArrayList<TitanType>(4);
+        signature = new ArrayList<TitanType>(4);
+
+        isUnidirectional=false;
+
+        indexes = new HashSet<IndexType>(4);
+        dataType = null;
     }
 
     private void checkGeneralArguments() {
-        if (name == null || name.length() == 0)
-            throw new IllegalArgumentException("Need to specify name");
-        if (name.startsWith(SystemTypeManager.systemETprefix))
-            throw new IllegalArgumentException("Name starts with a reserved keyword: " + SystemTypeManager.systemETprefix);
-        if (RESERVED_NAMES.contains(name.toLowerCase()))
-            throw new IllegalArgumentException("Name is reserved: " + name);
-        if ((!primarySig.isEmpty() || !compactsig.isEmpty()) && category != TypeCategory.HasProperties)
-            throw new IllegalArgumentException("Can only specify signatures for labeled edge types");
-        checkPrimarySignature(primarySig);
-        checkSignature(compactsig);
-        Set<TitanType> intersectSign = Sets.newHashSet(primarySig);
-        intersectSign.retainAll(compactsig);
-        if (!intersectSign.isEmpty())
-            throw new IllegalArgumentException("The primary key and the compact signature contain identical types: " + intersectSign);
+        Preconditions.checkArgument(StringUtils.isBlank(name),"Need to specify name");
+        Preconditions.checkArgument(!name.startsWith(SystemTypeManager.systemETprefix),
+            "Name starts with a reserved keyword: " + SystemTypeManager.systemETprefix);
+        Preconditions.checkArgument(!RESERVED_NAMES.contains(name.toLowerCase()),
+            "Name is reserved: " + name);
+        for (int i=0;i<2;i++) Preconditions.checkArgument(!hasUniqueLock[i] || isUnique[i],
+                "Must be unique in order to have a lock");
+        checkPrimaryKey(primaryKey);
+        checkSignature(signature);
+        Preconditions.checkArgument(Sets.intersection(Sets.newHashSet(primaryKey),Sets.newHashSet(signature)).isEmpty(),
+                "Signature and primary key must be disjoined");
     }
 
-    private TitanType[] checkPrimarySignature(List<TitanType> sig) {
+    private static long[] checkPrimaryKey(List<TitanType> sig) {
         for (TitanType t : sig) {
             Preconditions.checkArgument(t.isEdgeLabel()
                     || Comparable.class.isAssignableFrom(((TitanKey) t).getDataType()),
-                    "Type must be a label or a key with comparable data type: " + t);
+                    "Key must have comparable data type to be used as primary key: " + t);
         }
         return checkSignature(sig);
     }
 
-    private TitanType[] checkSignature(List<TitanType> sig) {
-        TitanType[] signature = new TitanType[sig.size()];
+    private static long[] checkSignature(List<TitanType> sig) {
+        Preconditions.checkArgument(sig.size() == (Sets.newHashSet(sig)).size(),"Signature and primary key cannot contain duplicate types");
+        long[] signature = new long[sig.size()];
         for (int i = 0; i < sig.size(); i++) {
             TitanType et = sig.get(i);
-            if (!et.isFunctional())
-                throw new IllegalArgumentException("Signature edge types must be functional :" + et);
-            if (!et.isSimple())
-                throw new IllegalArgumentException("Signature edge types must be simple: " + et);
-            if (et.isEdgeLabel() && !((TitanLabel) et).isUnidirected())
-                throw new IllegalArgumentException("Signature relationship types must be unidirected: " + et);
-            if (et.isPropertyKey() && ((TitanKey) et).getDataType().equals(Object.class))
-                throw new IllegalArgumentException("Signature keys must have a proper declared datatype: " + et);
-            signature[i] = et;
+            Preconditions.checkNotNull(et);
+            Preconditions.checkArgument(et.isUnique(Direction.OUT),"Type must be functional: " + et);
+            Preconditions.checkArgument(!et.isEdgeLabel() || ((TitanLabel)et).isUnidirected(),
+                    "Label must be unidirectional: " + et);
+            Preconditions.checkArgument(!et.isPropertyKey() || !((TitanKey) et).getDataType().equals(Object.class),
+                    "Signature keys must have a proper declared datatype: " + et);
+            signature[i] = et.getID();
         }
         return signature;
     }
@@ -110,88 +112,61 @@ public class StandardTypeMaker implements TypeMaker {
 
     @Override
     public TitanKey makePropertyKey() {
-        if (category == null) category = TypeCategory.Simple;
         checkGeneralArguments();
-        if (directionality != Directionality.Directed)
-            throw new IllegalArgumentException("keys must be directed");
-        if (category != TypeCategory.Simple)
-            throw new IllegalArgumentException("Only simple properties are supported");
-        if (objectType == null)
-            throw new IllegalArgumentException("Need to specify data type");
-        if (isVertexUnique && !indexes.contains(IndexType.of(Vertex.class)))
-            throw new IllegalArgumentException("A unique key requires the existence of a standard vertex index");
-        return etManager.createPropertyKey(tx, name, category, directionality,
-                visibility, isFunctional, checkSignature(primarySig), checkSignature(compactsig),
-                group, isVertexUnique, checkIndexes(indexes), objectType);
+        isUnidirectional=false;
+        Preconditions.checkNotNull(dataType,"Need to specify a datatype");
+        Preconditions.checkArgument(!isUnique[EdgeDirection.position(Direction.OUT)] ||
+                indexes.contains(IndexType.of(Vertex.class)), "A unique key requires the existence of a standard vertex index");
+        return tx.makePropertyKey(new StandardKeyDefinition(name,group,isUnique,hasUniqueLock,isStatic,isHidden,isModifiable,
+                checkPrimaryKey(primaryKey),checkSignature(signature),checkIndexes(indexes),dataType));
+
     }
+
 
     @Override
     public TitanLabel makeEdgeLabel() {
-        if (category == null) category = TypeCategory.HasProperties;
         checkGeneralArguments();
-        if (!indexes.isEmpty())
-            throw new IllegalArgumentException("Cannot declare labels to be indexed");
-        return etManager.createEdgeLabel(tx, name, category, directionality,
-                visibility, isFunctional, checkPrimarySignature(primarySig), checkSignature(compactsig), group);
-
+        Preconditions.checkArgument(indexes.isEmpty(),"Cannot declare labels to be indexed");
+        return tx.makeEdgeLabel(new StandardLabelDefinition(name, group, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,
+                checkPrimaryKey(primaryKey), checkSignature(signature), isUnidirectional));
     }
 
     @Override
     public StandardTypeMaker signature(TitanType... types) {
-        compactsig = Arrays.asList(types);
+        signature.addAll(Arrays.asList(types));
         return this;
     }
 
     @Override
     public StandardTypeMaker primaryKey(TitanType... types) {
-        primarySig = Arrays.asList(types);
+        primaryKey.addAll(Arrays.asList(types));
         return this;
     }
 
-    @Override
-    public StandardTypeMaker simple() {
-        category = TypeCategory.Simple;
-        return this;
-    }
 
     @Override
     public StandardTypeMaker dataType(Class<?> clazz) {
-        objectType = clazz;
+        Preconditions.checkNotNull(clazz);
+        dataType = clazz;
+        return this;
+    }
+
+
+    @Override
+    public StandardTypeMaker directed() {
+        isUnidirectional=false;
         return this;
     }
 
     @Override
-    public StandardTypeMaker functional() {
-        return functional(true);
-    }
-
-    @Override
-    public StandardTypeMaker functional(boolean locking) {
-        if (locking) isFunctional = FunctionalType.FUNCTIONAL_LOCKING;
-        else isFunctional = FunctionalType.FUNCTIONAL;
-        return this;
-    }
-
-    @Override
-    public TypeMaker directed() {
-        directionality = Directionality.Directed;
-        return this;
-    }
-
-    @Override
-    public TypeMaker undirected() {
-        directionality = Directionality.Undirected;
-        return this;
-    }
-
-    @Override
-    public TypeMaker unidirected() {
-        directionality = Directionality.Unidirected;
+    public StandardTypeMaker unidirected() {
+        isUnidirectional=true;
         return this;
     }
 
     @Override
     public StandardTypeMaker group(TypeGroup group) {
+        Preconditions.checkNotNull(group);
         this.group = group;
         return this;
     }
@@ -203,13 +178,25 @@ public class StandardTypeMaker implements TypeMaker {
     }
 
     @Override
-    public TypeMaker unique() {
-        isVertexUnique = true;
+    public StandardTypeMaker unique(Direction direction, UniquenessConsistency consistency) {
+        if (direction==Direction.BOTH) {
+            unique(Direction.IN,consistency); unique(Direction.OUT,consistency);
+        } else {
+            isUnique[EdgeDirection.position(direction)]=true;
+            hasUniqueLock[EdgeDirection.position(direction)]=
+                    (consistency==UniquenessConsistency.LOCK?true:false);
+        }
         return this;
     }
 
     @Override
-    public TypeMaker indexed(Class<? extends Element> clazz) {
+    public StandardTypeMaker unique(Direction direction) {
+        unique(direction,UniquenessConsistency.LOCK);
+        return this;
+    }
+
+    @Override
+    public StandardTypeMaker indexed(Class<? extends Element> clazz) {
         if (clazz==Element.class) {
             this.indexes.add(IndexType.of(Vertex.class));
             this.indexes.add(IndexType.of(Edge.class));
@@ -220,12 +207,33 @@ public class StandardTypeMaker implements TypeMaker {
     }
 
     @Override
-    public TypeMaker indexed(String indexName, Class<? extends Element> clazz) {
+    public StandardTypeMaker indexed(String indexName, Class<? extends Element> clazz) {
         if (clazz==Element.class) {
             this.indexes.add(IndexType.of(indexName, Vertex.class));
             this.indexes.add(IndexType.of(indexName, Edge.class));
         } else {
             this.indexes.add(IndexType.of(indexName, clazz));
+        }
+        return this;
+    }
+
+    public StandardTypeMaker hidden() {
+        this.isHidden=true;
+        this.isModifiable=false;
+        return this;
+    }
+
+
+    public StandardTypeMaker unModifiable() {
+        this.isModifiable=false;
+        return this;
+    }
+
+    public StandardTypeMaker makeStatic(Direction direction) {
+        if (direction==Direction.BOTH) {
+            makeStatic(Direction.IN); makeStatic(Direction.OUT);
+        } else {
+            isStatic[EdgeDirection.position(direction)]=true;
         }
         return this;
     }

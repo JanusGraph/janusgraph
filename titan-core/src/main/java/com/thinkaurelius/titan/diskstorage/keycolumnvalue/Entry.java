@@ -1,5 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.util.datastructures.ImmutableLongObjectMap;
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -9,15 +14,18 @@ import java.nio.ByteBuffer;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
-public class Entry {
+public class Entry implements Comparable<Entry> {
 
     private final ByteBuffer column;
     private final ByteBuffer value;
 
+    private volatile transient ImmutableLongObjectMap cache;
+
     public Entry(ByteBuffer column, ByteBuffer value) {
-        assert column != null;
+        Preconditions.checkNotNull(column);
         this.column = column;
         this.value = value;
+        this.cache = null;
     }
 
     /**
@@ -39,36 +47,32 @@ public class Entry {
         return value;
     }
 
-
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((column == null) ? 0 : column.hashCode());
-        result = prime * result + ((value == null) ? 0 : value.hashCode());
-        return result;
+        return new HashCodeBuilder().append(column).toHashCode();
     }
-
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (!getClass().isInstance(obj)) return false;
         Entry other = (Entry) obj;
-        if (column == null) {
-            if (other.column != null)
-                return false;
-        } else if (!column.equals(other.column))
-            return false;
-        if (value == null) {
-            if (other.value != null)
-                return false;
-        } else if (!value.equals(other.value))
-            return false;
-        return true;
+        return column.equals(other.column);
     }
+
+    @Override
+    public int compareTo(Entry entry) {
+        return ByteBufferUtil.compare(column,entry.column);
+    }
+
+    public ImmutableLongObjectMap getCache() {
+        return cache;
+    }
+
+    public void setCache(ImmutableLongObjectMap cache) {
+        Preconditions.checkNotNull(cache);
+        this.cache=cache;
+    }
+
 }

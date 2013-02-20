@@ -6,8 +6,8 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.persist.PersistSimpleTitanEdge;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.testutil.MemoryAssess;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
@@ -78,7 +78,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 
         p = new PerformanceTest(true);
         for (int i = 0; i < noNodes; i++) {
-            new PersistSimpleTitanEdge(connect, (InternalTitanVertex) nodes[i], (InternalTitanVertex) nodes[(i + 1) % noNodes]);
+            new PersistSimpleTitanEdge(connect, (InternalVertex) nodes[i], (InternalVertex) nodes[(i + 1) % noNodes]);
         }
         p.end();
         System.out.println("Time per edge in (ns): " + (p.getNanoTime() / noNodes));

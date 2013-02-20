@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
 
 /**
@@ -23,6 +24,12 @@ import com.tinkerpop.blueprints.Element;
  */
 public interface TypeMaker {
 
+    public enum UniquenessConsistency {
+        NO_LOCK,
+        LOCK
+    }
+
+
     /**
      * Sets the name of the type
      *
@@ -31,16 +38,6 @@ public interface TypeMaker {
      * @see com.thinkaurelius.titan.core.TitanType#getName()
      */
     public TypeMaker name(String name);
-
-    /**
-     * Configures the type to be functional.
-     * <p/>
-     * By default, the type is non-functional.
-     *
-     * @return this type maker
-     * @see com.thinkaurelius.titan.core.TitanType#isFunctional()
-     */
-    public TypeMaker functional();
 
     /**
      * Configures the type to be functional and whether the database
@@ -54,7 +51,18 @@ public interface TypeMaker {
      *
      * @return this type maker
      */
-    public TypeMaker functional(boolean locking);
+    /**
+     * Configures the type to be unqiue, which means that each value for a property of this type is uniquely associated
+     * with a vertex. This only applies to property keys.
+     * <p/>
+     * By default, the type is not unique.
+     *
+     * @return this type maker
+     * @see TitanKey#isUnique()
+     */
+    public TypeMaker unique(Direction direction, UniquenessConsistency consistency);
+
+    public TypeMaker unique(Direction direction);
 
     /**
      * Configures the type to be directed. This only applies to edge labels.
@@ -67,16 +75,6 @@ public interface TypeMaker {
     public TypeMaker directed();
 
     /**
-     * Configures the type to be undirected. This only applies to edge labels.
-     * <p/>
-     * By default, the type is directed.
-     *
-     * @return this type maker
-     * @see com.thinkaurelius.titan.core.TitanLabel#isUndirected()
-     */
-    public TypeMaker undirected();
-
-    /**
      * Configures the type to be unidirected. This only applies to edge labels.
      * <p/>
      * By default, the type is directed.
@@ -85,16 +83,6 @@ public interface TypeMaker {
      * @see com.thinkaurelius.titan.core.TitanLabel#isUnidirected()
      */
     public TypeMaker unidirected();
-
-    /**
-     * Configures the type to be simple, which means that relation instances of the type do not support incident properties.
-     * <p/>
-     * By default, the type is not simple and allows incident properties.
-     *
-     * @return this type maker
-     * @see com.thinkaurelius.titan.core.TitanType#isSimple()
-     */
-    public TypeMaker simple();
 
 
     /**
@@ -153,17 +141,6 @@ public interface TypeMaker {
      * @return this type maker
      */
     public TypeMaker signature(TitanType... types);
-
-    /**
-     * Configures the type to be unqiue, which means that each value for a property of this type is uniquely associated
-     * with a vertex. This only applies to property keys.
-     * <p/>
-     * By default, the type is not unique.
-     *
-     * @return this type maker
-     * @see TitanKey#isUnique()
-     */
-    public TypeMaker unique();
 
     /**
      * Configures instances of this type to be indexed for the specified Element type using the standard Titan index.

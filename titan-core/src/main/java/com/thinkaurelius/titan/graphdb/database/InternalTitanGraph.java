@@ -7,10 +7,10 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.blueprints.Features;
 
 import java.util.Collection;
@@ -25,7 +25,7 @@ public interface InternalTitanGraph extends TitanGraph {
 
     boolean containsVertexID(long id, InternalTitanTransaction tx);
 
-    public void assignID(InternalTitanVertex vertex);
+    public void assignID(InternalVertex vertex);
 
     public boolean isReferenceVertexID(long vertexid);
 

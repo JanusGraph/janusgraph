@@ -32,7 +32,7 @@ public interface TitanProperty extends TitanRelation {
      *
      * @return attribute of this property
      */
-    public Object getAttribute();
+    public Object getValue();
 
     /**
      * Returns the attribute value of this property cast to the specified class.
@@ -42,7 +42,7 @@ public interface TitanProperty extends TitanRelation {
      * @return Attribute of this property cast to the specified class.
      * @throws ClassCastException if the attribute cannot be cast to clazz.
      */
-    public <O> O getAttribute(Class<O> clazz);
+    public <O> O getValue(Class<O> clazz);
 
 
 }

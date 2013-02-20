@@ -8,8 +8,8 @@ import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
-import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.tinkerpop.blueprints.Direction;
 
 import java.util.Comparator;
@@ -52,7 +52,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         else {
             // 1) Compare primary key values
             assert t1.equals(t2);
-            for (String key : ((InternalTitanType) t1).getDefinition().getKeySignature()) {
+            for (String key : ((InternalType) t1).getDefinition().getPrimaryKey()) {
                 int keycompare = compareOnKey(r1, r2, key);
                 if (keycompare != 0) return keycompare;
             }
@@ -63,8 +63,8 @@ public class RelationComparator implements Comparator<InternalRelation> {
             // 2) Compare property objects or other vertices
             if (r1.isProperty()) {
                 Preconditions.checkArgument(r2.isProperty() && position == 1);
-                Object o1 = ((TitanProperty) r1).getAttribute();
-                Object o2 = ((TitanProperty) r2).getAttribute();
+                Object o1 = ((TitanProperty) r1).getValue();
+                Object o2 = ((TitanProperty) r2).getValue();
                 Preconditions.checkArgument(o1 != null && o2 != null);
                 if (!o1.equals(o2)) {
                     int objectcompare = 0;

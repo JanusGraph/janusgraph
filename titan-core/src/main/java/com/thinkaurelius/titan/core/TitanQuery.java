@@ -131,22 +131,6 @@ public interface TitanQuery extends Query {
     public TitanQuery onlyModifiable();
 
     /**
-     * Configures the query for in-memory retrieval.
-     * <p/>
-     * By default, an implementation of TitanQuery chooses the most efficient way to retrieve a vertex's incident relations.
-     * In some cases, it may be most efficient to NOT create the object graph in memory but only retrieve what is asked
-     * for (e.g. vertex idAuthorities) directly from the storage backend. However, when the same or similar queries are repeatedly
-     * executed, creating the object graph in memory first is more efficient.
-     * Calling this method signals such cases to the TitanQuery implementation.
-     * <p/>
-     * By default, the in memory retrieval flag is false.
-     *
-     * @return this query
-     */
-    public TitanQuery inMemory();
-
-
-    /**
      * Sets the retrieval limit for this query.
      * <p/>
      * When setting a limit, executing this query will only retrieve the specified number of relations. Note, that this

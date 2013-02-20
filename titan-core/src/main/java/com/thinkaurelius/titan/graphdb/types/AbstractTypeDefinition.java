@@ -1,50 +1,53 @@
 package com.thinkaurelius.titan.graphdb.types;
 
+import com.carrotsearch.hppc.LongIntMap;
+import com.carrotsearch.hppc.LongIntOpenHashMap;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
+import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
+import com.tinkerpop.blueprints.Direction;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class AbstractTypeDefinition implements TypeDefinition {
+public class AbstractTypeDefinition implements TypeDefinition {
 
-    public TypeVisibility visibility;
-    public String name;
-    public TypeGroup group;
-    public FunctionalType isfunctional;
-    public Directionality directionality;
-    public TypeCategory category;
-    public String[] keysig;
-    public String[] compactsig;
+    private String name;
+    private TypeGroup group;
+    private boolean[] isUnique;
+    private boolean[] hasUniqueLock;
+    private boolean[] isStatic;
+    private boolean isHidden;
+    private boolean isModifiable;
+    private long[] primaryKey;
+    private long[] signature;
 
-    private transient Map<String, Integer> signatureIndex = null;
+    private transient LongIntMap signatureIndex = null;
 
-    //Needed for serialization
+    //Needed for de-serialization
     AbstractTypeDefinition() {
     }
 
-    AbstractTypeDefinition(String name, TypeCategory category, Directionality directionality,
-                           TypeVisibility visibility, FunctionalType isfunctional,
-                           String[] keysig, String[] compactsig, TypeGroup group) {
+    AbstractTypeDefinition(String name, TypeGroup group,
+                                     boolean[] unique, boolean[] hasUniqueLock, boolean[] isStatic,
+                                     boolean hidden, boolean modifiable,
+                                     long[] primaryKey, long[] signature) {
         this.name = name;
         this.group = group;
-        this.category = category;
-        this.directionality = directionality;
-        this.visibility = visibility;
-        this.isfunctional = isfunctional;
-        this.keysig = keysig;
-        this.compactsig = compactsig;
+        isUnique = unique;
+        this.hasUniqueLock = hasUniqueLock;
+        this.isStatic = isStatic;
+        isHidden = hidden;
+        isModifiable = modifiable;
+        this.primaryKey = primaryKey;
+        this.signature = signature;
     }
 
-    private Map<String, Integer> getSignatureIndex() {
+    private LongIntMap getSignatureIndex() {
         if (signatureIndex == null) {
-            signatureIndex = new HashMap<String, Integer>();
+            signatureIndex = new LongIntOpenHashMap(signature.length);
             int pos = 0;
-            for (String s : keysig) {
-                signatureIndex.put(s, pos);
-                pos++;
-            }
-            for (String s : compactsig) {
+            for (long s : signature) {
                 signatureIndex.put(s, pos);
                 pos++;
             }
@@ -53,36 +56,38 @@ public abstract class AbstractTypeDefinition implements TypeDefinition {
     }
 
     public boolean hasSignatureEdgeType(TitanType et) {
-        return getSignatureIndex().containsKey(et.getName());
+        return getSignatureIndex().containsKey(et.getID());
     }
 
     public int getSignatureIndex(TitanType et) {
-        Integer i = getSignatureIndex().get(et.getName());
-        if (i == null)
-            throw new IllegalArgumentException("The provided TitanType is not part of the signature: " + et);
-        return i;
+        if (!hasSignatureEdgeType(et)) throw new IllegalArgumentException("The provided TitanType is not part of the signature: " + et);
+        return getSignatureIndex().get(et.getID());
     }
 
 
     @Override
-    public String[] getCompactSignature() {
-        return compactsig;
+    public boolean uniqueLock(Direction direction) {
+        return isUnique(direction) && hasUniqueLock[EdgeDirection.position(direction)];
     }
 
     @Override
-    public String[] getKeySignature() {
-        return keysig;
-    }
-
-
-    @Override
-    public TypeCategory getCategory() {
-        return category;
+    public boolean isUnique(Direction direction) {
+        return isUnique[EdgeDirection.position(direction)];
     }
 
     @Override
-    public Directionality getDirectionality() {
-        return directionality;
+    public boolean isStatic(Direction direction) {
+        return isStatic[EdgeDirection.position(direction)];
+    }
+
+    @Override
+    public long[] getPrimaryKey() {
+        return primaryKey;
+    }
+
+    @Override
+    public long[] getSignature() {
+        return signature;
     }
 
     @Override
@@ -95,25 +100,15 @@ public abstract class AbstractTypeDefinition implements TypeDefinition {
         return group;
     }
 
-    @Override
-    public boolean isFunctional() {
-        return isfunctional.isFunctional();
-    }
-
-    @Override
-    public boolean isFunctionalLocking() {
-        return isfunctional.isLocking();
-    }
 
     @Override
     public boolean isModifiable() {
-        return visibility.isModifiable();
+        return isModifiable;
     }
-
 
     @Override
     public boolean isHidden() {
-        return visibility.isHidden();
+        return isHidden;
     }
 
 

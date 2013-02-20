@@ -4,11 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import org.apache.commons.codec.binary.Hex;
@@ -69,7 +65,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
     }
 
     private long getCurrentID(ByteBuffer partitionKey, StoreTransaction txh) throws StorageException {
-        List<Entry> blocks = idStore.getSlice(partitionKey, EMPTY_BUFFER, EMPTY_BUFFER, 5, txh);
+        List<Entry> blocks = idStore.getSlice(new KeySliceQuery(partitionKey, EMPTY_BUFFER, EMPTY_BUFFER, 5), txh);
         if (blocks == null) throw new TemporaryStorageException("Could not read from storage");
 
         long latest = BASE_ID;
@@ -124,7 +120,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                         TimeUtility.sleepUntil(after + idApplicationWaitMS, log);
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
-                        List<Entry> blocks = idStore.getSlice(partitionKey, slice[0], slice[1], txh);
+                        List<Entry> blocks = idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh);
                         if (blocks == null) throw new TemporaryStorageException("Could not read from storage");
                         if (blocks.isEmpty())
                             throw new PermanentStorageException("It seems there is a race-condition in the block application. " +

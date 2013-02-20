@@ -2,6 +2,8 @@
 package com.thinkaurelius.titan.core;
 
 
+import com.tinkerpop.blueprints.Element;
+
 /**
  * TitanElement represents the abstract concept of an entity in the graph and specifies basic methods for interacting
  * with entities.
@@ -23,7 +25,7 @@ package com.thinkaurelius.titan.core;
  * @see TitanVertex
  * @see TitanRelation
  */
-public interface TitanElement {
+public interface TitanElement extends Element, Comparable<TitanElement> {
 
     /**
      * Returns a unique identifier for this entity.
@@ -38,7 +40,7 @@ public interface TitanElement {
      *
      * @return The unique identifier for this entity
      * @throws IllegalStateException if the entity does not (yet) have a unique identifier
-     * @see #hasID
+     * @see #hasId
      */
     public long getID();
 
@@ -51,7 +53,7 @@ public interface TitanElement {
      * @return true if this entity has been assigned a unique id, else false
      * @see #getID()
      */
-    public boolean hasID();
+    public boolean hasId();
 
     /**
      * Deletes this entity from the graph.
@@ -64,6 +66,77 @@ public interface TitanElement {
      *                               have permission to remove the entity
      */
     public void remove();
+
+    /**
+     * Add a property with the given key and value to this vertex.
+     * If the key is functional, then a possibly existing value is replaced. If it is not functional, then
+     * a new property is added.
+     *
+     * @param key   the string key of the property
+     * @param value the object value o the property
+     */
+    public void setProperty(String key, Object value);
+
+    public void setProperty(TitanKey key, Object value);
+
+    /**
+     * Retrieves the attribute value for the only property of the specified property key incident on this vertex.
+     * <p/>
+     * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
+     * If there could be multiple properties (i.e. for non-functional property keys), then use {@link #getProperties(TitanKey)}
+     *
+     * @param key key of the property for which to retrieve the attribute value
+     * @return Attribute value of the property with the specified type or null if no such property exists
+     * @throws IllegalArgumentException if more than one property of the specified key are incident on this vertex.
+     */
+    public Object getProperty(TitanKey key);
+
+    /**
+     * Retrieves the attribute value for the only property of the specified property key incident on this vertex.
+     * <p/>
+     * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
+     * If there could be multiple properties (i.e. for non-functional property keys), then use {@link #getProperties(String)}
+     *
+     * @param key key name of the property for which to retrieve the attribute value
+     * @return Attribute value of the property with the specified type or null if no such property exists
+     * @throws IllegalArgumentException if more than one property of the specified key are incident on this vertex.
+     */
+    public Object getProperty(String key);
+
+    /**
+     * Retrieves the attribute value for the only property of the specified property key incident on this vertex and casts
+     * it to the specified {@link Class}.
+     * <p/>
+     * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
+     *
+     * @param key key name of the property for which to retrieve the attribute value
+     * @return Attribute value of the property with the specified type
+     * @throws IllegalArgumentException if more than one property of the specified key are incident on this vertex.
+     */
+    public <O> O getProperty(TitanKey key, Class<O> clazz);
+
+    /**
+     * Retrieves the attribute value for the only property of the specified property key incident on this vertex and casts
+     * it to the specified {@link Class}.
+     * <p/>
+     * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
+     *
+     * @param key key of the property for which to retrieve the attribute value
+     * @return Attribute value of the property with the specified type
+     * @throws IllegalArgumentException if more than one property of the specified key are incident on this vertex.
+     */
+    public <O> O getProperty(String key, Class<O> clazz);
+
+    /**
+     * Removes all properties with the given key from this vertex.
+     *
+     * @param key the key of the properties to remove from the element
+     * @return the object value (or null) associated with that key prior to removal if the key is functional,
+     *         or an {@link Iterable} over all values (which may be empty) if it is not functional
+     */
+    public Object removeProperty(String key);
+
+    public Object removeProperty(TitanType type);
 
 
     //########### LifeCycle Status ##########
@@ -83,42 +156,11 @@ public interface TitanElement {
     public boolean isLoaded();
 
     /**
-     * Checks whether this entity has been loaded into the current transaction and modified.
-     *
-     * @return True, has been loaded and modified, else false.
-     */
-    public boolean isModified();
-
-    /**
      * Checks whether this entity has been deleted into the current transaction.
      *
      * @return True, has been deleted, else false.
      */
     public boolean isRemoved();
-
-    /**
-     * Checks whether this entity denotes a reference vertex which cannot be loaded into the current transaction.
-     *
-     * @return True, if this entity denotes a reference vertex, else false.
-     */
-    public boolean isReferenceVertex();
-
-    /**
-     * Checks whether this entity is available in the current transaction.
-     * <p/>
-     * An entity is considered available iff it is not deleted and also not a reference vertex.
-     * In other words, an entity is available if it is new, loaded or modified.
-     *
-     * @return true, if the entity is available, else false
-     */
-    public boolean isAvailable();
-
-    /**
-     * If the transaction in which this entity lives is still open.
-     *
-     * @return true if this entity's transaction is still open, else false.
-     */
-    public boolean isAccessible();
 
 
 }

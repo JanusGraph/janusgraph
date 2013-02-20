@@ -2,10 +2,8 @@ package com.thinkaurelius.titan.graphdb.blueprints;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.tinkerpop.blueprints.*;
@@ -146,7 +144,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
                 "Expected vertex, edge or element");
 
         if (indexParameters==null || indexParameters.length==0) {
-            indexParameters = new Parameter[]{new Parameter(IndexType.STANDARD,true)};
+            indexParameters = new Parameter[]{new Parameter(Titan.Token.STANDARD_INDEX,true)};
         }
 
         if (containsType(key)) {
@@ -191,7 +189,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         Set<String> indexedkeys = new HashSet<String>();
         for (TitanVertex v : getVertices(SystemKey.TypeClass, TitanTypeClass.KEY)) {
             TitanKey k = (TitanKey) v;
-            if (k.hasIndex(elementClass)) indexedkeys.add(k.getName());
+            if (!Iterables.isEmpty(k.getIndexes(elementClass))) indexedkeys.add(k.getName());
         }
         return indexedkeys;
     }

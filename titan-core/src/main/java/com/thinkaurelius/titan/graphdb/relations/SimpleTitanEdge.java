@@ -4,8 +4,8 @@ import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -14,10 +14,10 @@ import static com.tinkerpop.blueprints.Direction.*;
 
 public class SimpleTitanEdge extends AbstractTypedRelation implements TitanEdge {
 
-    private final InternalTitanVertex start;
-    private final InternalTitanVertex end;
+    private final InternalVertex start;
+    private final InternalVertex end;
 
-    public SimpleTitanEdge(TitanLabel type, InternalTitanVertex start, InternalTitanVertex end) {
+    public SimpleTitanEdge(TitanLabel type, InternalVertex start, InternalVertex end) {
         super(type);
         this.start = start;
         this.end = end;
@@ -70,7 +70,7 @@ public class SimpleTitanEdge extends AbstractTypedRelation implements TitanEdge 
 
 
     @Override
-    public InternalTitanVertex getVertex(int pos) {
+    public InternalVertex getVertex(int pos) {
         switch (pos) {
             case 0:
                 return start;

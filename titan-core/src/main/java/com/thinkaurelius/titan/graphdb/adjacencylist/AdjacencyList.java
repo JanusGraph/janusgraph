@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.adjacencylist;
 
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 
 public interface AdjacencyList extends Iterable<InternalRelation> {

@@ -1,28 +1,54 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TypeGroup;
+import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
-import com.thinkaurelius.titan.graphdb.types.TypeCategory;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinition;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
-import com.thinkaurelius.titan.graphdb.vertices.LoadedEmptyTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.tinkerpop.blueprints.Direction;
+import org.apache.commons.lang.StringUtils;
 
-public abstract class SystemType extends LoadedEmptyTitanVertex implements InternalTitanVertex, InternalTitanType, TypeDefinition {
+public abstract class SystemType extends EmptyVertex implements InternalVertex, InternalType, TypeDefinition {
 
     private final String name;
     private final long id;
+    private final boolean[] isUnique;
+    private final boolean[] isStatic;
+    private final boolean isModifiable;
 
 
-    SystemType(String name, long id) {
+    SystemType(String name, long id, boolean[] isUnique, boolean[] isStatic, boolean isModifiable) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(name));
+        Preconditions.checkArgument(id>0);
+        Preconditions.checkArgument(isUnique!=null && isUnique.length==2);
+        Preconditions.checkArgument(isStatic!=null && isStatic.length==2);
         this.name = SystemTypeManager.systemETprefix + name;
         this.id = id;
-
+        this.isUnique = isUnique;
+        this.isStatic = isStatic;
+        this.isModifiable = isModifiable;
     }
 
     @Override
     public String getName() {
         return name;
+    }
+
+    @Override
+    public boolean isUnique(Direction direction) {
+        return isUnique[EdgeDirection.position(direction)];
+    }
+
+    @Override
+    public boolean isStatic(Direction dir) {
+        return isStatic[EdgeDirection.position(dir)];
+    }
+
+    @Override
+    public boolean uniqueLock(Direction direction) {
+        return isUnique(direction);
     }
 
 	
@@ -38,7 +64,7 @@ public abstract class SystemType extends LoadedEmptyTitanVertex implements Inter
 
     @Override
     public boolean isModifiable() {
-        return false;
+        return isModifiable;
     }
 
     @Override
@@ -47,23 +73,13 @@ public abstract class SystemType extends LoadedEmptyTitanVertex implements Inter
     }
 
     @Override
-    public TypeCategory getCategory() {
-        return TypeCategory.Simple;
+    public long[] getPrimaryKey() {
+        return new long[0];
     }
 
     @Override
-    public boolean isSimple() {
-        return true;
-    }
-
-    @Override
-    public String[] getKeySignature() {
-        return new String[0];
-    }
-
-    @Override
-    public String[] getCompactSignature() {
-        return new String[0];
+    public long[] getSignature() {
+        return new long[0];
     }
 
     @Override
@@ -71,14 +87,13 @@ public abstract class SystemType extends LoadedEmptyTitanVertex implements Inter
         return this;
     }
 
-
     @Override
     public long getID() {
         return id;
     }
 
     @Override
-    public boolean hasID() {
+    public boolean hasId() {
         return true;
     }
 
@@ -87,19 +102,5 @@ public abstract class SystemType extends LoadedEmptyTitanVertex implements Inter
         throw new IllegalStateException("SystemType has already been assigned an id");
     }
 
-    @Override
-    public InternalTitanTransaction getTransaction() {
-        throw new UnsupportedOperationException("Operation is not supported on SystemType");
-    }
-
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException("Operation is not supported on SystemType");
-    }
-
-    @Override
-    public boolean isAccessible() {
-        return true;
-    }
 
 }

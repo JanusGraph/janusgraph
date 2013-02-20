@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.types.system;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TypeGroup;
-import com.thinkaurelius.titan.graphdb.types.group.StandardTypeGroup;
+import com.thinkaurelius.titan.graphdb.types.StandardTypeGroup;
 
 import java.util.Map;
 import java.util.Set;
@@ -41,7 +41,7 @@ public abstract class SystemTypeManager {
 
     public static final Set<? extends SystemType> prepersistedSystemTypes = ImmutableSet.of(SystemKey.TypeName,
             SystemKey.PropertyTypeDefinition,
-            SystemKey.RelationshipTypeDefinition,
+            SystemKey.EdgeTypeDefinition,
             SystemKey.TypeClass);
 
 }

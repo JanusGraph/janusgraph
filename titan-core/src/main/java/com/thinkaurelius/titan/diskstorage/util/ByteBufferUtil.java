@@ -72,7 +72,7 @@ public class ByteBufferUtil {
      * @return true if the first ByteBuffer is smaller than the second
      */
     public static final boolean isSmallerThan(ByteBuffer a, ByteBuffer b) {
-        return isSmallerThanWithEqual(a, b, false);
+        return compare(a, b)<0;
     }
 
     /**
@@ -83,27 +83,24 @@ public class ByteBufferUtil {
      * @return true if the first ByteBuffer is smaller than or equal to the second
      */
     public static final boolean isSmallerOrEqualThan(ByteBuffer a, ByteBuffer b) {
-        return isSmallerThanWithEqual(a, b, true);
+        return compare(a,b)<=0;
     }
 
     /**
-     * Compares two {@link java.nio.ByteBuffer}s.
+     * Compares two {@link java.nio.ByteBuffer}s according to their byte order (and not the byte value).
      * <p/>
-     * If considerEqual is true, it checks whether the first ByteBuffer is smaller than or equal to the second.
-     * If considerEqual is false, it checks whether the first ByteBuffer is smaller than the second.
      *
      * @param a             First ByteBuffer
      * @param b             Second ByteBuffer
-     * @param considerEqual Determines comparison mode
-     * @return true if the first ByteBuffer is smaller than (or equal to) the second
+     * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater than the second.
      */
-    public static final boolean isSmallerThanWithEqual(ByteBuffer a, ByteBuffer b, boolean considerEqual) {
+    public static final int compare(ByteBuffer a, ByteBuffer b) {
         if (a == b) {
-            return considerEqual;
+            return 0;
         }
         a.mark();
         b.mark();
-        boolean result = true;
+        int result = -1;
         while (true) {
             if (!a.hasRemaining() && b.hasRemaining()) break;
             else if (a.hasRemaining() && b.hasRemaining()) {
@@ -112,26 +109,26 @@ public class ByteBufferUtil {
                     if (ca >= 0 && cb >= 0) {
                         if (ca < cb) break;
                         else if (ca > cb) {
-                            result = false;
+                            result = 1;
                             break;
                         }
                     } else if (ca < 0 && cb < 0) {
                         if (ca < cb) break;
                         else if (ca > cb) {
-                            result = false;
+                            result = 1;
                             break;
                         }
                     } else if (ca >= 0 && cb < 0) break;
                     else {
-                        result = false;
+                        result = 1;
                         break;
                     }
                 }
             } else if (a.hasRemaining() && !b.hasRemaining()) {
-                result = false;
+                result = 1;
                 break;
             } else { //!a.hasRemaining() && !b.hasRemaining()
-                result = considerEqual;
+                result = 0;
                 break;
             }
         }

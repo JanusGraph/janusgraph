@@ -21,16 +21,17 @@ import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.SimpleTitanQuery;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.RelationFactory;
-import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
-import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.transaction.vertexcache.ConcurrentVertexCache;
+import com.thinkaurelius.titan.graphdb.transaction.vertexcache.VertexCache;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.util.VertexCentricEdgeIterable;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.factory.VertexFactory;
 import com.thinkaurelius.titan.util.datastructures.Factory;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
@@ -66,7 +67,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     private final Lock keyedPropertyCreateLock;
     private final ConcurrentMap<TitanKey, Multimap<Object, TitanVertex>> attributeIndex;
 
-    private final Optional<Set<InternalTitanVertex>> newVertices;
+    private final Optional<Set<InternalVertex>> newVertices;
     private VertexCache vertexCache;
 
     private boolean isOpen;
@@ -84,12 +85,12 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         isOpen = true;
 
         if (!config.isReadOnly() && config.hasMaintainNewVertices()) {
-            newVertices = Optional.of(Collections.newSetFromMap(new ConcurrentHashMap<InternalTitanVertex, Boolean>(10,
+            newVertices = Optional.of(Collections.newSetFromMap(new ConcurrentHashMap<InternalVertex, Boolean>(10,
                     0.75f, 2)));
         } else {
             newVertices = Optional.absent();
         }
-        vertexCache = new StandardVertexCache();
+        vertexCache = new ConcurrentVertexCache();
 
         keyIndex = new ConcurrentHashMap<TitanKey, ConcurrentMap<Object, TitanVertex>>(20, 0.75f, 2);
         attributeIndex = new ConcurrentHashMap<TitanKey, Multimap<Object, TitanVertex>>(20, 0.75f, 2);
@@ -106,7 +107,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     public final void verifyAccess(TitanVertex... vertices) {
         verifyOpen();
         for (TitanVertex v : vertices) {
-            if (!(v instanceof SystemType) && !this.equals(((InternalTitanVertex) v).getTransaction()))
+            if (!(v instanceof SystemType) && !this.equals(((InternalVertex) v).getTransaction()))
                 throw new IllegalArgumentException("The vertex or type is not associated with this transaction [" + v + "]");
             if (!v.isAvailable())
                 throw new IllegalArgumentException("The vertex or type is now longer available [" + v + "]");
@@ -123,7 +124,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
      */
 
     @Override
-    public void registerNewEntity(InternalTitanVertex n) {
+    public void registerNewEntity(InternalVertex n) {
         assert (!(n instanceof InternalRelation) || !((InternalRelation) n).isInline());
         assert n.isNew();
         assert !n.hasID();
@@ -142,7 +143,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     @Override
     public TitanVertex addVertex() {
         verifyWriteAccess();
-        InternalTitanVertex n = vertexFactory.createNew(this);
+        InternalVertex n = vertexFactory.createNew(this);
         return n;
     }
 
@@ -164,13 +165,13 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     }
 
     @Override
-    public InternalTitanVertex getExistingVertex(long id) {
+    public InternalVertex getExistingVertex(long id) {
         return getExisting(id);
     }
 
-    private InternalTitanVertex getExisting(long id) {
+    private InternalVertex getExisting(long id) {
         synchronized (vertexCache) {
-            InternalTitanVertex vertex = vertexCache.get(id);
+            InternalVertex vertex = vertexCache.get(id);
             if (vertex == null) {
                 IDInspector idspec = graphdb.getIDInspector();
 
@@ -189,12 +190,12 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     }
 
     public boolean isDeletedVertex(long id) {
-        InternalTitanVertex vertex = vertexCache.get(id);
+        InternalVertex vertex = vertexCache.get(id);
         return vertex!=null && vertex.isRemoved();
     }
 
     @Override
-    public void deleteVertex(InternalTitanVertex n) {
+    public void deleteVertex(InternalVertex n) {
         verifyWriteAccess(n);
         if (n.hasID()) {
             assert vertexCache.contains(n.getID());
@@ -214,11 +215,11 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
             keyedPropertyCreateLock.lock();
         InternalRelation e = null;
         try {
-            if (isUniqueKey && config.hasVerifyKeyUniqueness() && getVertex(key, attribute) != null) {
+            if (isUniqueKey && config.hasVerifyUniqueness() && getVertex(key, attribute) != null) {
                 throw new InvalidElementException(
                         "The specified attribute is already used for the given property key: " + attribute, vertex);
             }
-            e = edgeFactory.createNewProperty(key, (InternalTitanVertex) vertex, attribute);
+            e = edgeFactory.createNewProperty(key, (InternalVertex) vertex, attribute);
             addedRelation(e);
         } finally {
             if (isUniqueKey)
@@ -237,7 +238,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     @Override
     public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, TitanLabel label) {
         verifyWriteAccess(outVertex, inVertex, label);
-        InternalRelation e = edgeFactory.createNewRelationship(label, (InternalTitanVertex) outVertex, (InternalTitanVertex) inVertex);
+        InternalRelation e = edgeFactory.createNewRelationship(label, (InternalVertex) outVertex, (InternalVertex) inVertex);
         addedRelation(e);
         return (TitanEdge) e;
     }
@@ -273,7 +274,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         }
         if (et == null) {
             // Second, check TypeManager
-            InternalTitanType eti = etManager.getType(name, this);
+            InternalType eti = etManager.getType(name, this);
             if (eti != null)
                 vertexCache.add(eti, eti.getID());
             et = eti;
@@ -322,21 +323,21 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     }
 
     @Override
-    public TitanQuery query(InternalTitanVertex n) {
+    public TitanQuery query(InternalVertex n) {
         return new SimpleTitanQuery(n);
     }
 
     @Override
     public TitanQuery query(long nodeid) {
-        return new SimpleTitanQuery((InternalTitanVertex) getVertex(nodeid));
+        return new SimpleTitanQuery((InternalVertex) getVertex(nodeid));
     }
 
     @Override
     public Iterable<Vertex> getVertices() {
         if (newVertices.isPresent())
-            return (Iterable) Iterables.filter(newVertices.get(), new Predicate<InternalTitanVertex>() {
+            return (Iterable) Iterables.filter(newVertices.get(), new Predicate<InternalVertex>() {
                 @Override
-                public boolean apply(@Nullable InternalTitanVertex internalTitanVertex) {
+                public boolean apply(@Nullable InternalVertex internalTitanVertex) {
                     return !(internalTitanVertex instanceof TitanType);
                 }
             });
@@ -366,7 +367,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
      */
 
     private void addProperty2Index(TitanProperty property) {
-        addProperty2Index(property.getPropertyKey(), property.getAttribute(), property.getVertex());
+        addProperty2Index(property.getPropertyKey(), property.getValue(), property.getVertex());
     }
 
     private static Factory<ConcurrentMap<Object, TitanVertex>> keyIndexFactory = new Factory<ConcurrentMap<Object, TitanVertex>>() {
@@ -408,13 +409,13 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
         if (type.isUnique()) {
             Map<Object, TitanVertex> subindex = keyIndex.get(type);
             Preconditions.checkNotNull(subindex);
-            TitanVertex n = subindex.remove(property.getAttribute());
+            TitanVertex n = subindex.remove(property.getValue());
             assert n != null && n.equals(property.getVertex());
             // TODO Set to NO-ENTRY node object
         } else {
             boolean hasIdenticalProperty = false;
             for (TitanProperty p2 : property.getVertex().getProperties(type)) {
-                if (!p2.equals(property) && p2.getAttribute().equals(property.getAttribute())) {
+                if (!p2.equals(property) && p2.getValue().equals(property.getValue())) {
                     hasIdenticalProperty = true;
                     break;
                 }
@@ -422,7 +423,7 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
             if (!hasIdenticalProperty) {
                 Multimap<Object, TitanVertex> subindex = attributeIndex.get(type);
                 Preconditions.checkNotNull(subindex);
-                boolean removed = subindex.remove(property.getAttribute(), property.getVertex());
+                boolean removed = subindex.remove(property.getValue(), property.getVertex());
                 assert removed;
             }
         }

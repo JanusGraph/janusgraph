@@ -3,19 +3,19 @@ package com.thinkaurelius.titan.graphdb.relations.persist;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.graphdb.entitystatus.BasicElement;
 import com.thinkaurelius.titan.graphdb.relations.SimpleProperty;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.vertices.VertexUtil;
 
 public class PersistSimpleProperty extends SimpleProperty {
 
     protected BasicElement entity;
 
-    public PersistSimpleProperty(TitanKey type, InternalTitanVertex node, Object attribute) {
+    public PersistSimpleProperty(TitanKey type, InternalVertex node, Object attribute) {
         super(type, node, attribute);
         entity = new BasicElement();
     }
 
-    public PersistSimpleProperty(TitanKey type, InternalTitanVertex node, Object attribute, long id) {
+    public PersistSimpleProperty(TitanKey type, InternalVertex node, Object attribute, long id) {
         super(type, node, attribute);
         entity = new BasicElement(id);
     }

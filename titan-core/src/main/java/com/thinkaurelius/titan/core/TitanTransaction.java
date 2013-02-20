@@ -111,46 +111,6 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public boolean containsVertex(long vertexid);
 
     /**
-     * Creates a new query for the vertex identified by the given id.
-     *
-     * @param vertexid Id of the vertex for which to create a new query
-     * @return An {@link TitanQuery}
-     * @throws InvalidElementException if id does not exist in the database
-     * @see TitanQuery
-     */
-    public TitanQuery query(long vertexid);
-
-    /**
-     * Retrieves the vertex whose attribute value for the specified property key matches the given value.
-     * <p/>
-     * This method assumes that the property key is unique, i.e. that each attribute for a property of
-     * this key is associated with at most one vertex. In other words, a vertex can be uniquely identified
-     * given the property key and the attribute
-     *
-     * @param key   property key
-     * @param value value to retrieve vertex for
-     * @return The vertex uniquely identified by the property key and value, or null if no such exists
-     * @throws IllegalArgumentException if the property key is not unique
-     * @see TitanKey#isUnique()
-     */
-    public TitanVertex getVertex(TitanKey key, Object value);
-
-    /**
-     * Retrieves the vertex whose attribute value for the specified property key matches the given value.
-     * <p/>
-     * This method assumes that the property key is unique, i.e. that each attribute for a property of
-     * this key is associated with at most one vertex. In other words, a vertex can be uniquely identified
-     * given the property key and the attribute
-     *
-     * @param key   property key
-     * @param value value to retrieve vertex for
-     * @return The vertex uniquely identified by the property key and value, or null if no such exists
-     * @throws IllegalArgumentException if the property key is not unique
-     * @see TitanKey#isUnique()
-     */
-    public TitanVertex getVertex(String key, Object value);
-
-    /**
      * Retrieves all vertices which have an incident property of the given key with the specified value.
      * <p/>
      * The given property key must be indexed. In this regard, it violates the Blueprints contract which

@@ -5,14 +5,12 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.graphdb.adjacencylist.StandardAdjListFactory;
-import com.thinkaurelius.titan.graphdb.relations.InlineProperty;
-import com.thinkaurelius.titan.graphdb.relations.InlineTitanEdge;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.persist.PersistLabeledTitanEdge;
 import com.thinkaurelius.titan.graphdb.relations.persist.PersistSimpleProperty;
 import com.thinkaurelius.titan.graphdb.relations.persist.PersistSimpleTitanEdge;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 
 public class StandardPersistedRelationFactory implements RelationFactory {
 
@@ -34,7 +32,7 @@ public class StandardPersistedRelationFactory implements RelationFactory {
 
     @Override
     public InternalRelation createNewProperty(TitanKey type,
-                                              InternalTitanVertex node, Object attribute) {
+                                              InternalVertex node, Object attribute) {
         Preconditions.checkNotNull(attribute);
         InternalRelation rel = null;
         if (node instanceof TitanRelation) {
@@ -53,7 +51,7 @@ public class StandardPersistedRelationFactory implements RelationFactory {
 
     @Override
     public InternalRelation createNewRelationship(
-            TitanLabel type, InternalTitanVertex start, InternalTitanVertex end) {
+            TitanLabel type, InternalVertex start, InternalVertex end) {
         InternalRelation rel = null;
         if (type.isSimple()) {
             if (start instanceof TitanRelation) {

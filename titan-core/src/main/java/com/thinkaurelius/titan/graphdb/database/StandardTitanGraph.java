@@ -32,20 +32,18 @@ import com.thinkaurelius.titan.graphdb.database.util.LimitTracker;
 import com.thinkaurelius.titan.graphdb.database.util.TypeSignature;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.SimpleAtomicQuery;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.transaction.StandardPersistTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
-import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinition;
-import com.thinkaurelius.titan.graphdb.types.manager.SimpleTypeManager;
-import com.thinkaurelius.titan.graphdb.types.manager.TypeManager;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.util.interval.AtomicInterval;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Features;
@@ -89,7 +87,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         this.config = configuration;
         this.backend = configuration.getBackend();
         this.edgeStore = backend.getEdgeStore();
-        this.propertyIndex = backend.getVertexIndexStore();
+        this.propertyIndex = backend.getIndexStore();
         this.maxWriteRetryAttempts = config.getWriteAttempts();
         this.maxReadRetryAttempts = config.getReadAttempts();
         this.retryStorageWaitTime = config.getStorageWaittime();
@@ -298,7 +296,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 "Raw retrieval is currently does not support in-memory filtering");
         List<Entry> entries = queryForEntries(query, getStoreTransaction(tx));
 
-        InternalTitanVertex node = query.getNode();
+        InternalVertex node = query.getNode();
         TitanType titanType = null;
         if (query.hasEdgeTypeCondition()) titanType = query.getTypeCondition();
 
@@ -352,8 +350,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
             Object[] keys = null;
             if (!titanType.isSimple()) {
-                TypeDefinition def = ((InternalTitanType) titanType).getDefinition();
-                String[] keysig = def.getKeySignature();
+                TypeDefinition def = ((InternalType) titanType).getDefinition();
+                String[] keysig = def.getPrimaryKey();
                 keys = new Object[keysig.length];
                 for (int i = 0; i < keysig.length; i++)
                     keys[i] = readInline(column, getEdgeType(keysig[i], etCache, tx));
@@ -397,15 +395,15 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
             //Read value inline edges if any
             if (!titanType.isSimple()) {
-                TypeDefinition def = ((InternalTitanType) titanType).getDefinition();
+                TypeDefinition def = ((InternalType) titanType).getDefinition();
                 //First create all keys buffered above
-                String[] keysig = def.getKeySignature();
+                String[] keysig = def.getPrimaryKey();
                 for (int i = 0; i < keysig.length; i++) {
                     createInlineEdge(loader, getEdgeType(keysig[i], etCache, tx), keys[i]);
                 }
 
                 //value signature
-                for (String str : def.getCompactSignature())
+                for (String str : def.getSignature())
                     readLabel(loader, value, getEdgeType(str, etCache, tx));
 
                 //Third: read rest
@@ -498,8 +496,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 boolean isRange = false;
                 if (query.hasConstraints()) {
                     assert !et.isSimple();
-                    TypeDefinition def = ((InternalTitanType) et).getDefinition();
-                    String[] keysig = def.getKeySignature();
+                    TypeDefinition def = ((InternalType) et).getDefinition();
+                    String[] keysig = def.getPrimaryKey();
                     applicableConstraints = new ArrayList<Object>(keysig.length);
                     Map<String, Object> constraints = query.getConstraints();
                     for (int i = 0; i < keysig.length; i++) {
@@ -640,7 +638,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
     // ################### WRITE #########################
 
     @Override
-    public void assignID(InternalTitanVertex vertex) {
+    public void assignID(InternalVertex vertex) {
         idAssigner.assignID(vertex);
     }
 
@@ -648,7 +646,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         for (InternalRelation edge : addedEdges) {
 
             for (int i = 0; i < edge.getArity(); i++) {
-                InternalTitanVertex node = edge.getVertex(i);
+                InternalVertex node = edge.getVertex(i);
                 if (!node.hasID()) {
                     assert node.isNew();
                     assignID(node);
@@ -694,17 +692,17 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 //        while (true) { //Indefinite loop, broken if no exception occurs, otherwise retried or failed immediately
             try {
                 //2. Collect deleted edges
-                ListMultimap<InternalTitanVertex, InternalRelation> mutations = ArrayListMultimap.create();
+                ListMultimap<InternalVertex, InternalRelation> mutations = ArrayListMultimap.create();
                 if (deletedRelations != null && !deletedRelations.isEmpty()) {
                     for (InternalRelation del : deletedRelations) {
                         assert del.isRemoved();
                         for (int pos = 0; pos < del.getArity(); pos++) {
-                            InternalTitanVertex node = del.getVertex(pos);
+                            InternalVertex node = del.getVertex(pos);
                             if (pos == 0 || !del.isUnidirected()) {
                                 mutations.put(node, del);
                             }
                             if (pos == 0 && acquireLocks && del.getType().isFunctional() &&
-                                    ((InternalTitanType) del.getType()).isFunctionalLocking()) {
+                                    ((InternalType) del.getType()).isFunctionalLocking()) {
                                 Entry entry = getEntry(tx, del, pos, signatures);
                                 mutator.acquireEdgeLock(IDHandler.getKey(node.getID()), entry.getColumn(), entry.getValue());
                             }
@@ -716,8 +714,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                     }
                 }
 
-                ListMultimap<InternalTitanType, InternalRelation> simpleEdgeTypes = null;
-                ListMultimap<InternalTitanType, InternalRelation> otherEdgeTypes = null;
+                ListMultimap<InternalType, InternalRelation> simpleEdgeTypes = null;
+                ListMultimap<InternalType, InternalRelation> otherEdgeTypes = null;
 
                 //3. Sort Added Edges
                 for (InternalRelation edge : addedRelationsIter) {
@@ -727,8 +725,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
                     //Give special treatment to edge type definitions
                     if (SystemTypeManager.prepersistedSystemTypes.contains(et)) {
-                        assert edge.getVertex(0) instanceof InternalTitanType;
-                        InternalTitanType node = (InternalTitanType) edge.getVertex(0);
+                        assert edge.getVertex(0) instanceof InternalType;
+                        InternalType node = (InternalType) edge.getVertex(0);
                         assert node.hasID();
                         if (node.isSimple()) {
                             if (simpleEdgeTypes == null) simpleEdgeTypes = ArrayListMultimap.create();
@@ -740,13 +738,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                     } else { //STANDARD TitanRelation
                         assert (edge.getArity() == 1 && edge.isProperty()) || (edge.getArity() == 2 && edge.isEdge());
                         for (int pos = 0; pos < edge.getArity(); pos++) {
-                            InternalTitanVertex node = edge.getVertex(pos);
+                            InternalVertex node = edge.getVertex(pos);
                             assert node.hasID();
                             if (pos == 0 || !edge.isUnidirected()) {
                                 mutations.put(node, edge);
                             }
                             if (pos == 0 && acquireLocks && edge.getType().isFunctional() && !node.isNew()
-                                    && ((InternalTitanType) edge.getType()).isFunctionalLocking()) {
+                                    && ((InternalType) edge.getType()).isFunctionalLocking()) {
                                 Entry entry = getEntry(tx, edge, pos, signatures, true);
                                 mutator.acquireEdgeLock(IDHandler.getKey(node.getID()), entry.getColumn(), null);
                             }
@@ -786,12 +784,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         }
     }
 
-    private void commitEdgeTypes(Iterable<InternalTitanType> edgeTypes) {
-        for (InternalTitanType et : edgeTypes) etManager.committed(et);
+    private void commitEdgeTypes(Iterable<InternalType> edgeTypes) {
+        for (InternalType et : edgeTypes) etManager.committed(et);
     }
 
 
-    private <V extends InternalTitanVertex> void persist(ListMultimap<V, InternalRelation> mutatedEdges, Map<TitanType, TypeSignature> signatures,
+    private <V extends InternalVertex> void persist(ListMultimap<V, InternalRelation> mutatedEdges, Map<TitanType, TypeSignature> signatures,
                                                          InternalTitanTransaction tx, BackendMutator mutator) throws StorageException {
         assert mutatedEdges != null && !mutatedEdges.isEmpty();
 
@@ -951,7 +949,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
 
 
     private static void writeAttribute(DataOutput out, TitanProperty property) {
-        Object attribute = property.getAttribute();
+        Object attribute = property.getValue();
         TitanKey key = (TitanKey) property.getType();
         assert attribute != null;
         assert key.getDataType().isInstance(attribute);
@@ -990,7 +988,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
                 IDHandler.writeInlineEdgeType(out, type.getID(), idManager);
             }
             if (edge.isProperty()) {
-                Object attribute = ((TitanProperty) edge).getAttribute();
+                Object attribute = ((TitanProperty) edge).getValue();
                 if (hasGenericDataType((TitanKey) type))
                     out.writeClassAndObject(attribute);
                 else out.writeObject(attribute);
@@ -1023,10 +1021,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
             Preconditions.checkArgument(pt.hasIndex(),"Standard Index needs to be created for property to be declared unique: " + pt.getName());
             Preconditions.checkArgument(!(prop.getVertex() instanceof TitanRelation),"Can only lock vertex properties: " + prop);
             if (prop.isNew()) {
-                mutator.acquireVertexIndexLock(getIndexKey(prop.getAttribute()), getKeyedIndexColumn(pt), null);
+                mutator.acquireVertexIndexLock(getIndexKey(prop.getValue()), getKeyedIndexColumn(pt), null);
             } else {
                 Preconditions.checkArgument(prop.isRemoved());
-                mutator.acquireVertexIndexLock(getIndexKey(prop.getAttribute()), getKeyedIndexColumn(pt), getIndexValue(prop));
+                mutator.acquireVertexIndexLock(getIndexKey(prop.getValue()), getKeyedIndexColumn(pt), getIndexValue(prop));
             }
         }
     }
@@ -1037,10 +1035,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         assert pt.isSimple();
         if (pt.hasIndex()) {
             if (pt.isUnique()) {
-                mutator.mutateIndex(getIndexKey(prop.getAttribute()), null,
+                mutator.mutateIndex(getIndexKey(prop.getValue()), null,
                         Lists.newArrayList(getKeyedIndexColumn(prop.getPropertyKey())));
             } else {
-                mutator.mutateIndex(getIndexKey(prop.getAttribute()), null,
+                mutator.mutateIndex(getIndexKey(prop.getValue()), null,
                         Lists.newArrayList(getIndexColumn(prop.getPropertyKey(), prop.getID())));
             }
 
@@ -1052,10 +1050,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph implements Internal
         assert pt.isSimple();
         if (pt.hasIndex()) {
             if (pt.isUnique()) {
-                mutator.mutateIndex(getIndexKey(prop.getAttribute()),
+                mutator.mutateIndex(getIndexKey(prop.getValue()),
                         Lists.newArrayList(new Entry(getKeyedIndexColumn(pt), getIndexValue(prop))), null);
             } else {
-                mutator.mutateIndex(getIndexKey(prop.getAttribute()),
+                mutator.mutateIndex(getIndexKey(prop.getValue()),
                         Lists.newArrayList(new Entry(getIndexColumn(pt, prop.getID()), getIndexValue(prop))), null);
             }
         }

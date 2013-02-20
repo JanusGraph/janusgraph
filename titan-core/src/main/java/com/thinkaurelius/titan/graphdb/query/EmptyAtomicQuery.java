@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -50,7 +50,7 @@ public class EmptyAtomicQuery implements AtomicQuery {
     }
 
     @Override
-    public InternalTitanVertex getNode() {
+    public InternalVertex getNode() {
         throw new UnsupportedOperationException();
     }
 

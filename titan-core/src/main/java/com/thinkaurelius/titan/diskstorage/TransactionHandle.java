@@ -27,4 +27,19 @@ public interface TransactionHandle {
      */
     public void flush() throws StorageException;
 
+
+    public static final TransactionHandle NO_TRANSACTION = new TransactionHandle() {
+        @Override
+        public void commit() throws StorageException {
+        }
+
+        @Override
+        public void abort() throws StorageException {
+        }
+
+        @Override
+        public void flush() throws StorageException {
+        }
+    };
+
 }

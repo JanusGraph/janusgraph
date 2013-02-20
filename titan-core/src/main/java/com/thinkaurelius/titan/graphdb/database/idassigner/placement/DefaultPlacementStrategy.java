@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
 import java.util.Map;
 
@@ -23,13 +23,13 @@ public class DefaultPlacementStrategy implements IDPlacementStrategy {
     }
 
     @Override
-    public long getPartition(InternalTitanVertex vertex) {
+    public long getPartition(InternalVertex vertex) {
         return partitionID;
     }
 
     @Override
-    public void getPartitions(Map<InternalTitanVertex, PartitionAssignment> vertices) {
-        for (Map.Entry<InternalTitanVertex, PartitionAssignment> entry : vertices.entrySet()) {
+    public void getPartitions(Map<InternalVertex, PartitionAssignment> vertices) {
+        for (Map.Entry<InternalVertex, PartitionAssignment> entry : vertices.entrySet()) {
             entry.setValue(new SimplePartitionAssignment(partitionID));
         }
     }

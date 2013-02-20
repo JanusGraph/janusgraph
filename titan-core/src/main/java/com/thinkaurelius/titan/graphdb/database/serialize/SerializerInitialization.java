@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.attribute.FloatSeriali
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.IntegerSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.LongSerializer;
 import com.thinkaurelius.titan.graphdb.types.*;
-import com.thinkaurelius.titan.graphdb.types.group.StandardTypeGroup;
+import com.thinkaurelius.titan.graphdb.types.StandardTypeGroup;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -14,8 +14,8 @@ import java.util.HashMap;
 public class SerializerInitialization {
 
     public static final void initialize(Serializer serializer) {
-        serializer.registerClass(StandardPropertyKey.class);
-        serializer.registerClass(StandardEdgeLabel.class);
+        serializer.registerClass(StandardKeyDefinition.class);
+        serializer.registerClass(StandardLabelDefinition.class);
         serializer.registerClass(TypeVisibility.class);
         serializer.registerClass(Directionality.class);
         serializer.registerClass(TypeCategory.class);

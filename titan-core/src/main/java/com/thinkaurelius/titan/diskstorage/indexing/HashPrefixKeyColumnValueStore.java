@@ -2,10 +2,7 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
@@ -63,13 +60,9 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, int limit, StoreTransaction txh) throws StorageException {
-        return store.getSlice(prefixKey(key), columnStart, columnEnd, limit, txh);
-    }
-
-    @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, StoreTransaction txh) throws StorageException {
-        return store.getSlice(prefixKey(key), columnStart, columnEnd, txh);
+    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+        KeySliceQuery prefixQuery = new KeySliceQuery(prefixKey(query.getKey()),query);
+        return store.getSlice(prefixQuery, txh);
     }
 
     @Override

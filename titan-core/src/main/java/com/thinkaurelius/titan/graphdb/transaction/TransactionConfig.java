@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
-import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
@@ -12,42 +11,53 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  */
 public class TransactionConfig {
 
-    private boolean isReadOnly = false;
+    private final boolean isReadOnly;
 
-    private boolean assignIDsImmediately = false;
+    private final boolean assignIDsImmediately;
 
-    private DefaultTypeMaker defaultTypeMaker = null;
+    private final DefaultTypeMaker defaultTypeMaker;
 
-    private boolean verifyNodeExistence = true;
+    private final boolean verifyNodeExistence;
 
-    private boolean verifyKeyUniqueness = true;
+    private final boolean verifyUniqueness;
 
-    private boolean acquireLocks = true;
+    private final boolean acquireLocks;
 
-    private boolean maintainNewVertices = true;
+//    private final boolean maintainNewVertices = true;
+
+    private final boolean singleThreaded;
+
+    private final boolean threadBound;
 
     /**
      * Constructs a new TitanTransaction configuration with default configuration parameters.
      */
-    public TransactionConfig(GraphDatabaseConfiguration graphConfig) {
+    public TransactionConfig(GraphDatabaseConfiguration graphConfig, boolean threadBound) {
         this.isReadOnly = graphConfig.isReadOnly();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         if (graphConfig.isBatchLoading()) {
-            verifyKeyUniqueness = false;
+            verifyUniqueness = false;
             verifyNodeExistence = false;
             acquireLocks = false;
-            maintainNewVertices = false;
+        } else {
+            verifyUniqueness = true;
+            verifyNodeExistence = true;
+            acquireLocks = true;
         }
+        this.threadBound = threadBound;
+        singleThreaded = threadBound;
     }
 
-    public TransactionConfig(DefaultTypeMaker defaultTypeMaker, boolean assignIDsImmediately) {
+    public TransactionConfig(DefaultTypeMaker defaultTypeMaker, boolean assignIDsImmediately, boolean threadBound) {
         this.defaultTypeMaker = defaultTypeMaker;
         this.assignIDsImmediately = assignIDsImmediately;
-    }
-
-    public TransactionConfig() {
-        this(BlueprintsDefaultTypeMaker.INSTANCE, true);
+        this.isReadOnly = false;
+        verifyUniqueness = true;
+        verifyNodeExistence = true;
+        acquireLocks = true;
+        this.threadBound = threadBound;
+        singleThreaded = threadBound;
     }
 
     /**
@@ -55,14 +65,14 @@ public class TransactionConfig {
      *
      * @return True, if the transaction is configured as read-only, else false.
      */
-    public boolean isReadOnly() {
+    public final boolean isReadOnly() {
         return isReadOnly;
     }
 
     /**
      * @return Whether this transaction is configured to assign idAuthorities immediately.
      */
-    public boolean hasAssignIDsImmediately() {
+    public final boolean hasAssignIDsImmediately() {
         return assignIDsImmediately;
     }
 
@@ -72,7 +82,7 @@ public class TransactionConfig {
      *
      * @return True, if node existence is verified, else false
      */
-    public boolean hasVerifyNodeExistence() {
+    public final boolean hasVerifyNodeExistence() {
         return verifyNodeExistence;
     }
 
@@ -81,14 +91,14 @@ public class TransactionConfig {
      *
      * @return True, if locks should be acquired, else false
      */
-    public boolean hasAcquireLocks() {
+    public final boolean hasAcquireLocks() {
         return acquireLocks;
     }
 
     /**
      * @return The default edge type maker used to automatically create not yet existing edge types.
      */
-    public DefaultTypeMaker getAutoEdgeTypeMaker() {
+    public final DefaultTypeMaker getAutoEdgeTypeMaker() {
         return defaultTypeMaker;
     }
 
@@ -97,21 +107,25 @@ public class TransactionConfig {
      *
      * @return True, if node existence is verified, else false
      */
-    public boolean hasVerifyKeyUniqueness() {
-        return verifyKeyUniqueness;
+    public final boolean hasVerifyUniqueness() {
+        return verifyUniqueness;
     }
 
     /**
-     * Whether the graph transaction is configured to maintain a set of all newly created vertices in that
-     * transaction. Disabling the maintenance of new vertices saves memory at the expense of not being able
-     * to iterate over all vertices in the transaction (in case vertex iteration is supported).
-     * Hence, disabling it only makes sense in batch loading scenarios.
-     *
-     * @return True, if new vertices are maintained, else false
+     * Whether this transaction is only accessed by a single thread.
+     * If so, then certain data structures may be optimized for single threaded access since locking can be avoided.
+     * @return
      */
-    public boolean hasMaintainNewVertices() {
-        return maintainNewVertices;
+    public final boolean isSingleThreaded() {
+        return singleThreaded;
     }
 
-
+    /**
+     * Whether this transaction is bound to a running thread.
+     * If so, then elements in this transaction can expand their life cycle to the next transaction in the thread.
+     * @return
+     */
+    public final boolean isThreadBound() {
+        return threadBound;
+    }
 }

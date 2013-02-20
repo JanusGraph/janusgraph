@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanQuery;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,7 +17,7 @@ import java.util.List;
 public class SimpleTitanQuery extends SimpleAtomicQuery implements TitanQuery {
 
 
-    public SimpleTitanQuery(InternalTitanVertex n) {
+    public SimpleTitanQuery(InternalVertex n) {
         super(n);
     }
 

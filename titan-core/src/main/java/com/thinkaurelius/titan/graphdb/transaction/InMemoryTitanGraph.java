@@ -14,10 +14,9 @@ import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.factory.StandardPersistedRelationFactory;
-import com.thinkaurelius.titan.graphdb.types.manager.InMemoryTypeManager;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.vertices.factory.StandardVertexFactories;
 import com.tinkerpop.blueprints.Features;
 
@@ -138,7 +137,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
     }
 
     @Override
-    public void assignID(InternalTitanVertex vertex) {
+    public void assignID(InternalVertex vertex) {
         int id = idCounter.incrementAndGet();
         long newid = -1;
         if (vertex instanceof InternalRelation) {

@@ -13,10 +13,10 @@ import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TypeGroup;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableRelationIterable;
 import com.thinkaurelius.titan.graphdb.vertices.RemovableRelationIterator;
 import com.thinkaurelius.titan.util.interval.AtomicInterval;
@@ -40,7 +40,7 @@ public class SimpleAtomicQuery implements AtomicQuery {
     private static final Map<String, Object> NO_CONSTRAINTS = ImmutableMap.of();
 
     protected final InternalTitanTransaction tx;
-    private InternalTitanVertex node;
+    private InternalVertex node;
     private long nodeid;
 
     private boolean inMemoryRetrieval = false;
@@ -73,7 +73,7 @@ public class SimpleAtomicQuery implements AtomicQuery {
         constraints = NO_CONSTRAINTS;
     }
 
-    public SimpleAtomicQuery(InternalTitanVertex n) {
+    public SimpleAtomicQuery(InternalVertex n) {
         this(n.getTransaction());
 
 
@@ -110,7 +110,7 @@ public class SimpleAtomicQuery implements AtomicQuery {
         else constraints = new HashMap<String, Object>(q.constraints);
     }
 
-    SimpleAtomicQuery(InternalTitanVertex node, SimpleAtomicQuery q) {
+    SimpleAtomicQuery(InternalVertex node, SimpleAtomicQuery q) {
         this(q);
         this.node = node;
     }
@@ -121,7 +121,7 @@ public class SimpleAtomicQuery implements AtomicQuery {
         return q;
     }
 
-    public static final SimpleAtomicQuery queryAll(InternalTitanVertex node) {
+    public static final SimpleAtomicQuery queryAll(InternalVertex node) {
         return new SimpleAtomicQuery(node).includeHidden();
     }
 
@@ -425,7 +425,7 @@ public class SimpleAtomicQuery implements AtomicQuery {
     }
 
     @Override
-    public InternalTitanVertex getNode() {
+    public InternalVertex getNode() {
         return node;
     }
 

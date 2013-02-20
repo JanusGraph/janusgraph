@@ -2,10 +2,7 @@ package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 
 import java.nio.ByteBuffer;
@@ -80,13 +77,8 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, int limit, StoreTransaction txh) throws StorageException {
-        return dataStore.getSlice(key, columnStart, columnEnd, limit, getTx(txh));
-    }
-
-    @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, StoreTransaction txh) throws StorageException {
-        return dataStore.getSlice(key, columnStart, columnEnd, getTx(txh));
+    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+        return dataStore.getSlice(query, getTx(txh));
     }
 
     @Override

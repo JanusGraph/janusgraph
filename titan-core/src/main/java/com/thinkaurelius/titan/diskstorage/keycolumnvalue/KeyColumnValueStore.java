@@ -18,40 +18,17 @@ public interface KeyColumnValueStore {
     public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException;
 
     /**
-     * Retrieves the list of entries (i.e. column-value pairs) for a specified key which
-     * lie between the specified start and end columns.
-     * The start and end columns are considered to be inclusive and exclusive, respectively.
-     * <p/>
-     * Only retrieves a maximum number of entries as specified by the limit.
+     * Retrieves the list of entries (i.e. column-value pairs) for a specified query.
      *
-     * @param key         Key
-     * @param columnStart Tail Column (inclusive)
-     * @param columnEnd   Head Column (exclusive)
-     * @param limit       Maximum number of entries to retrieve
+     * @param query       Query to get results for
      * @param txh         Transaction
      * @return List of entries up to a maximum of "limit" entries
      * @throws StorageException when columnEnd < columnStart as determined in
      *                          {@link com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil#isSmallerThan(ByteBuffer, ByteBuffer)}
+     * @see KeySliceQuery
      */
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, int limit, StoreTransaction txh) throws StorageException;
+    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException;
 
-
-    /**
-     * Retrieves the list of entries (i.e. column-value pairs) for a specified key which
-     * lie between the specified start and end columns.
-     * The start and end columns are considered to be inclusive and exclusive, respectively.
-     * <p/>
-     * Retrieves all entries.
-     *
-     * @param key         Key
-     * @param columnStart Tail Column (inclusive)
-     * @param columnEnd   Head Column (exclusive)
-     * @param txh         Transaction
-     * @return List of entries
-     * @throws StorageException when columnEnd < columnStart as determined in
-     *                          {@link com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil#isSmallerThan(ByteBuffer, ByteBuffer)}
-     */
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart, ByteBuffer columnEnd, StoreTransaction txh) throws StorageException;
 
     /**
      * Retrieves the value for the specified column and key under the given transaction

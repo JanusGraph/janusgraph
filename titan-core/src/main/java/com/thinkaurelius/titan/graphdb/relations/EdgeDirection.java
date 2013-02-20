@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
+import com.google.common.base.Preconditions;
 import com.tinkerpop.blueprints.Direction;
 
 /**
@@ -9,70 +10,39 @@ import com.tinkerpop.blueprints.Direction;
  *
  * @author Matthias Broecheler (me@matthiasb.com);
  */
-public enum EdgeDirection {
-
-    OUT {
-        public final byte getID() {
-            return 1;
-        }
-
-        public boolean impliedBy(Direction dir) {
-            return dir == Direction.OUT || dir == Direction.BOTH;
-        }
-    },
-
-    IN {
-        public final byte getID() {
-            return 2;
-        }
-
-        public boolean impliedBy(Direction dir) {
-            return dir == Direction.IN || dir == Direction.BOTH;
-        }
-    };
+public class EdgeDirection {
 
 
-    public abstract byte getID();
+    public static final boolean impliedBy(Direction sub, Direction sup) {
+        return sup==sub || sup==Direction.BOTH;
+    }
 
-    public abstract boolean impliedBy(Direction dir);
+    public static final Direction fromPosition(int pos) {
+        if (pos==0) return Direction.OUT;
+        else if (pos==1) return Direction.IN;
+        else throw new IllegalArgumentException("Invalid position:" + pos);
+    }
 
-    public final static EdgeDirection fromID(long dir) {
+    public static final int position(Direction dir) {
+        if (dir==Direction.OUT) return 0;
+        else if (dir==Direction.IN) return 1;
+        else throw new IllegalArgumentException("Invalid direction: " + dir);
+    }
+
+    public static final byte getID(Direction dir) {
+        return (byte)(position(dir)+1);
+    }
+
+
+    public final static Direction fromID(long dir) {
         return fromID((int) dir);
     }
 
 
-    public final static EdgeDirection fromID(int dir) {
-        switch (dir) {
-            case 1:
-                return OUT;
-            case 2:
-                return IN;
-            default:
-                throw new IllegalArgumentException("Unkown edge direction");
-        }
+    public final static Direction fromID(int dir) {
+        return fromPosition(dir-1);
     }
 
-    public final static EdgeDirection convert(Direction dir) {
-        switch (dir) {
-            case IN:
-                return IN;
-            case OUT:
-                return OUT;
-            default:
-                throw new IllegalArgumentException("Unsupported Direction: " + dir);
-        }
-    }
-
-    public final static Direction convert(EdgeDirection dir) {
-        switch (dir) {
-            case IN:
-                return Direction.IN;
-            case OUT:
-                return Direction.OUT;
-            default:
-                throw new IllegalArgumentException("Unsupported Direction: " + dir);
-        }
-    }
 
 
 }

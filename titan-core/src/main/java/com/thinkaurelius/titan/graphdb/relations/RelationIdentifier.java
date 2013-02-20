@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.tinkerpop.blueprints.Direction;
 
@@ -26,8 +23,16 @@ public final class RelationIdentifier {
         this.relationId = relationId;
     }
 
+    static final RelationIdentifier get(InternalRelation r) {
+        if (r.hasId()) {
+            return new RelationIdentifier(r.getVertex(0).getID(),
+                    r.getType().getID(),
+                    r.getID());
+        } else return null;
+    }
+
     static final RelationIdentifier get(TitanProperty property) {
-        if (property.hasID()) {
+        if (property.hasId()) {
             return new RelationIdentifier(property.getVertex().getID(),
                     property.getPropertyKey().getID(),
                     property.getID());
@@ -35,7 +40,7 @@ public final class RelationIdentifier {
     }
 
     static final RelationIdentifier get(TitanEdge edge) {
-        if (edge.hasID()) {
+        if (edge.hasId()) {
             return new RelationIdentifier(edge.getVertex(Direction.OUT).getID(),
                     edge.getTitanLabel().getID(),
                     edge.getID());
@@ -65,18 +70,31 @@ public final class RelationIdentifier {
         return s.toString();
     }
 
-    public TitanEdge findEdge(TitanTransaction tx) {
+    TitanRelation findRelation(TitanTransaction tx) {
         TitanVertex v = tx.getVertex(outVertexId);
         if (v == null) return null;
-        TitanVertex v2 = tx.getVertex(typeId);
-        if (v2 == null) return null;
-        if (!(v2 instanceof TitanLabel))
-            throw new IllegalArgumentException("Invalid RelationIdentifier: typeID does not reference a label");
-        TitanLabel label = (TitanLabel) v2;
-        for (TitanEdge e : v.getTitanEdges(Direction.OUT, label)) {
-            if (e.getID() == relationId) return e;
+        TitanVertex type = tx.getVertex(typeId);
+        if (type == null) return null;
+        if (!(type instanceof TitanType))
+            throw new IllegalArgumentException("Invalid RelationIdentifier: typeID does not reference a type");
+        for (TitanRelation r : v.query().types((TitanType)type).direction(Direction.OUT).relations()) {
+            if (r.getID() == relationId) return r;
         }
         return null;
+    }
+
+    public TitanEdge findEdge(TitanTransaction tx) {
+        TitanRelation r = findRelation(tx);
+        if (r==null) return null;
+        else if (r instanceof TitanEdge) return (TitanEdge)r;
+        else throw new UnsupportedOperationException("Referenced relation is a property not an edge");
+    }
+
+    public TitanProperty findProperty(TitanTransaction tx) {
+        TitanRelation r = findRelation(tx);
+        if (r==null) return null;
+        else if (r instanceof TitanProperty) return (TitanProperty)r;
+        else throw new UnsupportedOperationException("Referenced relation is a edge not a property");
     }
 
     public static final RelationIdentifier parse(String id) {

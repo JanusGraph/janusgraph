@@ -12,9 +12,9 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.core.VertexList;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
-import com.thinkaurelius.titan.graphdb.types.InternalTitanType;
 import com.tinkerpop.blueprints.*;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
@@ -55,7 +55,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         n1 = tx.getVertex(nid);
 
         for (TitanProperty prop : n1.getProperties()) {
-            Object o = prop.getAttribute();
+            Object o = prop.getValue();
         }
         n1.query().relations();
         assertEquals(10.5, n1.getProperty(weight));
@@ -119,8 +119,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertTrue(friend.isEdgeLabel());
         assertFalse(friend.isPropertyKey());
         assertTrue(friend.isFunctional());
-        assertTrue(((InternalTitanType) friend).isFunctionalLocking());
-        assertFalse(((InternalTitanType) friend).isHidden());
+        assertTrue(((InternalType) friend).isFunctionalLocking());
+        assertFalse(((InternalType) friend).isHidden());
         assertFalse(friend.isSimple());
 
         connect = tx.getEdgeLabel("connect");
@@ -132,8 +132,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertTrue(connect.isEdgeLabel());
         assertFalse(connect.isPropertyKey());
         assertTrue(connect.isFunctional());
-        assertFalse(((InternalTitanType) connect).isFunctionalLocking());
-        assertFalse(((InternalTitanType) connect).isHidden());
+        assertFalse(((InternalType) connect).isFunctionalLocking());
+        assertFalse(((InternalType) connect).isHidden());
 
         link = tx.getEdgeLabel("link");
         assertTrue(link.isUnidirected());
@@ -350,14 +350,14 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     public void testSelfLoop() {
         Vertex v = tx.addVertex(null);
         tx.addEdge(null,v,v,"self");
-        assertEquals(1,Iterables.size(v.getEdges(Direction.OUT, "self")));
-        assertEquals(1,Iterables.size(v.getEdges(Direction.IN, "self")));
+        assertEquals(1, Iterables.size(v.getEdges(Direction.OUT, "self")));
+        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
         clopen();
         v = tx.getVertex(v.getId());
         assertNotNull(v);
         assertEquals(1,Iterables.size(v.getEdges(Direction.IN, "self")));
         assertEquals(1,Iterables.size(v.getEdges(Direction.OUT, "self")));
-        assertEquals(1,Iterables.size(v.getEdges(Direction.IN, "self")));
+        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
     }
 
     @Test
@@ -401,7 +401,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             }
             assertEquals(numV-deleteV, Iterables.size(tx.getVertices()));
             clopen();
-            assertEquals(numV-deleteV, Iterables.size(tx.getVertices()));
+            assertEquals(numV - deleteV, Iterables.size(tx.getVertices()));
         }
     }
 

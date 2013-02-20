@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class VertexIterable implements Iterable<InternalTitanVertex> {
+public class VertexIterable implements Iterable<InternalVertex> {
 
     private final InternalTitanTransaction tx;
     private final InternalTitanGraph graph;
@@ -25,14 +25,14 @@ public class VertexIterable implements Iterable<InternalTitanVertex> {
     }
 
     @Override
-    public Iterator<InternalTitanVertex> iterator() {
-        return new Iterator<InternalTitanVertex>() {
+    public Iterator<InternalVertex> iterator() {
+        return new Iterator<InternalVertex>() {
 
             RecordIterator<Long> iterator = graph.getVertexIDs(tx);
-            InternalTitanVertex nextVertex = nextVertex();
+            InternalVertex nextVertex = nextVertex();
 
-            private InternalTitanVertex nextVertex() {
-                InternalTitanVertex v = null;
+            private InternalVertex nextVertex() {
+                InternalVertex v = null;
                 try {
                     while (v == null && iterator.hasNext()) {
                         long nextId = iterator.next().longValue();
@@ -53,9 +53,9 @@ public class VertexIterable implements Iterable<InternalTitanVertex> {
             }
 
             @Override
-            public InternalTitanVertex next() {
+            public InternalVertex next() {
                 if (!hasNext()) throw new NoSuchElementException();
-                InternalTitanVertex returnVertex = nextVertex;
+                InternalVertex returnVertex = nextVertex;
                 nextVertex = nextVertex();
                 return returnVertex;
             }

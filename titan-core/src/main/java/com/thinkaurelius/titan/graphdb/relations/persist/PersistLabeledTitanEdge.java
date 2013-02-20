@@ -4,24 +4,23 @@ import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.adjacencylist.ModificationStatus;
 import com.thinkaurelius.titan.graphdb.entitystatus.BasicElement;
-import com.thinkaurelius.titan.graphdb.relations.InlineRelation;
-import com.thinkaurelius.titan.graphdb.relations.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.LabeledTitanEdge;
 import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.vertices.InternalTitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
 public class PersistLabeledTitanEdge extends LabeledTitanEdge {
 
     protected final BasicElement entity;
 
     public PersistLabeledTitanEdge(TitanLabel type,
-                                   InternalTitanVertex start, InternalTitanVertex end, InternalTitanTransaction tx, AdjacencyListFactory adjList) {
+                                   InternalVertex start, InternalVertex end, InternalTitanTransaction tx, AdjacencyListFactory adjList) {
         super(type, start, end, tx, adjList);
         entity = new BasicElement();
     }
 
     public PersistLabeledTitanEdge(TitanLabel type,
-                                   InternalTitanVertex start, InternalTitanVertex end, InternalTitanTransaction tx, AdjacencyListFactory adjList, long id) {
+                                   InternalVertex start, InternalVertex end, InternalTitanTransaction tx, AdjacencyListFactory adjList, long id) {
         super(type, start, end, tx, adjList);
         entity = new BasicElement(id);
     }
