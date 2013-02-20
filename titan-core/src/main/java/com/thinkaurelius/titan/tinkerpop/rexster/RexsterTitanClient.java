@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.tinkerpop.rexster;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
+import com.tinkerpop.rexster.client.RexProException;
 import com.tinkerpop.rexster.client.RexsterClient;
 import com.tinkerpop.rexster.client.RexsterClientFactory;
 import com.tinkerpop.rexster.server.RexsterSettings;
@@ -41,7 +42,7 @@ public class RexsterTitanClient {
     public RexsterTitanClient(String host, int port) {
         Preconditions.checkArgument(!StringUtils.isEmpty(host));
         try {
-            client = RexsterClientFactory.getInstance().createClient(host, port);
+            client = RexsterClientFactory.open(host, port);
         } catch (Exception e) {
             throw new RuntimeException("Could not initialize RexsterClient", e);
         }
@@ -50,7 +51,7 @@ public class RexsterTitanClient {
     public RexsterTitanClient(final Configuration clientConfig) {
         Preconditions.checkNotNull(clientConfig);
         try {
-            client = RexsterClientFactory.getInstance().createClient(clientConfig);
+            client = RexsterClientFactory.open(clientConfig);
         } catch (Exception e) {
             throw new RuntimeException("Could not initialize RexsterClient", e);
         }
@@ -73,36 +74,14 @@ public class RexsterTitanClient {
     }
 
     public List<Map<String, Object>> query(String query, Map<String, Object> parameters) {
-        List<List<Map<String,Value>>> packResults = queryTemplate(query, parameters, tList(tMap(TString, TValue)));
-        final List<Map<String, Object>> results = new ArrayList<Map<String, Object>>();
         try {
-            for (Map<String,Value> map : packResults.get(0)) {
-                //Convert map
-                Map<String, Object> result = new HashMap<String, Object>();
-                for (Map.Entry<String, Value> entry : map.entrySet()) {
-                    result.put(entry.getKey(), convert(entry.getValue()));
-                }
-                results.add(result);
-            }
+            return client.execute(wrapQuery(query),parameters);
         } catch (MessageTypeException e) {
             throw new IllegalArgumentException("Could not convert query result", e);
-        }
-
-        return results;
-    }
-
-    public <T> List<T> queryTemplate(final String script, final Template template) {
-        return queryTemplate(script, null, template);
-    }
-
-    public <T> List<T> queryTemplate(String query, final Map<String, Object> parameters, final Template template) {
-        query = wrapQuery(query);
-        try {
-            log.trace("Sending query: {}", query);
-            return client.execute(query, parameters, template);
-        } catch (Throwable e) {
-            log.debug("Failure in sending query", e);
-            throw new TitanException("Failure in query sending", e);
+        } catch (RexProException e) {
+            throw new TitanException("Could not process query",e);
+        } catch (IOException e) {
+            throw new TitanException("Could not connect to query server",e);
         }
     }
 
