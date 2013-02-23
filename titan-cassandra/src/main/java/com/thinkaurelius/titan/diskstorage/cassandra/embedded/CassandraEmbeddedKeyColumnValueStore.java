@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -20,7 +21,6 @@ import org.apache.cassandra.exceptions.IsBootstrappingException;
 import org.apache.cassandra.exceptions.RequestTimeoutException;
 import org.apache.cassandra.exceptions.UnavailableException;
 import org.apache.cassandra.service.StorageProxy;
-import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.utils.ByteBufferUtil;
 
 import org.slf4j.Logger;
@@ -60,15 +60,23 @@ public class CassandraEmbeddedKeyColumnValueStore
     }
 
     @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-                          StoreTransaction txh) throws StorageException {
+    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
+        Preconditions.checkNotNull(txh);
+        return getInternal(keyspace, columnFamily, key, column, getTx(txh).getReadConsistencyLevel().getDBConsistency());
+    }
+
+    static ByteBuffer getInternal(String keyspace,
+                                         String columnFamily,
+                                         ByteBuffer key,
+                                         ByteBuffer column,
+                                         org.apache.cassandra.db.ConsistencyLevel cl) throws StorageException {
 
         QueryPath slicePath = new QueryPath(columnFamily);
 
         SliceByNamesReadCommand namesCmd = new SliceByNamesReadCommand(
                 keyspace, key.duplicate(), slicePath, Arrays.asList(column.duplicate()));
 
-        List<Row> rows = read(namesCmd, getTx(txh).getReadConsistencyLevel().getDBConsistency());
+        List<Row> rows = read(namesCmd, cl);
 
         if (null == rows || 0 == rows.size())
             return null;
@@ -236,13 +244,13 @@ public class CassandraEmbeddedKeyColumnValueStore
         storeManager.mutateMany(ImmutableMap.of(columnFamily, mutations), txh);
     }
 
-    private List<Row> read(ReadCommand cmd, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
+    private static List<Row> read(ReadCommand cmd, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
         ArrayList<ReadCommand> cmdHolder = new ArrayList<ReadCommand>(1);
         cmdHolder.add(cmd);
         return read(cmdHolder, clvl);
     }
 
-    private List<Row> read(List<ReadCommand> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
+    private static List<Row> read(List<ReadCommand> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
         try {
             return StorageProxy.read(cmds, clvl);
         } catch (IOException e) {

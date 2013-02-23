@@ -74,6 +74,9 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     private StoreFeatures features = null;
 
+    protected static final String SYSTEM_PROPERTIES_CF  = "system_properties";
+    protected static final String SYSTEM_PROPERTIES_KEY = "general";
+
     public AbstractCassandraStoreManager(Configuration storageConfig) {
         super(storageConfig, PORT_DEFAULT);
 

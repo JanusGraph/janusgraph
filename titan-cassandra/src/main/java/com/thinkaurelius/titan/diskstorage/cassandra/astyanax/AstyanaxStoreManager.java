@@ -7,7 +7,9 @@ import com.netflix.astyanax.ColumnListMutation;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.MutationBatch;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
+import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
+import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.astyanax.connectionpool.impl.ConnectionPoolType;
 import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
@@ -15,8 +17,11 @@ import com.netflix.astyanax.connectionpool.impl.FixedRetryBackoffStrategy;
 import com.netflix.astyanax.ddl.ColumnFamilyDefinition;
 import com.netflix.astyanax.ddl.KeyspaceDefinition;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
+import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
+import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.retry.RetryPolicy;
+import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -99,6 +104,15 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      */
     public static final String RETRY_POLICY_DEFAULT = "com.netflix.astyanax.retry.BoundedExponentialBackoff,25,1000,30";
     public static final String RETRY_POLICY_KEY = "retry-policy";
+
+    private static final ColumnFamily<String, String> PROPERTIES_CF;
+
+    static {
+        PROPERTIES_CF = new ColumnFamily<String, String>(SYSTEM_PROPERTIES_CF,
+                                                         StringSerializer.get(),
+                                                         StringSerializer.get(),
+                                                         StringSerializer.get());
+    }
 
     private final String clusterName;
 
@@ -241,6 +255,10 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     private void ensureColumnFamilyExists(String name) throws StorageException {
+        ensureColumnFamilyExists(name, "org.apache.cassandra.db.marshal.BytesType");
+    }
+
+    private void ensureColumnFamilyExists(String name, String comparator) throws StorageException {
         Cluster cl = clusterContext.getEntity();
         try {
             KeyspaceDefinition ksDef = cl.describeKeyspace(keySpaceName);
@@ -255,7 +273,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         cl.makeColumnFamilyDefinition()
                                 .setName(name)
                                 .setKeyspace(keySpaceName)
-                                .setComparatorType("org.apache.cassandra.db.marshal.BytesType");
+                                .setComparatorType(comparator);
                 cl.addColumnFamily(cfDef);
             }
         } catch (ConnectionException e) {
@@ -385,12 +403,19 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     public String getConfigurationProperty(final String key) throws StorageException {
-        Cluster cl = clusterContext.getEntity();
-
         try {
-            KeyspaceDefinition ksDef = cl.describeKeyspace(keySpaceName);
-            Preconditions.checkNotNull(ksDef);
-            return ksDef.getStrategyOptions().get(key);
+            ensureColumnFamilyExists(SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
+
+            OperationResult<Column<String>> result =
+                    keyspaceContext.getEntity().prepareQuery(PROPERTIES_CF)
+                                               .setConsistencyLevel(ConsistencyLevel.CL_QUORUM)
+                                               .withRetryPolicy(retryPolicy.duplicate())
+                                               .getKey(SYSTEM_PROPERTIES_KEY).getColumn(key)
+                                               .execute();
+
+            return result.getResult().getStringValue();
+        } catch (NotFoundException e) {
+                return null;
         } catch (ConnectionException e) {
             throw new PermanentStorageException(e);
         }
@@ -398,18 +423,17 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     public void setConfigurationProperty(final String key, final String value) throws StorageException {
-        Cluster cl = clusterContext.getEntity();
-
         try {
-            KeyspaceDefinition currentKs = cl.describeKeyspace(keySpaceName);
-            Preconditions.checkNotNull(currentKs);
+            ensureColumnFamilyExists(SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
 
-            cl.updateKeyspace(cl.makeKeyspaceDefinition()
-                    .setName(currentKs.getName())
-                    .setStrategyClass(currentKs.getStrategyClass())
-                    .setStrategyOptions(new HashMap<String, String>(currentKs.getStrategyOptions()) {{
-                        put(key, value);
-                    }}));
+            Keyspace ks = keyspaceContext.getEntity();
+
+            OperationResult<Void> result = ks.prepareColumnMutation(PROPERTIES_CF, SYSTEM_PROPERTIES_KEY, key)
+                                                    .setConsistencyLevel(ConsistencyLevel.CL_QUORUM)
+                                                    .putValue(value, null)
+                                                    .execute();
+
+            result.getResult();
         } catch (ConnectionException e) {
             throw new PermanentStorageException(e);
         }
