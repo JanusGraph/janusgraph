@@ -16,10 +16,11 @@ import org.apache.cassandra.config.CFMetaData.Caching;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.KSMetaData;
 import org.apache.cassandra.config.Schema;
-import org.apache.cassandra.db.ColumnFamilyType;
-import org.apache.cassandra.db.RowMutation;
+import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.filter.QueryPath;
+import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.BytesType;
+import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.dht.BytesToken;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
@@ -29,6 +30,7 @@ import org.apache.cassandra.scheduler.IRequestScheduler;
 import org.apache.cassandra.service.MigrationManager;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.StorageService;
+import org.apache.cassandra.thrift.ColumnPath;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,7 @@ import java.util.*;
 import java.util.concurrent.TimeoutException;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
+import static com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedKeyColumnValueStore.getInternal;
 
 public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager {
 
@@ -283,12 +286,16 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
     }
 
-    private void ensureColumnFamilyExists(String keyspaceName, String columnfamilyName) throws StorageException {
+    private void ensureColumnFamilyExists(String ksName, String cfName) throws StorageException {
+        ensureColumnFamilyExists(ksName, cfName, BytesType.instance);
+    }
+
+    private void ensureColumnFamilyExists(String keyspaceName, String columnfamilyName, AbstractType comparator) throws StorageException {
         if (null != Schema.instance.getCFMetaData(keyspaceName, columnfamilyName))
             return;
 
         // Column Family not found; create it
-        CFMetaData cfm = new CFMetaData(keyspaceName, columnfamilyName, ColumnFamilyType.Standard, BytesType.instance, null);
+        CFMetaData cfm = new CFMetaData(keyspaceName, columnfamilyName, ColumnFamilyType.Standard, comparator, null);
 
         // Hard-coded caching settings
         if (columnfamilyName.startsWith(Backend.EDGESTORE_NAME)) {
@@ -310,24 +317,34 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     }
 
     @Override
-    public String getConfigurationProperty(final String key) {
-        KSMetaData ksMetaData = Schema.instance.getKSMetaData(keySpaceName);
-        Preconditions.checkNotNull(ksMetaData);
-        return ksMetaData.strategyOptions.get(key);
+    public String getConfigurationProperty(final String key) throws StorageException {
+        ensureColumnFamilyExists(keySpaceName, SYSTEM_PROPERTIES_CF, UTF8Type.instance);
+
+        ByteBuffer propertiesKey = UTF8Type.instance.fromString(SYSTEM_PROPERTIES_KEY);
+        ByteBuffer column = UTF8Type.instance.fromString(key);
+
+        ByteBuffer value = getInternal(keySpaceName,
+                                       SYSTEM_PROPERTIES_CF,
+                                       propertiesKey,
+                                       column,
+                                       ConsistencyLevel.QUORUM);
+
+        return (value == null) ? null : UTF8Type.instance.getString(value);
     }
 
     @Override
-    public void setConfigurationProperty(final String key, final String value) throws StorageException {
-        KSMetaData current = Schema.instance.getKSMetaData(keySpaceName);
-        Preconditions.checkNotNull(current);
+    public void setConfigurationProperty(final String rawKey, final String rawValue) throws StorageException {
+        if (rawKey == null || rawValue == null)
+            return;
 
-        KSMetaData ksUpdate = KSMetaData.cloneWith(current, Collections.<CFMetaData>emptyList());
-        ksUpdate.strategyOptions.put(key, value);
+        ensureColumnFamilyExists(keySpaceName, SYSTEM_PROPERTIES_CF, UTF8Type.instance);
 
-        try {
-            MigrationManager.announceKeyspaceUpdate(ksUpdate);
-        } catch (ConfigurationException e) {
-            throw new PermanentStorageException("Failed to update config property", e);
-        }
+        ByteBuffer key = UTF8Type.instance.fromString(rawKey);
+        ByteBuffer val = UTF8Type.instance.fromString(rawValue);
+
+        RowMutation property = new RowMutation(keySpaceName, UTF8Type.instance.fromString(SYSTEM_PROPERTIES_KEY));
+        property.add(new QueryPath(new ColumnPath(SYSTEM_PROPERTIES_CF).setColumn(key)), val, System.currentTimeMillis());
+
+        mutate(Arrays.asList(property), ConsistencyLevel.QUORUM);
     }
 }

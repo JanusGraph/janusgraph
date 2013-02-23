@@ -16,17 +16,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
-import org.apache.cassandra.thrift.Cassandra;
-import org.apache.cassandra.thrift.CfDef;
-import org.apache.cassandra.thrift.Column;
-import org.apache.cassandra.thrift.ColumnOrSuperColumn;
-import org.apache.cassandra.thrift.ConsistencyLevel;
-import org.apache.cassandra.thrift.Deletion;
-import org.apache.cassandra.thrift.InvalidRequestException;
-import org.apache.cassandra.thrift.KsDef;
-import org.apache.cassandra.thrift.NotFoundException;
-import org.apache.cassandra.thrift.SchemaDisagreementException;
-import org.apache.cassandra.thrift.SlicePredicate;
+import org.apache.cassandra.db.marshal.UTF8Type;
+import org.apache.cassandra.thrift.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
@@ -35,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -177,49 +167,16 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
     }
 
-    @Override
-    public synchronized CassandraThriftKeyColumnValueStore openDatabase(final String name)
-            throws StorageException {
+    @Override // TODO: *BIG FAT WARNING* 'synchronized is always *bad*, change openStores to use ConcurrentLinkedHashMap
+    public synchronized CassandraThriftKeyColumnValueStore openDatabase(final String name) throws StorageException {
+        if (openStores.containsKey(name))
+            return openStores.get(name);
 
-        if (openStores.containsKey(name)) return openStores.get(name);
-        else {
-            CTConnection conn = null;
-            try {
-                KsDef keyspaceDef = ensureKeyspaceExists(keySpaceName);
+        ensureColumnFamilyExists(keySpaceName, name);
 
-                conn = pool.genericBorrowObject(keySpaceName);
-                Cassandra.Client client = conn.getClient();
-                log.debug("Looking up metadata on keyspace {}...", keySpaceName);
-                boolean foundColumnFamily = false;
-                for (CfDef cfDef : keyspaceDef.getCf_defs()) {
-                    String curCfName = cfDef.getName();
-                    if (curCfName.equals(name)) {
-                        foundColumnFamily = true;
-                    }
-                }
-                if (!foundColumnFamily) {
-                    log.debug("Keyspace {} not found, about to create it", keySpaceName);
-                    createColumnFamily(client, keySpaceName, name);
-                } else {
-                    log.debug("Found keyspace: {}", keySpaceName);
-                }
-            } catch (TException e) {
-                throw new PermanentStorageException(e);
-            } catch (InvalidRequestException e) {
-                throw new PermanentStorageException(e);
-            } catch (NotFoundException e) {
-                throw new PermanentStorageException(e);
-            } catch (SchemaDisagreementException e) {
-                throw new TemporaryStorageException(e);
-            } finally {
-                if (null != conn)
-                    pool.genericReturnObject(keySpaceName, conn);
-            }
-
-            CassandraThriftKeyColumnValueStore store = new CassandraThriftKeyColumnValueStore(keySpaceName, name, this, pool);
-            openStores.put(name, store);
-            return store;
-        }
+        CassandraThriftKeyColumnValueStore store = new CassandraThriftKeyColumnValueStore(keySpaceName, name, this, pool);
+        openStores.put(name, store);
+        return store;
 	}
 
 
@@ -306,28 +263,72 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
     }
 
-    private static void createColumnFamily(Cassandra.Client client, String keyspaceName, String columnfamilyName)
-            throws InvalidRequestException, TException, StorageException {
+    private void ensureColumnFamilyExists(String ksName, String cfName) throws StorageException {
+        ensureColumnFamilyExists(ksName, cfName, "org.apache.cassandra.db.marshal.BytesType");
+    }
+
+    private void ensureColumnFamilyExists(String ksName, String cfName, String comparator) throws StorageException {
+        CTConnection conn = null;
+        try {
+            KsDef keyspaceDef = ensureKeyspaceExists(ksName);
+
+            conn = pool.genericBorrowObject(ksName);
+            Cassandra.Client client = conn.getClient();
+
+            log.debug("Looking up metadata on keyspace {}...", ksName);
+
+            boolean foundColumnFamily = false;
+            for (CfDef cfDef : keyspaceDef.getCf_defs()) {
+                String curCfName = cfDef.getName();
+                if (curCfName.equals(cfName))
+                    foundColumnFamily = true;
+            }
+
+            if (!foundColumnFamily) {
+                createColumnFamily(client, ksName, cfName, comparator);
+            } else {
+                log.debug("Keyspace {} and ColumnFamily {} were found.", ksName, cfName);
+            }
+        } catch (SchemaDisagreementException e) {
+            throw new TemporaryStorageException(e);
+        } catch (Exception e) {
+            throw new PermanentStorageException(e);
+        } finally {
+            IOUtils.closeQuietly(conn);
+        }
+    }
+
+    private static void createColumnFamily(Cassandra.Client client, String ksName, String cfName) throws StorageException {
+        createColumnFamily(client, ksName, cfName, "org.apache.cassandra.db.marshal.BytesType");
+    }
+
+    private static void createColumnFamily(Cassandra.Client client,
+                                           String ksName,
+                                           String cfName,
+                                           String comparator) throws StorageException {
         CfDef createColumnFamily = new CfDef();
-        createColumnFamily.setName(columnfamilyName);
-        createColumnFamily.setKeyspace(keyspaceName);
-        createColumnFamily.setComparator_type("org.apache.cassandra.db.marshal.BytesType");
+        createColumnFamily.setName(cfName);
+        createColumnFamily.setKeyspace(ksName);
+        createColumnFamily.setComparator_type(comparator);
 
         // Hard-coded caching settings
-        if (columnfamilyName.startsWith(Backend.EDGESTORE_NAME)) {
+        if (cfName.startsWith(Backend.EDGESTORE_NAME)) {
             createColumnFamily.setCaching("keys_only");
-        } else if (columnfamilyName.startsWith(Backend.VERTEXINDEX_STORE_NAME)) {
+        } else if (cfName.startsWith(Backend.VERTEXINDEX_STORE_NAME)) {
             createColumnFamily.setCaching("rows_only");
         }
 
-        log.debug("Adding column family {} to keyspace {}...", columnfamilyName, keyspaceName);
+        log.debug("Adding column family {} to keyspace {}...", cfName, ksName);
         String schemaVer;
         try {
             schemaVer = client.system_add_column_family(createColumnFamily);
         } catch (SchemaDisagreementException e) {
             throw new TemporaryStorageException("Error in setting up column family", e);
+        } catch (Exception e) {
+            throw new PermanentStorageException(e);
         }
-        log.debug("Added column family {} to keyspace {}.", columnfamilyName, keyspaceName);
+
+        log.debug("Added column family {} to keyspace {}.", cfName, ksName);
 
         // Try to let Cassandra converge on the new column family
         try {
@@ -343,10 +344,27 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         CTConnection connection = null;
 
         try {
-            connection = getCassandraConnection();
+            ensureColumnFamilyExists(keySpaceName, SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
 
-            // if keyspace doesn't exist or there was a connection problem this will throw an exception different from NPE
-            return connection.getClient().describe_keyspace(keySpaceName).getStrategy_options().get(key);
+            connection = getCassandraConnection();
+            Cassandra.Client client = connection.getClient();
+
+            client.set_keyspace(keySpaceName);
+
+            ColumnOrSuperColumn column = client.get(UTF8Type.instance.fromString(SYSTEM_PROPERTIES_KEY),
+                                                   new ColumnPath(SYSTEM_PROPERTIES_CF).setColumn(UTF8Type.instance.fromString(key)),
+                                                   ConsistencyLevel.QUORUM);
+
+            if (column == null || !column.isSetColumn())
+                    return null;
+
+            Column actualColumn = column.getColumn();
+
+            return (actualColumn.value == null)
+                    ? null
+                    : UTF8Type.instance.getString(actualColumn.value);
+        } catch (NotFoundException e) {
+                return null;
         } catch (Exception e) {
             throw new PermanentStorageException(e);
         } finally {
@@ -355,21 +373,24 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public void setConfigurationProperty(final String key, final String value) throws StorageException {
+    public void setConfigurationProperty(final String rawKey, final String rawValue) throws StorageException {
         CTConnection connection = null;
 
         try {
+            ensureColumnFamilyExists(keySpaceName, SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
+
+            ByteBuffer key = UTF8Type.instance.fromString(rawKey);
+            ByteBuffer val = UTF8Type.instance.fromString(rawValue);
+
             connection = getCassandraConnection();
             Cassandra.Client client = connection.getClient();
-            KsDef ksDef = client.describe_keyspace(keySpaceName); // would throw NotFoundException so no need to assert
 
-            client.system_update_keyspace(new KsDef().setName(ksDef.name)
-                                                     .setDurable_writes(ksDef.durable_writes)
-                                                     .setStrategy_class(ksDef.strategy_class)
-                                                     .setCf_defs(Collections.<CfDef>emptyList())
-                                                     .setStrategy_options(new HashMap<String, String>(ksDef.strategy_options) {{
-                                                         put(key, value);
-                                                     }}));
+            client.set_keyspace(keySpaceName);
+
+            client.insert(UTF8Type.instance.fromString(SYSTEM_PROPERTIES_KEY),
+                          new ColumnParent(SYSTEM_PROPERTIES_CF),
+                          new Column(key).setValue(val).setTimestamp(System.currentTimeMillis()),
+                          ConsistencyLevel.QUORUM);
         } catch (Exception e) {
             throw new PermanentStorageException(e);
         } finally {
