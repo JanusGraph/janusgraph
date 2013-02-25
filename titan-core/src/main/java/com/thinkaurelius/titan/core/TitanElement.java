@@ -2,6 +2,7 @@
 package com.thinkaurelius.titan.core;
 
 
+import com.thinkaurelius.titan.util.datastructures.Removable;
 import com.tinkerpop.blueprints.Element;
 
 /**
@@ -25,7 +26,7 @@ import com.tinkerpop.blueprints.Element;
  * @see TitanVertex
  * @see TitanRelation
  */
-public interface TitanElement extends Element, Comparable<TitanElement> {
+public interface TitanElement extends Element, Comparable<TitanElement>, Removable {
 
     /**
      * Returns a unique identifier for this entity.

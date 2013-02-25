@@ -3,10 +3,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.blueprints.Direction;
 
@@ -42,6 +39,11 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
     @Override
     public int getArity() {
         return 2;
+    }
+
+    @Override
+    public int getLen() {
+        return isUnidirected()?1:2;
     }
 
     @Override

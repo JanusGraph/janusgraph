@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
+import com.google.common.base.Preconditions;
+
 /**
  * ElementLifeCycle enumerates all possible states of the lifecycle of a entity.
  *
@@ -7,13 +9,12 @@ package com.thinkaurelius.titan.graphdb.internal;
  */
 public class ElementLifeCycle {
 
-    public enum Event {REMOVED, DELETED_RELATION, ADDED_RELATION }
+    public enum Event {REMOVED, REMOVED_RELATION, ADDED_RELATION }
 
     /**
      * The entity has been newly created and not yet persisted.
      */
     public final static byte New = 1;
-
 
     /**
      * The entity has been loaded from the database and has not changed
@@ -29,27 +30,31 @@ public class ElementLifeCycle {
     /**
      * The entity has changed after being loaded from the database by deleting relations.
      */
-    final static byte DeletedRelations = 4;
+    final static byte RemovedRelations = 4;
 
     /**
      * The entity has changed after being loaded from the database by adding and/or deleting relations.
      */
     final static byte Modified = 5;
 
-
     /**
      * The entity has been deleted but not yet erased from the database.
      */
-    final static byte Removed = 10;
+    public final static byte Removed = 6;
 
 
     public static final boolean isModified(byte lifecycle) {
         return lifecycle>=AddedRelations && lifecycle<=Modified;
     }
 
-    public static final boolean hasDeletedRelations(byte lifecycle) {
-        return lifecycle==DeletedRelations || lifecycle==Modified;
+    public static final boolean hasRemovedRelations(byte lifecycle) {
+        return lifecycle== RemovedRelations || lifecycle==Modified;
     }
+
+    public static final boolean hasAddedRelations(byte lifecycle) {
+        return lifecycle==AddedRelations || lifecycle==Modified;
+    }
+
 
     public static final boolean isNew(byte lifecycle) {
         return lifecycle==New;
@@ -64,22 +69,26 @@ public class ElementLifeCycle {
     }
 
 
+
+
     public static final byte update(final byte lifecycle, final Event event) {
+        Preconditions.checkArgument(lifecycle>=New && lifecycle<=Removed,"Invalid element state: " + lifecycle);
         if (event==Event.REMOVED) return Removed;
-        else if (lifecycle==New) return lifecycle;
-        else if (lifecycle==Modified) return lifecycle;
-        else if (lifecycle== Removed) throw new IllegalStateException("No event can occur on deleted vertices: " + event);
-        else if (event==Event.DELETED_RELATION) {
-            if (lifecycle==Loaded) return DeletedRelations;
+        else if (lifecycle==New || lifecycle==Modified) {
+            return lifecycle;
+        } else if (lifecycle== Removed) {
+            throw new IllegalStateException("No event can occur on deleted vertices: " + event);
+        } else if (event==Event.REMOVED_RELATION) {
+            if (lifecycle==Loaded) return RemovedRelations;
             else if (lifecycle==AddedRelations) return Modified;
-            else if (lifecycle==DeletedRelations) return DeletedRelations;
+            else if (lifecycle== RemovedRelations) return RemovedRelations;
             else throw new IllegalStateException("Unexpected state: " + lifecycle + " - " + event);
         } else if (event==Event.ADDED_RELATION) {
             if (lifecycle==Loaded) return AddedRelations;
-            else if (lifecycle==DeletedRelations) return Modified;
+            else if (lifecycle== RemovedRelations) return Modified;
             else if (lifecycle==AddedRelations) return AddedRelations;
             else throw new IllegalStateException("Unexpected state: " + lifecycle + " - " + event);
-        } else throw new IllegalStateException("Unexpected state: " + lifecycle + " - " + event);
+        } else throw new IllegalStateException("Unexpected state event: " + lifecycle + " - " + event);
     }
 
 

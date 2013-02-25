@@ -115,4 +115,8 @@ public class SliceQuery {
                 ByteBufferUtil.isSmallerOrEqualThan(oth.sliceEnd,sliceEnd);
     }
 
+    public static final ByteBuffer pointRange(ByteBuffer point) {
+        return ByteBufferUtil.nextBiggerBuffer(point);
+    }
+
 }

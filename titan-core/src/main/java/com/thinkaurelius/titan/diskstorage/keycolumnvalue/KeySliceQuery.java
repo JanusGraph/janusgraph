@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.nio.ByteBuffer;

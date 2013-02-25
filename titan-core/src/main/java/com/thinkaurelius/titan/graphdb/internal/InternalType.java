@@ -1,9 +1,6 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
 import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.core.TypeMaker;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinition;
 import com.tinkerpop.blueprints.Direction;
 

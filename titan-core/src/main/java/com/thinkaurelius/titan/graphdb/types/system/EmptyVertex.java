@@ -44,6 +44,16 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
+    public boolean hasRemovedRelations() {
+        return false;
+    }
+
+    @Override
+    public boolean hasAddedRelations() {
+        return false;
+    }
+
+    @Override
     public Object getProperty(TitanKey key) {
         return null;
     }
@@ -228,7 +238,7 @@ public class EmptyVertex implements InternalVertex {
 
     @Override
     public byte getLifeCycle() {
-        return ElementLifeCycle.loadedLifeCycle();
+        return ElementLifeCycle.Loaded;
     }
 
     @Override

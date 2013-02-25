@@ -47,6 +47,14 @@ public final class RelationIdentifier {
         } else return null;
     }
 
+    public long[] getLongRepresentation() {
+        long[] r = new long[3];
+        r[0]=outVertexId;
+        r[1]=typeId;
+        r[2]=relationId;
+        return r;
+    }
+
     @Override
     public int hashCode() {
         return Long.valueOf(relationId).hashCode() +

@@ -26,9 +26,9 @@ public abstract class SystemTypeManager {
                     for (SystemType et : SystemKey.values()) {
                         builder.put(Long.valueOf(et.getID()), et);
                     }
-                    for (SystemType et : SystemLabel.values()) {
-                        builder.put(Long.valueOf(et.getID()), et);
-                    }
+//                    for (SystemType et : SystemLabel.values()) {
+//                        builder.put(Long.valueOf(et.getID()), et);
+//                    }
                     systemEdgeTypes = builder.build();
                 }
             }

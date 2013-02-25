@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
-import com.sun.jersey.core.util.StringKeyIgnoreCaseMultivaluedMap;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
 import java.util.List;
 import java.util.Map;
@@ -14,6 +11,14 @@ import java.util.Map;
  */
 
 public interface IndexProvider extends IndexInformation {
+
+    /**
+     * It is expected that this method is first called with each new key to inform the index of the expected type.
+     *
+     * @param key
+     * @param dataType
+     */
+    public void register(String store, String key, Class<?> dataType, TransactionHandle tx) throws StorageException;
 
     public void mutate(Map<String,Map<String, IndexMutation>> mutations, TransactionHandle tx) throws StorageException;
 

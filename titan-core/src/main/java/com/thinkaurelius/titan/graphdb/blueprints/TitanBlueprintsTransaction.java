@@ -6,14 +6,17 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
-import com.tinkerpop.blueprints.util.PropertyFilteredIterable;
 import com.tinkerpop.blueprints.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -46,7 +49,6 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public Vertex addVertex(Object id) {
-        //Preconditions.checkArgument(id==null,"Titan does not support vertex id assignment");
         return addVertex();
     }
 
@@ -76,15 +78,14 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     }
 
     @Override
+    public Iterable<Vertex> getVertices(String key, Object attribute) {
+        if (!containsType(key)) return IterablesUtil.emptyIterable();
+        else return (Iterable)getVertices(getPropertyKey(key),attribute);
+    }
+
+    @Override
     public void removeVertex(Vertex vertex) {
-        TitanVertex v = (TitanVertex) vertex;
-        //Delete all edges
-        Iterator<TitanRelation> iter = v.getRelations().iterator();
-        while (iter.hasNext()) {
-            iter.next();
-            iter.remove();
-        }
-        v.remove();
+        vertex.remove();
     }
 
 
@@ -95,6 +96,12 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         Preconditions.checkArgument(inVertex instanceof TitanVertex);
         return addEdge((TitanVertex) outVertex, (TitanVertex) inVertex, label);
     }
+
+    @Override
+    public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, String label) {
+        return addEdge(outVertex, inVertex, getEdgeLabel(label));
+    }
+
 
     @Override
     public Edge getEdge(Object id) {
@@ -112,12 +119,18 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public void removeEdge(Edge edge) {
-        ((TitanEdge) edge).remove();
+        edge.remove();
     }
 
     @Override
     public Iterable<Edge> getEdges(String key, Object value) {
-        return new PropertyFilteredIterable<Edge>(key, value, this.getEdges());
+        if (!containsType(key)) return IterablesUtil.emptyIterable();
+        else return (Iterable)getEdges(getPropertyKey(key), value);
+    }
+
+    @Override
+    public TitanProperty addProperty(TitanVertex vertex, String key, Object attribute) {
+        return addProperty(vertex,getPropertyKey(key),attribute);
     }
 
     @Override
@@ -166,7 +179,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
             if (!indexesCovered)
                 throw new UnsupportedOperationException("Cannot add an index to an already existing property key: " + type.getName());
         } else {
-            TypeMaker tm = makeType().functional(false).name(key).dataType(Object.class);
+            TypeMaker tm = makeType().unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).name(key).dataType(Object.class);
             for (Parameter p : indexParameters) {
                 Preconditions.checkArgument(p.getKey() instanceof String,"Invalid index argument: " + p);
                 tm.indexed((String) p.getKey(),elementClass);
@@ -184,7 +197,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public <T extends Element> Set<String> getIndexedKeys(Class<T> elementClass) {
-        Preconditions.checkArgument(elementClass==Vertex.class || elementClass==Edge.class, "Must provide either Vertex.class or Edge.class as an argument");
+        Preconditions.checkArgument(elementClass == Vertex.class || elementClass == Edge.class, "Must provide either Vertex.class or Edge.class as an argument");
 
         Set<String> indexedkeys = new HashSet<String>();
         for (TitanVertex v : getVertices(SystemKey.TypeClass, TitanTypeClass.KEY)) {

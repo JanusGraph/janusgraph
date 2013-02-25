@@ -3,9 +3,6 @@ package com.thinkaurelius.titan.graphdb.internal;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
-import com.thinkaurelius.titan.graphdb.internal.InternalElement;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -42,7 +39,7 @@ public abstract class AbstractElement implements InternalElement {
 
     @Override
     public int compareTo(TitanElement titanElement) {
-        return Longs.compare(id,titanElement.getID());
+        return Longs.compare(getID(),titanElement.getID());
     }
 
     @Override
@@ -61,7 +58,7 @@ public abstract class AbstractElement implements InternalElement {
     }
 
     public boolean hasId() {
-        return !isTemporaryId(id);
+        return !isTemporaryId(getID());
     }
 
     @Override

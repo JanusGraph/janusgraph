@@ -29,8 +29,25 @@ public class KeyAtom<K> implements KeyCondition<K> {
     }
 
     @Override
+    public boolean hasChildren() {
+        return false;
+    }
+
+    @Override
     public Iterable<KeyCondition<K>> getChildren() {
         return ImmutableList.of();
+    }
+
+    public K getKey() {
+        return key;
+    }
+
+    public Relation getRelation() {
+        return relation;
+    }
+
+    public Object getCondition() {
+        return condition;
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -25,7 +26,7 @@ public interface AddedRelationsContainer {
      * of the transaction after there are no additional changes. Otherwise the behavior is non deterministic.
      * @return
      */
-    public Iterable<InternalRelation> getAll();
+    public Collection<InternalRelation> getAll();
 
 
     public static final AddedRelationsContainer EMPTY = new AddedRelationsContainer() {
@@ -50,7 +51,7 @@ public interface AddedRelationsContainer {
         }
 
         @Override
-        public Iterable<InternalRelation> getAll() {
+        public Collection<InternalRelation> getAll() {
             return ImmutableList.of();
         }
     };

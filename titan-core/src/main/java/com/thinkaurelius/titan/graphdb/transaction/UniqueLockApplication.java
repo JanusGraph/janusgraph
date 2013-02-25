@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Direction;

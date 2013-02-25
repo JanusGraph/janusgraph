@@ -4,9 +4,6 @@ import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.query.AtomicQuery;
-import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 
 import java.util.List;
@@ -40,6 +37,11 @@ public interface InternalVertex extends TitanVertex, InternalElement {
     public List<InternalRelation> getAddedRelations(Predicate<InternalRelation> query);
 
     public Iterable<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery,List<Entry>> lookup);
+
+
+    public boolean hasRemovedRelations();
+
+    public boolean hasAddedRelations();
 
 
 }

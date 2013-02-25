@@ -1,13 +1,9 @@
 package com.thinkaurelius.titan.graphdb.transaction.addedrelations;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -69,7 +65,7 @@ public class SimpleBufferAddedRelations implements AddedRelationsContainer {
     }
 
     @Override
-    public Iterable<InternalRelation> getAll() {
+    public Collection<InternalRelation> getAll() {
         cleanup();
         return added;
     }

@@ -2,11 +2,8 @@ package com.thinkaurelius.titan.graphdb.types.vertices;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.PropertyKeyDefinition;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.tinkerpop.blueprints.Element;
@@ -24,7 +21,7 @@ public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
         if (definition == null) {
             synchronized (this) {
                 if (definition==null) {
-                    definition = QueryUtil.queryHiddenFunctionalProperty(this, SystemKey.PropertyTypeDefinition)
+                    definition = QueryUtil.queryHiddenUniqueProperty(this, SystemKey.PropertyTypeDefinition)
                             .getValue(PropertyKeyDefinition.class);
                     Preconditions.checkNotNull(definition);
                 }

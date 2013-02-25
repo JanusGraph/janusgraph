@@ -7,9 +7,6 @@ import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.tinkerpop.blueprints.Direction;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class AbstractTypeDefinition implements TypeDefinition {
 
     private String name;

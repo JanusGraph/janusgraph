@@ -4,9 +4,8 @@ import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -40,7 +39,7 @@ public class SimpleAddedRelations extends ArrayList<InternalRelation> implements
     }
 
     @Override
-    public Iterable<InternalRelation> getAll() {
+    public Collection<InternalRelation> getAll() {
         return this;
     }
 }

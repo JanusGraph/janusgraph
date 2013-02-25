@@ -4,14 +4,11 @@ import cern.colt.list.AbstractLongList;
 import cern.colt.list.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
-import com.google.common.primitives.Longs;
-import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexList;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -47,12 +44,7 @@ public class VertexArrayList implements VertexListInternal {
     @Override
     public void sort() {
         if (sorted) return;
-        Collections.sort(vertices, new Comparator<TitanVertex>() {
-            @Override
-            public int compare(TitanVertex node, TitanVertex node1) {
-                return Longs.compare(node.getID(), node1.getID());
-            }
-        });
+        Collections.sort(vertices);
         sorted = true;
     }
 
@@ -77,7 +69,6 @@ public class VertexArrayList implements VertexListInternal {
     private static final AbstractLongList toLongList(List<TitanVertex> vertices) {
         AbstractLongList result = new LongArrayList(vertices.size());
         for (TitanVertex n : vertices) {
-            if (!n.hasID()) throw new InvalidElementException("Neighboring node does not have an id", n);
             result.add(n.getID());
         }
         return result;

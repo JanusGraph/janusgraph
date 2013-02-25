@@ -140,6 +140,8 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      */
     public Iterable<Vertex> getVertices(String key, Object attribute);
 
+    public Iterable<TitanEdge> getEdges(TitanKey key, Object attribute);
+
     /**
      * Checks whether a type with the specified name exists.
      *

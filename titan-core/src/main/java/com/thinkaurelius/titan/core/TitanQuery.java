@@ -83,7 +83,9 @@ public interface TitanQuery extends Query {
      * @param value Value for the property of the given key to match, or vertex to point unidirectional edge to
      * @return this query
      */
-    public TitanQuery has(TitanType type, Object value);
+    public TitanQuery has(TitanKey key, Object value);
+
+    public TitanQuery has(TitanLabel label, TitanVertex value);
 
     /**
      * Query only for edges that have an incident property or unidirected edge matching the given value.
@@ -121,14 +123,6 @@ public interface TitanQuery extends Query {
      * @return this query
      */
     public <T extends Comparable<T>> TitanQuery interval(TitanKey key, T start, T end);
-
-    /**
-     * Query for edges that are modifiable.
-     *
-     * @return this query
-     * @see com.thinkaurelius.titan.core.TitanType#isModifiable()
-     */
-    public TitanQuery onlyModifiable();
 
     /**
      * Sets the retrieval limit for this query.
@@ -199,17 +193,5 @@ public interface TitanQuery extends Query {
      */
     public VertexList vertexIds();
 
-
-    /* ---------------------------------------------------------------
-    * Query execution
-    * ---------------------------------------------------------------
-    */
-
-    /**
-     * Clones the current query
-     *
-     * @return An identical copy of the query
-     */
-    public TitanQuery clone();
 
 }

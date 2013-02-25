@@ -3,11 +3,7 @@ package com.thinkaurelius.titan.tinkerpop.gremlin;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 
 import javax.script.Bindings;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 

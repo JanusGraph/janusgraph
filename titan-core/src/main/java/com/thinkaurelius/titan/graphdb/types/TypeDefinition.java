@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.thinkaurelius.titan.core.TypeGroup;
-import com.thinkaurelius.titan.core.TypeMaker;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.tinkerpop.blueprints.Direction;
 
 

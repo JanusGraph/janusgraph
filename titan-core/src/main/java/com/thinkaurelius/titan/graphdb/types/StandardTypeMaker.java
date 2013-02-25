@@ -3,11 +3,7 @@ package com.thinkaurelius.titan.graphdb.types;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.core.TypeGroup;
-import com.thinkaurelius.titan.core.TypeMaker;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
@@ -18,10 +14,13 @@ import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class StandardTypeMaker implements TypeMaker {
 
     private static final Set<String> RESERVED_NAMES = ImmutableSet.of("id", "label", "key");
+
+    private static final Pattern namePattern = Pattern.compile("^[a-zA-Z0-9_]+$");
 
     private final StandardTitanTx tx;
 
@@ -63,6 +62,7 @@ public class StandardTypeMaker implements TypeMaker {
 
     private void checkGeneralArguments() {
         Preconditions.checkArgument(StringUtils.isBlank(name),"Need to specify name");
+        Preconditions.checkArgument(namePattern.matcher(name).matches(),"Name can only contain alpha-numeric characters and underscore");
         Preconditions.checkArgument(!name.startsWith(SystemTypeManager.systemETprefix),
             "Name starts with a reserved keyword: " + SystemTypeManager.systemETprefix);
         Preconditions.checkArgument(!RESERVED_NAMES.contains(name.toLowerCase()),
@@ -104,6 +104,10 @@ public class StandardTypeMaker implements TypeMaker {
         IndexType[] result = new IndexType[indexes.size()];
         int i =0;
         for (IndexType it : indexes) {
+            Preconditions.checkArgument(isUnique[EdgeDirection.position(Direction.OUT)] || it.isStandardIndex(),
+                    "Only standard index is allowed on non-unique property keys");
+            Preconditions.checkArgument(tx.getGraph().getIndexInformation(it.getIndexName()).supports(dataType),"" +
+                    "Index ["+it.getIndexName()+"] does not support data type: " + dataType);
             result[i]=it;
             i++;
         }
@@ -115,10 +119,10 @@ public class StandardTypeMaker implements TypeMaker {
         checkGeneralArguments();
         isUnidirectional=false;
         Preconditions.checkNotNull(dataType,"Need to specify a datatype");
-        Preconditions.checkArgument(!isUnique[EdgeDirection.position(Direction.OUT)] ||
+        Preconditions.checkArgument(!isUnique[EdgeDirection.position(Direction.IN)] ||
                 indexes.contains(IndexType.of(Vertex.class)), "A unique key requires the existence of a standard vertex index");
-        return tx.makePropertyKey(new StandardKeyDefinition(name,group,isUnique,hasUniqueLock,isStatic,isHidden,isModifiable,
-                checkPrimaryKey(primaryKey),checkSignature(signature),checkIndexes(indexes),dataType));
+        return tx.makePropertyKey(new StandardKeyDefinition(name, group, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,
+                checkPrimaryKey(primaryKey), checkSignature(signature), checkIndexes(indexes), dataType));
 
     }
 
@@ -127,6 +131,8 @@ public class StandardTypeMaker implements TypeMaker {
     public TitanLabel makeEdgeLabel() {
         checkGeneralArguments();
         Preconditions.checkArgument(indexes.isEmpty(),"Cannot declare labels to be indexed");
+        Preconditions.checkArgument(!isUnique[EdgeDirection.position(Direction.IN)] ||
+                indexes.contains(IndexType.of(Vertex.class)), "In-uniqueness not allowed for unidrectional edges");
         return tx.makeEdgeLabel(new StandardLabelDefinition(name, group, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,
                 checkPrimaryKey(primaryKey), checkSignature(signature), isUnidirectional));
     }

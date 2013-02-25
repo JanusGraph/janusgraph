@@ -8,11 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 public class KeyValueStoreAdapter implements KeyColumnValueStore {
 
@@ -226,10 +222,9 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
         int oldposition = concat.position(), oldlimit = concat.limit();
         concat.position(getKeyLength(concat));
         if (!hasFixedKeyLength()) concat.limit(concat.limit() - variableKeyLengthSize);
-        boolean inrange =
-                ByteBufferUtil.isSmallerThanWithEqual(columnStart, concat, startInc) &&
-                        ByteBufferUtil.isSmallerThanWithEqual(concat, columnEnd, endInc);
-
+        int startComp = ByteBufferUtil.compare(columnStart,concat);
+        int endComp = ByteBufferUtil.compare(concat,columnEnd);
+        boolean inrange = (startComp<0 || (startComp==0 && startInc)) && (endComp<0 || (endComp==0 && endInc));
         concat.position(oldposition);
         concat.limit(oldlimit);
         return inrange;

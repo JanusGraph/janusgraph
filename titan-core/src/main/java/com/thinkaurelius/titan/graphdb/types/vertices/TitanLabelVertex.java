@@ -20,7 +20,7 @@ public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
         if (definition == null) {
             synchronized (this) {
                 if (definition==null) {
-                    definition = QueryUtil.queryHiddenFunctionalProperty(this, SystemKey.EdgeTypeDefinition)
+                    definition = QueryUtil.queryHiddenUniqueProperty(this, SystemKey.EdgeTypeDefinition)
                             .getValue(EdgeLabelDefinition.class);
                     Preconditions.checkNotNull(definition);
                 }

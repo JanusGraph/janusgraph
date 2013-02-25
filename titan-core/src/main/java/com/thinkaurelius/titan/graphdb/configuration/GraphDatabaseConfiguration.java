@@ -17,12 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Provides functionality to configure a {@link com.thinkaurelius.titan.core.TitanGraph} INSTANCE.
@@ -228,6 +223,18 @@ public class GraphDatabaseConfiguration {
      */
     public static final String IDS_FLUSH_KEY = "flush";
     public static final boolean IDS_FLUSH_DEFAULT = true;
+
+    // ############## Attributes ######################
+    // ################################################
+
+    public static final String INDEX_NAMESPACE = "index";
+
+
+    /**
+     * Define the storage backed to use for persistence
+     */
+    public static final String INDEX_BACKEND_KEY = "backend";
+    public static final String INDEX_BACKEND_DEFAULT = "lucene";
 
 
     // ############## Attributes ######################
@@ -481,5 +488,19 @@ public class GraphDatabaseConfiguration {
         config.setFileName(file);
         config.setAutoSave(true);
         return config;
+    }
+
+
+    private static final char CONFIGURATION_SEPARATOR = '.';
+
+    public static Set<String> getUnqiuePrefixes(Configuration config) {
+        Set<String> names = new HashSet<String>();
+        Iterator<String> keyiter = config.getKeys();
+        while (keyiter.hasNext()) {
+            String key = keyiter.next();
+            int pos = key.indexOf(CONFIGURATION_SEPARATOR);
+            if (pos>0) names.add(key.substring(0,pos));
+        }
+        return names;
     }
 }

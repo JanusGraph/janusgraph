@@ -20,6 +20,7 @@ public class RemovableRelationIterator<O extends TitanRelation>
     @Override
     public boolean hasNext() {
         return iterator.hasNext();
+
     }
 
     @SuppressWarnings("unchecked")

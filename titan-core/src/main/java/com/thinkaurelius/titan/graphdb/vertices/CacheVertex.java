@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;

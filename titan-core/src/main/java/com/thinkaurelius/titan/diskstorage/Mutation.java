@@ -1,8 +1,5 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 

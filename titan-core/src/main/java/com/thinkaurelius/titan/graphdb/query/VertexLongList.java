@@ -3,28 +3,27 @@ package com.thinkaurelius.titan.graphdb.query;
 import cern.colt.list.AbstractLongList;
 import cern.colt.list.LongArrayList;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexList;
-import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 
 import java.util.Iterator;
 
 public class VertexLongList implements VertexListInternal {
 
-    private final InternalTitanTransaction tx;
+    private final StandardTitanTx tx;
     private final AbstractLongList vertices;
     private boolean sorted;
 
-    public VertexLongList(InternalTitanTransaction tx) {
+    public VertexLongList(StandardTitanTx tx) {
         this(tx, new LongArrayList(), false);
     }
 
-    public VertexLongList(InternalTitanTransaction tx, AbstractLongList vertices) {
+    public VertexLongList(StandardTitanTx tx, AbstractLongList vertices) {
         this(tx, vertices, false);
     }
 
-    private VertexLongList(InternalTitanTransaction tx, AbstractLongList vertices, boolean sorted) {
+    private VertexLongList(StandardTitanTx tx, AbstractLongList vertices, boolean sorted) {
         this.tx = tx;
         this.vertices = vertices;
         this.sorted = sorted;
@@ -32,7 +31,6 @@ public class VertexLongList implements VertexListInternal {
 
     @Override
     public void add(TitanVertex n) {
-        if (!n.hasID()) throw new InvalidElementException("Neighboring node does not have an id", n);
         if (sorted)
             Preconditions.checkArgument(n.getID() >= vertices.get(vertices.size() - 1), "Nodes must be inserted in sorted order");
         vertices.add(n.getID());

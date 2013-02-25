@@ -22,6 +22,15 @@ public class KeyNot<K> implements KeyCondition<K> {
         return Type.NOT;
     }
 
+    public KeyCondition<K> getChild() {
+        return element;
+    }
+
+    @Override
+    public boolean hasChildren() {
+        return true;
+    }
+
     @Override
     public Iterable<KeyCondition<K>> getChildren() {
         return ImmutableList.of(element);

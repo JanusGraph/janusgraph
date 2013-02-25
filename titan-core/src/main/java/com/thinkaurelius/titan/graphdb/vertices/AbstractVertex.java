@@ -7,8 +7,8 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.query.SimpleAtomicQuery;
-import com.thinkaurelius.titan.graphdb.query.VertexQueryBuilder;
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
+import com.thinkaurelius.titan.graphdb.query.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.tinkerpop.blueprints.Direction;
@@ -32,14 +32,13 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     @Override
     public final InternalVertex it() {
         if (this.isRemoved()) throw new UnsupportedOperationException("Cannot access removed vertex");
-        else if (!tx.isClosed()) return this;
+        else if (tx.isOpen()) return this;
         else return (InternalVertex)tx.getNextTx().getVertex(getID());
     }
 
     @Override
     public final StandardTitanTx tx() {
-        if (this.isRemoved()) throw new UnsupportedOperationException("Cannot access removed vertex");
-        else if (!tx.isClosed()) return tx;
+        if (tx.isOpen()) return tx;
         else return tx.getNextTx();
     }
 
@@ -67,7 +66,14 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public synchronized void remove() {
-        for (TitanRelation r : SimpleAtomicQuery.queryAll(it()).relations()) {
+        //TODO: It's Blueprints semantics to remove all edges - is this correct?
+        Iterator<TitanRelation> iter = it().getRelations().iterator();
+        while (iter.hasNext()) {
+            iter.next();
+            iter.remove();
+        }
+        //Finally remove internal/hidden relations
+        for (TitanRelation r : QueryUtil.queryAll(it())) {
             if (r.getType().equals(SystemKey.VertexState)) r.remove();
             else throw new IllegalStateException("Cannot remove node since it is still connected");
         }
@@ -79,7 +85,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 	 */
 
     @Override
-    public VertexQueryBuilder query() {
+    public VertexCentricQueryBuilder query() {
         return tx().query(it());
     }
 
@@ -94,7 +100,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public Object getProperty(TitanKey key) {
-        Iterator<TitanProperty> iter = query().type(key).propertyIterator();
+        Iterator<TitanProperty> iter = query().type(key).properties().iterator();
         if (key.isUnique(Direction.OUT)) {
             if (iter.hasNext()) return iter.next().getValue();
             else return null;
@@ -240,7 +246,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
 
         Object result = null;
-        Iterator<TitanProperty> iter = query().type(key).propertyIterator();
+        Iterator<TitanProperty> iter = query().type(key).properties().iterator();
         while (iter.hasNext()) {
             TitanProperty p = iter.next();
             result = p.getValue();

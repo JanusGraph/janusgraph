@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
-import com.google.common.base.Preconditions;
 import com.tinkerpop.blueprints.Direction;
 
 /**
@@ -12,6 +11,7 @@ import com.tinkerpop.blueprints.Direction;
  */
 public class EdgeDirection {
 
+    public static final Direction[] PROPER_DIRS = {Direction.IN, Direction.OUT};
 
     public static final boolean impliedBy(Direction sub, Direction sup) {
         return sup==sub || sup==Direction.BOTH;
@@ -41,6 +41,10 @@ public class EdgeDirection {
 
     public final static Direction fromID(int dir) {
         return fromPosition(dir-1);
+    }
+
+    public static final boolean isProperDirection(Direction dir) {
+        return dir==Direction.IN || dir==Direction.OUT;
     }
 
 

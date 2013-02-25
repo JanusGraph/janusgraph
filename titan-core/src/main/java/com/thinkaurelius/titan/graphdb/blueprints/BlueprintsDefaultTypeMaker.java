@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TypeMaker;
+import com.tinkerpop.blueprints.Direction;
 
 /**
  *
@@ -22,7 +23,7 @@ public class BlueprintsDefaultTypeMaker implements DefaultTypeMaker {
 
     @Override
     public TitanKey makeKey(String name, TypeMaker factory) {
-        return factory.name(name).functional(false).
+        return factory.name(name).unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).
                 dataType(Object.class).makePropertyKey();
     }
 

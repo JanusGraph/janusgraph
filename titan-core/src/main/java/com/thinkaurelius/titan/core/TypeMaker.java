@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
 

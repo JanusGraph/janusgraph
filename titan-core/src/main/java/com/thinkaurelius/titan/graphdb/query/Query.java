@@ -1,28 +1,28 @@
 package com.thinkaurelius.titan.graphdb.query;
 
-import com.thinkaurelius.titan.core.TitanElement;
-
 import java.util.Comparator;
 
 /**
- * TODO: add sorting and sort order
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public interface Query<E> {
+public interface Query<Q extends Query> {
 
-    public boolean matches(E element);
+    public static final int NO_LIMIT = Integer.MAX_VALUE;
 
     public boolean hasLimit();
 
     public int getLimit();
 
+    public boolean isInvalid();
+
+//    public Q updateLimit(int newLimit);
+
     public boolean isSorted();
 
-    public Comparator<E> getSortOrder();
+    public Comparator getSortOrder();
 
-    public boolean hasCustomModifier(String key);
-
-    public Object getCustomModifier(String key);
+    public boolean hasUniqueResults();
 
 }

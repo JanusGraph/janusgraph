@@ -7,11 +7,9 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.util.datastructures.Retriever;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class SimpleVertexCache implements VertexCache {
 
@@ -29,15 +27,20 @@ public class SimpleVertexCache implements VertexCache {
     }
 
     @Override
-    public InternalVertex get(long id) {
-        return (InternalVertex) map.get(id);
+    public InternalVertex get(long id, Retriever<Long,InternalVertex> constructor) {
+        InternalVertex v = (InternalVertex) map.get(id);
+        if (v==null) {
+            v = constructor.get(id);
+            Preconditions.checkNotNull(v);
+            map.put(id,v);
+        }
+        return v;
     }
 
     @Override
     public void add(InternalVertex vertex, long id) {
         Preconditions.checkNotNull(vertex);
-        Preconditions.checkArgument(id > 0, "Vertex id must be positive");
-        assert !map.containsKey(id);
+        Preconditions.checkArgument(!map.containsKey(id));
         map.put(id, vertex);
     }
 
@@ -51,11 +54,6 @@ public class SimpleVertexCache implements VertexCache {
                 return (InternalVertex)o;
             }
         });
-    }
-
-    @Override
-    public boolean remove(long vertexid) {
-        return map.remove(vertexid)!=null;
     }
 
 

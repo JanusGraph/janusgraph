@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
+import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -19,7 +19,7 @@ import java.util.WeakHashMap;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
+public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     // ########## TRANSACTION HANDLING ###########################
 
@@ -73,17 +73,14 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
         }
     }
 
-    private TitanTransaction internalStartTransaction() {
-        TitanTransaction tx = (TitanTransaction) newTransaction();
-        txs.set(tx);
-        openTx.put(tx, Boolean.TRUE);
-        return tx;
-    }
+    protected abstract TitanTransaction newThreadBoundTransaction();
 
     private TitanTransaction getAutoStartTx() {
         TitanTransaction tx = txs.get();
         if (tx == null) {
-            tx = internalStartTransaction();
+            tx = newThreadBoundTransaction();
+            txs.set(tx);
+            openTx.put(tx, Boolean.TRUE);
         }
         return tx;
     }

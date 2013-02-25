@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.internal;
 
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
 /**
  * The abstract TitanRelation class defines the standard interface for edges used
@@ -14,11 +13,25 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
  */
 public interface InternalRelation extends TitanRelation, InternalElement {
 
+    public InternalRelation it();
+
     public InternalVertex getVertex(int pos);
 
+    /**
+     * Number of vertices on this relation
+     * @return
+     */
     public int getArity();
 
+    /**
+     * Number of vertices on this relation that are aware of its existence
+     * @see com.thinkaurelius.titan.core.TitanEdge#isUnidirected()
+     */
+    public int getLen();
+
     public boolean isHidden();
+
+    public Object getProperty(TitanType type);
 
     public Object getPropertyDirect(TitanType type);
 

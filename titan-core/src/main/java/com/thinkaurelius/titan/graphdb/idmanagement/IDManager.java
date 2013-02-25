@@ -224,6 +224,7 @@ public class IDManager implements IDInspector {
         return addPartition(addGroup(IDType.PropertyType.addPadding(count), groupid), partition);
     }
 
+    @Override
     public long getGroupID(long edgetypeid) {
         return (edgetypeid & groupIDMask) >> groupOffset;
     }

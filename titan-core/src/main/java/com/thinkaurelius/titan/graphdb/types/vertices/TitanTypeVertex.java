@@ -1,12 +1,8 @@
 package com.thinkaurelius.titan.graphdb.types.vertices;
 
 import com.thinkaurelius.titan.core.TypeGroup;
-import com.thinkaurelius.titan.graphdb.adjacencylist.AdjacencyListFactory;
-import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.tinkerpop.blueprints.Direction;
 

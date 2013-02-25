@@ -16,8 +16,8 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.placement.IDPlacement
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionAssignment;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -164,7 +164,7 @@ public class VertexIDAssigner {
             for (InternalRelation relation : addedRelations) {
                 for (int i = 0; i < relation.getArity(); i++) {
                     InternalVertex vertex = relation.getVertex(i);
-                    if (!vertex.hasID()) {
+                    if (!vertex.hasId()) {
                         assignID(vertex);
                     }
                 }
@@ -176,7 +176,7 @@ public class VertexIDAssigner {
             for (InternalRelation relation : addedRelations) {
                 for (int i = 0; i < relation.getArity(); i++) {
                     InternalVertex vertex = relation.getVertex(i);
-                    if (!vertex.hasID()) {
+                    if (!vertex.hasId()) {
                         if (!(vertex instanceof TitanType) || partitionRelationTypes) {
                             assignments.put(vertex, PartitionAssignment.EMPTY);
                         } else {
@@ -194,7 +194,7 @@ public class VertexIDAssigner {
                     Map.Entry<InternalVertex, PartitionAssignment> entry = iter.next();
                     try {
                         assignID(entry.getKey(), entry.getValue().getPartitionID());
-                        Preconditions.checkArgument(entry.getKey().hasID());
+                        Preconditions.checkArgument(entry.getKey().hasId());
                     } catch (IDPoolExhaustedException e) {
                         if (leftOvers == null) leftOvers = new HashMap<InternalVertex, PartitionAssignment>();
                         leftOvers.put(entry.getKey(), PartitionAssignment.EMPTY);
@@ -213,20 +213,20 @@ public class VertexIDAssigner {
             for (InternalRelation relation : addedRelations) {
                 for (int pos = 0; pos < relation.getArity(); pos++) {
                     try {
-                        Preconditions.checkArgument(relation.getVertex(pos).hasID());
+                        Preconditions.checkArgument(relation.getVertex(pos).hasId());
                         assignID(relation, idManager.getPartitionID(relation.getVertex(pos).getID()));
                         break;
                     } catch (IDPoolExhaustedException e) {
                     }
                 }
-                if (!relation.hasID()) assignID(relation);
+                if (!relation.hasId()) assignID(relation);
             }
         }
     }
 
     private void assignID(final InternalVertex vertex, final long partitionIDl) {
         Preconditions.checkNotNull(vertex);
-        Preconditions.checkArgument(!vertex.hasID());
+        Preconditions.checkArgument(!vertex.hasId());
         Preconditions.checkArgument(partitionIDl >= 0 && partitionIDl <= maxPartitionID, partitionIDl);
         final int partitionID = (int) partitionIDl;
         long id = -1;

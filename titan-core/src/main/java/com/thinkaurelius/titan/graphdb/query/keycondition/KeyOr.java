@@ -15,7 +15,7 @@ public class KeyOr<K> implements KeyCondition<K> {
 
     public KeyOr(KeyCondition<K>... elements) {
         Preconditions.checkNotNull(elements);
-        Preconditions.checkArgument(elements.length>0);
+        Preconditions.checkArgument(elements.length>=0);
         for (int i=0;i<elements.length;i++) Preconditions.checkNotNull(elements[i]);
         this.elements=elements;
     }
@@ -31,6 +31,11 @@ public class KeyOr<K> implements KeyCondition<K> {
     @Override
     public Type getType() {
         return Type.OR;
+    }
+
+    @Override
+    public boolean hasChildren() {
+        return elements.length>0;
     }
 
     @Override

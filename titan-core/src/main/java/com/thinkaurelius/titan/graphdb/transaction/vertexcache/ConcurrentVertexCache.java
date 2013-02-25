@@ -5,6 +5,7 @@ import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.carrotsearch.hppc.ObjectContainer;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.util.datastructures.Retriever;
 
 import java.util.ArrayList;
 import java.util.concurrent.locks.Lock;
@@ -35,13 +36,28 @@ public class ConcurrentVertexCache implements VertexCache {
     }
 
     @Override
-    public InternalVertex get(long id) {
+    public InternalVertex get(long id, Retriever<Long,InternalVertex> constructor) {
+        InternalVertex v = null;
         readLock.lock();
         try {
-            return (InternalVertex) map.get(id);
+            v = (InternalVertex) map.get(id);
         } finally {
             readLock.unlock();
         }
+        if (v==null) {
+            writeLock.lock();
+            try {
+                v = (InternalVertex) map.get(id);
+                if (v==null) {
+                    v = constructor.get(id);
+                    Preconditions.checkNotNull(v);
+                    map.put(id,v);
+                }
+            } finally {
+                writeLock.unlock();
+            }
+        }
+        return v;
     }
 
     @Override
@@ -70,16 +86,6 @@ public class ConcurrentVertexCache implements VertexCache {
             readLock.unlock();
         }
         return vertices;
-    }
-
-    @Override
-    public boolean remove(long vertexid) {
-        writeLock.lock();
-        try {
-            return map.remove(vertexid)!=null;
-        } finally {
-            writeLock.unlock();
-        }
     }
 
 

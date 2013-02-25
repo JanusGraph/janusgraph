@@ -15,7 +15,7 @@ public class KeyAnd<K> implements KeyCondition<K> {
 
     public KeyAnd(KeyCondition<K>... elements) {
         Preconditions.checkNotNull(elements);
-        Preconditions.checkArgument(elements.length>0);
+        Preconditions.checkArgument(elements.length>=0);
         for (int i=0;i<elements.length;i++) Preconditions.checkNotNull(elements[i]);
         this.elements=elements;
     }
@@ -26,6 +26,11 @@ public class KeyAnd<K> implements KeyCondition<K> {
 
     public KeyCondition<K> get(int position) {
         return elements[position];
+    }
+
+    @Override
+    public boolean hasChildren() {
+        return elements.length>0;
     }
 
     @Override

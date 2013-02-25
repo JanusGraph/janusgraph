@@ -4,7 +4,7 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
-import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
 import java.util.Iterator;
@@ -16,10 +16,10 @@ import java.util.NoSuchElementException;
 
 public class VertexIterable implements Iterable<InternalVertex> {
 
-    private final InternalTitanTransaction tx;
-    private final InternalTitanGraph graph;
+    private final StandardTitanTx tx;
+    private final StandardTitanGraph graph;
 
-    public VertexIterable(final InternalTitanGraph graph, final InternalTitanTransaction tx) {
+    public VertexIterable(final StandardTitanGraph graph, final StandardTitanTx tx) {
         this.graph = graph;
         this.tx = tx;
     }
@@ -28,7 +28,7 @@ public class VertexIterable implements Iterable<InternalVertex> {
     public Iterator<InternalVertex> iterator() {
         return new Iterator<InternalVertex>() {
 
-            RecordIterator<Long> iterator = graph.getVertexIDs(tx);
+            RecordIterator<Long> iterator = graph.getVertexIDs(tx.getTxHandle());
             InternalVertex nextVertex = nextVertex();
 
             private InternalVertex nextVertex() {
@@ -36,10 +36,9 @@ public class VertexIterable implements Iterable<InternalVertex> {
                 try {
                     while (v == null && iterator.hasNext()) {
                         long nextId = iterator.next().longValue();
-                        if (tx.isDeletedVertex(nextId)) continue;
                         v = tx.getExistingVertex(nextId);
-                        //Filter out types
-                        if (v instanceof TitanType) v = null;
+                        //Filter out deleted vertices and types
+                        if (v.isRemoved() || (v instanceof  TitanType)) v = null;
                     }
                 } catch (StorageException e) {
                     throw new TitanException("Read exception on open iterator", e);

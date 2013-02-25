@@ -60,8 +60,8 @@ public class IndexTransaction implements TransactionHandle {
         index.register(store,key,dataType,indexTx);
     }
 
-    public boolean covers(String store, Class<?> dataType, Relation relation) {
-        return index.covers(store,dataType,relation);
+    public boolean covers(Class<?> dataType, Relation relation) {
+        return index.supports(dataType, relation);
     }
 
     public List<String> query(IndexQuery query) throws StorageException {

@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
@@ -31,7 +30,12 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
     }
 
     @Override
-    public int getArity() {
+    public final int getArity() {
+        return 1;
+    }
+
+    @Override
+    public final int getLen() {
         return 1;
     }
 

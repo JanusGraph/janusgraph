@@ -2,11 +2,10 @@ package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TypeGroup;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
-import com.thinkaurelius.titan.graphdb.types.TypeDefinition;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinition;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.StringUtils;
 

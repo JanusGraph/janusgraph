@@ -2,8 +2,6 @@ package com.thinkaurelius.titan.graphdb.loading;
 
 import com.thinkaurelius.titan.graphdb.loadingstatus.DefaultLoadingStatus;
 import com.thinkaurelius.titan.graphdb.loadingstatus.LoadingStatus;
-import com.thinkaurelius.titan.graphdb.query.SimpleAtomicQuery;
-import com.thinkaurelius.titan.graphdb.transaction.InMemoryTitanGraph;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.tinkerpop.blueprints.Direction;
 import org.junit.Test;

@@ -36,7 +36,7 @@ public class StandardVertex extends AbstractVertex {
     @Override
     public void removeRelation(InternalRelation r) {
         if (r.isNew()) addedRelations.remove(r);
-        else if (r.isLoaded()) updateLifeCycle(ElementLifeCycle.Event.DELETED_RELATION);
+        else if (r.isLoaded()) updateLifeCycle(ElementLifeCycle.Event.REMOVED_RELATION);
         else throw new IllegalArgumentException("Unexpected relation status: " + r.isRemoved());
     }
 
@@ -71,9 +71,18 @@ public class StandardVertex extends AbstractVertex {
     }
 
     @Override
+    public boolean hasRemovedRelations() {
+        return ElementLifeCycle.hasRemovedRelations(lifecycle);
+    }
+
+    @Override
+    public boolean hasAddedRelations() {
+        return ElementLifeCycle.hasAddedRelations(lifecycle);
+    }
+
+    @Override
     public synchronized void remove() {
         super.remove();
-        close();
         updateLifeCycle(ElementLifeCycle.Event.REMOVED);
     }
 

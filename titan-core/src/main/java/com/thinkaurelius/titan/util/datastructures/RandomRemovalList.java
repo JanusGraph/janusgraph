@@ -2,12 +2,7 @@ package com.thinkaurelius.titan.util.datastructures;
 
 import com.google.common.base.Preconditions;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Random;
+import java.util.*;
 
 
 public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
