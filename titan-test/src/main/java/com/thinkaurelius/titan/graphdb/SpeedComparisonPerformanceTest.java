@@ -73,8 +73,8 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
             time = time();
             for (int i = 0; i < numVertices; i++) {
                 TitanQuery q = ((TitanQuery) vertices[i].query()).direction(Direction.OUT).labels("connect");
-                if (inMemory) {
-                    for (Vertex v : q.inMemory().vertices()) {
+                if (inMemory) { //TODO: this has been disabled
+                    for (Vertex v : q.vertices()) {
                         v.getId();
                     }
                 } else {

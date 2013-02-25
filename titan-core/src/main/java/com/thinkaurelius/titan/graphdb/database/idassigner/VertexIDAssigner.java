@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.placement.IDPlacement
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionAssignment;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import org.apache.commons.configuration.Configuration;
@@ -50,7 +51,6 @@ public class VertexIDAssigner {
     private final IDPlacementStrategy placementStrategy;
 
     private final int maxPartitionID;
-    private final boolean partitionRelationTypes;
     private final boolean hasLocalPartitions;
 
 
@@ -78,8 +78,6 @@ public class VertexIDAssigner {
         idManager = new IDManager(partitionBits, groupBits);
         Preconditions.checkArgument(idManager.getMaxPartitionID() <= Integer.MAX_VALUE);
         this.maxPartitionID = (int) idManager.getMaxPartitionID();
-
-        partitionRelationTypes = false;
 
         long baseBlockSize = config.getLong(GraphDatabaseConfiguration.IDS_BLOCK_SIZE_KEY, GraphDatabaseConfiguration.IDS_BLOCK_SIZE_DEFAULT);
         idAuthority.setIDBlockSizer(new SimpleVertexIDBlockSizer(baseBlockSize));
@@ -139,14 +137,13 @@ public class VertexIDAssigner {
         }
     }
 
-    public void assignID(InternalVertex vertex) {
+    public void assignID(InternalElement vertex) {
         for (int attempt = 0; attempt < MAX_PARTITION_RENEW_ATTEMPTS; attempt++) {
             long partitionID = -1;
             if (vertex instanceof InternalRelation) {
                 partitionID = placementStrategy.getPartition(vertex);
             } else if (vertex instanceof TitanType) {
-                if (partitionRelationTypes) partitionID = placementStrategy.getPartition(vertex);
-                else partitionID = DEFAULT_PARTITION;
+                partitionID = DEFAULT_PARTITION;
             } else {
                 partitionID = placementStrategy.getPartition(vertex);
             }
@@ -177,10 +174,10 @@ public class VertexIDAssigner {
                 for (int i = 0; i < relation.getArity(); i++) {
                     InternalVertex vertex = relation.getVertex(i);
                     if (!vertex.hasId()) {
-                        if (!(vertex instanceof TitanType) || partitionRelationTypes) {
-                            assignments.put(vertex, PartitionAssignment.EMPTY);
-                        } else {
+                        if (vertex instanceof TitanType) {
                             assignID(vertex, DEFAULT_PARTITION);
+                        } else {
+                            assignments.put(vertex, PartitionAssignment.EMPTY);
                         }
                     }
                 }
@@ -224,7 +221,7 @@ public class VertexIDAssigner {
         }
     }
 
-    private void assignID(final InternalVertex vertex, final long partitionIDl) {
+    private void assignID(final InternalElement vertex, final long partitionIDl) {
         Preconditions.checkNotNull(vertex);
         Preconditions.checkArgument(!vertex.hasId());
         Preconditions.checkArgument(partitionIDl >= 0 && partitionIDl <= maxPartitionID, partitionIDl);
@@ -244,7 +241,7 @@ public class VertexIDAssigner {
                 if (idPools.containsKey(partitionID)) {
                     poolObj = idPools.get(partitionID);
                 } else {
-                    poolObj = new PartitionPool(partitionID, idAuthority, idManager, partitionRelationTypes || partitionID == DEFAULT_PARTITION);
+                    poolObj = new PartitionPool(partitionID, idAuthority, idManager, partitionID == DEFAULT_PARTITION);
                     idPools.put(partitionID, poolObj);
                 }
             } finally {

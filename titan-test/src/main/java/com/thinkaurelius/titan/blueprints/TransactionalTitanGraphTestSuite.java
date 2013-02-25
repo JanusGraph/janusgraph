@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.blueprints;
 
+import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.TransactionalGraphTestSuite;
 import com.tinkerpop.blueprints.impls.GraphTest;
@@ -22,9 +24,9 @@ public class TransactionalTitanGraphTestSuite extends TransactionalGraphTestSuit
         //Need to define types before hand to avoid deadlock in transactions
 
         graph.makeType().name("friend").makeEdgeLabel();
-        graph.makeType().name("test").functional(false).dataType(Long.class).makePropertyKey();
-        graph.makeType().name("blah").functional(false).dataType(Float.class).makePropertyKey();
-        graph.makeType().name("bloop").functional(false).dataType(Integer.class).makePropertyKey();
+        graph.makeType().name("test").unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).dataType(Long.class).makePropertyKey();
+        graph.makeType().name("blah").unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).dataType(Float.class).makePropertyKey();
+        graph.makeType().name("bloop").unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).dataType(Integer.class).makePropertyKey();
 
 
         graph.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);

@@ -1,12 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Assert;
@@ -187,7 +182,7 @@ public abstract class KeyColumnValueStoreTest {
         for (int t=0;t<trials;t++) {
             int key = r.nextInt(keys);
             int start = r.nextInt(columns-delta);
-            store.getSlice(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(start+delta), tx);
+            store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(start+delta)), tx);
         }
         System.out.println("Reading time (ms): " + (System.currentTimeMillis()-time));
     }
@@ -256,9 +251,9 @@ public abstract class KeyColumnValueStoreTest {
     public void checkSlice(String[][] values, Set<KeyColumn> removed, int key, int start, int end, int limit) throws StorageException {
         List<Entry> entries;
         if (limit <= 0)
-            entries = store.getSlice(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), tx);
+            entries = store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end)), tx);
         else
-            entries = store.getSlice(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), limit, tx);
+            entries = store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), limit), tx);
 
         int pos = 0;
         for (int i = start; i < end; i++) {
@@ -377,11 +372,11 @@ public abstract class KeyColumnValueStoreTest {
 		 * all matching columns must be returned.
 		 */
         List<Entry> result =
-                store.getSlice(key, columnStart, columnEnd, cols, txn);
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd, cols), txn);
         Assert.assertEquals(cols, result.size());
         Assert.assertEquals(entries, result);
         result =
-                store.getSlice(key, columnStart, columnEnd, cols + 10, txn);
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd, cols + 10), txn);
         Assert.assertEquals(cols, result.size());
         Assert.assertEquals(entries, result);
 
@@ -390,12 +385,12 @@ public abstract class KeyColumnValueStoreTest {
 		 * limit (ordered bytewise) must be returned.
 		 */
         result =
-                store.getSlice(key, columnStart, columnEnd, cols - 1, txn);
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd, cols - 1), txn);
         Assert.assertEquals(cols - 1, result.size());
         entries.remove(entries.size() - 1);
         Assert.assertEquals(entries, result);
         result =
-                store.getSlice(key, columnStart, columnEnd, 1, txn);
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd, 1), txn);
         Assert.assertEquals(1, result.size());
         List<Entry> firstEntrySingleton = Arrays.asList(entries.get(0));
         Assert.assertEquals(firstEntrySingleton, result);
@@ -423,7 +418,7 @@ public abstract class KeyColumnValueStoreTest {
 
         // getSlice() with only start inclusive
         txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
-        List<Entry> result = store.getSlice(key, columnStart, columnEnd, txn);
+        List<Entry> result = store.getSlice(new KeySliceQuery(key, columnStart, columnEnd), txn);
         Assert.assertEquals(1, result.size());
         Assert.assertEquals(777, result.get(0).getColumn().getLong());
         txn.commit();

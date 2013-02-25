@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
 
+import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
 import java.util.Map;
@@ -16,7 +17,7 @@ public interface IDPlacementStrategy {
      * @param vertex Vertex or relation to assign id to.
      * @return
      */
-    public long getPartition(InternalVertex vertex);
+    public long getPartition(InternalElement vertex);
 
     /**
      * Bulk assignment of idAuthorities to vertices.

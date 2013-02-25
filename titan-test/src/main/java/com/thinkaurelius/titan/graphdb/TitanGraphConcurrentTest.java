@@ -171,7 +171,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
         public void run() {
             while (true) {
                 // Set propType to a random value on a random node
-                TitanVertex n = tx.getVertex(idProp, RandomGenerator.randomInt(0, nodeCount));
+                TitanVertex n = Iterables.getOnlyElement(tx.getVertices(idProp, RandomGenerator.randomInt(0, nodeCount)));
                 String propVal = RandomGenerator.randomString();
                 n.addProperty(randomProp, propVal);
                 if (Thread.interrupted())
@@ -208,8 +208,8 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
                 // Make or break relType between two (possibly same) random nodes
 //				TitanVertex source = tx.getVertex(idProp, RandomGenerator.randomInt(0, nodeCount));
 //				TitanVertex sink = tx.getVertex(idProp, RandomGenerator.randomInt(0, nodeCount));
-                TitanVertex source = tx.getVertex(idProp, 0);
-                TitanVertex sink = tx.getVertex(idProp, 1);
+                TitanVertex source = Iterables.getOnlyElement(tx.getVertices(idProp, 0));
+                TitanVertex sink = Iterables.getOnlyElement(tx.getVertices(idProp, 1));
                 for (TitanEdge r : source.getTitanEdges(Direction.OUT, relType)) {
                     if (r.getVertex(Direction.IN).getID() == sink.getID()) {
                         r.remove();
@@ -243,7 +243,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 
         @Override
         protected void doRun() throws Exception {
-            TitanVertex n = tx.getVertex(id, nodeid);
+            TitanVertex n = Iterables.getOnlyElement(tx.getVertices(id, nodeid));
 
             for (int i = 0; i < nodeTraversalCount; i++) {
                 assertEquals(expectedEdges, Iterables.size(n.getTitanEdges(Direction.BOTH, relTypeToTraverse)));

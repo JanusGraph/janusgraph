@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan;
 
 
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -47,6 +49,12 @@ public class StorageSetup {
             homeDirFile.mkdirs();
         boolean success = IOUtils.deleteFromDirectory(homeDirFile);
         if (!success) throw new IllegalStateException("Could not remove " + homeDirFile);
+    }
+
+    public static TitanGraph getInMemoryGraph() {
+        BaseConfiguration config = new BaseConfiguration();
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "com.thinkaurelius.titan.diskstorage.inmemory.InMemoryStorageAdapter");
+        return TitanFactory.open(config);
     }
 
 }

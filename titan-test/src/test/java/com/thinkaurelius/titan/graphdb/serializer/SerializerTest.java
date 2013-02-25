@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.serializer;
 
 
+import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
@@ -9,6 +10,7 @@ import com.thinkaurelius.titan.graphdb.types.StandardLabelDefinition;
 import com.thinkaurelius.titan.graphdb.types.StandardTypeGroup;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
+import com.tinkerpop.blueprints.Vertex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,9 +37,6 @@ public class SerializerTest {
         serialize.registerClass(TestClass.class);
         serialize.registerClass(short[].class);
         serialize.registerClass(StandardLabelDefinition.class);
-        serialize.registerClass(Directionality.class);
-        serialize.registerClass(TypeCategory.class);
-        serialize.registerClass(TypeVisibility.class);
         serialize.registerClass(StandardTypeGroup.class);
         serialize.registerClass(StandardKeyDefinition.class);
 
@@ -113,18 +112,19 @@ public class SerializerTest {
 
     @Test
     public void serializeRelationshipType() {
-        StandardLabelDefinition relType = new StandardLabelDefinition("testName", TypeCategory.Simple,
-                Directionality.Directed, TypeVisibility.Modifiable, FunctionalType.NON_FUNCTIONAL,
-                new String[]{}, new String[]{}, SystemTypeManager.SYSTEM_TYPE_GROUP);
-        StandardKeyDefinition propType = new StandardKeyDefinition("testName", TypeCategory.Simple,
-                Directionality.Directed, TypeVisibility.Modifiable, FunctionalType.NON_FUNCTIONAL,
-                new String[]{}, new String[]{}, SystemTypeManager.SYSTEM_TYPE_GROUP, true, true, String.class);
+        StandardLabelDefinition relType = new StandardLabelDefinition("testName", SystemTypeManager.SYSTEM_TYPE_GROUP,
+        new boolean[2], new boolean[2], new boolean[2], false, true, new long[0], new long[0], false);
+
+
+        StandardKeyDefinition propType = new StandardKeyDefinition("testName", SystemTypeManager.SYSTEM_TYPE_GROUP,
+        new boolean[]{false,true}, new boolean[]{false,true}, new boolean[2], false ,true , new long[0], new long[0],
+                new IndexType[]{IndexType.of(Vertex.class)}, String.class);
         DataOutput out = serialize.getDataOutput(128, true);
         out.writeObjectNotNull(relType);
         out.writeObjectNotNull(propType);
         ByteBuffer b = out.getByteBuffer();
         if (printStats) log.debug(bufferStats(b));
-        assertEquals("testName", serialize.readObjectNotNull(b, StandardLabelDefinition.class).name);
+        assertEquals("testName", serialize.readObjectNotNull(b, StandardLabelDefinition.class).getName());
         assertEquals(String.class, serialize.readObjectNotNull(b, StandardKeyDefinition.class).getDataType());
         assertFalse(b.hasRemaining());
     }

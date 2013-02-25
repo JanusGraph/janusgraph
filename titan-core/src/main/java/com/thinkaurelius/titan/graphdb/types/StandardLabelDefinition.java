@@ -9,7 +9,7 @@ public class StandardLabelDefinition extends AbstractTypeDefinition implements E
     StandardLabelDefinition() {
     }
 
-    StandardLabelDefinition(String name, TypeGroup group,
+    public StandardLabelDefinition(String name, TypeGroup group,
                                    boolean[] unique, boolean[] hasUniqueLock, boolean[] isStatic,
                                    boolean hidden, boolean modifiable,
                                    long[] primaryKey, long[] signature, boolean unidirectional) {

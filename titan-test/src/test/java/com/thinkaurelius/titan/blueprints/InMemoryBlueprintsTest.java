@@ -101,7 +101,7 @@ public class InMemoryBlueprintsTest extends GraphTest {
 
     @Override
     public Graph generateGraph() {
-        graph = TitanFactory.openInMemoryGraph();
+        graph = StorageSetup.getInMemoryGraph();
         return graph;
     }
 

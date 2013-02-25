@@ -106,26 +106,34 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         this.txHandle = txHandle;
 
         temporaryID = new AtomicLong(-1);
-        CacheBuilder<StandardElementQuery,List<Object>> indexCacheBuilder = CacheBuilder.newBuilder().
-                weigher(new Weigher<StandardElementQuery, List<Object>>() {
+        Cache<StandardElementQuery,List<Object>> indexCacheBuilder = CacheBuilder.newBuilder().weigher(new Weigher<StandardElementQuery, List<Object>>() {
                     @Override
                     public int weigh(StandardElementQuery q, List<Object> r) {
                         return 2 + r.size();
                     }
                 }).
-                maximumWeight(DEFAULT_CACHE_SIZE);
+                maximumWeight(DEFAULT_CACHE_SIZE).build();
+        int concurrencyLevel;
         if (config.isSingleThreaded()) {
             vertexCache = new SimpleVertexCache();
             addedRelations = new SimpleBufferAddedRelations();
-            indexCache = indexCacheBuilder.concurrencyLevel(1).build();
+            concurrencyLevel = 1;
             typeCache = new HashMap<String,TitanType>();
         } else {
             vertexCache = new ConcurrentVertexCache();
             addedRelations = new ConcurrentBufferAddedRelations();
-            indexCache = indexCacheBuilder.build();
+            concurrencyLevel = 4;
             typeCache = new ConcurrentHashMap<String, TitanType>();
 
         }
+
+        indexCache = CacheBuilder.newBuilder().weigher(new Weigher<StandardElementQuery, List<Object>>() {
+            @Override
+            public int weigh(StandardElementQuery q, List<Object> r) {
+                return 2 + r.size();
+            }
+        }).concurrencyLevel(concurrencyLevel).maximumWeight(DEFAULT_CACHE_SIZE).build();
+
         uniqueLocks = UNINITIALIZED_LOCKS;
         deletedRelations = EMPTY_DELETED_RELATIONS;
         this.isOpen = true;
@@ -514,6 +522,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
         @Override
         public Iterator<TitanRelation> execute(final VertexCentricQuery query) {
+            if (query.getVertex().isNew()) return Iterators.emptyIterator();
+
             final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
             FittedSliceQuery sq = edgeSerializer.getQuery(query);
             final InternalVertex v = query.getVertex();
@@ -704,6 +714,17 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         return queryElements().and(key, Cmp.EQUAL,attribute).getVertices();
     }
 
+    @Override
+    public TitanVertex getVertex(TitanKey key, Object attribute) {
+        Preconditions.checkArgument(key.isUnique(Direction.IN),"Key is not uniquely associated to value [%s]",key.getName());
+        return Iterables.getOnlyElement(getVertices(key,attribute),null);
+    }
+
+    @Override
+    public TitanVertex getVertex(String key, Object attribute) {
+        if (!containsType(key)) return null;
+        else return getVertex((TitanKey)getType(key),attribute);
+    }
 
     @Override
     public Iterable<TitanEdge> getEdges(TitanKey key, Object attribute) {

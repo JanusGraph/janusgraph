@@ -23,7 +23,7 @@ public class StandardKeyDefinition extends AbstractTypeDefinition implements Pro
     StandardKeyDefinition() {
     }
 
-    StandardKeyDefinition(String name, TypeGroup group,
+    public StandardKeyDefinition(String name, TypeGroup group,
                                  boolean[] unique, boolean[] hasUniqueLock, boolean[] isStatic,
                                  boolean hidden, boolean modifiable,
                                  long[] primaryKey, long[] signature,

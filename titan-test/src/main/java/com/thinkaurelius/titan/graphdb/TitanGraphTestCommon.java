@@ -9,6 +9,8 @@ import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
@@ -70,23 +72,8 @@ public abstract class TitanGraphTestCommon {
     }
 
     public TitanLabel makeSimpleEdgeLabel(String name, TypeGroup group) {
-        return makeSimpleEdgeLabel(name, group, Directionality.Directed);
-    }
-
-    public TitanLabel makeSimpleEdgeLabel(String name, TypeGroup group, Directionality dir) {
         TypeMaker etmaker = tx.makeType();
-        etmaker.name(name).simple().group(group);
-        switch (dir) {
-            case Undirected:
-                etmaker.undirected();
-                break;
-            case Unidirected:
-                etmaker.unidirected();
-                break;
-            case Directed:
-                etmaker.directed();
-                break;
-        }
+        etmaker.name(name).group(group);
         return etmaker.makeEdgeLabel();
     }
 
@@ -98,21 +85,21 @@ public abstract class TitanGraphTestCommon {
     }
 
     public TitanKey makeUniqueStringPropertyKey(String name) {
-        return tx.makeType().name(name).simple().functional().
-                unique().indexed().dataType(String.class).makePropertyKey();
+        return tx.makeType().name(name).unique(Direction.OUT).
+               unique(Direction.IN).indexed(Vertex.class).dataType(String.class).makePropertyKey();
     }
 
     public TitanKey makeStringUIDPropertyKey(String name, TypeGroup group) {
         return tx.makeType().name(name).
-                simple().functional().
-                unique().indexed().
+                unique(Direction.OUT).
+                unique(Direction.IN).indexed(Vertex.class).
                 dataType(String.class).group(group).
                 makePropertyKey();
     }
 
     public TitanKey makeStringPropertyKey(String name) {
         return tx.makeType().name(name).
-                simple().indexed().
+                indexed(Vertex.class).
                 dataType(String.class).
                 makePropertyKey();
     }
@@ -124,15 +111,15 @@ public abstract class TitanGraphTestCommon {
 
     public TitanKey makeIntegerUIDPropertyKey(String name, TypeGroup group) {
         return tx.makeType().name(name).
-                simple().functional().
-                unique().indexed().
+                unique(Direction.OUT).
+                unique(Direction.IN).indexed(Vertex.class).
                 dataType(Integer.class).group(group).
                 makePropertyKey();
     }
 
     public TitanKey makeWeightPropertyKey(String name) {
         return tx.makeType().name(name).
-                simple().functional().
+                unique(Direction.OUT).
                 dataType(Double.class).
                 makePropertyKey();
     }

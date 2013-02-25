@@ -6,8 +6,9 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.relations.persist.PersistSimpleTitanEdge;
+import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
 import com.thinkaurelius.titan.testutil.MemoryAssess;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
@@ -78,7 +79,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 
         p = new PerformanceTest(true);
         for (int i = 0; i < noNodes; i++) {
-            new PersistSimpleTitanEdge(connect, (InternalVertex) nodes[i], (InternalVertex) nodes[(i + 1) % noNodes]);
+            new StandardEdge(i,connect, (InternalVertex) nodes[i], (InternalVertex) nodes[(i + 1) % noNodes], ElementLifeCycle.New);
         }
         p.end();
         System.out.println("Time per edge in (ns): " + (p.getNanoTime() / noNodes));
@@ -259,8 +260,8 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
                 for (int e = 0; e < noEdgesPerNode; e++) {
                     TitanVertex n2 = nodes[wrapAround(i + offsets[e], noNodes)];
                     TitanEdge r = n.addEdge(knows, n2);
-                    r.addProperty(id, RandomGenerator.randomInt(0, Integer.MAX_VALUE));
-                    r.addProperty(weight, Math.random());
+                    r.setProperty(id, RandomGenerator.randomInt(0, Integer.MAX_VALUE));
+                    r.setProperty(weight, Math.random());
                 }
                 if ((i + 1) % 10000 == 0) System.out.println("" + (i + 1));
             }

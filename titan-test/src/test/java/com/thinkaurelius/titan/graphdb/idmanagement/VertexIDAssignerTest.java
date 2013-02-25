@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
+import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
@@ -72,7 +74,7 @@ public class VertexIDAssignerTest {
     public void testIDAssignment() {
         for (int trial = 0; trial < 100; trial++) {
             for (boolean flush : new boolean[]{true, false}) {
-                InternalTitanGraph graph = new InMemoryTitanGraph(new TransactionConfig(BlueprintsDefaultTypeMaker.INSTANCE, false));
+                TitanGraph graph = StorageSetup.getInMemoryGraph();
                 int numVertices = 100;
                 List<TitanVertex> vertices = new ArrayList<TitanVertex>(numVertices);
                 List<InternalRelation> relations = new ArrayList<InternalRelation>();

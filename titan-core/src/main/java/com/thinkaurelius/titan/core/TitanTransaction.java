@@ -1,6 +1,9 @@
 
 package com.thinkaurelius.titan.core;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
@@ -109,6 +112,10 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @return true, if a vertex with that id exists, else false
      */
     public boolean containsVertex(long vertexid);
+
+    public TitanVertex getVertex(TitanKey key, Object attribute);
+
+    public TitanVertex getVertex(String key, Object attribute);
 
     /**
      * Retrieves all vertices which have an incident property of the given key with the specified value.
