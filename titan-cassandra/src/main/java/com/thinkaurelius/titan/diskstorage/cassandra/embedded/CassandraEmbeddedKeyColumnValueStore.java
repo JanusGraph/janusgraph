@@ -179,18 +179,17 @@ public class CassandraEmbeddedKeyColumnValueStore
     }
 
     @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-                                ByteBuffer columnEnd, int limit, StoreTransaction txh) throws StorageException {
+    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
 
         QueryPath slicePath = new QueryPath(columnFamily);
         ReadCommand sliceCmd = new SliceFromReadCommand(
                 keyspace,        // Keyspace name
-                key.duplicate(), // Row key
+                query.getKey().duplicate(), // Row key
                 slicePath,       // ColumnFamily
-                columnStart.duplicate(),     // Start column name (empty means begin at first result)
-                columnEnd.duplicate(),       // End column name (empty means max out the count)
+                query.getSliceStart().duplicate(),     // Start column name (empty means begin at first result)
+                query.getSliceEnd().duplicate(),       // End column name (empty means max out the count)
                 false,           // Reverse results? (false=no)
-                limit);          // Max count of Columns to return
+                query.getLimit());          // Max count of Columns to return
 
         List<Row> slice = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDBConsistency());
 
@@ -218,13 +217,7 @@ public class CassandraEmbeddedKeyColumnValueStore
         if (cf.isMarkedForDelete())
             return new ArrayList<Entry>(0);
 
-        return cfToEntries(cf, columnStart, columnEnd);
-    }
-
-    @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-                                ByteBuffer columnEnd, StoreTransaction txh) throws StorageException {
-        return getSlice(key, columnStart, columnEnd, Integer.MAX_VALUE, txh);
+        return cfToEntries(cf, query.getSliceStart(), query.getSliceEnd());
     }
 
     @Override

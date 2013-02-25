@@ -149,7 +149,7 @@ public class BerkeleyJEKeyValueStore implements KeyValueStore {
                 ByteBuffer key = getByteBuffer(foundKey);
                 //log.debug("Fou: {}",ByteBufferUtil.toBitString(nextKey, " "));
                 //keyEnd.rewind();
-                if (!ByteBufferUtil.isSmallerThanWithEqual(key, keyEnd, false)) break;
+                if (ByteBufferUtil.compare(key, keyEnd)>=0) break;
                 //nextKey.rewind();
 
                 boolean skip = false;

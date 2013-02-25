@@ -84,24 +84,23 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
      *          when columnEnd < columnStart
      */
     @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-                                ByteBuffer columnEnd, int limit, StoreTransaction txh) throws StorageException {
-        Preconditions.checkArgument(limit >= 0);
-        if (0 == limit) return ImmutableList.<Entry>of();
+    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+        Preconditions.checkArgument(query.getLimit() >= 0);
+        if (0 == query.getLimit()) return ImmutableList.<Entry>of();
 
         ColumnParent parent = new ColumnParent(columnFamily);        /*
 		 * Cassandra cannot handle columnStart = columnEnd.
 		 * Cassandra's Thrift getSlice() throws InvalidRequestException
 		 * if columnStart = columnEnd.
 		 */
-        if (!ByteBufferUtil.isSmallerThan(columnStart, columnEnd)) {
+        if (ByteBufferUtil.compare(query.getSliceStart(), query.getSliceEnd())>=0) {
             // Check for invalid arguments where columnEnd < columnStart
-            if (ByteBufferUtil.isSmallerThan(columnEnd, columnStart)) {
-                throw new PermanentStorageException("columnStart=" + columnStart +
-                        " is greater than columnEnd=" + columnEnd + ". " +
+            if (ByteBufferUtil.isSmallerThan(query.getSliceEnd(), query.getSliceStart())) {
+                throw new PermanentStorageException("columnStart=" + query.getSliceStart() +
+                        " is greater than columnEnd=" + query.getSliceEnd() + ". " +
                         "columnStart must be less than or equal to columnEnd");
             }
-            if (0 != columnStart.remaining() && 0 != columnEnd.remaining()) {
+            if (0 != query.getSliceStart().remaining() && 0 != query.getSliceEnd().remaining()) {
                 logger.debug("Return empty list due to columnEnd==columnStart and neither empty");
                 return ImmutableList.<Entry>of();
             }
@@ -111,9 +110,9 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThriftConsistency();
         SlicePredicate predicate = new SlicePredicate();
         SliceRange range = new SliceRange();
-        range.setCount(limit);
-        range.setStart(columnStart);
-        range.setFinish(columnEnd);
+        range.setCount(query.getLimit());
+        range.setStart(query.getSliceStart());
+        range.setFinish(query.getSliceEnd());
         predicate.setSlice_range(range);
 
 
@@ -121,7 +120,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         try {
             conn = pool.genericBorrowObject(keyspace);
             Cassandra.Client client = conn.getClient();
-            List<ColumnOrSuperColumn> rows = client.get_slice(key, parent, predicate, consistency);
+            List<ColumnOrSuperColumn> rows = client.get_slice(query.getKey(), parent, predicate, consistency);
 			/*
 			 * The final size of the "result" List may be at most rows.size().
 			 * However, "result" could also be up to two elements smaller than
@@ -132,7 +131,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                 Column c = r.getColumn();
 
                 // Skip column if it is equal to columnEnd because columnEnd is exclusive
-                if (columnEnd.equals(c.bufferForName())) continue;
+                if (query.getSliceEnd().equals(c.bufferForName())) continue;
 
                 result.add(new Entry(c.bufferForName(), c.bufferForValue()));
             }
@@ -143,12 +142,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             if (null != conn)
                 pool.genericReturnObject(keyspace, conn);
         }
-    }
-
-    @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-                                ByteBuffer columnEnd, StoreTransaction txh) throws StorageException {
-        return getSlice(key, columnStart, columnEnd, Integer.MAX_VALUE, txh);
     }
 
     @Override

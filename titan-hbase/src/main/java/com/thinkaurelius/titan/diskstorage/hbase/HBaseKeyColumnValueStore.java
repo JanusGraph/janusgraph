@@ -3,11 +3,7 @@ package com.thinkaurelius.titan.diskstorage.hbase;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
@@ -154,31 +150,19 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-                                ByteBuffer columnEnd, int limit, StoreTransaction txh) throws StorageException {
+    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
 
-        byte[] colStartBytes = columnEnd.hasRemaining() ? toArray(columnStart) : null;
-        byte[] colEndBytes = columnEnd.hasRemaining() ? toArray(columnEnd) : null;
+        byte[] colStartBytes = query.getSliceEnd().hasRemaining() ? toArray(query.getSliceStart()) : null;
+        byte[] colEndBytes = query.getSliceEnd().hasRemaining() ? toArray(query.getSliceEnd()) : null;
 
-        Filter colRangeFilter = new ColumnRangeFilter(colStartBytes, true, colEndBytes, false);
-        Filter limitFilter = new ColumnPaginationFilter(limit, 0);
+        Filter filter = new ColumnRangeFilter(colStartBytes, true, colEndBytes, false);
+        if (query.hasLimit()) {
+            Filter limitFilter = new ColumnPaginationFilter(query.getLimit(), 0);
+            filter = new FilterList(FilterList.Operator.MUST_PASS_ALL, filter,
+                    limitFilter);
+        }
 
-        FilterList bothFilters = new FilterList(FilterList.Operator.MUST_PASS_ALL, colRangeFilter,
-                limitFilter);
-
-        return getHelper(key, bothFilters);
-    }
-
-    @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-                                ByteBuffer columnEnd, StoreTransaction txh) throws StorageException {
-
-        byte[] colStartBytes = columnEnd.hasRemaining() ? toArray(columnStart) : null;
-        byte[] colEndBytes = columnEnd.hasRemaining() ? toArray(columnEnd) : null;
-
-        Filter colRangeFilter = new ColumnRangeFilter(colStartBytes, true, colEndBytes, false);
-
-        return getHelper(key, colRangeFilter);
+        return getHelper(query.getKey(), filter);
     }
 
     private List<Entry> getHelper(ByteBuffer key,

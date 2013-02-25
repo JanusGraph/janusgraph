@@ -100,8 +100,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     }
 
     @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-                                ByteBuffer columnEnd, int limit, StoreTransaction txh) throws StorageException {
+    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
 
 		/*
 		 * The following hideous cast dance avoids a type-erasure error in the
@@ -136,9 +135,11 @@ public class AstyanaxOrderedKeyColumnValueStore implements
         RowQuery rq = (RowQuery) keyspace.prepareQuery(columnFamily)
                 .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
                 .withRetryPolicy(retryPolicy.duplicate())
-                .getKey(key);
+                .getKey(query.getKey());
 //		RowQuery<ByteBuffer, ByteBuffer> rq = keyspace.prepareQuery(columnFamily).getKey(key);
-        rq.withColumnRange(columnStart, columnEnd, false, limit + 1);
+        int limit = Integer.MAX_VALUE - 1;
+        if (query.hasLimit()) limit = query.getLimit();
+        rq.withColumnRange(query.getSliceStart(), query.getSliceEnd(), false, limit + 1);
 
         OperationResult<ColumnList<ByteBuffer>> r;
         try {
@@ -156,7 +157,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
         for (Column<ByteBuffer> c : r.getResult()) {
             ByteBuffer colName = c.getName();
 
-            if (colName.equals(columnEnd)) {
+            if (colName.equals(query.getSliceEnd())) {
                 break;
             }
 
@@ -168,12 +169,6 @@ public class AstyanaxOrderedKeyColumnValueStore implements
         }
 
         return result;
-    }
-
-    @Override
-    public List<Entry> getSlice(ByteBuffer key, ByteBuffer columnStart,
-                                ByteBuffer columnEnd, StoreTransaction txh) throws StorageException {
-        return getSlice(key, columnStart, columnEnd, Integer.MAX_VALUE - 1, txh);
     }
 
     @Override
