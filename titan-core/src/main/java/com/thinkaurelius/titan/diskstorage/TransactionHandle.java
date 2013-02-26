@@ -18,7 +18,7 @@ public interface TransactionHandle {
      *
      * @throws StorageException
      */
-    public void abort() throws StorageException;
+    public void rollback() throws StorageException;
 
     /**
      * Flushes the transction, i.e. forces all buffered writes to be send to the backend.
@@ -34,7 +34,7 @@ public interface TransactionHandle {
         }
 
         @Override
-        public void abort() throws StorageException {
+        public void rollback() throws StorageException {
         }
 
         @Override

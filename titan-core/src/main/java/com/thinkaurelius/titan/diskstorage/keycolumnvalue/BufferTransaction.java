@@ -120,9 +120,9 @@ public class BufferTransaction implements StoreTransaction {
     }
 
     @Override
-    public void abort() throws StorageException {
+    public void rollback() throws StorageException {
         clear();
-        tx.abort();
+        tx.rollback();
     }
 
     @Override

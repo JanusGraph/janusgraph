@@ -31,4 +31,8 @@ public interface IndexProvider extends IndexInformation {
      */
     public TransactionHandle beginTransaction() throws StorageException;
 
+    public void close() throws StorageException;
+
+    public void clearStorage() throws StorageException;
+
 }

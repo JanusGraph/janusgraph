@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 
@@ -66,7 +67,7 @@ public class Geoshape {
 
     private SpatialRelation getSpatialRelation(Geoshape other) {
         Preconditions.checkNotNull(other);
-        return convert().relate(other.convert());
+        return convert2Spatial4j().relate(other.convert2Spatial4j());
     }
 
     public boolean intersect(Geoshape other) {
@@ -81,10 +82,10 @@ public class Geoshape {
         return getSpatialRelation(other)==SpatialRelation.DISJOINT;
     }
 
-    private Shape convert() {
+    public Shape convert2Spatial4j() {
         switch(getType()) {
             case POINT: return getPoint().getSpatial4jPoint();
-            case CIRCLE: return CTX.makeCircle(getPoint(0).getSpatial4jPoint(), getRadius());
+            case CIRCLE: return CTX.makeCircle(getPoint(0).getSpatial4jPoint(), DistanceUtils.dist2Degrees(getRadius(), DistanceUtils.EARTH_MEAN_RADIUS_KM));
             case BOX: return CTX.makeRectangle(getPoint(0).getSpatial4jPoint(),getPoint(1).getSpatial4jPoint());
             case POLYGON: throw new UnsupportedOperationException("Not yet supported");
             default: throw new IllegalStateException("Unrecognized type: " + getType());
@@ -97,10 +98,18 @@ public class Geoshape {
         return new Geoshape(new float[][]{ new float[]{latitude}, new float[]{longitude}});
     }
 
-    public static final Geoshape circle(final float latitude, final float longitude, final float radiusInDegree) {
+    public static final Geoshape point(final double latitude, final double longitude) {
+        return point((float)latitude,(float)longitude);
+    }
+
+    public static final Geoshape circle(final float latitude, final float longitude, final float radiusInKM) {
         Preconditions.checkArgument(isValidCoordinate(latitude,longitude),"Invalid coordinate provided");
-        Preconditions.checkArgument(radiusInDegree>0 && radiusInDegree<=180,"Invalid radius provided [%s]",radiusInDegree);
-        return new Geoshape(new float[][]{ new float[]{latitude, Float.NaN}, new float[]{longitude, radiusInDegree}});
+        Preconditions.checkArgument(radiusInKM>0,"Invalid radius provided [%s]",radiusInKM);
+        return new Geoshape(new float[][]{ new float[]{latitude, Float.NaN}, new float[]{longitude, radiusInKM}});
+    }
+
+    public static final Geoshape circle(final double latitude, final double longitude, final double radiusInKM) {
+        return circle((float)latitude,(float)longitude,(float)radiusInKM);
     }
 
     public static final Geoshape box(final float southWestLatitude, final float southWestLongitude,
@@ -108,6 +117,11 @@ public class Geoshape {
         Preconditions.checkArgument(isValidCoordinate(southWestLatitude,southWestLongitude),"Invalid south-west coordinate provided");
         Preconditions.checkArgument(isValidCoordinate(northEastLatitude,northEastLongitude),"Invalid north-east coordinate provided");
         return new Geoshape(new float[][]{ new float[]{southWestLatitude, northEastLatitude}, new float[]{southWestLongitude, northEastLongitude}});
+    }
+
+    public static final Geoshape box(final double southWestLatitude, final double southWestLongitude,
+                                     final double northEastLatitude, final double northEastLongitude) {
+        return box((float)southWestLatitude,(float)southWestLongitude,(float)northEastLatitude,(float)northEastLongitude);
     }
 
     public static final boolean isValidCoordinate(final float latitude, final float longitude) {

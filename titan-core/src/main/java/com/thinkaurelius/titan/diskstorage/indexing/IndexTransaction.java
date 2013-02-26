@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
 
 import java.util.HashMap;
 import java.util.List;
@@ -60,10 +59,6 @@ public class IndexTransaction implements TransactionHandle {
         index.register(store,key,dataType,indexTx);
     }
 
-    public boolean covers(Class<?> dataType, Relation relation) {
-        return index.supports(dataType, relation);
-    }
-
     public List<String> query(IndexQuery query) throws StorageException {
         return index.query(query,indexTx);
     }
@@ -75,9 +70,9 @@ public class IndexTransaction implements TransactionHandle {
     }
 
     @Override
-    public void abort() throws StorageException {
+    public void rollback() throws StorageException {
         mutations=null;
-        indexTx.abort();
+        indexTx.rollback();
     }
 
     @Override

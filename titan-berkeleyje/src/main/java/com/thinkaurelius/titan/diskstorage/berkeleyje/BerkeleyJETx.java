@@ -49,7 +49,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
     }
 
     @Override
-    public synchronized void abort() throws StorageException {
+    public synchronized void rollback() throws StorageException {
         if (tx == null) return;
         try {
             closeOpenIterators();

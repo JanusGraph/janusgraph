@@ -20,6 +20,14 @@ public class IndexQuery {
         this.store=store;
     }
 
+    public KeyCondition<String> getCondition() {
+        return condition;
+    }
+
+    public String getStore() {
+        return store;
+    }
+
     @Override
     public int hashCode() {
         return condition.hashCode()*9876469 + store.hashCode();

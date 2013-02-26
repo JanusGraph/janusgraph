@@ -7,9 +7,17 @@
         <version>0.3.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>titan-lucene</artifactId>
-    <name>Titan-Lucene: Full-text search support</name>
+    <artifactId>titan-berkeleyje</artifactId>
+    <name>Titan-BerkeleyJE: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+    <repositories>
+        <repository>
+            <id>oracleReleases</id>
+            <name>Oracle Released Java Packages</name>
+            <url>http://download.oracle.com/maven</url>
+            <layout>default</layout>
+        </repository>
+    </repositories>
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -23,19 +31,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-core</artifactId>
-            <version>4.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-analyzers-common</artifactId>
-            <version>4.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-spatial</artifactId>
-            <version>4.1.0</version>
+            <groupId>com.sleepycat</groupId>
+            <artifactId>je</artifactId>
+            <version>5.0.58</version>
         </dependency>
     </dependencies>
     <profiles>

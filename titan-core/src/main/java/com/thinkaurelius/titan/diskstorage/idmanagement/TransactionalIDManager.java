@@ -49,7 +49,7 @@ public class TransactionalIDManager extends AbstractIDManager {
                 return new long[]{current, next};
             } catch (StorageException e) {
                 log.warn("Storage exception while allocating id block - retrying in {} ms: {}", idApplicationWaitMS, e);
-                if (txh != null) txh.abort();
+                if (txh != null) txh.rollback();
                 if (idApplicationWaitMS > 0)
                     TimeUtility.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
             }
@@ -87,7 +87,7 @@ public class TransactionalIDManager extends AbstractIDManager {
                 return current;
             } catch (StorageException e) {
                 log.warn("Storage exception while reading id block - retrying in {} ms: {}", idApplicationWaitMS, e);
-                if (txh != null) txh.abort();
+                if (txh != null) txh.rollback();
                 if (idApplicationWaitMS > 0)
                     TimeUtility.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
             }

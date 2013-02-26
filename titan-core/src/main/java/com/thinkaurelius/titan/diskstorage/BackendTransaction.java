@@ -64,9 +64,9 @@ public class BackendTransaction implements TransactionHandle {
     }
 
     @Override
-    public void abort() throws StorageException {
-        storeTx.abort();
-        for (IndexTransaction itx : indexTx.values()) itx.abort();
+    public void rollback() throws StorageException {
+        storeTx.rollback();
+        for (IndexTransaction itx : indexTx.values()) itx.rollback();
     }
 
     @Override

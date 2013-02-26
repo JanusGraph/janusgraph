@@ -320,6 +320,8 @@ public class Backend {
         edgeIndexStore.close();
         idAuthority.close();
         storeManager.close();
+        //Indexes
+        for (IndexProvider index : indexes.values()) index.close();
     }
 
     public void clearStorage() throws StorageException {
@@ -328,6 +330,8 @@ public class Backend {
         edgeIndexStore.close();
         idAuthority.close();
         storeManager.clearStorage();
+        //Indexes
+        for (IndexProvider index : indexes.values()) index.clearStorage();
     }
     
     //############ Registered Storage Managers ##############

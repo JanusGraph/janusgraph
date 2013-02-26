@@ -111,7 +111,7 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
             }
 
             @Override
-            public void abort() throws StorageException {
+            public void rollback() throws StorageException {
                 //Do nothing
             }
 

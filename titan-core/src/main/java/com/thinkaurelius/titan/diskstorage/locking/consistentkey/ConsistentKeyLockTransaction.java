@@ -70,10 +70,10 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
     }
 
     @Override
-    public void abort() throws StorageException {
+    public void rollback() throws StorageException {
         if (0 < lockClaims.size())
             unlockAll();
-        baseTx.abort();
+        baseTx.rollback();
     }
 
     @Override

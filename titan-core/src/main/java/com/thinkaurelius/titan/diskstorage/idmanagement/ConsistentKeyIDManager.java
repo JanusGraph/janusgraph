@@ -46,7 +46,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 return nextID;
             } catch (TemporaryStorageException e) {
                 log.warn("Temporary storage exception while reading id block - retrying in {} ms: {}", idApplicationWaitMS, e);
-                if (txh != null) txh.abort();
+                if (txh != null) txh.rollback();
                 if (idApplicationWaitMS > 0)
                     TimeUtility.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
             }
@@ -164,7 +164,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 }
             } catch (TemporaryStorageException e) {
                 log.warn("Temporary storage exception while acquiring id block - retrying in {} ms: {}", idApplicationWaitMS, e);
-                if (txh != null) txh.abort();
+                if (txh != null) txh.rollback();
                 txh = null;
                 if (idApplicationWaitMS > 0)
                     TimeUtility.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);

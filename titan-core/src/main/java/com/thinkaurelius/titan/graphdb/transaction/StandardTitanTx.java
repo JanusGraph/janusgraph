@@ -723,7 +723,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     @Override
     public TitanVertex getVertex(String key, Object attribute) {
         if (!containsType(key)) return null;
-        else return getVertex((TitanKey)getType(key),attribute);
+        else return getVertex((TitanKey) getType(key), attribute);
     }
 
     @Override
@@ -746,6 +746,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             }
             txHandle.commit();
         } catch (StorageException e) {
+            try {
+                txHandle.rollback();
+            } catch (StorageException e1) {
+                throw new TitanException("Could not rollback after a failed commit",e);
+            }
             throw new TitanException("Could not commit transaction due to exception during persistence", e);
         } finally {
             close();
@@ -756,7 +761,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     public synchronized void rollback() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         try {
-            txHandle.abort();
+            txHandle.rollback();
         } catch (StorageException e) {
             throw new TitanException("Could not rollback transaction due to exception during persistence", e);
         } finally {
