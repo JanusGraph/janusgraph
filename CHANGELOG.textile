@@ -1,4 +1,4 @@
-Titan: A Highly Scalable, Distributed Graph Database
+Titan: Distributed Graph Database
 "http://thinkaurelius.github.com/titan/":http://thinkaurelius.github.com/titan/
 
 h2. Titan 0.y.z
