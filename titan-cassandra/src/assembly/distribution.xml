@@ -6,18 +6,11 @@
     <fileSets>
         <fileSet>
             <fileMode>0775</fileMode>
-            <!--<directory>target/${project.artifactId}-${project.version}-standalone/bin</directory>-->
-            <directory>src/main/bin</directory>
+            <directory>../titan-all/src/main/bin</directory>
             <outputDirectory>bin</outputDirectory>
             <includes>
                 <include>*.sh</include>
                 <include>*.bat</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <includes>
-                <include>../bin/cassandra.local</include>
-                <include>../bin/hbase.local</include>
             </includes>
         </fileSet>
         <fileSet>
@@ -34,8 +27,8 @@
             <outputDirectory>doc/javadoc</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>target/${project.artifactId}-${project.version}-standalone/lib</directory>
-            <outputDirectory>lib</outputDirectory>
+            <directory>target/*.jar</directory>
+            <outputDirectory>/lib</outputDirectory>
         </fileSet>
     </fileSets>
     <files>
@@ -64,16 +57,25 @@
              <outputDirectory>/</outputDirectory>
          </file>
          <file>
-             <source>src/main/bin/README.txt</source>
+             <source>../titan-all/src/main/bin/README.txt</source>
              <outputDirectory>/</outputDirectory>
          </file>
         <file>
             <source>../bin/cassandra.local</source>
             <outputDirectory>bin</outputDirectory>
         </file>
-        <file>
-            <source>../bin/hbase.local</source>
-            <outputDirectory>bin</outputDirectory>
-        </file>
     </files>
+
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>/lib</outputDirectory>
+            <unpack>false</unpack>
+            <scope>compile</scope>
+        </dependencySet>
+        <dependencySet>
+            <outputDirectory>/lib</outputDirectory>
+            <unpack>false</unpack>
+            <scope>provided</scope>
+        </dependencySet>
+    </dependencySets>
 </assembly>
