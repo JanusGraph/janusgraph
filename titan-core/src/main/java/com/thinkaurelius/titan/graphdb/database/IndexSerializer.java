@@ -7,8 +7,8 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
+import com.thinkaurelius.titan.diskstorage.lucene.IndexInformation;
+import com.thinkaurelius.titan.diskstorage.lucene.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -157,12 +157,12 @@ public class IndexSerializer {
 
     public void addKeyValue(TitanElement element, TitanKey key, Object value, String index, BackendTransaction tx) throws StorageException {
         Preconditions.checkArgument(key.isUnique(Direction.OUT),"Only out-unique properties are supported by index [%s]",index);
-        tx.getIndexTransactionHandle(index).add(getStoreName(element),element2String(element),key2String(key),value);
+        tx.getIndexTransactionHandle(index).add(getStoreName(element),element2String(element),key2String(key),value,element.isNew());
     }
 
     public void removeKeyValue(TitanElement element, TitanKey key, String index, BackendTransaction tx) {
         Preconditions.checkArgument(key.isUnique(Direction.OUT), "Only out-unique properties are supported by index [%s]", index);
-        tx.getIndexTransactionHandle(index).delete(getStoreName(element),element2String(element),key2String(key));
+        tx.getIndexTransactionHandle(index).delete(getStoreName(element),element2String(element),key2String(key),element.isRemoved());
     }
 
 
@@ -266,8 +266,8 @@ public class IndexSerializer {
         return LongEncoding.decode(name);
     }
 
-    private static final String EDGEINDEX_NAME = "edge";
-    private static final String VERTEXINDEX_NAME = "vertex";
+    public static final String EDGEINDEX_NAME = "edge";
+    public static final String VERTEXINDEX_NAME = "vertex";
 
     private static final String getStoreName(StandardElementQuery query) {
         switch (query.getType()) {

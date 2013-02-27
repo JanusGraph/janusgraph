@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage;
+package com.thinkaurelius.titan.diskstorage.lucene;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;

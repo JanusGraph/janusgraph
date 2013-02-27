@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.google.common.collect.ImmutableList;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,10 +34,12 @@ public class Mutation<E,K> {
     }
 
     public List<E> getAdditions() {
+        if (additions==null) return ImmutableList.of();
         return additions;
     }
 
     public List<K> getDeletions() {
+        if (deletions==null) return ImmutableList.of();
         return deletions;
     }
 

@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.lucene.HashPrefixKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 
 /**

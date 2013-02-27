@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.indexing;
+package com.thinkaurelius.titan.diskstorage.lucene;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;

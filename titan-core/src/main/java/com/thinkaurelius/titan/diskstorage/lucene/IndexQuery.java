@@ -1,10 +1,15 @@
-package com.thinkaurelius.titan.diskstorage.indexing;
+package com.thinkaurelius.titan.diskstorage.lucene;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyCondition;
 import org.apache.commons.lang.StringUtils;
 
 /**
+ * An external index query executed on an {@link IndexProvider}.
+ *
+ * A query is comprised of the store identifier against which the query ought to be executed and a query condition
+ * which defines which entries match the query.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 

@@ -1,14 +1,11 @@
-package com.thinkaurelius.titan.diskstorage.indexing;
+package com.thinkaurelius.titan.diskstorage.lucene;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -16,7 +13,6 @@ import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.query.keycondition.*;
-import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -36,6 +32,8 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,9 +47,11 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class LuceneIndex implements IndexProvider {
 
+    private Logger log = LoggerFactory.getLogger(LuceneIndex.class);
+
+
     private static final String DOCID = "_____elementid";
-    private static final String STR_SUFFIX = "_str";
-    private static final String TXT_SUFFIX = "_txt";
+    private static final String GEOID = "_____geo";
     private static final int MAX_STRING_FIELD_LEN = 256;
 
     private static final int GEO_MAX_LEVELS = 11;
@@ -127,66 +127,95 @@ public class LuceneIndex implements IndexProvider {
     @Override
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, TransactionHandle tx) throws StorageException {
         Transaction ltx = (Transaction)tx;
+        writerLock.lock();
         try {
             for (Map.Entry<String,Map<String, IndexMutation>> stores : mutations.entrySet()) {
                 String storename = stores.getKey();
-                ltx.acquireWriterLock(storename);
                 IndexWriter writer = getWriter(storename);
                 IndexReader reader = DirectoryReader.open(writer, true);
                 IndexSearcher searcher = new IndexSearcher(reader);
                 for (Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                     String docid = entry.getKey();
                     IndexMutation mutation = entry.getValue();
-                    TermQuery query = new TermQuery(new Term(DOCID,docid));
+                    Term docTerm = new Term(DOCID,docid);
+
+                    if (mutation.isDeleted()) {
+                        log.debug("Deleted entire document [{}]",docid);
+                        writer.deleteDocuments(docTerm);
+                        continue;
+                    }
 
                     Document doc=null;
-                    TopDocs hits = searcher.search(query, 10);
+                    TopDocs hits = searcher.search(new TermQuery(docTerm), 10);
+                    Map<String,Shape> geofields = Maps.newHashMap();
 
                     if (hits.scoreDocs.length == 0) {
+                        log.debug("Creating new document for [{}]", docid);
                         doc = new Document();
                         Field docidField = new StringField(DOCID, docid, Field.Store.YES);
                         doc.add(docidField);
                     } else if (hits.scoreDocs.length > 1) {
                         throw new IllegalArgumentException("More than one document found for document id: " + docid);
                     } else {
+                        log.debug("Updating existing document for [{}]", docid);
                         int docId = hits.scoreDocs[0].doc;
                         //retrieve the old document
                         doc = searcher.doc(docId);
+                        for (IndexableField field : doc.getFields()) {
+                            if (field.stringValue().startsWith(GEOID)) {
+                                geofields.put(field.name(),ctx.readShape(field.stringValue().substring(GEOID.length())));
+                            }
+                        }
                     }
                     Preconditions.checkNotNull(doc);
                     for (String key : mutation.getDeletions()) {
-                        if (doc.getField(key)!=null) doc.removeFields(key);
+                        if (doc.getField(key)!=null) {
+                            log.debug("Removing field [{}] on document [{}]",key,docid);
+                            doc.removeFields(key);
+                            geofields.remove(key);
+                        }
                     }
                     for (IndexEntry add : mutation.getAdditions()) {
+                        log.debug("Adding field [{}] on document [{}]",add.key,docid);
                         if (doc.getField(add.key)!=null) doc.removeFields(add.key);
                         if (add.value instanceof Number) {
                             Field field = null;
                             if (add.value instanceof Integer || add.value instanceof Long) {
-                                field = new LongField(add.key, ((Number)add.value).longValue(), Field.Store.NO);
+                                field = new LongField(add.key, ((Number)add.value).longValue(), Field.Store.YES);
                             } else { //double or float
-                                field = new DoubleField(add.key, ((Number)add.value).doubleValue(), Field.Store.NO);
+                                field = new DoubleField(add.key, ((Number)add.value).doubleValue(), Field.Store.YES);
                             }
                             doc.add(field);
                         } else if (add.value instanceof String) {
                             String str = (String)add.value;
-                            Field field = new TextField(add.key+TXT_SUFFIX, str, Field.Store.NO);
+                            Field field = new TextField(add.key, str, Field.Store.YES);
                             doc.add(field);
-                            if (str.length()<MAX_STRING_FIELD_LEN)
-                                field = new StringField(add.key+STR_SUFFIX, str, Field.Store.NO);
-                            doc.add(field);
+//                            if (str.length()<MAX_STRING_FIELD_LEN)
+//                                field = new StringField(add.key+STR_SUFFIX, str, Field.Store.NO);
+//                            doc.add(field);
                         } else if (add.value instanceof Geoshape) {
                             Shape shape = ((Geoshape)add.value).convert2Spatial4j();
-                            for (IndexableField f : getSpatialStrategy(add.key).createIndexableFields(shape)) {
-                                doc.add(f);
-                            }
+                            geofields.put(add.key,shape);
+                            doc.add(new StoredField(add.key,GEOID+ctx.toString(shape)));
+
                         } else throw new IllegalArgumentException("Unsupported type: " + add.value);
                     }
+                    for (Map.Entry<String,Shape> geo : geofields.entrySet()) {
+                        for (IndexableField f : getSpatialStrategy(geo.getKey()).createIndexableFields(geo.getValue())) {
+                            doc.add(f);
+                        }
+                    }
+
                     //write the old document to the index with the modifications
                     writer.updateDocument(new Term(DOCID,docid), doc);
                 }
+                writer.commit();
             }
+            ltx.postCommit();
         } catch (IOException e) {
             throw new TemporaryStorageException("Could not update Lucene index",e);
+        } finally {
+            writerLock.unlock();
         }
     }
 
@@ -267,16 +296,16 @@ public class LuceneIndex implements IndexProvider {
                     return numericFilter(key,(Cmp)relation,(Number)value);
                 }
             } else if (value instanceof String) {
-                if (relation == Cmp.EQUAL) {
-                    return new TermsFilter(new Term(key+STR_SUFFIX,(String)value));
-                } else if (relation == Cmp.NOT_EQUAL) {
-                    BooleanFilter q = new BooleanFilter();
-                    q.add(new TermsFilter(new Term(key+STR_SUFFIX,(String)value)), BooleanClause.Occur.MUST_NOT);
-                    return q;
-                } else if (relation == Txt.CONTAINS) {
-                    return new TermsFilter(new Term(key+TXT_SUFFIX,(String)value));
-                } else if (relation == Txt.PREFIX) {
-                    return new PrefixFilter(new Term(key+STR_SUFFIX,(String)value));
+                if (relation == Txt.CONTAINS) {
+                    return new TermsFilter(new Term(key,(String)value));
+//                } else if (relation == Txt.PREFIX) {
+//                    return new PrefixFilter(new Term(key+STR_SUFFIX,(String)value));
+//                } else if (relation == Cmp.EQUAL) {
+//                    return new TermsFilter(new Term(key+STR_SUFFIX,(String)value));
+//                } else if (relation == Cmp.NOT_EQUAL) {
+//                    BooleanFilter q = new BooleanFilter();
+//                    q.add(new TermsFilter(new Term(key+STR_SUFFIX,(String)value)), BooleanClause.Occur.MUST_NOT);
+//                    return q;
                 } else throw new IllegalArgumentException("Relation is not supported for string value: " + relation);
             } else if (value instanceof Geoshape) {
                 Preconditions.checkArgument(relation==Geo.INTERSECT,"Relation is not supported for geo value: " + relation);
@@ -316,7 +345,7 @@ public class LuceneIndex implements IndexProvider {
         } else if (dataType == Geoshape.class) {
             return relation== Geo.INTERSECT;
         } else if (dataType == String.class) {
-            return relation == Txt.CONTAINS || relation == Txt.PREFIX || relation == Cmp.EQUAL || relation == Cmp.NOT_EQUAL;
+            return relation == Txt.CONTAINS; // || relation == Txt.PREFIX || relation == Cmp.EQUAL || relation == Cmp.NOT_EQUAL;
         } else return false;
     }
 
@@ -367,51 +396,33 @@ public class LuceneIndex implements IndexProvider {
             return searcher;
         }
 
-        private void acquireWriterLock(String store) {
-            writerLock.lock();
-            updatedStores.add(store);
+        public void postCommit() throws StorageException {
+            close();
+            searchers.clear();
         }
+
 
         @Override
         public void commit() throws StorageException {
-            Preconditions.checkArgument(writerLock.isHeldByCurrentThread() || updatedStores.isEmpty());
-            if (writerLock.isHeldByCurrentThread()) {
-                try {
-                    for (Map.Entry<String,IndexWriter> w : writers.entrySet())
-                        if (updatedStores.contains(w.getKey())) w.getValue().commit();
-                    close();
-                } catch (IOException e) {
-                    rollback();
-                    throw new PermanentStorageException("Could not commit writer",e);
-                } finally {
-                    writerLock.unlock();
-                }
-            }
+            close();
         }
 
         @Override
         public void rollback() throws StorageException {
-            Preconditions.checkArgument(writerLock.isHeldByCurrentThread() || updatedStores.isEmpty());
-            if (writerLock.isHeldByCurrentThread()) {
-                try {
-                    for (Map.Entry<String,IndexWriter> w : writers.entrySet())
-                        if (updatedStores.contains(w.getKey())) w.getValue().rollback();
-                    close();
-                } catch (IOException e) {
-                    throw new PermanentStorageException("Could not rollback writer",e);
-                } finally {
-                    writerLock.unlock();
-                }
-            }
+            close();
         }
 
         @Override
         public void flush() throws StorageException {
-            commit();
+
         }
 
-        private void close() throws IOException {
-            for (IndexSearcher searcher : searchers.values()) searcher.getIndexReader().close();
+        private void close() throws StorageException {
+            try {
+                for (IndexSearcher searcher : searchers.values()) searcher.getIndexReader().close();
+            }  catch (IOException e) {
+                throw new PermanentStorageException("Could not close searcher",e);
+            }
         }
     }
 

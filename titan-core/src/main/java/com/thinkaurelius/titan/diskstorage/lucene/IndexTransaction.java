@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.indexing;
+package com.thinkaurelius.titan.diskstorage.lucene;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -30,15 +30,15 @@ public class IndexTransaction implements TransactionHandle {
         this.mutations = null;
     }
 
-    public void add(String store, String docid, String key, Object value) {
-        getIndexMutation(store,docid).addition(new IndexEntry(key,value));
+    public void add(String store, String docid, String key, Object value, boolean isNew) {
+        getIndexMutation(store,docid,isNew,false).addition(new IndexEntry(key,value));
     }
 
-    public void delete(String store, String docid, String key) {
-        getIndexMutation(store,docid).deletion(key);
+    public void delete(String store, String docid, String key, boolean deleteAll) {
+        getIndexMutation(store,docid,false,deleteAll).deletion(key);
     }
 
-    private IndexMutation getIndexMutation(String store, String docid) {
+    private IndexMutation getIndexMutation(String store, String docid, boolean isNew, boolean isDeleted) {
         if (mutations==null) mutations = new HashMap<String,Map<String,IndexMutation>>(DEFAULT_OUTER_MAP_SIZE);
         Map<String,IndexMutation> storeMutations = mutations.get(store);
         if (storeMutations==null) {
@@ -48,7 +48,7 @@ public class IndexTransaction implements TransactionHandle {
         }
         IndexMutation m = storeMutations.get(docid);
         if (m==null) {
-            m = new IndexMutation();
+            m = new IndexMutation(isNew,isDeleted);
             storeMutations.put(docid, m);
         }
         return m;
