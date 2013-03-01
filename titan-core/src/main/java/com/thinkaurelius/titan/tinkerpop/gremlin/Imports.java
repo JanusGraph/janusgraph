@@ -15,6 +15,7 @@ public class Imports {
     static {
         // titan
         imports.add("com.thinkaurelius.titan.core.*");
+        imports.add("com.thinkaurelius.titan.core.attribute.*");
         imports.add("org.apache.commons.configuration.*");
     }
 
