@@ -64,7 +64,7 @@ public class ConcurrentVertexCache implements VertexCache {
     @Override
     public void add(InternalVertex vertex, long id) {
         Preconditions.checkNotNull(vertex);
-        Preconditions.checkArgument(id > 0, "Vertex id must be positive");
+        Preconditions.checkArgument(id != 0, "Vertex id must be positive");
         writeLock.lock();
         try {
             assert !map.containsKey(id);

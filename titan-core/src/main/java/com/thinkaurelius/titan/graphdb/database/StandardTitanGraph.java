@@ -216,9 +216,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         //Update Indexes
                         if (del.isProperty()) {
                             if (acquireLocks) indexSerializer.lockKeyedProperty((TitanProperty) del,mutator);
-                            indexSerializer.removeProperty((TitanProperty) del,mutator);
-                        } else if (del.isEdge()) {
-                            indexSerializer.removeEdge(del,mutator);
                         }
 
                     }
@@ -305,6 +302,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 for (int pos=0;pos<edge.getLen();pos++) {
                     if (edge.getVertex(pos).equals(vertex)) {
                         if (edge.isRemoved()) {
+                            if (edge.isProperty()) {
+                                indexSerializer.removeProperty((TitanProperty) edge,mutator);
+                            } else if (edge.isEdge()) {
+                                indexSerializer.removeEdge(edge,mutator);
+                            }
                             deletions.add(edgeSerializer.writeRelation(edge, pos, false, tx).getColumn());
                         } else {
                             assert edge.isNew();
