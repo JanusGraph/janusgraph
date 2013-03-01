@@ -127,7 +127,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             typeCache = new ConcurrentHashMap<String, TitanType>();
 
         }
-        for (SystemType st : SystemTypeManager.prepersistedSystemTypes) typeCache.put(st.getName(),st);
+        for (SystemType st : SystemKey.values()) typeCache.put(st.getName(),st);
 
         indexCache = CacheBuilder.newBuilder().weigher(new Weigher<StandardElementQuery, List<Object>>() {
             @Override

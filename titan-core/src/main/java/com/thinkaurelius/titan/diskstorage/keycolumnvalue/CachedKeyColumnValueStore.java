@@ -68,7 +68,7 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
     public List<Entry> getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
         if (query.isStatic() && !query.hasLimit()) {
             try {
-                log.debug("Cache Retrieval. Attempts: {} | Misses: {}",cacheRetrieval.get(),cacheMiss.get());
+                if (log.isDebugEnabled()) log.debug("Cache Retrieval on "+store.getName()+". Attempts: {} | Misses: {}",cacheRetrieval.get(),cacheMiss.get());
                 cacheRetrieval.incrementAndGet();
                 List<Entry> result = cache.get(query,new Callable<List<Entry>>() {
                     @Override
