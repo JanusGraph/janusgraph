@@ -8,13 +8,13 @@ package com.thinkaurelius.titan.core;
  */
 public class InvalidElementException extends TitanException {
 
-    private final TitanVertex element;
+    private final TitanElement element;
 
     /**
      * @param msg     Exception message
      * @param element The invalid element causing the exception
      */
-    public InvalidElementException(String msg, TitanVertex element) {
+    public InvalidElementException(String msg, TitanElement element) {
         super(msg);
         this.element = element;
     }
@@ -24,7 +24,7 @@ public class InvalidElementException extends TitanException {
      *
      * @return The element causing the exception
      */
-    public TitanVertex getElement() {
+    public TitanElement getElement() {
         return element;
     }
 

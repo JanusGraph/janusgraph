@@ -16,10 +16,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class VertexCentricQueryBuilder implements TitanQuery {
 
@@ -44,22 +41,12 @@ public class VertexCentricQueryBuilder implements TitanQuery {
         includeHidden = false;
     }
 
-    public static final VertexCentricQueryBuilder queryAll(InternalVertex node) {
-        return new VertexCentricQueryBuilder(node).includeHidden();
-    }
-
     private final TitanType getType(String typeName) {
         TitanType t = vertex.tx().getType(typeName);
         if (t == null && !vertex.tx().getConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
             throw new IllegalArgumentException("Undefined type used in query: " + typeName);
         }
         return t;
-    }
-
-    private final TitanKey getKey(String keyName) {
-        TitanType t = getType(keyName);
-        if (t instanceof TitanKey) return (TitanKey) t;
-        else throw new IllegalArgumentException("Provided name does not represent a key: " + keyName);
     }
 
 	/* ---------------------------------------------------------------
@@ -69,8 +56,10 @@ public class VertexCentricQueryBuilder implements TitanQuery {
 
     private VertexCentricQuery constructQuery(RelationType returnType) {
         Preconditions.checkNotNull(returnType);
-        Preconditions.checkArgument(limit>0);
+        Preconditions.checkArgument(limit>=0);
         Preconditions.checkArgument(dir!=null);
+
+        if (limit==0) return VertexCentricQuery.INVALID;
 
         if (returnType== RelationType.PROPERTY) {
             if (dir==Direction.IN) return VertexCentricQuery.INVALID;
@@ -85,10 +74,16 @@ public class VertexCentricQueryBuilder implements TitanQuery {
                     ts.add(t);
                     if (group!=null && !group.equals(t.getGroup()))
                         throw new IllegalArgumentException("Given type conflicts with group assignment: " + type);
-                    if (t.isPropertyKey() && returnType!= RelationType.PROPERTY)
-                        throw new IllegalArgumentException("Querying for edges but including a property key: " + t.getName());
-                    if (t.isEdgeLabel() && returnType!= RelationType.EDGE)
-                        throw new IllegalArgumentException("Querying for properties but including an edge label: " + t.getName());
+                    if (t.isPropertyKey()) {
+                        if (returnType==RelationType.EDGE)
+                            throw new IllegalArgumentException("Querying for edges but including a property key: " + t.getName());
+                        returnType=RelationType.PROPERTY;
+                    }
+                    if (t.isEdgeLabel()) {
+                        if (returnType== RelationType.PROPERTY)
+                            throw new IllegalArgumentException("Querying for properties but including an edge label: " + t.getName());
+                        returnType = RelationType.EDGE;
+                    }
                 }
             }
             if (ts.isEmpty()) return VertexCentricQuery.INVALID;
@@ -96,24 +91,29 @@ public class VertexCentricQueryBuilder implements TitanQuery {
         }
 
         //check constraints
-        KeyAtom<TitanType>[] c = new KeyAtom[constraints.size()];
+        List<KeyAtom<TitanType>> c = new ArrayList<KeyAtom<TitanType>>(constraints.size());
         for (int i=0;i<constraints.size();i++) {
             KeyAtom<String> atom = constraints.get(i);
             TitanType t = getType(atom.getKey());
-            if (t==null) return VertexCentricQuery.INVALID;
+            if (t==null) {
+                if (atom.getRelation()==Cmp.EQUAL && atom.getCondition()==null) continue; //Ignore condition
+                else return VertexCentricQuery.INVALID;
+            }
             Object condition = atom.getCondition();
             Relation relation = atom.getRelation();
             //Check condition
             Preconditions.checkArgument(relation.isValidCondition(condition),"Invalid condition onf key [%s]: %s",t.getName(),condition);
             if (t.isPropertyKey()) {
                 if (condition!=null) condition = AttributeUtil.verifyAttribute((TitanKey)t,condition);
-                Preconditions.checkArgument(relation.isValidDataType(((TitanKey)t).getDataType()),"Invalid data type for condition");
+                Preconditions.checkArgument(relation.isValidCondition(condition),"Invalid condition: %s",condition);
+//                Preconditions.checkArgument(relation.isValidDataType(((TitanKey)t).getDataType()),"Invalid data type for condition");
             } else { //t.isEdgeLabel()
                 Preconditions.checkArgument(((TitanLabel)t).isUnidirected() && (condition instanceof TitanVertex));
             }
-            c[i]=new KeyAtom<TitanType>(t, relation, condition);
+            c.add(new KeyAtom<TitanType>(t, relation, condition));
         }
-        return new VertexCentricQuery(vertex,dir,ts.toArray(new TitanType[ts.size()]),group,KeyAnd.of(c),includeHidden,limit,returnType);
+
+        return new VertexCentricQuery(vertex,dir,ts.toArray(new TitanType[ts.size()]),group,KeyAnd.of(c.toArray(new KeyAtom[c.size()])),includeHidden,limit,returnType);
     }
 
 
@@ -148,7 +148,7 @@ public class VertexCentricQueryBuilder implements TitanQuery {
 
     @Override
     public Iterable<TitanProperty> properties() {
-        return Iterables.filter(relations(RelationType.EDGE),TitanProperty.class);
+        return Iterables.filter(relations(RelationType.PROPERTY),TitanProperty.class);
     }
 
     @Override
@@ -208,7 +208,7 @@ public class VertexCentricQueryBuilder implements TitanQuery {
     @Override
     public <T extends Comparable<T>> VertexCentricQueryBuilder interval(String key, T start, T end) {
         addConstraint(key,Cmp.GREATER_THAN_EQUAL,start);
-        return addConstraint(key,Cmp.LESS_THAN_EQUAL,end);
+        return addConstraint(key,Cmp.LESS_THAN,end);
     }
 
     @Override
@@ -269,7 +269,7 @@ public class VertexCentricQueryBuilder implements TitanQuery {
 
     @Override
     public VertexCentricQueryBuilder limit(long limit) {
-        Preconditions.checkArgument(limit>0,"Limit must be positive [%s]",limit);
+        Preconditions.checkArgument(limit>=0,"Limit must be non-negative [%s]",limit);
         Preconditions.checkArgument(limit<Integer.MAX_VALUE,"Limit is too large [%s]",limit);
         this.limit = (int)limit;
         return this;

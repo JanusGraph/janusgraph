@@ -51,7 +51,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
     public void testMultipleDatabases() {
         long memoryBaseline = 0;
         for (int i = 0; i < 100; i++) {
-            graphdb.addVertex(null);
+            graph.addVertex(null);
             clopen();
             if (i == 1) {
                 memoryBaseline = MemoryAssess.getMemoryUse();
@@ -79,7 +79,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 
         p = new PerformanceTest(true);
         for (int i = 0; i < noNodes; i++) {
-            new StandardEdge(i,connect, (InternalVertex) nodes[i], (InternalVertex) nodes[(i + 1) % noNodes], ElementLifeCycle.New);
+            new StandardEdge(i+1,connect, (InternalVertex) nodes[i], (InternalVertex) nodes[(i + 1) % noNodes], ElementLifeCycle.New);
         }
         p.end();
         System.out.println("Time per edge in (ns): " + (p.getNanoTime() / noNodes));
@@ -243,10 +243,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
             String[] names = new String[noNodes];
             TitanVertex[] nodes = new TitanVertex[noNodes];
             for (int i = 0; i < noNodes; i++) {
-                do {
-                    names[i] = RandomGenerator.randomString();
-                    // Retry in case of collision with existing name
-                } while (null != tx.getVertex(name, names[i]));
+                names[i]="Node"+i;
                 nodes[i] = tx.addVertex();
                 nodes[i].addProperty(name, names[i]);
                 nodes[i].addProperty(id, i);
@@ -289,10 +286,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
             String[] names = new String[noNodes];
             TitanVertex[] nodes = new TitanVertex[noNodes];
             for (int i = 0; i < noNodes; i++) {
-                do {
-                    names[i] = RandomGenerator.randomString();
-                    // Retry in case of collision with existing name
-                } while (null != tx.getVertex(name, names[i]));
+                names[i]="Node"+i;
                 nodes[i] = tx.addVertex();
                 nodes[i].addProperty(name, names[i]);
                 nodes[i].addProperty(id, i);

@@ -2,13 +2,13 @@ package com.thinkaurelius.titan.graphdb;
 
 
 import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
@@ -18,7 +18,7 @@ import org.junit.Before;
 public abstract class TitanGraphTestCommon {
 
     public Configuration config;
-    public TitanGraph graphdb;
+    public StandardTitanGraph graph;
     public TitanTransaction tx;
 
     public TitanGraphTestCommon(Configuration config) {
@@ -38,22 +38,24 @@ public abstract class TitanGraphTestCommon {
     }
 
     public void open() {
-        graphdb = TitanFactory.open(config);
-        tx = graphdb.newTransaction();
+        graph = (StandardTitanGraph)TitanFactory.open(config);
+        //tx = graph.newThreadBoundTransaction();
+        tx = graph.newTransaction();
     }
 
     public void close() {
         if (null != tx && tx.isOpen())
             tx.commit();
 
-        if (null != graphdb)
-            graphdb.shutdown();
+        if (null != graph)
+            graph.shutdown();
     }
 
     public void newTx() {
         if (null != tx && tx.isOpen())
             tx.commit();
-        tx = graphdb.newTransaction();
+        //tx = graph.newThreadBoundTransaction();
+        tx = graph.newTransaction();
     }
 
     public void clopen() {
@@ -98,7 +100,7 @@ public abstract class TitanGraphTestCommon {
     }
 
     public TitanKey makeStringPropertyKey(String name) {
-        return tx.makeType().name(name).
+        return tx.makeType().name(name).unique(Direction.OUT).
                 indexed(Vertex.class).
                 dataType(String.class).
                 makePropertyKey();

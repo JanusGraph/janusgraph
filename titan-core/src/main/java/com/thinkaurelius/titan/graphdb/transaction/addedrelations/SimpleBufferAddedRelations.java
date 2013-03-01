@@ -13,24 +13,24 @@ public class SimpleBufferAddedRelations implements AddedRelationsContainer {
 
     private static final int INITIAL_ADDED_SIZE = 10;
     private static final int INITIAL_DELETED_SIZE = 10;
-    private static final int MAX_DELETED_SIZE = 50;
+    private static final int MAX_DELETED_SIZE = 500;
 
     private List<InternalRelation> added;
     private List<InternalRelation> deleted;
 
     public SimpleBufferAddedRelations() {
-        added = null;
+        added = new ArrayList<InternalRelation>(INITIAL_ADDED_SIZE);
         deleted = null;
     }
 
     @Override
     public boolean add(InternalRelation relation) {
-        if (added==null) added = new ArrayList<InternalRelation>(INITIAL_ADDED_SIZE);
         return added.add(relation);
     }
 
     @Override
     public boolean remove(InternalRelation relation) {
+        if (added.isEmpty()) return false;
         if (deleted==null) deleted = new ArrayList<InternalRelation>(INITIAL_DELETED_SIZE);
         boolean del = deleted.add(relation);
         if (deleted.size()>MAX_DELETED_SIZE) cleanup();
@@ -47,7 +47,7 @@ public class SimpleBufferAddedRelations implements AddedRelationsContainer {
         if (deleted==null || deleted.isEmpty()) return;
         Set<InternalRelation> deletedSet = new HashSet<InternalRelation>(deleted);
         deleted=null;
-        List<InternalRelation> newadded = new ArrayList<InternalRelation>(added.size()-deleted.size()/2);
+        List<InternalRelation> newadded = new ArrayList<InternalRelation>(added.size()-deletedSet.size()/2);
         for (InternalRelation r : added) {
             if (!deletedSet.contains(r)) newadded.add(r);
         }

@@ -73,7 +73,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         }
     }
 
-    protected abstract TitanTransaction newThreadBoundTransaction();
+    public abstract TitanTransaction newThreadBoundTransaction();
 
     private TitanTransaction getAutoStartTx() {
         TitanTransaction tx = txs.get();

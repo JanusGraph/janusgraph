@@ -7,6 +7,9 @@ import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
+ * Used to identify a lock for relations with a uniqueness property so that a corresponding lock can be acquired during
+ * creation to ensure uniqueness.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -21,6 +24,7 @@ public class UniqueLockApplication {
         Preconditions.checkNotNull(start);
         Preconditions.checkNotNull(type);
         Preconditions.checkNotNull(end);
+        Preconditions.checkArgument(type.isUnique(Direction.OUT) || type.isUnique(Direction.IN));
         this.type=type;
         if (type.isUnique(Direction.OUT)) this.start=start;
         else this.start=null;

@@ -21,7 +21,7 @@ public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
         if (definition == null) {
             synchronized (this) {
                 if (definition==null) {
-                    definition = QueryUtil.queryHiddenUniqueProperty(this, SystemKey.PropertyTypeDefinition)
+                    definition = QueryUtil.queryHiddenUniqueProperty(this, SystemKey.PropertyKeyDefinition)
                             .getValue(PropertyKeyDefinition.class);
                     Preconditions.checkNotNull(definition);
                 }

@@ -13,8 +13,13 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * Caches KeySliceQuery results which are marked <i>static</i> and hence do not change.
+ *
+ * @see SliceQuery
+ *
  * TODO: generalize cache to check for subsumption instead of equality of KeySliceQuery
  * and allow having a limit
  *
@@ -29,6 +34,9 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
 
     private final KeyColumnValueStore store;
     private final Cache<KeySliceQuery,List<Entry>> cache;
+
+    private final AtomicLong cacheRetrieval = new AtomicLong(0);
+    private final AtomicLong cacheMiss = new AtomicLong(0);
 
     public CachedKeyColumnValueStore(final KeyColumnValueStore store) {
         this(store,DEFAULT_CACHE_SIZE);
@@ -46,6 +54,11 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
         .build();
     }
 
+    public final double getCacheHitRatio() {
+        if (cacheRetrieval.get()==0) return Double.NaN;
+        else return (cacheRetrieval.get()-cacheMiss.get())*1.0/cacheRetrieval.get();
+    }
+
     @Override
     public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
         return store.containsKey(key,txh);
@@ -55,14 +68,17 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
     public List<Entry> getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
         if (query.isStatic() && !query.hasLimit()) {
             try {
-                log.debug("Attempting to retrieve query from cache");
-                return cache.get(query,new Callable<List<Entry>>() {
+                log.debug("Cache Retrieval. Attempts: {} | Misses: {}",cacheRetrieval.get(),cacheMiss.get());
+                cacheRetrieval.incrementAndGet();
+                List<Entry> result = cache.get(query,new Callable<List<Entry>>() {
                     @Override
                     public List<Entry> call() throws StorageException {
-                        log.debug("Cache miss");
+                        cacheMiss.incrementAndGet();
                         return store.getSlice(query,txh);
                     }
                 });
+                if (result.isEmpty()) cache.invalidate(query);
+                return result;
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
                 if (cause!=null && cause instanceof StorageException) {

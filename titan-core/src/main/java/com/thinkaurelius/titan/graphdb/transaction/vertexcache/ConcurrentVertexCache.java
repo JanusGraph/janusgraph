@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.transaction.vertexcache;
 import com.carrotsearch.hppc.LongObjectMap;
 import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.carrotsearch.hppc.ObjectContainer;
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
@@ -78,9 +79,9 @@ public class ConcurrentVertexCache implements VertexCache {
         ArrayList<InternalVertex> vertices = new ArrayList<InternalVertex>(map.size() + 2);
         readLock.lock();
         try {
-            ObjectContainer oc = map.values();
-            for (Object o : oc) {
-                vertices.add((InternalVertex)o);
+            ObjectContainer<InternalVertex> oc = map.values();
+            for (ObjectCursor<InternalVertex> o : oc) {
+                vertices.add(o.value);
             }
         } finally {
             readLock.unlock();

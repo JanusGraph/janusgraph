@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Titan specific Gremlin imports
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class Imports {

@@ -85,11 +85,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         clopen();
 
-        try {
-            tx.getVertex(id, "v1");
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
+        assertNull(tx.getVertex(id, "v1"));
 
         id = tx.getPropertyKey("uid");
         assertEquals(TypeGroup.DEFAULT_GROUP, id.getGroup());
@@ -152,12 +148,12 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             fail();
         } catch (IllegalArgumentException e) {
         }
-        try {
-            tx.makeType().name("link2").unidirected().
-                    primaryKey(id, weight).makeEdgeLabel();
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
+//        try {
+//            tx.makeType().name("link2").unidirected().
+//                    primaryKey(id, weight).makeEdgeLabel();
+//            fail();
+//        } catch (IllegalArgumentException e) {
+//        }
         tx.makeType().name("link2").unidirected().
                 primaryKey(id, weight).makeEdgeLabel();
 
@@ -227,35 +223,35 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testVertexRemoval() {
-        Vertex v1 = graphdb.addVertex(null);
-        Vertex v2 = graphdb.addVertex(null);
+        Vertex v1 = graph.addVertex(null);
+        Vertex v2 = graph.addVertex(null);
 
-        Edge e = graphdb.addEdge(null, v1, v2, "knows");
+        Edge e = graph.addEdge(null, v1, v2, "knows");
         clopen();
 
-        v1 = graphdb.getVertex(v1);
-        v2 = graphdb.getVertex(v2);
-        graphdb.removeVertex(v1);
-        graphdb.removeVertex(v2);
+        v1 = graph.getVertex(v1);
+        v2 = graph.getVertex(v2);
+        graph.removeVertex(v1);
+        graph.removeVertex(v2);
 
-        graphdb.commit();
+        graph.commit();
     }
 
     @Test
     public void testDate() throws ParseException {
-        tx.makeType().name("birthday").dataType(GregorianCalendar.class).makePropertyKey();
+        tx.makeType().name("birthday").unique(Direction.OUT).dataType(GregorianCalendar.class).makePropertyKey();
 
         Vertex v = tx.addVertex(null);
         Date date = new SimpleDateFormat("ddMMyyyy").parse("28101978");
         Calendar c = Calendar.getInstance();
         c.setTime(date);
         v.setProperty("birthday", c);
-        System.out.println(c); // prints Sat Oct 28 00:00:00 CET 1978
+//        System.out.println(c); // prints Sat Oct 28 00:00:00 CET 1978
 
         clopen();
 
         v = tx.getVertex(v);
-        System.out.println(v.getProperty("birthday")); // prints Wed Jan 16 18:49:44 CET 2013
+//        System.out.println(v.getProperty("birthday")); // prints Wed Jan 16 18:49:44 CET 2013
         assertEquals(c,v.getProperty("birthday"));
     }
 
@@ -268,8 +264,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testTransaction() {
-        TitanTransaction tx1 = graphdb.newTransaction();
-        TitanTransaction tx2 = graphdb.newTransaction();
+        TitanTransaction tx1 = graph.newTransaction();
+        TitanTransaction tx2 = graph.newTransaction();
 
         TitanVertex v11 = tx1.addVertex();
         TitanVertex v12 = tx1.addVertex();
@@ -348,7 +344,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     @Test
     public void testIteration() {
         int numV = 50; int deleteV = 5;
-        if (graphdb.getFeatures().supportsVertexIteration) {
+        if (graph.getFeatures().supportsVertexIteration) {
 
             TitanVertex previous = tx.addVertex();
             previous.setProperty("count", 0);
@@ -437,8 +433,16 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testIndexRetrieval() {
-        TitanKey id = makeIntegerUIDPropertyKey("uid");
-        TitanKey name = makeStringPropertyKey("name");
+        TitanKey id = tx.makeType().name("uid").
+                unique(Direction.OUT).
+                unique(Direction.IN).indexed(Vertex.class).indexed(Edge.class).
+                dataType(Integer.class).
+                makePropertyKey();
+        TitanKey name = tx.makeType().name("name").unique(Direction.OUT).
+                indexed(Vertex.class).indexed(Edge.class).
+                dataType(String.class).
+                makePropertyKey();
+        TitanLabel connect = tx.makeType().name("connect").signature(id,name).makeEdgeLabel();
         int noNodes = 100;
         int div = 10;
         int mod = noNodes / div;
@@ -446,6 +450,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             TitanVertex n = tx.addVertex();
             n.addProperty(id, i);
             n.addProperty(name, "Name" + (i % mod));
+
+            TitanEdge e = n.addEdge(connect,tx.getVertex(id,Math.max(0,i-1)));
+            e.setProperty(id,i);
+            e.setProperty(name,"Edge"+(i%mod));
         }
         clopen();
         for (int j = 0; j < mod; j++) {
@@ -455,8 +463,89 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
                 int nid = ((Number) n.getProperty("uid")).intValue();
                 assertEquals(j, nid % mod);
             }
+            Iterable<Edge> edges = tx.getEdges("name", "Edge" + j);
+            assertEquals(div, Iterables.size(edges));
+            for (Edge e : edges) {
+                int nid = ((Number) e.getProperty("uid")).intValue();
+                assertEquals(j, nid % mod);
+            }
+        }
+        clopen();
+        for (int i = 0; i < noNodes; i++) {
+            assertEquals(Iterables.getOnlyElement(tx.getVertices("uid",i)).getProperty("name").toString().substring(4),String.valueOf(i%mod));
+        }
+        for (int i = 0; i < noNodes; i++) {
+            assertEquals(Iterables.getOnlyElement(tx.getEdges("uid", i)).getProperty("name").toString().substring(4),String.valueOf(i%mod));
         }
 
+    }
+
+    @Test
+    public void testThreadBoundTx() {
+        Vertex v1 = graph.addVertex(null);
+        Vertex v2 = graph.addVertex(null);
+        Vertex v3 = graph.addVertex(null);
+        v1.setProperty("name","Vertex1");
+        v1.setProperty("age",35);
+        v2.setProperty("name","Vertex2");
+        v2.setProperty("age",45);
+        v3.setProperty("name","Vertex3");
+        v3.setProperty("age",55);
+        Edge e1 = v1.addEdge("knows",v2);
+        e1.setProperty("time",5);
+        Edge e2 = v2.addEdge("knows",v3);
+        e2.setProperty("time",15);
+        Edge e3 = v3.addEdge("knows",v1);
+        e3.setProperty("time",25);
+        for (Vertex v : new Vertex[]{v1,v2,v3}) {
+            assertEquals(2,v.query().direction(Direction.BOTH).labels("knows").count());
+            assertEquals(1,v.query().direction(Direction.OUT).labels("knows").count());
+            assertEquals(5,((Number)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"knows")).getProperty("time")).intValue()%10);
+        }
+        e3.setProperty("time",35);
+        assertEquals(35,e3.getProperty("time"));
+
+        graph.commit();
+
+        assertEquals(35,e3.getProperty("time"));
+        e3 = graph.getEdge(e3);
+        e3.setProperty("time",45);
+        assertEquals(45,e3.getProperty("time"));
+
+        assertEquals(15,e2.getProperty("time"));
+        e2.setProperty("time",25);
+        assertEquals(25,e2.getProperty("time"));
+
+        assertEquals(35,v1.getProperty("age"));
+        assertEquals(55,v3.getProperty("age"));
+        v3.setProperty("age",65);
+        assertEquals(65,v3.getProperty("age"));
+
+
+        for (Vertex v : new Vertex[]{v1,v2,v3}) {
+            assertEquals(2,v.query().direction(Direction.BOTH).labels("knows").count());
+            assertEquals(1,v.query().direction(Direction.OUT).labels("knows").count());
+            assertEquals(5,((Number)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"knows")).getProperty("time")).intValue()%10);
+        }
+
+        graph.commit();
+
+        assertEquals(45,e3.getProperty("time"));
+
+        try {
+            //TODO: how to address this? Only allow transactional passing for vertices?
+            assertEquals(25,e2.getProperty("time"));
+            fail();
+        } catch (InvalidElementException e) {}
+
+        assertEquals(35,v1.getProperty("age"));
+        assertEquals(65,v3.getProperty("age"));
+
+        for (Vertex v : new Vertex[]{v1,v2,v3}) {
+            assertEquals(2,v.query().direction(Direction.BOTH).labels("knows").count());
+            assertEquals(1,v.query().direction(Direction.OUT).labels("knows").count());
+            assertEquals(5,((Number)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"knows")).getProperty("time")).intValue()%10);
+        }
     }
 
     @Test
@@ -705,6 +794,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(9, v.query().interval("time", 4, 14).has("time", 10, Query.Compare.NOT_EQUAL).count());
         assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
         assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
+//        for (TitanRelation r : v.query().labels("friend", "connect", "knows").direction(OUT).has("time", 10, Query.Compare.NOT_EQUAL).relations()) System.out.println(r);
         assertEquals(98, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", 10, Query.Compare.NOT_EQUAL).count());
         assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
         assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());

@@ -29,20 +29,6 @@ public class EdgeDirection {
         else throw new IllegalArgumentException("Invalid direction: " + dir);
     }
 
-    public static final byte getID(Direction dir) {
-        return (byte)(position(dir)+1);
-    }
-
-
-    public final static Direction fromID(long dir) {
-        return fromID((int) dir);
-    }
-
-
-    public final static Direction fromID(int dir) {
-        return fromPosition(dir-1);
-    }
-
     public static final boolean isProperDirection(Direction dir) {
         return dir==Direction.IN || dir==Direction.OUT;
     }

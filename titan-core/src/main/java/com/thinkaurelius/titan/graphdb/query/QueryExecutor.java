@@ -12,8 +12,6 @@ public interface QueryExecutor<Q extends Query<Q>,R> {
 
     public Iterator<R> getNew(Q query);
 
-    public boolean isDeleted(Q query, R result);
-
     public Iterator<R> execute(Q query);
 
 }

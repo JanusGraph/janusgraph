@@ -6,12 +6,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Comparison relations for text objects.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
 public enum Txt implements Relation {
 
     //TODO: generalize to also allow String[] as condition
+    /**
+     * Whether the text contains a given term
+     */
     CONTAINS {
 
         @Override
@@ -23,6 +28,9 @@ public enum Txt implements Relation {
         }
     },
 
+    /**
+     * Whether the text starts with a given term
+     */
     PREFIX {
 
         @Override
@@ -44,7 +52,7 @@ public enum Txt implements Relation {
     @Override
     public boolean isValidDataType(Class<?> clazz) {
         Preconditions.checkNotNull(clazz);
-        return clazz.equals(Object.class) || clazz.equals(String.class);
+        return clazz.equals(String.class);
     }
 
 

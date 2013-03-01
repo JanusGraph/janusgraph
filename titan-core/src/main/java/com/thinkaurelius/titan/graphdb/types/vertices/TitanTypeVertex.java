@@ -52,5 +52,4 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
         return getDefinition().isModifiable();
     }
 
-
 }

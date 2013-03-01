@@ -32,6 +32,12 @@ public interface IDAuthority {
      */
     public long peekNextID(int partition) throws StorageException;
 
+    /**
+     * Returns the lower and upper limits of the key range assigned to this local machine as an array with two entries.
+     *
+     * @return
+     * @throws StorageException
+     */
     public ByteBuffer[] getLocalIDPartition() throws StorageException;
 
     /**

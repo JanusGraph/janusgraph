@@ -20,8 +20,10 @@ public class AttributeUtil {
         if (!datatype.equals(Object.class)) {
             if (attribute instanceof Integer && datatype.equals(Long.class)) {
                 attribute = Long.valueOf((Integer) attribute);
-            } else if (attribute instanceof Float && datatype.equals(Double.class)) {
-                attribute = Double.valueOf((Float) attribute);
+            } else if (attribute instanceof Number && datatype.equals(Double.class)) {
+                attribute = ((Number)attribute).doubleValue();
+            } else if (attribute instanceof Number && datatype.equals(Float.class)) {
+                attribute = ((Number)attribute).floatValue();
             }
         }
         return attribute;

@@ -7,6 +7,12 @@ import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
 
 /**
+ * A generic representation of a geographic shape, which can either be a single point,
+ * circle, box, or polygon. Use {@link #getType()} to determine the type of shape of a particular Geoshape object.
+ * Use the static constructor methods to create the desired geoshape.
+ *
+ * Note, polygons are not yet supported.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -14,12 +20,19 @@ public class Geoshape {
 
     private static final SpatialContext CTX = SpatialContext.GEO;
 
+    /**
+     * The Type of a shape: a point, box, circle, or polygon
+     */
     public enum Type {
         POINT, BOX, CIRCLE, POLYGON;
     }
 
     //coordinates[0] = latitudes, coordinates[1] = longitudes
     private final float[][] coordinates;
+
+    private Geoshape() {
+        coordinates = null;
+    }
 
     private Geoshape(final float[][] coordinates) {
         Preconditions.checkArgument(coordinates!=null && coordinates.length==2);
@@ -31,6 +44,11 @@ public class Geoshape {
         this.coordinates=coordinates;
     }
 
+    /**
+     * Returns the {@link Type} of this geoshape.
+     *
+     * @return
+     */
     public Type getType() {
         if (coordinates[0].length==1) return Type.POINT;
         else if (coordinates[0].length>2) return Type.POLYGON;
@@ -40,6 +58,12 @@ public class Geoshape {
         }
     }
 
+    /**
+     * Returns the number of points comprising this geoshape. A point and circle have only one point (center of cricle),
+     * a box has two points (the south-west and north-east corners) and a polygon has a variable number of points (>=3).
+     *
+     * @return
+     */
     public int size() {
         switch(getType()) {
             case POINT: return 1;
@@ -50,16 +74,31 @@ public class Geoshape {
         }
     }
 
+    /**
+     * Returns the point at the given position. The position must be smaller than {@link #size()}.
+     *
+     * @param position
+     * @return
+     */
     public Point getPoint(int position) {
         if (position<0 || position>=size()) throw new ArrayIndexOutOfBoundsException("Invalid position: " + position);
         return new Point(coordinates[0][position],coordinates[1][position]);
     }
 
+    /**
+     * Returns the singleton point of this shape. Only applicable for point and circle shapes.
+     *
+     * @return
+     */
     public Point getPoint() {
         Preconditions.checkArgument(size()==1,"Shape does not have a single point");
         return getPoint(0);
     }
 
+    /**
+     * Returns the radius in kilometers of this circle. Only applicable to circle shapes.
+     * @return
+     */
     public float getRadius() {
         Preconditions.checkArgument(getType()==Type.CIRCLE,"This shape is not a circle");
         return coordinates[1][1];
@@ -71,7 +110,8 @@ public class Geoshape {
     }
 
     public boolean intersect(Geoshape other) {
-        return getSpatialRelation(other)==SpatialRelation.INTERSECTS;
+        SpatialRelation r = getSpatialRelation(other);
+        return r==SpatialRelation.INTERSECTS || r==SpatialRelation.CONTAINS || r==SpatialRelation.WITHIN;
     }
 
     public boolean within(Geoshape outer) {
@@ -82,6 +122,10 @@ public class Geoshape {
         return getSpatialRelation(other)==SpatialRelation.DISJOINT;
     }
 
+    /**
+     * Converts this shape into its equivalent Spatial4j {@link Shape}.
+     * @return
+     */
     public Shape convert2Spatial4j() {
         switch(getType()) {
             case POINT: return getPoint().getSpatial4jPoint();
@@ -93,25 +137,59 @@ public class Geoshape {
     }
 
 
+    /**
+     * Constructs a point from its latitude and longitude information
+     * @param latitude
+     * @param longitude
+     * @return
+     */
     public static final Geoshape point(final float latitude, final float longitude) {
         Preconditions.checkArgument(isValidCoordinate(latitude,longitude),"Invalid coordinate provided");
         return new Geoshape(new float[][]{ new float[]{latitude}, new float[]{longitude}});
     }
 
+    /**
+     * Constructs a point from its latitude and longitude information
+     * @param latitude
+     * @param longitude
+     * @return
+     */
     public static final Geoshape point(final double latitude, final double longitude) {
         return point((float)latitude,(float)longitude);
     }
 
+    /**
+     * Constructs a circle from a given center point and a radius in kilometer
+     * @param latitude
+     * @param longitude
+     * @param radiusInKM
+     * @return
+     */
     public static final Geoshape circle(final float latitude, final float longitude, final float radiusInKM) {
         Preconditions.checkArgument(isValidCoordinate(latitude,longitude),"Invalid coordinate provided");
         Preconditions.checkArgument(radiusInKM>0,"Invalid radius provided [%s]",radiusInKM);
         return new Geoshape(new float[][]{ new float[]{latitude, Float.NaN}, new float[]{longitude, radiusInKM}});
     }
 
+    /**
+     * Constructs a circle from a given center point and a radius in kilometer
+     * @param latitude
+     * @param longitude
+     * @param radiusInKM
+     * @return
+     */
     public static final Geoshape circle(final double latitude, final double longitude, final double radiusInKM) {
         return circle((float)latitude,(float)longitude,(float)radiusInKM);
     }
 
+    /**
+     * Constructs a new box shape which is identified by its south-west and north-east corner points
+     * @param southWestLatitude
+     * @param southWestLongitude
+     * @param northEastLatitude
+     * @param northEastLongitude
+     * @return
+     */
     public static final Geoshape box(final float southWestLatitude, final float southWestLongitude,
                                      final float northEastLatitude, final float northEastLongitude) {
         Preconditions.checkArgument(isValidCoordinate(southWestLatitude,southWestLongitude),"Invalid south-west coordinate provided");
@@ -119,29 +197,60 @@ public class Geoshape {
         return new Geoshape(new float[][]{ new float[]{southWestLatitude, northEastLatitude}, new float[]{southWestLongitude, northEastLongitude}});
     }
 
+    /**
+     * Constructs a new box shape which is identified by its south-west and north-east corner points
+     * @param southWestLatitude
+     * @param southWestLongitude
+     * @param northEastLatitude
+     * @param northEastLongitude
+     * @return
+     */
     public static final Geoshape box(final double southWestLatitude, final double southWestLongitude,
                                      final double northEastLatitude, final double northEastLongitude) {
         return box((float)southWestLatitude,(float)southWestLongitude,(float)northEastLatitude,(float)northEastLongitude);
     }
 
+    /**
+     * Whether the given coordinates mark a point on earth.
+     * @param latitude
+     * @param longitude
+     * @return
+     */
     public static final boolean isValidCoordinate(final float latitude, final float longitude) {
         return latitude>=-90.0 && latitude<=90.0 && longitude>=-180.0 && longitude<=180.0;
     }
 
+    /**
+     * A single point representation. A point is identified by its coordinate on the earth sphere using the spherical
+     * system of latitudes and longitudes.
+     */
     public static final class Point {
 
         private final float longitude;
         private final float latitude;
 
+        /**
+         * Constructs a point with the given latitude and longitude
+         * @param latitude Between -90 and 90 degrees
+         * @param longitude Between -180 and 180 degrees
+         */
         public Point(float latitude, float longitude) {
             this.longitude = longitude;
             this.latitude = latitude;
         }
 
+        /**
+         * Longitude of this point
+         * @return
+         */
         public float getLongitude() {
             return longitude;
         }
 
+        /**
+         * Latitude of this point
+         * @return
+         */
         public float getLatitude() {
             return latitude;
         }
@@ -151,7 +260,7 @@ public class Geoshape {
         }
 
         public double distance(Point other) {
-            return CTX.getDistCalc().distance(getSpatial4jPoint(),other.getSpatial4jPoint());
+            return DistanceUtils.degrees2Dist(CTX.getDistCalc().distance(getSpatial4jPoint(),other.getSpatial4jPoint()),DistanceUtils.EARTH_MEAN_RADIUS_KM);
         }
     }
 

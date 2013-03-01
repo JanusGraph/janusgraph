@@ -294,6 +294,16 @@ public class GraphDatabaseConfiguration {
         return configuration;
     }
 
+    public static final String toString(Configuration config) {
+        StringBuilder s = new StringBuilder();
+        Iterator<String> keys = config.getKeys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            s.append(key).append(": ").append(config.getProperty(key)).append("\n");
+        }
+        return s.toString();
+    }
+
     private void preLoadConfiguration() {
         Configuration storageConfig = configuration.subset(STORAGE_NAMESPACE);
         readOnly = storageConfig.getBoolean(STORAGE_READONLY_KEY, STORAGE_READONLY_DEFAULT);

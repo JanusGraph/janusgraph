@@ -17,7 +17,6 @@ public class KeyAtom<K> implements KeyCondition<K> {
     public KeyAtom(K key, Relation relation, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(relation);
-        Preconditions.checkNotNull(condition);
         this.key = key;
         this.relation = relation;
         this.condition = condition;
@@ -66,7 +65,7 @@ public class KeyAtom<K> implements KeyCondition<K> {
 
     @Override
     public String toString() {
-        return key.toString()+relation.toString()+condition.toString();
+        return key.toString()+relation.toString()+String.valueOf(condition);
     }
 
     public static final<K> KeyAtom<K> of(K key, Relation relation, Object condition) {

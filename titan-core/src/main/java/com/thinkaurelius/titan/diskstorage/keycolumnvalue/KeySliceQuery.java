@@ -1,11 +1,13 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.graphdb.query.Query;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.nio.ByteBuffer;
 
 /**
+ * Extends {@link SliceQuery} by a key that identifies the location of the slice in the key-ring.
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -26,7 +28,7 @@ public class KeySliceQuery extends SliceQuery {
     }
 
     public KeySliceQuery(ByteBuffer key, ByteBuffer sliceStart, ByteBuffer sliceEnd) {
-        this(key,sliceStart,sliceEnd,DEFAULT_LIMIT,DEFAULT_STATIC);
+        this(key,sliceStart,sliceEnd, Query.NO_LIMIT,DEFAULT_STATIC);
     }
 
     public KeySliceQuery(ByteBuffer key, ByteBuffer sliceStart, ByteBuffer sliceEnd, int limit) {
@@ -34,7 +36,7 @@ public class KeySliceQuery extends SliceQuery {
     }
 
     public KeySliceQuery(ByteBuffer key, ByteBuffer sliceStart, ByteBuffer sliceEnd, boolean isStatic) {
-        this(key,sliceStart,sliceEnd,DEFAULT_LIMIT,isStatic);
+        this(key,sliceStart,sliceEnd,Query.NO_LIMIT,isStatic);
     }
 
     /**

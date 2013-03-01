@@ -2,7 +2,9 @@ package com.thinkaurelius.titan.graphdb.internal;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Longs;
+import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanElement;
+import com.thinkaurelius.titan.core.TitanVertex;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -31,9 +33,10 @@ public abstract class AbstractElement implements InternalElement {
     public boolean equals(Object other) {
         if (this==other) return true;
         else if (other==null) return false;
-        else if (!getClass().isInstance(other)) return false;
-        InternalVertex oth = (InternalVertex)other;
-        return getID()==oth.getID();
+        if (((this instanceof TitanVertex) && (other instanceof TitanVertex)) ||
+                ((this instanceof TitanEdge) && (other instanceof TitanEdge)))
+            return getID()==((AbstractElement)other).getID();
+        else return false;
     }
 
 
@@ -63,7 +66,7 @@ public abstract class AbstractElement implements InternalElement {
 
     @Override
     public void setID(long id) {
-        Preconditions.checkArgument(isTemporaryId(id),"Element has already been assigned an id");
+        Preconditions.checkArgument(isTemporaryId(this.id),"Element has already been assigned an id");
         Preconditions.checkArgument(id>0);
         this.id=id;
     }

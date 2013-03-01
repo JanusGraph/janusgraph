@@ -8,6 +8,8 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.util.datastructures.Removable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -23,6 +25,9 @@ import java.util.*;
 
 public class QueryProcessor<Q extends Query<Q>,R> implements Iterable<R> {
 
+    private static final Logger log = LoggerFactory.getLogger(QueryProcessor.class);
+
+
     private final Q query;
     private final List<Q> optimal;
     private final QueryExecutor<Q,R> executor;
@@ -33,6 +38,7 @@ public class QueryProcessor<Q extends Query<Q>,R> implements Iterable<R> {
         this.query = query;
         this.executor = executor;
         this.optimal = optimizer.optimize(query);
+        log.debug("Optimized query [{}] into {} subqueries",query,optimal.size());
         for (Q q : optimal) Preconditions.checkArgument(!q.isInvalid());
     }
 
@@ -54,7 +60,7 @@ public class QueryProcessor<Q extends Query<Q>,R> implements Iterable<R> {
             if (executor.hasNew(query))  {
                 final List<R> allNew= Lists.newArrayList(executor.getNew(query));
                 Collections.sort(allNew,query.getSortOrder());
-                iter = new MergeSortIterator<R>(allNew.iterator(),iter,query.getSortOrder(),true);
+                iter = new MergeSortIterator<R>(allNew.iterator(),iter,query.getSortOrder(),query.hasUniqueResults());
             }
         } else {
 
@@ -73,8 +79,8 @@ public class QueryProcessor<Q extends Query<Q>,R> implements Iterable<R> {
                             return !allNew.contains(r);
                         }
                     });
+                    iter = Iterators.concat(allNew.iterator(),iter);
                 }
-                iter = Iterators.concat(allNew.iterator(),iter);
             } else {
                 iter = Iterators.concat(Iterators.transform(optimal.iterator(),new Function<Q, Iterator<R>>() {
                     @Nullable
@@ -124,11 +130,11 @@ public class QueryProcessor<Q extends Query<Q>,R> implements Iterable<R> {
 
         OuterIterator() {
             this.iter=getUnwrappedIterator();
-            this.current=null;
-            this.next = nextInternal();
             if (query.hasLimit()) limit = query.getLimit();
             else limit = Query.NO_LIMIT;
             count = 0;
+            this.current=null;
+            this.next = nextInternal();
         }
 
         @Override
@@ -138,9 +144,8 @@ public class QueryProcessor<Q extends Query<Q>,R> implements Iterable<R> {
 
         private R nextInternal() {
             R r = null;
-            while (r==null && count<limit && iter.hasNext()) {
+            if (count<limit && iter.hasNext()) {
                 r = iter.next();
-                if (executor.isDeleted(query,r)) r = null;
             }
             return r;
         }
@@ -149,8 +154,8 @@ public class QueryProcessor<Q extends Query<Q>,R> implements Iterable<R> {
         public R next() {
             if (!hasNext()) throw new NoSuchElementException();
             current = next;
-            next = nextInternal();
             count++;
+            next = nextInternal();
             return current;
         }
 
@@ -201,7 +206,7 @@ public class QueryProcessor<Q extends Query<Q>,R> implements Iterable<R> {
             next = null;
             do {
                 next = nextInternal();
-            } while (next!=null && comp.compare(current,next)==0);
+            } while (next!=null && filterDuplicates && comp.compare(current,next)==0);
             return current;
         }
 

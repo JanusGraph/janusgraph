@@ -5,6 +5,8 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.tinkerpop.blueprints.Direction;
+import static com.tinkerpop.blueprints.util.StringFactory.*;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -21,6 +23,11 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
         Preconditions.checkNotNull(value);
         this.vertex=vertex;
         this.value=value;
+    }
+
+    @Override
+    public String toString() {
+        return E + L_BRACKET + getId() + R_BRACKET + L_BRACKET + getVertex().getId() + DASH + getPropertyKey() + ARROW + String.valueOf(value).substring(0,100) + R_BRACKET;
     }
 
     @Override

@@ -12,15 +12,16 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.lang.StringUtils;
+import static com.tinkerpop.blueprints.Direction.*;
 
 import java.util.*;
 import java.util.regex.Pattern;
 
 public class StandardTypeMaker implements TypeMaker {
 
-    private static final Set<String> RESERVED_NAMES = ImmutableSet.of("id", "label", "key");
+    private static final Set<String> RESERVED_NAMES = ImmutableSet.of("id", "label");//, "key");
 
-    private static final Pattern namePattern = Pattern.compile("^[a-zA-Z0-9_]+$");
+    private static final char[] RESERVED_CHARS = {'{','}'};
 
     private final StandardTitanTx tx;
 
@@ -36,8 +37,8 @@ public class StandardTypeMaker implements TypeMaker {
 
     private boolean isUnidirectional;
 
-    private Set<IndexType> indexes;
     private Class<?> dataType;
+    private Set<IndexType> indexes;
 
 
     public StandardTypeMaker(StandardTitanTx tx) {
@@ -61,12 +62,14 @@ public class StandardTypeMaker implements TypeMaker {
     }
 
     private void checkGeneralArguments() {
-        Preconditions.checkArgument(StringUtils.isBlank(name),"Need to specify name");
-        Preconditions.checkArgument(namePattern.matcher(name).matches(),"Name can only contain alpha-numeric characters and underscore");
+        Preconditions.checkArgument(StringUtils.isNotBlank(name),"Need to specify name");
+        for (char c : RESERVED_CHARS) Preconditions.checkArgument(name.indexOf(c)<0,"Name can not contains reserved character %s: %s",c,name);
         Preconditions.checkArgument(!name.startsWith(SystemTypeManager.systemETprefix),
             "Name starts with a reserved keyword: " + SystemTypeManager.systemETprefix);
         Preconditions.checkArgument(!RESERVED_NAMES.contains(name.toLowerCase()),
             "Name is reserved: " + name);
+        Preconditions.checkNotNull(group,"Need to specify a type group");
+
         for (int i=0;i<2;i++) Preconditions.checkArgument(!hasUniqueLock[i] || isUnique[i],
                 "Must be unique in order to have a lock");
         checkPrimaryKey(primaryKey);
@@ -90,11 +93,11 @@ public class StandardTypeMaker implements TypeMaker {
         for (int i = 0; i < sig.size(); i++) {
             TitanType et = sig.get(i);
             Preconditions.checkNotNull(et);
-            Preconditions.checkArgument(et.isUnique(Direction.OUT),"Type must be functional: " + et);
+            Preconditions.checkArgument(et.isUnique(OUT),"Type must be out-unique: %s",et.getName());
             Preconditions.checkArgument(!et.isEdgeLabel() || ((TitanLabel)et).isUnidirected(),
-                    "Label must be unidirectional: " + et);
+                    "Label must be unidirectional: %s",et.getName());
             Preconditions.checkArgument(!et.isPropertyKey() || !((TitanKey) et).getDataType().equals(Object.class),
-                    "Signature keys must have a proper declared datatype: " + et);
+                    "Signature keys must have a proper declared datatype: %s",et.getName());
             signature[i] = et.getID();
         }
         return signature;
@@ -104,7 +107,7 @@ public class StandardTypeMaker implements TypeMaker {
         IndexType[] result = new IndexType[indexes.size()];
         int i =0;
         for (IndexType it : indexes) {
-            Preconditions.checkArgument(isUnique[EdgeDirection.position(Direction.OUT)] || it.isStandardIndex(),
+            Preconditions.checkArgument(isUnique[EdgeDirection.position(OUT)] || (it.isStandardIndex() && it.getElementType()==Vertex.class),
                     "Only standard index is allowed on non-unique property keys");
             Preconditions.checkArgument(tx.getGraph().getIndexInformation(it.getIndexName()).supports(dataType),"" +
                     "Index ["+it.getIndexName()+"] does not support data type: " + dataType);
@@ -118,8 +121,8 @@ public class StandardTypeMaker implements TypeMaker {
     public TitanKey makePropertyKey() {
         checkGeneralArguments();
         isUnidirectional=false;
-        Preconditions.checkNotNull(dataType,"Need to specify a datatype");
-        Preconditions.checkArgument(!isUnique[EdgeDirection.position(Direction.IN)] ||
+        Preconditions.checkArgument(dataType!=null,"Need to specify a datatype");
+        Preconditions.checkArgument(!isUnique[EdgeDirection.position(IN)] ||
                 indexes.contains(IndexType.of(Vertex.class)), "A unique key requires the existence of a standard vertex index");
         return tx.makePropertyKey(new StandardKeyDefinition(name, group, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,
                 checkPrimaryKey(primaryKey), checkSignature(signature), checkIndexes(indexes), dataType));
@@ -131,8 +134,12 @@ public class StandardTypeMaker implements TypeMaker {
     public TitanLabel makeEdgeLabel() {
         checkGeneralArguments();
         Preconditions.checkArgument(indexes.isEmpty(),"Cannot declare labels to be indexed");
-        Preconditions.checkArgument(!isUnique[EdgeDirection.position(Direction.IN)] ||
-                indexes.contains(IndexType.of(Vertex.class)), "In-uniqueness not allowed for unidrectional edges");
+        Preconditions.checkArgument(dataType==null,"Cannot declare a data type for a label");
+
+        Preconditions.checkArgument(!isUnidirectional ||
+                (!isUnique[EdgeDirection.position(IN)] && !hasUniqueLock[EdgeDirection.position(IN)] && !isStatic[EdgeDirection.position(IN)]),
+                "Unidirectional labels cannot be unique or static");
+
         return tx.makeEdgeLabel(new StandardLabelDefinition(name, group, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,
                 checkPrimaryKey(primaryKey), checkSignature(signature), isUnidirectional));
     }
@@ -152,7 +159,7 @@ public class StandardTypeMaker implements TypeMaker {
 
     @Override
     public StandardTypeMaker dataType(Class<?> clazz) {
-        Preconditions.checkNotNull(clazz);
+        Preconditions.checkArgument(clazz!=null,"Need to specify a data type");
         dataType = clazz;
         return this;
     }
@@ -172,7 +179,7 @@ public class StandardTypeMaker implements TypeMaker {
 
     @Override
     public StandardTypeMaker group(TypeGroup group) {
-        Preconditions.checkNotNull(group);
+        Preconditions.checkArgument(group!=null,"Need to specify a group");
         this.group = group;
         return this;
     }
@@ -225,7 +232,6 @@ public class StandardTypeMaker implements TypeMaker {
 
     public StandardTypeMaker hidden() {
         this.isHidden=true;
-        this.isModifiable=false;
         return this;
     }
 

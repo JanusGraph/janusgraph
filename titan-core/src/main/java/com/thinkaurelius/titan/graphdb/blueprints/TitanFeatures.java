@@ -34,7 +34,7 @@ public class TitanFeatures {
         features.supportsEdgeIndex = false;
         features.supportsKeyIndices = true;
         features.supportsVertexKeyIndex = true;
-        features.supportsEdgeKeyIndex = false;
+        features.supportsEdgeKeyIndex = true;
         features.supportsEdgeIteration = false;
         features.supportsVertexIteration = false;
         features.supportsVertexProperties = true;
@@ -55,16 +55,6 @@ public class TitanFeatures {
                 features.supportsEdgeIteration = true;
             }
         }
-        return features;
-    }
-
-    public static Features getInMemoryFeatures() {
-        Features features = TitanFeatures.getBaselineTitanFeatures();
-        features.isPersistent = false;
-        features.supportsVertexIteration = true;
-        features.supportsEdgeIteration = true;
-        features.supportsTransactions = false;
-        features.supportsThreadedTransactions = false;
         return features;
     }
 

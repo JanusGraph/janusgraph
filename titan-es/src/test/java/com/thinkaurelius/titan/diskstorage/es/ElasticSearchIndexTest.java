@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.attribute.Txt;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProviderTest;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexProvider;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
@@ -32,7 +32,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         Configuration config = new BaseConfiguration();
         config.setProperty(LOCAL_MODE_KEY,true);
         config.setProperty(CLIENT_ONLY_KEY,false);
-        config.setProperty(DATA_DIRECTORY_KEY,StorageSetup.getHomeDir("es"));
+        config.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY,StorageSetup.getHomeDir("es"));
         return config;
     }
 
@@ -51,7 +51,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         assertTrue(index.supports(Double.class, Cmp.GREATER_THAN_EQUAL));
         assertTrue(index.supports(Double.class, Cmp.LESS_THAN));
         assertTrue(index.supports(Long.class, Cmp.INTERVAL));
-        assertTrue(index.supports(Geoshape.class, Geo.INTERSECT));
+        assertTrue(index.supports(Geoshape.class, Geo.WITHIN));
 
         assertFalse(index.supports(String.class, Txt.PREFIX));
         assertFalse(index.supports(Double.class, Geo.INTERSECT));

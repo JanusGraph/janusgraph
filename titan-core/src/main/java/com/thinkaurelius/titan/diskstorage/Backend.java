@@ -2,14 +2,15 @@ package com.thinkaurelius.titan.diskstorage;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.core.Titan;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
-import com.thinkaurelius.titan.diskstorage.lucene.HashPrefixKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexInformation;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexProvider;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexTransaction;
+import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
@@ -20,6 +21,7 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
+import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -36,6 +38,9 @@ import java.util.Set;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
+ * Orchestrates and configures all backend systems:
+ * The primary backend storage ({@link KeyColumnValueStore}) and all external indexing providers ({@link IndexProvider}).
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -209,23 +214,28 @@ public class Backend {
         }
     }
 
-    public Map<String,? extends IndexInformation> getIndexInformation() {
-        return indexes;
+    public Map<String,IndexInformation> getIndexInformation() {
+        ImmutableMap.Builder<String,IndexInformation> copy = ImmutableMap.builder();
+        copy.putAll(indexes);
+        copy.put(Titan.Token.STANDARD_INDEX,StandardIndexInformation.INSTANCE);
+        return copy.build();
     }
 
-    public final static StoreManager getStorageManager(Configuration storageConfig) {
+    private final static StoreManager getStorageManager(Configuration storageConfig) {
         return getImplementationClass(storageConfig,GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,
                                     GraphDatabaseConfiguration.STORAGE_BACKEND_DEFAULT,
                                     REGISTERED_STORAGE_MANAGERS);
     }
 
-    public final static Map<String,IndexProvider> getIndexes(Configuration storageConfig) {
+    private final static Map<String,IndexProvider> getIndexes(Configuration storageConfig) {
         Configuration indexConfig = storageConfig.subset(GraphDatabaseConfiguration.INDEX_NAMESPACE);
         Set<String> indexes = GraphDatabaseConfiguration.getUnqiuePrefixes(indexConfig);
         ImmutableMap.Builder<String,IndexProvider> builder = ImmutableMap.builder();
         for (String index : indexes) {
             Preconditions.checkArgument(StringUtils.isNotBlank(index),"Invalid index name [%s]",index);
-            IndexProvider provider = getImplementationClass(indexConfig.subset(index),
+            Configuration config = indexConfig.subset(index);
+            log.info("Configuring index [{}] based on: \n {}",index,GraphDatabaseConfiguration.toString(config));
+            IndexProvider provider = getImplementationClass(config,
                     GraphDatabaseConfiguration.INDEX_BACKEND_KEY,GraphDatabaseConfiguration.INDEX_BACKEND_DEFAULT,
                     REGISTERED_INDEX_PROVIDERS);
             Preconditions.checkNotNull(provider);

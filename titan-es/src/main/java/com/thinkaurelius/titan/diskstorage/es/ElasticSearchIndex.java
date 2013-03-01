@@ -1,53 +1,40 @@
 package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.spatial4j.core.shape.Shape;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexEntry;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexMutation;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexProvider;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexQuery;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexMutation;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.query.keycondition.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.NumericRangeFilter;
 import org.elasticsearch.ElasticSearchInterruptedException;
-import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingAction;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.geo.ShapeRelation;
-import org.elasticsearch.common.io.FileSystemUtils;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.*;
-import org.elasticsearch.index.search.geo.GeoDistance;
 import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
@@ -80,8 +67,6 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final String ES_YML_KEY = "config-file";
 
-    public static final String DATA_DIRECTORY_KEY = "data-directory";
-
     private static final String[] DATA_SUBDIRS = {"data","work","logs"};
 
 
@@ -99,14 +84,16 @@ public class ElasticSearchIndex implements IndexProvider {
 
         NodeBuilder builder = NodeBuilder.nodeBuilder();
 
-        Preconditions.checkArgument(config.containsKey(ES_YML_KEY) || config.containsKey(DATA_DIRECTORY_KEY),
+        Preconditions.checkArgument(config.containsKey(ES_YML_KEY) || config.containsKey(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY),
                 "Must either configure configuration file or base directory");
         if (config.containsKey(ES_YML_KEY)) {
             String configFile = config.getString(ES_YML_KEY);
+            log.debug("Configuring ES from YML file [{}]",configFile);
             Settings settings = ImmutableSettings.settingsBuilder().loadFromSource(configFile).build();
             builder.settings(settings);
         } else {
-            String dataDirectory = config.getString(DATA_DIRECTORY_KEY);
+            String dataDirectory = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
+            log.debug("Configuring ES with data directory [{}]",dataDirectory);
             File f = new File(dataDirectory);
             if (!f.exists()) f.mkdirs();
             ImmutableSettings.Builder b = ImmutableSettings.settingsBuilder();
@@ -122,8 +109,6 @@ public class ElasticSearchIndex implements IndexProvider {
             Preconditions.checkArgument(StringUtils.isNotBlank(clustername),"Invalid cluster name: %s",clustername);
             builder.clusterName(clustername);
         }
-
-
 
 
         node = builder.client(clientOnly).data(!clientOnly).local(local).node();
@@ -244,6 +229,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     //Deletions first
                     if (mutation.hasDeletions()) {
                         if (mutation.isDeleted()) {
+                            log.trace("Deleting entire document {}",docid);
                             brb.add(new DeleteRequest(indexName,storename,docid));
                         } else {
                             Set<String> deletions = Sets.newHashSet(mutation.getDeletions());
@@ -257,6 +243,7 @@ public class ElasticSearchIndex implements IndexProvider {
                                 for (String key : deletions) {
                                     script.append("ctx._source.remove(\""+key+"\"); ");
                                 }
+                                log.trace("Deleting individual fields [{}] for document {}",deletions,docid);
                                 client.prepareUpdate(indexName,storename,docid).setScript(script.toString()).execute().actionGet();
                             }
                         }
@@ -264,12 +251,14 @@ public class ElasticSearchIndex implements IndexProvider {
 
                     if (mutation.hasAdditions()) {
                         if (mutation.isNew()) { //Index
+                            log.trace("Adding entire document {}",docid);
                             brb.add(new IndexRequest(indexName,storename,docid).source(getContent(mutation.getAdditions())));
                         } else { //Update
                             boolean needUpsert = !mutation.hasDeletions();
                             XContentBuilder builder = getContent(mutation.getAdditions());
                             UpdateRequestBuilder update = client.prepareUpdate(indexName,storename,docid).setDoc(builder);
                             if (needUpsert) update.setUpsert(builder);
+                            log.trace("Updating document {} with upsert {}",docid,needUpsert);
                             update.execute().actionGet();
                         }
                     }
@@ -319,7 +308,7 @@ public class ElasticSearchIndex implements IndexProvider {
 //                    return q;
                 } else throw new IllegalArgumentException("Relation is not supported for string value: " + relation);
             } else if (value instanceof Geoshape) {
-                Preconditions.checkArgument(relation==Geo.INTERSECT,"Relation is not supported for geo value: " + relation);
+                Preconditions.checkArgument(relation==Geo.WITHIN,"Relation is not supported for geo value: " + relation);
                 Geoshape shape = (Geoshape)value;
                 if (shape.getType()== Geoshape.Type.CIRCLE) {
                     Geoshape.Point center = shape.getPoint();
@@ -358,7 +347,7 @@ public class ElasticSearchIndex implements IndexProvider {
         //srb.setExplain(true);
 
         SearchResponse response = srb.execute().actionGet();
-        log.debug("Searching took {} ms",response.tookInMillis());
+        log.debug("Executed query [{}] in {} ms",query.getCondition(),response.tookInMillis());
         SearchHits hits = response.getHits();
         if (hits.totalHits()>maxResultSize) throw new TitanException("Result set size exceed limit: " + hits.totalHits());
         List<String> result = new ArrayList<String>((int)hits.totalHits());
@@ -374,7 +363,7 @@ public class ElasticSearchIndex implements IndexProvider {
             if (relation instanceof Cmp) return true;
             else return false;
         } else if (dataType == Geoshape.class) {
-            return relation== Geo.INTERSECT;
+            return relation== Geo.WITHIN;
         } else if (dataType == String.class) {
             return relation == Txt.CONTAINS; // || relation == Txt.PREFIX || relation == Cmp.EQUAL || relation == Cmp.NOT_EQUAL;
         } else return false;

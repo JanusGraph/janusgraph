@@ -48,6 +48,7 @@ import com.thinkaurelius.titan.graphdb.util.FakeLock;
 import com.thinkaurelius.titan.graphdb.util.VertexCentricEdgeIterable;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
+import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -126,6 +127,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             typeCache = new ConcurrentHashMap<String, TitanType>();
 
         }
+        for (SystemType st : SystemTypeManager.prepersistedSystemTypes) typeCache.put(st.getName(),st);
 
         indexCache = CacheBuilder.newBuilder().weigher(new Weigher<StandardElementQuery, List<Object>>() {
             @Override
@@ -152,7 +154,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     public final void verifyAccess(TitanVertex... vertices) {
         verifyOpen();
         for (TitanVertex v : vertices) {
-            Preconditions.checkArgument(v instanceof InternalVertex,"Invalid vertex: " + v);
+            Preconditions.checkArgument(v instanceof InternalVertex,"Invalid vertex: %s",v);
             if (!(v instanceof SystemType) && this!=((InternalVertex) v).tx())
                 throw new IllegalArgumentException("The vertex or type is not associated with this transaction [" + v + "]");
             if (v.isRemoved())
@@ -171,7 +173,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     public StandardTitanTx getNextTx() {
         Preconditions.checkArgument(isClosed());
-        if (!config.isThreadBound()) throw new IllegalStateException("Cannot access vertex since its enclosing transaction is closed and unbound");
+        if (!config.isThreadBound()) throw new IllegalStateException("Cannot access element because its enclosing transaction is closed and unbound");
         else return (StandardTitanTx)graph.getCurrentThreadTx();
     }
 
@@ -194,7 +196,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     @Override
     public boolean containsVertex(final long vertexid) {
         verifyOpen();
-        if (vertexCache.contains(vertexid) && !vertexCache.get(vertexid,vertexConstructor).isRemoved()) return true;
+        if (vertexCache.contains(vertexid)) {
+            if (!vertexCache.get(vertexid,vertexConstructor).isRemoved()) return true;
+            else return false;
+        }
         else if (graph.containsVertexID(vertexid, txHandle)) return true;
         else return false;
     }
@@ -220,10 +225,12 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
             InternalVertex vertex = null;
             if (idInspector.isEdgeTypeID(id)) {
-                if (idInspector.isEdgeTypeID(id)) {
-                    vertex = new TitanLabelVertex(StandardTitanTx.this,id,ElementLifeCycle.Loaded);
-                } else {
+                Preconditions.checkArgument(id>0);
+                if (idInspector.isPropertyTypeID(id)) {
                     vertex = new TitanKeyVertex(StandardTitanTx.this,id,ElementLifeCycle.Loaded);
+                } else {
+                    Preconditions.checkArgument(idInspector.isRelationshipTypeID(id));
+                    vertex = new TitanLabelVertex(StandardTitanTx.this,id,ElementLifeCycle.Loaded);
                 }
                 //If its a newly created type, add to type cache
                 typeCache.put(((TitanType)vertex).getName(),(TitanType)vertex);
@@ -258,9 +265,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             }
             return Iterables.concat(newVs, new VertexIterable(graph, this));
         } else {
-            new VertexIterable(graph, this);
+            return (Iterable)new VertexIterable(graph, this);
         }
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
     /*
@@ -268,6 +274,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
      */
 
     public void removeRelation(InternalRelation relation) {
+        Preconditions.checkArgument(!relation.isRemoved());
+        //Delete from Vertex
+        for (int i=0;i<relation.getLen();i++) {
+            relation.getVertex(i).removeRelation(relation);
+        }
         //Update transaction data structures
         if (relation.isNew()) {
             addedRelations.remove(relation);
@@ -285,10 +296,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             }
             deletedRelations.put(Long.valueOf(relation.getID()),relation);
         }
-        //Delete from Vertex
-        for (int i=0;i<relation.getLen();i++) {
-            relation.getVertex(i).removeRelation(relation);
-        }
     }
 
     public boolean isRemovedRelation(Long relationId) {
@@ -305,7 +312,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             }
         }
         UniqueLockApplication la = new UniqueLockApplication(start,type,end);
-        return uniqueLocks.putIfAbsent(la,new ReentrantLock());
+        Lock lock = new ReentrantLock();
+        Lock existingLock = uniqueLocks.putIfAbsent(la,lock);
+        if (existingLock==null) return lock;
+        else return existingLock;
     }
 
 
@@ -320,15 +330,16 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
                 if (label.isUnique(Direction.OUT)) {
-                    Preconditions.checkArgument(Iterables.isEmpty(query(outVertex).includeHidden().type(label).direction(Direction.OUT).relations()),
+                    Preconditions.checkArgument(Iterables.isEmpty(query(outVertex).includeHidden().type(label).direction(Direction.OUT).titanEdges()),
                             "An edge with the given type already exists on the out-vertex");
                 }
                 if (label.isUnique(Direction.IN)) {
-                    Preconditions.checkArgument(Iterables.isEmpty(query(inVertex).includeHidden().type(label).direction(Direction.IN).relations()),
+                    Preconditions.checkArgument(Iterables.isEmpty(query(inVertex).includeHidden().type(label).direction(Direction.IN).titanEdges()),
                             "An edge with the given type already exists on the in-vertex");
                 }
             }
             StandardEdge edge = new StandardEdge(temporaryID.decrementAndGet(),label,(InternalVertex)outVertex,(InternalVertex)inVertex,ElementLifeCycle.New);
+            if (config.hasAssignIDsImmediately()) graph.assignID(edge);
             connectRelation(edge);
             return edge;
         } finally {
@@ -356,7 +367,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
                 if (key.isUnique(Direction.OUT)) {
-                    Preconditions.checkArgument(Iterables.isEmpty(query(vertex).includeHidden().type(key).direction(Direction.OUT).relations()),
+                    Preconditions.checkArgument(Iterables.isEmpty(query(vertex).includeHidden().type(key).direction(Direction.OUT).properties()),
                             "An property with the given type already exists on the vertex");
                 }
                 if (key.isUnique(Direction.IN)) {
@@ -364,9 +375,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                             "The given value is already used as a property");
                 }
             }
-            StandardProperty edge = new StandardProperty(temporaryID.decrementAndGet(),key,(InternalVertex)vertex,value,ElementLifeCycle.New);
-            connectRelation(edge);
-            return edge;
+            StandardProperty prop = new StandardProperty(temporaryID.decrementAndGet(),key,(InternalVertex)vertex,value,ElementLifeCycle.New);
+            if (config.hasAssignIDsImmediately()) graph.assignID(prop);
+            connectRelation(prop);
+            return prop;
         } finally {
             uniqueLock.unlock();
         }
@@ -416,10 +428,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     public TitanKey makePropertyKey(PropertyKeyDefinition definition) {
         verifyOpen();
         TitanKeyVertex prop = new TitanKeyVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
-        addProperty(prop, SystemKey.PropertyTypeDefinition, definition);
         addProperty(prop, SystemKey.TypeName, definition.getName());
+        addProperty(prop, SystemKey.PropertyKeyDefinition, definition);
         addProperty(prop, SystemKey.TypeClass, TitanTypeClass.KEY);
         graph.assignID(prop);
+        Preconditions.checkArgument(prop.getID()>0);
         vertexCache.add(prop,prop.getID());
         typeCache.put(definition.getName(),prop);
         return prop;
@@ -428,8 +441,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     public TitanLabel makeEdgeLabel(EdgeLabelDefinition definition) {
         verifyOpen();
         TitanLabelVertex label = new TitanLabelVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
-        addProperty(label, SystemKey.EdgeTypeDefinition, definition);
         addProperty(label, SystemKey.TypeName, definition.getName());
+        addProperty(label, SystemKey.RelationTypeDefinition, definition);
         addProperty(label, SystemKey.TypeClass, TitanTypeClass.LABEL);
         graph.assignID(label);
         vertexCache.add(label, label.getID());
@@ -502,22 +515,26 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
         @Override
         public boolean hasNew(final VertexCentricQuery query) {
-            return ((InternalVertex)query.getVertex()).hasAddedRelations();
+            return query.getVertex().isNew() || ((InternalVertex)query.getVertex()).hasAddedRelations();
         }
 
         @Override
         public Iterator<TitanRelation> getNew(final VertexCentricQuery query) {
             return (Iterator)((InternalVertex)query.getVertex()).getAddedRelations(new Predicate<InternalRelation>() {
+                //Need to filter out self-loops if query only asks for one direction
+
+                private TitanRelation previous=null;
+
                 @Override
                 public boolean apply(@Nullable InternalRelation relation) {
+                    if (query.hasSingleDirection() && (relation instanceof TitanEdge)
+                            && ((TitanEdge)relation).isLoop()) {
+                        if (relation.equals(previous)) return false;
+                        else previous=relation;
+                    }
                     return query.matches(relation);
                 }
             }).iterator();
-        }
-
-        @Override
-        public boolean isDeleted(VertexCentricQuery query, TitanRelation result) {
-            return !result.isNew() && deletedRelations.containsKey(Long.valueOf(result.getID()));
         }
 
         @Override
@@ -526,35 +543,62 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
             final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
             FittedSliceQuery sq = edgeSerializer.getQuery(query);
+            final boolean fittedQuery = sq.isFitted();
             final InternalVertex v = query.getVertex();
-            Iterator<Entry> iter = null;
-            if (v instanceof CacheVertex) {
-                CacheVertex cv = (CacheVertex)v;
-                iter = ((CacheVertex) v).loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
-                    @Override
-                    public List<Entry> get(SliceQuery query) {
-                        return graph.edgeQuery(v.getID(), query, txHandle);
-                    }
-                }).iterator();
-            } else {
-                iter = graph.edgeQuery(v.getID(),sq,txHandle).iterator();
-            }
-            Iterator<TitanRelation> result = Iterators.transform(iter, new Function<Entry, TitanRelation>() {
-                @Nullable
-                @Override
-                public TitanRelation apply(@Nullable Entry entry) {
-                    return edgeSerializer.readRelation(v, entry);
+            final boolean needsFiltering = !sq.isFitted() || !deletedRelations.isEmpty();
+            if (needsFiltering && sq.hasLimit()) sq = new FittedSliceQuery(sq,QueryUtil.updateLimit(sq.getLimit(),1.1));
+
+            Iterable<TitanRelation> result = null;
+            double limitMultiplier = 1.0;
+            int previousDiskSize = 0;
+            boolean finished;
+            do {
+                finished = true;
+                Iterable<Entry> iter = null;
+
+                if (v instanceof CacheVertex) {
+                    CacheVertex cv = (CacheVertex)v;
+                    iter = ((CacheVertex) v).loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
+                        @Override
+                        public List<Entry> get(SliceQuery query) {
+                            return graph.edgeQuery(v.getID(), query, txHandle);
+                        }
+                    });
+                } else {
+                    iter = graph.edgeQuery(v.getID(),sq,txHandle);
                 }
-            });
-            if (!sq.isFitted()) {
-                result = Iterators.filter(result,new Predicate<TitanRelation>() {
+                result = Iterables.transform(iter, new Function<Entry, TitanRelation>() {
+                    @Nullable
                     @Override
-                    public boolean apply(@Nullable TitanRelation titanRelation) {
-                        return query.matches(titanRelation);
+                    public TitanRelation apply(@Nullable Entry entry) {
+                        return edgeSerializer.readRelation(v, entry);
                     }
                 });
-            }
-            return result;
+                if (needsFiltering) {
+                    result = Iterables.filter(result,new Predicate<TitanRelation>() {
+                        @Override
+                        public boolean apply(@Nullable TitanRelation relation) {
+                            //Filter out updated and deleted relations
+                            return (relation==((InternalRelation)relation).it() && !deletedRelations.containsKey(Long.valueOf(relation.getID())))
+                                    && (fittedQuery || query.matches(relation));
+                        }
+                    });
+                }
+                //Determine termination
+                if (needsFiltering && query.hasLimit()) {
+                    if (!IterablesUtil.sizeLargerOrEqualThan(result,query.getLimit())) {
+                        int currentDiskSize = IterablesUtil.size(iter);
+                        if (currentDiskSize>previousDiskSize) {
+                            finished=false;
+                            previousDiskSize=currentDiskSize;
+                            limitMultiplier*=2;
+                            sq = new FittedSliceQuery(sq,QueryUtil.updateLimit(sq.getLimit(),limitMultiplier));
+                        }
+                    }
+                }
+            } while (!finished);
+
+            return result.iterator();
         }
 
     };
@@ -564,14 +608,16 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
         @Override
         public boolean hasNew(StandardElementQuery query) {
-            return hasModifications();
+            if (query.getType()== StandardElementQuery.Type.VERTEX) return hasModifications();
+            else if (query.getType()== StandardElementQuery.Type.EDGE) return !addedRelations.isEmpty();
+            else throw new AssertionError("Unexpected type: " + query.getType());
         }
 
         @Override
         public Iterator<TitanElement> getNew(final StandardElementQuery query) {
             Preconditions.checkArgument(query.getType()== StandardElementQuery.Type.VERTEX || query.getType()== StandardElementQuery.Type.EDGE);
             if (query.getType()==StandardElementQuery.Type.VERTEX && hasModifications()) {
-                //Collect all keys from the query
+                //Collect all keys from the query - ASSUMPTION: query is an AND of KeyAtom
                 final Set<TitanKey> keys = Sets.newHashSet();
                 for (KeyCondition<TitanKey> atom : query.getCondition().getChildren()) {
                     keys.add(((KeyAtom<TitanKey>)atom).getKey());
@@ -607,14 +653,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             } else throw new IllegalArgumentException("Unexpected type: " + query.getType());
         }
 
-        @Override
-        public boolean isDeleted(StandardElementQuery query, TitanElement result) {
+        private boolean isDeleted(StandardElementQuery query, TitanElement result) {
             if (result.isRemoved()) return true;
             else if (query.getType()== StandardElementQuery.Type.VERTEX) {
                 Preconditions.checkArgument(result instanceof InternalVertex);
                 InternalVertex v = ((InternalVertex)result).it();
                 if (v.hasAddedRelations() || v.hasRemovedRelations()) {
-                    return query.matches(result);
+                    return !query.matches(result);
                 } else return false;
             } else if (query.getType()==StandardElementQuery.Type.EDGE) {
                 //Loaded edges are immutable and new edges are previously filtered
@@ -641,8 +686,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                 });
             } else {
                 String index = query.getIndex();
+                log.debug("Answering query [{}] with index {}",query,index);
                 //Filter out everything not covered by the index
                 KeyCondition<TitanKey> condition = query.getCondition();
+                //ASSUMPTION: query is an AND of KeyAtom
                 Preconditions.checkArgument(condition instanceof KeyAnd);
                 Preconditions.checkArgument(condition.hasChildren());
                 List<KeyCondition<TitanKey>> newConds = Lists.newArrayList();
@@ -654,9 +701,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                             atom.getKey().hasIndex(index,query.getType().getElementType())) {
                         newConds.add(atom);
                     } else {
+                        log.debug("Filtered out atom [{}] from query [{}] because it is not indexed or not covered by the index");
                         needsFilter = true;
                     }
                 }
+                Preconditions.checkArgument(!newConds.isEmpty(),"Invalid index assignment [%s] to query [%s]",index, query);
                 final StandardElementQuery indexQuery;
                 if (needsFilter) {
                     indexQuery = new StandardElementQuery(query.getType(),KeyAnd.of(newConds.toArray(new KeyAtom[newConds.size()])),index);
@@ -686,14 +735,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                     iter = Iterators.filter(iter,new Predicate<TitanElement>() {
                         @Override
                         public boolean apply(@Nullable TitanElement element) {
-                            return element!=null && !element.isRemoved() && query.matches(element);
+                            return element!=null && !element.isRemoved() && !isDeleted(query,element) && query.matches(element);
                         }
                     });
                 } else {
                     iter = Iterators.filter(iter,new Predicate<TitanElement>() {
                         @Override
                         public boolean apply(@Nullable TitanElement element) {
-                            return element!=null && !element.isRemoved();
+                            return element!=null && !element.isRemoved() && !isDeleted(query,element) ;
                         }
                     });
                 }
@@ -703,6 +752,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     };
 
+    @Override
     public ElementQueryBuilder queryElements() {
         return new ElementQueryBuilder(this);
     }

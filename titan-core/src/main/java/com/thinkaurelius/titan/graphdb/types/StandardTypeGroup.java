@@ -40,4 +40,9 @@ public class StandardTypeGroup extends TypeGroup {
         return id == ((TypeGroup) other).getID();
     }
 
+    @Override
+    public String toString() {
+        return "G"+id;
+    }
+
 }

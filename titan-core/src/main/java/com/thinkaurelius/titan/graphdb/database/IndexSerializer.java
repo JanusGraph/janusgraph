@@ -7,8 +7,8 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexInformation;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexQuery;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -25,6 +25,8 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -37,6 +39,8 @@ import java.util.Map;
 
 public class IndexSerializer {
 
+    private static final Logger log = LoggerFactory.getLogger(IndexSerializer.class);
+
     private static final int DEFAULT_VALUE_CAPACITY = 40;
 
     private final Serializer serializer;
@@ -47,12 +51,18 @@ public class IndexSerializer {
         this.indexes = indexes;
     }
 
+    /* ################################################
+               Index Updates
+    ################################################### */
+
     public void newPropertyKey(TitanKey key, BackendTransaction tx) throws StorageException {
         for (String index : key.getIndexes(Vertex.class)) {
-            tx.getIndexTransactionHandle(index).register(VERTEXINDEX_NAME,key2String(key),key.getDataType());
+            if (!index.equals(Titan.Token.STANDARD_INDEX))
+                tx.getIndexTransactionHandle(index).register(VERTEXINDEX_NAME,key2String(key),key.getDataType());
         }
         for (String index : key.getIndexes(Edge.class)) {
-            tx.getIndexTransactionHandle(index).register(EDGEINDEX_NAME,key2String(key),key.getDataType());
+            if (!index.equals(Titan.Token.STANDARD_INDEX))
+                tx.getIndexTransactionHandle(index).register(EDGEINDEX_NAME,key2String(key),key.getDataType());
         }
     }
 
@@ -140,7 +150,7 @@ public class IndexSerializer {
         }
     }
 
-    public static final ByteBuffer relationID2ByteBuffer(RelationIdentifier rid) {
+    private static final ByteBuffer relationID2ByteBuffer(RelationIdentifier rid) {
         long[] longs = rid.getLongRepresentation();
         Preconditions.checkArgument(longs.length==3);
         ByteBuffer buffer = ByteBuffer.allocate(24);
@@ -149,23 +159,25 @@ public class IndexSerializer {
         return buffer;
     }
 
-    public static final RelationIdentifier bytebuffer2RelationId(ByteBuffer b) {
+    private static final RelationIdentifier bytebuffer2RelationId(ByteBuffer b) {
         long[] relationId = new long[3];
         for (int i=0;i<3;i++) relationId[i]=VariableLong.readPositive(b);
         return RelationIdentifier.get(relationId);
     }
 
-    public void addKeyValue(TitanElement element, TitanKey key, Object value, String index, BackendTransaction tx) throws StorageException {
+    private void addKeyValue(TitanElement element, TitanKey key, Object value, String index, BackendTransaction tx) throws StorageException {
         Preconditions.checkArgument(key.isUnique(Direction.OUT),"Only out-unique properties are supported by index [%s]",index);
         tx.getIndexTransactionHandle(index).add(getStoreName(element),element2String(element),key2String(key),value,element.isNew());
     }
 
-    public void removeKeyValue(TitanElement element, TitanKey key, String index, BackendTransaction tx) {
+    private void removeKeyValue(TitanElement element, TitanKey key, String index, BackendTransaction tx) {
         Preconditions.checkArgument(key.isUnique(Direction.OUT), "Only out-unique properties are supported by index [%s]", index);
         tx.getIndexTransactionHandle(index).delete(getStoreName(element),element2String(element),key2String(key),element.isRemoved());
     }
 
-
+    /* ################################################
+                Querying
+    ################################################### */
 
     public List<Object> query(StandardElementQuery query, BackendTransaction tx) {
         Preconditions.checkArgument(query.hasIndex());
@@ -178,7 +190,7 @@ public class IndexSerializer {
             else if (query.getCondition() instanceof KeyAnd || query.getCondition() instanceof KeyOr) {
                 cond = (KeyAtom<TitanKey>)Iterables.getOnlyElement(query.getCondition().getChildren());
             }
-            Preconditions.checkArgument(cond.getRelation()== Cmp.EQUAL,"Only equality relations are supported by standard index [%s]",cond);
+            Preconditions.checkArgument(cond.getRelation()==Cmp.EQUAL,"Only equality relations are supported by standard index [%s]",cond);
             TitanKey key = cond.getKey();
             Object value = cond.getCondition();
             Preconditions.checkArgument(key.hasIndex(index,query.getType().getElementType()),
@@ -194,10 +206,11 @@ public class IndexSerializer {
             }
             List<Object> results = new ArrayList<Object>(r.size());
             for (Entry entry : r) {
+                ByteBuffer entryValue = entry.getValue().duplicate();
                 if (query.getType()== StandardElementQuery.Type.VERTEX) {
-                    results.add(Long.valueOf(VariableLong.readPositive(entry.getValue())));
+                    results.add(Long.valueOf(VariableLong.readPositive(entryValue)));
                 } else {
-                    results.add(bytebuffer2RelationId(entry.getValue()));
+                    results.add(bytebuffer2RelationId(entryValue));
                 }
             }
             Preconditions.checkArgument(!(query.getType()== StandardElementQuery.Type.VERTEX && key.isUnique(Direction.IN)) || results.size()<=1);
@@ -243,9 +256,16 @@ public class IndexSerializer {
         } else throw new IllegalArgumentException("Invalid condition: " + condition);
     }
 
+    /* ################################################
+                Utility Functions
+    ################################################### */
+
     private static final String element2String(TitanElement element) {
         if (element instanceof TitanVertex) return longID2Name(element.getID());
-        else return element.getId().toString();
+        else {
+            RelationIdentifier rid = (RelationIdentifier) element.getId();
+            return rid.toString();
+        }
     }
 
     private static final Object string2ElementId(String str) {
@@ -283,23 +303,21 @@ public class IndexSerializer {
         else throw new IllegalArgumentException("Invalid class: " + element.getClass());
     }
 
-    private ByteBuffer getIndexKey(Object att) {
+    private final ByteBuffer getIndexKey(Object att) {
         DataOutput out = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
         out.writeObjectNotNull(att);
         return out.getByteBuffer();
     }
 
-    private ByteBuffer getIndexValue(TitanProperty prop) {
+    private static final ByteBuffer getIndexValue(TitanProperty prop) {
         return VariableLong.positiveByteBuffer(prop.getVertex().getID());
     }
 
-    private ByteBuffer getUniqueIndexColumn(TitanKey type) {
-        assert type.isUnique(Direction.IN);
+    private static final ByteBuffer getUniqueIndexColumn(TitanKey type) {
         return VariableLong.positiveByteBuffer(type.getID());
     }
 
-    private ByteBuffer getIndexColumn(TitanKey type, long propertyID) {
-        assert !type.isUnique(Direction.IN);
+    private static final ByteBuffer getIndexColumn(TitanKey type, long propertyID) {
         return VariableLong.positiveByteBuffer(new long[]{type.getID(), propertyID});
     }
 

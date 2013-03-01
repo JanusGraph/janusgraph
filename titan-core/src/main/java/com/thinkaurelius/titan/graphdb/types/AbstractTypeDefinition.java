@@ -40,26 +40,26 @@ public class AbstractTypeDefinition implements TypeDefinition {
         this.signature = signature;
     }
 
-    private LongIntMap getSignatureIndex() {
-        if (signatureIndex == null) {
-            signatureIndex = new LongIntOpenHashMap(signature.length);
-            int pos = 0;
-            for (long s : signature) {
-                signatureIndex.put(s, pos);
-                pos++;
-            }
-        }
-        return signatureIndex;
-    }
-
-    public boolean hasSignatureEdgeType(TitanType et) {
-        return getSignatureIndex().containsKey(et.getID());
-    }
-
-    public int getSignatureIndex(TitanType et) {
-        if (!hasSignatureEdgeType(et)) throw new IllegalArgumentException("The provided TitanType is not part of the signature: " + et);
-        return getSignatureIndex().get(et.getID());
-    }
+//    private LongIntMap getSignatureIndex() {
+//        if (signatureIndex == null) {
+//            signatureIndex = new LongIntOpenHashMap(signature.length);
+//            int pos = 0;
+//            for (long s : signature) {
+//                signatureIndex.put(s, pos);
+//                pos++;
+//            }
+//        }
+//        return signatureIndex;
+//    }
+//
+//    public boolean hasSignatureEdgeType(TitanType et) {
+//        return getSignatureIndex().containsKey(et.getID());
+//    }
+//
+//    public int getSignatureIndex(TitanType et) {
+//        if (!hasSignatureEdgeType(et)) throw new IllegalArgumentException("The provided TitanType is not part of the signature: " + et);
+//        return getSignatureIndex().get(et.getID());
+//    }
 
 
     @Override

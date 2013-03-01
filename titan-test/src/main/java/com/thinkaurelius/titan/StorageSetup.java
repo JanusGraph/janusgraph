@@ -10,6 +10,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
+import java.util.Iterator;
 
 public class StorageSetup {
 

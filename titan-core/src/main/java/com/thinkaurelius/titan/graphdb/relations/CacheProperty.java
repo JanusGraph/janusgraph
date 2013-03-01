@@ -25,7 +25,7 @@ public class CacheProperty extends AbstractProperty {
         this.data = data;
     }
 
-    //############## SAME CODE AS CacheEdge [but with Property->Edge, rename in it()!!!!] #############################
+    //############## Similar code as CacheEdge but be careful when copying #############################
 
     private final Entry data;
 
@@ -46,19 +46,23 @@ public class CacheProperty extends AbstractProperty {
         else return super.it();
     }
 
-    private synchronized InternalRelation update() {
-        StandardProperty copy = new StandardProperty(super.getID(),getPropertyKey(),getVertex(0),getValue(), ElementLifeCycle.Loaded);
-        StandardProperty u = (StandardProperty)tx().addProperty(getVertex(0),getPropertyKey(),getValue());
-        u.setPreviousID(super.getID());
-        //Copy properties
+    private final void copyProperties(InternalRelation to) {
         ImmutableLongObjectMap map = getMap();
         for (int i=0;i<map.size();i++) {
             if (map.getKey(i)<0) continue;
             TitanType type = tx().getExistingType(map.getKey(i));
-            copy.setPropertyDirect(type,map.getValue(i));
-            u.setPropertyDirect(type,map.getValue(i));
+            to.setPropertyDirect(type,map.getValue(i));
         }
+    }
+
+    private synchronized InternalRelation update() {
+        StandardProperty copy = new StandardProperty(super.getID(),getPropertyKey(),getVertex(0),getValue(), ElementLifeCycle.Loaded);
+        copyProperties(copy);
         copy.remove();
+
+        StandardProperty u = (StandardProperty)tx().addProperty(getVertex(0),getPropertyKey(),getValue());
+        u.setPreviousID(super.getID());
+        copyProperties(u);
         return u;
     }
 
@@ -105,14 +109,16 @@ public class CacheProperty extends AbstractProperty {
 
     @Override
     public byte getLifeCycle() {
-        if (getVertex(0).hasRemovedRelations() && tx().isRemovedRelation(super.getID())) return ElementLifeCycle.Removed;
+        if ( (getVertex(0).hasRemovedRelations() || getVertex(0).isRemoved()) && tx().isRemovedRelation(super.getID())) return ElementLifeCycle.Removed;
         else return ElementLifeCycle.Loaded;
     }
 
     @Override
     public void remove() {
         verifyRemoval();
-        tx().removeRelation(this);
+        if (!tx().isRemovedRelation(super.getID())) {
+            tx().removeRelation(this);
+        }
     }
 
 

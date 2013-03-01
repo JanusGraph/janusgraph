@@ -21,7 +21,7 @@ import java.util.Set;
 
 public class EmptyVertex implements InternalVertex {
 
-    private static final String errorName = "Empty Nodes";
+    private static final String errorName = "Empty vertex";
 
 	/* ---------------------------------------------------------------
      * TitanRelation Iteration/Access

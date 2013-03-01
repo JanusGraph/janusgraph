@@ -25,17 +25,17 @@ public class ElementLifeCycle {
     /**
      * The entity has changed after being loaded from the database by adding relations.
      */
-    final static byte AddedRelations = 3;
+    private final static byte AddedRelations = 3;
 
     /**
      * The entity has changed after being loaded from the database by deleting relations.
      */
-    final static byte RemovedRelations = 4;
+    private final static byte RemovedRelations = 4;
 
     /**
      * The entity has changed after being loaded from the database by adding and/or deleting relations.
      */
-    final static byte Modified = 5;
+    private final static byte Modified = 5;
 
     /**
      * The entity has been deleted but not yet erased from the database.

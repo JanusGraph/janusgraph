@@ -77,7 +77,7 @@ public class KeyAnd<K> implements KeyCondition<K> {
         b.append("(");
         for (int i=0;i<elements.length;i++) {
             if (i>0) b.append(" AND ");
-            b.append(elements);
+            b.append(elements[i]);
         }
         b.append(")");
         return b.toString();

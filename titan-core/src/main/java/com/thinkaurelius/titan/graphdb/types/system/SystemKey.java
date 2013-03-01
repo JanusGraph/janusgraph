@@ -13,10 +13,10 @@ import com.tinkerpop.blueprints.Vertex;
 
 public class SystemKey extends SystemType implements PropertyKeyDefinition, TitanKey {
 
-    public static final SystemKey PropertyTypeDefinition =
+    public static final SystemKey PropertyKeyDefinition =
             new SystemKey("PropertyKeyDefinition", StandardKeyDefinition.class, 2);
 
-    public static final SystemKey EdgeTypeDefinition =
+    public static final SystemKey RelationTypeDefinition =
             new SystemKey("EdgeLabelDefinition", StandardLabelDefinition.class, 3);
 
     public static final SystemKey TypeName =
@@ -29,7 +29,7 @@ public class SystemKey extends SystemType implements PropertyKeyDefinition, Tita
             new SystemKey("VertexState", Byte.class, 7, false, false, true);
 
     public static final Iterable<SystemKey> values() {
-        return ImmutableList.of(PropertyTypeDefinition, EdgeTypeDefinition, TypeName, TypeClass, VertexState);
+        return ImmutableList.of(PropertyKeyDefinition, RelationTypeDefinition, TypeName, TypeClass, VertexState);
     }
 
     private final Class<?> dataType;
@@ -40,7 +40,7 @@ public class SystemKey extends SystemType implements PropertyKeyDefinition, Tita
     }
 
     private SystemKey(String name, Class<?> dataType, int id, boolean index, boolean unique, boolean modifiable) {
-        super(name,id,new boolean[]{true,unique},new boolean[]{true,unique && index},modifiable);
+        super(name,id,new boolean[]{true,unique},new boolean[]{!modifiable,unique && index},modifiable);
         this.dataType = dataType;
         this.index = index;
     }

@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.indexing;
 
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexInformation;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
 
 /**
@@ -16,7 +16,7 @@ public class StandardIndexInformation implements IndexInformation {
 
     @Override
     public boolean supports(Class<?> dataType, Relation relation) {
-        return relation== Cmp.EQUAL;
+        return relation==Cmp.EQUAL;
     }
 
     @Override

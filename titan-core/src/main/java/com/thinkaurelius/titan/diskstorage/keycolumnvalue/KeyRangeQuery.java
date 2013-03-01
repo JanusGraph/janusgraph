@@ -2,11 +2,15 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.graphdb.query.Query;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.nio.ByteBuffer;
 
 /**
+ * Extends a {@link SliceQuery} by a key range which identifies the range of keys (start inclusive, end exclusive)
+ * to which the slice query is applied.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -25,7 +29,7 @@ public class KeyRangeQuery extends SliceQuery {
     }
 
     public KeyRangeQuery(ByteBuffer keyStart, ByteBuffer keyEnd, ByteBuffer sliceStart, ByteBuffer sliceEnd) {
-        this(keyStart,keyEnd,sliceStart,sliceEnd,DEFAULT_LIMIT,DEFAULT_STATIC);
+        this(keyStart,keyEnd,sliceStart,sliceEnd, Query.NO_LIMIT,DEFAULT_STATIC);
     }
 
     public KeyRangeQuery(ByteBuffer keyStart, ByteBuffer keyEnd, ByteBuffer sliceStart, ByteBuffer sliceEnd, int limit) {
@@ -33,7 +37,7 @@ public class KeyRangeQuery extends SliceQuery {
     }
 
     public KeyRangeQuery(ByteBuffer keyStart, ByteBuffer keyEnd, ByteBuffer sliceStart, ByteBuffer sliceEnd, boolean isStatic) {
-        this(keyStart, keyEnd, sliceStart, sliceEnd, DEFAULT_LIMIT, isStatic);
+        this(keyStart, keyEnd, sliceStart, sliceEnd, Query.NO_LIMIT, isStatic);
     }
 
     public ByteBuffer getKeyStart() {

@@ -34,7 +34,7 @@ public class CacheVertex extends StandardVertex {
             if (relationCache==null) {
                 //Initialize datastructures
                 if (tx().getConfiguration().isSingleThreaded()) {
-                    relationCache = new TreeSet<Entry>();
+                    relationCache = new ConcurrentSkipListSet<Entry>();
                     queryCache = new SimpleQueryCache();
                 } else {
                     synchronized (this) {
@@ -45,6 +45,7 @@ public class CacheVertex extends StandardVertex {
                     }
                 }
             }
+            synchronized (this) {
             if (queryCache.isCovered(query)) {
                 return relationCache.subSet(new Entry(query.getSliceStart(),null),new Entry(query.getSliceEnd(),null));
             } else {
@@ -52,6 +53,7 @@ public class CacheVertex extends StandardVertex {
                 relationCache.addAll(results);
                 queryCache.add(query);
                 return results;
+            }
             }
         }
     }

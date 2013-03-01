@@ -32,7 +32,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
     private static final int CORE_COUNT = ManagementFactory.
             getOperatingSystemMXBean().getAvailableProcessors();
     private static final int THREAD_COUNT = CORE_COUNT * 4;
-    private static final int TASK_COUNT = THREAD_COUNT * 512;
+    private static final int TASK_COUNT = 16;//THREAD_COUNT * 512;
 
     // Graph structure settings
     private static final int NODE_COUNT = 1000;
@@ -246,7 +246,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
             TitanVertex n = Iterables.getOnlyElement(tx.getVertices(id, nodeid));
 
             for (int i = 0; i < nodeTraversalCount; i++) {
-                assertEquals(expectedEdges, Iterables.size(n.getTitanEdges(Direction.BOTH, relTypeToTraverse)));
+                assertEquals("On vertex: " + n.getID(),expectedEdges, Iterables.size(n.getTitanEdges(Direction.BOTH, relTypeToTraverse)));
                 for (TitanEdge r : n.getTitanEdges(Direction.OUT, relTypeToTraverse)) {
                     n = r.getVertex(Direction.IN);
                 }

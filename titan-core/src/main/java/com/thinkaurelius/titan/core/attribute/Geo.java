@@ -4,6 +4,8 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
 
 /**
+ * Comparison relations for geographic shapes.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 

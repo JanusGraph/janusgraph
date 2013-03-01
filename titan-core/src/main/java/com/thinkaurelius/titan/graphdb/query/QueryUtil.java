@@ -24,4 +24,8 @@ public class QueryUtil {
         return new VertexCentricQueryBuilder(vertex).includeHidden().relations();
     }
 
+    public static final int updateLimit(int limit, double multiplier) {
+        return (int)Math.min(Integer.MAX_VALUE-1,Math.round(limit*multiplier));
+    }
+
 }

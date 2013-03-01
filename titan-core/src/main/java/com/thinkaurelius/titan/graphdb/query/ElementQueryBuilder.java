@@ -9,8 +9,11 @@ import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAnd;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAtom;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyCondition;
 import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
+import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.stats.ObjectAccumulator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -19,6 +22,9 @@ import java.util.List;
  */
 
 public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<StandardElementQuery>  {
+
+    private static final Logger log = LoggerFactory.getLogger(ElementQueryBuilder.class);
+
 
     private static final List<KeyAtom<TitanKey>> INVALID = ImmutableList.of();
 
@@ -49,8 +55,9 @@ public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<Standar
     public ElementQuery and(TitanKey key, Relation relation, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(relation);
-        Preconditions.checkArgument(relation.isValidCondition(condition));
-        Preconditions.checkArgument(relation.isValidDataType(key.getDataType()));
+        if (condition!=null) condition=AttributeUtil.verifyAttribute(key,condition);
+        Preconditions.checkArgument(relation.isValidCondition(condition),"Invalid condition: %s",condition);
+        Preconditions.checkArgument(relation.isValidDataType(key.getDataType()),"Invalid data type for condition: %s",key.getDataType());
         if (conditions!=INVALID) {
             conditions.add(new KeyAtom<TitanKey>(key,relation,condition));
         }
@@ -73,17 +80,18 @@ public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<Standar
     @Override
     public Iterable<TitanEdge> getEdges() {
         if (conditions==INVALID) return ImmutableList.of();
-        else if (conditions.isEmpty()) return Iterables.filter(tx.getVertices(),TitanEdge.class);
+        else if (conditions.isEmpty()) return Iterables.filter(tx.getEdges(),TitanEdge.class);
         StandardElementQuery query = constructQuery(StandardElementQuery.Type.EDGE);
         return Iterables.filter(new QueryProcessor<StandardElementQuery,TitanElement>(query,tx.elementProcessor,this),TitanEdge.class);
     }
 
     @Override
     public List<StandardElementQuery> optimize(StandardElementQuery query) {
-        if (!query.isInvalid()) return ImmutableList.of();
+        if (query.isInvalid()) return ImmutableList.of();
         //Find most suitable index
         ObjectAccumulator<String> opt = new ObjectAccumulator<String>(5);
         KeyCondition<TitanKey> condition = query.getCondition();
+        //ASSUMPTION: query is an AND of KeyAtom
         Preconditions.checkArgument(condition instanceof KeyAnd);
         Preconditions.checkArgument(condition.hasChildren());
         for (KeyCondition<TitanKey> c : condition.getChildren()) {
@@ -94,6 +102,7 @@ public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<Standar
             }
         }
         String bestIndex = opt.getMaxObject();
+        log.debug("Best index for query [{}]: {}",query,bestIndex);
         if (bestIndex!=null) return ImmutableList.of(new StandardElementQuery(query,bestIndex));
         else return ImmutableList.of(query);
     }

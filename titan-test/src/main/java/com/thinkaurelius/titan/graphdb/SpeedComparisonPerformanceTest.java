@@ -4,17 +4,10 @@ import com.thinkaurelius.titan.core.TitanQuery;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexList;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -33,18 +26,18 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        graphdb.createKeyIndex("uid", Vertex.class);
+        graph.createKeyIndex("uid", Vertex.class);
         Vertex vertices[] = new TitanVertex[numVertices];
         for (int i = 0; i < numVertices; i++) {
-            vertices[i] = graphdb.addVertex(null);
+            vertices[i] = graph.addVertex(null);
             vertices[i].setProperty("uid", i);
         }
         for (int i = 0; i < numVertices; i++) {
             for (int j = 1; j <= edgesPerVertex; j++) {
-                graphdb.addEdge(null, vertices[i], vertices[wrapAround(i + j, numVertices)], "connect");
+                graph.addEdge(null, vertices[i], vertices[wrapAround(i + j, numVertices)], "connect");
             }
         }
-        graphdb.commit();
+        graph.commit();
     }
 
     @Test
@@ -65,7 +58,7 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
     public void retrieveNgh(boolean inMemory) {
         long time = time();
         Vertex vertices[] = new TitanVertex[numVertices];
-        for (int i = 0; i < numVertices; i++) vertices[i] = graphdb.getVertices("uid", i).iterator().next();
+        for (int i = 0; i < numVertices; i++) vertices[i] = graph.getVertices("uid", i).iterator().next();
         time = time() - time;
         //System.out.println("Vertex retrieval: " + time);
 
@@ -88,7 +81,7 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
             System.out.println("Ngh retrieval: " + time);
         }
 
-        graphdb.commit();
+        graph.commit();
     }
 
     private static long time() {

@@ -19,8 +19,8 @@ import com.tinkerpop.blueprints.Element;
  * <li><strong>Deleted:</strong> The entity has been deleted in the current transaction</li>
  * </ul>
  * Depending on the concrete type of the entity, an entity may be identifiable,
- * i.e. it has a unique ID which can be retrieved via {@link #getID}
- * (use {@link #hasID} to determine if a given entity has a unique ID).
+ * i.e. it has a unique ID which can be retrieved via {@link #getId}
+ * (use {@link #hasId} to determine if a given entity has a unique ID).
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see TitanVertex
@@ -36,12 +36,18 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
      * how to configure when entity idAuthorities are assigned.
      * Some entities are never assigned a unique identifier if they depend on a parent entity.
      * <p/>
-     * Note: Edges cannot be retrieved by the unique identifier returned by {@link #getID()}. Use the identifier returned
-     * by {@link com.tinkerpop.blueprints.Element#getId()} instead for edge retrieval.
      *
      * @return The unique identifier for this entity
      * @throws IllegalStateException if the entity does not (yet) have a unique identifier
      * @see #hasId
+     */
+    public Object getId();
+
+    /**
+     * Unique identifier for this entity. This id can be temporarily assigned and might change.
+     * Use {@link #getId()} for the permanent id.
+     *
+     * @return Unique long id
      */
     public long getID();
 
@@ -78,6 +84,14 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
      */
     public void setProperty(String key, Object value);
 
+    /**
+     * Add a property with the given key and value to this vertex.
+     * If the key is functional, then a possibly existing value is replaced. If it is not functional, then
+     * a new property is added.
+     *
+     * @param key   the string key of the property
+     * @param value the object value o the property
+     */
     public void setProperty(TitanKey key, Object value);
 
     /**

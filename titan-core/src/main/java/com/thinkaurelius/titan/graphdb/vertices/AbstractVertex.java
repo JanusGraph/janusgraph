@@ -31,9 +31,12 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public final InternalVertex it() {
-        if (this.isRemoved()) throw new UnsupportedOperationException("Cannot access removed vertex");
-        else if (tx.isOpen()) return this;
-        else return (InternalVertex)tx.getNextTx().getVertex(getID());
+        if (tx.isOpen()) return this;
+        else {
+            InternalVertex next = (InternalVertex)tx.getNextTx().getVertex(getID());
+            if (next==null) throw new InvalidElementException("Vertex has been removed",this);
+            else return next;
+        }
     }
 
     @Override
@@ -66,6 +69,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public synchronized void remove() {
+        if (it().isRemoved()) return;
         //TODO: It's Blueprints semantics to remove all edges - is this correct?
         Iterator<TitanRelation> iter = it().getRelations().iterator();
         while (iter.hasNext()) {
@@ -100,7 +104,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public Object getProperty(TitanKey key) {
-        Iterator<TitanProperty> iter = query().type(key).properties().iterator();
+        Iterator<TitanProperty> iter = query().type(key).includeHidden().properties().iterator();
         if (key.isUnique(Direction.OUT)) {
             if (iter.hasNext()) return iter.next().getValue();
             else return null;

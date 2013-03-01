@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.diskstorage;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexQuery;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexTransaction;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -15,6 +15,10 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
+ * Bundles all transaction handles from the various backend systems and provides a proxy for some of their
+ * methods for convenience.
+ * Also increases robustness of read call by attempting read calls multiple times on failure.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 

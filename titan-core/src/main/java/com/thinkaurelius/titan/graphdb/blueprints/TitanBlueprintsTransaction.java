@@ -107,11 +107,14 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     public Edge getEdge(Object id) {
         if (id == null) throw ExceptionFactory.edgeIdCanNotBeNull();
         RelationIdentifier rid = null;
-        if (id instanceof RelationIdentifier) rid = (RelationIdentifier) id;
-        else if (id instanceof String) rid = RelationIdentifier.parse((String) id);
-        else if (id instanceof long[]) rid = RelationIdentifier.get((long[]) id);
-        else if (id instanceof int[]) rid = RelationIdentifier.get((int[]) id);
-        else if (id instanceof Long) log.warn("");
+
+        try {
+            if (id instanceof TitanEdge) rid = (RelationIdentifier)((TitanEdge) id).getId();
+            else if (id instanceof RelationIdentifier) rid = (RelationIdentifier) id;
+            else if (id instanceof String) rid = RelationIdentifier.parse((String) id);
+            else if (id instanceof long[]) rid = RelationIdentifier.get((long[]) id);
+            else if (id instanceof int[]) rid = RelationIdentifier.get((int[]) id);
+        } catch (IllegalArgumentException e) { return null; }
 
         if (rid != null) return rid.findEdge(this);
         else return null;
@@ -147,7 +150,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public <T extends Element> void dropKeyIndex(String key, Class<T> elementClass) {
-        throw new UnsupportedOperationException("Key indexes cannot be dropped");
+        throw new UnsupportedOperationException("Key indexes cannot currently be dropped. Create a new key instead.");
     }
 
     @Override
@@ -157,7 +160,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
                 "Expected vertex, edge or element");
 
         if (indexParameters==null || indexParameters.length==0) {
-            indexParameters = new Parameter[]{new Parameter(Titan.Token.STANDARD_INDEX,true)};
+            indexParameters = new Parameter[]{new Parameter(Titan.Token.STANDARD_INDEX,"")};
         }
 
         if (containsType(key)) {

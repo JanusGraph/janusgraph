@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.lucene;
+package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
 

@@ -1,19 +1,14 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexProvider;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexQuery;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexTransaction;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAnd;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAtom;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.*;
-import static org.junit.Assert.*;
+
 import static org.junit.Assert.assertEquals;
 
 import org.slf4j.Logger;
@@ -103,14 +98,14 @@ public abstract class IndexProviderTest {
             assertEquals(1,result.size());
             assertEquals("doc2",result.get(0));
 
-            result = tx.query(new IndexQuery(store, KeyAtom.of("location", Geo.INTERSECT,Geoshape.circle(48.5,0.5,200.00))));
+            result = tx.query(new IndexQuery(store, KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00))));
             assertEquals(2,result.size());
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Txt.CONTAINS, "tomorrow"), KeyAtom.of("location", Geo.INTERSECT,Geoshape.circle(48.5,0.5,200.00)))));
+            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Txt.CONTAINS, "tomorrow"), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00)))));
             assertEquals(ImmutableSet.of("doc2"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("time", Cmp.INTERVAL, Interval.of(-1000,1010)), KeyAtom.of("location", Geo.INTERSECT,Geoshape.circle(48.5,0.5,1000.00)))));
+            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("time", Cmp.INTERVAL, Interval.of(-1000,1010)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
             assertEquals(ImmutableSet.of("doc1","doc3"), ImmutableSet.copyOf(result));
 
             result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.GREATER_THAN, 10.0))));
@@ -121,11 +116,11 @@ public abstract class IndexProviderTest {
 
             //Update some data
             add(store,"doc4",getDocument("I'ts all a big Bob",-100,11.2,Geoshape.point(48.0, 8.0)),true);
-            remove(store,"doc2",doc2,true);
-            remove(store,"doc3",ImmutableMap.of("weight",(Object)10.1),false);
-            add(store,"doc3", ImmutableMap.of("time",(Object)2000,"text","Bob owns the world"),false);
-            remove(store,"doc1",ImmutableMap.of("time",(Object)1001),false);
-            add(store,"doc1", ImmutableMap.of("time",(Object)1005,"weight",11.1),false);
+            remove(store, "doc2", doc2, true);
+            remove(store, "doc3", ImmutableMap.of("weight", (Object) 10.1), false);
+            add(store, "doc3", ImmutableMap.of("time", (Object) 2000, "text", "Bob owns the world"), false);
+            remove(store, "doc1", ImmutableMap.of("time", (Object) 1001), false);
+            add(store, "doc1", ImmutableMap.of("time", (Object) 1005, "weight", 11.1), false);
 
 
         }
@@ -141,13 +136,13 @@ public abstract class IndexProviderTest {
             assertEquals(1,result.size());
             assertEquals("doc1",result.get(0));
 
-            result = tx.query(new IndexQuery(store, KeyAtom.of("location", Geo.INTERSECT,Geoshape.circle(48.5,0.5,200.00))));
+            result = tx.query(new IndexQuery(store, KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00))));
             assertEquals(ImmutableSet.of("doc1"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Txt.CONTAINS, "tomorrow"), KeyAtom.of("location", Geo.INTERSECT,Geoshape.circle(48.5,0.5,200.00)))));
+            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Txt.CONTAINS, "tomorrow"), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00)))));
             assertEquals(ImmutableSet.of(), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("time", Cmp.INTERVAL, Interval.of(-1000,1010)), KeyAtom.of("location", Geo.INTERSECT,Geoshape.circle(48.5,0.5,1000.00)))));
+            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("time", Cmp.INTERVAL, Interval.of(-1000,1010)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
             assertEquals(ImmutableSet.of("doc1","doc4"), ImmutableSet.copyOf(result));
 
             result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.GREATER_THAN, 10.0))));
@@ -172,9 +167,9 @@ public abstract class IndexProviderTest {
         clopen();
 
 //        List<String> result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.INTERVAL, Interval.of(0.2,0.3)))));
-//        List<String> result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("location", Geo.INTERSECT,Geoshape.circle(48.5,0.5,1000.00)))));
+//        List<String> result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
         long time = System.currentTimeMillis();
-        List<String> result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.INTERVAL, Interval.of(0.2,0.6)), KeyAtom.of("location", Geo.INTERSECT,Geoshape.circle(48.5,0.5,1000.00)))));
+        List<String> result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.INTERVAL, Interval.of(0.2,0.6)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
         System.out.println(result.size() + " vs " + (numDoc/1000 * 2.4622623015));
         System.out.println("Query time on "+numDoc+" docs (ms): " + (System.currentTimeMillis()-time));
     }

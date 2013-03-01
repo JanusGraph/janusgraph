@@ -14,6 +14,8 @@ import java.io.File;
 import java.io.IOException;
 
 /**
+ * The Gremlin console adapted for the Titan Graph Database
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class Console {

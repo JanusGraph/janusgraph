@@ -2,18 +2,22 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.graphdb.query.Query;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.nio.ByteBuffer;
 
 /**
+ * Queries for a slice of data identified by a start point (inclusive) and end point (exclusive).
+ * Returns all {@link ByteBuffer}s that lie in this range up to the given limit.
+ *
+ * If a SliceQuery is marked <i>static</i> it is expected that the result set does not change.
  *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
 public class SliceQuery {
 
-    public static final int DEFAULT_LIMIT = Integer.MAX_VALUE;
     public static final boolean DEFAULT_STATIC = false;
 
     private final ByteBuffer sliceStart;
@@ -38,7 +42,7 @@ public class SliceQuery {
     }
 
     public SliceQuery(final ByteBuffer sliceStart, final ByteBuffer sliceEnd) {
-        this(sliceStart,sliceEnd,DEFAULT_LIMIT,DEFAULT_STATIC);
+        this(sliceStart,sliceEnd, Query.NO_LIMIT,DEFAULT_STATIC);
     }
 
     public SliceQuery(final ByteBuffer sliceStart, final ByteBuffer sliceEnd, final int limit) {
@@ -46,7 +50,7 @@ public class SliceQuery {
     }
 
     public SliceQuery(final ByteBuffer sliceStart, final ByteBuffer sliceEnd, final boolean isStatic) {
-        this(sliceStart,sliceEnd,DEFAULT_LIMIT,isStatic);
+        this(sliceStart,sliceEnd,Query.NO_LIMIT,isStatic);
     }
 
     /**
@@ -68,7 +72,7 @@ public class SliceQuery {
     }
 
     public boolean hasLimit() {
-        return limit!=DEFAULT_LIMIT;
+        return limit!=Query.NO_LIMIT;
     }
 
     /**

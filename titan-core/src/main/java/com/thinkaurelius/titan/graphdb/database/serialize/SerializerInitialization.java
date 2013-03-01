@@ -1,9 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
-import com.thinkaurelius.titan.graphdb.database.serialize.attribute.DoubleSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.attribute.FloatSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.attribute.IntegerSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.attribute.LongSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
 import com.thinkaurelius.titan.graphdb.types.*;
 
 import java.util.ArrayList;
@@ -17,7 +14,7 @@ public class SerializerInitialization {
         serializer.registerClass(StandardLabelDefinition.class);
         serializer.registerClass(StandardTypeGroup.class);
         serializer.registerClass(Object.class);
-        serializer.registerClass(Date.class);
+        serializer.registerClass(Date.class, new DateSerializer());
         serializer.registerClass(ArrayList.class);
         serializer.registerClass(HashMap.class);
         serializer.registerClass(int[].class);

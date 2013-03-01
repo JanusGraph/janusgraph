@@ -32,6 +32,7 @@ public class BerkeleyJEBlueprintsTest extends TitanBlueprintsTest {
     @Override
     public Graph generateGraph(String uid) {
         String dir = BerkeleyJeStorageSetup.getHomeDir(uid);
+        System.out.println("Opening graph in: " + dir);
         BaseConfiguration config = new BaseConfiguration();
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, dir);
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "berkeleyje");

@@ -25,7 +25,7 @@ public class ImmutableLongObjectMapTest {
     public void testMap() {
         int len = 100;
         ImmutableLongObjectMap.Builder b = new ImmutableLongObjectMap.Builder();
-        for (int i=1;i<len;i++) {
+        for (int i=1;i<=len;i++) {
             b.put(i*1000,"TestValue " + i);
         }
         ImmutableLongObjectMap map = b.build();
@@ -36,15 +36,16 @@ public class ImmutableLongObjectMapTest {
         }
         Map<Long,Object> copy2 = new HashMap<Long,Object>();
         for (ImmutableLongObjectMap.Entry entry : map) {
-            copy1.put(entry.getKey(),entry.getValue());
+            copy2.put(entry.getKey(),entry.getValue());
         }
         assertEquals(len,map.size());
         assertEquals(len, copy1.size());
+        System.out.println(copy1.toString());
         assertEquals(len, copy2.size());
-        for (int i=1;i<len;i++) {
+        for (int i=1;i<=len;i++) {
             assertEquals("TestValue " + i,map.get(i*1000));
-            assertEquals("TestValue " + i, copy1.get(i * 1000));
-            assertEquals("TestValue " + i, copy2.get(i * 1000));
+            assertEquals("TestValue " + i, copy1.get(i * 1000l));
+            assertEquals("TestValue " + i, copy2.get(i * 1000l));
         }
 
     }
@@ -60,16 +61,16 @@ public class ImmutableLongObjectMapTest {
     @Test
     public void testPerformance() {
         int trials = 10;
-        int iterations = 10000;
+        int iterations = 100000;
         for (int k=0;k<iterations;k++) {
-            int len = random.nextInt(100);
+            int len = random.nextInt(10);
             ImmutableLongObjectMap.Builder b = new ImmutableLongObjectMap.Builder();
-            for (int i=1;i<len;i++) {
+            for (int i=1;i<=len;i++) {
                 b.put(i*1000,"TestValue " + i);
             }
             ImmutableLongObjectMap map = b.build();
             for (int t = 0; t<trials;t++) {
-                for (int i=1;i<len;i++) {
+                for (int i=1;i<=len;i++) {
                     assertEquals("TestValue " + i,map.get(i*1000));
                 }
                 assertEquals(len,map.size());

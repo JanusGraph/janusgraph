@@ -5,13 +5,15 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.tinkerpop.blueprints.Direction;
 
+import java.util.Arrays;
+
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
 public final class RelationIdentifier {
 
-    public static final String TOSTRING_DELIMITER = ":";
+    public static final String TOSTRING_DELIMITER = "-";
 
     private final long outVertexId;
     private final long typeId;
@@ -86,7 +88,9 @@ public final class RelationIdentifier {
         if (!(type instanceof TitanType))
             throw new IllegalArgumentException("Invalid RelationIdentifier: typeID does not reference a type");
         for (TitanRelation r : v.query().types((TitanType)type).direction(Direction.OUT).relations()) {
-            if (r.getID() == relationId) return r;
+            //Find current or previous relation
+            if (r.getID() == relationId ||
+                    ((r instanceof StandardRelation) && ((StandardRelation)r).getPreviousID()==relationId)) return r;
         }
         return null;
     }
@@ -107,31 +111,28 @@ public final class RelationIdentifier {
 
     public static final RelationIdentifier parse(String id) {
         String[] elements = id.split(TOSTRING_DELIMITER);
-        if (elements.length != 3) return null;
+        if (elements.length != 3) throw new IllegalArgumentException("Not a valid relation identifier: " + id);
         try {
             return new RelationIdentifier(LongEncoding.decode(elements[1]),
                     LongEncoding.decode(elements[2]),
                     LongEncoding.decode(elements[0]));
         } catch (NumberFormatException e) {
-            //throw new IllegalArgumentException("Invalid id - each token expected to be a number",e);
-            return null;
+            throw new IllegalArgumentException("Invalid id - each token expected to be a number",e);
         }
     }
 
     public static final RelationIdentifier get(long[] ids) {
-        if (ids.length != 3) return null;
+        if (ids.length != 3) throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         for (int i = 0; i < 3; i++) {
-            //Preconditions.checkArgument(idAuthorities[i]>=0,"Non-negative numbers expected");
-            if (ids[i] < 0) return null;
+            if (ids[i] < 0)  throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         }
         return new RelationIdentifier(ids[0], ids[1], ids[2]);
     }
 
     public static final RelationIdentifier get(int[] ids) {
-        if (ids.length != 3) return null;
+        if (ids.length != 3) throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         for (int i = 0; i < 3; i++) {
-            //Preconditions.checkArgument(idAuthorities[i]>=0,"Non-negative numbers expected");
-            if (ids[i] < 0) return null;
+            if (ids[i] < 0)  throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         }
         return new RelationIdentifier(ids[0], ids[1], ids[2]);
     }

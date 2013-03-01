@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.lucene;
+package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * TODO: add index transaction
+ * Wraps the transaction handle of an index and buffers all mutations against an index for efficiency.
+ * Also acts as a proxy to the {@link IndexProvider} methods.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 

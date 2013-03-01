@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 
 /**
+ * Standalone Titan database with fronting Rexster server.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 

@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.query;
 
+import cern.colt.Arrays;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -33,7 +34,6 @@ public class VertexCentricQuery implements Query<VertexCentricQuery> {
     private final boolean includeHidden;
     private final int limit;
     private final RelationType returnType;
-
 
     public VertexCentricQuery(InternalVertex vertex, Direction dir, TitanType[] types, TypeGroup group,
                               KeyAnd<TitanType> constraints,
@@ -153,13 +153,26 @@ public class VertexCentricQuery implements Query<VertexCentricQuery> {
 
     @Override
     public boolean hasUniqueResults() {
-        return true;
+        return false;
     }
 
     @Override
     public boolean isInvalid() {
         return limit<=0;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder s = new StringBuilder();
+        s.append("[").append(vertex).append("]");
+        s.append("(").append(dir).append(",").append(group).append(",").append(Arrays.toString(types)).append(")");
+        s.append("-").append(constraints).append(":");
+        s.append(includeHidden).append(":");
+        if (hasLimit()) s.append(limit).append(":");
+        s.append(returnType);
+        return s.toString();
+    }
+
 
     public boolean matches(TitanRelation relation) {
         InternalRelation r = (InternalRelation)relation;

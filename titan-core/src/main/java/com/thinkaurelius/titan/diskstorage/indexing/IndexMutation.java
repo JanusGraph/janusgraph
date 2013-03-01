@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.lucene;
+package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Mutation;

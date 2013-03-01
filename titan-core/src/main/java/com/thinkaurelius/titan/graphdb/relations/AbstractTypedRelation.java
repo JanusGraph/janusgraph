@@ -2,10 +2,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
@@ -29,7 +26,11 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     public InternalRelation it() {
         InternalVertex v = getVertex(0);
         if (v==v.it()) return this;
-        else return (InternalRelation)getId().findRelation(tx());
+        else {
+            InternalRelation next = (InternalRelation)getId().findRelation(tx());
+            if (next==null) throw new InvalidElementException("Relation has been removed",this);
+            else return next;
+        }
     }
 
     @Override
@@ -127,7 +128,10 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         else if (type instanceof TitanLabel) {
             Preconditions.checkArgument(value instanceof TitanVertex,"Value must be a vertex");
             setProperty((TitanLabel) type, (InternalVertex) value);
-        }
+        } else if (type==null) {
+            if (value instanceof TitanVertex) setProperty(tx().getEdgeLabel(key),(TitanVertex)value);
+            setProperty(tx().getPropertyKey(key),value);
+        } else throw new IllegalArgumentException("Invalid key argument: " + key);
     }
 
     @Override

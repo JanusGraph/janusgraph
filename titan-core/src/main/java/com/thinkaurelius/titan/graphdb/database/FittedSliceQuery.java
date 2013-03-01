@@ -16,21 +16,11 @@ public class FittedSliceQuery extends SliceQuery {
         super(sliceStart, sliceEnd, limit, isStatic);
         this.isFitted=isFitted;
     }
-//
-//    public FittedSliceQuery(boolean isFitted, ByteBuffer sliceStart, ByteBuffer sliceEnd) {
-//        super(sliceStart, sliceEnd);
-//        this.isFitted=isFitted;
-//    }
-//
-//    public FittedSliceQuery(boolean isFitted, ByteBuffer sliceStart, ByteBuffer sliceEnd, int limit) {
-//        super(sliceStart, sliceEnd, limit);
-//        this.isFitted=isFitted;
-//    }
-//
-//    public FittedSliceQuery(boolean isFitted, ByteBuffer sliceStart, ByteBuffer sliceEnd, boolean isStatic) {
-//        super(sliceStart, sliceEnd, isStatic);
-//        this.isFitted=isFitted;
-//    }
+
+    public FittedSliceQuery(FittedSliceQuery query, int newLimit)  {
+        super(query.getSliceStart(),query.getSliceEnd(),newLimit,query.isStatic());
+        this.isFitted=query.isFitted();
+    }
 
     public boolean isFitted() {
         return isFitted;

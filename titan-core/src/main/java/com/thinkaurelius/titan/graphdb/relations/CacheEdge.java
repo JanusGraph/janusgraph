@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanLabel;
@@ -24,11 +25,13 @@ public class CacheEdge extends AbstractEdge {
 
     public CacheEdge(long id, TitanLabel label, InternalVertex start, InternalVertex end, byte position, Entry data) {
         super(id, label, start, end);
+        Preconditions.checkNotNull(data);
+        Preconditions.checkArgument(position>=0 && position<=1);
         this.data = data;
         this.position=position;
     }
 
-    //############## SAME CODE AS CacheProperty [but with a) using position in getMap b) Property->Edge, rename in it()!!!!] #############################
+    //############## Similar code as CacheProperty but be careful when copying #############################
 
     private final Entry data;
 
@@ -49,19 +52,23 @@ public class CacheEdge extends AbstractEdge {
         else return super.it();
     }
 
-    private synchronized InternalRelation update() {
-        StandardEdge copy = new StandardEdge(super.getID(),getTitanLabel(),getVertex(0),getVertex(1),ElementLifeCycle.Loaded);
-        StandardEdge u = (StandardEdge)tx().addEdge(getVertex(0),getVertex(1),getLabel());
-        u.setPreviousID(super.getID());
-        //Copy properties
+    private final void copyProperties(InternalRelation to) {
         ImmutableLongObjectMap map = getMap();
         for (int i=0;i<map.size();i++) {
             if (map.getKey(i)<0) continue;
             TitanType type = tx().getExistingType(map.getKey(i));
-            copy.setPropertyDirect(type,map.getValue(i));
-            u.setPropertyDirect(type,map.getValue(i));
+            to.setPropertyDirect(type,map.getValue(i));
         }
+    }
+
+    private synchronized InternalRelation update() {
+        StandardEdge copy = new StandardEdge(super.getID(),getTitanLabel(),getVertex(0),getVertex(1),ElementLifeCycle.Loaded);
+        copyProperties(copy);
         copy.remove();
+
+        StandardEdge u = (StandardEdge)tx().addEdge(getVertex(0),getVertex(1),getLabel());
+        u.setPreviousID(super.getID());
+        copyProperties(u);
         return u;
     }
 
@@ -108,14 +115,16 @@ public class CacheEdge extends AbstractEdge {
 
     @Override
     public byte getLifeCycle() {
-        if (getVertex(0).hasRemovedRelations() && tx().isRemovedRelation(super.getID())) return ElementLifeCycle.Removed;
+        if ( (getVertex(0).hasRemovedRelations() || getVertex(0).isRemoved()) && tx().isRemovedRelation(super.getID())) return ElementLifeCycle.Removed;
         else return ElementLifeCycle.Loaded;
     }
 
     @Override
     public void remove() {
         verifyRemoval();
-        tx().removeRelation(this);
+        if (!tx().isRemovedRelation(super.getID())) {
+            tx().removeRelation(this);
+        }
     }
 
 }

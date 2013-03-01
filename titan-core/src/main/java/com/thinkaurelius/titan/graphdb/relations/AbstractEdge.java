@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.util.StringFactory;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -22,6 +23,11 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
         Preconditions.checkNotNull(end);
         this.start=start;
         this.end=end;
+    }
+
+    @Override
+    public String toString() {
+        return StringFactory.edgeString(this);
     }
 
     @Override

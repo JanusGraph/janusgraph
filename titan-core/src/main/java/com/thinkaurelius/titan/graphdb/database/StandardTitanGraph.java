@@ -5,7 +5,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.lucene.IndexInformation;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
@@ -19,6 +19,7 @@ import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformatio
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
@@ -38,8 +39,6 @@ import java.util.Collection;
 import java.util.List;
 
 public class StandardTitanGraph extends TitanBlueprintsGraph {
-
-    private static final int defaultOutputCapacity = 128;
 
     private static final Logger log =
             LoggerFactory.getLogger(StandardTitanGraph.class);
@@ -119,13 +118,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     public IndexInformation getIndexInformation(String indexName) {
-        if (Titan.Token.STANDARD_INDEX.equals(indexName)) {
-            return StandardIndexInformation.INSTANCE;
-        } else {
-            IndexInformation indexinfo = backend.getIndexInformation().get(indexName);
-            Preconditions.checkArgument(indexinfo!=null,"Index is unknown or not configured: %s",indexName);
-            return indexinfo;
-        }
+        IndexInformation indexinfo = backend.getIndexInformation().get(indexName);
+        Preconditions.checkArgument(indexinfo!=null,"Index is unknown or not configured: %s",indexName);
+        return indexinfo;
     }
 
     public IDInspector getIDInspector() {
@@ -184,7 +179,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     // ################### WRITE #########################
 
-    public void assignID(InternalVertex vertex) {
+    public void assignID(InternalElement vertex) {
         idAssigner.assignID(vertex);
     }
 
@@ -229,21 +224,19 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     }
                 }
 
-                ListMultimap<InternalType, InternalRelation> otherEdgeTypes = null;
+                ListMultimap<InternalType, InternalRelation> otherEdgeTypes = ArrayListMultimap.create();
 
                 //3. Sort Added Edges
                 for (InternalRelation relation : addedRelations) {
-                    assert relation.isNew();
+                    Preconditions.checkArgument(relation.isNew());
 
                     TitanType type = relation.getType();
 
                     //Give special treatment to edge type definitions
                     if (SystemTypeManager.prepersistedSystemTypes.contains(type)) {
                         InternalType itype = (InternalType) relation.getVertex(0);
-                        if (otherEdgeTypes == null) otherEdgeTypes = ArrayListMultimap.create();
                         otherEdgeTypes.put(itype, relation);
                     } else { //STANDARD TitanRelation
-                        assert (relation.getArity() == 1 && relation.isProperty()) || (relation.getArity() == 2 && relation.isEdge());
                         for (int pos = 0; pos < relation.getLen(); pos++) {
                             InternalVertex node = relation.getVertex(pos);
                             mutations.put(node, relation);
@@ -263,12 +256,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 }
 
                 //3. Persist
-                if (otherEdgeTypes != null) persist(otherEdgeTypes, tx);
-                mutator.flush();
-
-                //Register new keys with indexprovider
-                for (InternalType itype : otherEdgeTypes.keySet()) {
-                    if (itype.isPropertyKey() && itype.isNew()) indexSerializer.newPropertyKey((TitanKey)itype,mutator);
+                if (!otherEdgeTypes.isEmpty()) {
+                    persist(otherEdgeTypes, tx);
+                    mutator.flush();
+                    //Register new keys with indexprovider
+                    for (InternalType itype : otherEdgeTypes.keySet()) {
+                        if (itype.isPropertyKey() && itype.isNew()) indexSerializer.newPropertyKey((TitanKey)itype,mutator);
+                    }
                 }
 
                 if (!mutations.isEmpty()) persist(mutations, tx);
@@ -303,11 +297,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 //		}
         BackendTransaction mutator = tx.getTxHandle();
         for (V vertex : vertices) {
+            Preconditions.checkArgument(vertex.getID()>0,"Vertex has no id: %s",vertex.getID());
             List<InternalRelation> edges = mutatedEdges.get(vertex);
             List<Entry> additions = new ArrayList<Entry>(edges.size());
             List<ByteBuffer> deletions = new ArrayList<ByteBuffer>(Math.max(10, edges.size() / 10));
             for (InternalRelation edge : edges) {
-                for (int pos=0;pos<edge.getArity();pos++) {
+                for (int pos=0;pos<edge.getLen();pos++) {
                     if (edge.getVertex(pos).equals(vertex)) {
                         if (edge.isRemoved()) {
                             deletions.add(edgeSerializer.writeRelation(edge, pos, false, tx).getColumn());

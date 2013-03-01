@@ -1,9 +1,11 @@
-package com.thinkaurelius.titan.diskstorage.lucene;
+package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
 
 /**
+ * An index entry is a key-value pair (or field-value pair).
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 

@@ -26,27 +26,27 @@ public class RelationComparator implements Comparator<InternalRelation> {
     @Override
     public int compare(final InternalRelation r1, final InternalRelation r2) {
         if (r1.equals(r2)) return 0;
-        //Direction
+        //1) Direction
         Direction dir1=null, dir2=null;
         for (int i=0;i<r1.getLen();i++) if (r1.getVertex(i).equals(vertex)) { dir1 = EdgeDirection.fromPosition(i); break; }
         for (int i=0;i<r2.getLen();i++) if (r2.getVertex(i).equals(vertex)) { dir2 = EdgeDirection.fromPosition(i); break; }
         Preconditions.checkArgument(dir1!=null && dir2!=null,"Either relation is not incident on vertex [%s]",vertex);
-        int dirCompare = EdgeDirection.getID(dir1)-EdgeDirection.getID(dir2);
+        int dirCompare = EdgeDirection.position(dir1)-EdgeDirection.position(dir2);
         if (dirCompare!=0) return dirCompare;
 
-        //Type
+        //2) Type
         InternalType t1 = (InternalType)r1.getType(), t2 = (InternalType)r2.getType();
         int typecompare = t1.compareTo(t2);
         if (typecompare != 0) return typecompare;
         assert t1.equals(t2);
         if (t1.isUnique(dir1)) return 0;
 
-        // 1) Compare primary key values
+        // 3) Compare primary key values
         for (long typeid : t1.getDefinition().getPrimaryKey()) {
             int keycompare = compareOnKey(r1, r2, typeid);
             if (keycompare != 0) return keycompare;
         }
-        // 2) Compare property objects or other vertices
+        // 4) Compare property objects or other vertices
         if (r1.isProperty()) {
             Object o1 = ((TitanProperty) r1).getValue();
             Object o2 = ((TitanProperty) r2).getValue();
@@ -62,12 +62,12 @@ public class RelationComparator implements Comparator<InternalRelation> {
             }
         } else {
             Preconditions.checkArgument(r1.isEdge() && r2.isEdge());
-            int vertexcompare = ((InternalRelation)r1).getVertex(EdgeDirection.position(dir1.opposite())).
-                    compareTo(((InternalRelation) r2).getVertex(EdgeDirection.position(dir1.opposite())));
+            int vertexcompare = r1.getVertex(EdgeDirection.position(dir1.opposite())).
+                    compareTo(r2.getVertex(EdgeDirection.position(dir1.opposite())));
             if (vertexcompare != 0) return vertexcompare;
         }
         //TODO: if graph is simple, return 0
-        // 3)compare relation ids
+        // 5)compare relation ids
         return r1.compareTo(r2);
     }
 

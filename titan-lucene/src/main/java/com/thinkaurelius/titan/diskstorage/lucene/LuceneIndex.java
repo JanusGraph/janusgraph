@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.lucene;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.spatial4j.core.context.SpatialContext;
@@ -11,6 +12,10 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexMutation;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.query.keycondition.*;
 import org.apache.commons.configuration.Configuration;
@@ -29,6 +34,7 @@ import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -74,6 +80,7 @@ public class LuceneIndex implements IndexProvider {
         if (!directory.exists()) directory.mkdirs();
         if (!directory.exists() || !directory.isDirectory() || !directory.canWrite()) throw new IllegalArgumentException("Cannot access or write to directory: " + dir);
         basePath = directory.getAbsolutePath();
+        log.debug("Configured Lucene to use base directory [{}]",basePath);
     }
 
     private Directory getStoreDirectory(String store) throws StorageException {
@@ -83,6 +90,7 @@ public class LuceneIndex implements IndexProvider {
             File path = new File(dir);
             if (!path.exists()) path.mkdirs();
             if (!path.exists() || !path.isDirectory() || !path.canWrite()) throw new PermanentStorageException("Cannot access or write to directory: " + dir);
+            log.debug("Opening store directory [{}]",path);
             return FSDirectory.open(path);
         } catch (IOException e) {
             throw new PermanentStorageException("Could not open directory: " + dir,e);
@@ -110,8 +118,9 @@ public class LuceneIndex implements IndexProvider {
         if (strategy==null) {
             synchronized (spatial) {
                 if (!spatial.containsKey(key)) {
-                    SpatialPrefixTree grid = new GeohashPrefixTree(ctx, GEO_MAX_LEVELS);
-                    strategy = new RecursivePrefixTreeStrategy(grid, key);
+//                    SpatialPrefixTree grid = new GeohashPrefixTree(ctx, GEO_MAX_LEVELS);
+//                    strategy = new RecursivePrefixTreeStrategy(grid, key);
+                    strategy = new PointVectorStrategy(ctx,key);
                     spatial.put(key,strategy);
                 } else return spatial.get(key);
             }
@@ -140,7 +149,7 @@ public class LuceneIndex implements IndexProvider {
                     Term docTerm = new Term(DOCID,docid);
 
                     if (mutation.isDeleted()) {
-                        log.debug("Deleted entire document [{}]",docid);
+                        log.trace("Deleted entire document [{}]", docid);
                         writer.deleteDocuments(docTerm);
                         continue;
                     }
@@ -150,14 +159,14 @@ public class LuceneIndex implements IndexProvider {
                     Map<String,Shape> geofields = Maps.newHashMap();
 
                     if (hits.scoreDocs.length == 0) {
-                        log.debug("Creating new document for [{}]", docid);
+                        log.trace("Creating new document for [{}]", docid);
                         doc = new Document();
                         Field docidField = new StringField(DOCID, docid, Field.Store.YES);
                         doc.add(docidField);
                     } else if (hits.scoreDocs.length > 1) {
                         throw new IllegalArgumentException("More than one document found for document id: " + docid);
                     } else {
-                        log.debug("Updating existing document for [{}]", docid);
+                        log.trace("Updating existing document for [{}]", docid);
                         int docId = hits.scoreDocs[0].doc;
                         //retrieve the old document
                         doc = searcher.doc(docId);
@@ -170,13 +179,13 @@ public class LuceneIndex implements IndexProvider {
                     Preconditions.checkNotNull(doc);
                     for (String key : mutation.getDeletions()) {
                         if (doc.getField(key)!=null) {
-                            log.debug("Removing field [{}] on document [{}]",key,docid);
+                            log.trace("Removing field [{}] on document [{}]", key, docid);
                             doc.removeFields(key);
                             geofields.remove(key);
                         }
                     }
                     for (IndexEntry add : mutation.getAdditions()) {
-                        log.debug("Adding field [{}] on document [{}]",add.key,docid);
+                        log.trace("Adding field [{}] on document [{}]", add.key, docid);
                         if (doc.getField(add.key)!=null) doc.removeFields(add.key);
                         if (add.value instanceof Number) {
                             Field field = null;
@@ -201,6 +210,7 @@ public class LuceneIndex implements IndexProvider {
                         } else throw new IllegalArgumentException("Unsupported type: " + add.value);
                     }
                     for (Map.Entry<String,Shape> geo : geofields.entrySet()) {
+                        log.trace("Updating geo-indexes for key {}",geo.getKey());
                         for (IndexableField f : getSpatialStrategy(geo.getKey()).createIndexableFields(geo.getValue())) {
                             doc.add(f);
                         }
@@ -226,7 +236,10 @@ public class LuceneIndex implements IndexProvider {
 
         try {
             IndexSearcher searcher = ((Transaction)tx).getSearcher(query.getStore());
+            if (searcher==null) return ImmutableList.of(); //Index does not yet exist
+            long time = System.currentTimeMillis();
             TopDocs docs = searcher.search(new MatchAllDocsQuery(), q, maxResultSize+1);
+            log.debug("Executed query [{}] in {} ms",q,System.currentTimeMillis()-time);
             if (docs.totalHits>maxResultSize) throw new TitanException("Max results from external index exceeded: " + maxResultSize);
 
             List<String> result = new ArrayList<String>(docs.totalHits);
@@ -308,10 +321,10 @@ public class LuceneIndex implements IndexProvider {
 //                    return q;
                 } else throw new IllegalArgumentException("Relation is not supported for string value: " + relation);
             } else if (value instanceof Geoshape) {
-                Preconditions.checkArgument(relation==Geo.INTERSECT,"Relation is not supported for geo value: " + relation);
+                Preconditions.checkArgument(relation==Geo.WITHIN,"Relation is not supported for geo value: " + relation);
                 Shape shape = ((Geoshape)value).convert2Spatial4j();
-                SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,shape);
-                return getSpatialStrategy("location").makeFilter(args);
+                SpatialArgs args = new SpatialArgs(SpatialOperation.IsWithin,shape);
+                return getSpatialStrategy(key).makeFilter(args);
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         } else if (condition instanceof KeyNot) {
             BooleanFilter q = new BooleanFilter();
@@ -343,7 +356,7 @@ public class LuceneIndex implements IndexProvider {
             for (Cmp cmp : Cmp.values()) if (relation==cmp) return true;
             return false;
         } else if (dataType == Geoshape.class) {
-            return relation== Geo.INTERSECT;
+            return relation== Geo.WITHIN;
         } else if (dataType == String.class) {
             return relation == Txt.CONTAINS; // || relation == Txt.PREFIX || relation == Cmp.EQUAL || relation == Cmp.NOT_EQUAL;
         } else return false;
@@ -388,10 +401,12 @@ public class LuceneIndex implements IndexProvider {
                 try {
                     reader = DirectoryReader.open(getStoreDirectory(store));
                     searcher = new IndexSearcher(reader);
-                    searchers.put(store,searcher);
+                } catch (IndexNotFoundException e) {
+                    searcher = null;
                 } catch (IOException e) {
                     throw new PermanentStorageException("Could not open index reader on store: " + store,e);
                 }
+                searchers.put(store,searcher);
             }
             return searcher;
         }
@@ -419,7 +434,9 @@ public class LuceneIndex implements IndexProvider {
 
         private void close() throws StorageException {
             try {
-                for (IndexSearcher searcher : searchers.values()) searcher.getIndexReader().close();
+                for (IndexSearcher searcher : searchers.values()) {
+                    if (searcher!=null) searcher.getIndexReader().close();
+                }
             }  catch (IOException e) {
                 throw new PermanentStorageException("Could not close searcher",e);
             }

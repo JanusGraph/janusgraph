@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,8 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class StandardEdge extends AbstractEdge {
-
+public class StandardEdge extends AbstractEdge implements StandardRelation {
 
     public StandardEdge(long id, TitanLabel label, InternalVertex start, InternalVertex end, byte lifecycle) {
         super(id, label, start, end);
@@ -31,11 +31,12 @@ public class StandardEdge extends AbstractEdge {
     private long previousID=0;
     private Map<TitanType,Object> properties = EMPTY_PROPERTIES;
 
-
+    @Override
     public long getPreviousID() {
         return previousID;
     }
 
+    @Override
     public void setPreviousID(long previousID) {
         Preconditions.checkArgument(previousID > 0);
         Preconditions.checkArgument(this.previousID==0);
@@ -51,11 +52,11 @@ public class StandardEdge extends AbstractEdge {
     public void setPropertyDirect(TitanType type, Object value) {
         if (properties==EMPTY_PROPERTIES) {
             if (tx().getConfiguration().isSingleThreaded()) {
-                properties = new HashMap<TitanType, Object>();
+                properties = new HashMap<TitanType, Object>(5);
             } else {
                 synchronized (this) {
                     if (properties==EMPTY_PROPERTIES) {
-                        properties = new ConcurrentHashMap<TitanType, Object>();
+                        properties = Collections.synchronizedMap(new HashMap<TitanType, Object>(5));
                     }
                 }
             }
@@ -83,7 +84,9 @@ public class StandardEdge extends AbstractEdge {
     @Override
     public synchronized void remove() {
         verifyRemoval();
-        tx().removeRelation(this);
-        lifecycle = ElementLifeCycle.update(lifecycle, ElementLifeCycle.Event.REMOVED);
+        if (!ElementLifeCycle.isRemoved(lifecycle)) {
+            tx().removeRelation(this);
+            lifecycle = ElementLifeCycle.update(lifecycle, ElementLifeCycle.Event.REMOVED);
+        }
     }
 }

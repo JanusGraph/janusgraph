@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.lucene;
+package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -10,6 +10,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 /**
+ * Adds a hash prefix of configurable length to the wrapped {@link KeyColumnValueStore} to randomize the
+ * position of index values on a byte-ordered key ring.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 

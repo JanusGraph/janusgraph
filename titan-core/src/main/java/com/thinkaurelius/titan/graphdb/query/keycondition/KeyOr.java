@@ -76,7 +76,7 @@ public class KeyOr<K> implements KeyCondition<K> {
         b.append("(");
         for (int i=0;i<elements.length;i++) {
             if (i>0) b.append(" OR ");
-            b.append(elements);
+            b.append(elements[i]);
         }
         b.append(")");
         return b.toString();

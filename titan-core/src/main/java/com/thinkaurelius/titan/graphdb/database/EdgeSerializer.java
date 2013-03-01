@@ -4,10 +4,7 @@ import com.carrotsearch.hppc.LongOpenHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
@@ -29,6 +26,8 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinition;
 import com.thinkaurelius.titan.util.datastructures.ImmutableLongObjectMap;
 import com.tinkerpop.blueprints.Direction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -40,14 +39,17 @@ import java.util.Collection;
 
 public class EdgeSerializer {
 
-    private static final int DEFAULT_PRIMARY_CAPACITY = 80;
+    private static final Logger log = LoggerFactory.getLogger(EdgeSerializer.class);
+
+
+    private static final int DEFAULT_PRIMARY_CAPACITY = 60;
     private static final int DEFAULT_VALUE_CAPACITY = 128;
 
-    private static final long RELATION_ID = -100;
     private static final long DIRECTION_ID = -101;
     private static final long TYPE_ID = -102;
     private static final long VALUE_ID = -103;
     private static final long OTHER_VERTEX_ID = -104;
+    private static final long RELATION_ID = -105;
 
     private final Serializer serializer;
     private final IDManager idManager;
@@ -101,10 +103,8 @@ public class EdgeSerializer {
     private ImmutableLongObjectMap parseProperties(InternalVertex vertex, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
         ImmutableLongObjectMap.Builder builder = new ImmutableLongObjectMap.Builder();
 
-        ByteBuffer column = data.getColumn();
-        ByteBuffer value = data.getValue();
-        column.mark();
-        value.mark();
+        ByteBuffer column = data.getColumn().duplicate();
+        ByteBuffer value = data.getValue().duplicate();
 
         int dirID = IDHandler.getDirectionID(column.get(column.position()));
         Direction dir=null;
@@ -167,9 +167,6 @@ public class EdgeSerializer {
             }
         }
 
-        column.reset();
-        value.reset();
-
         return builder.build();
     }
 
@@ -219,8 +216,6 @@ public class EdgeSerializer {
 
         int typeIDLength = IDHandler.edgeTypeLength(typeid, idManager);
 
-        ByteBuffer column = null, value = null;
-
         DataOutput colOut = serializer.getDataOutput(DEFAULT_PRIMARY_CAPACITY, true);
         IDHandler.writeEdgeType(colOut, typeid, dirID, idManager);
 
@@ -243,6 +238,7 @@ public class EdgeSerializer {
             VariableLong.write(writer, vertexIdDiff);
         } else {
             Preconditions.checkArgument(relation.isProperty());
+            Object value = ((TitanProperty)relation).getValue();
             Preconditions.checkNotNull(value);
             TitanKey key = (TitanKey)type;
             assert key.getDataType().isInstance(value);
@@ -308,14 +304,6 @@ public class EdgeSerializer {
         }
     }
 
-//    private static TypeSignature getSignature(InternalTitanTransaction tx, TitanType et, Map<TitanType, TypeSignature> signatures) {
-//        TypeSignature ets = signatures.get(et);
-//        if (ets == null) {
-//            ets = new TypeSignature(et, tx);
-//            signatures.put(et, ets);
-//        }
-//        return ets;
-//    }
 
     private static int[] getDirIDInterval(Direction dir, RelationType rt) {
         if (dir==Direction.OUT) {
@@ -365,8 +353,6 @@ public class EdgeSerializer {
                 isStatic = ((InternalType)type).isStatic(dir);
                 TypeDefinition def = ((InternalType)type).getDefinition();
 
-                ArrayList<Object> applicableConstraints = null;
-                boolean isRange = false;
                 if (query.hasConstraints() && def.getPrimaryKey().length>0) {
                     Multimap<TitanType,KeyAtom<TitanType>> constraintMap = query.getConstraintMap();
                     long[] primaryKey = def.getPrimaryKey();
@@ -387,7 +373,7 @@ public class EdgeSerializer {
                         KeyAtom<TitanType> equals = null;
                         for (KeyAtom<TitanType> a : cons) if (a.getRelation()== Cmp.EQUAL) equals=a;
                         if (equals!=null) {
-                            if (type.isEdgeLabel()) {
+                            if (kt.isEdgeLabel()) {
                                 long id = 0;
                                 if (equals.getCondition() != null) id = ((TitanVertex) equals.getCondition()).getID();
                                 VariableLong.writePositive(start, id);
@@ -397,20 +383,20 @@ public class EdgeSerializer {
                                 end.writeObject(equals.getCondition());
                             }
                         } else {
-                            Preconditions.checkArgument(type.isPropertyKey());
+                            Preconditions.checkArgument(kt.isPropertyKey());
                             //Range constraint
                             Comparable lower=null, upper=null;
                             boolean lowerInc=true, upperInc=true;
                             boolean isProperInterval=true;
                             for (KeyAtom<TitanType> a : cons) {
                                 if ((a.getRelation()==Cmp.GREATER_THAN || a.getRelation()==Cmp.GREATER_THAN_EQUAL) &&
-                                        (lower==null || lower.compareTo(a.getCondition())<=0)) {
+                                        (lower==null || lower.compareTo(a.getCondition())<0)) {
                                     lower = (Comparable) a.getCondition();
-                                    lowerInc = lowerInc && a.getRelation()==Cmp.GREATER_THAN_EQUAL;
+                                    lowerInc = a.getRelation()==Cmp.GREATER_THAN_EQUAL;
                                 } else if ((a.getRelation()==Cmp.LESS_THAN || a.getRelation()==Cmp.LESS_THAN_EQUAL) &&
-                                        (upper==null || upper.compareTo(a.getCondition())>=0)) {
+                                        (upper==null || upper.compareTo(a.getCondition())>0)) {
                                     upper = (Comparable) a.getCondition();
-                                    upperInc = upperInc && a.getRelation()==Cmp.LESS_THAN_EQUAL;
+                                    upperInc = a.getRelation()==Cmp.LESS_THAN_EQUAL;
                                 } else {
                                     isProperInterval=false;
                                 }

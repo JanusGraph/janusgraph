@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.core;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.graphdb.query.ElementQueryBuilder;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
@@ -112,6 +113,8 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @return true, if a vertex with that id exists, else false
      */
     public boolean containsVertex(long vertexid);
+
+    public ElementQueryBuilder queryElements();
 
     public TitanVertex getVertex(TitanKey key, Object attribute);
 
