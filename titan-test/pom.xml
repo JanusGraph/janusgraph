@@ -54,5 +54,14 @@
                 </directory>
             </testResource>
         </testResources>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.12.1</version>
+                <configuration>
+                    <argLine>-Xms256m -Xmx756m</argLine>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>

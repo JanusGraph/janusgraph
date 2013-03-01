@@ -71,10 +71,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
                 return null;
             }
         }
-        if (longId <= 0)
-            return null;
-        else
-            return getVertex(longId);
+        return getVertex(longId);
     }
 
     @Override

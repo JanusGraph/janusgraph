@@ -40,7 +40,6 @@ public class ImmutableLongObjectMapTest {
         }
         assertEquals(len,map.size());
         assertEquals(len, copy1.size());
-        System.out.println(copy1.toString());
         assertEquals(len, copy2.size());
         for (int i=1;i<=len;i++) {
             assertEquals("TestValue " + i,map.get(i*1000));

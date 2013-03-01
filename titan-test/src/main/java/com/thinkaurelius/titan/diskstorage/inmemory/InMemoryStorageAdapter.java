@@ -138,7 +138,7 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
         f.supportsScan=true;
         f.supportsBatchMutation=true;
 
-        f.supportsTransactions=false;
+        f.supportsTransactions=true;
         f.supportsConsistentKeyOperations=false;
         f.supportsLocking=true;
 

@@ -200,7 +200,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             if (!vertexCache.get(vertexid,vertexConstructor).isRemoved()) return true;
             else return false;
         }
-        else if (graph.containsVertexID(vertexid, txHandle)) return true;
+        else if (vertexid>0 && graph.containsVertexID(vertexid, txHandle)) return true;
         else return false;
     }
 
@@ -221,7 +221,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         @Override
         public InternalVertex get(Long id) {
             Preconditions.checkNotNull(id);
-            Preconditions.checkArgument(id!=0);
+            Preconditions.checkArgument(id>0);
 
             InternalVertex vertex = null;
             if (idInspector.isEdgeTypeID(id)) {

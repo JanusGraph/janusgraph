@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class RandomGenerator {
@@ -100,7 +101,7 @@ public class RandomGenerator {
         double avg = sum * 1.0 / trials;
         double error = (5 / Math.pow(trials, 0.3));
         //log.debug(error);
-        assertTrue(Math.abs(avg - 50.5) < error);
+        assertEquals(50.5,avg,error);
     }
 
     @Test

@@ -54,7 +54,8 @@ public class StorageSetup {
 
     public static TitanGraph getInMemoryGraph() {
         BaseConfiguration config = new BaseConfiguration();
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "com.thinkaurelius.titan.diskstorage.inmemory.InMemoryStorageAdapter");
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "inmemory");
+        config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_FLUSH_KEY,false);
         return TitanFactory.open(config);
     }
 

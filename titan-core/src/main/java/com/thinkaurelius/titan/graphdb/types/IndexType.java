@@ -12,17 +12,31 @@ import com.tinkerpop.blueprints.Vertex;
 
 public class IndexType {
 
+    private static final int VERTEX = 0;
+    private static final int EDGE = 1;
+
+    private static final int fromType(final Class<? extends Element> element) {
+        if (element==Vertex.class) return VERTEX;
+        else if (element==Edge.class) return EDGE;
+        else throw new IllegalArgumentException("Either vertex or edge expected: " + element);
+    }
+
+    private static final Class<? extends Element> toType(final int element) {
+        if (element==VERTEX) return Vertex.class;
+        else if (element==EDGE) return Edge.class;
+        else throw new IllegalArgumentException("Either vertex or edge expected: " + element);
+    }
+
     private String indexName;
-    private Class<? extends Element> element;
+    private int element;
 
     public IndexType() {}
 
     public IndexType(final String indexName, final Class<? extends Element> element) {
         Preconditions.checkNotNull(indexName);
         Preconditions.checkNotNull(element);
-        Preconditions.checkArgument(element==Vertex.class || element==Edge.class,"Can only index vertex or edges");
         this.indexName=indexName;
-        this.element=element;
+        this.element=fromType(element);
     }
 
     public final static IndexType of(final String indexName, final Class<? extends Element> element) {
@@ -38,7 +52,7 @@ public class IndexType {
     }
 
     public Class<? extends Element> getElementType() {
-        return element;
+        return toType(element);
     }
 
     public boolean isStandardIndex() {
@@ -50,20 +64,20 @@ public class IndexType {
         if (this==other) return true;
         else if (!getClass().equals(other.getClass())) return false;
         IndexType oth = (IndexType)other;
-        return element.equals(oth.element) && indexName.equals(oth.indexName);
+        return element==oth.element && indexName.equals(oth.indexName);
     }
 
     @Override
     public int hashCode() {
         int hash = indexName.hashCode();
         hash *= 1711;
-        if (element==Vertex.class) hash = hash << 1;
+        hash = hash << element;
         return hash;
     }
 
     @Override
     public String toString() {
-        return indexName+":"+element.getSimpleName();
+        return indexName+":"+toType(element).getSimpleName();
     }
 
 }

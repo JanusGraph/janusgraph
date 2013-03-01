@@ -42,7 +42,7 @@ public class SimpleVertexCache implements VertexCache {
     @Override
     public void add(InternalVertex vertex, long id) {
         Preconditions.checkNotNull(vertex);
-        Preconditions.checkArgument(!map.containsKey(id));
+        Preconditions.checkArgument(!map.containsKey(id),id);
         map.put(id, vertex);
     }
 

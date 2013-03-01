@@ -21,6 +21,8 @@ public class SerializerInitialization {
         serializer.registerClass(double[].class);
         serializer.registerClass(long[].class);
         serializer.registerClass(byte[].class);
+        serializer.registerClass(boolean[].class);
+        serializer.registerClass(IndexType.class);
         serializer.registerClass(TitanTypeClass.class);
         serializer.registerClass(Integer.class, new IntegerSerializer());
         serializer.registerClass(Double.class, new DoubleSerializer());

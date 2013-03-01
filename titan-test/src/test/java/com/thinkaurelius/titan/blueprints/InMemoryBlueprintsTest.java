@@ -25,7 +25,7 @@ import java.util.Set;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class InMemoryBlueprintsTest extends GraphTest {
+public abstract class InMemoryBlueprintsTest extends GraphTest {
 
     /*public void testTitanBenchmarkTestSuite() throws Exception {
         this.stopWatch();

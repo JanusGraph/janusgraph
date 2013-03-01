@@ -52,8 +52,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public Object getId() {
-        if (hasId()) return Long.valueOf(getID());
-        else return null;
+        return Long.valueOf(getID());
     }
 
     @Override

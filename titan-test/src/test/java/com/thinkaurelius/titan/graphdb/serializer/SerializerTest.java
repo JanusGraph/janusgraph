@@ -36,6 +36,8 @@ public class SerializerTest {
         serialize.registerClass(TestEnum.class);
         serialize.registerClass(TestClass.class);
         serialize.registerClass(short[].class);
+        serialize.registerClass(boolean[].class);
+        serialize.registerClass(IndexType.class);
         serialize.registerClass(StandardLabelDefinition.class);
         serialize.registerClass(StandardTypeGroup.class);
         serialize.registerClass(StandardKeyDefinition.class);
