@@ -76,6 +76,7 @@ public class StandardTypeMaker implements TypeMaker {
         checkSignature(signature);
         Preconditions.checkArgument(Sets.intersection(Sets.newHashSet(primaryKey),Sets.newHashSet(signature)).isEmpty(),
                 "Signature and primary key must be disjoined");
+        if ((isUnique[0] || isUnique[1]) && !primaryKey.isEmpty()) throw new IllegalArgumentException("Cannot define a primary key on a unique type");
     }
 
     private static long[] checkPrimaryKey(List<TitanType> sig) {

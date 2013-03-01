@@ -1,6 +1,7 @@
 
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.graphdb.query.ElementQueryBuilder;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
@@ -37,6 +38,8 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
 
 
     public TypeMaker makeType();
+
+    public ElementQueryBuilder queryElements();
 
 
     public TitanType getType(String name);

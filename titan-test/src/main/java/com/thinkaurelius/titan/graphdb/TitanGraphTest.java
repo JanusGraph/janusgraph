@@ -79,7 +79,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         TitanLabel link = tx.makeType().name("link").unidirected().makeEdgeLabel();
 
-        TitanLabel connect = tx.makeType().name("connect").primaryKey(id).signature(weight).unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).makeEdgeLabel();
+        TitanLabel connect = tx.makeType().name("connect").signature(id,weight).unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).makeEdgeLabel();
 
         TitanLabel parent = tx.makeType().name("parent").unique(Direction.OUT).makeEdgeLabel();
 
@@ -432,6 +432,46 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     }
 
     @Test
+    public void testUnidirectional() {
+        TitanLabel link = tx.makeType().name("link").unidirected().unique(Direction.OUT).makeEdgeLabel();
+        TitanLabel connect = tx.makeType().name("connect").primaryKey(link).makeEdgeLabel();
+
+        TitanVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
+        TitanEdge e = v1.addEdge(link,v2);
+        e.setProperty("time",5);
+        e = v1.addEdge(connect,v2);
+        e.setProperty("time",10);
+        e.setProperty("link",v3);
+        e = v2.addEdge(connect,v3);
+        e.setProperty("time",15);
+        e.setProperty("link",v1);
+
+        assertEquals(2,Iterables.size(v1.getEdges(Direction.OUT)));
+        assertEquals(1,Iterables.size(v2.getEdges(Direction.OUT)));
+        assertEquals(2,Iterables.size(v2.getEdges(Direction.BOTH)));
+
+        assertEquals(1,Iterables.size(v3.getEdges(Direction.BOTH)));
+        e = (TitanEdge) Iterables.getOnlyElement(v1.getEdges(Direction.OUT, "connect"));
+        assertEquals(10,e.getProperty("time"));
+        assertEquals(v3,e.getProperty("link"));
+
+        clopen();
+
+        v1 = (TitanVertex) tx.getVertex(v1);
+        v2 = (TitanVertex) tx.getVertex(v2);
+        v3 = (TitanVertex) tx.getVertex(v3);
+        assertEquals(2,Iterables.size(v1.getEdges(Direction.OUT)));
+        assertEquals(1,Iterables.size(v2.getEdges(Direction.OUT)));
+        assertEquals(2,Iterables.size(v2.getEdges(Direction.BOTH)));
+
+        assertEquals(1,Iterables.size(v3.getEdges(Direction.BOTH)));
+        e = (TitanEdge) Iterables.getOnlyElement(v1.getEdges(Direction.OUT, "connect"));
+        assertEquals(10,e.getProperty("time"));
+        assertEquals(v3,e.getProperty("link"));
+
+    }
+
+    @Test
     public void testIndexRetrieval() {
         TitanKey id = tx.makeType().name("uid").
                 unique(Direction.OUT).
@@ -518,8 +558,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         assertEquals(35,v1.getProperty("age"));
         assertEquals(55,v3.getProperty("age"));
-        v3.setProperty("age",65);
-        assertEquals(65,v3.getProperty("age"));
+        v3.setProperty("age", 65);
+        assertEquals(65, v3.getProperty("age"));
 
 
         for (Vertex v : new Vertex[]{v1,v2,v3}) {
@@ -538,7 +578,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             fail();
         } catch (InvalidElementException e) {}
 
-        assertEquals(35,v1.getProperty("age"));
+        assertEquals(35, v1.getProperty("age"));
         assertEquals(65,v3.getProperty("age"));
 
         for (Vertex v : new Vertex[]{v1,v2,v3}) {

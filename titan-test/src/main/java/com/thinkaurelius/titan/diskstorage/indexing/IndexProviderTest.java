@@ -94,6 +94,10 @@ public abstract class IndexProviderTest {
             List<String> result = tx.query(new IndexQuery(store, KeyAtom.of("text", Txt.CONTAINS, "world")));
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
 
+            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Txt.CONTAINS, "world"), KeyAtom.of("text", Txt.CONTAINS, "hello"))));
+            assertEquals(1,result.size());
+            assertEquals("doc1",result.get(0));
+
             result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Txt.CONTAINS, "world"), KeyAtom.of("weight", Cmp.GREATER_THAN,6.0))));
             assertEquals(1,result.size());
             assertEquals("doc2",result.get(0));

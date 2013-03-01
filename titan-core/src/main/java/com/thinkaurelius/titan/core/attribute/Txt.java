@@ -1,9 +1,13 @@
 package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 /**
  * Comparison relations for text objects.
@@ -21,10 +25,17 @@ public enum Txt implements Relation {
 
         @Override
         public boolean satisfiesCondition(Object value, Object condition) {
-            Preconditions.checkArgument(condition instanceof String);
+            Preconditions.checkArgument(isValidCondition(condition),"Invalid condition provided: %s",condition);
             if (value==null) return false;
             if (!(value instanceof String)) log.debug("Value not a string: " + value);
             return value.toString().contains((String)condition);
+        }
+
+        @Override
+        public boolean isValidCondition(Object condition) {
+            if (condition==null) return false;
+            else if (condition instanceof String && StringUtils.isNotBlank((String)condition)) return true;
+            else return false;
         }
     },
 
@@ -40,14 +51,17 @@ public enum Txt implements Relation {
             if (!(value instanceof String)) log.debug("Value not a string: " + value);
             return value.toString().startsWith((String)condition);
         }
+
+        @Override
+        public boolean isValidCondition(Object condition) {
+            return condition!=null && condition instanceof String;
+        }
+
     };
 
     private static final Logger log = LoggerFactory.getLogger(Txt.class);
 
-    @Override
-    public boolean isValidCondition(Object condition) {
-        return condition!=null && condition instanceof String;
-    }
+
 
     @Override
     public boolean isValidDataType(Class<?> clazz) {

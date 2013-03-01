@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.query.ElementQueryBuilder;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Parameter;
@@ -150,6 +151,11 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     @Override
     public TypeMaker makeType() {
         return getAutoStartTx().makeType();
+    }
+
+    @Override
+    public ElementQueryBuilder queryElements() {
+        return getAutoStartTx().queryElements();
     }
 
     @Override

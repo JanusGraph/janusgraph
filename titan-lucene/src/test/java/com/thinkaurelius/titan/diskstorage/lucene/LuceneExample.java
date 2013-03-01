@@ -34,7 +34,7 @@ import java.util.Set;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class LuceneExample {
+public abstract class LuceneExample {
 
     public static final File path = new File("/tmp/lucene");
     private static final String STR_SUFFIX = "_str";
