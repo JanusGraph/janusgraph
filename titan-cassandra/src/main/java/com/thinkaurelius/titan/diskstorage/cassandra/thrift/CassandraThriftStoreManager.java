@@ -50,17 +50,17 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     private final UncheckedGenericKeyedObjectPool
             <String, CTConnection> pool;
 
+    private final String hostname;
 
     public CassandraThriftStoreManager(Configuration config) throws StorageException {
         super(config);
-
+        this.hostname = getSingleHostname();
         this.pool = CTConnectionPool.getPool(
                 hostname,
                 port,
                 config.getInt(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT));
 
         this.openStores = new HashMap<String, CassandraThriftKeyColumnValueStore>();
-
 
     }
 

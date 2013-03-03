@@ -32,6 +32,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -315,7 +316,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                         .setRetryBackoffStrategy(new FixedRetryBackoffStrategy(1000, 5000)) // TODO configuration
                                         .setSocketTimeout(connectionTimeout)
                                         .setConnectTimeout(connectionTimeout)
-                                        .setSeeds(hostname))
+                                        .setSeeds(StringUtils.join(hostnames,",")))
                         .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
 
         return builder;

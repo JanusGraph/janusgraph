@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.common;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.codec.DecoderException;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.management.ManagementFactory;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
+import java.util.Random;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -19,18 +21,23 @@ import java.net.UnknownHostException;
 public class DistributedStoreManager {
 
     private static final Logger log = LoggerFactory.getLogger(DistributedStoreManager.class);
-
+    private static final Random random = new Random();
 
     protected final byte[] rid;
 
-    protected final String hostname;
+    protected final String[] hostnames;
     protected final int port;
     protected final int connectionTimeout;
     protected final int connectionPoolSize;
 //    protected final boolean isKeyOrdered;
 
     public DistributedStoreManager(Configuration storageConfig, int portDefault) {
-        this.hostname = storageConfig.getString(GraphDatabaseConfiguration.HOSTNAME_KEY, GraphDatabaseConfiguration.HOSTNAME_DEFAULT);
+        if (storageConfig.containsKey(GraphDatabaseConfiguration.HOSTNAME_KEY)) {
+            this.hostnames = storageConfig.getStringArray(GraphDatabaseConfiguration.HOSTNAME_KEY);
+        } else {
+            this.hostnames = new String[]{GraphDatabaseConfiguration.HOSTNAME_DEFAULT};
+        }
+        Preconditions.checkArgument(hostnames.length>0,"No hostname configured");
         this.port = storageConfig.getInt(GraphDatabaseConfiguration.PORT_KEY, portDefault);
         this.rid = getRid(storageConfig);
         this.connectionTimeout = storageConfig.getInt(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
@@ -38,9 +45,14 @@ public class DistributedStoreManager {
         //this.isKeyOrdered = storageConfig.getBoolean(GraphDatabaseConfiguration.STORAGE_IS_ORDERED_KEY,GraphDatabaseConfiguration.STORAGE_IS_ORDERED_DEFAULT);
     }
 
+    protected String getSingleHostname() {
+        return hostnames[random.nextInt(hostnames.length)];
+    }
+
     @Override
     public String toString() {
-        return hostname.substring(0, Math.min(hostname.length(), 256)) + ":" + port;
+        String hn = getSingleHostname();
+        return hn.substring(0, Math.min(hn.length(), 256)) + ":" + port;
     }
 
     /**

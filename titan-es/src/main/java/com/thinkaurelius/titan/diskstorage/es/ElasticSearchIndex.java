@@ -29,8 +29,10 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -69,6 +71,9 @@ public class ElasticSearchIndex implements IndexProvider {
 
     private static final String[] DATA_SUBDIRS = {"data","work","logs"};
 
+    private static final String HOST_NAMES_KEY = "hosts";
+    private static final int HOST_PORT_DEFAULT = 9300;
+
 
 
     private final Node node;
@@ -78,43 +83,66 @@ public class ElasticSearchIndex implements IndexProvider {
 
 
     public ElasticSearchIndex(Configuration config) {
-        boolean clientOnly = config.getBoolean(CLIENT_ONLY_KEY, CLIENT_ONLY_DEFAULT);
-        boolean local = config.getBoolean(LOCAL_MODE_KEY,LOCAL_MODE_DEFAULT);
         indexName = config.getString(INDEX_NAME_KEY, INDEX_NAME_DEFAULT);
 
-        NodeBuilder builder = NodeBuilder.nodeBuilder();
+        if (!config.containsKey(HOST_NAMES_KEY)) {
+            boolean clientOnly = config.getBoolean(CLIENT_ONLY_KEY, CLIENT_ONLY_DEFAULT);
+            boolean local = config.getBoolean(LOCAL_MODE_KEY,LOCAL_MODE_DEFAULT);
 
-        Preconditions.checkArgument(config.containsKey(ES_YML_KEY) || config.containsKey(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY),
-                "Must either configure configuration file or base directory");
-        if (config.containsKey(ES_YML_KEY)) {
-            String configFile = config.getString(ES_YML_KEY);
-            log.debug("Configuring ES from YML file [{}]",configFile);
-            Settings settings = ImmutableSettings.settingsBuilder().loadFromSource(configFile).build();
-            builder.settings(settings);
-        } else {
-            String dataDirectory = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
-            log.debug("Configuring ES with data directory [{}]",dataDirectory);
-            File f = new File(dataDirectory);
-            if (!f.exists()) f.mkdirs();
-            ImmutableSettings.Builder b = ImmutableSettings.settingsBuilder();
-            for (String sub : DATA_SUBDIRS) {
-                String subdir = dataDirectory + File.separator + sub;
-                f = new File(subdir);
+            NodeBuilder builder = NodeBuilder.nodeBuilder();
+            Preconditions.checkArgument(config.containsKey(ES_YML_KEY) || config.containsKey(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY),
+                    "Must either configure configuration file or base directory");
+            if (config.containsKey(ES_YML_KEY)) {
+                String configFile = config.getString(ES_YML_KEY);
+                log.debug("Configuring ES from YML file [{}]",configFile);
+                Settings settings = ImmutableSettings.settingsBuilder().loadFromSource(configFile).build();
+                builder.settings(settings);
+            } else {
+                String dataDirectory = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
+                log.debug("Configuring ES with data directory [{}]",dataDirectory);
+                File f = new File(dataDirectory);
                 if (!f.exists()) f.mkdirs();
-                b.put("path."+sub,subdir);
-            }
-            builder.settings(b.build());
+                ImmutableSettings.Builder b = ImmutableSettings.settingsBuilder();
+                for (String sub : DATA_SUBDIRS) {
+                    String subdir = dataDirectory + File.separator + sub;
+                    f = new File(subdir);
+                    if (!f.exists()) f.mkdirs();
+                    b.put("path."+sub,subdir);
+                }
+                builder.settings(b.build());
 
-            String clustername = config.getString(CLUSTER_NAME_KEY,CLUSTER_NAME_DEFAULT);
-            Preconditions.checkArgument(StringUtils.isNotBlank(clustername),"Invalid cluster name: %s",clustername);
-            builder.clusterName(clustername);
+                String clustername = config.getString(CLUSTER_NAME_KEY,CLUSTER_NAME_DEFAULT);
+                Preconditions.checkArgument(StringUtils.isNotBlank(clustername),"Invalid cluster name: %s",clustername);
+                builder.clusterName(clustername);
+            }
+
+            node = builder.client(clientOnly).data(!clientOnly).local(local).node();
+            client = node.client();
+
+        } else {
+            ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
+            if (config.containsKey(CLUSTER_NAME_KEY)) {
+                String clustername = config.getString(CLUSTER_NAME_KEY,CLUSTER_NAME_DEFAULT);
+                Preconditions.checkArgument(StringUtils.isNotBlank(clustername),"Invalid cluster name: %s",clustername);
+                settings.put("cluster.name", clustername);
+            } else {
+                settings.put("client.transport.ignore_cluster_name", true);
+            }
+            settings.put("client.transport.sniff", true);
+            TransportClient tc = new TransportClient(settings.build());
+            for (String host : config.getStringArray(HOST_NAMES_KEY)) {
+                String[] hostparts = host.split(":");
+                String hostname = hostparts[0];
+                int hostport = HOST_PORT_DEFAULT;
+                if (hostparts.length==2) hostport = Integer.parseInt(hostparts[1]);
+                log.info("Configured remote host: {} : {}",hostname,hostport);
+                tc.addTransportAddress(new InetSocketTransportAddress(hostname,hostport));
+            }
+            client = tc;
+            node = null;
         }
 
-
-        node = builder.client(clientOnly).data(!clientOnly).local(local).node();
-        client = node.client();
-
-        node.client().admin().cluster().prepareHealth()
+        client.admin().cluster().prepareHealth()
                 .setWaitForYellowStatus().execute().actionGet();
 
         //Create index if it does not already exist
@@ -215,7 +243,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, TransactionHandle tx) throws StorageException {
-        BulkRequestBuilder brb = node.client().prepareBulk();
+        BulkRequestBuilder brb = client.prepareBulk();
         try {
             for (Map.Entry<String,Map<String, IndexMutation>> stores : mutations.entrySet()) {
                 String storename = stores.getKey();
@@ -382,8 +410,8 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public void close() throws StorageException {
-        if (!node.isClosed()) {
-            client.close();
+        client.close();
+        if (node!=null && !node.isClosed()) {
             node.close();
         }
     }
@@ -392,7 +420,7 @@ public class ElasticSearchIndex implements IndexProvider {
     public void clearStorage() throws StorageException {
         try {
             try {
-                node.client().admin().indices()
+                client.admin().indices()
                         .delete(new DeleteIndexRequest(indexName)).actionGet();
                 // We wait for one second to let ES delete the river
                 Thread.sleep(1000);
