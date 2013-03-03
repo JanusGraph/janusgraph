@@ -5,6 +5,7 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
  * A generic representation of a geographic shape, which can either be a single point,
@@ -42,6 +43,27 @@ public class Geoshape {
             else Preconditions.checkArgument(isValidCoordinate(coordinates[0][i],coordinates[1][i]));
         }
         this.coordinates=coordinates;
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder().append(coordinates[0]).append(coordinates[1]).toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this==other) return true;
+        else if (other==null) return false;
+        else if (!getClass().isInstance(other)) return false;
+        Geoshape oth = (Geoshape)other;
+        Preconditions.checkArgument(coordinates.length==2 && oth.coordinates.length==2);
+        for (int i=0;i<coordinates.length;i++) {
+            if (coordinates[i].length!=oth.coordinates[i].length) return false;
+            for (int j=0;j<coordinates[i].length;j++) {
+                if (coordinates[i][j]!=oth.coordinates[i][j]) return false;
+            }
+        }
+        return true;
     }
 
     /**
