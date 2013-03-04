@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -65,7 +64,7 @@ public class EdgeSerializer {
         if (data.getCache()==null) {
             synchronized (data) {
                 if (data.getCache()==null) {
-                    map = parseProperties(vertex,data,true,tx);
+                    map = parseProperties(vertex.getID(),data,true,tx);
                 } else map = data.getCache();
             }
         } else map = data.getCache();
@@ -88,11 +87,34 @@ public class EdgeSerializer {
         } else throw new AssertionError();
     }
 
+    public void readRelation(RelationFactory factory, Entry data, StandardTitanTx tx) {
+        ImmutableLongObjectMap map = parseProperties(factory.getVertexID(),data,false,tx);
+
+        factory.setDirection((Direction) map.get(DIRECTION_ID));
+        long typeid = (Long)map.get(TYPE_ID);
+        TitanType type = tx.getExistingType(typeid);
+        factory.setType(type);
+        factory.setRelationID((Long) map.get(RELATION_ID));
+        if (type.isPropertyKey()) {
+            factory.setValue(map.get(VALUE_ID));
+        } else if (type.isEdgeLabel()) {
+            factory.setOtherVertexID((Long)map.get(OTHER_VERTEX_ID));
+        } else throw new AssertionError();
+        //Add properties
+        for (int i=0;i<map.size();i++) {
+            long propTypeId = map.getKey(i);
+            if (propTypeId>0) {
+                TitanType pt = tx.getExistingType(propTypeId);
+                factory.addProperty(pt,map.getValue(i));
+            }
+        }
+    }
+
     public ImmutableLongObjectMap readProperties(InternalVertex vertex, Entry data, StandardTitanTx tx) {
         if (data.getCache()==null) {
             synchronized (data) {
                 if (data.getCache()==null) {
-                    ImmutableLongObjectMap props = parseProperties(vertex,data,false,tx);
+                    ImmutableLongObjectMap props = parseProperties(vertex.getID(),data,false,tx);
                     data.setCache(props);
                     return props;
                 } else return data.getCache();
@@ -100,7 +122,8 @@ public class EdgeSerializer {
         } else return data.getCache();
     }
 
-    private ImmutableLongObjectMap parseProperties(InternalVertex vertex, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
+    private ImmutableLongObjectMap parseProperties(long vertexid, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
+        Preconditions.checkArgument(vertexid>0);
         ImmutableLongObjectMap.Builder builder = new ImmutableLongObjectMap.Builder();
 
         ByteBuffer column = data.getColumn().duplicate();
@@ -137,7 +160,7 @@ public class EdgeSerializer {
         if (rtype==RelationType.EDGE) {
             Preconditions.checkArgument(titanType.isEdgeLabel());
             long vertexIdDiff = VariableLong.read(reader);
-            builder.put(OTHER_VERTEX_ID,vertex.getID()+vertexIdDiff);
+            builder.put(OTHER_VERTEX_ID,vertexid+vertexIdDiff);
         } else {
             Preconditions.checkArgument(titanType.isPropertyKey());
             TitanKey key = ((TitanKey) titanType);
@@ -162,7 +185,7 @@ public class EdgeSerializer {
 
             //Third: read rest
             while (value.hasRemaining()) {
-                TitanType type = (TitanType) tx.getExistingVertex(IDHandler.readInlineEdgeType(value, idManager));
+                TitanType type = tx.getExistingType(IDHandler.readInlineEdgeType(value, idManager));
                 builder.put(type.getID(), readInline(value, type));
             }
         }
