@@ -71,7 +71,6 @@ public class LuceneIndex implements IndexProvider {
     private SpatialContext ctx = SpatialContext.GEO;
 
     private final String basePath;
-    private final int maxResultSize = 10000;
 
     public LuceneIndex(Configuration config) {
         String dir = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY,"");
@@ -238,10 +237,11 @@ public class LuceneIndex implements IndexProvider {
             IndexSearcher searcher = ((Transaction)tx).getSearcher(query.getStore());
             if (searcher==null) return ImmutableList.of(); //Index does not yet exist
             long time = System.currentTimeMillis();
-            TopDocs docs = searcher.search(new MatchAllDocsQuery(), q, maxResultSize+1);
+            TopDocs docs = searcher.search(new MatchAllDocsQuery(), q, IndexProvider.MAXIMUM_RESULT_SIZE+1);
             log.debug("Executed query [{}] in {} ms",q,System.currentTimeMillis()-time);
-            if (docs.totalHits>maxResultSize) throw new TitanException("Max results from external index exceeded: " + maxResultSize);
-
+            if (docs.totalHits>MAXIMUM_RESULT_SIZE) {
+                log.warn("Maximum result size of [{}] exceeded by result set with size [{}]. Results truncated!",IndexProvider.MAXIMUM_RESULT_SIZE,docs.totalHits);
+            }
             List<String> result = new ArrayList<String>(docs.totalHits);
             for (int i = 0; i < docs.totalHits; i++) {
                 result.add(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue());

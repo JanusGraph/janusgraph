@@ -79,8 +79,6 @@ public class ElasticSearchIndex implements IndexProvider {
     private final Node node;
     private final Client client;
     private final String indexName;
-    private final int maxResultSize = 10000;
-
 
     public ElasticSearchIndex(Configuration config) {
         indexName = config.getString(INDEX_NAME_KEY, INDEX_NAME_DEFAULT);
@@ -371,13 +369,15 @@ public class ElasticSearchIndex implements IndexProvider {
         srb.setQuery(QueryBuilders.matchAllQuery());
         srb.setFilter(getFilter(query.getCondition()));
         srb.setFrom(0);
-        srb.setSize(maxResultSize+1);
+        srb.setSize(IndexProvider.MAXIMUM_RESULT_SIZE+1);
         //srb.setExplain(true);
 
         SearchResponse response = srb.execute().actionGet();
         log.debug("Executed query [{}] in {} ms",query.getCondition(),response.tookInMillis());
         SearchHits hits = response.getHits();
-        if (hits.totalHits()>maxResultSize) throw new TitanException("Result set size exceed limit: " + hits.totalHits());
+        if (hits.totalHits()>MAXIMUM_RESULT_SIZE) {
+            log.warn("Maximum result size of [{}] exceeded by result set with size [{}]. Results truncated!",IndexProvider.MAXIMUM_RESULT_SIZE,hits.totalHits());
+        }
         List<String> result = new ArrayList<String>((int)hits.totalHits());
         for (SearchHit hit : hits) {
             result.add(hit.id());
