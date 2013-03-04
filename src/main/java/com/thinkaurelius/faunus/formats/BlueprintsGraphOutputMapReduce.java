@@ -16,6 +16,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ public class BlueprintsGraphOutputMapReduce {
         FAILED_TRANSACTIONS
     }
 
+    private static final Logger LOGGER = Logger.getLogger(BlueprintsGraphOutputMapReduce.class);
     public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_TX_COMMIT = "faunus.graph.output.blueprints.tx-commit";
     // some random property that will 'never' be used by anyone
     public static final String BLUEPRINTS_ID = "_bId0192834";
@@ -111,6 +113,7 @@ public class BlueprintsGraphOutputMapReduce {
                     ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
                     context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
                 } catch (Exception e) {
+                    LOGGER.error("Could not commit transaction during Map.map():", e);
                     context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
                 }
             }
@@ -124,6 +127,7 @@ public class BlueprintsGraphOutputMapReduce {
                     context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
                 }
             } catch (Exception e) {
+                LOGGER.error("Could not commit transaction during Map.cleanup():", e);
                 context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
             }
             this.graph.shutdown();
@@ -186,18 +190,22 @@ public class BlueprintsGraphOutputMapReduce {
                                     ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
                                     context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
                                 } catch (Exception e) {
+                                    LOGGER.error("Could not commit transaction during Reduce.reduce():", e);
                                     context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
                                 }
                                 blueprintsVertex = this.graph.getVertex(blueprintsVertex.getId());
                             }
                         } else {
+                            LOGGER.warn("No target vertex: faunusVertex[" + faunusEdge.getVertex(IN).getId() + "] blueprintsVertex[" + otherId + "]");
                             context.getCounter(Counters.NULL_VERTEX_EDGES_IGNORED).increment(1l);
                         }
                     }
                 } else {
+                    LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "] blueprintsVertex[" + blueprintsId + "]");
                     context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                 }
             } else {
+                LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "]");
                 context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
             }
 
@@ -213,6 +221,7 @@ public class BlueprintsGraphOutputMapReduce {
                     context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
                 }
             } catch (Exception e) {
+                LOGGER.error("Could not commit transaction during Reduce.cleanup():", e);
                 context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
             }
             this.graph.shutdown();
