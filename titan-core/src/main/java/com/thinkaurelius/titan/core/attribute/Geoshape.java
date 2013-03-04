@@ -60,10 +60,34 @@ public class Geoshape {
         for (int i=0;i<coordinates.length;i++) {
             if (coordinates[i].length!=oth.coordinates[i].length) return false;
             for (int j=0;j<coordinates[i].length;j++) {
+                if (Float.isNaN(coordinates[i][j]) && Float.isNaN(oth.coordinates[i][j])) continue;
                 if (coordinates[i][j]!=oth.coordinates[i][j]) return false;
             }
         }
         return true;
+    }
+
+    @Override
+    public String toString() {
+        Type type = getType();
+        StringBuilder s = new StringBuilder();
+        s.append(type.toString().toLowerCase());
+        switch (type) {
+            case POINT:
+                s.append(getPoint().toString());
+                break;
+            case CIRCLE:
+                s.append(getPoint().toString()).append(":").append(getRadius());
+                break;
+            default:
+                s.append("[");
+                for (int i=0;i<size();i++) {
+                    if (i>0) s.append(",");
+                    s.append(getPoint(i));
+                }
+                s.append("]");
+        }
+        return s.toString();
     }
 
     /**
@@ -284,6 +308,26 @@ public class Geoshape {
         public double distance(Point other) {
             return DistanceUtils.degrees2Dist(CTX.getDistCalc().distance(getSpatial4jPoint(),other.getSpatial4jPoint()),DistanceUtils.EARTH_MEAN_RADIUS_KM);
         }
+
+        @Override
+        public String toString() {
+            return "["+latitude+","+longitude+"]";
+        }
+
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder().append(latitude).append(longitude).toHashCode();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this==other) return true;
+            else if (other==null) return false;
+            else if (!getClass().isInstance(other)) return false;
+            Point oth = (Point)other;
+            return latitude==oth.latitude && longitude==oth.longitude;
+        }
+
     }
 
 }

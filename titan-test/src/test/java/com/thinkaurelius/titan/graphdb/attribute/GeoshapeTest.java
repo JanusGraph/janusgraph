@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.core.attribute.Geoshape;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -34,6 +35,20 @@ public class GeoshapeTest {
             assertTrue(point.intersect(circle));
             assertTrue(circle.intersect(circle));
         }
+    }
+
+    @Test
+    public void testEquality() {
+        Geoshape c = Geoshape.circle(10.0,12.5,100);
+        Geoshape b = Geoshape.box(20.0, 22.5, 40.5, 60.5);
+        assertEquals(Geoshape.circle(10.0,12.5,100),c);
+        assertEquals(Geoshape.box(20.0,22.5,40.5,60.5),b);
+        assertEquals(Geoshape.circle(10.0,12.5,100).hashCode(),c.hashCode());
+        assertEquals(Geoshape.box(20.0,22.5,40.5,60.5).hashCode(),b.hashCode());
+        assertNotSame(c.hashCode(),b.hashCode());
+        assertNotSame(c,b);
+        System.out.println(c);
+        System.out.println(b);
     }
 
 }
