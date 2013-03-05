@@ -4,6 +4,9 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.THRIFT_DEFAULT_FRAME_SIZE;
+import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.THRIFT_DEFAULT_MAX_MESSAGE_SIZE;
+
 /**
  * Cassandra-Thrift connection pooler classes using Apache commons-pool.
  *
@@ -22,26 +25,47 @@ public class CTConnectionPool {
             new ConcurrentHashMap<PoolKey,
                     UncheckedGenericKeyedObjectPool<String, CTConnection>>();
 
+    public static void clearPool(String hostname, int port, int timeoutMS) {
+        clearPool(hostname, port, timeoutMS, null);
+    }
+
+    public static void clearPool(String hostname, int port, int timeoutMS, Object key) {
+        UncheckedGenericKeyedObjectPool<String, CTConnection> pool = getPool(hostname,
+                                                                             port,
+                                                                             timeoutMS,
+                                                                             THRIFT_DEFAULT_FRAME_SIZE,
+                                                                             THRIFT_DEFAULT_MAX_MESSAGE_SIZE);
+
+        if (key == null)
+            pool.clear();
+        else
+            pool.clear(key);
+    }
+
     /*
      * We don't want to risk creating a pool multiple times, since
      * each one must be explicitly shutdown()d.  Synchronize the method
      * for now to guarantee that only one pool is ever created for a
      * particular PoolKey.
+     *
+     * TODO: !!! OMG !!! This is very bad to use synchronized like that, should be fixed ASAP.
      */
-    public static synchronized UncheckedGenericKeyedObjectPool<String, CTConnection>
-    getPool(String hostname, int port, int timeoutMS) {
+    public static synchronized UncheckedGenericKeyedObjectPool<String, CTConnection> getPool(String hostname,
+                                                                                             int port,
+                                                                                             int timeoutMS,
+                                                                                             int frameSize,
+                                                                                             int maxMessageSize) {
         PoolKey pk = new PoolKey(hostname, port, timeoutMS);
 
-        UncheckedGenericKeyedObjectPool<String, CTConnection> p =
-                pools.get(pk);
+        UncheckedGenericKeyedObjectPool<String, CTConnection> p = pools.get(pk);
+
         if (null == p) {
-            CTConnectionFactory f = getFactory(hostname, port, timeoutMS);
+            CTConnectionFactory f = getFactory(hostname, port, timeoutMS, frameSize, maxMessageSize);
             p = new UncheckedGenericKeyedObjectPool<String, CTConnection>(f);
             p.setTestOnBorrow(true);
             p.setTestOnReturn(false);
             p.setTestWhileIdle(false);
-            p.setWhenExhaustedAction(
-                    GenericKeyedObjectPool.WHEN_EXHAUSTED_GROW);
+            p.setWhenExhaustedAction(GenericKeyedObjectPool.WHEN_EXHAUSTED_GROW);
             p.setMaxActive(-1); // "A negative value indicates no limit"
             p.setMaxTotal(-1);
             pools.put(pk, p);
@@ -50,13 +74,12 @@ public class CTConnectionPool {
         return p;
     }
 
-    public static synchronized CTConnectionFactory
-    getFactory(String hostname, int port, int timeoutMS) {
+    public static CTConnectionFactory getFactory(String hostname, int port, int timeoutMS, int frameSize, int maxMessageSize) {
         PoolKey pk = new PoolKey(hostname, port, timeoutMS);
 
         CTConnectionFactory f = factories.get(pk);
         if (null == f) {
-            f = new CTConnectionFactory(hostname, port, timeoutMS);
+            f = new CTConnectionFactory(hostname, port, timeoutMS, frameSize, maxMessageSize);
             CTConnectionFactory old = factories.putIfAbsent(pk, f);
             if (null != old)
                 f = old;
