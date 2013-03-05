@@ -12,7 +12,6 @@ import org.apache.cassandra.thrift.InvalidRequestException;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
 import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
@@ -32,18 +31,20 @@ import java.util.UUID;
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class CTConnectionFactory implements KeyedPoolableObjectFactory {
+    private static final Logger log = LoggerFactory.getLogger(CTConnectionFactory.class);
 
     private final String hostname;
     private final int port;
     private final int timeoutMS;
+    private final int frameSize;
+    private final int maxMessageSize;
 
-    private static final Logger log =
-            LoggerFactory.getLogger(CTConnectionFactory.class);
-
-    CTConnectionFactory(String hostname, int port, int timeoutMS) {
+    CTConnectionFactory(String hostname, int port, int timeoutMS, int frameSize, int maxMessageSize) {
         this.hostname = hostname;
         this.port = port;
         this.timeoutMS = timeoutMS;
+        this.frameSize = frameSize;
+        this.maxMessageSize = maxMessageSize;
     }
 
     @Override
@@ -81,13 +82,17 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory {
      */
     public CTConnection makeRawConnection() throws TTransportException {
         log.debug("Creating TSocket({}, {}, {})", new Object[]{hostname, port, timeoutMS});
-        TTransport transport = new TFramedTransport(new TSocket(hostname, port, timeoutMS));
-        TProtocol proto = new TBinaryProtocol(transport);
-        Cassandra.Client client = new Cassandra.Client(proto);
+
+        TTransport transport = new TFramedTransport(new TSocket(hostname, port, timeoutMS), frameSize);
+        TBinaryProtocol protocol = new TBinaryProtocol(transport);
+
+        protocol.setReadLength(maxMessageSize);
+
+        Cassandra.Client client = new Cassandra.Client(protocol);
 
         transport.open();
 
-        return new CTConnection(transport, proto, client);
+        return new CTConnection(transport, client);
     }
 
     @Override
