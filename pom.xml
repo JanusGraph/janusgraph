@@ -18,6 +18,8 @@
     </description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <titan.version>0.3.0-SNAPSHOT</titan.version>
+        <tinkerpop.version>2.3.0-SNAPSHOT</tinkerpop.version>
     </properties>
     <developers>
         <developer>
@@ -55,17 +57,17 @@
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
             <artifactId>blueprints-core</artifactId>
-            <version>2.2.0</version>
+            <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
             <groupId>com.tinkerpop.gremlin</groupId>
             <artifactId>gremlin-groovy</artifactId>
-            <version>2.2.0</version>
+            <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
             <groupId>com.tinkerpop.rexster</groupId>
             <artifactId>rexster-core</artifactId>
-            <version>2.2.0</version>
+            <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -76,19 +78,35 @@
         <!-- TITAN -->
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan</artifactId>
-            <version>0.2.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.cassandra</groupId>
-                    <artifactId>cassandra-all</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>titan-core</artifactId>
+            <version>${titan.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
             <version>1.1.10</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase</artifactId>
+            <!-- Update the hadoop-core artifact version when you update this -->
+            <version>0.94.1</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>avro</artifactId>
+                    <groupId>org.apache.avro</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jruby-complete</artifactId>
+                    <groupId>org.jruby</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-core</artifactId>
+            <!-- Update the hbase artifact version when you update this -->
+            <version>1.0.3</version>
         </dependency>
         <!-- RDF PARSING -->
         <dependency>

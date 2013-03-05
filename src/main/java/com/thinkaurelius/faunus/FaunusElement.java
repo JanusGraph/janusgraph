@@ -72,6 +72,12 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         return this;
     }
 
+    @Override
+    public void remove() {
+        //TODO: should this be supported?
+        throw new UnsupportedOperationException("Not supported in Faunus");
+    }
+
     public void enablePath(final boolean enablePath) {
         this.pathEnabled = enablePath;
         if (this.pathEnabled) {

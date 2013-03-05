@@ -2,11 +2,11 @@ package com.thinkaurelius.faunus.formats.titan.cassandra;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.formats.titan.FaunusVertexRelationLoader;
+import com.thinkaurelius.faunus.formats.titan.FaunusVertexLoader;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.transaction.InternalTitanTransaction;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import org.apache.cassandra.db.IColumn;
 import org.apache.commons.configuration.Configuration;
@@ -22,7 +22,7 @@ import java.util.SortedMap;
 
 public class FaunusTitanCassandraGraph extends StandardTitanGraph {
 
-    private final InternalTitanTransaction tx; /* it's only for reading a Titan graph into Hadoop. */
+    private final StandardTitanTx tx; /* it's only for reading a Titan graph into Hadoop. */
 
     public FaunusTitanCassandraGraph(final Configuration configuration) {
         this(configuration, true);
@@ -30,19 +30,24 @@ public class FaunusTitanCassandraGraph extends StandardTitanGraph {
 
     public FaunusTitanCassandraGraph(final Configuration configuration, boolean autoTx) {
         super(new GraphDatabaseConfiguration(configuration));
-        this.tx = (autoTx) ? startTransaction(new TransactionConfig(this.getConfiguration())) : null;
+        this.tx = (autoTx) ? newTransaction(new TransactionConfig(this.getConfiguration(), false)) : null;
     }
 
     public FaunusVertex readFaunusVertex(final ByteBuffer key, final SortedMap<ByteBuffer, IColumn> value) {
-        FaunusVertexRelationLoader loader = new FaunusVertexRelationLoader(key);
-        loadRelations(new CassandraMapIterable(value), loader, tx);
+        FaunusVertexLoader loader = new FaunusVertexLoader(key);
+        Iterable<Entry> entries = new CassandraMapIterable(value);
+        for (Entry data : entries) {
+            FaunusVertexLoader.RelationFactory factory = loader.getFactory();
+            super.edgeSerializer.readRelation(factory,data,tx);
+            factory.build();
+        }
         return loader.getVertex();
     }
 
     @Override
     public void shutdown() {
         if (tx != null)
-            tx.abort();
+            tx.rollback();
 
         super.shutdown();
     }
