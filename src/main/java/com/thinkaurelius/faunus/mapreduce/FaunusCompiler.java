@@ -181,11 +181,11 @@ public class FaunusCompiler extends Configured implements Tool {
 
             job.setMapOutputKeyClass(this.mapOutputKey);
             job.setMapOutputValueClass(this.mapOutputValue);
+            if(null != this.comparatorClass)
+                job.setSortComparatorClass(this.comparatorClass);
             job.setOutputKeyClass(this.outputKey);
             job.setOutputValueClass(this.outputValue);
 
-            if (null != this.comparatorClass)
-                job.setSortComparatorClass(this.comparatorClass);
 
             this.jobs.add(job);
 
