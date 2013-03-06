@@ -5,13 +5,17 @@ SET LIBDIR=..\lib
 SET CP=%LIBDIR%/*
 
 :: find hadoop
-IF "%HADOOP_CONF_DIR%" NEQ "" (
-  SET CP=%CP%;%HADOOP_CONF_DIR%
+IF "%HADOOP_PREFIX% NEQ "" (
+  SET CP=%CP%;%HADOOP_PREFIX%/conf
 ) ELSE (
-  IF "%HADOOP_CONF%" NEQ "" (
-    SET CP=%CP%;%HADOOP_CONF%
+  IF "%HADOOP_CONF_DIR%" NEQ "" (
+    SET CP=%CP%;%HADOOP_CONF_DIR%
   ) ELSE (
-    SET CP=%CP%;%HADOOP_HOME%/conf
+    IF "%HADOOP_CONF%" NEQ "" (
+      SET CP=%CP%;%HADOOP_CONF%
+    ) ELSE (
+      SET CP=%CP%;%HADOOP_HOME%/conf
+    )
   )
 )
 
