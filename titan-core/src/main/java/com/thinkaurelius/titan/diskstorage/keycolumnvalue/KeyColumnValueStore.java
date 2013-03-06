@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface KeyColumnValueStore {
 
+    public static final int PAGE_SIZE = 10; /* default page size for "slice" or "paged" operations */
+
     /**
      * Returns true if the specified key exists in the store, i.e. there is at least one column-value
      * pair for the key.
