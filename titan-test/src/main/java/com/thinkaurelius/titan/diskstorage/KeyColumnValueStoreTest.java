@@ -247,7 +247,6 @@ public abstract class KeyColumnValueStoreTest {
             clopen();
             RecordIterator<ByteBuffer> iterator1 = store.getKeys(tx);
             RecordIterator<ByteBuffer> iterator2 = store.getKeys(tx);
-            RecordIterator<ByteBuffer> iterator3 = store.getKeys(tx);
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator1));
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator2));
         }

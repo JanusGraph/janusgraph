@@ -1,7 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
@@ -10,36 +14,33 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import org.apache.cassandra.db.ColumnFamily;
-import org.apache.cassandra.db.IColumn;
-import org.apache.cassandra.db.ReadCommand;
-import org.apache.cassandra.db.Row;
-import org.apache.cassandra.db.SliceByNamesReadCommand;
-import org.apache.cassandra.db.SliceFromReadCommand;
+import org.apache.cassandra.db.*;
+import org.apache.cassandra.db.ConsistencyLevel;
+import org.apache.cassandra.db.filter.IDiskAtomFilter;
 import org.apache.cassandra.db.filter.QueryPath;
+import org.apache.cassandra.db.marshal.BytesType;
+import org.apache.cassandra.dht.*;
 import org.apache.cassandra.exceptions.IsBootstrappingException;
 import org.apache.cassandra.exceptions.RequestTimeoutException;
 import org.apache.cassandra.exceptions.UnavailableException;
 import org.apache.cassandra.service.StorageProxy;
+import org.apache.cassandra.service.StorageService;
+import org.apache.cassandra.thrift.*;
 import org.apache.cassandra.utils.ByteBufferUtil;
+import org.apache.commons.lang.ArrayUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
-public class CassandraEmbeddedKeyColumnValueStore
-        implements KeyColumnValueStore {
+public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore {
 
-    private static final Logger log = LoggerFactory
-            .getLogger(CassandraEmbeddedKeyColumnValueStore.class);
+    private static final Logger log = LoggerFactory.getLogger(CassandraEmbeddedKeyColumnValueStore.class);
 
     private final String keyspace;
     private final String columnFamily;
@@ -126,7 +127,89 @@ public class CassandraEmbeddedKeyColumnValueStore
 
     @Override
     public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        throw new UnsupportedOperationException();
+        final IPartitioner<?> partitioner = StorageService.getPartitioner();
+
+        if (!(partitioner instanceof RandomPartitioner) && !(partitioner instanceof Murmur3Partitioner))
+            throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
+
+        final Token maximumToken = (partitioner instanceof RandomPartitioner)
+                                    ? new BigIntegerToken(RandomPartitioner.MAXIMUM)
+                                    : new LongToken(Murmur3Partitioner.MAXIMUM);
+
+        return new RecordIterator<ByteBuffer>() {
+            private Iterator<Row> keys = getKeySlice(partitioner.getMinimumToken(),
+                                                     maximumToken,
+                                                     PAGE_SIZE);
+
+            private ByteBuffer lastSeenKey = null;
+
+            @Override
+            public boolean hasNext() throws StorageException {
+                boolean hasNext = keys.hasNext();
+
+                if (!hasNext && lastSeenKey != null) {
+                    keys = getKeySlice(partitioner.getToken(lastSeenKey), maximumToken, PAGE_SIZE);
+                    hasNext = keys.hasNext();
+                }
+
+                return hasNext;
+            }
+
+            @Override
+            public ByteBuffer next() throws StorageException {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+
+                Row row = keys.next();
+
+                try {
+                    return row.key.key.duplicate();
+                } finally {
+                    lastSeenKey = row.key.key;
+                }
+            }
+
+            @Override
+            public void close() throws StorageException {
+                // nothing to clean-up here
+            }
+        };
+    }
+
+    private Iterator<Row> getKeySlice(Token start, Token end, int pageSize) throws StorageException {
+        IPartitioner<?> partitioner = StorageService.getPartitioner();
+
+        /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
+        SlicePredicate predicate = new SlicePredicate().setSlice_range(new SliceRange()
+                                                                        .setStart(ArrayUtils.EMPTY_BYTE_ARRAY)
+                                                                        .setFinish(ArrayUtils.EMPTY_BYTE_ARRAY)
+                                                                        .setCount(5));
+
+        Range<RowPosition> range = new Range<RowPosition>(start.maxKeyBound(partitioner),
+                                                          end.maxKeyBound(partitioner),
+                                                          partitioner);
+
+        List<Row> rows;
+
+        try {
+            IDiskAtomFilter filter = ThriftValidation.asIFilter(predicate, BytesType.instance);
+
+            rows = StorageProxy.getRangeSlice(new RangeSliceCommand(keyspace,
+                                                                    new ColumnParent(columnFamily),
+                                                                    filter,
+                                                                    range,
+                                                                    null,
+                                                                    pageSize), ConsistencyLevel.QUORUM);
+        } catch (Exception e) {
+            throw new PermanentStorageException(e);
+        }
+
+        return Iterators.filter(rows.iterator(), new Predicate<Row>() {
+            @Override
+            public boolean apply(@Nullable Row row) {
+                return (row == null) ? false : !(row.cf == null || row.cf.isMarkedForDelete() || row.cf.getColumnCount() == 0);
+            }
+        });
     }
 
     @Override
@@ -214,7 +297,7 @@ public class CassandraEmbeddedKeyColumnValueStore
         ColumnFamily cf = r.cf;
 
         if (null == cf) {
-            log.warn("null ColumnFamily (\"{}\")", columnFamily);
+            log.debug("null ColumnFamily (\"{}\")", columnFamily);
             return new ArrayList<Entry>(0);
         }
 

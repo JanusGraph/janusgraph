@@ -9,4 +9,9 @@ public class InternalCassandraEmbeddedGraphTest extends TitanGraphTest {
         super(CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration());
     }
 
+    @Override
+    public void testIteration() {
+        // do nothing as this is uses ordered Partitioner
+    }
+
 }
