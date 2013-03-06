@@ -37,7 +37,7 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
                 Holder.class,
                 NullWritable.class,
                 FaunusVertex.class,
-                new Configuration());
+                BlueprintsGraphOutputMapReduce.createConfiguration());
     }
 
 }

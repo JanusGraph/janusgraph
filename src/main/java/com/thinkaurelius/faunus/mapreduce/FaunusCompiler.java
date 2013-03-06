@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.mapreduce;
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
 import com.thinkaurelius.faunus.hdfs.GraphFilter;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
 import org.apache.hadoop.conf.Configuration;
@@ -167,11 +166,6 @@ public class FaunusCompiler extends Configured implements Tool {
                 throw new RuntimeException(e.getMessage(), e);
             }
 
-            // copy over any global configuration from faunus.properties and -D CLI
-            for (final Map.Entry<String, String> entry : this.graph.getConfiguration()) {
-                job.getConfiguration().set(entry.getKey(), entry.getValue());
-            }
-
             job.setJarByClass(FaunusCompiler.class);
             job.setMapperClass(MapSequence.Map.class);
             if (null != this.reduceClass) {
@@ -183,12 +177,6 @@ public class FaunusCompiler extends Configured implements Tool {
                 job.getConfiguration().setClass("mapred.map.output.compression.codec", DefaultCodec.class, CompressionCodec.class);
             } else {
                 job.setNumReduceTasks(0);
-            }
-
-            // todo: make this part of MapReduceFormat
-            if (this.mapSequenceClasses.contains(BlueprintsGraphOutputMapReduce.Map.class)) {
-                job.setMapSpeculativeExecution(false);
-                job.setReduceSpeculativeExecution(false);
             }
 
             job.setMapOutputKeyClass(this.mapOutputKey);
@@ -215,18 +203,22 @@ public class FaunusCompiler extends Configured implements Tool {
             return;
         }
 
-        // TODO: rectify this hell
-        final String hadoopFileJar;
-        if (new File("target/" + Tokens.FAUNUS_JOB_JAR).exists())
+        String hadoopFileJar = null;
+        if (new File("target/" + Tokens.FAUNUS_JOB_JAR).exists()) {
+            logger.warn("Using developer reference to target/" + Tokens.FAUNUS_JOB_JAR);
             hadoopFileJar = "target/" + Tokens.FAUNUS_JOB_JAR;
-        else if (new File("../../" + Tokens.FAUNUS_JOB_JAR).exists())
-            // this path is here when running the .bat from mvn clean install
-            hadoopFileJar = "../../" + Tokens.FAUNUS_JOB_JAR;
-        else if (new File("lib/" + Tokens.FAUNUS_JOB_JAR).exists())
-            hadoopFileJar = "lib/" + Tokens.FAUNUS_JOB_JAR;
-        else if (new File("../lib/" + Tokens.FAUNUS_JOB_JAR).exists())
-            hadoopFileJar = "../lib/" + Tokens.FAUNUS_JOB_JAR;
-        else
+        } else if (new File("../target/" + Tokens.FAUNUS_JOB_JAR).exists()) {
+            logger.warn("Using developer reference to target/" + Tokens.FAUNUS_JOB_JAR);
+            hadoopFileJar = "../target/" + Tokens.FAUNUS_JOB_JAR;
+        } else {
+            final String faunusHome = System.getProperty(Tokens.FAUNUS_HOME);
+            if (null == faunusHome || faunusHome.isEmpty())
+                throw new IllegalStateException("FAUNUS_HOME must be set in order to locate the Faunus Hadoop job jar: " + Tokens.FAUNUS_JOB_JAR);
+            if (new File(faunusHome + "/lib/" + Tokens.FAUNUS_JOB_JAR).exists()) {
+                hadoopFileJar = faunusHome + "/lib/" + Tokens.FAUNUS_JOB_JAR;
+            }
+        }
+        if (null == hadoopFileJar)
             throw new IllegalStateException("The Faunus Hadoop job jar could not be found: " + Tokens.FAUNUS_JOB_JAR);
 
         if (this.pathEnabled)
