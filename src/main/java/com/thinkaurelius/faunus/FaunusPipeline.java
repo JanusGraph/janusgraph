@@ -28,6 +28,7 @@ import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
+import com.thinkaurelius.faunus.mapreduce.util.ScriptMap;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -1022,6 +1023,15 @@ public class FaunusPipeline {
      */
     public FaunusPipeline keep() {
         return this.commit(Tokens.Action.KEEP);
+    }
+
+    public FaunusPipeline script(final String scriptUri, final String... args) {
+        this.compiler.addMap(ScriptMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                ScriptMap.createConfiguration(scriptUri, args));
+        makeMapReduceString(CommitEdgesMap.class, scriptUri);
+        return this;
     }
 
     /////////////// UTILITIES
