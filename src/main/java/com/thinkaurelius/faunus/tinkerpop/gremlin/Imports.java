@@ -41,7 +41,7 @@ public class Imports {
 
         // titan
         imports.add("com.thinkaurelius.titan.core.*");
-        //imports.add("org.apache.commons.configuration.*");
+        imports.add("org.apache.commons.configuration.BaseConfiguration");
 
         // tinkerpop
         imports.addAll(com.tinkerpop.gremlin.Imports.getImports());
