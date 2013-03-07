@@ -41,36 +41,30 @@ import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
-
-    private static final Logger log =
-            LoggerFactory.getLogger(CassandraThriftStoreManager.class);
+    private static final Logger log = LoggerFactory.getLogger(CassandraThriftStoreManager.class);
 
     private final Map<String, CassandraThriftKeyColumnValueStore> openStores;
 
-    private final UncheckedGenericKeyedObjectPool
-            <String, CTConnection> pool;
-
+    private final UncheckedGenericKeyedObjectPool <String, CTConnection> pool;
 
     public CassandraThriftStoreManager(Configuration config) throws StorageException {
         super(config);
 
-        this.pool = CTConnectionPool.getPool(
-                hostname,
-                port,
-                config.getInt(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT));
+        this.pool = CTConnectionPool.getPool(hostname,
+                                             port,
+                                             config.getInt(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY,
+                                                           GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT),
+                                             thriftFrameSize,
+                                             thriftMaxMessageSize);
 
         this.openStores = new HashMap<String, CassandraThriftKeyColumnValueStore>();
-
-
     }
 
     @Override
     public Partitioner getPartitioner() throws StorageException {
-        CTConnectionFactory fac =
-                CTConnectionPool.getFactory(hostname, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
         CTConnection conn = null;
         try {
-            conn = fac.makeRawConnection();
+            conn = getCassandraConnection();
             return Partitioner.getPartitioner(conn.getClient().describe_partitioner());
         } catch (Exception e) {
             throw new TemporaryStorageException(e);
@@ -199,7 +193,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
         CTConnection conn = null;
         try {
-            conn = CTConnectionPool.getFactory(hostname, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT).makeRawConnection();
+            conn = getCassandraConnection();
             Cassandra.Client client = conn.getClient();
 
             try {
@@ -210,7 +204,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 for (CfDef cfDef : ksDef.getCf_defs())
                     client.truncate(cfDef.name);
 
-                CTConnectionPool.getPool(hostname, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT).clear(keySpaceName);
+
+                CTConnectionPool.clearPool(hostname, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT, keySpaceName);
             } catch (InvalidRequestException e) { // Keyspace doesn't exist yet: return immediately
                 log.debug("Keyspace {} does not exist, not attempting to truncate.", keySpaceName);
             }
@@ -399,10 +394,10 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     private CTConnection getCassandraConnection() throws TTransportException {
-        CTConnectionFactory fac = CTConnectionPool.getFactory(hostname,
-                port,
-                GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
-
-        return fac.makeRawConnection();
+        return CTConnectionPool.getFactory(hostname,
+                                           port,
+                                           GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT,
+                                           thriftFrameSize,
+                                           thriftMaxMessageSize).makeRawConnection();
     }
 }

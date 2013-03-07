@@ -36,6 +36,19 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     public static final String READ_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
 
     public static final String WRITE_CONSISTENCY_LEVEL_KEY = "write-consistency-level";
+
+    /**
+     * Next tqo options should be appropriately set when server-side Thrift counterparts were changed,
+     * because otherwise client wouldn't be able to accept read/write frames from server as incorrectly sized.
+     *
+     * Note: both properties are sized in megabytes for user convenience (defaults are 15MB and 16MB by cassandra.yaml).
+     */
+    public static final String THRIFT_FRAME_SIZE_MB = "cassandra.thrift.frame_size_mb";
+    public static final String THRIFT_MAX_MESSAGE_SIZE_MB = "cassandra.thrift.max_message_size_mb";
+
+    public static final int THRIFT_DEFAULT_FRAME_SIZE = 15 * 1024 * 1024;
+    public static final int THRIFT_DEFAULT_MAX_MESSAGE_SIZE = 16 * 1024 * 1024;
+
     /*
      * Any operation attempted with ConsistencyLevel.TWO
      * against a single-node Cassandra cluster (like the one
@@ -72,6 +85,9 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     private final CassandraTransaction.Consistency readConsistencyLevel;
     private final CassandraTransaction.Consistency writeConsistencyLevel;
 
+    // see description for THRIFT_FRAME_SIZE and THRIFT_MAX_MESSAGE_SIZE for details
+    protected final int thriftFrameSize, thriftMaxMessageSize;
+
     private StoreFeatures features = null;
 
     protected static final String SYSTEM_PROPERTIES_CF  = "system_properties";
@@ -89,6 +105,21 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
         this.writeConsistencyLevel = CassandraTransaction.Consistency.parse(storageConfig.getString(
                 WRITE_CONSISTENCY_LEVEL_KEY, WRITE_CONSISTENCY_LEVEL_DEFAULT));
+
+        String rawFrameSize = storageConfig.getString(THRIFT_FRAME_SIZE_MB);
+        String rawMaxMessageSize = storageConfig.getString(THRIFT_MAX_MESSAGE_SIZE_MB);
+
+        try {
+            this.thriftFrameSize = (rawFrameSize != null)
+                                     ? Integer.valueOf(rawFrameSize) * 1024 * 1024
+                                     : THRIFT_DEFAULT_FRAME_SIZE;
+
+            this.thriftMaxMessageSize = (rawMaxMessageSize != null)
+                                         ? Integer.valueOf(rawMaxMessageSize) * 1024 * 1024
+                                         : THRIFT_DEFAULT_MAX_MESSAGE_SIZE;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid Thrift storage option(s) given", e);
+        }
     }
 
     public abstract Partitioner getPartitioner() throws StorageException;
