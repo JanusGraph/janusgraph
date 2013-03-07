@@ -8,7 +8,7 @@ def setup(args) {
 }
 
 def map(v, args) {
-    u = g.v(v.id)
+    u = g.v(v.id) // the Faunus vertex id is the same as the original Titan vertex id
     pipe = u.out('father').name
     if (pipe.hasNext()) u.fathersName = pipe.next();
     u.name + "'s father's name is " + u.fathersName

@@ -15,6 +15,7 @@ h3. Version 0.2.0 (NOT OFFICIALLY RELEASE YET)
 </dependency>
 ```
 
+* Added @script@-step which allows for arbitrary Gremlin/Groovy script executions on Faunus vertices
 * Fixed job jar finding issue by introducing @FAUNUS_HOME@ system property
 * Complete refactoring of @FaunusCompiler@ and @FaunusPipeline@
 * Added support for user defined @Input@- @OutputFormats@
