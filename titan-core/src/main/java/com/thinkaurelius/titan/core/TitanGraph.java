@@ -39,7 +39,7 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
 
     public TypeMaker makeType();
 
-    public ElementQueryBuilder queryElements();
+    public ElementQuery query();
 
 
     public TitanType getType(String name);

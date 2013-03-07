@@ -30,6 +30,7 @@ public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<Standar
 
     private final StandardTitanTx tx;
     private List<KeyAtom<TitanKey>> conditions;
+    private int limit = Query.NO_LIMIT;
 
     public ElementQueryBuilder(StandardTitanTx tx) {
         Preconditions.checkNotNull(tx);
@@ -38,7 +39,7 @@ public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<Standar
     }
 
     @Override
-    public ElementQuery and(String key, Relation relation, Object condition) {
+    public ElementQuery has(String key, Relation relation, Object condition) {
         Preconditions.checkNotNull(key);
         TitanType type = tx.getType(key);
         if (type==null || !(type instanceof TitanKey)) {
@@ -48,11 +49,11 @@ public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<Standar
             } else {
                 throw new IllegalArgumentException("Unknown or invalid property key: " + key);
             }
-        } else return and((TitanKey)type,relation,condition);
+        } else return has((TitanKey) type, relation, condition);
     }
 
     @Override
-    public ElementQuery and(TitanKey key, Relation relation, Object condition) {
+    public ElementQuery has(TitanKey key, Relation relation, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(relation);
         if (condition!=null) condition=AttributeUtil.verifyAttribute(key,condition);
@@ -66,11 +67,11 @@ public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<Standar
 
     private StandardElementQuery constructQuery(StandardElementQuery.Type elementType) {
         Preconditions.checkNotNull(elementType);
-        return new StandardElementQuery(elementType,KeyAnd.of(conditions.toArray(new KeyAtom[conditions.size()])),null);
+        return new StandardElementQuery(elementType,KeyAnd.of(conditions.toArray(new KeyAtom[conditions.size()])),limit,null);
     }
 
     @Override
-    public Iterable<TitanVertex> getVertices() {
+    public Iterable<TitanVertex> vertices() {
         if (conditions==INVALID) return ImmutableList.of();
         else if (conditions.isEmpty()) return Iterables.filter(tx.getVertices(), TitanVertex.class);
         StandardElementQuery query = constructQuery(StandardElementQuery.Type.VERTEX);
@@ -78,12 +79,20 @@ public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<Standar
     }
 
     @Override
-    public Iterable<TitanEdge> getEdges() {
+    public Iterable<TitanEdge> edges() {
         if (conditions==INVALID) return ImmutableList.of();
         else if (conditions.isEmpty()) return Iterables.filter(tx.getEdges(),TitanEdge.class);
         StandardElementQuery query = constructQuery(StandardElementQuery.Type.EDGE);
         return Iterables.filter(new QueryProcessor<StandardElementQuery,TitanElement>(query,tx.elementProcessor,this),TitanEdge.class);
     }
+
+//    @Override
+//    public ElementQuery limit(long max) {
+//        Preconditions.checkArgument(max>=0,"Non-negative limit expected: %s",max);
+//        Preconditions.checkArgument(max<=Integer.MAX_VALUE,"Limit expected to be smaller or equal than [%s] but given %s",Integer.MAX_VALUE,limit);
+//        this.limit=(int)max;
+//        return this;
+//    }
 
     @Override
     public List<StandardElementQuery> optimize(StandardElementQuery query) {

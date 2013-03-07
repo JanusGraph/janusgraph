@@ -10,7 +10,6 @@ import com.thinkaurelius.titan.core.attribute.Txt;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import groovy.swing.factory.CellEditorGetValueFactory;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 
@@ -70,26 +69,26 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon  {
         }
 
         for (int i=0;i<words.length;i++) {
-            assertEquals(numV/words.length, Iterables.size(tx.queryElements().and("text", Txt.CONTAINS, words[i]).getVertices()));
-            assertEquals(numV/words.length, Iterables.size(tx.queryElements().and("text", Txt.CONTAINS, words[i]).getEdges()));
+            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Txt.CONTAINS, words[i]).vertices()));
+            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Txt.CONTAINS, words[i]).edges()));
         }
 
         for (int i=0;i<numV/2;i+=numV/10) {
-            assertEquals(i, Iterables.size(tx.queryElements().and("time", Cmp.GREATER_THAN_EQUAL, i).and("time",Cmp.LESS_THAN, i+i).getVertices()));
-            assertEquals(i, Iterables.size(tx.queryElements().and("time", Cmp.GREATER_THAN_EQUAL, i).and("time", Cmp.LESS_THAN, i + i).getEdges()));
+            assertEquals(i, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).vertices()));
+            assertEquals(i, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).edges()));
         }
 
         for (int i=0;i<numV;i+=10) {
             offset = (i*50.0/originalNumV);
             distance = Geoshape.point(0.0,0.0).getPoint().distance(Geoshape.point(offset,offset).getPoint())+20;
-            assertEquals(i+1, Iterables.size(tx.queryElements().and("location", Geo.WITHIN,Geoshape.circle(0.0,0.0,distance)).getVertices()));
-            assertEquals(i+1, Iterables.size(tx.queryElements().and("location", Geo.WITHIN,Geoshape.circle(0.0,0.0,distance)).getEdges()));
+            assertEquals(i+1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices()));
+            assertEquals(i+1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges()));
         }
 
-        assertEquals(5, Iterables.size(tx.queryElements().and("time", Cmp.GREATER_THAN_EQUAL, 10).and("time",Cmp.LESS_THAN, 30).and("text",Txt.CONTAINS,words[0]).getVertices()));
+        assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Txt.CONTAINS, words[0]).vertices()));
         offset = (19*50.0/originalNumV);
         distance = Geoshape.point(0.0,0.0).getPoint().distance(Geoshape.point(offset,offset).getPoint())+20;
-        assertEquals(5, Iterables.size(tx.queryElements().and("location", Geo.INTERSECT,Geoshape.circle(0.0,0.0,distance)).and("text",Txt.CONTAINS,words[0]).getVertices()));
+        assertEquals(5, Iterables.size(tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Txt.CONTAINS, words[0]).vertices()));
 
         assertEquals(numV, Iterables.size(tx.getVertices()));
         assertEquals(numV, Iterables.size(tx.getEdges()));
@@ -98,26 +97,26 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon  {
 
         //Copied from above
         for (int i=0;i<words.length;i++) {
-            assertEquals(numV/words.length, Iterables.size(tx.queryElements().and("text", Txt.CONTAINS, words[i]).getVertices()));
-            assertEquals(numV/words.length, Iterables.size(tx.queryElements().and("text", Txt.CONTAINS, words[i]).getEdges()));
+            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Txt.CONTAINS, words[i]).vertices()));
+            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Txt.CONTAINS, words[i]).edges()));
         }
 
         for (int i=0;i<numV/2;i+=numV/10) {
-            assertEquals(i, Iterables.size(tx.queryElements().and("time", Cmp.GREATER_THAN_EQUAL, i).and("time",Cmp.LESS_THAN, i+i).getVertices()));
-            assertEquals(i, Iterables.size(tx.queryElements().and("time", Cmp.GREATER_THAN_EQUAL, i).and("time", Cmp.LESS_THAN, i + i).getEdges()));
+            assertEquals(i, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).vertices()));
+            assertEquals(i, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).edges()));
         }
 
         for (int i=0;i<numV;i+=10) {
             offset = (i*50.0/originalNumV);
             distance = Geoshape.point(0.0,0.0).getPoint().distance(Geoshape.point(offset,offset).getPoint())+20;
-            assertEquals(i+1, Iterables.size(tx.queryElements().and("location", Geo.WITHIN,Geoshape.circle(0.0,0.0,distance)).getVertices()));
-            assertEquals(i+1, Iterables.size(tx.queryElements().and("location", Geo.WITHIN,Geoshape.circle(0.0,0.0,distance)).getEdges()));
+            assertEquals(i+1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices()));
+            assertEquals(i+1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges()));
         }
 
-        assertEquals(5, Iterables.size(tx.queryElements().and("time", Cmp.GREATER_THAN_EQUAL, 10).and("time",Cmp.LESS_THAN, 30).and("text",Txt.CONTAINS,words[0]).getVertices()));
+        assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Txt.CONTAINS, words[0]).vertices()));
         offset = (19*50.0/originalNumV);
         distance = Geoshape.point(0.0,0.0).getPoint().distance(Geoshape.point(offset,offset).getPoint())+20;
-        assertEquals(5, Iterables.size(tx.queryElements().and("location", Geo.INTERSECT,Geoshape.circle(0.0,0.0,distance)).and("text",Txt.CONTAINS,words[0]).getVertices()));
+        assertEquals(5, Iterables.size(tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Txt.CONTAINS, words[0]).vertices()));
 
         assertEquals(numV, Iterables.size(tx.getVertices()));
         assertEquals(numV, Iterables.size(tx.getEdges()));
@@ -133,26 +132,26 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon  {
 
         //Copied from above
         for (int i=0;i<words.length;i++) {
-            assertEquals(numV/words.length, Iterables.size(tx.queryElements().and("text", Txt.CONTAINS, words[i]).getVertices()));
-            assertEquals(numV/words.length, Iterables.size(tx.queryElements().and("text", Txt.CONTAINS, words[i]).getEdges()));
+            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Txt.CONTAINS, words[i]).vertices()));
+            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Txt.CONTAINS, words[i]).edges()));
         }
 
         for (int i=0;i<numV/2;i+=numV/10) {
-            assertEquals(i, Iterables.size(tx.queryElements().and("time", Cmp.GREATER_THAN_EQUAL, i).and("time",Cmp.LESS_THAN, i+i).getVertices()));
-            assertEquals(i, Iterables.size(tx.queryElements().and("time", Cmp.GREATER_THAN_EQUAL, i).and("time", Cmp.LESS_THAN, i + i).getEdges()));
+            assertEquals(i, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).vertices()));
+            assertEquals(i, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).edges()));
         }
 
         for (int i=0;i<numV;i+=10) {
             offset = (i*50.0/originalNumV);
             distance = Geoshape.point(0.0,0.0).getPoint().distance(Geoshape.point(offset,offset).getPoint())+20;
-            assertEquals(i+1, Iterables.size(tx.queryElements().and("location", Geo.WITHIN,Geoshape.circle(0.0,0.0,distance)).getVertices()));
-            assertEquals(i+1, Iterables.size(tx.queryElements().and("location", Geo.WITHIN,Geoshape.circle(0.0,0.0,distance)).getEdges()));
+            assertEquals(i+1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices()));
+            assertEquals(i+1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges()));
         }
 
-        assertEquals(5, Iterables.size(tx.queryElements().and("time", Cmp.GREATER_THAN_EQUAL, 10).and("time",Cmp.LESS_THAN, 30).and("text",Txt.CONTAINS,words[0]).getVertices()));
+        assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Txt.CONTAINS, words[0]).vertices()));
         offset = (19*50.0/originalNumV);
         distance = Geoshape.point(0.0,0.0).getPoint().distance(Geoshape.point(offset,offset).getPoint())+20;
-        assertEquals(5, Iterables.size(tx.queryElements().and("location", Geo.INTERSECT,Geoshape.circle(0.0,0.0,distance)).and("text",Txt.CONTAINS,words[0]).getVertices()));
+        assertEquals(5, Iterables.size(tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Txt.CONTAINS, words[0]).vertices()));
 
         assertEquals(numV, Iterables.size(tx.getVertices()));
         assertEquals(numV, Iterables.size(tx.getEdges()));

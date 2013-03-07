@@ -23,7 +23,7 @@ public interface ElementQuery {
      * @param condition
      * @return This element query
      */
-    public ElementQuery and(String key, Relation relation, Object condition);
+    public ElementQuery has(String key, Relation relation, Object condition);
 
     /**
      * The returned element must have a property for the given key that matches the condition according to the
@@ -34,18 +34,21 @@ public interface ElementQuery {
      * @param condition
      * @return This element query
      */
-    public ElementQuery and(TitanKey key, Relation relation, Object condition);
+    public ElementQuery has(TitanKey key, Relation relation, Object condition);
 
     /**
      * Returns all vertices that match the conditions.
      * @return
      */
-    public Iterable<TitanVertex> getVertices();
+    public Iterable<TitanVertex> vertices();
 
     /**
      * Returns all edges that match the conditions.
      * @return
      */
-    public Iterable<TitanEdge> getEdges();
+    public Iterable<TitanEdge> edges();
+
+
+    //public ElementQuery limit(final long max);
 
 }

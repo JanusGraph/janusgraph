@@ -708,7 +708,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                 Preconditions.checkArgument(!newConds.isEmpty(),"Invalid index assignment [%s] to query [%s]",index, query);
                 final StandardElementQuery indexQuery;
                 if (needsFilter) {
-                    indexQuery = new StandardElementQuery(query.getType(),KeyAnd.of(newConds.toArray(new KeyAtom[newConds.size()])),index);
+                    indexQuery = new StandardElementQuery(query.getType(),KeyAnd.of(newConds.toArray(new KeyAtom[newConds.size()])),query.getLimit(),index);
                 } else {
                     indexQuery = query;
                 }
@@ -753,7 +753,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     };
 
     @Override
-    public ElementQueryBuilder queryElements() {
+    public ElementQueryBuilder query() {
         return new ElementQueryBuilder(this);
     }
 
@@ -761,7 +761,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     public Iterable<TitanVertex> getVertices(TitanKey key, Object attribute) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(attribute);
-        return queryElements().and(key, Cmp.EQUAL,attribute).getVertices();
+        return query().has(key, Cmp.EQUAL, attribute).vertices();
     }
 
     @Override
@@ -780,7 +780,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     public Iterable<TitanEdge> getEdges(TitanKey key, Object attribute) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(attribute);
-        return queryElements().and(key, Cmp.EQUAL,attribute).getEdges();
+        return query().has(key, Cmp.EQUAL, attribute).edges();
     }
 
     /*

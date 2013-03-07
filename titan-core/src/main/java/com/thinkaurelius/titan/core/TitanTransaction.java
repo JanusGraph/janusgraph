@@ -114,7 +114,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      */
     public boolean containsVertex(long vertexid);
 
-    public ElementQueryBuilder queryElements();
+    public ElementQuery query();
 
     public TitanVertex getVertex(TitanKey key, Object attribute);
 

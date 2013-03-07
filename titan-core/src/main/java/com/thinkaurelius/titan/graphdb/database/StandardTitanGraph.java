@@ -15,7 +15,6 @@ import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
-import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
@@ -53,9 +52,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private final int maxWriteRetryAttempts;
     private final int retryStorageWaitTime;
 
-    private final IndexSerializer indexSerializer;
-    private final EdgeSerializer edgeSerializer;
-    private final Serializer serializer;
+    protected final IndexSerializer indexSerializer;
+    protected final EdgeSerializer edgeSerializer;
+    protected final Serializer serializer;
 
 
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
@@ -101,15 +100,15 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     @Override
     public TitanTransaction newTransaction() {
-        return startTransaction(new TransactionConfig(config,false));
+        return newTransaction(new TransactionConfig(config, false));
     }
 
     @Override
     public TitanTransaction newThreadBoundTransaction() {
-        return startTransaction(new TransactionConfig(config,true));
+        return newTransaction(new TransactionConfig(config, true));
     }
 
-    public StandardTitanTx startTransaction(TransactionConfig configuration) {
+    public StandardTitanTx newTransaction(TransactionConfig configuration) {
         try {
             return new StandardTitanTx(this, configuration, backend.beginTransaction());
         } catch (StorageException e) {
