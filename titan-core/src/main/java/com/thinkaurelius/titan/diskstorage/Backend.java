@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -355,7 +356,10 @@ public class Backend {
 
         try {
             props = new Properties();
-            props.load(TitanFactory.class.getClassLoader().getResourceAsStream(TitanConstants.TITAN_PROPERTIES_FILE));
+            InputStream in = TitanFactory.class.getClassLoader().getResourceAsStream(TitanConstants.TITAN_PROPERTIES_FILE);
+            if (in!=null && in.available()>0) {
+                props.load(in);
+            }
         } catch (IOException e) {
             throw new AssertionError(e);
         }
