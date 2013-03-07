@@ -75,82 +75,84 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
     public void remove();
 
     /**
-     * Add a property with the given key and value to this vertex.
-     * If the key is functional, then a possibly existing value is replaced. If it is not functional, then
-     * a new property is added.
+     * Sets the value for the given key on this element.
+     * The key must be defined out-unique (see {@link TypeMaker#unique(com.tinkerpop.blueprints.Direction)}).
      *
-     * @param key   the string key of the property
-     * @param value the object value o the property
+     * @param key   the string identifying the key
+     * @param value the object value
      */
     public void setProperty(String key, Object value);
 
     /**
-     * Add a property with the given key and value to this vertex.
-     * If the key is functional, then a possibly existing value is replaced. If it is not functional, then
-     * a new property is added.
+     * Sets the value for the given key on this element.
+     * The key must be defined out-unique (see {@link TypeMaker#unique(com.tinkerpop.blueprints.Direction)}).
      *
-     * @param key   the string key of the property
-     * @param value the object value o the property
+     * @param key   the key
+     * @param value the object value
      */
     public void setProperty(TitanKey key, Object value);
 
     /**
-     * Retrieves the attribute value for the only property of the specified property key incident on this vertex.
+     * Retrieves the value associated with the given key on this vertex.
+     * If the key is out-unique, then there can be at most one value and this value is returned (or null).
+     * If the key is not out-unique, then a list of all associated values is returned, or an empty list of non exist.
      * <p/>
-     * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
-     * If there could be multiple properties (i.e. for non-functional property keys), then use {@link #getProperties(TitanKey)}
      *
-     * @param key key of the property for which to retrieve the attribute value
-     * @return Attribute value of the property with the specified type or null if no such property exists
-     * @throws IllegalArgumentException if more than one property of the specified key are incident on this vertex.
+     * @param key key
+     * @return value or list of values associated with key
      */
     public Object getProperty(TitanKey key);
 
     /**
-     * Retrieves the attribute value for the only property of the specified property key incident on this vertex.
+     * Retrieves the value associated with the given key on this vertex.
+     * If the key is out-unique, then there can be at most one value and this value is returned (or null).
+     * If the key is not out-unique, then a list of all associated values is returned, or an empty list of non exist.
      * <p/>
-     * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
-     * If there could be multiple properties (i.e. for non-functional property keys), then use {@link #getProperties(String)}
      *
-     * @param key key name of the property for which to retrieve the attribute value
-     * @return Attribute value of the property with the specified type or null if no such property exists
-     * @throws IllegalArgumentException if more than one property of the specified key are incident on this vertex.
+     * @param key string identifying a key
+     * @return value or list of values associated with key
      */
     public Object getProperty(String key);
 
     /**
-     * Retrieves the attribute value for the only property of the specified property key incident on this vertex and casts
-     * it to the specified {@link Class}.
+     * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
+     * If the key is out-unique, then there can be at most one value and this value is returned (or null).
+     * If the key is not out-unique, then a list of all associated values is returned, or an empty list of non exist.
      * <p/>
-     * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
      *
-     * @param key key name of the property for which to retrieve the attribute value
-     * @return Attribute value of the property with the specified type
-     * @throws IllegalArgumentException if more than one property of the specified key are incident on this vertex.
+     * @param key key
+     * @return value or list of values associated with key
      */
     public <O> O getProperty(TitanKey key, Class<O> clazz);
 
     /**
-     * Retrieves the attribute value for the only property of the specified property key incident on this vertex and casts
-     * it to the specified {@link Class}.
+     * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
+     * If the key is out-unique, then there can be at most one value and this value is returned (or null).
+     * If the key is not out-unique, then a list of all associated values is returned, or an empty list of non exist.
      * <p/>
-     * This method call expects that there is at most one property of the specified {@link TitanKey} incident on this vertex.
      *
-     * @param key key of the property for which to retrieve the attribute value
-     * @return Attribute value of the property with the specified type
-     * @throws IllegalArgumentException if more than one property of the specified key are incident on this vertex.
+     * @param key string identifying a key
+     * @return value or list of values associated with key
      */
     public <O> O getProperty(String key, Class<O> clazz);
 
     /**
-     * Removes all properties with the given key from this vertex.
+     * Removes the value associated with the given key for this vertex (if exists).
      *
-     * @param key the key of the properties to remove from the element
-     * @return the object value (or null) associated with that key prior to removal if the key is functional,
-     *         or an {@link Iterable} over all values (which may be empty) if it is not functional
+     * @param key the string identifying the key
+     * @return the object value associated with that key prior to removal, or NULL if such does not exist.
+     * @see #removeProperty(TitanType)
      */
     public Object removeProperty(String key);
 
+    /**
+     * Removes the value associated with the given key for this vertex (if exists).
+     * If the key is not out-unique then more than all values associated with this key are removed and only
+     * the last removed value returned.
+     *
+     * @param type the key
+     * @return the object value associated with that key prior to removal, or NULL if such does not exist.
+     */
     public Object removeProperty(TitanType type);
 
 

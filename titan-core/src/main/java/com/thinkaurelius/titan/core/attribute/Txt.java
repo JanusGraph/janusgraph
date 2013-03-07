@@ -17,7 +17,6 @@ import java.util.Arrays;
 
 public enum Txt implements Relation {
 
-    //TODO: generalize to also allow String[] as condition
     /**
      * Whether the text contains a given term
      */

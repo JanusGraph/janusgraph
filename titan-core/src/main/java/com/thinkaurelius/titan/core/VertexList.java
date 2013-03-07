@@ -8,7 +8,7 @@ import cern.colt.list.AbstractLongList;
  * Basic interface for a list of vertices which supports retrieving individuals vertices or iterating over all of them,
  * but does not support modification.
  * <p/>
- * VertexList is returned by {@link TitanQuery}. Depending on how the query was executed that returned this VertexList,
+ * VertexList is returned by {@link TitanVertexQuery}. Depending on how the query was executed that returned this VertexList,
  * getting vertex idAuthorities might be significantly faster than retrieving vertex objects.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)

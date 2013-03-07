@@ -1,7 +1,6 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.graphdb.query.ElementQueryBuilder;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
@@ -18,6 +17,11 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
 
     /**
      * Opens a new thread-independent {@link TitanTransaction}.
+     *
+     * <p />
+     * Note, that this returns a thread independent transaction object. It is not necessary to call this method
+     * to use Blueprint's standard transaction framework which will automatically start a transaction with the first
+     * operation on the graph.
      *
      * @return Transaction object representing a transactional context.
      */
@@ -36,12 +40,26 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
      */
     public void shutdown() throws TitanException;
 
-
+    /**
+     * Returns a {@link TypeMaker} to create a new Titan type.
+     *
+     * @return
+     */
     public TypeMaker makeType();
 
-    public ElementQuery query();
+    /**
+     * Returns a {@link TitanGraphQuery} to query for vertices or edges in the graph by their properties.
+     *
+     * @return
+     */
+    public TitanGraphQuery query();
 
 
+    /**
+     * Returns the {@link TitanType} uniquely identified by the given name, or NULL if such does not exist.
+     * @param name
+     * @return
+     */
     public TitanType getType(String name);
 
 

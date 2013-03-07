@@ -1,10 +1,6 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.graphdb.query.ElementQueryBuilder;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
@@ -114,42 +110,36 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      */
     public boolean containsVertex(long vertexid);
 
-    public ElementQuery query();
+    public TitanGraphQuery query();
 
     public TitanVertex getVertex(TitanKey key, Object attribute);
 
     public TitanVertex getVertex(String key, Object attribute);
 
     /**
-     * Retrieves all vertices which have an incident property of the given key with the specified value.
+     * Retrieves all vertices which have a property of the given key with the specified value.
      * <p/>
-     * The given property key must be indexed. In this regard, it violates the Blueprints contract which
-     * requires iterating over all vertices and filtering based on the attribute. However, Titan does not
-     * support vertex iteration.
+     * For this operation to be efficient, please ensure that the given property key is indexed for vertices using a <i>standard</i> index.
+     * Some storage backends may not support this method without a pre-configured index.
      *
-     * @param key       property key
+     * @param key       key
      * @param attribute attribute value
-     * @return All vertices which have an incident property of the given key with the specified value.
-     * @throws IllegalArgumentException if the property key is not indexed.
-     * @see com.thinkaurelius.titan.core.TitanKey#hasIndex()
+     * @return All vertices which have a property of the given key with the specified value.
+     * @see TypeMaker#indexed(Class)
      */
     public Iterable<TitanVertex> getVertices(TitanKey key, Object attribute);
 
     /**
-     * Retrieves all vertices which have an incident property of the given key with the specified value.
+     * Retrieves all edges which have a property of the given key with the specified value.
      * <p/>
-     * The given property key must be indexed. In this regard, it violates the Blueprints contract which
-     * requires iterating over all vertices and filtering based on the attribute. However, Titan does not
-     * support vertex iteration.
+     * For this operation to be efficient, please ensure that the given property key is indexed for edges using a <i>standard</i> index.
+     * Some storage backends may not support this method without a pre-configured index.
      *
-     * @param key       property key
+     * @param key       key
      * @param attribute attribute value
-     * @return All vertices which have an incident property of the given key with the specified value.
-     * @throws IllegalArgumentException if the property key is not indexed.
-     * @see com.thinkaurelius.titan.core.TitanKey#hasIndex()
+     * @return All edges which have a property of the given key with the specified value.
+     * @see TypeMaker#indexed(Class)
      */
-    public Iterable<Vertex> getVertices(String key, Object attribute);
-
     public Iterable<TitanEdge> getEdges(TitanKey key, Object attribute);
 
     /**

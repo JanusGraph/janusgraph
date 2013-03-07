@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.graphdb.query.Query;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyCondition;
 import org.apache.commons.lang.StringUtils;
 
@@ -17,12 +18,20 @@ public class IndexQuery {
 
     private final KeyCondition<String> condition;
     private final String store;
+    private final int limit;
+
 
     public IndexQuery(String store, KeyCondition<String> condition) {
+        this(store,condition,Query.NO_LIMIT);
+    }
+
+    public IndexQuery(String store, KeyCondition<String> condition, int limit) {
         Preconditions.checkNotNull(condition);
         Preconditions.checkArgument(StringUtils.isNotBlank(store));
-        this.condition = condition;
+        Preconditions.checkArgument(limit>=0);
+        this.condition=condition;
         this.store=store;
+        this.limit=limit;
     }
 
     public KeyCondition<String> getCondition() {
@@ -33,9 +42,21 @@ public class IndexQuery {
         return store;
     }
 
+    /**
+     *
+     * @return The maximum number of results to return
+     */
+    public int getLimit() {
+        return limit;
+    }
+
+    public boolean hasLimit() {
+        return limit!= Query.NO_LIMIT;
+    }
+
     @Override
     public int hashCode() {
-        return condition.hashCode()*9876469 + store.hashCode();
+        return condition.hashCode()*9876469 + store.hashCode()*4711 + limit;
     }
 
     @Override
@@ -44,12 +65,16 @@ public class IndexQuery {
         else if (other==null) return false;
         else if (!getClass().isInstance(other)) return false;
         IndexQuery oth = (IndexQuery)other;
-        return store.equals(oth.store) && condition.equals(oth.condition);
+        return store.equals(oth.store) && condition.equals(oth.condition) && limit==oth.limit;
     }
 
     @Override
     public String toString() {
-        return "["+condition.toString()+"]:"+store;
+        StringBuilder b = new StringBuilder();
+        b.append("[").append(condition.toString()).append("]");
+        if (hasLimit()) b.append("(").append(limit).append(")");
+        b.append(":").append(store);
+        return b.toString();
     }
 
 }

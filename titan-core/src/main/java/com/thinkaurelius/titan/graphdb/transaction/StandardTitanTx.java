@@ -708,7 +708,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                 Preconditions.checkArgument(!newConds.isEmpty(),"Invalid index assignment [%s] to query [%s]",index, query);
                 final StandardElementQuery indexQuery;
                 if (needsFilter) {
-                    indexQuery = new StandardElementQuery(query.getType(),KeyAnd.of(newConds.toArray(new KeyAtom[newConds.size()])),query.getLimit(),index);
+                    indexQuery = new StandardElementQuery(query.getType(),KeyAnd.of(newConds.toArray(new KeyAtom[newConds.size()])),query.getLimit()*2,index);
                 } else {
                     indexQuery = query;
                 }
@@ -753,8 +753,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     };
 
     @Override
-    public ElementQueryBuilder query() {
-        return new ElementQueryBuilder(this);
+    public TitanGraphQueryBuilder query() {
+        return new TitanGraphQueryBuilder(this);
     }
 
     @Override

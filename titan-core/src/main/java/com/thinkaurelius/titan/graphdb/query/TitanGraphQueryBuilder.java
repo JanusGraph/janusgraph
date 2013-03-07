@@ -21,9 +21,9 @@ import java.util.List;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<StandardElementQuery>  {
+public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<StandardElementQuery>  {
 
-    private static final Logger log = LoggerFactory.getLogger(ElementQueryBuilder.class);
+    private static final Logger log = LoggerFactory.getLogger(TitanGraphQueryBuilder.class);
 
 
     private static final List<KeyAtom<TitanKey>> INVALID = ImmutableList.of();
@@ -32,14 +32,14 @@ public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<Standar
     private List<KeyAtom<TitanKey>> conditions;
     private int limit = Query.NO_LIMIT;
 
-    public ElementQueryBuilder(StandardTitanTx tx) {
+    public TitanGraphQueryBuilder(StandardTitanTx tx) {
         Preconditions.checkNotNull(tx);
         this.tx=tx;
         this.conditions = Lists.newArrayList();
     }
 
     @Override
-    public ElementQuery has(String key, Relation relation, Object condition) {
+    public TitanGraphQuery has(String key, Relation relation, Object condition) {
         Preconditions.checkNotNull(key);
         TitanType type = tx.getType(key);
         if (type==null || !(type instanceof TitanKey)) {
@@ -53,7 +53,7 @@ public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<Standar
     }
 
     @Override
-    public ElementQuery has(TitanKey key, Relation relation, Object condition) {
+    public TitanGraphQuery has(TitanKey key, Relation relation, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(relation);
         if (condition!=null) condition=AttributeUtil.verifyAttribute(key,condition);
@@ -86,13 +86,13 @@ public class ElementQueryBuilder implements ElementQuery, QueryOptimizer<Standar
         return Iterables.filter(new QueryProcessor<StandardElementQuery,TitanElement>(query,tx.elementProcessor,this),TitanEdge.class);
     }
 
-//    @Override
-//    public ElementQuery limit(long max) {
-//        Preconditions.checkArgument(max>=0,"Non-negative limit expected: %s",max);
-//        Preconditions.checkArgument(max<=Integer.MAX_VALUE,"Limit expected to be smaller or equal than [%s] but given %s",Integer.MAX_VALUE,limit);
-//        this.limit=(int)max;
-//        return this;
-//    }
+    @Override
+    public TitanGraphQueryBuilder limit(long max) {
+        Preconditions.checkArgument(max>=0,"Non-negative limit expected: %s",max);
+        Preconditions.checkArgument(max<=Integer.MAX_VALUE,"Limit expected to be smaller or equal than [%s] but given %s",Integer.MAX_VALUE,limit);
+        this.limit=(int)max;
+        return this;
+    }
 
     @Override
     public List<StandardElementQuery> optimize(StandardElementQuery query) {

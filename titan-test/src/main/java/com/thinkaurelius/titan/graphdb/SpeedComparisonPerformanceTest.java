@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb;
 
-import com.thinkaurelius.titan.core.TitanQuery;
+import com.thinkaurelius.titan.core.TitanVertexQuery;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexList;
 import com.tinkerpop.blueprints.Direction;
@@ -65,7 +65,7 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
         for (int t = 0; t < 4; t++) {
             time = time();
             for (int i = 0; i < numVertices; i++) {
-                TitanQuery q = ((TitanQuery) vertices[i].query()).direction(Direction.OUT).labels("connect");
+                TitanVertexQuery q = ((TitanVertexQuery) vertices[i].query()).direction(Direction.OUT).labels("connect");
                 if (inMemory) { //TODO: this has been disabled
                     for (Vertex v : q.vertices()) {
                         v.getId();

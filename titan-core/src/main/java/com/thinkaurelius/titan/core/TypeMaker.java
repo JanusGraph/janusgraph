@@ -24,7 +24,15 @@ import com.tinkerpop.blueprints.Element;
 public interface TypeMaker {
 
     public enum UniquenessConsistency {
+
+        /**
+         * Does not acquire a lock and hence concurrent transactions may overwrite existing
+         * uniqueness relations.
+         */
         NO_LOCK,
+        /**
+         * Acquires a lock to ensure uniqueness consistency.
+         */
         LOCK
     }
 
@@ -39,28 +47,28 @@ public interface TypeMaker {
     public TypeMaker name(String name);
 
     /**
-     * Configures the type to be functional and whether the database
-     * should acquire a lock when creating or updating relation instances of this type.
-     * <p/>
-     * If locking is set to true, which is the default when invoking {@link #functional()}, then the database
-     * will acquire a lock an updated or created relation to ensure no data is blindly overwritten. If locking is
-     * set to false, then no lock is acquired. Acquiring locks ensures data consistency but comes at the expense
-     * of having to acquire a lock and failing transactions when there is lock contention or the lock could not be
-     * acquired for other reasons.
+     * Configures the type to be unique in the given direction with the provided uniqueness consistency.
+     * A type is unique in a given direction if there can be at most one relation (edge or property) in that direction for
+     * a particular element. For instance, an out-unique edge label ensures that there can be at most one outgoing edge
+     * of said label for any vertex. For property keys, in-uniqueness has the special meaning that there is at most one
+     * vertex associated with the property value. Hence, it allows to ensure that values are uniquely assigned to vertices
+     * in the database.
+     *
+     * <p />
+     * The consistency parameter specifies the consistency guarantees given when ensuring uniqueness. Without acquiring locks,
+     * unique relations may be overwritten by competing transactions. Acquring locks prohibits that at and additional "locking cost".
      *
      * @return this type maker
-     */
-    /**
-     * Configures the type to be unqiue, which means that each value for a property of this type is uniquely associated
-     * with a vertex. This only applies to property keys.
-     * <p/>
-     * By default, the type is not unique.
-     *
-     * @return this type maker
-     * @see TitanKey#isUnique()
      */
     public TypeMaker unique(Direction direction, UniquenessConsistency consistency);
 
+    /**
+     * Configures the type to be unique in the given direction with the default uniqueness consistency {@link UniquenessConsistency#LOCK}.
+     *
+     * @param direction
+     * @return
+     * @see #unique(com.tinkerpop.blueprints.Direction, com.thinkaurelius.titan.core.TypeMaker.UniquenessConsistency)
+     */
     public TypeMaker unique(Direction direction);
 
     /**
@@ -96,21 +104,22 @@ public interface TypeMaker {
     public TypeMaker group(TypeGroup group);
 
     /**
-     * Configures the composite primary key for this type. This only applies to edge labels.
+     * Configures the composite primary key for this type.
      * <p/>
-     * Specifying the primary key of a type allows edges of this type to be efficiently retrieved in the order of
-     * the key.
+     * Specifying the primary key of a type allows relations of this type to be efficiently retrieved in the order of
+     * the primary key.
      * <br />
      * For instance, if the edge label <i>friend</i> has the primary key (<i>since</i>), which is a property key
      * with a timestamp data type, then one can efficiently retrieve all edges with label <i>friend</i> in a specified
-     * time interval using {@link TitanQuery#interval(TitanKey, Comparable, Comparable)}.
+     * time interval using {@link TitanVertexQuery#interval(TitanKey, Comparable, Comparable)}.
      * <br />
      * In other words, relations are stored on disk in the order of the configured primary key. The primary key is empty
      * by default.
+     * <br />
+     * If multiple types are specified as primary key, then those are considered as a <i>composite</i> primary key, i.e. taken jointly
+     * in the given order.
      * <p/>
-     * {@link TitanType}s used in the primary key must be either property keys or unidirected edge lables.
-     * Also, they must be simple ({@link com.thinkaurelius.titan.core.TitanType#isSimple()}) and
-     * functional ({@link com.thinkaurelius.titan.core.TitanType#isFunctional()}).
+     * {@link TitanType}s used in the primary key must be either property out-unique keys or out-unique unidirected edge lables.
      *
      * @param types TitanTypes composing the primary key. The order is relevant.
      * @return this type maker
@@ -118,18 +127,16 @@ public interface TypeMaker {
     public TypeMaker primaryKey(TitanType... types);
 
     /**
-     * Configures the signature of this type. This only applies to edge labels.
+     * Configures the signature of this type.
      * <p/>
-     * Specifying the signature of a type tells the graph database to <i>expect</i> that edges of this type
+     * Specifying the signature of a type tells the graph database to <i>expect</i> that relations of this type
      * always have or are likely to have an incident property or unidirected edge of the type included in the
      * signature. This allows the graph database to store such edges more compactly and retrieve them more quickly.
      * <br />
      * For instance, if all edges with label <i>friend</i> have a property with key <i>createdOn</i>, then specifying
      * (<i>createdOn</i>) as the signature for type <i>friend</i> allows friend edges to be stored more efficiently.
      * <br />
-     * {@link TitanType}s used in the signature must be either property keys or unidirected edge lables.
-     * Also, they must be simple ({@link com.thinkaurelius.titan.core.TitanType#isSimple()}) and
-     * functional ({@link com.thinkaurelius.titan.core.TitanType#isFunctional()}).
+     * {@link TitanType}s used in the primary key must be either property out-unique keys or out-unique unidirected edge lables.
      * <br />
      * The signature should not contain any types already included in the primary key. The primary key provides the same
      * storage and retrieval efficiency.
@@ -142,14 +149,14 @@ public interface TypeMaker {
     public TypeMaker signature(TitanType... types);
 
     /**
-     * Configures instances of this type to be indexed for the specified Element type using the standard Titan index.
+     * Configures instances of this type to be indexed for the specified Element type using the <i>standard</i> Titan index.
      * One can either index vertices or edges.
      * <p/>
      * This only applies to property keys.
      * By default, the type is not indexed.
      *
      * @return this type maker
-     * @see com.thinkaurelius.titan.core.TitanKey#hasIndex(Class<? extends Element>)
+     * @see com.thinkaurelius.titan.core.TitanKey#hasIndex(String, Class)
      * @since 0.3.0
      */
     public TypeMaker indexed(Class<? extends Element> clazz);
@@ -162,7 +169,7 @@ public interface TypeMaker {
      * By default, the type is not indexed.
      *
      * @return this type maker
-     * @see com.thinkaurelius.titan.core.TitanKey#hasIndex(Class<? extends Element>)
+     * @see com.thinkaurelius.titan.core.TitanKey#hasIndex(String, Class)
      * @since 0.3.0
      */
     public TypeMaker indexed(String indexName, Class<? extends Element> clazz);

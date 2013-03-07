@@ -305,6 +305,12 @@ public class Geoshape {
             return CTX.makePoint(longitude,latitude);
         }
 
+        /**
+         * Returns the distance to another point in kilometers
+         *
+         * @param other Point
+         * @return
+         */
         public double distance(Point other) {
             return DistanceUtils.degrees2Dist(CTX.getDistCalc().distance(getSpatial4jPoint(),other.getSpatial4jPoint()),DistanceUtils.EARTH_MEAN_RADIUS_KM);
         }

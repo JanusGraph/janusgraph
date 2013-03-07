@@ -4,15 +4,16 @@ import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
 
 /**
  * Constructs a query against an external index to retrieve all elements (either vertices or edges)
- * that match all key conditions.
+ * that match all conditions.
  *
  * Finding matching elements using this query mechanism requires that appropriate index structures have
  * been defined for the keys. See {@link TypeMaker#indexed(Class)} and {@link TypeMaker#indexed(String, Class)}.
  *
  * (c) Matthias Broecheler (me@matthiasb.com)
+ * @since 0.3.0
  */
 
-public interface ElementQuery {
+public interface TitanGraphQuery {
 
     /**
      * The returned element must have a property for the given key that matches the condition according to the
@@ -21,9 +22,9 @@ public interface ElementQuery {
      * @param key Key that identifies the property
      * @param relation Relation between property and condition
      * @param condition
-     * @return This element query
+     * @return This query
      */
-    public ElementQuery has(String key, Relation relation, Object condition);
+    public TitanGraphQuery has(String key, Relation relation, Object condition);
 
     /**
      * The returned element must have a property for the given key that matches the condition according to the
@@ -32,9 +33,9 @@ public interface ElementQuery {
      * @param key Key that identifies the property
      * @param relation Relation between property and condition
      * @param condition
-     * @return This element query
+     * @return This query
      */
-    public ElementQuery has(TitanKey key, Relation relation, Object condition);
+    public TitanGraphQuery has(TitanKey key, Relation relation, Object condition);
 
     /**
      * Returns all vertices that match the conditions.
@@ -49,6 +50,11 @@ public interface ElementQuery {
     public Iterable<TitanEdge> edges();
 
 
-    //public ElementQuery limit(final long max);
+    /**
+     * Limits the size of the returned result set
+     * @param max The maximum number of results to return
+     * @return This query
+     */
+    public TitanGraphQuery limit(final long max);
 
 }

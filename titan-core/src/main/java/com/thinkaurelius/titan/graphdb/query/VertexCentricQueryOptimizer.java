@@ -25,8 +25,6 @@ public class VertexCentricQueryOptimizer implements QueryOptimizer<VertexCentric
 
     public static final VertexCentricQueryOptimizer INSTANCE = new VertexCentricQueryOptimizer();
 
-    private static final double LIMIT_BUFFER = 1.1;
-
     private VertexCentricQueryOptimizer() {}
 
     @Override

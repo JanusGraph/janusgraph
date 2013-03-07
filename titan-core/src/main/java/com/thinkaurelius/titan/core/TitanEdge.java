@@ -40,14 +40,16 @@ public interface TitanEdge extends TitanRelation, Edge {
 
 
     /**
-     * Checks whether this relation is directed.
+     * Checks whether this relation is directed, i.e. has a start and end vertex
+     * both of which are aware of the incident edge.
      *
      * @return true, if this relation is directed, else false.
      */
     public boolean isDirected();
 
     /**
-     * Checks whether this relation is unidirected.
+     * Checks whether this relation is unidirected, i.e. only the start vertex is aware of
+     * the edge's existence. A unidirected edge is similar to a link.
      *
      * @return true, if this relation is unidirected, else false.
      */

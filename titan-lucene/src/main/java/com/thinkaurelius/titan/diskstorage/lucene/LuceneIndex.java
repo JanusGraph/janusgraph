@@ -237,13 +237,10 @@ public class LuceneIndex implements IndexProvider {
             IndexSearcher searcher = ((Transaction)tx).getSearcher(query.getStore());
             if (searcher==null) return ImmutableList.of(); //Index does not yet exist
             long time = System.currentTimeMillis();
-            TopDocs docs = searcher.search(new MatchAllDocsQuery(), q, IndexProvider.MAXIMUM_RESULT_SIZE+1);
+            TopDocs docs = searcher.search(new MatchAllDocsQuery(), q, query.hasLimit()?query.getLimit():Integer.MAX_VALUE-1);
             log.debug("Executed query [{}] in {} ms",q,System.currentTimeMillis()-time);
-            if (docs.totalHits>MAXIMUM_RESULT_SIZE) {
-                log.warn("Maximum result size of [{}] exceeded by result set with size [{}]. Results truncated!",IndexProvider.MAXIMUM_RESULT_SIZE,docs.totalHits);
-            }
-            List<String> result = new ArrayList<String>(docs.totalHits);
-            for (int i = 0; i < docs.totalHits; i++) {
+            List<String> result = new ArrayList<String>(docs.scoreDocs.length);
+            for (int i = 0; i < docs.scoreDocs.length; i++) {
                 result.add(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue());
             }
             return result;

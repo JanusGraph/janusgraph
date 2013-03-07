@@ -39,7 +39,7 @@ public interface DefaultTypeMaker {
     /**
      * Whether to ignore undefined types occurring in a query.
      * <p/>
-     * If this method returns true, then undefined types referred to in a {@link TitanQuery} will be silently
+     * If this method returns true, then undefined types referred to in a {@link TitanVertexQuery} will be silently
      * ignored and an empty result set will be returned. If this method returns false, then usage of undefined types
      * in queries results in an {@link IllegalArgumentException}.
      */

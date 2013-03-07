@@ -16,12 +16,6 @@ import java.util.Map;
 public interface IndexProvider extends IndexInformation {
 
     /**
-     * Current limitation on the maximum number of index results that get returned
-     */
-    public static final int MAXIMUM_RESULT_SIZE = 100000;
-
-
-    /**
      * This method registers a new key for the specified index store with the given data type. This allows the IndexProvider
      * to prepare the index if necessary.
      *

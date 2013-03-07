@@ -69,10 +69,18 @@ public class StandardElementQuery implements Query<StandardElementQuery> {
         Preconditions.checkArgument(hasIndex());
         return index;
     }
+    @Override
+    public String toString() {
+        StringBuilder b = new StringBuilder();
+        b.append("[").append(condition.toString()).append("]");
+        if (hasLimit()) b.append("(").append(limit).append(")");
+        b.append(":").append(type.toString());
+        return b.toString();
+    }
 
     @Override
     public int hashCode() {
-        return condition.hashCode()*9676463 + type.hashCode();
+        return condition.hashCode()*9676463 + type.hashCode()*4711 + limit;
     }
 
     @Override
@@ -81,12 +89,7 @@ public class StandardElementQuery implements Query<StandardElementQuery> {
         else if (other==null) return false;
         else if (!getClass().isInstance(other)) return false;
         StandardElementQuery oth = (StandardElementQuery)other;
-        return type==oth.type && condition.equals(oth.condition);
-    }
-
-    @Override
-    public String toString() {
-        return "["+condition.toString()+"]:"+type.toString();
+        return type==oth.type && condition.equals(oth.condition) && limit==oth.limit;
     }
 
     @Override

@@ -18,7 +18,7 @@ import com.tinkerpop.blueprints.Vertex;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public class VertexCentricQueryBuilder implements TitanQuery {
+public class VertexCentricQueryBuilder implements TitanVertexQuery {
 
     private final InternalVertex vertex;
 
@@ -191,8 +191,8 @@ public class VertexCentricQueryBuilder implements TitanQuery {
     }
 
     @Override
-    public VertexCentricQueryBuilder has(TitanLabel label, TitanVertex value) {
-        return has(label.getName(),value);
+    public VertexCentricQueryBuilder has(TitanLabel label, TitanVertex vertex) {
+        return has(label.getName(), vertex);
     }
 
     @Override

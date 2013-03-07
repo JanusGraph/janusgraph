@@ -222,6 +222,13 @@ public enum Cmp implements Relation {
 
     private static final Logger log = LoggerFactory.getLogger(Cmp.class);
 
+
+    /**
+     * Convert Blueprint's comparison operators to Titan's
+     *
+     * @param comp Blueprint's comparison operator
+     * @return
+     */
     public static final Cmp convert(Query.Compare comp) {
         switch(comp) {
             case EQUAL: return EQUAL;

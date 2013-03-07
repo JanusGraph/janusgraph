@@ -174,8 +174,13 @@ public abstract class IndexProviderTest {
 //        List<String> result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
         long time = System.currentTimeMillis();
         List<String> result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.INTERVAL, Interval.of(0.2,0.6)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
+        int oldresultSize = result.size();
         System.out.println(result.size() + " vs " + (numDoc/1000 * 2.4622623015));
         System.out.println("Query time on "+numDoc+" docs (ms): " + (System.currentTimeMillis()-time));
+        result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.INTERVAL, Interval.of(0.2,0.6)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00))),numDoc/1000));
+        assertEquals(numDoc/1000,result.size());
+        result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.INTERVAL, Interval.of(0.2,0.6)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00))),numDoc/1000*100));
+        assertEquals(oldresultSize,result.size());
     }
 
     private void initialize(String store) throws StorageException {

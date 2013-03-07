@@ -907,7 +907,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         testCreateAndRetrieveComprehensive();
         log.debug("Neighborhood:");
         TitanVertex n1 = tx.getVertex("name", "Node1");
-        TitanQuery q = n1.query().direction(OUT).types(tx.getEdgeLabel("connect"));
+        TitanVertexQuery q = n1.query().direction(OUT).types(tx.getEdgeLabel("connect"));
         VertexList res = q.vertexIds();
         assertEquals(1, res.size());
         TitanVertex n2 = tx.getVertex("name", "Node2");

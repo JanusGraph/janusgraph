@@ -83,12 +83,12 @@ public interface TitanVertex extends TitanElement, Vertex {
     /**
      * Starts a new TitanQuery for this vertex.
      * <p/>
-     * Initializes and returns a new {@link TitanQuery} centered on this vertex.
+     * Initializes and returns a new {@link TitanVertexQuery} centered on this vertex.
      *
      * @return New TitanQuery for this vertex
-     * @see TitanQuery
+     * @see TitanVertexQuery
      */
-    public TitanQuery query();
+    public TitanVertexQuery query();
 
 
     /**

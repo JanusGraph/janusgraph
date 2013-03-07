@@ -8,16 +8,13 @@ import com.tinkerpop.blueprints.Direction;
  * relation is understood in its mathematical sense. It generalizes the notion of an edge and a property.
  * <br />
  * A TitanRelation extends {@link TitanVertex} which means it is an entity in its own right. This means, a TitanRelation
- * can have properties and unidirectional edges connecting it to other vertices. However, a {@link TitanType} can be
- * declared <strong>simple</strong>, which means that all relations of that type are simple and do not accept properties
- * or incident edges.
+ * can have properties and unidirectional edges connecting it to other vertices.
  * <br />
  * A TitanRelation is an abstract concept. A TitanRelation is either a {@link TitanProperty} or a {@link TitanEdge}.
  * A TitanRelation has a type which is either a label or key depending on the implementation.
  * <br />
- * A TitanRelation is either directed, undirected, or unidirected. Properties are always directed (connecting a vertex
- * with an attribute). A directed edge, the position or direction of a vertex matter whereas it does not for undirected
- * edges. A unidirected edge is a special type of directed edge where the connection is only established from the
+ * A TitanRelation is either directed, or unidirected. Properties are always directed (connecting a vertex
+ * with an attribute). A unidirected edge is a special type of directed edge where the connection is only established from the
  * perspective of the outgoing vertex. In that sense, a unidirected edge is akin to a link.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
@@ -26,9 +23,21 @@ import com.tinkerpop.blueprints.Direction;
  */
 public interface TitanRelation extends TitanElement {
 
-
+    /**
+     * Establishes a unidirectional edge between this relation and the given vertex for the specified label.
+     * The label must be defined {@link com.thinkaurelius.titan.core.TitanLabel#isUnidirected()}.
+     *
+     * @param label
+     * @param vertex
+     */
     public void setProperty(TitanLabel label, TitanVertex vertex);
 
+    /**
+     * Returns the vertex associated to this relation by a unidirected edge of the given label or NULL if such does not exist.
+     *
+     * @param label
+     * @return
+     */
     public TitanVertex getProperty(TitanLabel label);
 
     /**

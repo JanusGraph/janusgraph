@@ -4,9 +4,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
- * Start and end are inclusive.
- *
- * TODO: Generalize to make bounds in/exclusive
+ * Generic interval representation with a start and end point.
  *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */

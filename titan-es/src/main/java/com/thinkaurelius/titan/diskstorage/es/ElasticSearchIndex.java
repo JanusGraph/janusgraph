@@ -57,6 +57,9 @@ public class ElasticSearchIndex implements IndexProvider {
 
     private Logger log = LoggerFactory.getLogger(ElasticSearchIndex.class);
 
+    private static final String[] DATA_SUBDIRS = {"data","work","logs"};
+    private static final int MAX_RESULT_SET_SIZE = 100000;
+
 
     public static final String CLIENT_ONLY_KEY = "client-only";
     public static final boolean CLIENT_ONLY_DEFAULT = true;
@@ -67,12 +70,12 @@ public class ElasticSearchIndex implements IndexProvider {
     public static final String LOCAL_MODE_KEY = "local-mode";
     public static final boolean LOCAL_MODE_DEFAULT = false;
 
+    public static final String HOST_NAMES_KEY = "hosts";
+    public static final int HOST_PORT_DEFAULT = 9300;
+
     public static final String ES_YML_KEY = "config-file";
 
-    private static final String[] DATA_SUBDIRS = {"data","work","logs"};
 
-    private static final String HOST_NAMES_KEY = "hosts";
-    private static final int HOST_PORT_DEFAULT = 9300;
 
 
 
@@ -369,16 +372,16 @@ public class ElasticSearchIndex implements IndexProvider {
         srb.setQuery(QueryBuilders.matchAllQuery());
         srb.setFilter(getFilter(query.getCondition()));
         srb.setFrom(0);
-        srb.setSize(IndexProvider.MAXIMUM_RESULT_SIZE+1);
+        if (query.hasLimit()) srb.setSize(query.getLimit());
+        else srb.setSize(MAX_RESULT_SET_SIZE);
         //srb.setExplain(true);
 
         SearchResponse response = srb.execute().actionGet();
         log.debug("Executed query [{}] in {} ms",query.getCondition(),response.tookInMillis());
         SearchHits hits = response.getHits();
-        if (hits.totalHits()>MAXIMUM_RESULT_SIZE) {
-            log.warn("Maximum result size of [{}] exceeded by result set with size [{}]. Results truncated!",IndexProvider.MAXIMUM_RESULT_SIZE,hits.totalHits());
-        }
-        List<String> result = new ArrayList<String>((int)hits.totalHits());
+        if (!query.hasLimit() && hits.totalHits()>=MAX_RESULT_SET_SIZE)
+            log.warn("Query result set truncated to first [{}] elements for query: {}",MAX_RESULT_SET_SIZE,query);
+        List<String> result = new ArrayList<String>(hits.hits().length);
         for (SearchHit hit : hits) {
             result.add(hit.id());
         }

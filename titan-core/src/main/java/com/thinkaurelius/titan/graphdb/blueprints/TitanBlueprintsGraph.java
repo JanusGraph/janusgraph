@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb.blueprints;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.query.ElementQueryBuilder;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Parameter;
@@ -151,7 +150,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
-    public ElementQuery query() {
+    public TitanGraphQuery query() {
         return getAutoStartTx().query();
     }
 

@@ -11,12 +11,11 @@ import com.tinkerpop.blueprints.Query;
  * A TitanQuery extends Blueprint's {@link Query} by some Titan specific convenience methods. Using TitanQuery proceeds
  * in two steps: 1) Define the query by specifying what to retrieve and 2) execute the query.
  * <br />
- * A TitanQuery is initialized by calling {@link TitanTransaction#query(long)} with an existing vertex id or
- * {@link com.thinkaurelius.titan.core.TitanVertex#query()} on the vertex itself.
+ * A TitanQuery is initialized by calling {@link com.thinkaurelius.titan.core.TitanVertex#query()} on the vertex itself.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface TitanQuery extends Query {
+public interface TitanVertexQuery extends Query {
 
     /* ---------------------------------------------------------------
     * Query Specification
@@ -30,7 +29,7 @@ public interface TitanQuery extends Query {
      * @param type types to query for
      * @return this query
      */
-    public TitanQuery types(TitanType... type);
+    public TitanVertexQuery types(TitanType... type);
 
     /**
      * Query for only those edges matching one of the given labels.
@@ -39,7 +38,7 @@ public interface TitanQuery extends Query {
      * @param labels edge labels to query for
      * @return this query
      */
-    public TitanQuery labels(String... labels);
+    public TitanVertexQuery labels(String... labels);
 
     /**
      * Query for only those properties having one of the given keys.
@@ -48,7 +47,7 @@ public interface TitanQuery extends Query {
      * @param keys property keys to query for
      * @return this query
      */
-    public TitanQuery keys(String... keys);
+    public TitanVertexQuery keys(String... keys);
 
     /**
      * Query for only those relations having a type included in the given {@link TypeGroup}.
@@ -59,7 +58,7 @@ public interface TitanQuery extends Query {
      * @return this query
      * @see TypeGroup
      */
-    public TitanQuery group(TypeGroup group);
+    public TitanVertexQuery group(TypeGroup group);
 
     /**
      * Query only for relations in the given direction.
@@ -68,24 +67,29 @@ public interface TitanQuery extends Query {
      * @param d Direction to query for
      * @return this query
      */
-    public TitanQuery direction(Direction d);
+    public TitanVertexQuery direction(Direction d);
 
     /**
-     * Query only for edges that have an incident property or unidirected edge matching the given value.
+     * Query only for edges that have an incident property matching the given value.
      * <p/>
-     * If type is a property key, then the query is restricted to edges having an incident property matching
-     * this key-value pair.
-     * If type is an edge label, then it is expected that this label is unidirected ({@link com.thinkaurelius.titan.core.TitanLabel#isUnidirected()}
-     * and the query is restricted to edges having an incident unidirectional edge pointing to the value which is
-     * expected to be a {@link TitanVertex}.
      *
-     * @param type  TitanType
-     * @param value Value for the property of the given key to match, or vertex to point unidirectional edge to
+     * @param key  key
+     * @param value Value for the property of the given key to match
      * @return this query
      */
-    public TitanQuery has(TitanKey key, Object value);
+    public TitanVertexQuery has(TitanKey key, Object value);
 
-    public TitanQuery has(TitanLabel label, TitanVertex value);
+    /**
+     * Query only for edges that have a unidirected edge matching pointing to the given vertex
+     * <p/>
+     * It is expected that this label is unidirected ({@link com.thinkaurelius.titan.core.TitanLabel#isUnidirected()}
+     * and the query is restricted to edges having an incident unidirectional edge pointing to the given vertex.
+     *
+     * @param label  Label
+     * @param vertex Vertex to point unidirectional edge to
+     * @return this query
+     */
+    public TitanVertexQuery has(TitanLabel label, TitanVertex vertex);
 
     /**
      * Query only for edges that have an incident property or unidirected edge matching the given value.
@@ -100,19 +104,9 @@ public interface TitanQuery extends Query {
      * @param value Value for the property of the given key to match, or vertex to point unidirectional edge to
      * @return this query
      */
-    public TitanQuery has(String type, Object value);
+    public TitanVertexQuery has(String type, Object value);
 
-    public <T extends java.lang.Comparable<T>> TitanQuery has(java.lang.String s, T t, Query.Compare compare);
-
-    /**
-     * Query for those edges that have an incident property whose values lies in the interval by [start,end).
-     *
-     * @param key   property key
-     * @param start value defining the start of the interval (inclusive)
-     * @param end   value defining the end of the interval (exclusive)
-     * @return this query
-     */
-    public <T extends Comparable<T>> TitanQuery interval(String key, T start, T end);
+    public <T extends java.lang.Comparable<T>> TitanVertexQuery has(java.lang.String s, T t, Query.Compare compare);
 
     /**
      * Query for those edges that have an incident property whose values lies in the interval by [start,end).
@@ -122,7 +116,17 @@ public interface TitanQuery extends Query {
      * @param end   value defining the end of the interval (exclusive)
      * @return this query
      */
-    public <T extends Comparable<T>> TitanQuery interval(TitanKey key, T start, T end);
+    public <T extends Comparable<T>> TitanVertexQuery interval(String key, T start, T end);
+
+    /**
+     * Query for those edges that have an incident property whose values lies in the interval by [start,end).
+     *
+     * @param key   property key
+     * @param start value defining the start of the interval (inclusive)
+     * @param end   value defining the end of the interval (exclusive)
+     * @return this query
+     */
+    public <T extends Comparable<T>> TitanVertexQuery interval(TitanKey key, T start, T end);
 
     /**
      * Sets the retrieval limit for this query.
@@ -133,7 +137,7 @@ public interface TitanQuery extends Query {
      * @param limit maximum number of relations to retrieve for this query
      * @return this query
      */
-    public TitanQuery limit(long limit);
+    public TitanVertexQuery limit(long limit);
 
     /* ---------------------------------------------------------------
     * Query execution

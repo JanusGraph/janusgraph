@@ -9,8 +9,6 @@ package com.thinkaurelius.titan.core;
  * <li><strong>Directed:</strong> An edge is directed if the order or position of its vertices matters.
  * For directed edges, the outgoing vertex is considered the <i>start</i> and the incoming vertex the <i>end</i>.
  * By default, labels and therefore edges are directed. <i>Father</i> is an example of a directed label.</li>
- * <li><strong>Undirected:</strong> An edge is undirected if the order or position of its vertices is irrelevant.
- * In other words, there is no directionality expressed by the edge. <i>Friend</i> is an example of a undirected label. </li>
  * <li><strong>Unidirected:</strong> An edge is unidirected if it is directed but only pointing in one direction.
  * This means, the edge can only be traversed in the outgoing direction. As an example, a hyperlink is a unidirected
  * edge. Unidirected edges can be stored more efficiently.</li>

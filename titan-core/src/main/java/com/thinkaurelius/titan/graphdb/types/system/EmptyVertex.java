@@ -29,7 +29,7 @@ public class EmptyVertex implements InternalVertex {
 	 */
 
     @Override
-    public TitanQuery query() {
+    public TitanVertexQuery query() {
         throw new UnsupportedOperationException(errorName + " do not support querying");
     }
 

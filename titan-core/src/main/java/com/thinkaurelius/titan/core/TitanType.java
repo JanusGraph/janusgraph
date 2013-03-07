@@ -10,13 +10,14 @@ import com.tinkerpop.blueprints.Direction;
  * <br />
  * Each {@link TitanRelation} has a unique type which defines many important characteristics of that relation.
  * <ul>
- * <li><strong>Functional:</strong> Defines relations of this type to be functional ({@link #isFunctional()}</li>
- * <li><strong>Simple:</strong> Defines relations of this type to NOT have incident properties which provides better storage efficiencies in case properties are not needed. ({@link #isSimple()}</li>
+ * <li><strong>Uniqueness:</strong> Defines relations of this type to be unique in the OUTgoing or INcoming direction ({@link #isUnique(com.tinkerpop.blueprints.Direction)}}.
+ * If a type is unique, that means there can be at most one relation (i.e. property or edge) of that type on any given element in that direction.</li>
  * <li><strong>Groups:</strong> Types can be grouped together for faster retrieval ({@link #getGroup()}</li>
  * </ul>
  * <br />
  * TitanTypes are constructed through {@link TypeMaker} which is accessed in the context of a {@link TitanTransaction}
- * via {@link com.thinkaurelius.titan.core.TitanTransaction#makeType()}.
+ * via {@link com.thinkaurelius.titan.core.TitanTransaction#makeType()} or through the graph {@link com.thinkaurelius.titan.core.TitanGraph#makeType()}.
+ * Note, types will only be visible once the transaction in which they were created has been committed.
  * <br />
  * TitanType names must be unique in a graph database. Many methods allow the name of the type as an argument
  * instead of the actual type reference.
@@ -36,26 +37,22 @@ public interface TitanType extends TitanVertex {
     public String getName();
 
     /**
-     * Checks whether this type is functional.
+     * Checks whether this unique in the given direction.
      * <p/>
-     * A type is functional, if its relation instances are functional in the mathematical sense.
-     * A relation is functional iff each object in the domain has at most one value.
+     * A type is unique, iff there can be at most one relation (i.e. property or edge) of that type on any given element in that direction.
+     * We say that a type is out-unique (in-unique) if it is unique in the OUT direction (resp. IN direction).
+     *
      * Specifically, this means:
      * <ul>
-     * <li>A property key is functional, if a vertex has at most one value associated with the key.
-     * <i>Social security number</i> is an example of a functional property key since each person has at most SSN.</li>
-     * <li>An edge lable is functional, if a vertex has at most one outgoing edge for that label.
+     * <li>A property key is out-unique, if a vertex has at most one value associated with the key.
+     * <i>Birthdate</i> is an example of an out-unique property key since each person has at most one birth date.</li>
+     * <li>A property key is in-unique, if at most one vertex can be assigned a given value.
+     * <i>Social security number</i> is an example of an in-unique property key since there can only be one person for a particular SSN.</li>
+     * <li>An edge lable is out-unique, if a vertex has at most one outgoing edge for that label.
      * <i>Father</i> is an exmaple of a functional edge label, since each person has at most one father.</li>
      * </ul>
      *
-     * @return true, if the type is functional, else false
-     */
-    /**
-     * Checks whether this property key is unique.
-     * A property key is <b>unique</b> if all attributes for properties of this key are uniquely associated with the
-     * property's vertex. In other words, there is a functional mapping from attribute values to vertices.
-     *
-     * @return true, if this property key is unique, else false.
+     * @return true, if the type is unique in the given direction, else false
      */
     public boolean isUnique(Direction direction);
 

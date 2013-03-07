@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.graphdb.types.StandardTypeGroup;
 
 /**
  * TypeGroup defines a group of {@link TitanType}s. Grouping TitanTypes into a TypeGroup has the benefit
- * that all relations whose type is in a group can be retrieved at once using {@link TitanQuery#group(TypeGroup)}.
+ * that all relations whose type is in a group can be retrieved at once using {@link TitanVertexQuery#group(TypeGroup)}.
  * <p/>
  * For example, one could define the edge labels <i>father</i>, <i>mother</i>, <i>sibling</i> to be in the TypeGroup
  * <i>family</i>. This would allow the retrieval of all father,mother and sibling edges for a given vertex

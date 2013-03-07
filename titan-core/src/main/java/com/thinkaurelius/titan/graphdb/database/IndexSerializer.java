@@ -197,7 +197,7 @@ public class IndexSerializer {
                     "Cannot retrieve for given property key - it does not have an index [%s]",key.getName());
 
             ByteBuffer column = getUniqueIndexColumn(key);
-            KeySliceQuery sq = new KeySliceQuery(getIndexKey(value),column, SliceQuery.pointRange(column),((InternalType)key).isStatic(Direction.IN));
+            KeySliceQuery sq = new KeySliceQuery(getIndexKey(value),column, SliceQuery.pointRange(column),query.getLimit(),((InternalType)key).isStatic(Direction.IN));
             List<Entry> r;
             if (query.getType()== StandardElementQuery.Type.VERTEX) {
                 r = tx.vertexIndexQuery(sq);
@@ -218,7 +218,7 @@ public class IndexSerializer {
         } else {
             verifyQuery(query.getCondition(),index,query.getType().getElementType());
             KeyCondition<String> condition = convert(query.getCondition());
-            IndexQuery iquery = new IndexQuery(getStoreName(query),condition);
+            IndexQuery iquery = new IndexQuery(getStoreName(query),condition,query.getLimit());
             List<String> r = tx.indexQuery(index, iquery);
             List<Object> result = new ArrayList<Object>(r.size());
             for (String id : r) result.add(string2ElementId(id));
