@@ -1,10 +1,14 @@
-def g
+import com.thinkaurelius.titan.core.TitanFactory
+import com.tinkerpop.blueprints.Graph
+import org.apache.commons.configuration.BaseConfiguration
+
+Graph g
 
 def setup(args) {
-    conf = new org.apache.commons.configuration.BaseConfiguration()
+    conf = new BaseConfiguration()
     conf.setProperty('storage.backend', args[0])
     conf.setProperty('storage.hostname', 'localhost')
-    g = com.thinkaurelius.titan.core.TitanFactory.open(conf)
+    g = TitanFactory.open(conf)
 }
 
 def map(v, args) {
