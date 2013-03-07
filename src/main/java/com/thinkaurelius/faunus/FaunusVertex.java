@@ -181,6 +181,11 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         }
     }
 
+    @Override
+    public Edge addEdge(String label, Vertex vertex) {
+        return addEdge(Direction.OUT,new FaunusEdge(this.getIdAsLong(),((FaunusVertex)vertex).getIdAsLong(),label));
+    }
+
     public FaunusEdge addEdge(final Direction direction, final FaunusEdge edge) {
         if (OUT.equals(direction)) {
             List<Edge> edges = this.outEdges.get(edge.getLabel());
