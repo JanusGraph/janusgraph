@@ -74,7 +74,7 @@ public class ScriptMap {
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             try {
-                engine.eval(CLEANUP_ARGS);
+                this.engine.eval(CLEANUP_ARGS);
             } catch (Exception e) {
                 throw new InterruptedException(e.getMessage());
             }
