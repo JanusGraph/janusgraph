@@ -15,6 +15,7 @@ h3. Version 0.2.0 (NOT OFFICIALLY RELEASE YET)
 </dependency>
 ```
 
+* Fixed job jar finding issue by introducing @FAUNUS_HOME@ system property
 * Complete refactoring of @FaunusCompiler@ and @FaunusPipeline@
 * Added support for user defined @Input@- @OutputFormats@
 * Added @MapReduceFormat@ which allows an arbitrary number of MapReduce jobs after/before input/output.
