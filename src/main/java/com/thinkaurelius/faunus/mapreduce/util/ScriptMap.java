@@ -29,7 +29,7 @@ public class ScriptMap {
     private static final String MAP_V_ARGS = "map(v,args)";
     private static final String CLEANUP_ARGS = "cleanup(args)";
 
-    public static Configuration createConfiguration(final String scriptUri, String... args) {
+    public static Configuration createConfiguration(final String scriptUri, final String... args) {
         Configuration configuration = new Configuration();
         configuration.set(SCRIPT_PATH, scriptUri);
         configuration.setStrings(SCRIPT_ARGS, args);

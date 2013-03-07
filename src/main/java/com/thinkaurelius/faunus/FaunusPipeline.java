@@ -148,13 +148,23 @@ public class FaunusPipeline {
             return this.step;
         }
 
-        public void checkLocked() {
+        public void assertNotLocked() {
             if (this.locked) throw new IllegalStateException(PIPELINE_IS_LOCKED);
         }
 
-        public void checkProperty() {
+        public void assertNoProperty() {
             if (this.propertyKey != null)
                 throw new IllegalStateException("This step can not follow a property reference");
+        }
+
+        public void assertAtVertex() {
+            if (!this.atVertex())
+                throw new IllegalStateException("This step can not follow an edge-based step");
+        }
+
+        public void assertAtEdge() {
+            if (this.atVertex())
+                throw new IllegalStateException("This step can not follow a vertex-based step");
         }
 
         public boolean isLocked() {
@@ -223,7 +233,7 @@ public class FaunusPipeline {
                                final Class<? extends WritableComparable> value1,
                                final Class<? extends WritableComparable> key2,
                                final Class<? extends WritableComparable> value2) {
-        this.state.checkLocked();
+        this.state.assertNotLocked();
         final Configuration configuration = new Configuration();
         configuration.setClass(StepMapReduce.CLASS, this.state.getElementType(), Element.class);
         configuration.set(StepMapReduce.MAP_CLOSURE, this.validateClosure(mapClosure));
@@ -246,7 +256,7 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline _() {
-        this.state.checkLocked();
+        this.state.assertNotLocked();
         this.compiler.addMap(IdentityMap.Map.class,
                 NullWritable.class,
                 FaunusVertex.class,
@@ -262,8 +272,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline transform(final String closure) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.compiler.addMap(TransformMap.Map.class,
                 NullWritable.class,
@@ -281,8 +291,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline V() {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
         this.state.set(Vertex.class);
 
         this.compiler.addMap(VerticesMap.Map.class,
@@ -300,8 +310,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline E() {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
         this.state.set(Edge.class);
 
         this.compiler.addMap(EdgesMap.Map.class,
@@ -320,8 +330,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline v(final long... ids) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.state.set(Vertex.class);
         this.state.incrStep();
@@ -366,26 +376,24 @@ public class FaunusPipeline {
     }
 
     private FaunusPipeline inOutBoth(final Direction direction, final String... labels) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
+        this.state.assertAtVertex();
         this.state.incrStep();
 
-        if (this.state.atVertex()) {
-            this.compiler.addMapReduce(VerticesVerticesMapReduce.Map.class,
-                    VerticesVerticesMapReduce.Combiner.class,
-                    VerticesVerticesMapReduce.Reduce.class,
-                    null,
-                    LongWritable.class,
-                    Holder.class,
-                    NullWritable.class,
-                    FaunusVertex.class,
-                    VerticesVerticesMapReduce.createConfiguration(direction, labels));
-            this.state.set(Vertex.class);
-            makeMapReduceString(VerticesVerticesMapReduce.class, direction.name(), Arrays.asList(labels));
-            return this;
-        } else {
-            throw new IllegalStateException("This step can not follow an edge-based step");
-        }
+        this.compiler.addMapReduce(VerticesVerticesMapReduce.Map.class,
+                VerticesVerticesMapReduce.Combiner.class,
+                VerticesVerticesMapReduce.Reduce.class,
+                null,
+                LongWritable.class,
+                Holder.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                VerticesVerticesMapReduce.createConfiguration(direction, labels));
+        this.state.set(Vertex.class);
+        makeMapReduceString(VerticesVerticesMapReduce.class, direction.name(), Arrays.asList(labels));
+        return this;
+
     }
 
     /**
@@ -419,26 +427,23 @@ public class FaunusPipeline {
     }
 
     private FaunusPipeline inOutBothE(final Direction direction, final String... labels) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
+        this.state.assertAtVertex();
         this.state.incrStep();
 
-        if (this.state.atVertex()) {
-            this.compiler.addMapReduce(VerticesVerticesMapReduce.Map.class,
-                    VerticesVerticesMapReduce.Combiner.class,
-                    VerticesVerticesMapReduce.Reduce.class,
-                    null,
-                    LongWritable.class,
-                    Holder.class,
-                    NullWritable.class,
-                    FaunusVertex.class,
-                    VerticesVerticesMapReduce.createConfiguration(direction, labels));
-            this.state.set(Edge.class);
-            makeMapReduceString(VerticesEdgesMapReduce.class, direction.name(), Arrays.asList(labels));
-            return this;
-        } else {
-            throw new IllegalStateException("This step can not follow an edge-based step");
-        }
+        this.compiler.addMapReduce(VerticesVerticesMapReduce.Map.class,
+                VerticesVerticesMapReduce.Combiner.class,
+                VerticesVerticesMapReduce.Reduce.class,
+                null,
+                LongWritable.class,
+                Holder.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                VerticesVerticesMapReduce.createConfiguration(direction, labels));
+        this.state.set(Edge.class);
+        makeMapReduceString(VerticesEdgesMapReduce.class, direction.name(), Arrays.asList(labels));
+        return this;
     }
 
     /**
@@ -469,20 +474,18 @@ public class FaunusPipeline {
     }
 
     private FaunusPipeline inOutBothV(final Direction direction) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
+        this.state.assertAtEdge();
         this.state.incrStep();
 
-        if (!this.state.atVertex()) {
-            this.compiler.addMap(EdgesVerticesMap.Map.class,
-                    NullWritable.class,
-                    FaunusVertex.class,
-                    EdgesVerticesMap.createConfiguration(direction));
-            this.state.set(Vertex.class);
-            makeMapReduceString(EdgesVerticesMap.class, direction.name());
-            return this;
-        } else
-            throw new IllegalStateException("This step can not follow a vertex-based step");
+        this.compiler.addMap(EdgesVerticesMap.Map.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                EdgesVerticesMap.createConfiguration(direction));
+        this.state.set(Vertex.class);
+        makeMapReduceString(EdgesVerticesMap.class, direction.name());
+        return this;
     }
 
     /**
@@ -493,8 +496,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline property(final String key, final Class type) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
         this.state.setProperty(key, type);
         return this;
     }
@@ -515,8 +518,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline map() {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.compiler.addMap(PropertyMapMap.Map.class,
                 LongWritable.class,
@@ -533,14 +536,12 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline label() {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
+        this.state.assertAtEdge();
 
-        if (!this.state.atVertex()) {
-            this.property(Tokens.LABEL, String.class);
-            return this;
-        } else
-            throw new IllegalStateException("This step can not follow a vertex-based step");
+        this.property(Tokens.LABEL, String.class);
+        return this;
     }
 
     /**
@@ -549,8 +550,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline path() {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.compiler.addMap(PathMap.Map.class,
                 NullWritable.class,
@@ -571,7 +572,7 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline order(final Tokens.Order order, final String elementKey) {
-        this.state.checkLocked();
+        this.state.assertNotLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null != pair) {
             this.compiler.addMapReduce(OrderMapReduce.Map.class,
@@ -633,8 +634,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline filter(final String closure) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.compiler.addMap(FilterMap.Map.class,
                 NullWritable.class,
@@ -677,8 +678,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline has(final String key, final Query.Compare compare, final Object... values) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.compiler.addMap(PropertyFilterMap.Map.class,
                 NullWritable.class,
@@ -731,8 +732,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline interval(final String key, final Object startValue, final Object endValue) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.compiler.addMap(IntervalFilterMap.Map.class,
                 NullWritable.class,
@@ -748,8 +749,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline dedup() {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.compiler.addMap(DuplicateFilterMap.Map.class,
                 NullWritable.class,
@@ -767,8 +768,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline back(final String step) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.compiler.addMapReduce(BackFilterMapReduce.Map.class,
                 BackFilterMapReduce.Combiner.class,
@@ -784,7 +785,7 @@ public class FaunusPipeline {
     }
 
     /*public FaunusPipeline back(final int numberOfSteps) {
-        this.state.checkLocked();
+        this.state.assertNotLocked();
         this.compiler.backFilterMapReduce(this.state.getElementType(), this.state.getStep() - numberOfSteps);
         this.compiler.setPathEnabled(true);
         makeMapReduceString(BackFilterMapReduce.class, numberOfSteps);
@@ -797,8 +798,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline simplePath() {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.compiler.addMap(CyclicPathFilterMap.Map.class,
                 NullWritable.class,
@@ -819,8 +820,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline sideEffect(final String closure) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.compiler.addMap(SideEffectMap.Map.class,
                 NullWritable.class,
@@ -838,8 +839,8 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline as(final String name) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.state.addStep(name);
 
@@ -899,8 +900,8 @@ public class FaunusPipeline {
     }
 
     private FaunusPipeline link(final Direction direction, final String step, final String label, final String mergeWeightKey) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         this.compiler.addMapReduce(LinkMapReduce.Map.class,
                 LinkMapReduce.Combiner.class,
@@ -927,7 +928,7 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline.
      */
     public FaunusPipeline groupCount() {
-        this.state.checkLocked();
+        this.state.assertNotLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null == pair) {
             return this.groupCount(null, null);
@@ -964,7 +965,7 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline.
      */
     public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) {
-        this.state.checkLocked();
+        this.state.assertNotLocked();
 
 
         this.compiler.addMapReduce(GroupCountMapReduce.Map.class,
@@ -983,8 +984,8 @@ public class FaunusPipeline {
 
 
     private FaunusPipeline commit(final Tokens.Action action) {
-        this.state.checkLocked();
-        this.state.checkProperty();
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
 
         if (this.state.atVertex()) {
             this.compiler.addMapReduce(CommitVerticesMapReduce.Map.class,
@@ -1026,6 +1027,10 @@ public class FaunusPipeline {
     }
 
     public FaunusPipeline script(final String scriptUri, final String... args) {
+        this.state.assertNotLocked();
+        this.state.assertNoProperty();
+        this.state.assertAtVertex();
+
         this.compiler.addMap(ScriptMap.Map.class,
                 NullWritable.class,
                 FaunusVertex.class,
@@ -1042,6 +1047,7 @@ public class FaunusPipeline {
      *
      * @return the FaunusPipeline with path cacluations enabled
      */
+
     public FaunusPipeline enablePath() {
         this.compiler.setPathEnabled(true);
         return this;
@@ -1053,7 +1059,7 @@ public class FaunusPipeline {
      * @return the count
      */
     public FaunusPipeline count() {
-        this.state.checkLocked();
+        this.state.assertNotLocked();
         this.compiler.addMapReduce(CountMapReduce.Map.class,
                 CountMapReduce.Combiner.class,
                 CountMapReduce.Reduce.class,
@@ -1105,7 +1111,7 @@ public class FaunusPipeline {
     public void submit(final String script, final Boolean showHeader) throws Exception {
         this.done();
         if (MapReduceFormat.class.isAssignableFrom(this.graph.getGraphOutputFormat())) {
-            this.state.checkLocked();
+            this.state.assertNotLocked();
             ((Class<? extends MapReduceFormat>) this.graph.getGraphOutputFormat()).getConstructor().newInstance().addMapReduceJobs(this.compiler);
         }
         this.compiler.completeSequence();
