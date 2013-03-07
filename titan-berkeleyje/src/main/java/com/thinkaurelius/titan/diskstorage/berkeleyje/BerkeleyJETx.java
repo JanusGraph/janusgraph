@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.berkeleyje;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.sleepycat.je.Cursor;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Transaction;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
@@ -11,7 +13,9 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class BerkeleyJETx extends AbstractStoreTransaction {
@@ -19,7 +23,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJETx.class);
 
     private Transaction tx;
-    private Set<RecordIterator> openIterators = null;
+    private List<Cursor> openCursors = new ArrayList<Cursor>();
 
     public BerkeleyJETx(Transaction t, ConsistencyLevel level) {
         super(level);
@@ -30,21 +34,17 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
         return tx;
     }
 
-    synchronized void registerIterator(RecordIterator<?> iterator) {
-        if (openIterators == null) openIterators = new HashSet<RecordIterator>();
-        openIterators.add(iterator);
-    }
-
-    synchronized void unregisterIterator(RecordIterator<?> iterator) {
-        if (openIterators != null) openIterators.remove(iterator);
+    void registerCursor(Cursor cursor) {
+        Preconditions.checkArgument(cursor!=null);
+        synchronized (openCursors) {
+            //TODO: attempt to remove closed cursors if there are too many
+            openCursors.add(cursor);
+        }
     }
 
     private void closeOpenIterators() throws StorageException {
-        if (openIterators != null) {
-            for (RecordIterator iterator : Lists.newArrayList(openIterators)) { //copied to avoid ConcurrentmodificationException
-                iterator.close();
-            }
-            assert openIterators.isEmpty();
+        for (Cursor cursor : openCursors) {
+            cursor.close();
         }
     }
 

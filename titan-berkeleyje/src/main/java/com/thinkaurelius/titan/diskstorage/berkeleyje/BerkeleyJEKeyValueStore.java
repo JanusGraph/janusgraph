@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.berkeleyje;
 
+import com.google.common.base.Preconditions;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -53,7 +54,8 @@ public class BerkeleyJEKeyValueStore implements KeyValueStore {
     }
 
     private static final Transaction getTransaction(StoreTransaction txh) {
-        return (txh == null ? null : ((BerkeleyJETx) txh).getTransaction());
+        Preconditions.checkArgument(txh!=null);
+        return ((BerkeleyJETx) txh).getTransaction();
     }
 
     @Override
@@ -196,12 +198,11 @@ public class BerkeleyJEKeyValueStore implements KeyValueStore {
             cursor = null;
 
             //Register with transaction handle
-            if (txh != null) {
-                ((BerkeleyJETx) txh).registerIterator(this);
-            }
+
 
             try {
                 cursor = db.openCursor(getTransaction(txh), null);
+                ((BerkeleyJETx) txh).registerCursor(cursor);
                 OperationStatus status = cursor.getFirst(foundKey, foundValue, LockMode.DEFAULT);
                 if (status == OperationStatus.SUCCESS) {
                     nextKey = getByteBuffer(foundKey);
@@ -218,10 +219,6 @@ public class BerkeleyJEKeyValueStore implements KeyValueStore {
         @Override
         public void close() throws StorageException {
             try {
-                //Register with transaction handle
-                if (txh != null) {
-                    ((BerkeleyJETx) txh).unregisterIterator(this);
-                }
                 if (cursor != null) cursor.close();
             } catch (Exception e) {
                 throw new PermanentStorageException(e);
