@@ -100,7 +100,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         openStores = new HashMap<String, HBaseKeyColumnValueStore>();
 
         features = new StoreFeatures();
-        features.supportsScan = false;
+        features.supportsScan = true;
         features.supportsBatchMutation = true;
         features.supportsTransactions = false;
         features.supportsConsistentKeyOperations = true;
@@ -209,6 +209,15 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         if (openStores.containsKey(name))
             return openStores.get(name);
 
+        ensureColumnFamilyExists(tableName, name);
+
+        HBaseKeyColumnValueStore store = new HBaseKeyColumnValueStore(connectionPool, tableName, name, this);
+        openStores.put(name, store);
+
+        return store;
+    }
+
+    private HTableDescriptor ensureTableExists(String tableName) throws StorageException {
         HBaseAdmin adm = getAdminInterface();
 
         HTableDescriptor desc;
@@ -224,15 +233,22 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new TemporaryStorageException(e);
         }
 
+        return desc;
+    }
+
+    private void ensureColumnFamilyExists(String tableName, String columnFamily) throws StorageException {
+        HBaseAdmin adm = getAdminInterface();
+        HTableDescriptor desc = ensureTableExists(tableName);
+
         Preconditions.checkNotNull(desc);
 
         // Create our column family, if necessary
-        if (null == desc.getFamily(name.getBytes())) {
+        if (null == desc.getFamily(columnFamily.getBytes())) {
             try {
                 adm.disableTable(tableName);
-                desc.addFamily(new HColumnDescriptor(name));
+                desc.addFamily(new HColumnDescriptor(columnFamily));
                 adm.modifyTable(tableName.getBytes(), desc);
-                log.debug("Added HBase column family {}", name);
+                log.debug("Added HBase column family {}", columnFamily);
                 try {
                     Thread.sleep(1000L);
                 } catch (InterruptedException ie) {
@@ -248,11 +264,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 throw new TemporaryStorageException(ee);
             }
         }
-
-        HBaseKeyColumnValueStore store = new HBaseKeyColumnValueStore(connectionPool, tableName, name, this);
-        openStores.put(name, store);
-
-        return store;
     }
 
     @Override
@@ -301,6 +312,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public String getConfigurationProperty(final String key) throws StorageException {
+        ensureTableExists(tableName);
+
         try {
             return getAdminInterface().getTableDescriptor(tableName.getBytes()).getValue(key);
         } catch (IOException e) {
@@ -312,13 +325,17 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public void setConfigurationProperty(final String key, final String value) throws StorageException {
         byte[] name = tableName.getBytes();
 
+        HTableDescriptor desc = ensureTableExists(tableName);
+
         try {
             HBaseAdmin adm = getAdminInterface();
 
-            HTableDescriptor desc = adm.getTableDescriptor(name);
+            adm.disableTable(tableName);
+
             desc.setValue(key, value);
 
             adm.modifyTable(name, desc);
+            adm.enableTable(tableName);
         } catch (IOException e) {
             throw new PermanentStorageException(e);
         }
