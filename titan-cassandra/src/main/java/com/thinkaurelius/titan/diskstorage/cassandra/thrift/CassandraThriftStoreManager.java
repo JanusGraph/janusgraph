@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.cassandra.db.marshal.UTF8Type;
+import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.thrift.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.thrift.TException;
@@ -62,17 +63,20 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     public Partitioner getPartitioner() throws StorageException {
+        return Partitioner.getPartitioner(getCassandraPartitioner());
+    }
+
+    public IPartitioner<?> getCassandraPartitioner() throws StorageException {
         CTConnection conn = null;
         try {
             conn = getCassandraConnection();
-            return Partitioner.getPartitioner(conn.getClient().describe_partitioner());
+            return (IPartitioner<?>) Class.forName(conn.getClient().describe_partitioner()).newInstance();
         } catch (Exception e) {
             throw new TemporaryStorageException(e);
         } finally {
             IOUtils.closeQuietly(conn);
         }
     }
-
 
     @Override
     public String toString() {

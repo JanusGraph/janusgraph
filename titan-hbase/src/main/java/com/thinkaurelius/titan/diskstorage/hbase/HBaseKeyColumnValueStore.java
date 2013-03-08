@@ -1,6 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
+import javax.annotation.Nullable;
+
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
@@ -9,23 +14,16 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.HTableInterface;
-import org.apache.hadoop.hbase.client.HTablePool;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.Row;
-import org.apache.hadoop.hbase.filter.ColumnPaginationFilter;
-import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
-import org.apache.hadoop.hbase.filter.Filter;
-import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.filter.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -330,7 +328,56 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        throw new UnsupportedOperationException();
+        Scan s = new Scan().addFamily(columnFamilyBytes);
+        FilterList fl = new FilterList();
+        // returns first instance of a row, then skip to next row
+        fl.addFilter(new FirstKeyOnlyFilter());
+        // only return the Key, don't return the value
+        fl.addFilter(new KeyOnlyFilter());
+        s.setFilter(fl);
+
+        final ResultScanner scanner;
+
+        try {
+            scanner = pool.getTable(tableName).getScanner(s);
+        } catch (IOException e) {
+            throw new PermanentStorageException(e);
+        }
+
+        return new RecordIterator<ByteBuffer>() {
+            /* we need to check if key is long serializable because HBase returns weird rows sometimes */
+            private final Iterator<Result> results = Iterators.filter(scanner.iterator(), new Predicate<Result>() {
+                @Override
+                public boolean apply(@Nullable Result result) {
+                    if (result == null)
+                        return false;
+
+                    try {
+                        ByteBuffer id = ByteBuffer.wrap(result.getRow());
+                        id.getLong();
+                    } catch (NumberFormatException e) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            });
+
+            @Override
+            public boolean hasNext() throws StorageException {
+                return results.hasNext();
+            }
+
+            @Override
+            public ByteBuffer next() throws StorageException {
+                return ByteBuffer.wrap(results.next().getRow());
+            }
+
+            @Override
+            public void close() throws StorageException {
+                scanner.close();
+            }
+        };
     }
 
     @Override

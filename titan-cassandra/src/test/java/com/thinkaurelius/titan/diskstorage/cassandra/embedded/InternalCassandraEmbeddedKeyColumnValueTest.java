@@ -35,4 +35,8 @@ public class InternalCassandraEmbeddedKeyColumnValueTest extends KeyColumnValueS
         assertTrue(features.isKeyOrdered());
     }
 
+    @Override
+    public void scanTest() {
+        // nothing to do here as current test uses ordered partitioner
+    }
 }
