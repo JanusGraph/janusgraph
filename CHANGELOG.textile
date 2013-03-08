@@ -14,7 +14,7 @@ h3. Version 0.2.0 (NOT OFFICIALLY RELEASE YET)
   <version>0.2.0-SNAPSHOT</version>
 </dependency>
 ```
-
+* Bumped to support Hadoop 1.1.1
 * Added @script@-step which allows for arbitrary Gremlin/Groovy script executions on Faunus vertices
 * Fixed job jar finding issue by introducing @FAUNUS_HOME@ system property
 * Complete refactoring of @FaunusCompiler@ and @FaunusPipeline@

@@ -47,7 +47,7 @@ public class RDFRecordReader extends RecordReader<NullWritable, FaunusElement> {
         return this.handler.next();
     }
 
-    public float getProgress() {
+    public float getProgress() throws IOException {
         return this.lineRecordReader.getProgress();
     }
 
