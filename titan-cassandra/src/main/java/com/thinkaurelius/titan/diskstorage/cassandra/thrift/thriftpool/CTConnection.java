@@ -15,22 +15,16 @@ import java.io.Closeable;
  */
 public class CTConnection implements Closeable {
     private final TTransport transport;
-    private final TProtocol proto;
     private final Cassandra.Client client;
 
-    public CTConnection(TTransport transport, TProtocol proto, Client client) {
+    public CTConnection(TTransport transport, Client client) {
         super();
         this.transport = transport;
-        this.proto = proto;
         this.client = client;
     }
 
     public TTransport getTransport() {
         return transport;
-    }
-
-    public TProtocol getProto() {
-        return proto;
     }
 
     public Cassandra.Client getClient() {
@@ -45,8 +39,7 @@ public class CTConnection implements Closeable {
 
     @Override
     public String toString() {
-        return "CTConnection [transport=" + transport + ", proto=" + proto
-                + ", client=" + client + "]";
+        return "CTConnection [transport=" + transport + ", client=" + client + "]";
     }
 
 }

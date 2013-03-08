@@ -126,6 +126,15 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     public AstyanaxStoreManager(Configuration config) throws StorageException {
         super(config);
 
+        // Check if we have non-default thrift frame size or max message size set and warn users
+        // because there is nothing we can do in Astyanax to apply those, warning is good enough here
+        // otherwise it would make bad user experience if we don't warn at all or crash on this.
+        if (this.thriftFrameSize != THRIFT_DEFAULT_FRAME_SIZE)
+            log.warn("Couldn't set custom Thrift Frame Size property, use 'cassandrathrift' instead.");
+
+        if (this.thriftMaxMessageSize != THRIFT_DEFAULT_MAX_MESSAGE_SIZE)
+            log.warn("Couldn't set custom Thrift Max Message Size property, use 'cassandrathrift' instead.");
+
         this.clusterName = config.getString(CLUSTER_KEY, CLUSTER_DEFAULT);
 
         this.retryPolicy = getRetryPolicy(config.getString(RETRY_POLICY_KEY, RETRY_POLICY_DEFAULT));

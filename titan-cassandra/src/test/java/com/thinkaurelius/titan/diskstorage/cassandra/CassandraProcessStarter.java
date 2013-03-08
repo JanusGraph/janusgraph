@@ -184,9 +184,8 @@ public class CassandraProcessStarter {
 			 * times without restarting the JVM, failure to
 			 * destroy stale connections can cause odd failures.
 			 */
-            log.debug("Clearing pooled Thrift connections for {}:{}",
-                    address, port);
-            CTConnectionPool.getPool(address, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT).clear();
+            log.debug("Clearing pooled Thrift connections for {}:{}", address, port);
+            CTConnectionPool.clearPool(address, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
         } catch (Exception e) {
             e.printStackTrace();
             throw new TitanException(e);
@@ -219,7 +218,11 @@ public class CassandraProcessStarter {
     }
 
     public void waitForClusterSize(int minSize) throws InterruptedException, StorageException {
-        CTConnectionFactory f = CTConnectionPool.getFactory(address, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
+        CTConnectionFactory f = CTConnectionPool.getFactory(address,
+                                                            port,
+                                                            GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT,
+                                                            AbstractCassandraStoreManager.THRIFT_DEFAULT_FRAME_SIZE,
+                                                            AbstractCassandraStoreManager.THRIFT_DEFAULT_MAX_MESSAGE_SIZE);
         CTConnection conn = null;
         try {
             conn = f.makeRawConnection();
