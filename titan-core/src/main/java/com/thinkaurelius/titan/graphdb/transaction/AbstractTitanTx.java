@@ -470,8 +470,8 @@ public abstract class AbstractTitanTx extends TitanBlueprintsTransaction impleme
     public Iterable<TitanVertex> getVertices(final TitanKey key, Object attribute) {
         verifyAccess(key);
         Preconditions.checkNotNull(key);
-        attribute = AttributeUtil.prepareAttribute(attribute, key.getDataType());
-        if (key.hasIndex()) {
+        if (attribute!=null) attribute = AttributeUtil.prepareAttribute(attribute, key.getDataType());
+        if (key.hasIndex() && attribute!=null) {
             // First, get stuff from disk
             long[] nodeids = getVertexIDsFromDisk(key, attribute);
             Set<TitanVertex> vertices = new HashSet<TitanVertex>(nodeids.length);
