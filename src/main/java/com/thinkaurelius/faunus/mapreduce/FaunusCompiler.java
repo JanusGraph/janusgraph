@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.mapreduce;
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.hdfs.GraphFilter;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -226,35 +225,33 @@ public class FaunusCompiler extends Configured implements Tool {
         if (this.pathEnabled)
             logger.warn("Path calculations are enabled for this Faunus job (space and time expensive)");
 
-        for (final Job job : this.jobs) {
-            job.getConfiguration().setBoolean(PATH_ENABLED, this.pathEnabled);
-            job.getConfiguration().set("mapred.jar", hadoopFileJar);
-        }
-
         final FileSystem hdfs = FileSystem.get(this.graph.getConfiguration());
         final String outputJobPrefix = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
         hdfs.mkdirs(this.graph.getOutputLocation());
 
         //////// CHAINING JOBS TOGETHER
 
-        if (FileInputFormat.class.isAssignableFrom(this.graph.getGraphInputFormat())) {
-            FileInputFormat.setInputPaths(this.jobs.get(0), this.graph.getInputLocation());
-            FileInputFormat.setInputPathFilter(this.jobs.get(0), NoSideEffectFilter.class);
-        }
-
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
-            final Path path = new Path(outputJobPrefix + "-" + i);
-            FileOutputFormat.setOutputPath(job, path);
+            job.getConfiguration().setBoolean(PATH_ENABLED, this.pathEnabled);
+            job.getConfiguration().set("mapred.jar", hadoopFileJar);
 
+            FileOutputFormat.setOutputPath(job, new Path(outputJobPrefix + "-" + i));
+
+            // configure job inputs
             if (i == 0) {
                 job.setInputFormatClass(this.graph.getGraphInputFormat());
+                if (FileInputFormat.class.isAssignableFrom(this.graph.getGraphInputFormat())) {
+                    FileInputFormat.setInputPaths(job, this.graph.getInputLocation());
+                    FileInputFormat.setInputPathFilter(job, NoSideEffectFilter.class);
+                }
             } else {
                 job.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                FileInputFormat.setInputPathFilter(job, GraphFilter.class);
-                FileInputFormat.addInputPath(job, new Path(outputJobPrefix + "-" + (i - 1)));
+                FileInputFormat.setInputPaths(job, new Path(outputJobPrefix + "-" + (i - 1)));
+                FileInputFormat.setInputPathFilter(job, NoSideEffectFilter.class);
             }
 
+            // configure job outputs
             if (i == this.jobs.size() - 1) {
                 LazyOutputFormat.setOutputFormatClass(job, this.graph.getGraphOutputFormat());
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
