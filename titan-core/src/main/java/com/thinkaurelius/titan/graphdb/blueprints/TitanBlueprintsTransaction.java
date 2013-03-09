@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.tinkerpop.blueprints.*;
+import com.tinkerpop.blueprints.util.DefaultGraphQuery;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.PropertyFilteredIterable;
 import com.tinkerpop.blueprints.util.StringFactory;
@@ -125,6 +126,11 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     @Override
     public Iterable<Edge> getEdges(String key, Object value) {
         return new PropertyFilteredIterable<Edge>(key, value, this.getEdges());
+    }
+
+    @Override
+    public GraphQuery query() {
+        return new DefaultGraphQuery(this);
     }
 
     @Override

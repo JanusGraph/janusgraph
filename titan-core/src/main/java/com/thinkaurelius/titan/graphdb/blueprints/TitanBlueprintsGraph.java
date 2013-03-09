@@ -6,10 +6,7 @@ import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.InternalTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Parameter;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.util.StringFactory;
 
 import java.util.Set;
@@ -144,6 +141,11 @@ public abstract class TitanBlueprintsGraph implements InternalTitanGraph {
     @Override
     public Iterable<Vertex> getVertices() {
         return getAutoStartTx().getVertices();
+    }
+
+    @Override
+    public GraphQuery query() {
+        return getAutoStartTx().query();
     }
 
     @Override

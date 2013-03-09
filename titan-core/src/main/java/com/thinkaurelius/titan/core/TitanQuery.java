@@ -4,6 +4,7 @@ package com.thinkaurelius.titan.core;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Query;
+import com.tinkerpop.blueprints.VertexQuery;
 
 /**
  * TitanQuery constructs and executes a query over incident edges from the perspective of a vertex.
@@ -16,7 +17,7 @@ import com.tinkerpop.blueprints.Query;
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface TitanQuery extends Query {
+public interface TitanQuery extends VertexQuery {
 
     /* ---------------------------------------------------------------
     * Query Specification
