@@ -761,7 +761,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     public Iterable<TitanVertex> getVertices(TitanKey key, Object attribute) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(attribute);
-        return query().has(key, Cmp.EQUAL, attribute).vertices();
+        return (Iterable)query().has(key, Cmp.EQUAL, attribute).vertices();
     }
 
     @Override
@@ -780,7 +780,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     public Iterable<TitanEdge> getEdges(TitanKey key, Object attribute) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(attribute);
-        return query().has(key, Cmp.EQUAL, attribute).edges();
+        return (Iterable)query().has(key, Cmp.EQUAL, attribute).edges();
     }
 
     /*

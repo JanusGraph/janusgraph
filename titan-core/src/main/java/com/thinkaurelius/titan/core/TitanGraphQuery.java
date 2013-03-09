@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.GraphQuery;
+import com.tinkerpop.blueprints.Vertex;
 
 /**
  * Constructs a query against an external index to retrieve all elements (either vertices or edges)
@@ -13,7 +16,7 @@ import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
  * @since 0.3.0
  */
 
-public interface TitanGraphQuery {
+public interface TitanGraphQuery extends GraphQuery {
 
     /**
      * The returned element must have a property for the given key that matches the condition according to the
@@ -41,13 +44,13 @@ public interface TitanGraphQuery {
      * Returns all vertices that match the conditions.
      * @return
      */
-    public Iterable<TitanVertex> vertices();
+    public Iterable<Vertex> vertices();
 
     /**
      * Returns all edges that match the conditions.
      * @return
      */
-    public Iterable<TitanEdge> edges();
+    public Iterable<Edge> edges();
 
 
     /**

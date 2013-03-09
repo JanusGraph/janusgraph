@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.core.attribute.Interval;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAnd;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAtom;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyCondition;
@@ -12,6 +14,9 @@ import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.stats.ObjectAccumulator;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.GraphQuery;
+import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,26 +70,43 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
         return this;
     }
 
+
+    @Override
+    public TitanGraphQuery has(String s, Object o) {
+        return has(s, Cmp.EQUAL,o);
+    }
+
+    @Override
+    public <T extends Comparable<T>> TitanGraphQuery has(String s, T t, Compare compare) {
+        return has(s,Cmp.convert(compare),t);
+    }
+
+    @Override
+    public <T extends Comparable<T>> TitanGraphQuery interval(String s, T t, T t2) {
+        return has(s,Cmp.INTERVAL,new Interval<T>(t,t2));
+    }
+
     private StandardElementQuery constructQuery(StandardElementQuery.Type elementType) {
         Preconditions.checkNotNull(elementType);
         return new StandardElementQuery(elementType,KeyAnd.of(conditions.toArray(new KeyAtom[conditions.size()])),limit,null);
     }
 
     @Override
-    public Iterable<TitanVertex> vertices() {
+    public Iterable<Vertex> vertices() {
         if (conditions==INVALID) return ImmutableList.of();
-        else if (conditions.isEmpty()) return Iterables.filter(tx.getVertices(), TitanVertex.class);
+        else if (conditions.isEmpty()) return Iterables.filter(tx.getVertices(), Vertex.class);
         StandardElementQuery query = constructQuery(StandardElementQuery.Type.VERTEX);
-        return Iterables.filter(new QueryProcessor<StandardElementQuery,TitanElement>(query,tx.elementProcessor,this),TitanVertex.class);
+        return Iterables.filter(new QueryProcessor<StandardElementQuery,TitanElement>(query,tx.elementProcessor,this),Vertex.class);
     }
 
     @Override
-    public Iterable<TitanEdge> edges() {
+    public Iterable<Edge> edges() {
         if (conditions==INVALID) return ImmutableList.of();
-        else if (conditions.isEmpty()) return Iterables.filter(tx.getEdges(),TitanEdge.class);
+        else if (conditions.isEmpty()) return Iterables.filter(tx.getEdges(),Edge.class);
         StandardElementQuery query = constructQuery(StandardElementQuery.Type.EDGE);
-        return Iterables.filter(new QueryProcessor<StandardElementQuery,TitanElement>(query,tx.elementProcessor,this),TitanEdge.class);
+        return Iterables.filter(new QueryProcessor<StandardElementQuery,TitanElement>(query,tx.elementProcessor,this),Edge.class);
     }
+
 
     @Override
     public TitanGraphQueryBuilder limit(long max) {
