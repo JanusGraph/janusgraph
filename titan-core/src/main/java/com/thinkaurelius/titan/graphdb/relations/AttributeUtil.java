@@ -2,12 +2,23 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.attribute.Interval;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
 public class AttributeUtil {
+
+    public static final Object verifyAttributeQuery(TitanKey key, Object attribute) {
+        if (attribute==null) return attribute;
+        else if (attribute instanceof Interval) {
+            Comparable start = (Comparable) verifyAttributeQuery(key,((Interval)attribute).getStart());
+            Comparable end = (Comparable) verifyAttributeQuery(key,((Interval)attribute).getEnd());
+            return new Interval(start,end);
+        } else return verifyAttribute(key,attribute);
+    }
+
 
     public static final Object verifyAttribute(TitanKey key, Object attribute) {
         attribute = prepareAttribute(attribute, key.getDataType());

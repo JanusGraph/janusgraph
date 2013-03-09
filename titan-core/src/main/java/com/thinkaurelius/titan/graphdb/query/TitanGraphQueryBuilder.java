@@ -43,13 +43,17 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
         this.conditions = Lists.newArrayList();
     }
 
+    private boolean isInvalid() {
+        return conditions==INVALID || limit==0;
+    }
+
     @Override
     public TitanGraphQuery has(String key, Relation relation, Object condition) {
         Preconditions.checkNotNull(key);
         TitanType type = tx.getType(key);
         if (type==null || !(type instanceof TitanKey)) {
             if (tx.getConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
-                condition = INVALID;
+                conditions = INVALID;
                 return this;
             } else {
                 throw new IllegalArgumentException("Unknown or invalid property key: " + key);
@@ -61,7 +65,7 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
     public TitanGraphQuery has(TitanKey key, Relation relation, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(relation);
-        if (condition!=null) condition=AttributeUtil.verifyAttribute(key,condition);
+        condition=AttributeUtil.verifyAttributeQuery(key,condition);
         Preconditions.checkArgument(relation.isValidCondition(condition),"Invalid condition: %s",condition);
         Preconditions.checkArgument(relation.isValidDataType(key.getDataType()),"Invalid data type for condition: %s",key.getDataType());
         if (conditions!=INVALID) {
@@ -93,16 +97,14 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
 
     @Override
     public Iterable<Vertex> vertices() {
-        if (conditions==INVALID) return ImmutableList.of();
-        else if (conditions.isEmpty()) return Iterables.filter(tx.getVertices(), Vertex.class);
+        if (isInvalid()) return ImmutableList.of();
         StandardElementQuery query = constructQuery(StandardElementQuery.Type.VERTEX);
         return Iterables.filter(new QueryProcessor<StandardElementQuery,TitanElement>(query,tx.elementProcessor,this),Vertex.class);
     }
 
     @Override
     public Iterable<Edge> edges() {
-        if (conditions==INVALID) return ImmutableList.of();
-        else if (conditions.isEmpty()) return Iterables.filter(tx.getEdges(),Edge.class);
+        if (isInvalid()) return ImmutableList.of();
         StandardElementQuery query = constructQuery(StandardElementQuery.Type.EDGE);
         return Iterables.filter(new QueryProcessor<StandardElementQuery,TitanElement>(query,tx.elementProcessor,this),Edge.class);
     }
@@ -122,14 +124,15 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
         //Find most suitable index
         ObjectAccumulator<String> opt = new ObjectAccumulator<String>(5);
         KeyCondition<TitanKey> condition = query.getCondition();
-        //ASSUMPTION: query is an AND of KeyAtom
-        Preconditions.checkArgument(condition instanceof KeyAnd);
-        Preconditions.checkArgument(condition.hasChildren());
-        for (KeyCondition<TitanKey> c : condition.getChildren()) {
-            KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>)c;
-            for (String index : atom.getKey().getIndexes(query.getType().getElementType())) {
-                if (tx.getGraph().getIndexInformation(index).supports(atom.getKey().getDataType(),atom.getRelation()))
-                    opt.incBy(index,1);
+        if (condition.hasChildren()) {
+            Preconditions.checkArgument(condition instanceof KeyAnd);
+            for (KeyCondition<TitanKey> c : condition.getChildren()) {
+                KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>)c;
+                if (atom.getCondition()==null) continue; //Cannot answer those with index
+                for (String index : atom.getKey().getIndexes(query.getType().getElementType())) {
+                    if (tx.getGraph().getIndexInformation(index).supports(atom.getKey().getDataType(),atom.getRelation()))
+                        opt.incBy(index,1);
+                }
             }
         }
         String bestIndex = opt.getMaxObject();

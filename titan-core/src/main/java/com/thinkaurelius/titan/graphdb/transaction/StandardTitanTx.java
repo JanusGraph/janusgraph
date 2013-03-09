@@ -647,7 +647,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                 return (Iterator)addedRelations.getView(new Predicate<InternalRelation>() {
                     @Override
                     public boolean apply(@Nullable InternalRelation relation) {
-                        return query.matches(relation);
+                        return (relation instanceof TitanEdge) && !relation.isHidden() && query.matches(relation);
                     }
                 }).iterator();
             } else throw new IllegalArgumentException("Unexpected type: " + query.getType());
@@ -698,7 +698,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                 for (KeyCondition<TitanKey> c : condition.getChildren()) {
                     KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>)c;
                     if (getGraph().getIndexInformation(index).supports(atom.getKey().getDataType(),atom.getRelation()) &&
-                            atom.getKey().hasIndex(index,query.getType().getElementType())) {
+                            atom.getKey().hasIndex(index,query.getType().getElementType()) && atom.getCondition()!=null) {
                         newConds.add(atom);
                     } else {
                         log.debug("Filtered out atom [{}] from query [{}] because it is not indexed or not covered by the index");
@@ -708,6 +708,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                 Preconditions.checkArgument(!newConds.isEmpty(),"Invalid index assignment [%s] to query [%s]",index, query);
                 final StandardElementQuery indexQuery;
                 if (needsFilter) {
+                    Preconditions.checkArgument(!newConds.isEmpty(),"Query has been assigned an index [%s] in error: %s",query.getIndex(),query);
                     indexQuery = new StandardElementQuery(query.getType(),KeyAnd.of(newConds.toArray(new KeyAtom[newConds.size()])),query.getLimit(),index);
                 } else {
                     indexQuery = query;

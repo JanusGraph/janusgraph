@@ -27,7 +27,9 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
 
     @Override
     public String toString() {
-        return E + L_BRACKET + getId() + R_BRACKET + L_BRACKET + getVertex().getId() + DASH + getPropertyKey() + ARROW + String.valueOf(value).substring(0,100) + R_BRACKET;
+        String valueStr = String.valueOf(value);
+        valueStr = valueStr.substring(0,Math.min(valueStr.length(),20));
+        return E + L_BRACKET + getId() + R_BRACKET + L_BRACKET + getVertex().getId() + DASH + getPropertyKey() + ARROW + valueStr + R_BRACKET;
     }
 
     @Override

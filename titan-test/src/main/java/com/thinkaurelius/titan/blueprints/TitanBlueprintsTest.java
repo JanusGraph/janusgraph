@@ -55,7 +55,7 @@ public abstract class TitanBlueprintsTest extends GraphTest {
 
     public void testQueryTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new QueryTestSuite(this));
+        doTestSuite(new QueryTitanTestSuite(this));
         printTestPerformance("QueryTestSuite", this.stopWatch());
     }
 

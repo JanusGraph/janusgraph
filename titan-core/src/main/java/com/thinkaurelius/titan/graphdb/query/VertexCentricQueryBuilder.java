@@ -104,7 +104,7 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
             //Check condition
             Preconditions.checkArgument(relation.isValidCondition(condition),"Invalid condition onf key [%s]: %s",t.getName(),condition);
             if (t.isPropertyKey()) {
-                if (condition!=null) condition = AttributeUtil.verifyAttribute((TitanKey)t,condition);
+                condition = AttributeUtil.verifyAttributeQuery((TitanKey)t,condition);
                 Preconditions.checkArgument(relation.isValidCondition(condition),"Invalid condition: %s",condition);
 //                Preconditions.checkArgument(relation.isValidDataType(((TitanKey)t).getDataType()),"Invalid data type for condition");
             } else { //t.isEdgeLabel()
