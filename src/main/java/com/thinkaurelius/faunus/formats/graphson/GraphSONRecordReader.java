@@ -48,7 +48,7 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
         return this.value;
     }
 
-    public float getProgress() {
+    public float getProgress() throws IOException {
         return this.lineRecordReader.getProgress();
     }
 
