@@ -105,7 +105,9 @@ public class EdgeSerializer {
             long propTypeId = map.getKey(i);
             if (propTypeId>0) {
                 TitanType pt = tx.getExistingType(propTypeId);
-                factory.addProperty(pt,map.getValue(i));
+                if (map.getValue(i)!=null) {
+                    factory.addProperty(pt,map.getValue(i));
+                }
             }
         }
     }
