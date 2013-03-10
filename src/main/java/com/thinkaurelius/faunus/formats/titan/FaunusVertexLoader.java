@@ -120,7 +120,7 @@ public class FaunusVertexLoader {
                 //Add properties
                 for (Map.Entry<String,Object> entry : properties.entrySet()) {
                     if (entry.getValue()!=null) {
-                        edge.setProperty(entry.getKey(),entry.getValue());
+                        edge.setProperty(entry.getKey(),prepareAttribute(entry.getValue()));
                     }
                 }
                 vertex.addEdge(dir, edge);
