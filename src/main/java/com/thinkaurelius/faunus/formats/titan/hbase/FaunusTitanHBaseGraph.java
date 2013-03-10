@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.formats.titan.hbase;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.titan.FaunusTitanGraph;
 import com.thinkaurelius.faunus.formats.titan.FaunusVertexLoader;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -21,34 +22,18 @@ import java.util.NavigableMap;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class FaunusTitanHBaseGraph extends StandardTitanGraph {
-
-    private final StandardTitanTx tx; /* it's only for reading a Titan graph into Hadoop. */
+public class FaunusTitanHBaseGraph extends FaunusTitanGraph {
 
     public FaunusTitanHBaseGraph(final String configFile) throws ConfigurationException {
         this(new PropertiesConfiguration(configFile));
     }
 
     public FaunusTitanHBaseGraph(final Configuration configuration) {
-        super(new GraphDatabaseConfiguration(configuration));
-        this.tx = newTransaction(new TransactionConfig(this.getConfiguration(),false));
+        super(configuration);
     }
 
     public FaunusVertex readFaunusVertex(byte[] key, final NavigableMap<byte[], NavigableMap<Long, byte[]>> rowMap) {
-        FaunusVertexLoader loader = new FaunusVertexLoader(ByteBuffer.wrap(key));
-        Iterable<Entry> entries = new HBaseMapIterable(rowMap);
-        for (Entry data : entries) {
-            FaunusVertexLoader.RelationFactory factory = loader.getFactory();
-            super.edgeSerializer.readRelation(factory,data,tx);
-            factory.build();
-        }
-        return loader.getVertex();
-    }
-
-    @Override
-    public void shutdown() {
-        tx.rollback();
-        super.shutdown();
+        return super.readFaunusVertex(ByteBuffer.wrap(key),new HBaseMapIterable(rowMap));
     }
 
     private static class HBaseMapIterable implements Iterable<Entry> {
