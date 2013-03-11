@@ -112,13 +112,6 @@ public class FaunusElementTest extends TestCase {
             assertTrue(true);
         }
 
-        try {
-            a.setProperty(Tokens._ID, 11l);
-            assertFalse(true);
-        } catch (IllegalArgumentException e) {
-            assertTrue(true);
-        }
-
         FaunusEdge b = new FaunusEdge(1l, 2l, 13l, "self");
         try {
             b.setProperty(Tokens.ID, 10);
