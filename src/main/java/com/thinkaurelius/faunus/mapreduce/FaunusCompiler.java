@@ -46,7 +46,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
     private FaunusGraph graph;
 
-    private final List<Job> jobs = new ArrayList<Job>();
+    protected final List<Job> jobs = new ArrayList<Job>();
 
     private final List<Class<? extends Mapper>> mapSequenceClasses = new ArrayList<Class<? extends Mapper>>();
     private Class<? extends WritableComparable> mapOutputKey = NullWritable.class;
@@ -66,7 +66,6 @@ public class FaunusCompiler extends Configured implements Tool {
     public FaunusCompiler(final FaunusGraph graph) {
         this.graph = graph;
         this.setConf(new Configuration());
-        this.addConfiguration(this.graph.getConfiguration());
     }
 
     private String toStringOfJob(final Class sequenceClass) {
@@ -157,6 +156,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public void completeSequence() {
         if (this.mapSequenceClasses.size() > 0) {
+            this.addConfiguration(this.graph.getConfiguration());
             this.getConf().setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
             final Job job;
             try {
@@ -191,7 +191,6 @@ public class FaunusCompiler extends Configured implements Tool {
             this.jobs.add(job);
 
             this.setConf(new Configuration());
-            this.addConfiguration(this.graph.getConfiguration());
             this.mapSequenceClasses.clear();
             this.combinerClass = null;
             this.reduceClass = null;
