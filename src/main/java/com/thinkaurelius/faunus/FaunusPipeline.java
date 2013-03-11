@@ -2,7 +2,6 @@ package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.MapReduceFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
-import com.thinkaurelius.faunus.mapreduce.StepMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
@@ -13,6 +12,7 @@ import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.CommitVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.GroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.LinkMapReduce;
+import com.thinkaurelius.faunus.mapreduce.sideeffect.ScriptMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.SideEffectMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
@@ -28,14 +28,12 @@ import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
-import com.thinkaurelius.faunus.mapreduce.util.ScriptMap;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.pipes.util.structures.Pair;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
@@ -214,38 +212,6 @@ public class FaunusPipeline {
             }
         }
     }
-
-    ///////// STEP
-
-    /**
-     * An arbitrary map/reduce computation (the most generic step possible)
-     *
-     * @param mapClosure    the map function
-     * @param reduceClosure the reduce function
-     * @param key1          the map output key class
-     * @param value1        the map output value class
-     * @param key2          the reduce output key class
-     * @param value2        the reduce output value class
-     * @return the extended FaunusPipeline
-     */
-    public FaunusPipeline step(final String mapClosure, final String reduceClosure,
-                               final Class<? extends WritableComparable> key1,
-                               final Class<? extends WritableComparable> value1,
-                               final Class<? extends WritableComparable> key2,
-                               final Class<? extends WritableComparable> value2) {
-        this.state.assertNotLocked();
-        final Configuration configuration = new Configuration();
-        configuration.setClass(StepMapReduce.CLASS, this.state.getElementType(), Element.class);
-        configuration.set(StepMapReduce.MAP_CLOSURE, this.validateClosure(mapClosure));
-        configuration.set(StepMapReduce.REDUCE_CLOSURE, this.validateClosure(reduceClosure));
-        this.compiler.addMapReduce(StepMapReduce.Map.class,
-                null,
-                StepMapReduce.Reduce.class,
-                key1, value1, key2, value2, configuration);
-        this.state.lock();
-        return this;
-    }
-
 
     //////// TRANSFORMS
 
@@ -1036,6 +1002,7 @@ public class FaunusPipeline {
                 FaunusVertex.class,
                 ScriptMap.createConfiguration(scriptUri, args));
         makeMapReduceString(CommitEdgesMap.class, scriptUri);
+        // this.state.lock();
         return this;
     }
 

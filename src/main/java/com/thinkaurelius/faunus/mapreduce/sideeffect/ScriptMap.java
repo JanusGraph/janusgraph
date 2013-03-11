@@ -1,7 +1,8 @@
-package com.thinkaurelius.faunus.mapreduce.util;
+package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.util.SafeMapperOutputs;
 import com.thinkaurelius.faunus.tinkerpop.gremlin.FaunusGremlinScriptEngine;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -69,6 +70,7 @@ public class ScriptMap {
                 this.textWritable.set((null == result) ? Tokens.NULL : result.toString());
                 this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.textWritable);
             }
+            this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
         }
 
         @Override
