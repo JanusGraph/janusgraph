@@ -55,7 +55,7 @@ public class RexsterTitanServer {
     }
 
     public void start() {
-        EngineController.configure(-1, null);
+        EngineController.configure(-1, this.rexsterConfig.getString("script-engine-init", null));
         graph = TitanFactory.open(titanConfig);
         final RexsterApplication ra = new DefaultRexsterApplication(DEFAULT_GRAPH_NAME, graph);
         try {
