@@ -58,7 +58,7 @@
     </scm>
     <properties>
         <titan.version>0.2.1-SNAPSHOT</titan.version>
-        <titan.compatible.versions>0.2.0,0.2.1-SNAPSHOT</titan.compatible.versions>
+        <titan.compatible.versions>0.2.0</titan.compatible.versions>
         <tinkerpop.version>2.3.0-SNAPSHOT</tinkerpop.version>
         <junit.version>4.5</junit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
