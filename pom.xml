@@ -73,6 +73,7 @@
         <module>titan-core</module>
         <module>titan-test</module>
         <module>titan-berkeleyje</module>
+        <module>titan-persistit</module>
         <module>titan-cassandra</module>
         <module>titan-hbase</module>
         <module>titan-all</module>
