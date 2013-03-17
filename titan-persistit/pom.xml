@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>titan-persistit</artifactId>
-    <name>Titan-BerkeleyJE: Distributed Graph Database</name>
+    <name>Titan-Persistit: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <dependencies>
