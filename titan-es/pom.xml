@@ -8,7 +8,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-es</artifactId>
-    <name>Titan-ElasticSearch: Full text indexing support</name>
+    <name>Titan-ElasticSearch: Distributed Indexing Support</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     <dependencies>
         <dependency>
