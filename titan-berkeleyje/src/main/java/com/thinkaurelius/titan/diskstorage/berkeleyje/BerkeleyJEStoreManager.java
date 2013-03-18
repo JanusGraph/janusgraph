@@ -8,7 +8,6 @@ import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.Transaction;
-import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
@@ -49,8 +48,7 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
         stores = new HashMap<String, BerkeleyJEKeyValueStore>();
         String storageDir = configuration.getString(STORAGE_DIRECTORY_KEY);
         Preconditions.checkArgument(storageDir != null, "Need to specify storage directory");
-        directory = new File(storageDir);
-        Preconditions.checkArgument(directory.isDirectory() && directory.canWrite(), "Cannot open or write to directory: " + directory);
+        directory = getOrCreateDataDirectory(storageDir);
         isReadOnly = configuration.getBoolean(STORAGE_READONLY_KEY, STORAGE_READONLY_DEFAULT);
         batchLoading = configuration.getBoolean(STORAGE_BATCH_KEY, STORAGE_BATCH_DEFAULT);
         boolean transactional = configuration.getBoolean(STORAGE_TRANSACTIONAL_KEY, STORAGE_TRANSACTIONAL_DEFAULT);
@@ -209,5 +207,17 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
 
     private static File getConfigFile(File dbDirectory) {
         return new File(dbDirectory.getAbsolutePath() + File.separator + TITAN_CONFIG_FILE_NAME);
+    }
+
+    private static File getOrCreateDataDirectory(String location) throws StorageException {
+        File storageDir = new File(location);
+
+        if (storageDir.exists() && storageDir.isFile())
+            throw new PermanentStorageException(String.format("%s exists but is a file.", location));
+
+        if (!storageDir.exists() && !storageDir.mkdirs())
+            throw new PermanentStorageException(String.format("Failed to create directory %s for BerkleyDB storage.", location));
+
+        return storageDir;
     }
 }
