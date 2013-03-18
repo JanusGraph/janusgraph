@@ -386,7 +386,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     public void setProperty(TitanVertex vertex, final TitanKey key, Object value) {
         Preconditions.checkNotNull(key);
-        Preconditions.checkArgument(key.isUnique(Direction.OUT));
+        Preconditions.checkArgument(key.isUnique(Direction.OUT),"Not an out-unique key: %s",key.getName());
 
         Lock uniqueLock = FakeLock.INSTANCE;
         try {
