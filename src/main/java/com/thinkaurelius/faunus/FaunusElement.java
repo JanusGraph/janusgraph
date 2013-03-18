@@ -200,6 +200,10 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         return this.id;
     }
 
+    public void remove() throws UnsupportedOperationException {
+        throw new UnsupportedOperationException();
+    }
+
     public void readFields(final DataInput in) throws IOException {
         this.id = WritableUtils.readVLong(in);
         this.pathEnabled = in.readBoolean();

@@ -2,9 +2,9 @@ package com.thinkaurelius.faunus;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.util.DefaultQuery;
+import com.tinkerpop.blueprints.VertexQuery;
+import com.tinkerpop.blueprints.util.DefaultVertexQuery;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.hadoop.io.WritableUtils;
@@ -73,8 +73,8 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         this.addEdges(BOTH, vertex);
     }
 
-    public Query query() {
-        return new DefaultQuery(this);
+    public VertexQuery query() {
+        return new DefaultVertexQuery(this);
     }
 
     public Set<String> getEdgeLabels(final Direction direction) {
@@ -179,6 +179,10 @@ public class FaunusVertex extends FaunusElement implements Vertex {
                 this.addEdges(IN, label, (List) vertex.getEdges(IN, label));
             }
         }
+    }
+
+    public Edge addEdge(final String label, final Vertex inVertex) {
+        return this.addEdge(Direction.OUT, new FaunusEdge(this.getIdAsLong(), ((FaunusVertex) inVertex).getIdAsLong(), label));
     }
 
     public FaunusEdge addEdge(final Direction direction, final FaunusEdge edge) {
