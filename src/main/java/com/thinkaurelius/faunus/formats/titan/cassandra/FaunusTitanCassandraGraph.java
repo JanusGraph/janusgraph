@@ -42,7 +42,7 @@ public class FaunusTitanCassandraGraph extends StandardTitanGraph {
     @Override
     public void shutdown() {
         if (tx != null)
-            tx.abort();
+            tx.rollback();
 
         super.shutdown();
     }
