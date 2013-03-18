@@ -12,16 +12,19 @@ import org.apache.hadoop.io.IOUtils
  */
 class HadoopLoader {
 
+    private static final String SPACE = " ";
+    private static final String D_SPACE = "(D) ";
+
     public static void load() {
 
         FileStatus.metaClass.toString = {
             StringBuilder s = new StringBuilder();
-            s.append(((FileStatus) delegate).getPermission()).append(" ")
-            s.append(((FileStatus) delegate).getOwner()).append(" ");
-            s.append(((FileStatus) delegate).getGroup()).append(" ");
-            s.append(((FileStatus) delegate).getLen()).append(" ");
+            s.append(((FileStatus) delegate).getPermission()).append(SPACE)
+            s.append(((FileStatus) delegate).getOwner()).append(SPACE);
+            s.append(((FileStatus) delegate).getGroup()).append(SPACE);
+            s.append(((FileStatus) delegate).getLen()).append(SPACE);
             if (((FileStatus) delegate).isDir())
-                s.append("(D) ");
+                s.append(D_SPACE);
             s.append(((FileStatus) delegate).getPath().getName());
             return s.toString();
         }

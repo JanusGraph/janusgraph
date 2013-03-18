@@ -211,7 +211,7 @@ public class FaunusCompiler extends Configured implements Tool {
             logger.warn("Using developer reference to target/" + Tokens.FAUNUS_JOB_JAR);
             hadoopFileJar = "../target/" + Tokens.FAUNUS_JOB_JAR;
         } else {
-            final String faunusHome = System.getProperty(Tokens.FAUNUS_HOME);
+            final String faunusHome = System.getenv(Tokens.FAUNUS_HOME);
             if (null == faunusHome || faunusHome.isEmpty())
                 throw new IllegalStateException("FAUNUS_HOME must be set in order to locate the Faunus Hadoop job jar: " + Tokens.FAUNUS_JOB_JAR);
             if (new File(faunusHome + "/lib/" + Tokens.FAUNUS_JOB_JAR).exists()) {

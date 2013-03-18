@@ -22,7 +22,7 @@ h3. Version 0.1.1 (NOT OFFICIALLY RELEASE YET)
 * Removed @step@-step as it was not clearly defined and difficult to use (see @script@-step)
 * Fixed job jar finding issue by introducing @FAUNUS_HOME@ system property
 * Complete refactoring of @FaunusCompiler@ and @FaunusPipeline@
-* Added support for user defined @Input@- @OutputFormats@
+* Added support for user defined @Input@- and @OutputFormats@
 * Added @MapReduceFormat@ which allows an arbitrary number of MapReduce jobs after/before input/output.
 * Added configuration to allow Faunus to get the actual vertex count from Rexster when determining split size.
 * Added configuration to allow Faunus to authenticate to Rexster, if Rexster security is turned on.
