@@ -4,7 +4,7 @@ import com.thinkaurelius.faunus.util.MicroEdge;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.util.ExceptionFactory;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.WritableUtils;
@@ -162,10 +162,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     }
 
     public void setProperty(final String key, final Object value) {
-        if (key.equals(Tokens._ID) || key.equals(Tokens.ID))
-            throw ExceptionFactory.propertyKeyIdIsReserved();
-        if (this instanceof FaunusEdge && key.equals(Tokens.LABEL))
-            throw ExceptionFactory.propertyKeyLabelIsReservedForEdges();
+        ElementHelper.validateProperty(this, key, value);
         if (key.equals(Tokens._COUNT))
             throw new IllegalArgumentException("_count is a reserved property");
 
@@ -174,14 +171,14 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         this.properties.put(TYPE_MAP.get(key), value);
     }
 
-    public Object removeProperty(final String key) {
-        return null == this.properties ? null : this.properties.remove(key);
+    public <T> T removeProperty(final String key) {
+        return null == this.properties ? null : (T) this.properties.remove(key);
     }
 
-    public Object getProperty(final String key) {
+    public <T> T getProperty(final String key) {
         if (key.equals(Tokens._COUNT))
-            return this.pathCount();
-        return null == this.properties ? null : this.properties.get(key);
+            return (T) Long.valueOf(this.pathCount());
+        return null == this.properties ? null : (T) this.properties.get(key);
     }
 
     public Set<String> getPropertyKeys() {
