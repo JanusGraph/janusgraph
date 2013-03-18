@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -282,14 +283,25 @@ public class Backend {
     
     //############ Registered Storage Managers ##############
 
-    private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>();
+    private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>() {{
+        put("local", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
+        put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
+        put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
+        put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
+        put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
+        put("hbase", "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager");
+        put("embeddedcassandra", "com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager");
+    }};
 
     static {
         Properties props;
 
         try {
             props = new Properties();
-            props.load(TitanFactory.class.getClassLoader().getResourceAsStream(TitanConstants.TITAN_PROPERTIES_FILE));
+            InputStream in = TitanFactory.class.getClassLoader().getResourceAsStream(TitanConstants.TITAN_PROPERTIES_FILE);
+            if (in!=null && in.available()>0) {
+                props.load(in);
+            }
         } catch (IOException e) {
             throw new AssertionError(e);
         }
