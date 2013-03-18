@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.util;
 import com.google.common.base.Preconditions;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class ByteBufferUtil {
 
@@ -165,5 +166,24 @@ public class ByteBufferUtil {
             c[1 + i * 2] = Hex.byteToChar[bint & 0x0f];
         }
         return Hex.wrapCharArray(c);
+    }
+
+    public static byte[] getArray(ByteBuffer buffer)
+    {
+        int length = buffer.remaining();
+
+        if (buffer.hasArray())
+        {
+            int boff = buffer.arrayOffset() + buffer.position();
+            if (boff == 0 && length == buffer.array().length)
+                return buffer.array();
+            else
+                return Arrays.copyOfRange(buffer.array(), boff, boff + length);
+        }
+        // else, DirectByteBuffer.get() is the fastest route
+        byte[] bytes = new byte[length];
+        buffer.duplicate().get(bytes);
+
+        return bytes;
     }
 }
