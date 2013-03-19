@@ -21,11 +21,12 @@ public class MapSequence {
         private List<Mapper<Writable, Writable, Writable, Writable>> mappers = new ArrayList<Mapper<Writable, Writable, Writable, Writable>>();
         private List<Method> mapMethods = new ArrayList<Method>();
         private List<Method> cleanupMethods = new ArrayList<Method>();
-        //private MultipleOutputs outputs;
+        private int size = 0;
+        private MemoryMapContext memoryContext;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            if (mappers.size() == 0)
+            if (this.mappers.size() == 0) {
                 try {
                     final MemoryMapContext memoryContext = new MemoryMapContext(context);
                     final String[] mapClassNames = context.getConfiguration().getStrings(MAP_CLASSES, new String[0]);
@@ -36,7 +37,7 @@ public class MapSequence {
                             final Mapper<Writable, Writable, Writable, Writable> mapper = mapClass.getConstructor().newInstance();
                             try {
                                 mapClass.getMethod(Tokens.SETUP, Mapper.Context.class).invoke(mapper, memoryContext);
-                            } catch (NoSuchMethodException e) {
+                            } catch (final NoSuchMethodException e) {
                                 // there is no setup method and that is okay.
                             }
                             this.mappers.add(mapper);
@@ -48,53 +49,39 @@ public class MapSequence {
                             }
                             try {
                                 this.cleanupMethods.add(mapClass.getMethod(Tokens.CLEANUP, Mapper.Context.class));
-                            } catch (NoSuchMethodException e) {
+                            } catch (final NoSuchMethodException e) {
                                 this.cleanupMethods.add(null);
                             }
 
                         }
                     }
-                    //this.outputs = new MultipleOutputs(context);
-                } catch (Exception e) {
+                    this.size = this.mappers.size();
+                    this.memoryContext = new MemoryMapContext(context);
+                } catch (final Exception e) {
                     throw new IOException(e);
                 }
+            }
         }
 
 
         @Override
         public void map(final Writable key, final Writable value, final Mapper<Writable, Writable, Writable, Writable>.Context context) throws IOException, InterruptedException {
             try {
-                final int size = this.mappers.size();
-                //System.out.println(this.mappers.size());
-                Writable currentKey = key;
-                Writable currentValue = value;
+                this.memoryContext.setContext(context);
+                this.memoryContext.write(key, value);
 
-                final MemoryMapContext memoryContext = new MemoryMapContext(context);
-                for (int i = 0; i < size - 1; i++) {
-                    final Mapper mapper = this.mappers.get(i);
-                    final Method map = this.mapMethods.get(i);
-                    final Method cleanup = this.cleanupMethods.get(i);
-
-                    map.invoke(mapper, currentKey, currentValue, memoryContext);
-                    if (!memoryContext.nextKeyValue()) {
-                        currentKey = null;
-                        currentValue = null;
+                for (int i = 0; i < this.size - 1; i++) {
+                    this.mapMethods.get(i).invoke(this.mappers.get(i), this.memoryContext.getCurrentKey(), this.memoryContext.getCurrentValue(), this.memoryContext);
+                    if (!this.memoryContext.nextKeyValue()) {
                         break;
-                    } else {
-                        currentKey = memoryContext.getCurrentKey();
-                        currentValue = memoryContext.getCurrentValue();
                     }
-                    if (null != cleanup)
-                        cleanup.invoke(mapper, memoryContext);
                 }
 
-                if (currentKey != null && currentValue != null) {
-                    final Mapper mapper = this.mappers.get(size - 1);
-                    final Method map = this.mapMethods.get(size - 1);
-                    map.invoke(mapper, currentKey, currentValue, context);
+                if (this.memoryContext.nextKeyValue()) {
+                    this.mapMethods.get(this.size - 1).invoke(this.mappers.get(this.size - 1), this.memoryContext.getCurrentKey(), this.memoryContext.getCurrentValue(), context);
                 }
 
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 throw new IOException(e.getMessage(), e);
             }
         }
@@ -102,12 +89,12 @@ public class MapSequence {
         @Override
         public void cleanup(final Mapper<Writable, Writable, Writable, Writable>.Context context) throws IOException, InterruptedException {
             try {
-                final int size = this.mappers.size();
-                final Mapper mapper = this.mappers.get(size - 1);
-                final Method cleanup = this.cleanupMethods.get(size - 1);
-                if (null != cleanup)
-                    cleanup.invoke(mapper, context);
-            } catch (Exception e) {
+                for (int i = 0; i < this.mappers.size(); i++) {
+                    final Method cleanup = this.cleanupMethods.get(i);
+                    if (null != cleanup)
+                        cleanup.invoke(this.mappers.get(i), context);
+                }
+            } catch (final Exception e) {
                 throw new IOException(e.getMessage(), e);
             }
         }

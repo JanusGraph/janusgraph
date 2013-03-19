@@ -7,11 +7,14 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 
 /**
+ * MemoryMapper supports in-memory mapping for a chain of mappers.
+ * This provides significant performance improvements as each map-only task need not write its results to disk.
+ * Note that MemoryMapper is not general-purpose and is specific to Faunus' current MapReduce library.
+ * In particular, it assumes that the chain of mappers emits 0 or 1 output for each input.
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
@@ -23,8 +26,8 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
 
         private final Configuration currentConfiguration = new Configuration();
 
-        private Queue<Writable> keys = new LinkedList<Writable>();
-        private Queue<Writable> values = new LinkedList<Writable>();
+        private Writable key = null;
+        private Writable value = null;
         private Mapper.Context context;
         private Configuration globalConfiguration;
 
@@ -36,23 +39,27 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
 
         @Override
         public void write(final Object key, final Object value) throws IOException, InterruptedException {
-            this.keys.add((Writable) key);
-            this.values.add((Writable) value);
+            this.key = (Writable) key;
+            this.value = (Writable) value;
         }
 
         @Override
         public Writable getCurrentKey() {
-            return this.keys.remove();
+            final Writable temp = this.key;
+            this.key = null;
+            return temp;
         }
 
         @Override
         public Writable getCurrentValue() {
-            return this.values.remove();
+            final Writable temp = this.value;
+            this.value = null;
+            return temp;
         }
 
         @Override
         public boolean nextKeyValue() {
-            return !this.keys.isEmpty() && !this.values.isEmpty();
+            return this.key != null && this.value != null;
         }
 
         @Override
@@ -70,8 +77,8 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
             return this.currentConfiguration;
         }
 
-        public Mapper.Context getRawContext() {
-            return this.context;
+        public void setContext(final Mapper.Context context) {
+            this.context = context;
         }
 
         public void stageConfiguration(final int step) {

@@ -24,16 +24,13 @@ public class MapSequenceTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<Writable, Writable, Writable, Writable>());
     }
 
-    public void testTrue() {
-        assertTrue(true);
-    }
-
     public void testVertexFiltering() throws IOException {
         Configuration config = new Configuration();
         config.setStrings(MapSequence.MAP_CLASSES, IdentityMap.Map.class.getName(), IdentityMap.Map.class.getName(), IdentityMap.Map.class.getName());
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
         assertEquals(results.size(), 6);
+        identicalStructure(results, ExampleGraph.TINKERGRAPH);
     }
 
     /*public void testMapReduceOneJob() throws IOException {
