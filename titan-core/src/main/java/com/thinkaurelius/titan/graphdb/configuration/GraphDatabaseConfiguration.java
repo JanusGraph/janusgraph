@@ -277,14 +277,7 @@ public class GraphDatabaseConfiguration {
         try {
             if (dirOrFile.isFile())
                 return new PropertiesConfiguration(dirOrFile);
-
-            boolean exists = dirOrFile.exists();
-
-            if (!exists && !dirOrFile.mkdirs())
-                throw new IllegalArgumentException("Could not create directory: " + dirOrFile);
-
-            Preconditions.checkArgument(dirOrFile.isDirectory() && dirOrFile.exists());
-
+            
             configuration = new BaseConfiguration();
             configuration.setProperty(keyInNamespace(STORAGE_NAMESPACE, STORAGE_DIRECTORY_KEY), dirOrFile.getAbsolutePath());
         } catch (ConfigurationException e) {
