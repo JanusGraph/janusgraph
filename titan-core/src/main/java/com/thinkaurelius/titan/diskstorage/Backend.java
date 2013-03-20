@@ -347,8 +347,21 @@ public class Backend {
     
     //############ Registered Storage Managers ##############
 
-    private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>();
-    private static final Map<String, String> REGISTERED_INDEX_PROVIDERS = new HashMap<String, String>();
+    private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>() {{
+        put("local", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
+        put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
+        put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
+        put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
+        put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
+        put("hbase", "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager");
+        put("embeddedcassandra", "com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager");
+    }};
+
+    private static final Map<String, String> REGISTERED_INDEX_PROVIDERS = new HashMap<String, String>() {{
+        put("lucene","com.thinkaurelius.titan.diskstorage.lucene.LuceneIndex");
+        put("elasticsearch","com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
+        put("es","com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
+    }};
 
 
     static {
