@@ -156,6 +156,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         } catch (InterruptedException e) {
             throw new TemporaryStorageException(e);
         }
+
+        waitUntil(putTS);
     }
 
     @Override
@@ -369,5 +371,18 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         return commandsPerKey;
+    }
+
+    private static void waitUntil(long until) {
+        long now = System.currentTimeMillis();
+
+        while (now <= until) {
+            try {
+                Thread.sleep(1L);
+                now = System.currentTimeMillis();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
