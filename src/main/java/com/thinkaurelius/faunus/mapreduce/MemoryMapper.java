@@ -10,10 +10,10 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * MemoryMapper supports in-memory mapping for a chain of mappers.
- * This provides significant performance improvements as each map-only task need not write its results to disk.
+ * MemoryMapper supports in-memory mapping for a chain of consecutive mappers.
+ * This provides significant performance improvements as each map need not write its results to disk.
  * Note that MemoryMapper is not general-purpose and is specific to Faunus' current MapReduce library.
- * In particular, it assumes that the chain of mappers emits 0 or 1 output for each input.
+ * In particular, it assumes that the chain of mappers emits 0 or 1 key/value pairs for each input.
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -28,6 +28,8 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
 
         private Writable key = null;
         private Writable value = null;
+        private Writable tempKey = null;
+        private Writable tempValue = null;
         private Mapper.Context context;
         private Configuration globalConfiguration;
 
@@ -45,16 +47,16 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
 
         @Override
         public Writable getCurrentKey() {
-            final Writable temp = this.key;
+            this.tempKey = this.key;
             this.key = null;
-            return temp;
+            return this.tempKey;
         }
 
         @Override
         public Writable getCurrentValue() {
-            final Writable temp = this.value;
+            this.tempValue = this.value;
             this.value = null;
-            return temp;
+            return tempValue;
         }
 
         @Override

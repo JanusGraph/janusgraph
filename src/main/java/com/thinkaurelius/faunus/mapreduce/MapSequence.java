@@ -52,7 +52,6 @@ public class MapSequence {
                             } catch (final NoSuchMethodException e) {
                                 this.cleanupMethods.add(null);
                             }
-
                         }
                     }
                     this.size = this.mappers.size();
