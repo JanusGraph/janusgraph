@@ -24,6 +24,37 @@
             <version>${titan.version}</version>
             <scope>test</scope>
         </dependency>
+        <!--
+            JNA is not required to run Cassandra, but it improves
+            efficiency of certain of Cassandra's filesystem and memory
+            operations.  DataStax describes JNA as "required for
+            production installations":
+
+            http://www.datastax.com/docs/1.2/install/install_jre
+        -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>3.2.7</version>
+	    <scope>optional</scope>
+	</dependency>
+        <!-- 
+            Temporary hack to work around the outdated 12.0 Guava pom.xml
+            dependency in Cassandra 1.2.2.  Cassandra 1.2.2 actually
+            requires Guava 13.0.1, judging from the distro tarball
+            and runtime NoClassDefFoundErrors looking for the class
+            com/google/common/util/concurrent/RateLimiter.
+        -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>13.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>1.3.9</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
