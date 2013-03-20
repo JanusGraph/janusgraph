@@ -18,6 +18,7 @@ h3. Version 0.1.1 (NOT OFFICIALLY RELEASE YET)
 * Bumped to support Hadoop 1.1.1
 * Bumped to support Titan 0.2.1
 * Bumped to support OpenRDF 2.6.10
+* Bumped to support TinkerPop 2.3.0
 * Added @script@-step which allows for arbitrary Gremlin/Groovy script executions on Faunus vertices
 * Removed @step@-step as it was not clearly defined and difficult to use (see @script@-step)
 * Fixed job jar finding issue by introducing @FAUNUS_HOME@ system property
