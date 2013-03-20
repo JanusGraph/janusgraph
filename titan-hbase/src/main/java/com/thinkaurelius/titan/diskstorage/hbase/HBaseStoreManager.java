@@ -1,5 +1,14 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanException;
@@ -7,40 +16,17 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Mutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableNotFoundException;
-import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.HTableInterface;
-import org.apache.hadoop.hbase.client.HTablePool;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Row;
-import org.apache.hadoop.hbase.client.Scan;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import static com.thinkaurelius.titan.diskstorage.hbase.HBaseKeyColumnValueStore.toArray;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.util.Pair;
 
 /**
  * Experimental storage manager for HBase.
@@ -51,7 +37,7 @@ import static com.thinkaurelius.titan.diskstorage.hbase.HBaseKeyColumnValueStore
  */
 public class HBaseStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
 
-    private static final Logger log = LoggerFactory.getLogger(HBaseStoreManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(HBaseStoreManager.class);
 
     public static final String TABLE_NAME_KEY = "tablename";
     public static final String TABLE_NAME_DEFAULT = "titan";
@@ -60,50 +46,57 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final String HBASE_CONFIGURATION_NAMESPACE = "hbase-config";
 
-    public static final Map<String, String> HBASE_CONFIGURATION_MAP = new ImmutableMap.Builder<String, String>().
-            put(GraphDatabaseConfiguration.HOSTNAME_KEY, "hbase.zookeeper.quorum").
-            put(GraphDatabaseConfiguration.PORT_KEY, "hbase.zookeeper.property.clientPort").
-            build();
+    public static final ImmutableMap<String, String> HBASE_CONFIGURATION;
+
+    static {
+        HBASE_CONFIGURATION = new ImmutableMap.Builder<String, String>()
+                                    .put(GraphDatabaseConfiguration.HOSTNAME_KEY, "hbase.zookeeper.quorum")
+                                    .put(GraphDatabaseConfiguration.PORT_KEY, "hbase.zookeeper.property.clientPort")
+                                    .build();
+    }
 
     private final String tableName;
     private final org.apache.hadoop.conf.Configuration hconf;
 
-    private final Map<String, HBaseKeyColumnValueStore> openStores;
-    private final StoreFeatures features;
+    private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
     private final HTablePool connectionPool;
+
+    private final StoreFeatures features;
 
     public HBaseStoreManager(org.apache.commons.configuration.Configuration config) throws StorageException {
         super(config, PORT_DEFAULT);
+
         this.tableName = config.getString(TABLE_NAME_KEY, TABLE_NAME_DEFAULT);
 
         this.hconf = HBaseConfiguration.create();
-        for (Map.Entry<String, String> confEntry : HBASE_CONFIGURATION_MAP.entrySet()) {
+        for (Map.Entry<String, String> confEntry : HBASE_CONFIGURATION.entrySet()) {
             if (config.containsKey(confEntry.getKey())) {
                 hconf.set(confEntry.getValue(), config.getString(confEntry.getKey()));
             }
         }
 
         // Copy a subset of our commons config into a Hadoop config
-        org.apache.commons.configuration.Configuration hbCommons =
-                config.subset(HBASE_CONFIGURATION_NAMESPACE);
+        org.apache.commons.configuration.Configuration hbCommons = config.subset(HBASE_CONFIGURATION_NAMESPACE);
+
         @SuppressWarnings("unchecked") // I hope commons-config eventually fixes this
-                Iterator<String> keys = hbCommons.getKeys();
+        Iterator<String> keys = hbCommons.getKeys();
         int keysLoaded = 0;
 
         while (keys.hasNext()) {
             String key = keys.next();
             String value = hbCommons.getString(key);
-            log.debug("HBase configuration: setting {}={}", key, value);
+            logger.debug("HBase configuration: setting {}={}", key, value);
             hconf.set(key, value);
             keysLoaded++;
         }
 
-        log.debug("HBase configuration: set a total of {} configuration values", keysLoaded);
+        logger.debug("HBase configuration: set a total of {} configuration values", keysLoaded);
 
         connectionPool = new HTablePool(hconf, connectionPoolSize);
 
-        openStores = new HashMap<String, HBaseKeyColumnValueStore>();
+        openStores = new ConcurrentHashMap<String, HBaseKeyColumnValueStore>();
 
+        // TODO: allowing publicly mutate fields is bad, should be fixed
         features = new StoreFeatures();
         features.supportsScan = true;
         features.supportsBatchMutation = true;
@@ -134,63 +127,30 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public void mutateMany(Map<String, Map<ByteBuffer, Mutation>> mutations, StoreTransaction txh) throws StorageException {
-
-        Map<ByteBuffer, Put> puts = new HashMap<ByteBuffer, Put>();
-        Map<ByteBuffer, Delete> dels = new HashMap<ByteBuffer, Delete>();
-
-
         final long delTS = System.currentTimeMillis();
         final long putTS = delTS + 1;
 
-        for (Map.Entry<String, Map<ByteBuffer, Mutation>> mutEntry : mutations.entrySet()) {
-            byte[] columnFamilyBytes = mutEntry.getKey().getBytes();
-            for (Map.Entry<ByteBuffer, Mutation> rowMutation : mutEntry.getValue().entrySet()) {
-                ByteBuffer keyBB = rowMutation.getKey();
-                Mutation mutation = rowMutation.getValue();
+        Map<ByteBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, putTS, delTS);
+        List<Row> batch = new ArrayList<Row>(commandsPerKey.size()); // actual batch operation
 
-                if (mutation.hasDeletions()) {
-                    Delete d = dels.get(keyBB);
-                    if (null == d) {
-                        d = new Delete(toArray(keyBB), delTS, null);
-                        dels.put(keyBB, d);
-                    }
+        // convert sorted commands into representation required for 'batch' operation
+        for (Pair<Put, Delete> commands : commandsPerKey.values()) {
+            if (commands.getFirst() != null)
+                batch.add(commands.getFirst());
 
-                    for (ByteBuffer b : mutation.getDeletions()) {
-                        d.deleteColumns(columnFamilyBytes, toArray(b), delTS);
-                    }
-                }
-
-                if (mutation.hasAdditions()) {
-                    Put p = puts.get(keyBB);
-                    if (null == p) {
-                        p = new Put(toArray(keyBB), putTS);
-                        puts.put(keyBB, p);
-                    }
-
-                    for (Entry e : mutation.getAdditions()) {
-                        byte[] colBytes = toArray(e.getColumn());
-                        byte[] valBytes = toArray(e.getValue());
-                        p.add(columnFamilyBytes, colBytes, putTS, valBytes);
-                    }
-                }
-            }
+            if (commands.getSecond() != null)
+                batch.add(commands.getSecond());
         }
-
-        List<Row> batchOps = new LinkedList<Row>();
-        for (Delete d : dels.values()) batchOps.add(d);
-        for (Put p : puts.values()) batchOps.add(p);
-        dels = null;
-        puts = null;
 
         try {
             HTableInterface table = null;
+
             try {
                 table = connectionPool.getTable(tableName);
-                table.batch(batchOps);
+                table.batch(batch);
                 table.flushCommits();
             } finally {
-                if (null != table)
-                    table.close();
+                IOUtils.closeQuietly(table);
             }
         } catch (IOException e) {
             throw new TemporaryStorageException(e);
@@ -198,26 +158,23 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new TemporaryStorageException(e);
         }
 
-        long now = System.currentTimeMillis();
-        while (now <= putTS) {
-            try {
-                Thread.sleep(1L);
-                now = System.currentTimeMillis();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        waitUntil(putTS);
     }
 
     @Override
-    public KeyColumnValueStore openDatabase(String name) throws StorageException {
-        if (openStores.containsKey(name))
-            return openStores.get(name);
+    public KeyColumnValueStore openDatabase(String dbName) throws StorageException {
+        HBaseKeyColumnValueStore store = openStores.get(dbName);
 
-        ensureColumnFamilyExists(tableName, name);
+        if (store == null) {
+            HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(connectionPool, tableName, dbName);
 
-        HBaseKeyColumnValueStore store = new HBaseKeyColumnValueStore(connectionPool, tableName, name, this);
-        openStores.put(name, store);
+            store = openStores.putIfAbsent(dbName, newStore); // nothing bad happens if we loose to other thread
+
+            if (store == null) { // ensure that CF exists only first time somebody tries to open it
+                ensureColumnFamilyExists(tableName, dbName);
+                store = newStore;
+            }
+        }
 
         return store;
     }
@@ -248,23 +205,25 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         Preconditions.checkNotNull(desc);
 
         // Create our column family, if necessary
-        if (null == desc.getFamily(columnFamily.getBytes())) {
+        if (desc.getFamily(columnFamily.getBytes()) == null) {
             try {
                 adm.disableTable(tableName);
                 desc.addFamily(new HColumnDescriptor(columnFamily));
                 adm.modifyTable(tableName.getBytes(), desc);
-                log.debug("Added HBase column family {}", columnFamily);
+
                 try {
+                    logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propogate.", columnFamily);
                     Thread.sleep(1000L);
                 } catch (InterruptedException ie) {
                     throw new TemporaryStorageException(ie);
                 }
+
                 adm.enableTable(tableName);
             } catch (TableNotFoundException ee) {
-                log.error("TableNotFoundException", ee);
+                logger.error("TableNotFoundException", ee);
                 throw new PermanentStorageException(ee);
             } catch (org.apache.hadoop.hbase.TableExistsException ee) {
-                log.debug("Swallowing exception {}", ee);
+                logger.debug("Swallowing exception {}", ee);
             } catch (IOException ee) {
                 throw new TemporaryStorageException(ee);
             }
@@ -283,35 +242,42 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      */
     @Override
     public void clearStorage() throws StorageException {
+        HBaseAdmin adm = getAdminInterface();
+
+        try { // first of all, check if table exists, if not - we are done
+            if (!adm.tableExists(tableName)) {
+                logger.debug("clearStorage() called before table {} was created, skipping.", tableName);
+                return;
+            }
+        } catch (IOException e) {
+            throw new TemporaryStorageException(e);
+        }
+
         HTable table = null;
+
         try {
             table = new HTable(hconf, tableName);
+
             Scan scan = new Scan();
             scan.setBatch(100);
             scan.setCacheBlocks(false);
             scan.setCaching(2000);
-            ResultScanner resScan = null;
-            try {
-                resScan = table.getScanner(scan);
 
-                for (Result res : resScan) {
-                    Delete del = new Delete(res.getRow());
-                    table.delete(del);
+            ResultScanner scanner = null;
+
+            try {
+                scanner = table.getScanner(scan);
+
+                for (Result res : scanner) {
+                    table.delete(new Delete(res.getRow()));
                 }
             } finally {
-                if (resScan != null) {
-                    resScan.close();
-                }
+                IOUtils.closeQuietly(scanner);
             }
         } catch (IOException e) {
             throw new TemporaryStorageException(e);
         } finally {
-            if (table != null) {
-                try {
-                    table.close();
-                } catch (IOException e) {
-                }
-            }
+            IOUtils.closeQuietly(table);
         }
     }
 
@@ -351,6 +317,73 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             return new HBaseAdmin(hconf);
         } catch (IOException e) {
             throw new TitanException(e);
+        }
+    }
+
+    /**
+     * Convert Titan internal Mutation representation into HBase native commands.
+     *
+     * @param mutations Mutations to convert into HBase commands.
+     * @param putTimestamp The timestamp to use for Put commands.
+     * @param delTimestamp The timestamp to use for Delete commands.
+     *
+     * @return Commands sorted by key converted from Titan internal representation.
+     */
+    private static Map<ByteBuffer, Pair<Put, Delete>> convertToCommands(Map<String, Map<ByteBuffer, Mutation>> mutations,
+                                                                        final long putTimestamp,
+                                                                        final long delTimestamp) {
+        Map<ByteBuffer, Pair<Put, Delete>> commandsPerKey = new HashMap<ByteBuffer, Pair<Put, Delete>>();
+
+        for (Map.Entry<String, Map<ByteBuffer, Mutation>> entry : mutations.entrySet()) {
+            byte[] cfName = entry.getKey().getBytes();
+
+            for (Map.Entry<ByteBuffer, Mutation> m : entry.getValue().entrySet()) {
+                ByteBuffer key = m.getKey();
+                Mutation mutation = m.getValue();
+
+                Pair<Put, Delete> commands = commandsPerKey.get(key);
+
+                if (commands == null) {
+                    commands = new Pair<Put, Delete>();
+                    commandsPerKey.put(key, commands);
+                }
+
+                if (mutation.hasDeletions()) {
+                    if (commands.getSecond() == null)
+                        commands.setSecond(new Delete(ByteBufferUtil.getArray(key), delTimestamp, null));
+
+                    for (ByteBuffer b : mutation.getDeletions()) {
+                        commands.getSecond().deleteColumns(cfName, ByteBufferUtil.getArray(b), delTimestamp);
+                    }
+                }
+
+                if (mutation.hasAdditions()) {
+                    if (commands.getFirst() == null)
+                        commands.setFirst(new Put(ByteBufferUtil.getArray(key), putTimestamp));
+
+                    for (Entry e : mutation.getAdditions()) {
+                        commands.getFirst().add(cfName,
+                                ByteBufferUtil.getArray(e.getColumn()),
+                                putTimestamp,
+                                ByteBufferUtil.getArray(e.getValue()));
+                    }
+                }
+            }
+        }
+
+        return commandsPerKey;
+    }
+
+    private static void waitUntil(long until) {
+        long now = System.currentTimeMillis();
+
+        while (now <= until) {
+            try {
+                Thread.sleep(1L);
+                now = System.currentTimeMillis();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }
