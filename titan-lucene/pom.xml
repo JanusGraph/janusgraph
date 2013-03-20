@@ -8,7 +8,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-lucene</artifactId>
-    <name>Titan-Lucene: Full-text search support</name>
+    <name>Titan-Lucene: Indexing Support</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     <dependencies>
         <dependency>
