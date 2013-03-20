@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.persistit;
 
+import com.persistit.TransactionRunnable;
 import com.persistit.exception.PersistitException;
 import com.persistit.exception.RollbackException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
@@ -12,16 +13,24 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 public class PersistitTransaction extends AbstractStoreTransaction {
 
     private Transaction tx;
+    private boolean isOpen;
 
-    public PersistitTransaction(Transaction t, ConsistencyLevel level) {
+    public PersistitTransaction(Transaction t, ConsistencyLevel level) throws StorageException {
         super(level);
         tx = t;
+        try {
+            tx.begin();
+            isOpen = true;
+        } catch (PersistitException ex) {
+            throw new PermanentStorageException(ex.toString());
+        }
     }
 
     @Override
     public synchronized void abort() throws StorageException {
         if (tx == null) return;
         tx.rollback();
+        isOpen = false;
     }
 
     @Override
@@ -44,6 +53,28 @@ public class PersistitTransaction extends AbstractStoreTransaction {
             throw new PermanentStorageException(ex.toString());
         } finally {
             tx.end();
+            isOpen = false;
         }
+    }
+
+    /**
+     * Runs a unit of work within this transaction
+     *
+     * @param r: the runnable job
+     * @throws StorageException
+     */
+    public void run(TransactionRunnable r) throws StorageException {
+        if (!isOpen) {
+            throw new PermanentStorageException("transaction is not open");
+        }
+        try {
+            tx.run(r);
+        } catch (PersistitException ex) {
+            throw new PermanentStorageException(ex.toString());
+        }
+    }
+
+    public Transaction getTx() {
+        return tx;
     }
 }
