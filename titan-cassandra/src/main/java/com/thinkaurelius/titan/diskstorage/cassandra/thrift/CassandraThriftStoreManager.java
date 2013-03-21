@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -312,6 +313,12 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         createColumnFamily.setName(cfName);
         createColumnFamily.setKeyspace(ksName);
         createColumnFamily.setComparator_type(comparator);
+        createColumnFamily.setCompression_options(
+        		new ImmutableMap.Builder<String, String>()
+    			.put("sstable_compression", "SnappyCompressor")
+    			.put("chunk_length_kb", "64")
+    			.build()
+    	);
 
         // Hard-coded caching settings
         if (cfName.startsWith(Backend.EDGESTORE_NAME)) {

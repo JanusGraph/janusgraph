@@ -26,6 +26,8 @@ import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.exceptions.RequestExecutionException;
+import org.apache.cassandra.io.compress.CompressionParameters;
+import org.apache.cassandra.io.compress.SnappyCompressor;
 import org.apache.cassandra.scheduler.IRequestScheduler;
 import org.apache.cassandra.service.MigrationManager;
 import org.apache.cassandra.service.StorageProxy;
@@ -313,6 +315,10 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         } else if (columnfamilyName.startsWith(Backend.VERTEXINDEX_STORE_NAME)) {
             cfm.caching(Caching.ROWS_ONLY);
         }
+        
+        // Enable snappy compression
+        CompressionParameters cp = new CompressionParameters(new SnappyCompressor());
+        cfm.compressionParameters(cp);
 
         try {
             cfm.addDefaultIndexNames();
