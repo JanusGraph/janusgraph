@@ -27,6 +27,7 @@ public class Imports {
         imports.add("com.thinkaurelius.faunus.*");
         imports.add("com.thinkaurelius.faunus.formats.*");
         imports.add("com.thinkaurelius.faunus.formats.edgelist.*");
+        imports.add("com.thinkaurelius.faunus.formats.edgelist.rdf.*");
         imports.add("com.thinkaurelius.faunus.formats.graphson.*");
         imports.add("com.thinkaurelius.faunus.formats.noop.*");
         imports.add("com.thinkaurelius.faunus.formats.rexster.*");
