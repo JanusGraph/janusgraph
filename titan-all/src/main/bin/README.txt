@@ -5,9 +5,9 @@ and processing large-scale graphs within a multi-machine cluster.
 The primary features of Titan are itemized below.
 
   Support for various distributed storage layers
-    * BerkeleyDB 5.0.58
-    * Cassandra 1.2.0
-    * HBase 0.94.1
+    * Oracle BerkeleyDB
+    * Apache Cassandra
+    * Apache HBase
 
   Natively implements the Blueprints graph API
     * Gremlin graph traversal language

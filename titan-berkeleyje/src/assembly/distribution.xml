@@ -17,6 +17,9 @@
             <directory>src</directory>
         </fileSet>
         <fileSet>
+            <directory>../data</directory>
+        </fileSet>
+        <fileSet>
             <directory>../doc</directory>
         </fileSet>
         <fileSet>
@@ -35,10 +38,6 @@
         <file>
             <source>pom.xml</source>
             <outputDirectory>src</outputDirectory>
-        </file>
-        <file>
-            <source>../data/graph-of-the-gods.xml</source>
-            <outputDirectory>data</outputDirectory>
         </file>
         <file>
             <source>../LICENSE.txt</source>
