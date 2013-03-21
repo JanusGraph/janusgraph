@@ -4,9 +4,20 @@
         <format>zip</format>
     </formats>
     <fileSets>
+        <!-- Titan general scripts -->
         <fileSet>
             <fileMode>0775</fileMode>
             <directory>../titan-all/src/main/bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>*.sh</include>
+                <include>*.bat</include>
+            </includes>
+        </fileSet>
+        <!-- HBase control/management scripts -->
+        <fileSet>
+            <fileMode>0775</fileMode>
+            <directory>./bin</directory>
             <outputDirectory>bin</outputDirectory>
             <includes>
                 <include>*.sh</include>
@@ -17,6 +28,10 @@
             <includes>
                 <include>../bin/hbase.local</include>
             </includes>
+        </fileSet>
+        <fileSet>
+          <directory>./config</directory>
+          <outputDirectory>config</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>src</directory>
