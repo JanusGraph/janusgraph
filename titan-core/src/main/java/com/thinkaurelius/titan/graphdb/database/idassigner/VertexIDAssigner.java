@@ -75,8 +75,9 @@ public class VertexIDAssigner {
             hasLocalPartitions = false;
             placementStrategy = new DefaultPlacementStrategy(0);
         }
+        log.info("Partition IDs? [{}], Local Partitions? [{}]",partitionIDs,hasLocalPartitions);
         idManager = new IDManager(partitionBits, groupBits);
-        Preconditions.checkArgument(idManager.getMaxPartitionID() <= Integer.MAX_VALUE);
+        Preconditions.checkArgument(idManager.getMaxPartitionID() < Integer.MAX_VALUE);
         this.maxPartitionID = (int) idManager.getMaxPartitionID();
 
         long baseBlockSize = config.getLong(GraphDatabaseConfiguration.IDS_BLOCK_SIZE_KEY, GraphDatabaseConfiguration.IDS_BLOCK_SIZE_DEFAULT);
@@ -114,7 +115,7 @@ public class VertexIDAssigner {
                 //Upper bound needs to be exclusive
                 partition[1] = (partition[1] >>> 2) - 1;
                 Preconditions.checkArgument(partition[0] != partition[1]);
-                log.debug("Setting partition bound [{},{}]", partition[0], partition[1]);
+                log.info("Setting partition bound [{},{}]", partition[0], partition[1]);
                 placementStrategy.setLocalPartitionBounds(partition[0], partition[1], maxPartitionID + 1);
             }
         }

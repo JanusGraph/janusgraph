@@ -38,7 +38,7 @@ public abstract class TitanGraphTestCommon {
     }
 
     public void open() {
-        System.out.println(GraphDatabaseConfiguration.toString(config));
+        //System.out.println(GraphDatabaseConfiguration.toString(config));
         graph = (StandardTitanGraph)TitanFactory.open(config);
         //tx = graph.newThreadBoundTransaction();
         tx = graph.newTransaction();
