@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Cluster;
 import com.netflix.astyanax.ColumnListMutation;
@@ -284,6 +285,12 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                 .setName(name)
                                 .setKeyspace(keySpaceName)
                                 .setComparatorType(comparator);
+//                                .setCompressionOptions(
+//                                		new ImmutableMap.Builder<String, String>()
+//                                			.put("sstable_compression", "SnappyCompressor")
+//                                			.put("chunk_length_kb", "64")
+//                                			.build()
+//                                );
                 cl.addColumnFamily(cfDef);
             }
         } catch (ConnectionException e) {
