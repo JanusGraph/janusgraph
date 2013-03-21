@@ -15,6 +15,7 @@ h3. Version 0.1.1 (March 22, 2013)
 </dependency>
 ```
 
+* @OrderMapReduce@ semantics updated for number based properties (multiply by path count for efficiency)
 * Improved the memory consumption and speed of @MemoryMapper@
 * Bumped to support Hadoop 1.1.1
 * Bumped to support Titan 0.2.1

@@ -112,7 +112,7 @@ public class BlueprintsGraphOutputMapReduce {
             // after so many mutations, successfully commit the transaction (if graph is transactional)
             if (this.graph instanceof TransactionalGraph && (++this.mutations % this.commitTx) == 0) {
                 try {
-                    ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+                    ((TransactionalGraph) graph).commit();
                     context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
                 } catch (Exception e) {
                     LOGGER.error("Could not commit transaction during Map.map():", e);
@@ -126,7 +126,7 @@ public class BlueprintsGraphOutputMapReduce {
         public void cleanup(final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
             try {
                 if (this.graph instanceof TransactionalGraph) {
-                    ((TransactionalGraph) this.graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+                    ((TransactionalGraph) this.graph).commit();
                     context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
                 }
             } catch (Exception e) {
@@ -191,13 +191,15 @@ public class BlueprintsGraphOutputMapReduce {
                             // for titan, if the transaction is committed, need to 'reget' the vertex
                             if (this.graph instanceof TransactionalGraph && (++this.mutations % this.commitTx) == 0) {
                                 try {
-                                    ((TransactionalGraph) graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+                                    ((TransactionalGraph) graph).commit();
                                     context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
                                 } catch (Exception e) {
                                     LOGGER.error("Could not commit transaction during Reduce.reduce():", e);
                                     System.out.println("Could not commit transaction during Reduce.reduce():" + e);
                                     context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
                                 }
+                                // needed for Titan 0.2.0 and below.
+                                // TODO: DEPRECATE
                                 blueprintsVertex = this.graph.getVertex(blueprintsVertex.getId());
                             }
                         } else {
@@ -225,7 +227,7 @@ public class BlueprintsGraphOutputMapReduce {
         public void cleanup(final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             try {
                 if (this.graph instanceof TransactionalGraph) {
-                    ((TransactionalGraph) this.graph).stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+                    ((TransactionalGraph) this.graph).commit();
                     context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
                 }
             } catch (Exception e) {
