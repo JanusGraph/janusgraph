@@ -94,10 +94,15 @@ public class OrderMapReduce {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     this.text.set(ElementPicker.getPropertyAsString(value, this.elementKey));
-                    this.writable = this.handler.set(ElementPicker.getProperty(value, this.key));
+                    final Object temp = ElementPicker.getProperty(value, this.key);
                     if (this.key.equals(Tokens._COUNT)) {
+                        this.writable = this.handler.set(temp);
+                        context.write(this.writable, this.text);
+                    } else if (temp instanceof Number) {
+                        this.writable = this.handler.set(multiplyPathCount((Number) temp, value.pathCount()));
                         context.write(this.writable, this.text);
                     } else {
+                        this.writable = this.handler.set(temp);
                         for (int i = 0; i < value.pathCount(); i++) {
                             context.write(this.writable, this.text);
                         }
@@ -110,10 +115,15 @@ public class OrderMapReduce {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
                         this.text.set(ElementPicker.getPropertyAsString(edge, this.elementKey));
-                        this.writable = this.handler.set(ElementPicker.getProperty(edge, this.key));
+                        final Object temp = ElementPicker.getProperty(edge, this.key);
                         if (this.key.equals(Tokens._COUNT)) {
+                            this.writable = this.handler.set(temp);
+                            context.write(this.writable, this.text);
+                        } else if (temp instanceof Number) {
+                            this.writable = this.handler.set(multiplyPathCount((Number) temp, edge.pathCount()));
                             context.write(this.writable, this.text);
                         } else {
+                            this.writable = this.handler.set(temp);
                             for (int i = 0; i < edge.pathCount(); i++) {
                                 context.write(this.writable, this.text);
                             }
@@ -153,5 +163,19 @@ public class OrderMapReduce {
         public void cleanup(final Reducer<WritableComparable, Text, Text, WritableComparable>.Context context) throws IOException, InterruptedException {
             this.outputs.close();
         }
+    }
+
+    private static Number multiplyPathCount(final Number value, final Long pathCount) {
+        if (value instanceof Long)
+            return (Long) value * pathCount;
+        else if (value instanceof Integer)
+            return (Integer) value * pathCount;
+        else if (value instanceof Double)
+            return (Double) value * pathCount;
+        else if (value instanceof Float)
+            return (Float) value * pathCount;
+        else
+            return value.doubleValue() * pathCount;
+
     }
 }

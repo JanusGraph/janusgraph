@@ -1,19 +1,20 @@
 Faunus: Graph Analytics Engine
 "http://thinkaurelius.github.com/faunus/":http://thinkaurelius.github.com/faunus/
 
-!https://raw.github.com/thinkaurelius/titan/master/doc/images/titan-globe.png!
+[[https://raw.github.com/thinkaurelius/faunus/master/doc/images/graph-globe.png|width=100px]]
 
 h2. Faunus 0.x.y
 
-h3. Version 0.1.1 (NOT OFFICIALLY RELEASE YET)
+h3. Version 0.1.1 (March 22, 2013)
 
 ```xml
 <dependency>
   <groupId>com.thinkaurelius.faunus</groupId>
   <artifactId>faunus</artifactId>
-  <version>0.2.0-SNAPSHOT</version>
+  <version>0.1.1</version>
 </dependency>
 ```
+
 * Improved the memory consumption and speed of @MemoryMapper@
 * Bumped to support Hadoop 1.1.1
 * Bumped to support Titan 0.2.1
@@ -27,6 +28,8 @@ h3. Version 0.1.1 (NOT OFFICIALLY RELEASE YET)
 * Added @MapReduceFormat@ which allows an arbitrary number of MapReduce jobs after/before input/output.
 * Added configuration to allow Faunus to get the actual vertex count from Rexster when determining split size.
 * Added configuration to allow Faunus to authenticate to Rexster, if Rexster security is turned on.
+
+==<hr/>==
 
 h3. Version 0.1.0 (January 14, 2013)
 
