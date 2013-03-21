@@ -6,6 +6,7 @@ h2. Features
 
 * Elastic and linear scalability for a growing data and user base.
 * Data distribution and replication for performance and fault tolerance.
+* Multi-datacenter high availability and hot backups.
 * Support for "ACID":http://en.wikipedia.org/wiki/ACID and "eventual consistency":http://en.wikipedia.org/wiki/Eventual_consistency.
 * Support for various "storage backend":https://github.com/thinkaurelius/titan/wiki/Storage-Backend-Overview:
 ** "Apache Cassandra":http://cassandra.apache.org/
