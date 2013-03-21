@@ -25,6 +25,9 @@
             <directory>doc</directory>
         </fileSet>
         <fileSet>
+            <directory>data</directory>
+        </fileSet>
+        <fileSet>
             <directory>target/apidocs</directory>
             <outputDirectory>doc/javadoc</outputDirectory>
         </fileSet>
@@ -41,18 +44,6 @@
         <file>
             <source>pom.xml</source>
             <outputDirectory>src</outputDirectory>
-        </file>
-        <file>
-            <source>data/graph-of-the-gods.json</source>
-            <outputDirectory>data</outputDirectory>
-        </file>
-        <file>
-            <source>data/graph-example-1.json</source>
-            <outputDirectory>data</outputDirectory>
-        </file>
-        <file>
-            <source>data/graph-example-1.ntriple</source>
-            <outputDirectory>data</outputDirectory>
         </file>
         <file>
             <source>LICENSE.txt</source>
