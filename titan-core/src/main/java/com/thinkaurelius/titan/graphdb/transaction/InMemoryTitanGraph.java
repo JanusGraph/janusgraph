@@ -117,7 +117,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 
     @Override
     public void shutdown() throws TitanException {
-        //Nothing to do;
+        rollback();
     }
 
 
