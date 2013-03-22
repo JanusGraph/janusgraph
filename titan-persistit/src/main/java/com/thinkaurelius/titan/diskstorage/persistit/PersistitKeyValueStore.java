@@ -65,7 +65,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
         persistit = db;
 
         try {
-            exchange = persistit.getExchange("titan", name, true);
+            exchange = persistit.getExchange(db.getSystemVolume().getName(), name, true);
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex.toString());
         }
@@ -170,7 +170,11 @@ public class PersistitKeyValueStore implements KeyValueStore {
                 ek.appendByteArray(k, 0, k.length);
 
                 exchange.fetch();
-                result = ByteBuffer.wrap(exchange.getValue().getByteArray());
+                if (exchange.getValue().isDefined()) {
+                    result = ByteBuffer.wrap(exchange.getValue().getByteArray());
+                } else {
+                    result = null;
+                }
             }
         };
         ((PersistitTransaction) txh).run(j);
@@ -270,9 +274,9 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
                 Value ev = exchange.getValue();
                 ev.clear();
-                ev.putByteArray(k, 0, k.length);
+                ev.putByteArray(v, 0, v.length);
 
-                exchange.store();
+                exchange.fetchAndStore();
             }
         };
         ((PersistitTransaction) txh).run(j);
@@ -300,7 +304,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
     @Override
     public void close() throws StorageException {
-        //@todo: do we need to do anything here?? I think that as long as the persistit db is closed, this should be ok
+        storeManager.removeDatabase(this);
     }
 
     @Override

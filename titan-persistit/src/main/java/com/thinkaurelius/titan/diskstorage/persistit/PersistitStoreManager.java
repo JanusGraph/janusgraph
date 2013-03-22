@@ -71,6 +71,13 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         return store;
     }
 
+    public void removeDatabase(PersistitKeyValueStore db) {
+        if (!stores.containsKey(db.getName())) {
+            throw new IllegalArgumentException("Tried to remove an unkown database from the storage manager");
+        }
+        stores.remove(db.getName());
+    }
+
     @Override
     public void close() throws StorageException {
         if (db != null) {
@@ -94,7 +101,7 @@ public class PersistitStoreManager implements KeyValueStoreManager {
     public PersistitTransaction beginTransaction(ConsistencyLevel level) throws StorageException {
         //all Exchanges created by a thread share the same transaction context
         Transaction tx = db.getTransaction();
-        return new PersistitTransaction(tx, level);
+        return new PersistitTransaction(db, tx, level);
     }
 
     @Override
@@ -108,6 +115,7 @@ public class PersistitStoreManager implements KeyValueStoreManager {
             PersistitKeyValueStore store = stores.remove(key);
             store.clear();
         }
+        close();
         //@todo: delete storage directory
     }
 

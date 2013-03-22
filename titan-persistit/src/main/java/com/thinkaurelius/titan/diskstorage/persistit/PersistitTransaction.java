@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.persistit;
 
+import com.persistit.Persistit;
 import com.persistit.TransactionRunnable;
 import com.persistit.exception.PersistitException;
 import com.persistit.exception.RollbackException;
@@ -10,13 +11,18 @@ import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 import com.persistit.Transaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 
+/**
+ * @todo: read this and make sure multiple threads aren't sharing transactions http://akiban.github.com/persistit/javadoc/com/persistit/Transaction.html#_threadManagement
+ */
 public class PersistitTransaction extends AbstractStoreTransaction {
 
+    private Persistit db;
     private Transaction tx;
     private boolean isOpen;
 
-    public PersistitTransaction(Transaction t, ConsistencyLevel level) throws StorageException {
+    public PersistitTransaction(Persistit p, Transaction t, ConsistencyLevel level) throws StorageException {
         super(level);
+        db = p;
         tx = t;
         try {
             tx.begin();
@@ -29,6 +35,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     @Override
     public synchronized void abort() throws StorageException {
         if (tx == null) return;
+        db.setSessionId(tx.getSessionId());
         tx.rollback();
         isOpen = false;
     }
@@ -36,6 +43,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     @Override
     public synchronized void commit() throws StorageException {
         if (tx == null) return;
+        db.setSessionId(tx.getSessionId());
         int retries = 3;
         try {
             int i = 0;
@@ -67,6 +75,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
         if (!isOpen) {
             throw new PermanentStorageException("transaction is not open");
         }
+        db.setSessionId(tx.getSessionId());
         try {
             tx.run(r);
         } catch (PersistitException ex) {
