@@ -1,39 +1,41 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraOutputFormat;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class FaunusPipelineTest extends BaseTest {
 
     public void testElementTypeUpdating() {
-        FaunusPipeline pipeline = new FaunusPipeline(new FaunusGraph());
+        FaunusPipeline pipe = new FaunusPipeline(new FaunusGraph());
         try {
-            pipeline.outE();
+            pipe.outE();
             assertTrue(false);
         } catch (IllegalStateException e) {
             assertTrue(true);
         }
-        pipeline.v(1, 2, 3, 4).outE("knows").inV().property("key");
-        pipeline = new FaunusPipeline(new FaunusGraph());
-        pipeline.V().E().V().E();
+        pipe.v(1, 2, 3, 4).outE("knows").inV().property("key");
+        pipe = new FaunusPipeline(new FaunusGraph());
+        pipe.V().E().V().E();
 
 
         try {
-            pipeline.V().inV();
-            assertTrue(false);
-        } catch (IllegalStateException e) {
-            assertTrue(true);
-        }
-
-        try {
-            pipeline.E().outE();
+            pipe.V().inV();
             assertTrue(false);
         } catch (IllegalStateException e) {
             assertTrue(true);
         }
 
         try {
-            pipeline.E().outE();
+            pipe.E().outE();
+            assertTrue(false);
+        } catch (IllegalStateException e) {
+            assertTrue(true);
+        }
+
+        try {
+            pipe.E().outE();
             assertTrue(false);
         } catch (IllegalStateException e) {
             assertTrue(true);
@@ -41,18 +43,31 @@ public class FaunusPipelineTest extends BaseTest {
     }
 
     public void testPipelineLocking() {
-        FaunusPipeline pipeline = new FaunusPipeline(new FaunusGraph());
-        pipeline.V().out().property("name");
+        FaunusPipeline pipe = new FaunusPipeline(new FaunusGraph());
+        pipe.V().out().property("name");
 
         try {
-            pipeline.V();
+            pipe.V();
             assertTrue(false);
         } catch (IllegalStateException e) {
             assertTrue(true);
         }
 
         try {
-            pipeline.order(Tokens.Order.INCREASING, "name").V();
+            pipe.order(Tokens.Order.INCREASING, "name").V();
+            assertTrue(false);
+        } catch (IllegalStateException e) {
+            assertTrue(true);
+        }
+    }
+
+    public void testPipelineLockingWithMapReduceOutput() throws Exception {
+        FaunusGraph graph = new FaunusGraph();
+        graph.setGraphOutputFormat(TitanCassandraOutputFormat.class);
+        FaunusPipeline pipe = new FaunusPipeline(graph);
+        assertFalse(pipe.state.isLocked());
+        try {
+            pipe.V().out().count().submit();
             assertTrue(false);
         } catch (IllegalStateException e) {
             assertTrue(true);
@@ -60,31 +75,31 @@ public class FaunusPipelineTest extends BaseTest {
     }
 
     public void testPipelineStepIncr() {
-        FaunusPipeline pipeline = new FaunusPipeline(new FaunusGraph());
-        assertEquals(pipeline.state.getStep(), -1);
-        pipeline.V();
-        assertEquals(pipeline.state.getStep(), 0);
-        pipeline.as("a");
-        assertEquals(pipeline.state.getStep(), 0);
-        pipeline.has("name", "marko");
-        assertEquals(pipeline.state.getStep(), 0);
-        pipeline.out("knows");
-        assertEquals(pipeline.state.getStep(), 1);
-        pipeline.as("b");
-        assertEquals(pipeline.state.getStep(), 1);
-        pipeline.outE("battled");
-        assertEquals(pipeline.state.getStep(), 2);
-        pipeline.as("c");
-        assertEquals(pipeline.state.getStep(), 2);
-        pipeline.inV();
-        assertEquals(pipeline.state.getStep(), 3);
-        pipeline.as("d");
-        assertEquals(pipeline.state.getStep(), 3);
+        FaunusPipeline pipe = new FaunusPipeline(new FaunusGraph());
+        assertEquals(pipe.state.getStep(), -1);
+        pipe.V();
+        assertEquals(pipe.state.getStep(), 0);
+        pipe.as("a");
+        assertEquals(pipe.state.getStep(), 0);
+        pipe.has("name", "marko");
+        assertEquals(pipe.state.getStep(), 0);
+        pipe.out("knows");
+        assertEquals(pipe.state.getStep(), 1);
+        pipe.as("b");
+        assertEquals(pipe.state.getStep(), 1);
+        pipe.outE("battled");
+        assertEquals(pipe.state.getStep(), 2);
+        pipe.as("c");
+        assertEquals(pipe.state.getStep(), 2);
+        pipe.inV();
+        assertEquals(pipe.state.getStep(), 3);
+        pipe.as("d");
+        assertEquals(pipe.state.getStep(), 3);
 
-        assertEquals(pipeline.state.getStep("a"), 0);
-        assertEquals(pipeline.state.getStep("b"), 1);
-        assertEquals(pipeline.state.getStep("c"), 2);
-        assertEquals(pipeline.state.getStep("d"), 3);
+        assertEquals(pipe.state.getStep("a"), 0);
+        assertEquals(pipe.state.getStep("b"), 1);
+        assertEquals(pipe.state.getStep("c"), 2);
+        assertEquals(pipe.state.getStep("d"), 3);
     }
 
 }
