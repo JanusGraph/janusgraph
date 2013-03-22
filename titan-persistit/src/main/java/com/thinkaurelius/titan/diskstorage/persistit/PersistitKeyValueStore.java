@@ -109,8 +109,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
                 public void runTransaction() throws PersistitException, RollbackException {
                     if (exchange.hasNext()) {
                         exchange.next();
-                        //@todo: check that bytes are, in fact, always deserialized as strings
-                        result = ((String)exchange.getKey().decode()).getBytes();
+                        result = ByteBuffer.wrap(exchange.getValue().getByteArray());
                     } else {
                         result = null;
                     }
@@ -143,7 +142,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
         @Override
         public ByteBuffer next() throws StorageException {
             if (nextKey == null) throw new NoSuchElementException();
-            ByteBuffer returnKey = ByteBuffer.wrap((byte[])nextKey);
+            ByteBuffer returnKey = (ByteBuffer) nextKey;
             getNextKey();
             return returnKey;
         }
@@ -151,6 +150,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
         @Override
         public void close() {
             //don't do a damn thing
+            //@todo: maybe do something
         }
     }
 
@@ -199,8 +199,9 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
     /**
      * Runs all getSlice queries
-     * @todo: this
-     * @todo: question/assumption: is keyStart guaranteed to evaluate to <= keyEnd?
+     *
+     * The keyStart & keyEnd are not guaranteed to exist
+     * if keyStart is after keyEnd, an empty list is returned
      *
      * @param keyStart
      * @param keyEnd
@@ -212,6 +213,26 @@ public class PersistitKeyValueStore implements KeyValueStore {
      */
     private List<KeyValueEntry> getSlice(final ByteBuffer keyStart, final ByteBuffer keyEnd, final KeySelector selector, final Integer limit, PersistitTransaction txh) throws StorageException {
         PersistitJob j = new PersistitJob() {
+
+            /**
+             * Compare 2 byte arrays, return 0 if equal, 1 if a > b, -1 if b > a
+             */
+            private int compare(final byte[] a, final byte[] b) {
+                final int size = Math.min(a.length, b.length);
+                for (int i = 0; i < size; i++) {
+                    if (a[i] != b[i]) {
+                        if ((a[i] & 0xFF) > (b[i] & 0xFF))
+                            return 1;
+                        else
+                            return -1;
+                    }
+                }
+                if (a.length < b.length)
+                    return -1;
+                if (a.length > b.length)
+                    return 1;
+                return 0;
+            }
             @Override
             public void runTransaction() throws PersistitException, RollbackException {
                 ArrayList<KeyValueEntry> results = new ArrayList<KeyValueEntry>();
@@ -219,14 +240,31 @@ public class PersistitKeyValueStore implements KeyValueStore {
                 byte[] start = keyStart.array();
                 byte[] end = keyEnd.array();
 
-                KeyFilter.Term[] terms = {KeyFilter.rangeTerm(start, end)};
+                //bail out if the start key comes after the end
+                if (compare(start, end) > 0) {
+                    result = results;
+                    return;
+                }
+
+                KeyFilter.Term[] terms = {KeyFilter.rangeTerm(start, end, true, false, null)};
                 KeyFilter keyFilter = new KeyFilter(terms);
 
-                exchange.to(start);
+                exchange.getKey().clear().appendByteArray(start, 0, start.length);
+                exchange.fetch();
+
+                //if the start key doesn't exist
+                if (!exchange.getValue().isDefined()) {
+                    if (exchange.hasNext()) {
+                        exchange.next();
+                    } else {
+                        result = results;
+                        return;
+                    }
+                }
 
                 int i = 0;
                 while (keyFilter.selected(exchange.getKey())) {
-                    if (limit != null && i >= limit) break;
+                    if (limit != null && limit >= 0 && i >= limit) break;
                     if (selector != null && selector.reachedLimit()) break;
 
                     ByteBuffer k = ByteBuffer.wrap(exchange.getKey().decodeByteArray());
@@ -236,6 +274,11 @@ public class PersistitKeyValueStore implements KeyValueStore {
                         KeyValueEntry kv = new KeyValueEntry(k, v);
                         results.add(kv);
                         i++;
+                    }
+                    if (exchange.hasNext()) {
+                        exchange.next();
+                    } else {
+                        break;
                     }
                 }
                 result = results;
