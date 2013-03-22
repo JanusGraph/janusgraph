@@ -210,6 +210,12 @@ public class FaunusCompiler extends Configured implements Tool {
         } else if (new File("../target/" + Tokens.FAUNUS_JOB_JAR).exists()) {
             logger.warn("Using developer reference to target/" + Tokens.FAUNUS_JOB_JAR);
             hadoopFileJar = "../target/" + Tokens.FAUNUS_JOB_JAR;
+        } else if (new File("lib/" + Tokens.FAUNUS_JOB_JAR).exists()) {
+            logger.warn("Using distribution reference to lib/" + Tokens.FAUNUS_JOB_JAR);
+            hadoopFileJar = "lib/" + Tokens.FAUNUS_JOB_JAR;
+        } else if (new File("../lib/" + Tokens.FAUNUS_JOB_JAR).exists()) {
+            logger.warn("Using distribution reference to lib/" + Tokens.FAUNUS_JOB_JAR);
+            hadoopFileJar = "../lib/" + Tokens.FAUNUS_JOB_JAR;
         } else {
             final String faunusHome = System.getenv(Tokens.FAUNUS_HOME);
             if (null == faunusHome || faunusHome.isEmpty())
