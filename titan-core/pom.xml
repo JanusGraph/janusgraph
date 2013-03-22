@@ -10,12 +10,7 @@
     <artifactId>titan-core</artifactId>
     <name>Titan-Core: Core Library for Titan</name>
     <url>http://thinkaurelius.github.com/titan/</url>
-    <repositories>
-        <repository>
-            <id>fb-contrib</id>
-            <url>http://master.dl.sourceforge.net/project/fb-contrib/repo</url>
-        </repository>
-    </repositories>
+
     <dependencies>
         <!-- TinkerPop -->
         <dependency>
