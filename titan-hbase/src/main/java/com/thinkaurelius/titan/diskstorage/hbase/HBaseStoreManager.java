@@ -278,6 +278,15 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      */
     @Override
     public void clearStorage() throws StorageException {
+        HBaseAdmin adm = getAdminInterface();
+
+        try { // first of all, check if table exists, if not - we are done
+            if (!adm.tableExists(tableName))
+                return;
+        } catch (IOException e) {
+            throw new TemporaryStorageException(e);
+        }
+
         HTable table = null;
         try {
             table = new HTable(hconf, tableName);
