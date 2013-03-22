@@ -101,7 +101,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 
     @Override
     public synchronized void commit() {
-        //Simply ignore
+        super.commit();
     }
 
     @Override
@@ -117,7 +117,7 @@ public class InMemoryTitanGraph extends AbstractTitanTx implements InternalTitan
 
     @Override
     public void shutdown() throws TitanException {
-        rollback();
+        commit();
     }
 
 
