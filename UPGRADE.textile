@@ -24,7 +24,7 @@ h3. Version 0.2.0 (December 27, 2012)
 
 h3. Version 0.1.0 (September 7, 2012)
 
-*From Version 0.1-SNAPSHOT*
+*From Version 0.1-alpha*
 
 # Shut down all running instances of Titan prior to upgrading ALL instances to the current release to avoid data corruption.
 
