@@ -4,9 +4,20 @@
         <format>zip</format>
     </formats>
     <fileSets>
+        <!-- Titan general scripts -->
         <fileSet>
             <fileMode>0775</fileMode>
             <directory>../titan-all/src/main/bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>*.sh</include>
+                <include>*.bat</include>
+            </includes>
+        </fileSet>
+        <!-- HBase control/management scripts -->
+        <fileSet>
+            <fileMode>0775</fileMode>
+            <directory>./bin</directory>
             <outputDirectory>bin</outputDirectory>
             <includes>
                 <include>*.sh</include>
@@ -19,7 +30,14 @@
             </includes>
         </fileSet>
         <fileSet>
+          <directory>./config</directory>
+          <outputDirectory>config</outputDirectory>
+        </fileSet>
+        <fileSet>
             <directory>src</directory>
+        </fileSet>
+        <fileSet>
+            <directory>../data</directory>
         </fileSet>
         <fileSet>
             <directory>../doc</directory>
@@ -40,10 +58,6 @@
         <file>
             <source>pom.xml</source>
             <outputDirectory>src</outputDirectory>
-        </file>
-        <file>
-            <source>../data/graph-of-the-gods.xml</source>
-            <outputDirectory>data</outputDirectory>
         </file>
         <file>
             <source>../LICENSE.txt</source>

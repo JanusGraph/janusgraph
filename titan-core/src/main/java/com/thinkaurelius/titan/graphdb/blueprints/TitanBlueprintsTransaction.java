@@ -86,12 +86,6 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     @Override
     public void removeVertex(Vertex vertex) {
         TitanVertex v = (TitanVertex) vertex;
-        //Delete all edges
-        Iterator<TitanRelation> iter = v.getRelations().iterator();
-        while (iter.hasNext()) {
-            iter.next();
-            iter.remove();
-        }
         v.remove();
     }
 

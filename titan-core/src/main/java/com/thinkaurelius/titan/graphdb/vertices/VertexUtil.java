@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.util.interval.AtomicInterval;
 import com.thinkaurelius.titan.util.interval.DoesNotExist;
 import com.tinkerpop.blueprints.Direction;
 
+import java.util.Iterator;
 import java.util.Map;
 
 public class VertexUtil {
@@ -31,8 +32,7 @@ public class VertexUtil {
 
     public static void prepareForRemoval(InternalTitanVertex v) {
         for (TitanRelation r : SimpleAtomicQuery.queryAll(v).relations()) {
-            if (r.getType().equals(SystemKey.VertexState)) r.remove();
-            else throw new IllegalStateException("Cannot remove node since it is still connected");
+            r.remove();
         }
     }
 

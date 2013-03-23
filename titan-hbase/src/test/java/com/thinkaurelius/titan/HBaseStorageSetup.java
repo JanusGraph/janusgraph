@@ -1,16 +1,35 @@
 package com.thinkaurelius.titan;
 
-
-import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
-import java.io.File;
+import java.io.*;
 
 public class HBaseStorageSetup {
+    private static Process HBASE = null;
+    // amount of seconds to wait before assuming that HBase shutdown
+    private static final int SHUTDOWN_TIMEOUT_SEC = 20;
 
+    // hbase config for testing
+    private static final String HBASE_CONFIG_DIR = "./src/test/config";
+
+    // default pid file location
+    private static final String HBASE_PID_FILE = "/tmp/hbase-" + System.getProperty("user.name") + "-master.pid";
+
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                System.out.println("All done. Shutting done HBase.");
+
+                try {
+                    HBaseStorageSetup.shutdownHBase();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
 
     public static Configuration getHBaseStorageConfiguration() {
         BaseConfiguration config = new BaseConfiguration();
@@ -24,4 +43,58 @@ public class HBaseStorageSetup {
         return config;
     }
 
+    public static void startHBase() throws IOException {
+        if (HBASE != null)
+            return; // already started, nothing to do
+
+        try {
+            // start HBase instance with environment set
+            HBASE = Runtime.getRuntime().exec(String.format("./bin/hbase-daemon.sh --config %s start master", HBASE_CONFIG_DIR));
+
+            try {
+                HBASE.waitFor(); // wait for script to return
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            assert HBASE.exitValue() >= 0; // check if we have started successfully
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void shutdownHBase() throws IOException {
+        if (HBASE == null)
+            return; // HBase hasn't been started yet
+
+        try {
+            File pid = new File(HBASE_PID_FILE);
+
+            if (pid.exists()) {
+                RandomAccessFile pidFile = new RandomAccessFile(pid, "r");
+
+                StringBuilder b = new StringBuilder();
+
+                while (pidFile.getFilePointer() < (pidFile.length() - 1)) // we don't need newline
+                   b.append((char) pidFile.readByte());
+
+                Process kill = Runtime.getRuntime().exec("kill -TERM " + b.toString());
+                kill.waitFor();
+
+                pidFile.close();
+                pid.delete(); // delete pid file like nothing happened
+
+                return;
+            }
+
+            // fall back to scripting
+            Runtime.getRuntime().exec(String.format("./bin/hbase-daemon.sh --config %s stop master", HBASE_CONFIG_DIR));
+
+            System.out.println("Waiting 20 seconds for HBase to shutdown...");
+
+            Thread.sleep(SHUTDOWN_TIMEOUT_SEC * 1000); // wait no longer than timeout seconds
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
 }
