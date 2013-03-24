@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.persistit;
 import com.persistit.Exchange;
 import com.persistit.Persistit;
 import com.persistit.Transaction;
+import com.persistit.Volume;
 import com.persistit.exception.PersistitException;
 
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
@@ -114,6 +115,14 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         for(String key : stores.keySet()) {
             PersistitKeyValueStore store = stores.remove(key);
             store.clear();
+        }
+        for(Volume volume : db.getVolumes()) {
+            try {
+                volume.close();
+                volume.delete();
+            } catch (PersistitException e) {
+                throw new PermanentStorageException(e.toString());
+            }
         }
         close();
         //@todo: delete storage directory
