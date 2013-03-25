@@ -26,6 +26,7 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.io.hfile.Compression;
 import org.apache.hadoop.hbase.util.Pair;
 
 /**
@@ -204,11 +205,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         Preconditions.checkNotNull(desc);
 
+        HColumnDescriptor cf = desc.getFamily(columnFamily.getBytes());
+
         // Create our column family, if necessary
-        if (desc.getFamily(columnFamily.getBytes()) == null) {
+        if (cf == null) {
             try {
                 adm.disableTable(tableName);
-                desc.addFamily(new HColumnDescriptor(columnFamily));
+                desc.addFamily(new HColumnDescriptor(columnFamily).setCompressionType(Compression.Algorithm.GZ));
                 adm.modifyTable(tableName.getBytes(), desc);
 
                 try {
@@ -226,6 +229,18 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 logger.debug("Swallowing exception {}", ee);
             } catch (IOException ee) {
                 throw new TemporaryStorageException(ee);
+            }
+        } else { // check if compression was enabled, if not - enable it
+            if (cf.getCompressionType() == null) {
+                try {
+                    adm.disableTable(tableName);
+
+                    adm.modifyColumn(tableName, cf.setCompressionType(Compression.Algorithm.GZ));
+
+                    adm.enableTable(tableName);
+                } catch (IOException e) {
+                    throw new TemporaryStorageException(e);
+                }
             }
         }
     }
