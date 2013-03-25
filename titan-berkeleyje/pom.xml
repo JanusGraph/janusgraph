@@ -33,7 +33,7 @@
         <dependency>
             <groupId>com.sleepycat</groupId>
             <artifactId>je</artifactId>
-            <version>5.0.58</version>
+            <version>5.0.73</version>
         </dependency>
     </dependencies>
     <profiles>

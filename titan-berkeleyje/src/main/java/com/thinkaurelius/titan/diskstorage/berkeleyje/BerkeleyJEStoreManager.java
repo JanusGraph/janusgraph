@@ -13,6 +13,8 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.util.DirectoryUtil;
+import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -30,8 +32,6 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
 
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJEStoreManager.class);
 
-    private static final String TITAN_CONFIG_FILE_NAME = "titan-config.properties";
-
     public static final String CACHE_KEY = "cache-percentage";
     public static final int CACHE_DEFAULT = 65;
 
@@ -43,12 +43,13 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
     private final boolean isReadOnly;
     private final boolean batchLoading;
     private final StoreFeatures features;
+    private final FileStorageConfiguration storageConfig;
 
     public BerkeleyJEStoreManager(Configuration configuration) throws StorageException {
         stores = new HashMap<String, BerkeleyJEKeyValueStore>();
         String storageDir = configuration.getString(STORAGE_DIRECTORY_KEY);
         Preconditions.checkArgument(storageDir != null, "Need to specify storage directory");
-        directory = getOrCreateDataDirectory(storageDir);
+        directory = DirectoryUtil.getOrCreateDataDirectory(storageDir);
         isReadOnly = configuration.getBoolean(STORAGE_READONLY_KEY, STORAGE_READONLY_DEFAULT);
         batchLoading = configuration.getBoolean(STORAGE_BATCH_KEY, STORAGE_BATCH_DEFAULT);
         boolean transactional = configuration.getBoolean(STORAGE_TRANSACTIONAL_KEY, STORAGE_TRANSACTIONAL_DEFAULT);
@@ -72,6 +73,8 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
         features.isKeyOrdered = true;
         features.isDistributed = false;
         features.hasLocalKeyPartition = false;
+
+        storageConfig=new FileStorageConfiguration(directory);
     }
 
     private void initialize(int cachePercent) throws StorageException {
@@ -88,6 +91,8 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
 
             //Open the environment
             environment = new Environment(directory, envConfig);
+
+
         } catch (DatabaseException e) {
             throw new PermanentStorageException("Error during BerkeleyJE initialization: ", e);
         }
@@ -178,46 +183,13 @@ public class BerkeleyJEStoreManager implements KeyValueStoreManager {
 
     @Override
     public String getConfigurationProperty(String key) throws StorageException {
-        File configFile = getConfigFile(directory);
-
-        if (!configFile.exists()) //property has not been defined
-            return null;
-
-        Preconditions.checkArgument(configFile.isFile());
-        try {
-            Configuration config = new PropertiesConfiguration(configFile);
-            return config.getString(key, null);
-        } catch (ConfigurationException e) {
-            throw new PermanentStorageException("Could not read from configuration file", e);
-        }
+        return storageConfig.getConfigurationProperty(key);
     }
 
     @Override
     public void setConfigurationProperty(String key, String value) throws StorageException {
-        File configFile = getConfigFile(directory);
-
-        try {
-            PropertiesConfiguration config = new PropertiesConfiguration(configFile);
-            config.setProperty(key, value);
-            config.save();
-        } catch (ConfigurationException e) {
-            throw new PermanentStorageException("Could not save configuration file", e);
-        }
+        storageConfig.setConfigurationProperty(key,value);
     }
 
-    private static File getConfigFile(File dbDirectory) {
-        return new File(dbDirectory.getAbsolutePath() + File.separator + TITAN_CONFIG_FILE_NAME);
-    }
 
-    private static File getOrCreateDataDirectory(String location) throws StorageException {
-        File storageDir = new File(location);
-
-        if (storageDir.exists() && storageDir.isFile())
-            throw new PermanentStorageException(String.format("%s exists but is a file.", location));
-
-        if (!storageDir.exists() && !storageDir.mkdirs())
-            throw new PermanentStorageException(String.format("Failed to create directory %s for BerkleyDB storage.", location));
-
-        return storageDir;
-    }
 }
