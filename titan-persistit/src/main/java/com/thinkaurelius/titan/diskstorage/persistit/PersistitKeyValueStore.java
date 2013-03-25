@@ -70,12 +70,11 @@ public class PersistitKeyValueStore implements KeyValueStore {
     private static class ExchangePool {
         private Persistit db;
         private String name;
-        private BlockingQueue<Exchange> pool;
+        private BlockingQueue<Exchange> pool = new LinkedBlockingQueue<Exchange>();
 
         ExchangePool(Persistit db, String name) {
             this.db = db;
             this.name = name;
-            this.pool = new LinkedBlockingQueue<Exchange>();
         }
 
         /**
@@ -97,14 +96,20 @@ public class PersistitKeyValueStore implements KeyValueStore {
             if (!pool.isEmpty()) return pool.remove();
 
             try {
-                return db.getExchange(db.getSystemVolume().getName(), name, true);
+                Exchange exchange = db.getExchange(db.getSystemVolume().getName(), name, true);
+                return exchange;
+
             } catch (PersistitException e) {
                 throw new PermanentStorageException(e.toString());
             }
         }
 
-        boolean isEmpty() {
+        synchronized boolean isEmpty() {
             return pool.isEmpty();
+        }
+
+        synchronized void close() throws StorageException {
+            //clean up the open exchanges
         }
 
     }
@@ -145,6 +150,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
         final Exchange exchange;
         final ExchangePool exchangePool;
         Object nextKey = null;
+        private boolean isClosed = false;
 
         private PersistitJob getNextKeyJob;
 
@@ -199,6 +205,16 @@ public class PersistitKeyValueStore implements KeyValueStore {
         @Override
         public void close() {
             exchangePool.put(exchange);
+            isClosed = true;
+        }
+
+        @Override
+        protected void finalize() {
+            if (!isClosed) {
+                //@todo: log if we have to do anything here
+                close();
+                isClosed = true;
+            }
         }
     }
 
@@ -226,8 +242,11 @@ public class PersistitKeyValueStore implements KeyValueStore {
                 }
             }
         };
-        ((PersistitTransaction) txh).run(j);
-        exchangePool.put(exchange);
+        try {
+            ((PersistitTransaction) txh).run(j);
+        } finally {
+            exchangePool.put(exchange);
+        }
         return (ByteBuffer) j.getResult();
     }
 
@@ -244,8 +263,11 @@ public class PersistitKeyValueStore implements KeyValueStore {
                 result = exchange.isValueDefined();
             }
         };
-        ((PersistitTransaction) txh).run(j);
-        exchangePool.put(exchange);
+        try {
+            ((PersistitTransaction) txh).run(j);
+        } finally {
+            exchangePool.put(exchange);
+        }
         return (Boolean) j.getResult();
     }
 
@@ -330,8 +352,11 @@ public class PersistitKeyValueStore implements KeyValueStore {
             }
         };
 
-        txh.run(j);
-        exchangePool.put(exchange);
+        try {
+            txh.run(j);
+        } finally {
+            exchangePool.put(exchange);
+        }
         return (List<KeyValueEntry>) j.getResult();
     }
 
@@ -370,8 +395,11 @@ public class PersistitKeyValueStore implements KeyValueStore {
                 exchange.store();
             }
         };
-        ((PersistitTransaction) txh).run(j);
-        exchangePool.put(exchange);
+        try {
+            ((PersistitTransaction) txh).run(j);
+        } finally {
+            exchangePool.put(exchange);
+        }
     }
 
     @Override
@@ -398,6 +426,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
     @Override
     public void close() throws StorageException {
+        exchangePool.close();
         storeManager.removeDatabase(this);
     }
 

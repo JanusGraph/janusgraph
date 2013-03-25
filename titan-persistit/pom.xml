@@ -1,20 +1,24 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
-        <artifactId>titan</artifactId>
         <groupId>com.thinkaurelius.titan</groupId>
-        <version>0.2.1-SNAPSHOT</version>
+        <artifactId>titan</artifactId>
+        <version>0.2.1</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
-
     <artifactId>titan-persistit</artifactId>
     <name>Titan-Persistit: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
-
+    <repositories>
+        <repository>
+            <id>oracleReleases</id>
+            <name>Oracle Released Java Packages</name>
+            <url>http://download.oracle.com/maven</url>
+            <layout>default</layout>
+        </repository>
+    </repositories>
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -33,5 +37,30 @@
             <version>3.2.2</version>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>comprehensive</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.12.1</version>
+                        <configuration>
+                            <argLine>-Xms256m -Xmx1024m</argLine>
+                            <includes>
+                                <include>**/*Test.java</include>
+                            </includes>
+                            <excludes>
+                                <exclude>**/Internal*.java</exclude>
+                                <exclude>**/*Suite.java</exclude>
+                            </excludes>
+                            <forkMode>always</forkMode>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
