@@ -230,7 +230,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 throw new TemporaryStorageException(ee);
             }
         } else { // check if compression was enabled, if not - enable it
-            if (cf.getCompressionType() == null) {
+            if (cf.getCompressionType() == null || cf.getCompressionType() == Compression.Algorithm.NONE) {
                 try {
                     adm.disableTable(tableName);
 
