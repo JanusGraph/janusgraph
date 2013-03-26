@@ -75,7 +75,7 @@ public class SerializerTest {
 
     @Test
     public void testObjectVerification() {
-        Serializer s = new KryoSerializer(true);
+        KryoSerializer s = new KryoSerializer(true);
         DataOutput out = s.getDataOutput(128, true);
         Long l = Long.valueOf(128);
         out.writeClassAndObject(l);
@@ -88,14 +88,16 @@ public class SerializerTest {
         } catch (IllegalArgumentException e) {
 
         }
-        Date d = new Date(101);
+        TestTransientClass d = new TestTransientClass(101);
         try {
             out.writeClassAndObject(d);
             fail();
         } catch (IllegalArgumentException e) {
 
         }
+        out.writeObject(null);
     }
+
 
     @Test
     public void longWriteTest() {

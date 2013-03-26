@@ -7,6 +7,7 @@ public class BerkeleyJEGraphTest extends TitanGraphTest {
 
     public BerkeleyJEGraphTest() {
         super(BerkeleyJeStorageSetup.getBerkeleyJEGraphConfiguration());
+        //System.out.println(BerkeleyJeStorageSetup.getHomeDir());
     }
 
 }
