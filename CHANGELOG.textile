@@ -46,6 +46,8 @@ h3. Version 0.2.1 (March 22, 2013)
 
 * Pavel Yaskevich ("xedin":https://github.com/xedin)
 
+==<hr/>==
+
 h3. Version 0.2.0 (December 24, 2012)
 
 ```xml
@@ -85,6 +87,8 @@ h3. Version 0.2.0 (December 24, 2012)
 * Nicolas LaCasse ("nlacasse":https://github.com/nlacasse)
 * Vadas Gintautas ("vadasg":https://github.com/vadasg)
 
+==<hr/>==
+
 h3. Version 0.1.0 (September 7, 2012)
 
 ```xml
@@ -117,5 +121,3 @@ h3. Version 0.1.0 (September 7, 2012)
 * Dan Forest-Barbier ("DPanth3r":https://github.com/DPanth3r)
 * "jncorpron":https://github.com/jncorpron
 * Marc Abramowitz ("msabramo":https://github.com/msabramo)
-
-==<hr/>==
