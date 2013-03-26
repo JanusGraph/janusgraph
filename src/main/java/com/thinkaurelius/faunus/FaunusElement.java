@@ -72,6 +72,12 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         return this;
     }
 
+    @Override
+    public void remove() throws UnsupportedOperationException {
+        //TODO: should this be supported?
+        throw new UnsupportedOperationException();
+    }
+
     public void enablePath(final boolean enablePath) {
         this.pathEnabled = enablePath;
         if (this.pathEnabled) {
@@ -195,10 +201,6 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
     public long getIdAsLong() {
         return this.id;
-    }
-
-    public void remove() throws UnsupportedOperationException {
-        throw new UnsupportedOperationException();
     }
 
     public void readFields(final DataInput in) throws IOException {
