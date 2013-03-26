@@ -49,7 +49,7 @@ public abstract class TitanBlueprintsTest extends GraphTest {
 
     public void testGraphTestSuite() throws Exception {
         this.stopWatch();                       //Excluded test case because toString representation is non-standard
-        doTestSuite(new GraphTestSuite(this), ImmutableSet.of("testStringRepresentation"));
+        doTestSuite(new GraphTestSuite(this), ImmutableSet.of("testStringRepresentation","testDataTypeValidationOnProperties"));
         printTestPerformance("GraphTestSuite", this.stopWatch());
     }
 
