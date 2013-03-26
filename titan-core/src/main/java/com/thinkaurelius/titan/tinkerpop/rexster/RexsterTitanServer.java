@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.tinkerpop.rexster;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.rexster.Tokens;
 import com.tinkerpop.rexster.protocol.EngineController;
 import com.tinkerpop.rexster.server.DefaultRexsterApplication;
 import com.tinkerpop.rexster.server.HttpRexsterServer;
@@ -11,12 +12,14 @@ import com.tinkerpop.rexster.server.RexsterApplication;
 import com.tinkerpop.rexster.server.RexsterSettings;
 import com.tinkerpop.rexster.server.ShutdownManager;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Standalone Titan database with fronting Rexster server.
@@ -70,7 +73,10 @@ public class RexsterTitanServer {
     public void start() {
         EngineController.configure(-1, this.rexsterConfig.getString("script-engine-init", null));
         graph = TitanFactory.open(titanConfig);
-        final RexsterApplication ra = new DefaultRexsterApplication(DEFAULT_GRAPH_NAME, graph);
+
+        final List<HierarchicalConfiguration> extensionConfigurations = ((XMLConfiguration) rexsterConfig).configurationsAt(Tokens.REXSTER_GRAPH_EXTENSIONS_PATH);
+        log.info(extensionConfigurations.toString());
+        final RexsterApplication ra = new TitanRexsterApplication(DEFAULT_GRAPH_NAME, graph, extensionConfigurations);
         startRexProServer(ra);
         startHttpServer(ra);
     }
