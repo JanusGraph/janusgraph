@@ -101,6 +101,17 @@ public class SerializerTest {
         out.writeObject(null);
     }
 
+    @Test
+    public void testDateSerialization() {
+        DataOutput out = serialize.getDataOutput(128, true);
+        Date d = new Date(101);
+        out.writeClassAndObject(d);
+        out.writeObjectNotNull(d);
+        ByteBuffer result = out.getByteBuffer();
+        assertEquals(d,serialize.readClassAndObject(result));
+        assertEquals(d,serialize.readObjectNotNull(result,Date.class));
+    }
+
 
     @Test
     public void longWriteTest() {
