@@ -66,7 +66,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
             longId = ((Number) id).longValue();
         } else {
             try {
-                longId = Long.parseLong(id.toString());
+                longId = Long.valueOf(id.toString()).longValue();
             } catch (NumberFormatException e) {
                 return null;
             }
