@@ -51,11 +51,11 @@ public class RexsterTitanServer {
         final boolean isRexProConfigured = rexsterConfig.subset("rexpro").getKeys().hasNext();
         final boolean isHttpConfigured = rexsterConfig.subset("http").getKeys().hasNext();
 
-        if (isRexProConfigured) {
+        if (isRexProConfigured || !isHttpConfigured) {
             rexProServer = new RexProRexsterServer(rexsterConfig);
         }
 
-        if (isHttpConfigured) {
+        if (isHttpConfigured || !isRexProConfigured) {
             // turn off dog house...always
             rexsterConfig.setProperty("http.enable-doghouse", false);
             httpServer = new HttpRexsterServer(rexsterConfig);
