@@ -1,14 +1,19 @@
 package com.thinkaurelius.titan.diskstorage.persistit;
 
+import com.thinkaurelius.titan.PersistitStorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManagerAdapter;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.SubsetConfiguration;
 
 public class PersistitKeyColumnValueVariableTest extends KeyColumnValueStoreTest {
 
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        PersistitStoreManager sm = new PersistitStoreManager();
+        Configuration config = PersistitStorageSetup.getPersistitGraphConfig();
+        PersistitStoreManager sm = new PersistitStoreManager(config.subset(STORAGE_NAMESPACE));
         return new KeyValueStoreManagerAdapter(sm);
     }
 }

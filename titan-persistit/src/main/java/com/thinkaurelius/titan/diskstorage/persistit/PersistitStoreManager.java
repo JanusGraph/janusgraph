@@ -1,5 +1,12 @@
 package com.thinkaurelius.titan.diskstorage.persistit;
 
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
+
 import com.persistit.*;
 import com.persistit.exception.PersistitException;
 
@@ -8,9 +15,15 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
+import org.apache.commons.configuration.SubsetConfiguration;
+import sun.security.pkcs11.wrapper.CK_VERSION;
 
+
+import java.io.File;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  *
@@ -35,29 +48,43 @@ public class PersistitStoreManager implements KeyValueStoreManager {
     private Persistit db;
     private Exchange exchange;
 
-    public PersistitStoreManager() throws StorageException {
-        //@todo: take some config data here
+    private Configuration config;
+    private Properties properties;
+    private final File directory;
+
+    //@todo: unhack this
+    private final static String BACKEND_VERSION = TitanConstants.VERSION;
+
+    public PersistitStoreManager(Configuration configuration) throws StorageException {
         stores = new HashMap<String, PersistitKeyValueStore>();
-        db = new Persistit();
+
+        config = cloneConfig(configuration);
+        //read config and setup
+        properties = new Properties();
+        String datapath = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
+        Preconditions.checkArgument(datapath != null, "Need to specify storage directory");
+        directory = getOrCreateDataDirectory(datapath);
+        properties.put("datapath", datapath);
+        String volumeName = "titan";
+
+        properties.put("journalpath", directory + File.pathSeparator + volumeName);
+        properties.put("logfile", directory + File.pathSeparator + volumeName + ".log");
+
+        //@todo: make these tunable
+        properties.put("buffer.count.16384", "32");
+        properties.put("volume.1", directory + File.pathSeparator + volumeName + ",create,pageSize:16384,initialPages:5,extensionPages:5,maximumPages:100000");
 
         try {
+            db = new Persistit(properties);
             db.initialize();
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex.toString());
         }
+
+        //do some additional config setup
+        config.addProperty(Backend.TITAN_BACKEND_VERSION, BACKEND_VERSION);
     }
 
-    /**
-     * Opens an ordered database by the given name. If the database does not exist, it is
-     * created. If it has already been opened, the existing handle is returned.
-     * <p/>
-     * By default, the key length will be variable
-     *
-     * @param name Name of database
-     * @return Database Handle
-     * @throws com.thinkaurelius.titan.diskstorage.StorageException
-     *
-     */
     @Override
     public PersistitKeyValueStore openDatabase(String name) throws StorageException {
         if (stores.containsKey(name)) {
@@ -74,6 +101,28 @@ public class PersistitStoreManager implements KeyValueStoreManager {
             throw new IllegalArgumentException("Tried to remove an unkown database from the storage manager");
         }
         stores.remove(db.getName());
+    }
+
+    private static File getOrCreateDataDirectory(String location) throws StorageException {
+        File storageDir = new File(location);
+
+        if (storageDir.exists() && storageDir.isFile())
+            throw new PermanentStorageException(String.format("%s exists but is a file.", location));
+
+        if (!storageDir.exists() && !storageDir.mkdirs())
+            throw new PermanentStorageException(String.format("Failed to create directory %s for BerkleyDB storage.", location));
+
+        return storageDir;
+    }
+
+    private static Configuration cloneConfig(Configuration src) {
+        BaseConfiguration dst = new BaseConfiguration();
+        Iterator<String> keys = src.getKeys();
+        while (keys.hasNext()) {
+            String k = keys.next();
+            dst.addProperty(k, src.getString(k));
+        }
+        return dst;
     }
 
     @Override
@@ -134,13 +183,12 @@ public class PersistitStoreManager implements KeyValueStoreManager {
 
         }
         close();
-        //@todo: delete storage directory
+        //@todo: delete storage directory?
     }
 
     @Override
     public String getConfigurationProperty(final String key) throws StorageException {
-        //@todo: this
-        throw new PermanentStorageException("write this part");
+        return config.getString(key);
     }
 
     @Override
