@@ -15,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -70,7 +71,8 @@ public class PersistitKeyValueStore implements KeyValueStore {
     private static class ExchangePool {
         private Persistit db;
         private String name;
-        private BlockingQueue<Exchange> pool = new LinkedBlockingQueue<Exchange>();
+
+        private Map<Long, BlockingQueue<Exchange>> threadPool = new ConcurrentHashMap<Long, BlockingQueue<Exchange>>();
 
         ExchangePool(Persistit db, String name) {
             this.db = db;
@@ -82,6 +84,13 @@ public class PersistitKeyValueStore implements KeyValueStore {
          * @param ex
          */
         synchronized void put(Exchange ex) {
+            BlockingQueue<Exchange> pool = threadPool.get(Thread.currentThread().getId());
+
+            if (pool == null) {
+                pool = new LinkedBlockingQueue<Exchange>();
+                threadPool.put(Thread.currentThread().getId(), pool);
+            }
+
             pool.add(ex);
         }
 
@@ -93,7 +102,9 @@ public class PersistitKeyValueStore implements KeyValueStore {
          * @throws StorageException
          */
         synchronized Exchange get() throws StorageException {
-            if (!pool.isEmpty()) return pool.remove();
+            BlockingQueue<Exchange> pool = threadPool.get(Thread.currentThread().getId());
+
+            if (pool != null && !pool.isEmpty()) return pool.remove();
 
             try {
                 Exchange exchange = db.getExchange(db.getSystemVolume().getName(), name, true);
@@ -105,7 +116,8 @@ public class PersistitKeyValueStore implements KeyValueStore {
         }
 
         synchronized boolean isEmpty() {
-            return pool.isEmpty();
+            BlockingQueue<Exchange> pool = threadPool.get(Thread.currentThread().getId());
+            return pool == null || pool.isEmpty();
         }
 
         synchronized void close() throws StorageException {
