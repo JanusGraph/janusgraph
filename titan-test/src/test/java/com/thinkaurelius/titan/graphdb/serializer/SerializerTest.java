@@ -17,10 +17,14 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.util.Calendar;
+import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 public class SerializerTest {
 
@@ -67,6 +71,30 @@ public class SerializerTest {
         assertEquals(c, c2);
         assertEquals(n, serialize.readClassAndObject(b));
         assertFalse(b.hasRemaining());
+    }
+
+    @Test
+    public void testObjectVerification() {
+        Serializer s = new KryoSerializer(true);
+        DataOutput out = s.getDataOutput(128, true);
+        Long l = Long.valueOf(128);
+        out.writeClassAndObject(l);
+        Calendar c = Calendar.getInstance();
+        out.writeClassAndObject(c);
+        BigDecimal b = BigDecimal.ONE;
+        try {
+            out.writeClassAndObject(b);
+            fail();
+        } catch (IllegalArgumentException e) {
+
+        }
+        Date d = new Date(101);
+        try {
+            out.writeClassAndObject(d);
+            fail();
+        } catch (IllegalArgumentException e) {
+
+        }
     }
 
     @Test

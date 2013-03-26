@@ -17,14 +17,16 @@ public class KryoDataOutput implements DataOutput {
     private ByteBuffer buffer;
 
     private final ObjectBuffer objects;
+    private final KryoSerializer kryo;
 
     KryoDataOutput(int capacity) {
         this(capacity, null);
 
     }
 
-    KryoDataOutput(int capacity, Kryo kryo) {
+    KryoDataOutput(int capacity, KryoSerializer kryo) {
         buffer = ByteBuffer.allocate(capacity);
+        this.kryo=kryo;
         if (kryo != null) objects = new ObjectBuffer(kryo, initialKryoCapacity, maxKryoCapacity);
         else objects = null;
 
@@ -71,18 +73,21 @@ public class KryoDataOutput implements DataOutput {
 
     public DataOutput writeObject(Object object) {
         Preconditions.checkArgument(objects != null, "This DataOutput has not been initialized for object writing!");
+        Preconditions.checkArgument(kryo.isValidObject(object),"Cannot de-/serialize objects of type: %s",object.getClass().getName());
         append(objects.writeObject(object));
         return this;
     }
 
     public DataOutput writeObjectNotNull(Object object) {
         Preconditions.checkArgument(objects != null, "This DataOutput has not been initialized for object writing!");
+        Preconditions.checkArgument(kryo.isValidObject(object),"Cannot de-/serialize objects of type: %s",object.getClass().getName());
         append(objects.writeObjectData(object));
         return this;
     }
 
     public DataOutput writeClassAndObject(Object object) {
         Preconditions.checkArgument(objects != null, "This DataOutput has not been initialized for object writing!");
+        Preconditions.checkArgument(kryo.isValidObject(object),"Cannot de-/serialize objects of type: %s",object.getClass().getName());
         append(objects.writeClassAndObject(object));
         return this;
     }
