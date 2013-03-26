@@ -44,11 +44,6 @@ public class RexsterTitanServer {
         Preconditions.checkNotNull(rexsterConfig);
         Preconditions.checkNotNull(titanConfig);
 
-        // can drop this check on release of Rexster 2.3.0
-        if (!rexsterConfig.subset("security.authentication").getKeys().hasNext()) {
-            rexsterConfig.addProperty("security.authentication.type", "none");
-        }
-
         server = new RexProRexsterServer(rexsterConfig);
         this.rexsterConfig = rexsterConfig;
         this.titanConfig = titanConfig;
