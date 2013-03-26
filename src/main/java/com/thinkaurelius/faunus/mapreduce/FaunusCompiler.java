@@ -87,12 +87,10 @@ public class FaunusCompiler extends Configured implements Tool {
         return list.toArray(new String[list.size()]);
     }
 
-    public void setPathEnabled(final boolean pathEnabled) {
-        this.pathEnabled = pathEnabled;
-    }
-
     private void addConfiguration(final Configuration configuration) {
         for (final Map.Entry<String, String> entry : configuration) {
+            if (entry.getKey().equals(PATH_ENABLED) & Boolean.valueOf(entry.getValue()))
+                this.pathEnabled = true;
             this.getConf().set(entry.getKey() + "-" + this.mapSequenceClasses.size(), entry.getValue());
             this.getConf().set(entry.getKey(), entry.getValue());
         }

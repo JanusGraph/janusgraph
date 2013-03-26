@@ -36,11 +36,7 @@ public class BackFilterMapReduceTest extends BaseTest {
     }
 
     public void testVerticesFullStart() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(BackFilterMapReduce.CLASS, Vertex.class, Element.class);
-        config.setInt(BackFilterMapReduce.STEP, 0);
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
-
+        Configuration config = BackFilterMapReduce.createConfiguration(Vertex.class, 0);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
@@ -57,11 +53,7 @@ public class BackFilterMapReduceTest extends BaseTest {
     }
 
     public void testVerticesBiasedStart() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(BackFilterMapReduce.CLASS, Vertex.class, Element.class);
-        config.setInt(BackFilterMapReduce.STEP, 0);
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
-
+        Configuration config = BackFilterMapReduce.createConfiguration(Vertex.class, 0);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
@@ -86,11 +78,7 @@ public class BackFilterMapReduceTest extends BaseTest {
     }
 
     public void testBackingUpToEdgesException() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(BackFilterMapReduce.CLASS, Vertex.class, Element.class);
-        config.setInt(BackFilterMapReduce.STEP, 1);
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
-
+        Configuration config = BackFilterMapReduce.createConfiguration(Vertex.class, 1);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
@@ -110,11 +98,7 @@ public class BackFilterMapReduceTest extends BaseTest {
     }
 
     public void testBackingUpToVerticesFromEdges() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(BackFilterMapReduce.CLASS, Edge.class, Element.class);
-        config.setInt(BackFilterMapReduce.STEP, 0);
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
-
+        Configuration config = BackFilterMapReduce.createConfiguration(Edge.class, 0);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);

@@ -33,6 +33,7 @@ public class BackFilterMapReduce {
         final Configuration configuration = new Configuration();
         configuration.setInt(STEP, step);
         configuration.setClass(CLASS, klass, Element.class);
+        configuration.setBoolean(FaunusCompiler.PATH_ENABLED, true);
         return configuration;
     }
 

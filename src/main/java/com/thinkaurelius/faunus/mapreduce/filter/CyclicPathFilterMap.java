@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.filter;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -31,6 +32,7 @@ public class CyclicPathFilterMap {
     public static Configuration createConfiguration(final Class<? extends Element> klass) {
         final Configuration configuration = new Configuration();
         configuration.setClass(CLASS, klass, Element.class);
+        configuration.setBoolean(FaunusCompiler.PATH_ENABLED, true);
         return configuration;
     }
 

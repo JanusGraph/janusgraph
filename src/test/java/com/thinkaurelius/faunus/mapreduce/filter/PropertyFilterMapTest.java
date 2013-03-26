@@ -5,7 +5,6 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
@@ -30,14 +29,7 @@ public class PropertyFilterMapTest extends BaseTest {
     }
 
     public void testVerticesOnName() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(PropertyFilterMap.CLASS, Vertex.class, Element.class);
-        config.set(PropertyFilterMap.KEY, "name");
-        config.setClass(PropertyFilterMap.VALUE_CLASS, String.class, String.class);
-        config.setStrings(PropertyFilterMap.VALUES, "marko", "vadas");
-        config.set(PropertyFilterMap.COMPARE, Query.Compare.EQUAL.name());
-        config.setBoolean(PropertyFilterMap.NULL_WILDCARD, false);
-
+        Configuration config = PropertyFilterMap.createConfiguration(Vertex.class, "name", Query.Compare.EQUAL, "marko", "vadas");
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
@@ -57,15 +49,7 @@ public class PropertyFilterMapTest extends BaseTest {
     }
 
     public void testEdgesOnWeight() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(PropertyFilterMap.CLASS, Edge.class, Element.class);
-        config.set(PropertyFilterMap.KEY, "weight");
-        config.setClass(PropertyFilterMap.VALUE_CLASS, Float.class, Float.class);
-        config.setFloat(PropertyFilterMap.VALUES, 0.2f);
-        config.set(PropertyFilterMap.COMPARE, Query.Compare.EQUAL.name());
-        config.setBoolean(PropertyFilterMap.NULL_WILDCARD, false);
-
-
+        Configuration config = PropertyFilterMap.createConfiguration(Edge.class, "weight", Query.Compare.EQUAL, 0.2f);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);

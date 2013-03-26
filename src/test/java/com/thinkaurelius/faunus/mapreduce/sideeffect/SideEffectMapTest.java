@@ -2,7 +2,6 @@ package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -51,10 +50,7 @@ public class SideEffectMapTest extends BaseTest {
     }*/
 
     public void testVertexSideEffectOutDegree() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(SideEffectMap.CLASS, Vertex.class, Element.class);
-        config.set(SideEffectMap.CLOSURE, "{it -> it.degree = it.outE().count()}");
-
+        Configuration config = SideEffectMap.createConfiguration(Vertex.class, "{it -> it.degree = it.outE().count()}");
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
@@ -74,10 +70,7 @@ public class SideEffectMapTest extends BaseTest {
 
     public void testVertexSideEffectInDegree() throws IOException {
 
-        Configuration config = new Configuration();
-        config.setClass(SideEffectMap.CLASS, Vertex.class, Element.class);
-        config.set(SideEffectMap.CLOSURE, "{it -> it.degree = it.inE().count()}");
-
+        Configuration config = SideEffectMap.createConfiguration(Vertex.class, "{it -> it.degree = it.inE.count()}");
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);

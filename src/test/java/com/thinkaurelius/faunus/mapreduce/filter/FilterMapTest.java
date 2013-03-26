@@ -5,7 +5,6 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -29,10 +28,7 @@ public class FilterMapTest extends BaseTest {
     }
 
     public void testVerticesOnName() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(FilterMap.CLASS, Vertex.class, Element.class);
-        config.set(FilterMap.CLOSURE, "{it -> it.name.startsWith('v')}");
-
+        Configuration config = FilterMap.createConfiguration(Vertex.class, "{it -> it.name.startsWith('v')}");
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
@@ -52,10 +48,7 @@ public class FilterMapTest extends BaseTest {
     }
 
     public void testEdgesOnWeight() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(FilterMap.CLASS, Edge.class, Element.class);
-        config.set(FilterMap.CLOSURE, "{it -> it.weight > 0.19 && it.weight < 0.21}");
-
+        Configuration config = FilterMap.createConfiguration(Edge.class, "{it -> it.weight > 0.19 && it.weight < 0.21}");
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);

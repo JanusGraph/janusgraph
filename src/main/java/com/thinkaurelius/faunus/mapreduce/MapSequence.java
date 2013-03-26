@@ -62,7 +62,6 @@ public class MapSequence {
             }
         }
 
-
         @Override
         public void map(final Writable key, final Writable value, final Mapper<Writable, Writable, Writable, Writable>.Context context) throws IOException, InterruptedException {
             try {

@@ -34,10 +34,7 @@ public class DuplicateFilterMapTest extends BaseTest {
     }
 
     public void testDedupVertices() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(DuplicateFilterMap.CLASS, Vertex.class, Element.class);
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, false);
-
+        Configuration config = DuplicateFilterMap.createConfiguration(Vertex.class);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
@@ -72,10 +69,8 @@ public class DuplicateFilterMapTest extends BaseTest {
 
 
     public void testDedupVerticesWithPaths() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(DuplicateFilterMap.CLASS, Vertex.class, Element.class);
+        Configuration config = DuplicateFilterMap.createConfiguration(Vertex.class);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
-
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
@@ -112,8 +107,7 @@ public class DuplicateFilterMapTest extends BaseTest {
     }
 
     public void testDedupEdgesWithPaths() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(DuplicateFilterMap.CLASS, Edge.class, Element.class);
+        Configuration config = DuplicateFilterMap.createConfiguration(Edge.class);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);

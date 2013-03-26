@@ -523,7 +523,6 @@ public class FaunusPipeline {
                 NullWritable.class,
                 Text.class,
                 PathMap.createConfiguration(this.state.getElementType()));
-        this.compiler.setPathEnabled(true);
         this.state.lock();
         makeMapReduceString(PathMap.class);
         return this;
@@ -745,7 +744,6 @@ public class FaunusPipeline {
                 NullWritable.class,
                 FaunusVertex.class,
                 BackFilterMapReduce.createConfiguration(this.state.getElementType(), this.state.getStep(step)));
-        this.compiler.setPathEnabled(true);
         makeMapReduceString(BackFilterMapReduce.class, step);
         return this;
     }
@@ -771,7 +769,6 @@ public class FaunusPipeline {
                 NullWritable.class,
                 FaunusVertex.class,
                 CyclicPathFilterMap.createConfiguration(this.state.getElementType()));
-        this.compiler.setPathEnabled(true);
         makeMapReduceString(CyclicPathFilterMap.class);
         return this;
     }
@@ -883,7 +880,6 @@ public class FaunusPipeline {
             makeMapReduceString(LinkMapReduce.class, direction.name(), step, label, mergeWeightKey);
         else
             makeMapReduceString(LinkMapReduce.class, direction.name(), step, label);
-        this.compiler.setPathEnabled(true);
         return this;
     }
 
@@ -1009,18 +1005,6 @@ public class FaunusPipeline {
     /////////////// UTILITIES
 
     /**
-     * By default, paths are disabled. Computing paths is very expensive in terms of both space and time.
-     * When a path-based step is added to the pipeline, this method is automatically called.
-     *
-     * @return the FaunusPipeline with path cacluations enabled
-     */
-
-    public FaunusPipeline enablePath() {
-        this.compiler.setPathEnabled(true);
-        return this;
-    }
-
-    /**
      * Count the number of traversers currently in the graph
      *
      * @return the count
@@ -1092,6 +1076,10 @@ public class FaunusPipeline {
      */
     public FaunusGraph getGraph() {
         return this.graph;
+    }
+
+    public FaunusCompiler getCompiler() {
+        return this.compiler;
     }
 
     private String validateClosure(String closure) {

@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.mapreduce.sideeffect;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
@@ -40,9 +39,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
     }
 
     public void testVertexTypeProperty() throws IOException {
-        Configuration config = new Configuration();
-        config.set(ValueGroupCountMapReduce.CLASS, Vertex.class.getName());
-        config.set(ValueGroupCountMapReduce.PROPERTY, "type");
+        Configuration config = ValueGroupCountMapReduce.createConfiguration(Vertex.class, "type", Text.class);
         this.mapReduceDriver.withConfiguration(config);
 
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Vertex.class), this.mapReduceDriver);
@@ -70,10 +67,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
     }
 
     public void testVertexNoProperty() throws IOException {
-        Configuration config = new Configuration();
-        config.set(ValueGroupCountMapReduce.CLASS, Vertex.class.getName());
-        config.set(ValueGroupCountMapReduce.PROPERTY, "nothing property");
-        config.setClass(ValueGroupCountMapReduce.TYPE, Text.class, WritableComparable.class);
+        Configuration config = ValueGroupCountMapReduce.createConfiguration(Vertex.class, "nothing property", Text.class);
 
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<WritableComparable, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Vertex.class), this.mapReduceDriver);
@@ -91,9 +85,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
     }
 
     public void testEdgeTimeProperty() throws IOException {
-        Configuration config = new Configuration();
-        config.set(ValueGroupCountMapReduce.CLASS, Edge.class.getName());
-        config.set(ValueGroupCountMapReduce.PROPERTY, "time");
+        Configuration config = ValueGroupCountMapReduce.createConfiguration(Edge.class, "time", Text.class);
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<WritableComparable, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Edge.class), this.mapReduceDriver);
         //System.out.println(results);
@@ -116,8 +108,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
     }
 
     public void testEdgeLabelDistribution1() throws IOException {
-        Configuration config = new Configuration();
-        config.set(ValueGroupCountMapReduce.PROPERTY, "label");
+        Configuration config = ValueGroupCountMapReduce.createConfiguration(Edge.class, "label", Text.class);
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Edge.class), this.mapReduceDriver);
         assertEquals(results.size(), 6);
@@ -143,8 +134,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
     }
 
     public void testEdgeLabelDistribution2() throws IOException {
-        Configuration config = new Configuration();
-        config.set(ValueGroupCountMapReduce.PROPERTY, "label");
+        Configuration config = ValueGroupCountMapReduce.createConfiguration(Edge.class, "label", Text.class);
         this.mapReduceDriver.withConfiguration(config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config), Edge.class), this.mapReduceDriver);
         assertEquals(results.size(), 6);
@@ -170,10 +160,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
     }
 
     public void testPropertySortingOnInteger() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(ValueGroupCountMapReduce.CLASS, Vertex.class, Element.class);
-        config.set(ValueGroupCountMapReduce.PROPERTY, "age");
-        config.setClass(ValueGroupCountMapReduce.TYPE, IntWritable.class, WritableComparable.class);
+        Configuration config = ValueGroupCountMapReduce.createConfiguration(Vertex.class, "age", IntWritable.class);
         this.mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> vertices = new HashMap<Long, FaunusVertex>();
@@ -191,10 +178,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
     }
 
     public void testPropertySortingOnText() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(ValueGroupCountMapReduce.CLASS, Vertex.class, Element.class);
-        config.set(ValueGroupCountMapReduce.PROPERTY, "age");
-        config.setClass(ValueGroupCountMapReduce.TYPE, Text.class, WritableComparable.class);
+        Configuration config = ValueGroupCountMapReduce.createConfiguration(Vertex.class, "age", Text.class);
         this.mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> vertices = new HashMap<Long, FaunusVertex>();

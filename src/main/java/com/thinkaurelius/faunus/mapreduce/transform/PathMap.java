@@ -33,6 +33,7 @@ public class PathMap {
     public static Configuration createConfiguration(final Class<? extends Element> klass) {
         final Configuration configuration = new Configuration();
         configuration.setClass(CLASS, klass, Element.class);
+        configuration.setBoolean(FaunusCompiler.PATH_ENABLED, true);
         return configuration;
     }
 

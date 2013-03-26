@@ -51,6 +51,7 @@ public class LinkMapReduce {
             configuration.setBoolean(MERGE_DUPLICATES, true);
             configuration.set(MERGE_WEIGHT_KEY, mergeWeightKey);
         }
+        configuration.setBoolean(FaunusCompiler.PATH_ENABLED, true);
         return configuration;
     }
 

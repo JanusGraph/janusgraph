@@ -30,9 +30,7 @@ public class GroupCountMapReduceTest extends BaseTest {
     }
 
     public void testOutDegreeDistribution() throws IOException {
-        Configuration config = new Configuration();
-        config.set(GroupCountMapReduce.CLASS, Vertex.class.getName());
-        config.set(GroupCountMapReduce.KEY_CLOSURE, "{ it -> it.outE.count() }");
+        Configuration config = GroupCountMapReduce.createConfiguration(Vertex.class, "{ it -> it.outE.count() }", null);
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Vertex.class), this.mapReduceDriver);
@@ -60,10 +58,7 @@ public class GroupCountMapReduceTest extends BaseTest {
     }
 
     public void testEdgePropertySizeDistribution() throws IOException {
-        Configuration config = new Configuration();
-        config.set(GroupCountMapReduce.CLASS, Edge.class.getName());
-        config.set(GroupCountMapReduce.KEY_CLOSURE, "{ it -> it.map.next().size() }");
-        config.set(GroupCountMapReduce.VALUE_CLOSURE, "{ it -> 2}");
+        Configuration config = GroupCountMapReduce.createConfiguration(Edge.class, "{ it -> it.map.next().size() }", "{ it -> 2}");
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Edge.class), this.mapReduceDriver);
@@ -85,9 +80,7 @@ public class GroupCountMapReduceTest extends BaseTest {
     }
 
     public void testVertexDistribution() throws IOException {
-        Configuration config = new Configuration();
-        config.set(GroupCountMapReduce.CLASS, Vertex.class.getName());
-        config.set(GroupCountMapReduce.VALUE_CLOSURE, "{ it -> 3.2}");
+        Configuration config = GroupCountMapReduce.createConfiguration(Vertex.class, null, "{ it -> 3.2}");
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Vertex.class), this.mapReduceDriver);
@@ -105,8 +98,7 @@ public class GroupCountMapReduceTest extends BaseTest {
     }
 
     public void testEdgeDistribution() throws IOException {
-        Configuration config = new Configuration();
-        config.set(GroupCountMapReduce.CLASS, Edge.class.getName());
+        Configuration config = GroupCountMapReduce.createConfiguration(Edge.class, null, null);
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Edge.class), this.mapReduceDriver);

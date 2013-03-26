@@ -28,9 +28,7 @@ public class CommitEdgesMapTest extends BaseTest {
     }
 
     public void testDropAllEdges() throws IOException {
-        Configuration config = new Configuration();
-        config.set(CommitEdgesMap.ACTION, Tokens.Action.DROP.name());
-
+        Configuration config = CommitEdgesMap.createConfiguration(Tokens.Action.DROP);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
@@ -53,9 +51,7 @@ public class CommitEdgesMapTest extends BaseTest {
     }
 
     public void testKeepAllEdges() throws IOException {
-        Configuration config = new Configuration();
-        config.set(CommitEdgesMap.ACTION, Tokens.Action.KEEP.name());
-
+        Configuration config = CommitEdgesMap.createConfiguration(Tokens.Action.KEEP);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
@@ -78,9 +74,7 @@ public class CommitEdgesMapTest extends BaseTest {
     }
 
     public void testDropAllCreatedEdge() throws IOException {
-        Configuration config = new Configuration();
-        config.set(CommitEdgesMap.ACTION, Tokens.Action.DROP.name());
-
+        Configuration config = CommitEdgesMap.createConfiguration(Tokens.Action.DROP);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
