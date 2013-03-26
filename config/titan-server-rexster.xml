@@ -23,7 +23,7 @@ Be sure to read the following instructions for information:
                 <max-size>4</max-size>
             </kernal>
         </thread-pool>
-        <io-strategy>worker</io-strategy>
+        <io-strategy>leader-follower</io-strategy>
     </rexpro>
     <security>
         <authentication>
