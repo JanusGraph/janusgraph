@@ -73,21 +73,21 @@ public class KryoDataOutput implements DataOutput {
 
     public DataOutput writeObject(Object object) {
         Preconditions.checkArgument(objects != null, "This DataOutput has not been initialized for object writing!");
-        Preconditions.checkArgument(kryo.isValidObject(object),"Cannot de-/serialize objects of type: %s",object.getClass().getName());
+        Preconditions.checkArgument(kryo.isValidObject(object),"Cannot de-/serialize object: %s",object);
         append(objects.writeObject(object));
         return this;
     }
 
     public DataOutput writeObjectNotNull(Object object) {
         Preconditions.checkArgument(objects != null, "This DataOutput has not been initialized for object writing!");
-        Preconditions.checkArgument(kryo.isValidObject(object),"Cannot de-/serialize objects of type: %s",object.getClass().getName());
+        Preconditions.checkArgument(kryo.isValidObject(object),"Cannot de-/serialize object: %s",object);
         append(objects.writeObjectData(object));
         return this;
     }
 
     public DataOutput writeClassAndObject(Object object) {
         Preconditions.checkArgument(objects != null, "This DataOutput has not been initialized for object writing!");
-        Preconditions.checkArgument(kryo.isValidObject(object),"Cannot de-/serialize objects of type: %s",object.getClass().getName());
+        Preconditions.checkArgument(kryo.isValidObject(object),"Cannot de-/serialize object: %s",object);
         append(objects.writeClassAndObject(object));
         return this;
     }

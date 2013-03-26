@@ -26,12 +26,15 @@ public class KryoSerializer extends Kryo implements Serializer {
 
     @Override
     public <T> void registerClass(Class<T> type) {
+        Preconditions.checkArgument(isValidClass(type),"Class does not have a default constructor: %s",type.getName());
         super.register(type);
+        objectVerificationCache.put(type,Boolean.TRUE);
     }
 
     @Override
     public <T> void registerClass(Class<T> type, AttributeSerializer<T> serializer) {
         super.register(type, new KryoAttributeSerializerAdapter<T>(serializer));
+        objectVerificationCache.put(type,Boolean.TRUE);
     }
 
     //	public Object readClassAndObject(ByteBuffer buffer) {
@@ -56,19 +59,19 @@ public class KryoSerializer extends Kryo implements Serializer {
                                 .maximumSize(10000).concurrencyLevel(4).initialCapacity(32).build();
 
     final boolean isValidObject(final Object o) {
-        Preconditions.checkNotNull(o);
+        if (o==null) return true;
         Boolean status = objectVerificationCache.getIfPresent(o.getClass());
         if (status==null) {
-            if (!(getSerializer(o.getClass()) instanceof FieldSerializer)) status=true;
-            else if (!isValidClass(o.getClass())) status=false;
+            if (!(getSerializer(o.getClass()) instanceof FieldSerializer)) status=Boolean.TRUE;
+            else if (!isValidClass(o.getClass())) status=Boolean.FALSE;
             else {
                 try {
                     ObjectBuffer objects = new ObjectBuffer(this, 128, 100000);
                     ByteBuffer b = ByteBuffer.wrap(objects.writeClassAndObject(o));
                     Object ocopy = readClassAndObject(b);
-                    status=o.equals(ocopy);
+                    status=(o.equals(ocopy)?Boolean.TRUE:Boolean.FALSE);
                 } catch (Throwable e) {
-                    status=false;
+                    status=Boolean.FALSE;
                 }
             }
             objectVerificationCache.put(o.getClass(),status);
@@ -78,10 +81,16 @@ public class KryoSerializer extends Kryo implements Serializer {
     }
 
     public static final boolean isValidClass(Class<?> type) {
-        for (Constructor c : type.getConstructors()) {
-            if (c.getParameterTypes().length==0) return true;
+        if (type.isPrimitive()) return true;
+        else if (Enum.class.isAssignableFrom(type)) return true;
+        else if (type.isArray()) {
+            return isValidClass(type.getComponentType());
+        } else {
+            for (Constructor c : type.getConstructors()) {
+                if (c.getParameterTypes().length==0) return true;
+            }
+            return false;
         }
-        return false;
     }
 
 }
