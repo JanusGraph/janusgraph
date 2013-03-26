@@ -5,6 +5,22 @@ Faunus: Graph Analytics Engine
 
 h2. Faunus 0.x.y
 
+h3. Version 0.3.0 (NOT OFFICIALLY RELEASED YET)
+
+```xml
+<dependency>
+  <groupId>com.thinkaurelius.faunus</groupId>
+  <artifactId>faunus</artifactId>
+  <version>0.3.0-SNAPSHOT</version>
+</dependency>
+```
+
+* Skipped Faunus 0.2.y line in order to synchronize with Titan 0.3.y
+* Bumped to support Titan 0.3.0
+* Bumped to support Hadoop 1.1.2
+
+==<hr/>==
+
 h3. Version 0.1.1 (March 22, 2013)
 
 ```xml
