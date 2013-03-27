@@ -2,8 +2,6 @@ package com.thinkaurelius.faunus.mapreduce;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
-import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Reducer;

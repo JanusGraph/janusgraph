@@ -30,8 +30,7 @@ public class CountMapReduceTest extends BaseTest {
     }
 
     public void testVertexCount() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(CountMapReduce.CLASS, Vertex.class, Element.class);
+        Configuration config = CountMapReduce.createConfiguration(Vertex.class);
         mapReduceDriver.withConfiguration(config);
 
         final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
@@ -47,8 +46,7 @@ public class CountMapReduceTest extends BaseTest {
     }
 
     public void testEdgeCount() throws IOException {
-        Configuration config = new Configuration();
-        config.setClass(CountMapReduce.CLASS, Edge.class, Element.class);
+        Configuration config = CountMapReduce.createConfiguration(Edge.class);
         mapReduceDriver.withConfiguration(config);
 
         final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);

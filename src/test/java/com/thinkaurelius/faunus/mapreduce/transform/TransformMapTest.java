@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -30,9 +29,7 @@ public class TransformMapTest extends BaseTest {
     }
 
     public void testVerticesPropertyKeySize() throws IOException {
-        Configuration config = new Configuration();
-        config.set(TransformMap.CLOSURE, "{it -> it.propertyKeys.size()}");
-        config.setClass(TransformMap.CLASS, Vertex.class, Element.class);
+        Configuration config = TransformMap.createConfiguration(Vertex.class, "{it -> it.propertyKeys.size()}");
         mapReduceDriver.withConfiguration(config);
 
         final List<Pair<NullWritable, Text>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), this.mapReduceDriver);
@@ -45,9 +42,7 @@ public class TransformMapTest extends BaseTest {
     }
 
     public void testVerticesPropertyKeySizeWithPaths() throws IOException {
-        Configuration config = new Configuration();
-        config.set(TransformMap.CLOSURE, "{it -> it.propertyKeys.size()}");
-        config.setClass(TransformMap.CLASS, Vertex.class, Element.class);
+        Configuration config = TransformMap.createConfiguration(Vertex.class, "{it -> it.propertyKeys.size()}");
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
         mapReduceDriver.withConfiguration(config);
 
@@ -62,9 +57,7 @@ public class TransformMapTest extends BaseTest {
     }
 
     public void testEdgesPropertyKeySize() throws IOException {
-        Configuration config = new Configuration();
-        config.set(TransformMap.CLOSURE, "{it -> it.propertyKeys.size()}");
-        config.setClass(TransformMap.CLASS, Edge.class, Element.class);
+        Configuration config = TransformMap.createConfiguration(Edge.class, "{it -> it.propertyKeys.size()}");
         mapReduceDriver.withConfiguration(config);
 
         final List<Pair<NullWritable, Text>> results = runWithGraphNoIndex(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Edge.class), this.mapReduceDriver);

@@ -35,6 +35,12 @@ public abstract class BaseTest extends TestCase {
         return list;
     }
 
+    public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example) throws IOException {
+        Configuration configuration = new Configuration();
+        configuration.setBoolean(FaunusCompiler.PATH_ENABLED, false);
+        return generateGraph(example, configuration);
+    }
+
     public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws IOException {
         final List<FaunusVertex> vertices;
         if (ExampleGraph.TINKERGRAPH.equals(example))
@@ -49,8 +55,8 @@ public abstract class BaseTest extends TestCase {
             }
         }
 
-        Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
-        for (FaunusVertex vertex : vertices) {
+        final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
+        for (final FaunusVertex vertex : vertices) {
             map.put(vertex.getIdAsLong(), vertex);
         }
         return map;
@@ -83,7 +89,7 @@ public abstract class BaseTest extends TestCase {
         return graph;
     }
 
-    public static Map<Long, FaunusVertex> runWithGraph(Map<Long, FaunusVertex> graph, final MapReduceDriver driver) throws IOException {
+    public static Map<Long, FaunusVertex> runWithGraph(final Map<Long, FaunusVertex> graph, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
         driver.getConfiguration().setBoolean(FaunusCompiler.TESTING, true);
         for (final FaunusVertex vertex : graph.values()) {
@@ -97,7 +103,7 @@ public abstract class BaseTest extends TestCase {
         return map;
     }
 
-    public static List runWithGraphNoIndex(Map<Long, FaunusVertex> graph, final MapReduceDriver driver) throws IOException {
+    public static List runWithGraphNoIndex(final Map<Long, FaunusVertex> graph, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
         driver.getConfiguration().setBoolean(FaunusCompiler.TESTING, true);
         for (final Vertex vertex : graph.values()) {

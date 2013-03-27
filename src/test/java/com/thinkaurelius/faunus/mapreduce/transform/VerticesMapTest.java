@@ -29,8 +29,6 @@ public class VerticesMapTest extends BaseTest {
 
     public void testVerticesWithNoPaths() throws IOException {
         Configuration config = new Configuration();
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, false);
-
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);

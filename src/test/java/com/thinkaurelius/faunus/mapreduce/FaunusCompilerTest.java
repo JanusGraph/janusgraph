@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.mapreduce;
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusPipeline;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;

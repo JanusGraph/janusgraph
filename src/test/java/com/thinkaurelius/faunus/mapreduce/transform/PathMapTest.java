@@ -31,10 +31,7 @@ public class PathMapTest extends BaseTest {
     }
 
     public void testPathsFromVertices() throws IOException {
-        Configuration config = new Configuration();
-        config.set(PathMap.CLASS, Vertex.class.getName());
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
-
+        Configuration config = PathMap.createConfiguration(Vertex.class);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
@@ -67,8 +64,7 @@ public class PathMapTest extends BaseTest {
     }
 
     public void testPathsAndGetException() throws IOException {
-        Configuration config = new Configuration();
-        config.set(PathMap.CLASS, Vertex.class.getName());
+        Configuration config = PathMap.createConfiguration(Vertex.class);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, false);
 
         mapReduceDriver.withConfiguration(config);

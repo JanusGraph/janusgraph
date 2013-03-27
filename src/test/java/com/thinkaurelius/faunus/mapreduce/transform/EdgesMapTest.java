@@ -48,9 +48,8 @@ public class EdgesMapTest extends BaseTest {
     }
 
     public void testEdgesWithPaths() throws IOException {
-        Configuration config = new Configuration();
+        Configuration config = EdgesMap.createConfiguration(false);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
-        config.setBoolean(EdgesMap.PROCESS_VERTICES, false);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);

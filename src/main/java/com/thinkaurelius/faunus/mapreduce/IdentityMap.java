@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.mapreduce.transform;
+package com.thinkaurelius.faunus.mapreduce;
 
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;

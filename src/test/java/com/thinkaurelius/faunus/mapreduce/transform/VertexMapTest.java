@@ -25,9 +25,7 @@ public class VertexMapTest extends BaseTest {
     }
 
     public void testVerticesWith() throws IOException {
-        Configuration config = new Configuration();
-        config.setStrings(VertexMap.IDS, "1", "2", "2346");
-
+        Configuration config = VertexMap.createConfiguration(1, 2, 2346);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
@@ -51,8 +49,7 @@ public class VertexMapTest extends BaseTest {
     }
 
     public void testVerticesWithPaths() throws IOException {
-        Configuration config = new Configuration();
-        config.setStrings(VertexMap.IDS, "1", "2", "2346", "2345", "3333", "1", "1", "2");
+        Configuration config = VertexMap.createConfiguration(1, 2, 2346, 2345, 3333, 1, 1, 2);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
         mapReduceDriver.withConfiguration(config);
 

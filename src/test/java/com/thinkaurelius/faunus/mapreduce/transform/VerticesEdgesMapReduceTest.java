@@ -30,9 +30,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
     }
 
     public void testOutCreatedTraversalWithPaths() throws IOException {
-        Configuration config = new Configuration();
-        config.set(VerticesEdgesMapReduce.DIRECTION, Direction.OUT.name());
-        config.setStrings(VerticesEdgesMapReduce.LABELS, "created");
+        Configuration config = VerticesEdgesMapReduce.createConfiguration(Direction.OUT, "created");
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
@@ -75,9 +73,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
     }
 
     public void testOutAllTraversalWithPaths() throws IOException {
-        Configuration config = new Configuration();
-        config.set(VerticesEdgesMapReduce.DIRECTION, Direction.OUT.name());
-        config.setStrings(VerticesEdgesMapReduce.LABELS);
+        Configuration config = VerticesEdgesMapReduce.createConfiguration(Direction.OUT);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         mapReduceDriver.withConfiguration(config);
@@ -107,11 +103,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
     }
 
     public void testOutAllTraversal() throws IOException {
-        Configuration config = new Configuration();
-        config.set(VerticesEdgesMapReduce.DIRECTION, Direction.OUT.name());
-        config.setStrings(VerticesEdgesMapReduce.LABELS);
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, false);
-
+        Configuration config = VerticesEdgesMapReduce.createConfiguration(Direction.OUT);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
@@ -142,11 +134,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
     }
 
     public void testBothCreatedTraversal() throws IOException {
-        Configuration config = new Configuration();
-        config.set(VerticesEdgesMapReduce.DIRECTION, Direction.BOTH.name());
-        config.setStrings(VerticesEdgesMapReduce.LABELS, "created");
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, false);
-
+        Configuration config = VerticesEdgesMapReduce.createConfiguration(Direction.BOTH, "created");
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);

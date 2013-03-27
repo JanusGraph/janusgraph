@@ -17,7 +17,7 @@ import com.thinkaurelius.faunus.mapreduce.sideeffect.SideEffectMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesVerticesMap;
-import com.thinkaurelius.faunus.mapreduce.transform.IdentityMap;
+import com.thinkaurelius.faunus.mapreduce.IdentityMap;
 import com.thinkaurelius.faunus.mapreduce.transform.OrderMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
 import com.thinkaurelius.faunus.mapreduce.transform.PropertyMap;

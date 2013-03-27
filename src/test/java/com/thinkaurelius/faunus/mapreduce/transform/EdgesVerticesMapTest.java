@@ -26,9 +26,7 @@ public class EdgesVerticesMapTest extends BaseTest {
     }
 
     public void testInVertices() throws IOException {
-        Configuration config = new Configuration();
-        config.set(EdgesVerticesMap.DIRECTION, Direction.IN.name());
-
+        Configuration config = EdgesVerticesMap.createConfiguration(Direction.IN);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
@@ -49,8 +47,7 @@ public class EdgesVerticesMapTest extends BaseTest {
     }
 
     public void testOutVertices() throws IOException {
-        Configuration config = new Configuration();
-        config.set(EdgesVerticesMap.DIRECTION, Direction.OUT.name());
+        Configuration config = EdgesVerticesMap.createConfiguration(Direction.OUT);
 
         mapReduceDriver.withConfiguration(config);
 
@@ -73,8 +70,7 @@ public class EdgesVerticesMapTest extends BaseTest {
     }
 
     public void testBothVertices() throws IOException {
-        Configuration config = new Configuration();
-        config.set(EdgesVerticesMap.DIRECTION, Direction.BOTH.name());
+        Configuration config = EdgesVerticesMap.createConfiguration(Direction.BOTH);
 
         mapReduceDriver.withConfiguration(config);
 

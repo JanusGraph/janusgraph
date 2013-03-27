@@ -30,11 +30,7 @@ public class PropertyMapTest extends BaseTest {
     }
 
     public void testVertexPropertiesName() throws IOException {
-        Configuration config = new Configuration();
-        config.set(PropertyMap.CLASS, Vertex.class.getName());
-        config.set(PropertyMap.KEY, "name");
-        config.setClass(PropertyMap.TYPE, Text.class, WritableComparable.class);
-
+        Configuration config = PropertyMap.createConfiguration(Vertex.class, "name", Text.class);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class);
@@ -63,11 +59,7 @@ public class PropertyMapTest extends BaseTest {
     }
 
     public void testVertexPropertiesAge() throws IOException {
-        Configuration config = new Configuration();
-        config.set(PropertyMap.CLASS, Vertex.class.getName());
-        config.set(PropertyMap.KEY, "age");
-        config.setClass(PropertyMap.TYPE, IntWritable.class, WritableComparable.class);
-
+        Configuration config = PropertyMap.createConfiguration(Vertex.class, "age", IntWritable.class);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class);
@@ -97,11 +89,7 @@ public class PropertyMapTest extends BaseTest {
     }
 
     public void testVertexPropertiesNameDifferingPaths() throws IOException {
-        Configuration config = new Configuration();
-        config.set(PropertyMap.CLASS, Vertex.class.getName());
-        config.set(PropertyMap.KEY, "name");
-        config.setClass(PropertyMap.TYPE, Text.class, WritableComparable.class);
-
+        Configuration config = PropertyMap.createConfiguration(Vertex.class, "name", Text.class);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
@@ -130,11 +118,7 @@ public class PropertyMapTest extends BaseTest {
     }
 
     public void testVertexPropertiesAgeDifferingPaths() throws IOException {
-        Configuration config = new Configuration();
-        config.set(PropertyMap.CLASS, Vertex.class.getName());
-        config.set(PropertyMap.KEY, "age");
-        config.setClass(PropertyMap.TYPE, IntWritable.class, WritableComparable.class);
-
+        Configuration config = PropertyMap.createConfiguration(Vertex.class, "age", IntWritable.class);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
