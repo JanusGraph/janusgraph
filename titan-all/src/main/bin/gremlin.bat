@@ -39,7 +39,7 @@ if "%1" == "-v" goto version
 :console
 
 set CLASSPATH=%CP%;%OLD_CLASSPATH%
-java %JAVA_OPTIONS% %JAVA_ARGS% com.thinkaurelius.titan.tinkerpop.gremlin.Console
+java %JAVA_OPTIONS% %JAVA_ARGS% com.thinkaurelius.titan.tinkerpop.gremlin.Console %*
 
 set CLASSPATH=%OLD_CLASSPATH%
 goto :eof
@@ -61,7 +61,7 @@ CALL :concat %%X %1 %2
 
 
 set CLASSPATH=%CP%;%OLD_CLASSPATH%
-java %JAVA_OPTIONS% %JAVA_ARGS% com.tinkerpop.gremlin.groovy.console.Console
+java %JAVA_OPTIONS% %JAVA_ARGS% com.tinkerpop.gremlin.groovy.jsr223.ScriptExecutor %strg%
 set CLASSPATH=%OLD_CLASSPATH%
 goto :eof
 
