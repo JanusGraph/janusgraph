@@ -65,6 +65,22 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      */
     public static final int MAX_CONNECTIONS_PER_HOST_DEFAULT = 32;
     public static final String MAX_CONNECTIONS_PER_HOST_KEY = "max-connections-per-host";
+    
+    /**
+     * Maximum open connections allowed in the pool (counting all hosts).
+     * <p/>
+     * Value = {@value}
+     */
+    public static final int MAX_CONNECTIONS_DEFAULT = -1;
+    public static final String MAX_CONNECTIONS_KEY = "max-connections";
+    
+    /**
+     * Maximum number of operations allowed per connection before the connection is closed.
+     * <p/>
+     * Value = {@value}
+     */
+    public static final int MAX_OPERATIONS_PER_CONNECTION_DEFAULT = 100 * 1000;
+    public static final String MAX_OPERATIONS_PER_CONNECTION_KEY = "max-operations-per-connection";
 
     /**
      * Maximum pooled "cluster" connections per host.
@@ -316,6 +332,29 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 config.getString(
                         NODE_DISCOVERY_TYPE_KEY,
                         NODE_DISCOVERY_TYPE_DEFAULT));
+        
+        final int maxConnections =
+                config.getInt(
+                        MAX_CONNECTIONS_KEY,
+                        MAX_CONNECTIONS_DEFAULT);
+        
+        final int maxOperationsPerConnection =
+        		config.getInt(
+                        MAX_OPERATIONS_PER_CONNECTION_KEY,
+                        MAX_OPERATIONS_PER_CONNECTION_DEFAULT);
+        ConnectionPoolConfigurationImpl cpool =
+        		new ConnectionPoolConfigurationImpl(usedFor + "TitanConnectionPool")
+        			.setPort(port)
+        			.setMaxOperationsPerConnection(maxOperationsPerConnection)
+        			.setMaxConnsPerHost(maxConnsPerHost)
+        			.setRetryBackoffStrategy(new FixedRetryBackoffStrategy(1000, 5000)) // TODO configuration
+        			.setSocketTimeout(connectionTimeout)
+        			.setConnectTimeout(connectionTimeout)
+        			.setSeeds(StringUtils.join(hostnames,","));
+        
+        if (0 < maxConnections) {
+            cpool.setMaxConns(maxConnections);
+        }
 
         AstyanaxContext.Builder builder =
                 new AstyanaxContext.Builder()
@@ -325,14 +364,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                 new AstyanaxConfigurationImpl()
                                         .setConnectionPoolType(poolType)
                                         .setDiscoveryType(discType))
-                        .withConnectionPoolConfiguration(
-                                new ConnectionPoolConfigurationImpl(usedFor + "TitanConnectionPool")
-                                        .setPort(port)
-                                        .setMaxConnsPerHost(maxConnsPerHost)
-                                        .setRetryBackoffStrategy(new FixedRetryBackoffStrategy(1000, 5000)) // TODO configuration
-                                        .setSocketTimeout(connectionTimeout)
-                                        .setConnectTimeout(connectionTimeout)
-                                        .setSeeds(StringUtils.join(hostnames,",")))
+                        .withConnectionPoolConfiguration(cpool)
                         .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
 
         return builder;
