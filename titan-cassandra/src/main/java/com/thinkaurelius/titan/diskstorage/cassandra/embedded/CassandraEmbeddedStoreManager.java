@@ -100,7 +100,9 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     @Override
     public Partitioner getPartitioner() throws StorageException {
         try {
-            return Partitioner.getPartitioner(StorageService.getPartitioner());
+            Partitioner p = Partitioner.getPartitioner(StorageService.getPartitioner());
+            if (p==Partitioner.BYTEORDER) p=Partitioner.LOCALBYTEORDER;
+            return p;
         } catch (Exception e) {
             log.warn("Could not read local token range: {}", e);
             throw new PermanentStorageException("Could not read partitioner information on cluster", e);

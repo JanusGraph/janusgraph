@@ -59,7 +59,7 @@
     <properties>
         <titan.version>0.3.0-SNAPSHOT</titan.version>
         <titan.compatible.versions>0.3.0-SNAPSHOT</titan.compatible.versions>
-        <tinkerpop.version>2.3.0-SNAPSHOT</tinkerpop.version>
+        <tinkerpop.version>2.3.0</tinkerpop.version>
         <junit.version>4.5</junit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

@@ -33,6 +33,7 @@ public class InternalCassandraEmbeddedKeyColumnValueTest extends KeyColumnValueS
     public void testConfiguration() {
         StoreFeatures features = manager.getFeatures();
         assertTrue(features.isKeyOrdered());
+        assertTrue(features.hasLocalKeyPartition());
     }
 
     @Override
