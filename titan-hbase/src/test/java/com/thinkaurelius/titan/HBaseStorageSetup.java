@@ -3,6 +3,7 @@ package com.thinkaurelius.titan;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.io.FileUtils;
 
 import java.io.*;
 
@@ -18,6 +19,22 @@ public class HBaseStorageSetup {
     private static final String HBASE_PID_FILE = "/tmp/hbase-" + System.getProperty("user.name") + "-master.pid";
 
     static {
+        try {
+            System.out.println("Deleteing old test directories (if any).");
+
+            // please keep in sync with HBASE_CONFIG_DIR/hbase-site.xml, reading HBase XML config is huge pain.
+            File hbaseRoot = new File("./src/test/titan-hbase-test-data");
+            File zookeeperDataDir = new File("./src/test/titan-zookeeper-test");
+
+            if (hbaseRoot.exists())
+                FileUtils.deleteDirectory(hbaseRoot);
+
+            if (zookeeperDataDir.exists())
+                FileUtils.deleteDirectory(zookeeperDataDir);
+        } catch (IOException e) {
+            System.err.println("Failed to delete old HBase test directories: '" + e.getMessage() + "', ignoring.");
+        }
+
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 System.out.println("All done. Shutting done HBase.");
