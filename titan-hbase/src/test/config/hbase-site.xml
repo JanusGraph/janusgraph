@@ -22,6 +22,7 @@
  */
 -->
 <configuration>
+  <!-- Note: when updating rootdir or zookeeper data dir, please update HBaseStorageSetup accordingly -->
   <property>
     <name>hbase.rootdir</name>
     <value>./src/test/titan-hbase-test-data</value>
