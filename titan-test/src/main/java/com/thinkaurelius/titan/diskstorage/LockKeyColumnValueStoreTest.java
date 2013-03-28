@@ -352,6 +352,10 @@ public abstract class LockKeyColumnValueStoreTest {
         };
         idAuthorities[0].setIDBlockSizer(blockSizer);
         long[] block = idAuthorities[0].getIDBlock(0);
+        Assert.assertEquals(1,block[0]);
+        Assert.assertEquals(block[1], block[0] + blockSize);
+        block = idAuthorities[0].getIDBlock(0);
+        Assert.assertEquals(1+blockSize,block[0]);
         Assert.assertEquals(block[1], block[0] + blockSize);
     }
 

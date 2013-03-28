@@ -26,4 +26,7 @@ public class InMemoryGraphTest extends TitanGraphTest {
         newTx();
     }
 
+    @Override
+    public void testTypes() {}
+
 }

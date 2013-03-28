@@ -15,4 +15,13 @@ public class inMemoryLockKeyColumnValueStoreTest extends LockKeyColumnValueStore
     public KeyColumnValueStoreManager openStorageManager(int id) throws StorageException {
         return new InMemoryStoreManager();
     }
+
+    @Override
+    public void testRemoteLockContention() {
+        //Does not apply to non-persisting in-memory store
+    }
+
+    //TODO: should this test work in-memory?
+    @Override
+    public void testMultiIDAcquisition() {}
 }

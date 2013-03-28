@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.diskstorage.inmemory.InMemoryStorageAdapter;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -70,11 +72,18 @@ public class VertexIDAssignerTest {
         System.out.println("localPartition: " + Arrays.toString(localPartition));
     }
 
+    private static TitanGraph getInMemoryGraph() {
+        BaseConfiguration config = new BaseConfiguration();
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, InMemoryStorageAdapter.class.getCanonicalName());
+        config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_FLUSH_KEY,false);
+        return TitanFactory.open(config);
+    }
+
     @Test
     public void testIDAssignment() {
         for (int trial = 0; trial < 100; trial++) {
             for (boolean flush : new boolean[]{true, false}) {
-                TitanGraph graph = StorageSetup.getInMemoryGraph();
+                TitanGraph graph = getInMemoryGraph();
                 int numVertices = 100;
                 List<TitanVertex> vertices = new ArrayList<TitanVertex>(numVertices);
                 List<InternalRelation> relations = new ArrayList<InternalRelation>();

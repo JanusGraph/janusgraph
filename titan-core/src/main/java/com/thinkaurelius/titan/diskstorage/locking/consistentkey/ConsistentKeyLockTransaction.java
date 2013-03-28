@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
@@ -266,8 +267,10 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
             ByteBuffer empty = ByteBuffer.allocate(0);
 
             ConsistentKeyLockStore backer = lc.getBacker();
-
-            List<Entry> entries = backer.getLockStore().getSlice(new KeySliceQuery(lockKey, empty, empty), consistentTx);
+            int bufferLen = backer.getRid().length+8;
+            ByteBuffer lower = ByteBufferUtil.zeroByteBuffer(bufferLen);
+            ByteBuffer upper = ByteBufferUtil.oneByteBuffer(bufferLen);
+            List<Entry> entries = backer.getLockStore().getSlice(new KeySliceQuery(lockKey, lower, upper), consistentTx);
 
             // Determine the timestamp and rid of the earliest still-valid lock claim
             Long earliestNS = null;

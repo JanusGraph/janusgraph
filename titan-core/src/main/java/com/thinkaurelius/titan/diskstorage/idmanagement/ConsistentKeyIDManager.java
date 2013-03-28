@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
@@ -20,7 +21,8 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
 
     private static final Logger log = LoggerFactory.getLogger(ConsistentKeyIDManager.class);
 
-    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
+    private static final ByteBuffer LOWER_SLICE = ByteBufferUtil.zeroByteBuffer(16);
+    private static final ByteBuffer UPPER_SLICE = ByteBufferUtil.oneByteBuffer(16);
 
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
@@ -65,7 +67,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
     }
 
     private long getCurrentID(ByteBuffer partitionKey, StoreTransaction txh) throws StorageException {
-        List<Entry> blocks = idStore.getSlice(new KeySliceQuery(partitionKey, EMPTY_BUFFER, EMPTY_BUFFER, 5), txh);
+        List<Entry> blocks = idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE, 5), txh);
         if (blocks == null) throw new TemporaryStorageException("Could not read from storage");
 
         long latest = BASE_ID;
@@ -102,7 +104,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 boolean success = false;
                 try {
                     long before = System.currentTimeMillis();
-                    idStore.mutate(partitionKey, Arrays.asList(new Entry(target, EMPTY_BUFFER)), null, txh);
+                    idStore.mutate(partitionKey, Arrays.asList(new Entry(target, ByteBuffer.allocate(0))), null, txh);
                     long after = System.currentTimeMillis();
 
                     if (idApplicationWaitMS < after - before) {
