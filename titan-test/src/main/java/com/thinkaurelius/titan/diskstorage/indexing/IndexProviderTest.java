@@ -91,14 +91,14 @@ public abstract class IndexProviderTest {
 
         for (String store : stores) {
 
-            List<String> result = tx.query(new IndexQuery(store, KeyAtom.of("text", Txt.CONTAINS, "world")));
+            List<String> result = tx.query(new IndexQuery(store, KeyAtom.of("text", Text.CONTAINS, "world")));
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Txt.CONTAINS, "world"), KeyAtom.of("text", Txt.CONTAINS, "hello"))));
+            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Text.CONTAINS, "world"), KeyAtom.of("text", Text.CONTAINS, "hello"))));
             assertEquals(1,result.size());
             assertEquals("doc1",result.get(0));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Txt.CONTAINS, "world"), KeyAtom.of("weight", Cmp.GREATER_THAN,6.0))));
+            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Text.CONTAINS, "world"), KeyAtom.of("weight", Cmp.GREATER_THAN,6.0))));
             assertEquals(1,result.size());
             assertEquals("doc2",result.get(0));
 
@@ -106,7 +106,7 @@ public abstract class IndexProviderTest {
             assertEquals(2,result.size());
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Txt.CONTAINS, "tomorrow"), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00)))));
+            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Text.CONTAINS, "tomorrow"), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00)))));
             assertEquals(ImmutableSet.of("doc2"), ImmutableSet.copyOf(result));
 
             result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("time", Cmp.INTERVAL, Interval.of(-1000,1010)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
@@ -133,17 +133,17 @@ public abstract class IndexProviderTest {
 
         for (String store : stores) {
 
-            List<String> result = tx.query(new IndexQuery(store, KeyAtom.of("text", Txt.CONTAINS, "world")));
+            List<String> result = tx.query(new IndexQuery(store, KeyAtom.of("text", Text.CONTAINS, "world")));
             assertEquals(ImmutableSet.of("doc1", "doc3"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Txt.CONTAINS, "world"), KeyAtom.of("weight", Cmp.GREATER_THAN,6.0))));
+            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Text.CONTAINS, "world"), KeyAtom.of("weight", Cmp.GREATER_THAN,6.0))));
             assertEquals(1,result.size());
             assertEquals("doc1",result.get(0));
 
             result = tx.query(new IndexQuery(store, KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00))));
             assertEquals(ImmutableSet.of("doc1"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Txt.CONTAINS, "tomorrow"), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00)))));
+            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Text.CONTAINS, "tomorrow"), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00)))));
             assertEquals(ImmutableSet.of(), ImmutableSet.copyOf(result));
 
             result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("time", Cmp.INTERVAL, Interval.of(-1000,1010)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));

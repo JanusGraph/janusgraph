@@ -1,13 +1,10 @@
 package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
 
 /**
  * Comparison relations for text objects.
@@ -15,7 +12,7 @@ import java.util.Arrays;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public enum Txt implements Relation {
+public enum Text implements Relation {
 
     /**
      * Whether the text contains a given term
@@ -58,7 +55,7 @@ public enum Txt implements Relation {
 
     };
 
-    private static final Logger log = LoggerFactory.getLogger(Txt.class);
+    private static final Logger log = LoggerFactory.getLogger(Text.class);
 
 
 

@@ -325,7 +325,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     }
                 }
             } else if (value instanceof String) {
-                if (relation == Txt.CONTAINS) {
+                if (relation == Text.CONTAINS) {
                     return FilterBuilders.termFilter(key,(String)value);
 //                } else if (relation == Txt.PREFIX) {
 //                    return new PrefixFilter(new Term(key+STR_SUFFIX,(String)value));
@@ -396,7 +396,7 @@ public class ElasticSearchIndex implements IndexProvider {
         } else if (dataType == Geoshape.class) {
             return relation== Geo.WITHIN;
         } else if (dataType == String.class) {
-            return relation == Txt.CONTAINS; // || relation == Txt.PREFIX || relation == Cmp.EQUAL || relation == Cmp.NOT_EQUAL;
+            return relation == Text.CONTAINS; // || relation == Txt.PREFIX || relation == Cmp.EQUAL || relation == Cmp.NOT_EQUAL;
         } else return false;
     }
 

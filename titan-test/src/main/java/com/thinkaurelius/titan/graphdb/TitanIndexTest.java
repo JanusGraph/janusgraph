@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.core.attribute.Txt;
+import com.thinkaurelius.titan.core.attribute.Text;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -69,8 +69,8 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon  {
         }
 
         for (int i=0;i<words.length;i++) {
-            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Txt.CONTAINS, words[i]).vertices()));
-            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Txt.CONTAINS, words[i]).edges()));
+            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));
+            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).edges()));
         }
 
         for (int i=0;i<numV/2;i+=numV/10) {
@@ -85,10 +85,10 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon  {
             assertEquals(i+1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges()));
         }
 
-        assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Txt.CONTAINS, words[0]).vertices()));
+        assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices()));
         offset = (19*50.0/originalNumV);
         distance = Geoshape.point(0.0,0.0).getPoint().distance(Geoshape.point(offset,offset).getPoint())+20;
-        assertEquals(5, Iterables.size(tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Txt.CONTAINS, words[0]).vertices()));
+        assertEquals(5, Iterables.size(tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices()));
 
         assertEquals(numV, Iterables.size(tx.getVertices()));
         assertEquals(numV, Iterables.size(tx.getEdges()));
@@ -97,8 +97,8 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon  {
 
         //Copied from above
         for (int i=0;i<words.length;i++) {
-            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Txt.CONTAINS, words[i]).vertices()));
-            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Txt.CONTAINS, words[i]).edges()));
+            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));
+            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).edges()));
         }
 
         for (int i=0;i<numV/2;i+=numV/10) {
@@ -113,10 +113,10 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon  {
             assertEquals(i+1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges()));
         }
 
-        assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Txt.CONTAINS, words[0]).vertices()));
+        assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices()));
         offset = (19*50.0/originalNumV);
         distance = Geoshape.point(0.0,0.0).getPoint().distance(Geoshape.point(offset,offset).getPoint())+20;
-        assertEquals(5, Iterables.size(tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Txt.CONTAINS, words[0]).vertices()));
+        assertEquals(5, Iterables.size(tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices()));
 
         assertEquals(numV, Iterables.size(tx.getVertices()));
         assertEquals(numV, Iterables.size(tx.getEdges()));
@@ -132,8 +132,8 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon  {
 
         //Copied from above
         for (int i=0;i<words.length;i++) {
-            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Txt.CONTAINS, words[i]).vertices()));
-            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Txt.CONTAINS, words[i]).edges()));
+            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));
+            assertEquals(numV/words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).edges()));
         }
 
         for (int i=0;i<numV/2;i+=numV/10) {
@@ -148,10 +148,10 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon  {
             assertEquals(i+1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges()));
         }
 
-        assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Txt.CONTAINS, words[0]).vertices()));
+        assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices()));
         offset = (19*50.0/originalNumV);
         distance = Geoshape.point(0.0,0.0).getPoint().distance(Geoshape.point(offset,offset).getPoint())+20;
-        assertEquals(5, Iterables.size(tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Txt.CONTAINS, words[0]).vertices()));
+        assertEquals(5, Iterables.size(tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices()));
 
         assertEquals(numV, Iterables.size(tx.getVertices()));
         assertEquals(numV, Iterables.size(tx.getEdges()));
