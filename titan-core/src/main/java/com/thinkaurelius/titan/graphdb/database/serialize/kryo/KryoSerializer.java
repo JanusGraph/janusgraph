@@ -86,7 +86,7 @@ public class KryoSerializer extends Kryo implements Serializer {
         else if (type.isArray()) {
             return isValidClass(type.getComponentType());
         } else {
-            for (Constructor c : type.getConstructors()) {
+            for (Constructor c : type.getDeclaredConstructors()) {
                 if (c.getParameterTypes().length==0) return true;
             }
             return false;
