@@ -262,6 +262,7 @@ public abstract class KeyColumnValueStoreTest {
         for (int i = start; i < end; i++) {
             if (removed.contains(new KeyColumn(key, i))) continue;
             if (limit <= 0 || pos < limit) {
+                Assert.assertTrue(entries.size()>pos);
                 Entry entry = entries.get(pos);
                 int col = KeyValueStoreUtil.getID(entry.getColumn());
                 String str = KeyValueStoreUtil.getString(entry.getValue());

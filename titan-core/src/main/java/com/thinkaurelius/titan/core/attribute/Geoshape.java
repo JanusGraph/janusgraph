@@ -280,7 +280,7 @@ public class Geoshape {
          * @param latitude Between -90 and 90 degrees
          * @param longitude Between -180 and 180 degrees
          */
-        public Point(float latitude, float longitude) {
+        Point(float latitude, float longitude) {
             this.longitude = longitude;
             this.latitude = latitude;
         }

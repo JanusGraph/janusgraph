@@ -51,7 +51,7 @@ public abstract class LockKeyColumnValueStoreTest {
     @Before
     public void setUp() throws Exception {
         for (int i = 0; i < concurrency; i++)
-            openStorageManager(0).clearStorage();
+            openStorageManager(i).clearStorage();
 
         open();
         k = strToByteBuffer("key");
