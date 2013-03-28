@@ -57,10 +57,6 @@
             <outputDirectory>src</outputDirectory>
         </file>
         <file>
-            <source>../data/graph-of-the-gods.xml</source>
-            <outputDirectory>data</outputDirectory>
-        </file>
-        <file>
             <source>../LICENSE.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
