@@ -62,6 +62,11 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
     }
 
     @Override
+    public TitanGraphQuery has(String key, Compare relation, Object value) {
+        return has(key,Cmp.convert(relation),value);
+    }
+
+    @Override
     public TitanGraphQuery has(TitanKey key, Relation relation, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(relation);

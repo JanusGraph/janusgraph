@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.core;
 import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
+import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 
 /**
@@ -28,6 +29,18 @@ public interface TitanGraphQuery extends GraphQuery {
      * @return This query
      */
     public TitanGraphQuery has(String key, Relation relation, Object condition);
+
+    /**
+     * The returned element must have a property for the given key that matches the condition according to the
+     * specified relation
+     *
+     * @param key Key that identifies the property
+     * @param relation Relation between property and condition
+     * @param value
+     * @return This query
+     */
+    public TitanGraphQuery has(String key, Query.Compare relation, Object value);
+
 
     /**
      * The returned element must have a property for the given key that matches the condition according to the
