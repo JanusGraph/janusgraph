@@ -29,10 +29,10 @@ public class GraphOfTheGodsFactory {
     public static TitanGraph create(final String directory) {
         BaseConfiguration config = new BaseConfiguration();
         Configuration storage = config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE);
-        //Backend
+        // configuring local backend
         storage.setProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "local");
         storage.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, directory);
-        //Index
+        // configuring elastic search index
         Configuration index = storage.subset(GraphDatabaseConfiguration.INDEX_NAMESPACE).subset(INDEX_NAME);
         index.setProperty(INDEX_BACKEND_KEY, "elasticsearch");
         index.setProperty("local-mode", true);
@@ -126,5 +126,8 @@ public class GraphOfTheGodsFactory {
         pluto.addEdge("pet", cerberus);
 
         cerberus.addEdge("lives", tartarus);
+
+        // commit the transaction to disk
+        graph.commit();
     }
 }
