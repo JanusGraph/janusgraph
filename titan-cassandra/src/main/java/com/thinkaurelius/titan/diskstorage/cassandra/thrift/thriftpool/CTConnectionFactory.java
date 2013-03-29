@@ -37,14 +37,12 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory {
     private final int port;
     private final int timeoutMS;
     private final int frameSize;
-    private final int maxMessageSize;
 
-    CTConnectionFactory(String hostname, int port, int timeoutMS, int frameSize, int maxMessageSize) {
+    CTConnectionFactory(String hostname, int port, int timeoutMS, int frameSize) {
         this.hostname = hostname;
         this.port = port;
         this.timeoutMS = timeoutMS;
         this.frameSize = frameSize;
-        this.maxMessageSize = maxMessageSize;
     }
 
     @Override
@@ -84,11 +82,8 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory {
         log.debug("Creating TSocket({}, {}, {})", new Object[]{hostname, port, timeoutMS});
 
         TTransport transport = new TFramedTransport(new TSocket(hostname, port, timeoutMS), frameSize);
-        TBinaryProtocol protocol = new TBinaryProtocol(transport);
 
-        protocol.setReadLength(maxMessageSize);
-
-        Cassandra.Client client = new Cassandra.Client(protocol);
+        Cassandra.Client client = new Cassandra.Client(new TBinaryProtocol(transport));
 
         transport.open();
 

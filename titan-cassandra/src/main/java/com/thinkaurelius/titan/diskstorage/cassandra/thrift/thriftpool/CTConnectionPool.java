@@ -5,7 +5,6 @@ import org.apache.commons.pool.impl.GenericKeyedObjectPool;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.THRIFT_DEFAULT_FRAME_SIZE;
-import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.THRIFT_DEFAULT_MAX_MESSAGE_SIZE;
 
 /**
  * Cassandra-Thrift connection pooler classes using Apache commons-pool.
@@ -33,8 +32,7 @@ public class CTConnectionPool {
         UncheckedGenericKeyedObjectPool<String, CTConnection> pool = getPool(hostname,
                                                                              port,
                                                                              timeoutMS,
-                                                                             THRIFT_DEFAULT_FRAME_SIZE,
-                                                                             THRIFT_DEFAULT_MAX_MESSAGE_SIZE);
+                                                                             THRIFT_DEFAULT_FRAME_SIZE);
 
         if (key == null)
             pool.clear();
@@ -53,14 +51,13 @@ public class CTConnectionPool {
     public static synchronized UncheckedGenericKeyedObjectPool<String, CTConnection> getPool(String hostname,
                                                                                              int port,
                                                                                              int timeoutMS,
-                                                                                             int frameSize,
-                                                                                             int maxMessageSize) {
+                                                                                             int frameSize) {
         PoolKey pk = new PoolKey(hostname, port, timeoutMS);
 
         UncheckedGenericKeyedObjectPool<String, CTConnection> p = pools.get(pk);
 
         if (null == p) {
-            CTConnectionFactory f = getFactory(hostname, port, timeoutMS, frameSize, maxMessageSize);
+            CTConnectionFactory f = getFactory(hostname, port, timeoutMS, frameSize);
             p = new UncheckedGenericKeyedObjectPool<String, CTConnection>(f);
             p.setTestOnBorrow(true);
             p.setTestOnReturn(false);
@@ -74,12 +71,12 @@ public class CTConnectionPool {
         return p;
     }
 
-    public static CTConnectionFactory getFactory(String hostname, int port, int timeoutMS, int frameSize, int maxMessageSize) {
+    public static CTConnectionFactory getFactory(String hostname, int port, int timeoutMS, int frameSize) {
         PoolKey pk = new PoolKey(hostname, port, timeoutMS);
 
         CTConnectionFactory f = factories.get(pk);
         if (null == f) {
-            f = new CTConnectionFactory(hostname, port, timeoutMS, frameSize, maxMessageSize);
+            f = new CTConnectionFactory(hostname, port, timeoutMS, frameSize);
             CTConnectionFactory old = factories.putIfAbsent(pk, f);
             if (null != old)
                 f = old;
