@@ -5,6 +5,27 @@ Be sure to read the following instructions for information:
    https://github.com/thinkaurelius/titan/wiki/Rexster-Graph-Server
 -->
 <rexster>
+    <http>
+        <server-port>8182</server-port>
+        <server-host>0.0.0.0</server-host>
+        <base-uri>http://localhost</base-uri>
+        <character-set>UTF-8</character-set>
+        <enable-jmx>false</enable-jmx>
+        <max-post-size>2097152</max-post-size>
+        <max-header-size>8192</max-header-size>
+        <upload-timeout-millis>30000</upload-timeout-millis>
+        <thread-pool>
+            <worker>
+                <core-size>8</core-size>
+                <max-size>8</max-size>
+            </worker>
+            <kernal>
+                <core-size>4</core-size>
+                <max-size>4</max-size>
+            </kernal>
+        </thread-pool>
+        <io-strategy>leader-follower</io-strategy>
+    </http>
     <rexpro>
         <server-port>8184</server-port>
         <server-host>0.0.0.0</server-host>
@@ -23,7 +44,7 @@ Be sure to read the following instructions for information:
                 <max-size>4</max-size>
             </kernal>
         </thread-pool>
-        <io-strategy>worker</io-strategy>
+        <io-strategy>leader-follower</io-strategy>
     </rexpro>
     <security>
         <authentication>

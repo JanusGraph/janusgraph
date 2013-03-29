@@ -3,19 +3,23 @@ package com.thinkaurelius.titan.tinkerpop.rexster;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.rexster.Tokens;
 import com.tinkerpop.rexster.protocol.EngineController;
 import com.tinkerpop.rexster.server.DefaultRexsterApplication;
+import com.tinkerpop.rexster.server.HttpRexsterServer;
 import com.tinkerpop.rexster.server.RexProRexsterServer;
 import com.tinkerpop.rexster.server.RexsterApplication;
 import com.tinkerpop.rexster.server.RexsterSettings;
 import com.tinkerpop.rexster.server.ShutdownManager;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -39,19 +43,27 @@ public class RexsterTitanServer {
     private final Configuration titanConfig;
     private final Configuration rexsterConfig;
 
-    private RexProRexsterServer server;
+    private RexProRexsterServer rexProServer = null;
+    private HttpRexsterServer httpServer = null;
     private TitanGraph graph;
 
     public RexsterTitanServer(final XMLConfiguration rexsterConfig, final Configuration titanConfig) {
         Preconditions.checkNotNull(rexsterConfig);
         Preconditions.checkNotNull(titanConfig);
 
-        // can drop this check on release of Rexster 2.3.0
-        if (!rexsterConfig.subset("security.authentication").getKeys().hasNext()) {
-            rexsterConfig.addProperty("security.authentication.type", "none");
+        final boolean isRexProConfigured = rexsterConfig.subset("rexpro").getKeys().hasNext();
+        final boolean isHttpConfigured = rexsterConfig.subset("http").getKeys().hasNext();
+
+        if (isRexProConfigured || !isHttpConfigured) {
+            rexProServer = new RexProRexsterServer(rexsterConfig);
         }
 
-        server = new RexProRexsterServer(rexsterConfig);
+        if (isHttpConfigured || !isRexProConfigured) {
+            // turn off dog house...always
+            rexsterConfig.setProperty("http.enable-doghouse", false);
+            httpServer = new HttpRexsterServer(rexsterConfig);
+        }
+
         this.rexsterConfig = rexsterConfig;
         this.titanConfig = titanConfig;
     }
@@ -59,12 +71,12 @@ public class RexsterTitanServer {
     public void start() {
         EngineController.configure(-1, this.rexsterConfig.getString("script-engine-init", null));
         graph = TitanFactory.open(titanConfig);
-        final RexsterApplication ra = new DefaultRexsterApplication(DEFAULT_GRAPH_NAME, graph);
-        try {
-            server.start(ra);
-        } catch (Exception e) {
-            throw new IllegalStateException("Could not start rexster application", e);
-        }
+
+        final List<HierarchicalConfiguration> extensionConfigurations = ((XMLConfiguration) rexsterConfig).configurationsAt(Tokens.REXSTER_GRAPH_EXTENSIONS_PATH);
+        log.info(extensionConfigurations.toString());
+        final RexsterApplication ra = new TitanRexsterApplication(DEFAULT_GRAPH_NAME, graph, extensionConfigurations);
+        startRexProServer(ra);
+        startHttpServer(ra);
     }
 
     public void startDaemon() {
@@ -86,7 +98,8 @@ public class RexsterTitanServer {
     public void stop() {
         // shutdown grizzly/graphs
         try {
-            server.stop();
+            if (rexProServer != null) rexProServer.stop();
+            if (httpServer != null) httpServer.stop();
         } catch (Exception ex) {
             log.error("Exception when shutting down rexster: {}", ex);
         }
@@ -96,11 +109,11 @@ public class RexsterTitanServer {
     public static void main(String[] args) throws Exception {
         RexsterTitanServer server;
         if (args.length == 2) {
-            Configuration titanConfig = new PropertiesConfiguration(args[1]);
-            XMLConfiguration rexsterConfig = new XMLConfiguration(args[0]);
+            final Configuration titanConfig = new PropertiesConfiguration(args[1]);
+            final XMLConfiguration rexsterConfig = new XMLConfiguration(args[0]);
             server = new RexsterTitanServer(rexsterConfig, titanConfig);
         } else if (args.length == 1) {
-            Configuration config = new PropertiesConfiguration(args[0]);
+            final Configuration config = new PropertiesConfiguration(args[0]);
             server = new RexsterTitanServer(convert2RexproConfiguration(config.subset(REXSTER_CONFIG_NS)), config);
         } else {
             throw new IllegalArgumentException("Expected at least one configuration file");
@@ -110,7 +123,7 @@ public class RexsterTitanServer {
 
     public static XMLConfiguration convert2RexproConfiguration(final Configuration config) {
         final XMLConfiguration rexsterConfig = new XMLConfiguration();
-        Iterator<String> keys = config.getKeys();
+        final Iterator<String> keys = config.getKeys();
         while (keys.hasNext()) {
             String key = keys.next();
             log.debug("Setting Rexster RexPro Config Option:{}={}", key, config.getProperty(key));
@@ -119,5 +132,23 @@ public class RexsterTitanServer {
         return rexsterConfig;
     }
 
+    private void startRexProServer(RexsterApplication ra) {
+        try {
+            if (rexProServer != null) {
+                rexProServer.start(ra);
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not start RexPro Server", e);
+        }
+    }
 
+    private void startHttpServer(RexsterApplication ra) {
+        try {
+            if (httpServer != null) {
+                httpServer.start(ra);
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not start HTTP Server", e);
+        }
+    }
 }
