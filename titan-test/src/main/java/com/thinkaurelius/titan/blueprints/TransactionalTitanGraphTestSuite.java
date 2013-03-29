@@ -29,7 +29,7 @@ public class TransactionalTitanGraphTestSuite extends TransactionalGraphTestSuit
         graph.makeType().name("bloop").unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).dataType(Integer.class).makePropertyKey();
 
 
-        graph.stopTransaction(TransactionalGraph.Conclusion.SUCCESS);
+        graph.commit();
         graph.shutdown();
         super.testCompetingThreads();
     }
