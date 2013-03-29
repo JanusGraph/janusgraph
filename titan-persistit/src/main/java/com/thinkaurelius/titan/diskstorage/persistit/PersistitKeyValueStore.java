@@ -14,9 +14,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStore
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Persistit implicitly assigns units of work to transactions depending
@@ -42,8 +39,17 @@ public class PersistitKeyValueStore implements KeyValueStore {
      * in the context of an arbitrary transaction and provides a method for
      * getting the result of the job
      */
-    private static abstract class PersistitJob implements TransactionRunnable {
+    static abstract class PersistitJob implements TransactionRunnable {
         Object result = null;
+        Exchange exchange = null;
+
+        public void setExchange(Exchange exchange) {
+            this.exchange = exchange;
+        }
+
+        public Exchange getExchange() {
+            return exchange;
+        }
 
         /**
          * Returns the result of the job
@@ -65,77 +71,14 @@ public class PersistitKeyValueStore implements KeyValueStore {
         return buffer.array();
     }
 
-    /**
-     * threadsafe exchange pool
-     */
-    private static class ExchangePool {
-        private Persistit db;
-        private String name;
-
-        private Map<Long, BlockingQueue<Exchange>> threadPool = new ConcurrentHashMap<Long, BlockingQueue<Exchange>>();
-
-        ExchangePool(Persistit db, String name) {
-            this.db = db;
-            this.name = name;
-        }
-
-        /**
-         * Returns an exchange instance to the pool
-         * @param ex
-         */
-        synchronized void put(Exchange ex) {
-            BlockingQueue<Exchange> pool = threadPool.get(Thread.currentThread().getId());
-
-            if (pool == null) {
-                pool = new LinkedBlockingQueue<Exchange>();
-                threadPool.put(Thread.currentThread().getId(), pool);
-            }
-
-            pool.add(ex);
-        }
-
-        /**
-         * Gets an exchange instance from the pool, creating
-         * a new one if the pool is empty
-         *
-         * @return
-         * @throws StorageException
-         */
-        synchronized Exchange get() throws StorageException {
-            BlockingQueue<Exchange> pool = threadPool.get(Thread.currentThread().getId());
-
-            if (pool != null && !pool.isEmpty()) return pool.remove();
-
-            try {
-                Exchange exchange = db.getExchange(db.getSystemVolume().getName(), name, true);
-                return exchange;
-
-            } catch (PersistitException e) {
-                throw new PermanentStorageException(e.toString());
-            }
-        }
-
-        synchronized boolean isEmpty() {
-            BlockingQueue<Exchange> pool = threadPool.get(Thread.currentThread().getId());
-            return pool == null || pool.isEmpty();
-        }
-
-        synchronized void close() throws StorageException {
-            //clean up the open exchanges
-        }
-
-    }
-
     private final String name;
     private final PersistitStoreManager storeManager;
     private final Persistit persistit;
-    private final ExchangePool exchangePool;
 
     public PersistitKeyValueStore(String n, PersistitStoreManager mgr, Persistit db) throws StorageException {
         name = n;
         storeManager = mgr;
         persistit = db;
-        exchangePool = new ExchangePool(persistit, name);
     }
 
     @Override
@@ -148,9 +91,8 @@ public class PersistitKeyValueStore implements KeyValueStore {
      */
     public void clear() throws StorageException {
         try {
-            while (!exchangePool.isEmpty()) {
-                exchangePool.get().removeAll();
-            }
+            Exchange exchange = persistit.getExchange(persistit.getSystemVolume().getName(), name, true);
+            exchange.removeTree();
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex.toString());
         }
@@ -160,16 +102,14 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
         final PersistitTransaction transaction;
         final Exchange exchange;
-        final ExchangePool exchangePool;
         Object nextKey = null;
         private boolean isClosed = false;
 
         private PersistitJob getNextKeyJob;
 
-        public KeysIterator(PersistitTransaction tx, ExchangePool exPool) throws StorageException {
+        public KeysIterator(PersistitTransaction tx, Exchange exchange) throws StorageException {
             transaction = tx;
-            exchangePool = exPool;
-            exchange = exPool.get();
+            this.exchange = exchange;
 
             getNextKeyJob = new PersistitJob() {
                 @Override
@@ -182,6 +122,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
                     }
                 }
             };
+            getNextKeyJob.setExchange(exchange);
 
             begin();
             getNextKey();
@@ -193,12 +134,15 @@ public class PersistitKeyValueStore implements KeyValueStore {
         }
 
         private void begin() throws StorageException {
-            transaction.run(new PersistitJob() {
+            PersistitJob j = new PersistitJob() {
                 @Override
                 public void runTransaction() throws PersistitException, RollbackException {
                     exchange.getKey().to(Key.BEFORE);
                 }
-            });
+            };
+
+            j.setExchange(exchange);
+            transaction.run(j);
         }
 
         @Override
@@ -216,7 +160,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
         @Override
         public void close() {
-            exchangePool.put(exchange);
+            transaction.releaseExchange(exchange);
             isClosed = true;
         }
 
@@ -232,12 +176,11 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
     @Override
     public RecordIterator<ByteBuffer> getKeys(StoreTransaction tx) throws StorageException {
-        return new KeysIterator((PersistitTransaction)tx, exchangePool);
+        return new KeysIterator((PersistitTransaction)tx, ((PersistitTransaction) tx).getExchange(name));
     }
 
     @Override
     public ByteBuffer get(final ByteBuffer key, StoreTransaction txh) throws StorageException {
-        final Exchange exchange = exchangePool.get();
         PersistitJob j = new PersistitJob() {
             @Override
             public void runTransaction() throws PersistitException, RollbackException {
@@ -254,17 +197,19 @@ public class PersistitKeyValueStore implements KeyValueStore {
                 }
             }
         };
+        final PersistitTransaction tx = (PersistitTransaction) txh;
+        final Exchange exchange = tx.getExchange(name);
         try {
-            ((PersistitTransaction) txh).run(j);
+            j.setExchange(exchange);
+            tx.run(j);
         } finally {
-            exchangePool.put(exchange);
+            tx.releaseExchange(exchange);
         }
         return (ByteBuffer) j.getResult();
     }
 
     @Override
     public boolean containsKey(final ByteBuffer key, StoreTransaction txh) throws StorageException {
-        final Exchange exchange = exchangePool.get();
         PersistitJob j = new PersistitJob() {
             @Override
             public void runTransaction() throws PersistitException, RollbackException {
@@ -275,10 +220,13 @@ public class PersistitKeyValueStore implements KeyValueStore {
                 result = exchange.isValueDefined();
             }
         };
+        final PersistitTransaction tx = (PersistitTransaction) txh;
+        final Exchange exchange = tx.getExchange(name);
         try {
-            ((PersistitTransaction) txh).run(j);
+            j.setExchange(exchange);
+            tx.run(j);
         } finally {
-            exchangePool.put(exchange);
+            tx.releaseExchange(exchange);
         }
         return (Boolean) j.getResult();
     }
@@ -298,7 +246,6 @@ public class PersistitKeyValueStore implements KeyValueStore {
      * @throws StorageException
      */
     private List<KeyValueEntry> getSlice(final ByteBuffer keyStart, final ByteBuffer keyEnd, final KeySelector selector, final Integer limit, PersistitTransaction txh) throws StorageException {
-        final Exchange exchange = exchangePool.get();
         PersistitJob j = new PersistitJob() {
 
             /**
@@ -364,10 +311,13 @@ public class PersistitKeyValueStore implements KeyValueStore {
             }
         };
 
+        final PersistitTransaction tx = (PersistitTransaction) txh;
+        final Exchange exchange = tx.getExchange(name);
         try {
-            txh.run(j);
+            j.setExchange(exchange);
+            tx.run(j);
         } finally {
-            exchangePool.put(exchange);
+            tx.releaseExchange(exchange);
         }
         return (List<KeyValueEntry>) j.getResult();
     }
@@ -389,7 +339,6 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
     @Override
     public void insert(final ByteBuffer key, final ByteBuffer value, final StoreTransaction txh) throws StorageException {
-        final Exchange exchange = exchangePool.get();
         PersistitJob j = new PersistitJob() {
             @Override
             public void runTransaction() throws PersistitException, RollbackException {
@@ -407,16 +356,18 @@ public class PersistitKeyValueStore implements KeyValueStore {
                 exchange.store();
             }
         };
+        final PersistitTransaction tx = (PersistitTransaction) txh;
+        final Exchange exchange = tx.getExchange(name);
         try {
-            ((PersistitTransaction) txh).run(j);
+            j.setExchange(exchange);
+            tx.run(j);
         } finally {
-            exchangePool.put(exchange);
+            tx.releaseExchange(exchange);
         }
     }
 
     @Override
     public void delete(final ByteBuffer key, StoreTransaction txh) throws StorageException {
-        final Exchange exchange = exchangePool.get();
         PersistitJob j = new PersistitJob() {
             @Override
             public void runTransaction() throws PersistitException, RollbackException {
@@ -427,8 +378,14 @@ public class PersistitKeyValueStore implements KeyValueStore {
                 exchange.remove();
             }
         };
-        ((PersistitTransaction) txh).run(j);
-        exchangePool.put(exchange);
+        final PersistitTransaction tx = (PersistitTransaction) txh;
+        final Exchange exchange = tx.getExchange(name);
+        try {
+            j.setExchange(exchange);
+            tx.run(j);
+        } finally {
+            tx.releaseExchange(exchange);
+        }
     }
 
     @Override
@@ -438,7 +395,6 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
     @Override
     public void close() throws StorageException {
-        exchangePool.close();
         storeManager.removeDatabase(this);
     }
 

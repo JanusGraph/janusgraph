@@ -15,8 +15,6 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
-import org.apache.commons.configuration.SubsetConfiguration;
-import sun.security.pkcs11.wrapper.CK_VERSION;
 
 
 import java.io.File;
@@ -147,8 +145,7 @@ public class PersistitStoreManager implements KeyValueStoreManager {
     @Override
     public PersistitTransaction beginTransaction(ConsistencyLevel level) throws StorageException {
         //all Exchanges created by a thread share the same transaction context
-        Transaction tx = db.getTransaction();
-        return new PersistitTransaction(db, tx, level);
+        return new PersistitTransaction(db, level);
     }
 
     @Override
