@@ -23,12 +23,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-berkeleyje</artifactId>
-            <version>${titan.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
             <version>4.1.0</version>
