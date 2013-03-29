@@ -19,10 +19,14 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.util.Calendar;
+import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 public class SerializerTest {
 
@@ -71,6 +75,43 @@ public class SerializerTest {
         assertEquals(n, serialize.readClassAndObject(b));
         assertFalse(b.hasRemaining());
     }
+
+    @Test
+    public void testObjectVerification() {
+        KryoSerializer s = new KryoSerializer(true);
+        DataOutput out = s.getDataOutput(128, true);
+        Long l = Long.valueOf(128);
+        out.writeClassAndObject(l);
+        Calendar c = Calendar.getInstance();
+        out.writeClassAndObject(c);
+        BigDecimal b = BigDecimal.ONE;
+        try {
+            out.writeClassAndObject(b);
+            fail();
+        } catch (IllegalArgumentException e) {
+
+        }
+        TestTransientClass d = new TestTransientClass(101);
+        try {
+            out.writeClassAndObject(d);
+            fail();
+        } catch (IllegalArgumentException e) {
+
+        }
+        out.writeObject(null);
+    }
+
+    @Test
+    public void testDateSerialization() {
+        DataOutput out = serialize.getDataOutput(128, true);
+        Date d = new Date(101);
+        out.writeClassAndObject(d);
+        out.writeObjectNotNull(d);
+        ByteBuffer result = out.getByteBuffer();
+        assertEquals(d,serialize.readClassAndObject(result));
+        assertEquals(d,serialize.readObjectNotNull(result,Date.class));
+    }
+
 
     @Test
     public void longWriteTest() {
