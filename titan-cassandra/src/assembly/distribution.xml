@@ -60,6 +60,10 @@
             <source>../bin/cassandra.local</source>
             <outputDirectory>bin</outputDirectory>
         </file>
+        <file>
+            <source>../bin/cassandra-es.local</source>
+            <outputDirectory>bin</outputDirectory>
+        </file>
     </files>
 
     <dependencySets>

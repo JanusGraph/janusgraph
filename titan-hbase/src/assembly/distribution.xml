@@ -80,6 +80,10 @@
             <source>../bin/hbase.local</source>
             <outputDirectory>bin</outputDirectory>
         </file>
+        <file>
+            <source>../bin/hbase-es.local</source>
+            <outputDirectory>bin</outputDirectory>
+        </file>
     </files>
 
     <dependencySets>
