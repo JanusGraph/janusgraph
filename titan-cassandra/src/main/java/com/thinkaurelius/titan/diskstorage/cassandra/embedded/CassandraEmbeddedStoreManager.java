@@ -84,9 +84,6 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         if (this.thriftFrameSize != THRIFT_DEFAULT_FRAME_SIZE)
             log.warn("Couldn't set custom Thrift Frame Size property, use 'cassandrathrift' instead.");
 
-        if (this.thriftMaxMessageSize != THRIFT_DEFAULT_MAX_MESSAGE_SIZE)
-            log.warn("Couldn't set custom Thrift Max Message Size property, use 'cassandrathrift' instead.");
-
         String cassandraConfigDir = config.getString(CASSANDRA_CONFIG_DIR_KEY, CASSANDRA_CONFIG_DIR_DEFAULT);
 
         assert cassandraConfigDir != null && !cassandraConfigDir.isEmpty();

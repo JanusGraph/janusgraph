@@ -51,7 +51,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
     private final String hostname;
 
-
     public CassandraThriftStoreManager(Configuration config) throws StorageException {
         super(config);
         this.hostname = getSingleHostname();
@@ -59,8 +58,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                                              port,
                                              config.getInt(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY,
                                                            GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT),
-                                             thriftFrameSize,
-                                             thriftMaxMessageSize);
+                                             thriftFrameSize);
 
         this.openStores = new HashMap<String, CassandraThriftKeyColumnValueStore>();
     }
@@ -411,7 +409,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         return CTConnectionPool.getFactory(hostname,
                                            port,
                                            GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT,
-                                           thriftFrameSize,
-                                           thriftMaxMessageSize).makeRawConnection();
+                                           thriftFrameSize).makeRawConnection();
     }
 }

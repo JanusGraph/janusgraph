@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Cluster;
 import com.netflix.astyanax.ColumnListMutation;
@@ -149,9 +148,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         // otherwise it would make bad user experience if we don't warn at all or crash on this.
         if (this.thriftFrameSize != THRIFT_DEFAULT_FRAME_SIZE)
             log.warn("Couldn't set custom Thrift Frame Size property, use 'cassandrathrift' instead.");
-
-        if (this.thriftMaxMessageSize != THRIFT_DEFAULT_MAX_MESSAGE_SIZE)
-            log.warn("Couldn't set custom Thrift Max Message Size property, use 'cassandrathrift' instead.");
 
         this.clusterName = config.getString(CLUSTER_KEY, CLUSTER_DEFAULT);
 

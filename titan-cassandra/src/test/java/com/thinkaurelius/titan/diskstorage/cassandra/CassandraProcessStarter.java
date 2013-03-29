@@ -221,8 +221,7 @@ public class CassandraProcessStarter {
         CTConnectionFactory f = CTConnectionPool.getFactory(address,
                                                             port,
                                                             GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT,
-                                                            AbstractCassandraStoreManager.THRIFT_DEFAULT_FRAME_SIZE,
-                                                            AbstractCassandraStoreManager.THRIFT_DEFAULT_MAX_MESSAGE_SIZE);
+                                                            AbstractCassandraStoreManager.THRIFT_DEFAULT_FRAME_SIZE);
         CTConnection conn = null;
         try {
             conn = f.makeRawConnection();
