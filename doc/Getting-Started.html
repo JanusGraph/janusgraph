@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Getting Started</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Getting Started</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Getting-Started"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Getting-Started"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <blockquote>
+<p>In the beginning, there existed two deities known as <a href="http://en.wikipedia.org/wiki/Uranus_(mythology)">Uranus</a> and <a href="http://en.wikipedia.org/wiki/Gaia_(mythology)">Gaia</a>. They gave birth to the <a href="http://en.wikipedia.org/wiki/Titan_(mythology)">Titans</a> (a race of powerful beings).  <a href="http://en.wikipedia.org/wiki/Saturn_(mythology)">Saturn</a>, Titan of time, set reality in motion. Ultimately, time yielded the existence of the sky, the sea, and the end of life—death. To rule these notions, Saturn had three sons: <a href="http://en.wikipedia.org/wiki/Jupiter_(mythology)">Jupiter</a> (sky), <a href="http://en.wikipedia.org/wiki/Neptune_(mythology)">Neptune</a> (sea), and <a href="http://en.wikipedia.org/wiki/Pluto_(mythology)">Pluto</a> (underworld). The son’s of Saturn were not Titans, but a race of seemingly less powerful deities known the world over as the Gods. Fearful that his sons would overthrow him, Saturn devoured them and imprisoned them in his stomach. This caused a <a href="http://en.wikipedia.org/wiki/Titanomachy">great war</a> between the Titans and Gods. Ultimately, the Gods won and Jupiter took the throne as leader of the Gods.</p>
+</blockquote>
+<table><tr><td><img src="http://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/8646_-_St_Petersburg_-_Hermitage_-_Jupiter2.jpg/180px-8646_-_St_Petersburg_-_Hermitage_-_Jupiter2.jpg" alt="" /><br /><strong>Jupiter</strong> </td>
+		<td><img src="http://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Sousse_neptune.jpg/282px-Sousse_neptune.jpg" alt="" /><br /><strong>Neptune</strong></td>
+		<td><img src="http://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Henryk_Siemiradzki_010.jpeg/320px-Henryk_Siemiradzki_010.jpeg" alt="" /><br /><strong>Pluto</strong></td>
+	</tr></table><h2>The Graph of the Gods<a class="anchor" id="The-Graph-of-the-Gods" href="#The-Graph-of-the-Gods"></a></h2>
+<p>The examples in this section make extensive use of a toy graph distributed with Titan called <em>The Graph of the Gods</em>. This graph is diagrammed below. The abstract data model is known as a <a href="https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model">property graph</a> and this particular instance describes the relationships between the beings and places of the Roman pantheon. Moreover, special text and symbol modifiers in the diagram (e.g. bold, underline, etc.) denote different schematics/typings in the graph.</p>
+<p><span class="align-center"><span><img src="images/graph-of-the-gods-2.png" width="700px" /></span></span></p>
+<ul><li><strong>key</strong>: a graph indexed key.</li>
+	<li><strong>key</strong> *: a graph indexed key that must have a unique value.</li>
+	<li><ins>key</ins>: a vertex-centric indexed key.</li>
+	<li>hollow head edge: a functional/unique edge (no duplicates).</li>
+	<li>tail crossed edge: a unidirectional edge (can only traverse in one direction).</li>
+</ul><h2>Downloading Titan and Running the Gremlin Shell<a class="anchor" id="Downloading-Titan-and-Running-the-Gremlin-Shell" href="#Downloading-Titan-and-Running-the-Gremlin-Shell"></a></h2>
+<p><span class="float-right"><span><img src="images/titan-head.png" width="115px" /></span></span></p>
+<blockquote>
+<p>Unbeknownst to the Gods, there still lived one Titan. This Titan can not be seen, has no name, and is only apparent in the fact that reality exists. Upon the shoulders of this lost Titan, all of reality hangs together in an undulating web of relations.</p>
+</blockquote>
+<p>Titan can be downloaded from the <a href="https://github.com/thinkaurelius/titan/wiki/Downloads">Downloads</a> section of the project repository. Once retrieved and unpacked, a <a href="http://gremlin.tinkerpop.com">Gremlin</a> terminal can be started. The Gremlin <a href="http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop"><span class="caps">REPL</span></a> (i.e. interactive shell) is distributed with Titan and differs slightly from the main <a href="http://tinkerpop.com">TinkerPop</a> Gremlin distribution in that is comes preloaded with Titan-specific <code>imports</code> and helper methods. In the example below, <code>titan.zip</code> is used, however, be sure to unzip the zip-file that was downloaded.</p>
+<div class="highlight"><pre>$ unzip titan.zip
+Archive:  titan.zip
+   creating: titan/
+...
+$ cd titan
+$ bin/gremlin.sh 
+
+         \,,,/
+         (o o)
+-----oOOo-(_)-oOOo-----
+gremlin&gt;
+</pre></div>
+<p>The Gremlin terminal is a <a href="http://groovy.codehaus.org/">Groovy</a> shell. Groovy is a superset of Java that has various shorthand notations that make interactive programming easier. Likewise Gremlin is a superset of Groovy with various shorthand notations that make graph traversals easy. The basic examples below demonstrate handling numbers, strings, and maps. The remainder of the tutorial will discuss graph-specific constructs.</p>
+<div class="highlight"><pre>gremlin&gt; 100-10
+==&gt;90
+gremlin&gt; "Titan:" + " The Rise of Big Graph Data"
+==&gt;Titan: The Rise of Big Graph Data
+gremlin&gt; [name:'aurelius',vocation:['philosopher','emperor']]
+==&gt;name=aurelius
+==&gt;vocation=[philosopher, emperor]
+</pre></div>
+<p><strong><span class="caps">NOTE</span></strong>: Please refer to <a href="http://gremlindocs.com">GremlinDocs</a> for a easy to use Gremlin reference.</p>
+<h2>Loading Data Into Titan<a class="anchor" id="Loading-Data-Into-Titan" href="#Loading-Data-Into-Titan"></a></h2>
+<p><span class="float-left"><span><img src="https://github.com/tinkerpop/gremlin/raw/master/doc/images/gremlin-running.png" width="125px" /></span></span> <br />
+The example below will load <em>The Graph of the Gods</em> dataset diagrammed above into Titan. When working with a fresh graph (beyond this tutorial), <code>TitanFactory</code> provides methods to create various Titan instances (e.g. local, distributed, etc.). A local, single machine instance of Titan is created using the <code>TitanFactory.open(String directory)</code> method. Other pages in the documentation demonstrate distributing Titan across multiple machines, for instance <a class="internal present" href="Using-Cassandra.html">using Cassandra</a> or <a class="internal present" href="Using-HBase.html">using HBase</a>. Refer to the <a class="internal present" href="Storage-Backend-Overview.html">storage backend overview</a> on how to choose the optimal persistence mode. For the purpose of this tutorial, a pre-constructed local graph is provided that is loaded with the above <em>Graph of the Gods</em> diagram.</p>
+<div class="highlight"><pre>gremlin&gt; g = GraphOfTheGodsFactory.create('/tmp/titan')           
+==&gt;titangraph[local:/tmp/titan]
+</pre></div><br />
+The <code>GraphOfTheGodsFactory.create()</code> method does the following to the newly constructed graph prior to returning it:
+<ol><li>Creates a collection of global and vertex-centric indices on the graph.</li>
+	<li>Adds all the vertices to the graph along with their properties.</li>
+	<li>Adds all the edges to the graph along with their properties.</li>
+</ol><p>Please see the class source code:<br /><a href="https://github.com/thinkaurelius/titan/blob/master/titan-core/src/main/java/com/thinkaurelius/titan/example/GraphOfTheGodsFactory.java">https://github.com/thinkaurelius/titan/blob/master/titan-core/src/main/java/com/thinkaurelius/titan/example/GraphOfTheGodsFactory.java</a></p>
+<h2>Global Graph Indices<a class="anchor" id="Global-Graph-Indices" href="#Global-Graph-Indices"></a></h2>
+<p>The typical pattern for accessing data in a graph database is to first locate the entry point into the graph using a graph index. That entry point is an element (or set of elements) — i.e. a vertex or edge. From the entry elements, a Gremlin path description describes how to traverse to other elements in the graph via the explicit graph structure.</p>
+<p>Given that there is a unique index on <code>name</code> property, the Saturn vertex can be retrieved. The property map (i.e. the key/value pairs of Saturn) can then be examined. As demonstrated, the Saturn vertex has a <code>name</code> of “saturn,” an <code>age</code> of 10000, and a <code>type</code> of “titan.” The grandchild of Saturn can be retrieved with a traversal that expresses: “Who is Saturn’s grandchild?” (the inverse of “father” is “child”). The result is Hercules.</p>
+<div class="highlight"><pre>gremlin&gt; saturn = g.V('name','saturn').next()
+==&gt;v[4]
+gremlin&gt; saturn.map()
+==&gt;name=saturn
+==&gt;age=10000
+==&gt;type=titan
+gremlin&gt; saturn.in('father').in('father').name
+==&gt;hercules
+</pre></div>
+<p>The property <code>place</code> is also in a graph index. The property <code>place</code> is an edge property. Therefore, Titan can index edges in a graph index. It is possible to query <em>The Graph of the Gods</em> for all events that have happened within 50 kilometers of <a href="http://en.wikipedia.org/wiki/Athens">Athens</a> (latitude:37.97 and long:23.72). Then, given that information, which vertices were involved in those events.</p>
+<div class="highlight"><pre>gremlin&gt; g.query().has('place',Geo.WITHIN,Geoshape.circle(37.97,23.72,50)).edges()
+==&gt;e[2T-o-2F0LaTPQBM][24-battled-&gt;40]
+==&gt;e[2R-o-2F0LaTPQBM][24-battled-&gt;36]
+gremlin&gt; g.query().has('place',Geo.WITHIN,Geoshape.circle(37.97,23.72,50)).edges().collect {
+   it.bothV.name.next(2) 
+}
+==&gt;[hercules, hydra]
+==&gt;[hercules, nemean]
+</pre></div>
+<p>Graph indices are one type of index structure in Titan. Graph indices are accessible via the <code>Graph.query()</code> method. The second aspect of indexing in Titan is known as vertex-centric indices. Vertex-centric indices are accessible via the <code>Vertex.query()</code> method. Vertex-centric indices are described later.</p>
+<h2>Graph Traversal Examples<a class="anchor" id="Graph-Traversal-Examples" href="#Graph-Traversal-Examples"></a></h2>
+<blockquote>
+<p><a href="http://en.wikipedia.org/wiki/Hercules">Hercules</a>, son of Jupiter and <a href="http://en.wikipedia.org/wiki/Alcmene">Alcmene</a>, bore super human strength. Hercules was a <a href="http://en.wikipedia.org/wiki/Demigod">demigod</a> because his father was a god and his mother was a human. <a href="http://en.wikipedia.org/wiki/Juno_(mythology)">Juno</a>, wife of Jupiter, was furious with Jupiter’s infidelity. In revenge, she blinded Hercules with temporary insanity and caused him to kill his wife and children. To atone for the slaying, Hercules was ordered by the <a href="http://en.wikipedia.org/wiki/Oracle_at_Delphi">Oracle of Delphi</a> to serve <a href="http://en.wikipedia.org/wiki/Eurystheus">Eurystheus</a>. Eurystheus appointed Hercules to 12 labors.</p>
+</blockquote>
+<table><tr><td><img src="http://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Mosaico_Trabajos_H%C3%A9rcules_%28M.A.N._Madrid%29_01.jpg/301px-Mosaico_Trabajos_H%C3%A9rcules_%28M.A.N._Madrid%29_01.jpg" alt="" /><br /><strong>Nemean</strong></td>
+		<td><img src="http://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Hercules_slaying_the_Hydra.jpg/320px-Hercules_slaying_the_Hydra.jpg" alt="" /><strong>Hydra</strong></td>
+		<td><img src="http://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Cerberus-Blake.jpeg/320px-Cerberus-Blake.jpeg" alt="" /><br /><strong>Cerberus</strong></td>
+	</tr></table><p>In the previous section, it was demonstrated that Saturns’ grandchild was Hercules. This can be expressed using a <code>loop</code>. In essence, Hercules is the vertex that is 2-steps away from Saturn along the <code>in('father')</code> path.</p>
+<div class="highlight"><pre>gremlin&gt; hercules = saturn.as('x').in('father').loop('x'){it.loops &lt; 3}.next()
+==&gt;v[24]
+</pre></div>
+<p>Hercules is a demigod. To prove that Hercules is half human and half god, his parent’s origins must be examined. It is possible to traverse from the Hercules vertex to his mother and father. Finally, it is possible to determine the <code>type</code> of each of them — yielding “god” and “human.”</p>
+<div class="highlight"><pre>gremlin&gt; hercules.out('father','mother')
+==&gt;v[16]
+==&gt;v[28]
+gremlin&gt; hercules.out('father','mother').name
+==&gt;jupiter
+==&gt;alcmene
+gremlin&gt; hercules.out('father','mother').type
+==&gt;god
+==&gt;human
+gremlin&gt; hercules.type
+==&gt;demigod
+</pre></div>
+<p>The examples thus far have been with respect to the genetic lines of the various actors in the Roman pantheon. The <a href="https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model">property graph data model</a> is expressive enough to represent multiple types of things and relationships. In this way, <em>The Graph of the Gods</em> also identifies Hercules’ various heroic exploits <del>-</del> his famous 12 labors. In the previous section, it was discovered that Hercules was involved in two battles near Athens. It is possible to explore these events by traversing <code>battled</code> edges out of the Hercules vertex.</p>
+<div class="highlight"><pre>gremlin&gt; hercules.out('battled')
+==&gt;v[36]
+==&gt;v[40]
+==&gt;v[44]
+gremlin&gt; hercules.out('battled').map
+==&gt;{name=nemean, type=monster}
+==&gt;{name=hydra, type=monster}
+==&gt;{name=cerberus, type=monster}
+gremlin&gt; hercules.outE('battled').has('time',T.gt,1).inV.name
+==&gt;hydra
+==&gt;cerberus
+</pre></div>
+<p>The edge property <code>time</code> on <code>battled</code> edges is indexed by the vertex-centric indices of a vertex. Retrieving <code>battled</code> edges incident to Hercules according to a constraint/filter on <code>time</code> is faster than doing a linear scan of all edges and filtering  (typically <code>O(log n)</code>, where <code>n</code> is the number incident edges). Gremlin is intelligent enough to use vertex-centric indices when available. A <code>toString()</code> of a Gremlin expression shows the underlying <a href="http://pipes.tinkerpop.com">query pipeline</a>.</p>
+<div class="highlight"><pre>gremlin&gt; hercules.outE('battled').has('time',T.gt,1).inV.name.toString()
+==&gt;[StartPipe, VertexQueryPipe(out,[battled],has,edge), IdentityPipe, InVertexPipe, PropertyPipe(name)]
+</pre></div>
+<h2>More Complex Graph Traversal Examples<a class="anchor" id="More-Complex-Graph-Traversal-Examples" href="#More-Complex-Graph-Traversal-Examples"></a></h2>
+<p><span class="float-left"><span><img src="http://upload.wikimedia.org/wikipedia/commons/9/93/Agostino_Carracci_01.jpg" width="225px" /></span></span></p>
+<blockquote>
+<p>In the depths of Tartarus lives Pluto. His relationship with Hercules was strained by the fact that Hercules battled his pet, Cerberus. However, Hercules is his nephew — how should he make Hercules pay for his insolence?</p>
+</blockquote>
+<p>The Gremlin traversals below provide more examples over <em>The Graph of the Gods</em>. The explanation of each traversal is provided in the prior line as a <code>//</code> comment.</p>
+<p><br /><br /></p>
+<h3>Cohabiters of Tartarus<a class="anchor" id="Cohabiters-of-Tartarus" href="#Cohabiters-of-Tartarus"></a></h3>
+<div class="highlight"><pre>gremlin&gt; pluto = g.V('name','pluto').next()
+==&gt;v[32]
+gremlin&gt; // who are pluto's cohabitants?
+gremlin&gt; pluto.out('lives').in('lives').name                
+==&gt;pluto
+==&gt;cerberus
+gremlin&gt; // pluto can't be his own cohabitant
+gremlin&gt; pluto.out('lives').in('lives').except([pluto]).name
+==&gt;cerberus
+gremlin&gt; pluto.as('x').out('lives').in('lives').except('x').name
+==&gt;cerberus
+</pre></div>
+<h3>Pluto’s Brothers<a class="anchor" id="Plutoâs-Brothers" href="#Plutoâs-Brothers"></a></h3>
+<div class="highlight"><pre>gremlin&gt; // where do pluto's brothers live?
+gremlin&gt; pluto.out('brother').out('lives').name
+==&gt;sky
+==&gt;sea
+gremlin&gt; // which brother lives in which place?
+gremlin&gt; pluto.out('brother').as('god').out('lives').as('place').select
+==&gt;[god:v[16], place:v[8]]
+==&gt;[god:v[20], place:v[12]]
+gremlin&gt; // what is the name of the brother and the name of the place?
+gremlin&gt; pluto.out('brother').as('god').out('lives').as('place').select{it.name}
+==&gt;[god:jupiter, place:sky]
+==&gt;[god:neptune, place:sea]
+</pre></div>
+<p>Finally, Pluto lives in Tartarus because he shows no concern for death. His brothers, on the other hand, chose their locations based upon their love for certain qualities of those locations.</p>
+<div class="highlight"><pre>gremlin&gt; pluto.outE('lives').reason
+==&gt;no fear of death
+gremlin&gt; g.query().has('reason',Text.CONTAINS,'loves').edges()
+==&gt;e[2B-g-2F0LaTPQBU][16-lives-&gt;8]
+==&gt;e[2H-k-2F0LaTPQBU][20-lives-&gt;12]
+gremlin&gt; g.query().has('reason',Text.CONTAINS,'loves').edges().collect{
+  [it.outV.name.next(),it.reason,it.inV.name.next()] 
+}
+==&gt;[jupiter, loves fresh breezes, sky]
+==&gt;[neptune, loves waves, sea]
+</pre></div>
+<h2>Next Steps<a class="anchor" id="Next-Steps" href="#Next-Steps"></a></h2>
+<p>This section presented some basic examples of how to traverse <em>The Graph of the Gods</em> in Titan. In essence, a graph database is all about representing some world (structure) and traversing it to solve problems (process).</p>
+<p>The remainder of <a class="internal present" href="Home.html">this documentation</a> discusses more in-depth examples and configurations for using Titan. Specifically,</p>
+<ul><li>Learn more about <a class="internal present" href="Blueprints-Interface.html">Titan's core interface</a></li>
+	<li>Read about choosing a <a class="internal present" href="Storage-Backend-Overview.html">Titan storage backend</a></li>
+	<li>Read more about Gremlin via its <a href="http://gremlin.tinkerpop.com">wiki</a> and <a href="http://gremlindocs.com">GremlinDocs</a></li>
+</ul>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-03-29 04:17:12</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

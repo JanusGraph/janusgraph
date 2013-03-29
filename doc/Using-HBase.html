@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Using HBase</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Using HBase</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Using-HBase"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Using-HBase"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><a href="http://hbase.apache.org/"><img src="http://hbase.apache.org/images/hbase_logo.png" alt="" /></a></p>
+<blockquote>
+<p>HBase is the Hadoop database. Think of it as a distributed, scalable, big data store. Use HBase when you need random, realtime read/write access to your Big Data. This project’s goal is the hosting of very large tables — billions of rows X millions of columns — atop clusters of commodity hardware. HBase is an open-source, distributed, versioned, column-oriented store modeled after Google’s Bigtable. Just as Bigtable leverages the distributed data storage provided by the Google File System, HBase provides Bigtable-like capabilities on top of Hadoop and <span class="caps">HDFS</span>. — <a href="http://hbase.apache.org/">Apache HBase Homepage</a></p>
+</blockquote>
+<h2>HBase Setup<a class="anchor" id="HBase-Setup" href="#HBase-Setup"></a></h2>
+<p>The following sections outline the various ways in which Titan can be used in concert with HBase.</p>
+<h3>Local Server Mode<a class="anchor" id="Local-Server-Mode" href="#Local-Server-Mode"></a></h3>
+<p><img src="images/titan-modes-local.png" alt="" /></p>
+<p>HBase can be run as a standalone database on the same local host as Titan and the end-user application. In this model, Titan and HBase communicate with one another via a <code>localhost</code> socket. Running Titan over HBase requires the following setup steps:</p>
+<ul><li>Download and extract a stable HBase from <a href="http://www.apache.org/dyn/closer.cgi/hbase/stable/">http://www.apache.org/dyn/closer.cgi/hbase/stable/</a>.</li>
+	<li>Start HBase by invoking the <code>start-hbase.sh</code> script in the <em>bin</em> directory inside the extracted HBase directory. To stop HBase, use <code>stop-hbase.sh</code>.</li>
+</ul><div class="highlight"><pre>$ ./bin/start-hbase.sh 
+starting master, logging to ../logs/hbase-master-machine-name.local.out
+</pre></div>
+<p>Now, you can create an HBase TitanGraph as follows:</p>
+<div class="highlight"><pre><span class="n">Configuration</span> <span class="n">conf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BaseConfiguration</span><span class="o">();</span>
+<span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.backend"</span><span class="o">,</span><span class="s">"hbase"</span><span class="o">);</span>
+<span class="n">TitanGraph</span> <span class="n">g</span> <span class="o">=</span> <span class="n">TitanFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="n">conf</span><span class="o">);</span>
+</pre></div>
+<p>Note, that you do not need to specify a hostname since a localhost connection is attempted by default. Also, in the Gremlin shell, you can not define the type of the variables <code>conf</code> and <code>g</code>. Therefore, simply leave off the type declaration.</p>
+<h3>Remote Server Mode<a class="anchor" id="Remote-Server-Mode" href="#Remote-Server-Mode"></a></h3>
+<p><img src="images/titan-modes-distributed.png" alt="" /></p>
+<p>When the graph needs to scale beyond the confines of a single machine, then HBase and Titan are logically separated into different machines. In this model, the HBase cluster maintains the graph representation and any number of Titan instances maintain socket-based read/write access to the HBase cluster. The end-user application can directly interact with Titan within the same <span class="caps">JVM</span> as Titan.</p>
+<p>For example, suppose we have a running HBase cluster with two machines at IP address 77.77.77.77 and 77.77.77.78, then connecting Titan with the cluster is accomplished as follows:</p>
+<div class="highlight"><pre><span class="n">Configuration</span> <span class="n">conf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BaseConfiguration</span><span class="o">();</span>
+<span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.backend"</span><span class="o">,</span><span class="s">"hbase"</span><span class="o">);</span>
+<span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.hostname"</span><span class="o">,</span><span class="s">"77.77.77.77,77.77.77.78"</span><span class="o">);</span>
+<span class="n">TitanGraph</span> <span class="n">g</span> <span class="o">=</span> <span class="n">TitanFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="n">conf</span><span class="o">);</span>
+</pre></div>
+<p><em>storage.hostname</em> accepts a comma separated list of IP addresses and hostname for any subset of machines in the HBase cluster Titan should connect to. Also, in the Gremlin shell, you can not define the type of the variables <code>conf</code> and <code>g</code>. Therefore, simply leave off the type declaration.</p>
+<h3>Remote Server Mode with Rexster<a class="anchor" id="Remote-Server-Mode-with-Rexster" href="#Remote-Server-Mode-with-Rexster"></a></h3>
+<p><img src="images/titan-modes-rexster.png" alt="" /></p>
+<p>Finally, Rexster can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Rexster over <span class="caps">REST</span>. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.</p>
+<div class="highlight"><pre>http://rexster.titan.machine1/mygraph/vertices/1
+http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
+</pre></div>
+<p>In this case, each Rexster server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to the <a href="Rexster-Graph-Server">Rexster configuration page</a> for a complete example.</p>
+<div class="highlight"><pre>  <span class="nt">&lt;graph&gt;</span>
+    <span class="nt">&lt;graph-name&gt;</span>mygraph<span class="nt">&lt;/graph-name&gt;</span>
+    <span class="nt">&lt;graph-type&gt;</span>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration<span class="nt">&lt;/graph-type&gt;</span>
+    <span class="nt">&lt;graph-location&gt;&lt;/graph-location&gt;</span>
+    <span class="nt">&lt;graph-read-only&gt;</span>false<span class="nt">&lt;/graph-read-only&gt;</span>
+    <span class="nt">&lt;properties&gt;</span>
+          <span class="nt">&lt;storage.backend&gt;</span>hbase<span class="nt">&lt;/storage.backend&gt;</span>
+          <span class="nt">&lt;storage.hostname&gt;</span>77.77.77.77,77.77.77.78<span class="nt">&lt;/storage.hostname&gt;</span>
+    <span class="nt">&lt;/properties&gt;</span>
+    <span class="nt">&lt;extensions&gt;</span>
+      <span class="nt">&lt;allows&gt;</span>
+        <span class="nt">&lt;allow&gt;</span>tp:gremlin<span class="nt">&lt;/allow&gt;</span>
+      <span class="nt">&lt;/allows&gt;</span>
+    <span class="nt">&lt;/extensions&gt;</span>
+  <span class="nt">&lt;/graph&gt;</span>
+</pre></div>
+<h2>HBase Specific Configuration<a class="anchor" id="HBase-Specific-Configuration" href="#HBase-Specific-Configuration"></a></h2>
+<p>In addition to the general <a href="Graph-Configuration">Titan Graph Configuration</a>, there are the following HBase specific Titan configuration options:</p>
+<table><tr><th>Option </th>
+		<th>Description </th>
+		<th>Value </th>
+		<th>Default </th>
+		<th>Modifiable </th>
+	</tr><tr><td> storage.tablename </td>
+		<td> Name of the HBase table in which to store the Titan specific column families </td>
+		<td> String </td>
+		<td> titan </td>
+		<td> No </td>
+	</tr><tr><td> storage.hostname </td>
+		<td> Comma separated list of IP addresses or hostnames of the HBase cluster nodes that this Titan instance connects to </td>
+		<td> IP addresses or hostnames. Leave empty to connect to localhost. </td>
+		<td> – </td>
+		<td> Yes </td>
+	</tr><tr><td> storage.port </td>
+		<td> Port on which to connect to HBase cluster nodes. Leave empty to use default port. </td>
+		<td> Integer </td>
+		<td> – </td>
+		<td> Yes </td>
+	</tr></table><p>Please refer to the <a href="http://hbase.apache.org/book/config.files.html">HBase configuration documentation</a> for more HBase configuration options and their description. By prefixing the respective HBase configuration option with <em>storage.hbase-config</em> in the Titan configuration it will be passed on to HBase at initialization time. This allows arbitrary HBase configuration options to be configured through Titan.</p>
+<h2>Global Graph Operations<a class="anchor" id="Global-Graph-Operations" href="#Global-Graph-Operations"></a></h2>
+<p>Titan over HBase supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause <code>OutOfMemoryException</code>. Use <a href="http://thinkaurelius.github.com/faunus/">Faunus</a> to iterate over all vertices or edges in large graphs.</p>
+<h2>Deploying on Amazon EC2<a class="anchor" id="Deploying-on-Amazon-EC2" href="#Deploying-on-Amazon-EC2"></a></h2>
+<p><a href="http://aws.amazon.com/ec2/"><img src="http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick//logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png" alt="" /></a></p>
+<blockquote>
+<p><a href="http://aws.amazon.com/ec2/">Amazon EC2</a>  is a web service that provides resizable compute capacity in the cloud. It is designed to make web-scale computing easier for developers.</p>
+</blockquote>
+<p>Follow these steps to setup an HBase cluster on EC2 and deploy Titan over HBase. To follow these instructions, you need an Amazon <span class="caps">AWS</span> account with established authentication credentials and some basic knowledge of <span class="caps">AWS</span> and EC2.</p>
+<p>The following commands first launch a four-node HBase cluster on EC2 via <a href="http://whirr.apache.org/">Whirr</a>, then run a basic Titan test case using the cluster.</p>
+<p>The configuration described below puts one HBase master server in charge of three HBase regionservers.  The master will be the sole member of the Zookeeper quorum by which Titan connects to HBase.</p>
+<p>Whirr 0.7.1 sometimes fails when run on a machine behind a <span class="caps">NAT</span> (<a href="https://issues.apache.org/jira/browse/WHIRR-459">WHIRR-459</a>).  For this reason, it’s recommended to use at least Whirr 0.7.2.  Whirr 0.8.0 was used to test the following commands on a t1.micro instance running Amazon Linux 2012.03.  These commands might need tweaking to produce the intended results on environments besides a t1.micro instance running Amazon Linux 2012.03.</p>
+<pre><code># These commands were executed on a t1.micro instance running Amazon Linux 2012.03 x86_64.
+# The AMI identifier for Amazon Linux 2012.03 x86_64 is ami-aecd60c7.
+# [[https://console.aws.amazon.com/ec2/home?region=us-east-1#launchAmi=ami-aecd60c7]]
+export AWS_ACCESS_KEY_ID=... # Set your Access Key here
+export AWS_SECRET_ACCESS_KEY=... # Set your Secret Key here
+curl -O [[http://www.apache.org/dist/whirr/whirr-0.8.0/whirr-0.8.0.tar.gz]]
+tar -xzf whirr-0.8.0.tar.gz &amp;&amp; cd whirr-0.8.0
+# Generate an SSH keypair with which Whirr will deploy and manage instances
+ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa_whirr
+# Download a Whirr recipe for deploying HBase 0.94.1 with hadoop-core 1.0.3
+pushd recipes &amp;&amp; wget 'https://raw.github.com/thinkaurelius/titan/master/config/whirr-hbase.properties' ; popd
+bin/whirr launch-cluster --config recipes/whirr-hbase.properties --private-key-file ~/.ssh/id_rsa_whirr
+# Run a superficial health check on the hbase-master node (this should print "imok")
+echo "ruok" | nc $(awk '{print $3}' ~/.whirr/hbase-testing/instances | head -1) 2181; echo
+# Login to the HBase master node to run the remaining commands
+ssh -i ~/.ssh/id_rsa_whirr -o "UserKnownHostsFile /dev/null" -o StrictHostKeyChecking=no `grep hbase-master ~/.whirr/hbase-testing/instances | awk '{print $3}'`
+# Maven 2 is available through the package manager, but an incompatibility
+# with surefire 2.12 makes it a pain to use; here we download Maven 3 without
+# the OS package manager
+wget 'http://archive.apache.org/dist/maven/maven-3/3.0.4/binaries/apache-maven-3.0.4-bin.tar.gz'
+tar -xzf apache-maven-3.0.4-bin.tar.gz
+# Install git
+sudo apt-get install -y git-core
+# Clone Titan
+git clone 'git://github.com/thinkaurelius/titan.git' &amp;&amp; cd titan
+# Run a HBase-backed test of Titan
+#
+# This test should produce pages of output ending in something like this:
+#
+# -------------------------------------------------------
+#  T E S T S
+# -------------------------------------------------------
+# Running com.thinkaurelius.titan.graphdb.hbase.ExternalHBaseGraphPerformanceTest
+# Starting trial 1/1
+# 10000
+# 20000
+# 30000
+# 40000
+# 50000
+# Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 303.659 sec
+#
+# Results :
+#
+# Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+#
+# [INFO] ------------------------------------------------------------------------
+# [INFO] BUILD SUCCESS
+# [INFO] ------------------------------------------------------------------------
+~/apache-maven-3.0.4/bin/mvn test -Dtest=ExternalHBaseGraphPerformanceTest#unlabeledEdgeInsertion
+# Check on hadoop 
+hadoop version # Should print 1.0.3
+# List the hadoop root; should print something like:
+#
+# Found 4 items
+# drwxr-xr-x   - hadoop supergroup          0 2012-09-20 00:20 /hadoop
+# drwxr-xr-x   - hadoop supergroup          0 2012-09-20 00:42 /hbase
+# drwxrwxrwx   - hadoop supergroup          0 2012-09-20 00:20 /tmp
+# drwxrwxrwx   - hadoop supergroup          0 2012-09-20 00:20 /user
+hadoop fs -ls /</code></pre>
+<h2>Tips and Tricks for Managing an HBase Cluster<a class="anchor" id="Tips-and-Tricks-for-Managing-an-HBase-Cluster" href="#Tips-and-Tricks-for-Managing-an-HBase-Cluster"></a></h2>
+<p>The <a href="http://wiki.apache.org/hadoop/Hbase/Shell">HBase shell</a> on the master server can be used to get an overal status check of the cluster.</p>
+<div class="highlight"><pre><span class="nv">$HBASE_HOME</span>/bin/hbase shell
+</pre></div>
+<p>From the shell, the following commands are generally useful for understanding the status of the cluster.</p>
+<div class="highlight"><pre><span class="n">status</span> <span class="s1">'titan'</span>
+<span class="n">status</span> <span class="s1">'simple'</span>
+<span class="n">status</span> <span class="s1">'detailed'</span>
+</pre></div>
+<p>The above commands can identify if a region server has gone down. If so, it is possible to <code>ssh</code> into the failed region server machines and do the following:</p>
+<div class="highlight"><pre>sudo -u hadoop <span class="nv">$HBASE_HOME</span>/bin/hbase-daemon.sh stop regionserver
+sudo -u hadoop <span class="nv">$HBASE_HOME</span>/bin/hbase-daemon.sh start regionserver
+</pre></div>
+<p>The use of <a href="http://code.google.com/p/parallel-ssh/">pssh</a> can make this process easy as there is no need to log into each machine individually to run the commands. Put the IP addresses of the regionservers into a <code>hosts.txt</code> file and then execute the following.</p>
+<div class="highlight"><pre>pssh -h host.txt sudo -u hadoop <span class="nv">$HBASE_HOME</span>/bin/hbase-daemon.sh stop regionserver
+pssh -h host.txt sudo -u hadoop <span class="nv">$HBASE_HOME</span>/bin/hbase-daemon.sh start regionserver
+</pre></div>
+<p>Next, sometimes you need to restart the master server (e.g. connection refused exceptions). To do so, on the master execute the following:</p>
+<div class="highlight"><pre>sudo -u hadoop <span class="nv">$HBASE_HOME</span>/bin/hbase-daemon.sh stop master
+sudo -u hadoop <span class="nv">$HBASE_HOME</span>/bin/hbase-daemon.sh start master
+</pre></div>
+<p>Finally, if an HBase cluster has already been deployed and more memory is required of the master or region servers, simply edit the <code>$HBASE_HOME/conf/hbase-env.sh</code> files on the respective machines with requisite <code>-Xmx -Xms</code> parameters. Once edited, stop/start the master and/or region servers as described previous.</p>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-22 02:30:01</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

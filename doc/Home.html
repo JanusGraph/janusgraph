@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Home</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Home</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Home"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Home"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><span class="float-left"><span><img src="images/titan-logo.png" width="420px" /></span></span> <br />
+Titan is a distributed <a href="http://en.wikipedia.org/wiki/Graph_database">graph database</a> optimized for storing and querying massive-scale <a href="http://en.wikipedia.org/wiki/Graph_(mathematics)">graphs</a> represented over a cluster of machines. The cluster can elastically scale to support a growing dataset and user base. Titan has a pluggable storage architecture which allows it to build on proven database technology such as <a href="http://cassandra.apache.org/">Apache Cassandra</a>, <a href="http://hbase.apache.org/">Apache HBase</a>, or <a href="http://www.oracle.com/technetwork/database/berkeleydb/">Oracle BerkeleyDB</a>. Furthermore, a pluggable indexing architecture supports <a href="http://elasticsearch.com/">ElasticSearch</a> and <a href="http://lucene.apache.org/">Lucene</a>. Titan is a native <a href="http://blueprints.tinkerpop.com">Blueprints</a> enabled graph database and as such, it supports the full <a href="http://tinkerpop.com">TinkerPop</a> stack of technologies.</p>
+<p><a href="https://github.com/thinkaurelius/titan/wiki/Downloads"><span class="float-right"><span><img src="images/download-button.png" /></span></span></a></p>
+<p><br /><br /><br /><br /><br /></p>
+<p>Please use Aurelius’s <a href="https://groups.google.com/forum/#!forum/aureliusgraphs">mailing list</a> for all Titan related questions. For TinkerPop related discussions, use the Gremlin-Users <a href="https://groups.google.com/forum/#!forum/gremlin-users">mailing list</a>.<br />
+For <a href="http://thinkaurelius.com/subscription/">commercial Titan support</a>, please <a href="mailto:info@thinkaurelius.com">contact</a> the graph experts at <a href="http://thinkaurelius.com">Aurelius</a>.</p>
+<div class="highlight"><pre><span class="nt">&lt;dependency&gt;</span>
+   <span class="nt">&lt;groupId&gt;</span>com.thinkaurelius.titan<span class="nt">&lt;/groupId&gt;</span>
+   <span class="nt">&lt;artifactId&gt;</span>titan-core<span class="nt">&lt;/artifactId&gt;</span>
+   <span class="nt">&lt;version&gt;</span>0.3.0<span class="nt">&lt;/version&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+<span class="c">&lt;!-- core, all, cassandra, hbase, berkeleyje, es, lucene --&gt;</span>
+</pre></div>
+<p><strong>Version Numbers</strong></p>
+<ul><li>Titan 0.1.z is deprecated and will no longer be supported.</li>
+	<li>Titan 0.2.z is still active and updates will continue.</li>
+	<li>Titan 0.3.z is new with experimental features.</li>
+</ul><h2>Titan Manual<a class="anchor" id="Titan-Manual" href="#Titan-Manual"></a></h2>
+<ul><li>Introduction
+	<ul><li><a class="internal present" href="Beginner%27s-Guide.html">Beginner's Guide</a></li>
+		<li><a class="internal present" href="The-Benefits-of-Titan.html">The Benefits of Titan</a></li>
+		<li><a class="internal present" href="Getting-Started.html">Getting Started</a></li>
+		<li><a href="http://www.youtube.com/watch?v=ZkAYA4Kd8JE">Introduction to Titan Video</a> <em>(external)</em></li>
+		<li><a href="http://www.slideshare.net/slidarko/titan-the-rise-of-big-graph-data">Comprehensive Presentation on Titan</a> <em>(external)</em></li>
+	</ul></li>
+	<li>Using Titan
+	<ul><li>Titan Interfaces (<a href="http://thinkaurelius.github.com/titan/javadoc/current">JavaDoc</a>)
+		<ul><li><a class="internal present" href="Blueprints-Interface.html">Blueprints Interface</a> (<strong><a href="http://blueprints.tinkerpop.com">full documentation</a></strong>)</li>
+			<li><a class="internal present" href="Gremlin-Query-Language.html">Gremlin Query Language</a> (<strong><a href="http://gremlin.tinkerpop.com">full documentation</a></strong>)
+			<ul><li><a href="http://gremlindocs.com/">GremlinDocs</a> (<strong>cheat sheet</strong>)</li>
+			</ul></li>
+			<li><a class="internal present" href="Titan-Server.html">Titan Server</a></li>
+			<li><a class="internal present" href="Rexster-Graph-Server.html">Rexster Graph Server</a> (<strong><a href="http://rexster.tinkerpop.com">full documentation</a></strong>)</li>
+			<li><a class="internal present" href="TinkerPop-Graph-Stack.html">TinkerPop Graph Stack</a></li>
+		</ul></li>
+		<li>Transactions
+		<ul><li><a class="internal present" href="Transaction-Handling.html">Transaction Handling</a></li>
+			<li><a class="internal present" href="Multi-Threaded-Transactions.html">Multi-Threaded Transactions</a></li>
+		</ul></li>
+		<li><a class="internal present" href="Titan-Limitations.html">Titan Gotchas and Limitations</a></li>
+	</ul></li>
+	<li>Managing Titan
+	<ul><li>Storage Backends
+		<ul><li><a class="internal present" href="Storage-Backend-Overview.html">Storage Backend Overview</a></li>
+			<li><a class="internal present" href="Using-BerkeleyDB.html">Using BerkeleyDB</a></li>
+			<li><a class="internal present" href="Using-Cassandra.html">Using Cassandra</a></li>
+			<li><a class="internal present" href="Using-HBase.html">Using HBase</a></li>
+		</ul></li>
+		<li>Indexing Backends
+		<ul><li><a class="internal present" href="Indexing-Backend-Overview.html">Indexing Backend Overview</a></li>
+			<li><a class="internal present" href="Using-Elastic-Search.html">Using Elastic Search</a></li>
+			<li><a class="internal present" href="Using-Lucene.html">Using Lucene</a></li>
+		</ul></li>
+		<li>Type Management
+		<ul><li><a class="internal present" href="Type-Definition-Overview.html">Type Definition Overview</a> (<strong>cheat sheet</strong>)</li>
+		</ul></li>
+		<li>Configuration and Tuning
+		<ul><li><a class="internal present" href="Graph-Configuration.html">Graph Configuration</a> (<strong>cheat sheet</strong>)</li>
+			<li><a class="internal present" href="Datatype-and-Attribute-Serializer-Configuration.html">Datatype and Attribute Serializer Configuration</a></li>
+		</ul></li>
+	</ul></li>
+	<li>Advanced Topics
+	<ul><li><a class="internal present" href="Global-Graph-Analytics.html">Global Graph Analytics</a></li>
+		<li><a class="internal present" href="Advanced-Blueprints.html">Advanced Blueprints</a></li>
+		<li><a class="internal present" href="Building-Titan.html">Building Titan</a></li>
+	</ul></li>
+	<li>Titan Tutorials
+	<ul><li><a class="internal present" href="Generating-Artificial-Natural-Graphs.html">Generating Artificial Natural Graphs</a></li>
+		<li><a class="internal present" href="Titan-Presentations.html">Titan Presentations</a></li>
+	</ul></li>
+	<li><a class="internal present" href="Upgrade-Instructions.html">Upgrade Instructions</a></li>
+	<li>Related Third Party Projects
+	<ul><li><a href="http://bulbflow.com/">Blubflow</a> (Python)</li>
+		<li><a href="https://github.com/gameclosure/hermes">Hermes</a> (Clojure)</li>
+	</ul></li>
+	<li><a class="internal present" href="Version-Compatibility.html">Version Compatibility</a> (<strong>cheat sheet</strong>)</li>
+	<li><a class="internal present" href="Acknowledgements.html">Acknowledgements</a></li>
+	<li><a class="internal present" href="Release-Notes.html">Release Notes</a></li>
+</ul><hr /><p>The documentation in this wiki is respective of the current master branch, not the latest release.</p>
+<p>JavaDoc: <a href="http://thinkaurelius.github.com/titan/javadoc/0.3.0/">0.3.0</a> — <a href="http://thinkaurelius.github.com/titan/javadoc/0.2.1/">0.2.1</a> — <a href="http://thinkaurelius.github.com/titan/javadoc/0.2.0/">0.2.0</a> — <a href="http://thinkaurelius.github.com/titan/javadoc/0.1.0/">0.1.0</a><br />
+WikiDoc: <a href="http://thinkaurelius.github.com/titan/wikidoc/0.3.0/">0.3.0</a> — <a href="http://thinkaurelius.github.com/titan/wikidoc/0.2.1/">0.2.1</a> — <a href="http://thinkaurelius.github.com/titan/wikidoc/0.2.0/">0.2.0</a> — <a href="http://thinkaurelius.github.com/titan/wikidoc/0.1.0/">0.1.0</a></p>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>vadasg</b>, 2013-03-29 10:02:27</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

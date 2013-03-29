@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Using BerkeleyDB</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Using BerkeleyDB</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Using-BerkeleyDB"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Using-BerkeleyDB"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><a href="http://www.oracle.com/technetwork/products/berkeleydb"><span class="float-left"><span><img src="http://sepp.oetiker.ch/subversion-1.4.4-rp/images/Oracle_BerkeleyDB_clr.bmp" width="300px" /></span></span></a></p>
+<p>The <a href="http://www.oracle.com/technetwork/products/berkeleydb">Oracle BerkeleyDB</a> storage backend runs in the same <span class="caps">JVM</span> as Titan and provides local persistence on a single machine. Hence, the BerkeleyDB storage backend requires that all of the graph data fits on the local disk and all of the frequently accessed graph elements fit into main memory. This imposes a practical limitation of graphs with 10-100s million vertices on commodity hardware. However, for graphs of that size the BerkeleyDB storage backend exhibits high performance because all data can be accessed locally within the same <span class="caps">JVM</span>.<br /><br /></p>
+<blockquote>
+<p>Berkeley DB enables the development of custom data management solutions, without the overhead traditionally associated with such custom projects. Berkeley DB provides a collection of well-proven building-block technologies that can be configured to address any application need from the hand-held device to the datacenter, from a local storage solution to a world-wide distributed one, from kilobytes to petabytes. — <a href="http://www.oracle.com/technetwork/products/berkeleydb">BerkeleyDB Homepage</a></p>
+</blockquote>
+<h2>BerkeleyDB Setup<a class="anchor" id="BerkeleyDB-Setup" href="#BerkeleyDB-Setup"></a></h2>
+<p>Since BerkeleyDB runs in the same <span class="caps">JVM</span> as Titan, connecting the two only requires a simple configuration and no additional setup:</p>
+<div class="highlight"><pre><span class="n">Configuration</span> <span class="n">conf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BaseConfiguration</span><span class="o">();</span>
+<span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.directory"</span><span class="o">,</span> <span class="s">"/tmp/graph"</span><span class="o">);</span>
+<span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.backend"</span><span class="o">,</span> <span class="s">"berkeleyje"</span><span class="o">);</span>
+<span class="n">TitanGraph</span> <span class="n">graph</span> <span class="o">=</span> <span class="n">TitanFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="n">conf</span><span class="o">);</span>
+</pre></div>
+<p>In the Gremlin shell, you can not define the type of the variables <code>conf</code> and <code>g</code>. Therefore, simply leave off the type declaration.</p>
+<p>Currently, BerkeleyDB is the default local storage backend. So, we can use the TitanFactory helper method to open the same graph database.</p>
+<div class="highlight"><pre><span class="n">TitanGraph</span> <span class="n">graph</span> <span class="o">=</span> <span class="n">TitanFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="s">"/tmp/graph"</span><span class="o">)</span>
+</pre></div>
+<p>This has the same effect as the configuration above, with the only difference that it will create the directory in case it does not already exist where the configuration above would raise an exception.</p>
+<h2>BerkeleyDB Specific Configuration<a class="anchor" id="BerkeleyDB-Specific-Configuration" href="#BerkeleyDB-Specific-Configuration"></a></h2>
+<p>In addition to the general <a href="Graph-Configuration">Titan Graph Configuration</a>, there are the following BerkeleyDB specific Titan configuration options:</p>
+<table><tr><th>Option </th>
+		<th>Description </th>
+		<th>Value </th>
+		<th>Default </th>
+		<th>Modifiable </th>
+	</tr><tr><td> storage.transactions </td>
+		<td> Enables transactions and detects conflicting database operations. <strong><span class="caps">CAUTION</span>:</strong> While disabling transactions can lead to better performance it can cause to inconsistencies and even corrupt the database if multiple Titan instances interact with the same instance of BerkeleyDB. </td>
+		<td> <em>true</em> or <em>false</em> </td>
+		<td> <em>true</em> </td>
+		<td> yes </td>
+	</tr><tr><td> storage.cache-percentage </td>
+		<td> The percentage of <span class="caps">JVM</span> heap space (configured via -Xmx) to be allocated to BerkeleyDB for its cache. Try to give BerkeleyDB as much space as possible without causing memory problems for Titan. For instance, if Titan only runs short transactions, use a value of 80 or higher. </td>
+		<td> 1-99 </td>
+		<td> 65 </td>
+		<td> Yes </td>
+	</tr></table><h2>Ideal Use Case<a class="anchor" id="Ideal-Use-Case" href="#Ideal-Use-Case"></a></h2>
+<p>The BerkeleyDB storage backend is best suited for small to medium size graphs with up to 100 million vertices on commodity hardware. For graphs of that size, it will likely deliver higher performance than the distributed storage backends. Note, that BerkeleyDB is also limited in the number of concurrent requests it can handle efficiently because it runs on a single machine. Hence, it is not well suited for applications with many concurrent users mutating the graph, even if that graph is small to medium size.</p>
+<p>Since BerkeleyDB runs in the same <span class="caps">JVM</span> as Titan, this storage backend is ideally suited for unit testing of application code using Titan.</p>
+<h2>Global Graph Operations<a class="anchor" id="Global-Graph-Operations" href="#Global-Graph-Operations"></a></h2>
+<p>Titan backed by BerkeleyDB supports global graph operations such as iterating over all vertices or edges. However, note that such operations need to scan the entire database which can require a significant amount of time for larger graphs.</p>
+<p>In order to not run out of memory, it is advised to <a class="internal present" href="Graph-Configuration.html">disable transactions</a> when iterating over large graphs. Having transactions enabled requires BerkeleyDB to acquire read locks on the data it is reading. When iterating over the entire graph, these read locks can easily require more memory than is available.</p>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2012-12-23 15:45:04</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

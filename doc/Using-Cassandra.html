@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Using Cassandra</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Using Cassandra</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Using-Cassandra"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Using-Cassandra"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><a href="http://cassandra.apache.org/"><img src="http://cassandra.apache.org/media/img/cassandra_logo.png" alt="" /></a></p>
+<blockquote>
+<p>The Apache Cassandra database is the right choice when you need scalability and high availability without compromising performance. Linear scalability and proven fault-tolerance on commodity hardware or cloud infrastructure make it the perfect platform for mission-critical data. Cassandra’s support for replicating across multiple datacenters is best-in-class, providing lower latency for your users and the peace of mind of knowing that you can survive regional outages. The largest known Cassandra cluster has over 300 TB of data in over 400 machines. — <a href="http://cassandra.apache.org/">Apache Cassandra Homepage</a></p>
+</blockquote>
+<h2>Deploying on Managed Machines<a class="anchor" id="Deploying-on-Managed-Machines" href="#Deploying-on-Managed-Machines"></a></h2>
+<p>The following sections outline the various ways in which Titan can be used in concert with Cassandra.</p>
+<h3>Local Server Mode<a class="anchor" id="Local-Server-Mode" href="#Local-Server-Mode"></a></h3>
+<p><img src="images/titan-modes-local.png" alt="" /></p>
+<p>Cassandra can be run as a standalone database on the same local host as Titan and the end-user application. In this model, Titan and Cassandra communicate with one another via a <code>localhost</code> socket. Running Titan over Cassandra requires the following setup steps:</p>
+<ol><li><a href="http://cassandra.apache.org/download/">Download</a>, unpack, and <a href="http://wiki.apache.org/cassandra/GettingStarted">setup</a> Cassandra on your local machine.</li>
+	<li>Start Cassandra by invoking <code>bin/cassandra -f</code> on the command line in the directory where Cassandra was unpacked. Ensure that Cassandra started successfully.</li>
+</ol><p>Now, you can create a Cassandra TitanGraph as follows:</p>
+<div class="highlight"><pre><span class="n">Configuration</span> <span class="n">conf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BaseConfiguration</span><span class="o">();</span>
+<span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.backend"</span><span class="o">,</span><span class="s">"cassandra"</span><span class="o">);</span>
+<span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.hostname"</span><span class="o">,</span><span class="s">"127.0.0.1"</span><span class="o">);</span>
+<span class="n">TitanGraph</span> <span class="n">g</span> <span class="o">=</span> <span class="n">TitanFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="n">conf</span><span class="o">);</span>
+</pre></div>
+<p>In the Gremlin shell, you can not define the type of the variables <code>conf</code> and <code>g</code>. Therefore, simply leave off the type declaration.</p>
+<h3>Remote Server Mode<a class="anchor" id="Remote-Server-Mode" href="#Remote-Server-Mode"></a></h3>
+<p><img src="images/titan-modes-distributed.png" alt="" /></p>
+<p>When the graph needs to scale beyond the confines of a single machine, then Cassandra and Titan are logically separated into different machines. In this model, the Cassandra cluster maintains the graph representation and any number of Titan instances maintain socket-based read/write access to the Cassandra cluster. The end-user application can directly interact with Titan within the same <span class="caps">JVM</span> as Titan.</p>
+<p>For example, suppose we have a running Cassandra cluster where one of the machines has the IP address 77.77.77.77, then connecting Titan with the cluster is accomplished as follows:</p>
+<div class="highlight"><pre><span class="n">Configuration</span> <span class="n">conf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BaseConfiguration</span><span class="o">();</span>
+<span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.backend"</span><span class="o">,</span><span class="s">"cassandra"</span><span class="o">);</span>
+<span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.hostname"</span><span class="o">,</span><span class="s">"77.77.77.77"</span><span class="o">);</span>
+<span class="n">TitanGraph</span> <span class="n">g</span> <span class="o">=</span> <span class="n">TitanFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="n">conf</span><span class="o">);</span>
+</pre></div>
+<p>In the Gremlin shell, you can not define the type of the variables <code>conf</code> and <code>g</code>. Therefore, simply leave off the type declaration.</p>
+<h3>Remote Server Mode with Rexster<a class="anchor" id="Remote-Server-Mode-with-Rexster" href="#Remote-Server-Mode-with-Rexster"></a></h3>
+<p><img src="images/titan-modes-rexster.png" alt="" /></p>
+<p>Rexster can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Rexster over <span class="caps">REST</span>. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.</p>
+<div class="highlight"><pre>http://rexster.titan.machine1/mygraph/vertices/1
+http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
+</pre></div>
+<p>In this case, each Rexster server would be configured to connect to the Cassandra cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to the <a href="Rexster-Graph-Server">Rexster configuration page</a> for a complete example.</p>
+<div class="highlight"><pre>  <span class="nt">&lt;graph&gt;</span>
+    <span class="nt">&lt;graph-name&gt;</span>mygraph<span class="nt">&lt;/graph-name&gt;</span>
+    <span class="nt">&lt;graph-type&gt;</span>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration<span class="nt">&lt;/graph-type&gt;</span>
+    <span class="nt">&lt;graph-location&gt;&lt;/graph-location&gt;</span>
+    <span class="nt">&lt;graph-read-only&gt;</span>false<span class="nt">&lt;/graph-read-only&gt;</span>
+    <span class="nt">&lt;properties&gt;</span>
+          <span class="nt">&lt;storage.backend&gt;</span>cassandra<span class="nt">&lt;/storage.backend&gt;</span>
+          <span class="nt">&lt;storage.hostname&gt;</span>77.77.77.77<span class="nt">&lt;/storage.hostname&gt;</span>
+    <span class="nt">&lt;/properties&gt;</span>
+    <span class="nt">&lt;extensions&gt;</span>
+      <span class="nt">&lt;allows&gt;</span>
+        <span class="nt">&lt;allow&gt;</span>tp:gremlin<span class="nt">&lt;/allow&gt;</span>
+      <span class="nt">&lt;/allows&gt;</span>
+    <span class="nt">&lt;/extensions&gt;</span>
+  <span class="nt">&lt;/graph&gt;</span>
+</pre></div>
+<h3>Titan Embedded Mode<a class="anchor" id="Titan-Embedded-Mode" href="#Titan-Embedded-Mode"></a></h3>
+<p><img src="images/titan-modes-embedded.png" alt="" /></p>
+<p>Finally, Cassandra can be embedded in Titan, which means, that Titan and Cassandra run in the same <span class="caps">JVM</span> and communicate via in process calls rather than over the network. This removes the (de)serialization and network protocol overhead and can therefore lead to considerable performance improvements. In this deployment mode, Titan internally starts a cassandra daemon and Titan no longer connects to an existing cluster but is its own cluster.</p>
+<p>To use Titan in embedded mode, simply configure <code>embeddedcassandra</code> as the storage backend. The configuration options listed below also apply to embedded Cassandra. In creating a Titan cluster, ensure that the individual nodes can discover each other via the Gossip protocol, so setup a Titan-with-Cassandra-embedded cluster much like you would a stand alone Cassandra cluster. When running Titan in embedded mode, the Cassandra yaml file is configured using the additional configuration option <code>storage.cassandra-config-dir</code>, which specifies the yaml file as a full url, e.g. <code>storage.cassandra-config-dir = file:///home/cassandra.yaml</code>.</p>
+<p>When running a cluster with Titan and Cassandra embedded, it is advisable to expose Titan through the Rexster server so that applications can remotely connect to the Titan graph database and execute queries. To make this setup easy and simple, Titan comes packaged with <a class="internal present" href="Titan-Server.html">Titan Server</a>.</p>
+<h2>Cassandra Specific Configuration<a class="anchor" id="Cassandra-Specific-Configuration" href="#Cassandra-Specific-Configuration"></a></h2>
+<p>In addition to the general <a href="Graph-Configuration">Titan Graph Configuration</a>, there are the following Cassandra specific Titan configuration options:</p>
+<table><tr><th>Option </th>
+		<th>Description </th>
+		<th>Value </th>
+		<th>Default </th>
+		<th>Modifiable </th>
+	</tr><tr><td> storage.keyspace </td>
+		<td> Name of the keyspace in which to store the Titan specific column families </td>
+		<td> String </td>
+		<td> titan </td>
+		<td> No </td>
+	</tr><tr><td> storage.hostname </td>
+		<td> IP address or hostname of the Cassandra cluster node that this Titan instance connects to. Use a list of comma-separated hostnames or IP addresses to seed multiple multiple cassandra nodes. </td>
+		<td> IP address or hostname </td>
+		<td> – </td>
+		<td> Yes </td>
+	</tr><tr><td> storage.port </td>
+		<td> Port on which to connect to Cassandra cluster node </td>
+		<td> Integer </td>
+		<td> 9160 </td>
+		<td> Yes </td>
+	</tr><tr><td> storage.connection-timeout </td>
+		<td> Default time out in milliseconds after which to fail a connection attempt with a Cassandra node </td>
+		<td> Integer </td>
+		<td> 10000 </td>
+		<td> Yes </td>
+	</tr><tr><td> storage.connection-pool-size </td>
+		<td> Maximum size of the connection pool for connections to the Cassandra cluster </td>
+		<td> Integer </td>
+		<td> 32 </td>
+		<td> Yes </td>
+	</tr><tr><td> storage.read-consistency-level </td>
+		<td> Cassandra consistency level for read operations </td>
+		<td> – </td>
+		<td> <span class="caps">QUORUM</span> </td>
+		<td> Yes </td>
+	</tr><tr><td> storage.write-consistency-level </td>
+		<td> Cassandra consistency level for write operations </td>
+		<td> – </td>
+		<td> <span class="caps">QUORUM</span> </td>
+		<td> Yes </td>
+	</tr><tr><td> storage.replication-factor </td>
+		<td> The replication factor to use. The higher the replication factor, the more robust the graph database is to machine failure at the expense of data duplication. <strong>The default value should be overwritten for production system to ensure robustness. A value of 3 is recommended.</strong> This replication factor can only be set when the keyspace is initially created. <em>On an existing keyspace, this value is ignored.</em> </td>
+		<td> Integer </td>
+		<td> 1 </td>
+		<td> No </td>
+	</tr><tr><td> storage.cassandra.thrift.frame_size_mb </td>
+		<td> The maximum frame size to be used by thrift for transport. Increase this value when retrieving very large result sets. <em>Only applicable when storage.backend=cassandrathrift</em> </td>
+		<td> Integer </td>
+		<td> 16 </td>
+		<td> No </td>
+	</tr></table><p>For more information on Cassandra consistency levels and acceptable values, please refer to the <a href="http://wiki.apache.org/cassandra/API">Cassandra documentation</a>. In general, higher levels are more consistent and robust but have higher latency.</p>
+<h2>Global Graph Operations<a class="anchor" id="Global-Graph-Operations" href="#Global-Graph-Operations"></a></h2>
+<p>Titan over Cassandra supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause <code>OutOfMemoryException</code>. Use <a href="http://thinkaurelius.github.com/faunus/">Faunus</a> to iterate over all vertices or edges in large graphs.</p>
+<h2>Deploying on Amazon EC2<a class="anchor" id="Deploying-on-Amazon-EC2" href="#Deploying-on-Amazon-EC2"></a></h2>
+<p><a href="http://aws.amazon.com/ec2/"><img src="http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick//logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png" alt="" /></a></p>
+<blockquote>
+<p><a href="http://aws.amazon.com/ec2/">Amazon EC2</a>  is a web service that provides resizable compute capacity in the cloud. It is designed to make web-scale computing easier for developers.</p>
+</blockquote>
+<p>Follow these steps to setup a Cassandra cluster on EC2 and deploy Titan over Cassandra. To follow these instructions, you need an Amazon <span class="caps">AWS</span> account with established authentication credentials and some basic knowledge of <span class="caps">AWS</span> and EC2.</p>
+<h3>Setup Cassandra Cluster<a class="anchor" id="Setup-Cassandra-Cluster" href="#Setup-Cassandra-Cluster"></a></h3>
+<p>These instructions for configuring and launching the DataStax Cassandra Community Edition <span class="caps">AMI</span> are based on the excellent <a href="http://www.datastax.com/docs/datastax_enterprise2.0/ami/install_dse_ami">documentation from DataStax</a> and focus on aspects relevant for a Titan deployment.</p>
+<h4>Setting up Security Group<a class="anchor" id="Setting-up-Security-Group" href="#Setting-up-Security-Group"></a></h4>
+<ul><li>Navigate to the EC2 Console Dashboard, then click on <em>Security Groups</em> under <em>Network &amp; Security</em>.</li>
+</ul><ul><li>Create a new security group. Click Inbound.  Set the “Create a new rule” dropdown menu to “Custom <span class="caps">TCP</span> rule”.  Add a rule for port 22 from source 0.0.0.0/0.  Add a rule for ports 1024-65535 from the security group members.  If you<br />
+don’t want to open all unprivileged ports among security group members, then at least open 7000, 7199, and 9160 among security group members.  Tip: the “Source” dropdown will autocomplete security group identifiers once “sg” is typed in the box, so you needn’t have the exact value ready beforehand.</li>
+</ul><h4>Launch DataStax Cassandra <span class="caps">AMI</span><a class="anchor" id="Launch-DataStax-Cassandra-AMI" href="#Launch-DataStax-Cassandra-AMI"></a></h4>
+<ul><li><a href="https://aws.amazon.com/amis/datastax-auto-clustering-ami-2-2">Launch the DataStax <span class="caps">AMI</span></a> in your desired zone</li>
+</ul><ul><li>On the Instance Details page of the Request Instances Wizard, set “Number of Instances” to your desired number of Cassandra nodes. Set “Instance Type” to at least m1.large. We recommend m1.large.</li>
+</ul><ul><li>On the Advanced Instance Options page of the Request Instances Wizard, set the “as text” radio button under “User Data”, then fill this into the text box:</li>
+</ul><div class="highlight"><pre>--clustername [cassandra-cluster-name]
+--totalnodes [number-of-instances]
+--version community 
+--opscenter no
+</pre></div><br />
+[number-of-instances] in this configuration must match the number of EC2 instances configured on the previous wizard page. [cassandra-cluster-name] can be any string used for identification. For example:
+<div class="highlight"><pre>--clustername titan
+--totalnodes 4
+--version community 
+--opscenter no
+</pre></div>
+<ul><li>On the Tags page of the Request Instances Wizard you can apply any desired configurations. These tags exist only at the EC2 administrative level and have no effect on the Cassandra daemons’ configuration or operation.</li>
+</ul><ul><li>On the Create Key Pair page of the Request Instances Wizard, either select an existing key pair or create a new one.  The <span class="caps">PEM</span> file containing the private half of the selected key pair will be required to connect to these instances.</li>
+</ul><ul><li>On the Configure Firewall page of the Request Instances Wizard, select the security group created earlier.</li>
+</ul><ul><li>Review and launch instances on the final wizard page.</li>
+</ul><h4>Verify Successful Instance Launch<a class="anchor" id="Verify-Successful-Instance-Launch" href="#Verify-Successful-Instance-Launch"></a></h4>
+<ul><li><span class="caps">SSH</span> into any Cassandra instance node: <code>ssh -i [your-private-key].pem ubuntu</code>[public-dns-name-of-any-cassandra-instance]@</li>
+</ul><ul><li>Run the Cassandra nodetool <code>nodetool -h 127.0.0.1 ring</code> to inspect the state of the Cassandra token ring.  You should see as many nodes in this command’s output as instances launched in the previous steps.</li>
+</ul><p>Note, that the <span class="caps">AMI</span> takes a few minutes to configure each instance. A shell prompt will appear upon successful configuration when you <span class="caps">SSH</span> into the instance.</p>
+<h3>Launch Titan Instances<a class="anchor" id="Launch-Titan-Instances" href="#Launch-Titan-Instances"></a></h3>
+<p>Launch additional EC2 instances to run Titan which are either configured in <em>Remote Server Mode</em> or <em>Remote Server Mode with Rexster</em> as described above. You only need to note the IP address of one of the Cassandra cluster instances and configure it as the host name. The particular EC2 instance to run and the particular configuration depends on your use case.</p>
+<h4>Example Titan Instance on Amazon Linux <span class="caps">AMI</span><a class="anchor" id="Example-Titan-Instance-on-Amazon-Linux-AMI" href="#Example-Titan-Instance-on-Amazon-Linux-AMI"></a></h4>
+<ul><li>Launch the <a href="http://aws.amazon.com/amazon-linux-ami">Amazon Linux <span class="caps">AMI</span></a> in the same zone of the Cassandra cluster. Choose your desired EC2 instance type depending on the amount of resources you need. Use the default configuration options and select the same Key Pair and Security Group as for the Cassandra cluster configured in the previous step.</li>
+</ul><ul><li><span class="caps">SSH</span> into the newly created instance via <code>ssh -i [your-private-key].pem ec2-user[public-dns-name-of-the-instance]</code>. You may have to wait a little for the instance to launch.</li>
+</ul><ul><li><a href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download</a> the current Titan distribution with <code>wget</code> and unpack the archive locally to the home directory. Start the gremlin shell to verify that Titan runs successfully. For more information on how to unpack Titan and start the gremlin shell, please refer to the <a href="Getting-Started">Getting Started guide</a>.</li>
+</ul><ul><li>Create a configuration file with <code>vi titan.properties</code> and add the following lines<br /><div class="highlight"><pre>storage.backend = cassandra
+storage.hostname = [IP-address-of-one-Cassandra-EC2-instance]
+</pre></div><br />
+You may add additional configuration options found on this page or under <a href="Graph-Configuration">Graph Configuration</a>.</li>
+</ul><ul><li>Start the gremlin shell again and type the following:<br /><div class="highlight"><pre>gremlin&gt; g = TitanFactory.open('titan.properties')              
+==&gt;titangraph[cassandra:[IP-address-of-one-Cassandra-EC2-instance]]
+</pre></div><br />
+You have successfully connected this Titan instance to the Cassandra cluster and can start to operate on the graph.</li>
+</ul>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 05:01:04</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

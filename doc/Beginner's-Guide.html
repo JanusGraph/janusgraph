@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Beginner's Guide</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Beginner's Guide</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Beginner%27s-Guide"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Beginner%27s-Guide"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><span class="float-right"><span><img src="https://raw.github.com/thinkaurelius/titan/master/doc/images/titan-kneeling.png" width="150px" /></span></span></p>
+<p>The Beginner’s Guide is a list of recommended pages to help Titan newcomers navigate the <a class="internal present" href="Home.html">Titan manual</a>.</p>
+<ol><li><a href="http://markorodriguez.com/2011/04/30/putting-and-getting-data-from-a-database/">Brief Primer on Graph Databases</a>: Introduction to graph databases in particular and databases in general</li>
+	<li><a href="https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model">The Property Graph Model</a>: The data model used by Titan</li>
+	<li><a class="internal present" href="Getting-Started.html">Getting Started</a>: A simple step-by-step guide to setting up and using Titan</li>
+	<li><a class="internal present" href="The-Benefits-of-Titan.html">The Benefits of Titan</a>: Why you should consider using the Titan graph database</li>
+	<li><a class="internal present" href="Blueprints-Interface.html">Titan's Core Interface</a>: How to manipulate and navigate a Titan graph</li>
+	<li><a class="internal present" href="Gremlin-Query-Language.html">Gremlin Query Language</a>: How to query a Titan graph database</li>
+	<li><a class="internal present" href="Rexster-Graph-Server.html">Rexster Graph Server</a>: How to expose a Titan graph as <span class="caps">REST</span> endpoint</li>
+	<li><a class="internal present" href="Transaction-Handling.html">Transaction Handling</a>: How to handle transactions and concurrent users</li>
+	<li><a class="internal present" href="Storage-Backend-Overview.html">Titan Storage Backends</a>: How to choose and deploy the optimal storage backend</li>
+	<li><a class="internal present" href="Indexing-Backend-Overview.html">Titan Indexing Backends</a>: How to choose and deploy indexing backends to provide geo, full-text, and numeric range search</li>
+	<li><a href="http://www.slideshare.net/slidarko/titan-the-rise-of-big-graph-data">Big Graph Data Presentation</a>: Big picture presentation on large-scale graph processing of which Titan is one part.</li>
+</ol>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 04:53:35</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

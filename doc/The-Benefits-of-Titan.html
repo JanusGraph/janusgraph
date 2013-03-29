@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>The Benefits of Titan</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>The Benefits of Titan</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/The-Benefits-of-Titan"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/The-Benefits-of-Titan"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p>Titan is designed to support the processing of graphs so large that they require storage and computational capacities beyond what a single machine can provide. This is Titan’s foundational benefit. This section will discuss the various specific benefits of Titan and its underlying, supported persistence solutions.</p>
+<h2>General Titan Benefits<a class="anchor" id="General-Titan-Benefits" href="#General-Titan-Benefits"></a></h2>
+<p><span class="float-right"><span><img src="images/titan-kneeling.png" width="150px" /></span></span></p>
+<ul><li>Support for very large graphs. Titan graphs scale with the number of machines in the cluster.</li>
+	<li>Support for very many concurrent transactions. Titan’s transactional capacity scale with the number of machines in the cluster.</li>
+	<li>Support for geo, numeric range, and full text search for vertices and edges on very large graphs.</li>
+	<li>Native support for the popular property graph data model exposed by <a href="http://blueprints.tinkerpop.com">Blueprints</a>.</li>
+	<li>Native support for the graph traversal language <a href="http://gremlin.tinkerpop.com">Gremlin</a>.</li>
+	<li>Easy integration with the <a href="http://rexster.tinkerpop.com">Rexster</a> graph server for programming language agnostic connectivity.</li>
+	<li>Numerous graph-level configurations provide knobs for tuning performance.</li>
+	<li>Vertex-centric indices provide vertex-level querying to alleviate issues with the infamous <a href="http://thinkaurelius.com/2012/10/25/a-solution-to-the-supernode-problem/">super node problem</a>.</li>
+	<li>Provides an optimized disk representation to allow for efficient use of storage and speed of access.</li>
+	<li>Open source under the liberal <a href="http://en.wikipedia.org/wiki/Apache_License">Apache 2 license</a>.</li>
+</ul><p><br /><br /><br /></p>
+<h2>Benefits of Titan with Cassandra<a class="anchor" id="Benefits-of-Titan-with-Cassandra" href="#Benefits-of-Titan-with-Cassandra"></a></h2>
+<p><a href="http://cassandra.apache.org/"><img src="http://cassandra.apache.org/media/img/cassandra_logo.png" alt="" /></a></p>
+<ul><li><a href="http://en.wikipedia.org/wiki/Continuous_availability">Continuously available</a> with no single point of failure.</li>
+	<li>No read/write bottlenecks to the graph as there is no master/slave architecture.</li>
+	<li><a href="http://en.wikipedia.org/wiki/Elastic_computing">Elastic scalability</a> allows for the introduction and removal of machines.</li>
+	<li>Caching layer ensures that continuously accessed data is available in memory.</li>
+	<li>Increase the size of the cache by adding more machines to the cluster.</li>
+	<li>Integration with <a href="http://hadoop.apache.org/">Hadoop</a>.</li>
+	<li>Open source under the liberal Apache 2 license.</li>
+</ul><h2>Benefits of Titan with HBase<a class="anchor" id="Benefits-of-Titan-with-HBase" href="#Benefits-of-Titan-with-HBase"></a></h2>
+<p><a href="http://hbase.apache.org/"><img src="http://hbase.apache.org/images/hbase_logo.png" alt="" /></a></p>
+<ul><li>Tight integration with the <a href="http://hadoop.apache.org/">Hadoop</a> ecosystem.</li>
+	<li>Native support for <a href="http://en.wikipedia.org/wiki/Strong_consistency">strong consistency</a>.</li>
+	<li>Linear scalability with the addition of more machines.</li>
+	<li><a href="http://en.wikipedia.org/wiki/Strict_consistency">Strictly consistent</a> reads and writes.</li>
+	<li>Convenient base classes for backing Hadoop <a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce</a> jobs with HBase tables.</li>
+	<li>Support for exporting metrics via <a href="http://en.wikipedia.org/wiki/Java_Management_Extensions"><span class="caps">JMX</span></a>.</li>
+	<li>Open source under the liberal Apache 2 license.</li>
+</ul><h2>Titan and the <span class="caps">CAP</span> Theorem<a class="anchor" id="Titan-and-the-CAP-Theorem" href="#Titan-and-the-CAP-Theorem"></a></h2>
+<p>When using a database, the <a href="http://en.wikipedia.org/wiki/CAP_theorem"><span class="caps">CAP</span> theorem</a> should be thoroughly considered (C=Consistency, A=Availability, P=Partitionability). Titan is distributed with 3 supporting backends: <a href="http://cassandra.apache.org/">Cassandra</a>, <a href="http://hbase.apache.org/">HBase</a>, and <a href="http://www.oracle.com/technetwork/products/berkeleydb/">BerkeleyDB</a>. Their tradeoffs with respect to the <span class="caps">CAP</span> theorem are represented in the diagram below. Note that BerkeleyDB is a non-distributed database and as such, is typically only used with Titan for testing and exploration purposes.</p>
+<p><span class="align-center"><span><img src="images/titan-captheorem.png" /></span></span><br /><br /></p>
+<blockquote>
+<p>“Despite your best efforts, your system will experience enough faults that it will have to make a choice between reducing yield (i.e., stop answering requests) and reducing harvest (i.e., giving answers based on incomplete data). This decision should be based on business requirements.” – <a href="http://codahale.com/you-cant-sacrifice-partition-tolerance">Coda Hale</a></p>
+</blockquote>
+<p>HBase gives preference to consistency at the expense of yield, i.e. the probability of completing a request. Cassandra gives preference to availability at the expense of harvest, i.e. the completeness of the answer to the query (data available/complete data).</p>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 02:10:19</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

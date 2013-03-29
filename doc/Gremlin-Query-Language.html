@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Gremlin Query Language</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Gremlin Query Language</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Gremlin-Query-Language"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Gremlin-Query-Language"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><a href="http://gremlin.tinkerpop.com"><img src="https://github.com/tinkerpop/gremlin/raw/master/doc/images/gremlin-logo.png" alt="" /></a></p>
+<p>Titan supports the standard <a href="http://gremlin.tinkerpop.com">Gremlin</a> graph query language for complex graph traversal and mutation operations. Gremlin is a <a href="http://en.wikipedia.org/wiki/Functional_programming">functional language</a> whereby traversal operators are chained together to form path-like expressions. For example, “from Hercules, traverse to his father and then his father’s father and return the grandfather’s name.”</p>
+<p>This section of documentation will only briefly overview Gremlin. For more complete documentation on Gremlin, please see the <a href="http://gremlin.tinkerpop.com">online documentation</a>. Moreover, the examples are with respects to Gremlin-Groovy and note that there are other <a href="https://github.com/tinkerpop/gremlin/wiki/JVM-Language-Implementations"><span class="caps">JVM</span> language implementations</a> of Gremlin.</p>
+<h2>Introductory Traversals<a class="anchor" id="Introductory-Traversals" href="#Introductory-Traversals"></a></h2>
+<p>When working with Gremlin, it is important to realize the query as a chain of operations/functions that are read from left to right. A simple grandfather query is provided below over the <em>Graph of the Gods</em> <a href="images/graph-of-the-gods-2.png">dataset</a>.</p>
+<div class="highlight"><pre>gremlin&gt; g.V('name','hercules').out('father').out('father').name
+==&gt;saturn
+</pre></div>
+<p>The query above can be read:</p>
+<ol><li><code>g</code>: for the current graph.</li>
+	<li><code>V('name','hercules')</code>: get all vertices with name property “hercules” (there is only one).</li>
+	<li><code>out('father')</code>: traverse outgoing father edge’s from Hercules.</li>
+	<li><code>out('father')</code>: traverse outgoing father edge’s from Hercules’ father’s vertex (i.e. Jupiter).</li>
+	<li><code>name</code>: get the name property of the “hercules” vertex’s grandfather.</li>
+</ol><p>Each step can be decomposed and its results demonstrated. This style of building up a traversal/query is useful when constructing larger, complex query chains.</p>
+<div class="highlight"><pre>gremlin&gt; g                                                            
+==&gt;titangraph[cassandrathrift:127.0.0.1]
+gremlin&gt; g.V('name','hercules')
+==&gt;v[24]
+gremlin&gt; g.V('name','hercules').out('father')
+==&gt;v[16]
+gremlin&gt; g.V('name','hercules').out('father').out('father')
+==&gt;v[20]
+gremlin&gt; g.V('name','hercules').out('father').out('father').name
+==&gt;saturn
+</pre></div>
+<p>For a sanity check, it is usually good to look at the properties of each return, not the assigned long id.</p>
+<div class="highlight"><pre>gremlin&gt; g.V('name','hercules').name                            
+==&gt;hercules
+gremlin&gt; g.V('name','hercules').out('father').name              
+==&gt;jupiter
+gremlin&gt; g.V('name','hercules').out('father').out('father').name
+==&gt;saturn
+</pre></div>
+<p>Note the related traversal that shows the entire father family tree branch of Hercules. This more complicated traversal is provided in order to demonstrate the flexibility and expressivity of the language. A competent grasp of Gremlin provides the Titan user the ability to fluently navigate the underlying graph structure.</p>
+<div class="highlight"><pre>gremlin&gt; g.V('name','hercules').out('father').loop(1){true}{true}.name
+==&gt;jupiter
+==&gt;saturn
+</pre></div>
+<p>Some more traversal examples are provided below.</p>
+<div class="highlight"><pre>gremlin&gt; hercules = g.V('name','hercules').next() 
+==&gt;v[24]
+gremlin&gt; hercules.out('father','mother').type
+==&gt;god
+==&gt;human
+gremlin&gt; hercules.out('battled').type
+==&gt;monster
+==&gt;monster
+==&gt;monster
+gremlin&gt; hercules.out('battled').map    
+==&gt;{name=nemean, type=monster}
+==&gt;{name=hydra, type=monster}
+==&gt;{name=cerberus, type=monster}
+</pre></div>
+<h2>Traversing with Functions<a class="anchor" id="Traversing-with-Functions" href="#Traversing-with-Functions"></a></h2>
+<p>Each <em>step</em> (denoted by a separating <code>.</code>) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see <a href="https://github.com/tinkerpop/gremlin/wiki/Gremlin-Steps">Gremlin Steps</a>). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. “co-battlers” or perhaps, “allies”). Given that <em>The Graph of the Gods</em> only has one battler (Hercules), another battler (for the sake of example) is added to the graph with Gremlin.</p>
+<div class="highlight"><pre>gremlin&gt; theseus = g.addVertex([name:'theseus',type:'human'])
+==&gt;v[302]
+gremlin&gt; cerberus = g.V('name','cerberus').next()
+==&gt;v[48]
+gremlin&gt; g.addEdge(theseus,cerberus,'battled')
+==&gt;e[151200009:302:36028797018964038][302-battled-&gt;48]
+</pre></div>
+<div class="highlight"><pre>gremlin&gt; hercules.out('battled').in('battled').except([hercules]).name
+==&gt;theseus
+</pre></div>
+<p>The example above has 4 chained functions: <code>out</code>, <code>in</code>, <code>except</code>, and <code>property</code> (i.e. <code>name</code> is shorthand for <code>property('name')</code>). The function signatures of each are itemized below, where <code>V</code> is vertex and <code>U</code> is any object, where <code>V</code> is a subset of <code>U</code>.</p>
+<ol><li><code>out: V -&gt; V</code></li>
+	<li><code>in: V -&gt; V</code></li>
+	<li><code>except: U -&gt; U</code></li>
+	<li><code>property: V -&gt; U</code></li>
+</ol><p>When chaining together functions, the incoming type must match the outgoing type, where <code>U</code> matches anything. Thus, the “co-battled/ally” traversal above is correct.</p>
+<h2>Helper Configuration Files for Easy Local Connectivity<a class="anchor" id="Helper-Configuration-Files-for-Easy-Local-Connectivity" href="#Helper-Configuration-Files-for-Easy-Local-Connectivity"></a></h2>
+<p>When working with Gremlin against a local instance of <a class="internal present" href="Using-HBase.html">HBase</a> or <a class="internal present" href="Using-Cassandra.html">Cassandra</a>, the following behavior is constantly repeated.</p>
+<div class="highlight"><pre><span class="n">conf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BaseConfiguration</span><span class="o">();</span>
+<span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.backend"</span><span class="o">,</span><span class="s">"cassandra"</span><span class="o">);</span>
+<span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.hostname"</span><span class="o">,</span><span class="s">"127.0.0.1"</span><span class="o">);</span>
+</pre></div>
+<p>To make this easier, there are two configuration files in the <code>bin/</code> directory: <code>cassandra.local</code> and <code>hbase.local</code>. These can be used as such:</p>
+<div class="highlight"><pre><span class="n">TitanFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="s">"bin/cassandra.local"</span><span class="o">)</span>
+</pre></div>
+<p>or</p>
+<div class="highlight"><pre><span class="n">TitanFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="s">"bin/hbase.local"</span><span class="o">)</span>
+</pre></div>
+<h2>Next Steps<a class="anchor" id="Next-Steps" href="#Next-Steps"></a></h2>
+<ul><li>Read the <a href="http://gremlin.tinkerpop.com">Gremlin Manual</a> to learn more about this expressive query language.</li>
+	<li>Learn about the <a class="internal present" href="Titan-Server.html">Titan Server</a> that exposes any Titan graph through a Gremlin query interface.</li>
+</ul>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 04:10:00</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

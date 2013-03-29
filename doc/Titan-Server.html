@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Titan Server</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Titan Server</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Titan-Server"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Titan-Server"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><span class="float-right"><span><img src="https://raw.github.com/thinkaurelius/titan/master/doc/images/titan-server-embedded.png" width="200px" /></span></span></p>
+<p>Titan Server is a light-weight server that manages remote connections to Titan and thereby allows applications to execute <a class="internal present" href="Gremlin-Query-Language.html">Gremlin</a> queries against a Titan graph cluster. Titan Server embeds Rexster’s <a href="https://github.com/tinkerpop/rexster/wiki/Basic-REST-API">HTTP/REST</a> Server and <a href="https://github.com/tinkerpop/rexster/wiki/RexPro">RexPro</a> Server, a light-weight component of the <a href="http://rexster.tinkerpop.com">Rexster</a> Server which can efficiently handle hundreds of database connections.</p>
+<h3>Start Titan Server<a class="anchor" id="Start-Titan-Server" href="#Start-Titan-Server"></a></h3>
+<p>To start the Titan Server, execute the <code>titan.sh</code> script in the <code>bin</code> folder of the Titan distribution (use <code>.bat</code> for Windows).</p>
+<div class="highlight"><pre><span class="nv">$ </span>./bin/titan.sh config/titan-server-rexster.xml config/titan-server-cassandra.properties
+</pre></div>
+<p>The script expects two arguments:</p>
+<ol><li>A configuration file for the <span class="caps">HTTP</span>/<span class="caps">REST</span> and RexPro server. Titan Server can be configured with either one running or both.  Refer to the <a href="https://github.com/tinkerpop/rexster/wiki/Rexster-Configuration">Rexster configuration documentation</a> for more information. This first argument is optional and can be omitted, in which case default configurations are used for both <span class="caps">HTTP</span>/<span class="caps">REST</span> and RexPro.  To configure Titan Server to use one one server or the other, simply omit the appropriate section from the configuration file.  Note that there is a sample Rexster configuration file in <code>config/titan-server-rexster.xml</code>.</li>
+	<li>A configuration file for the Titan graph database. Refer to the <a class="internal present" href="Graph-Configuration.html">Graph Configuration</a> documentation for more information, but note that there is a sample configuration for embedded Cassandra in <code>config/titan-server-cassandra.properties</code>.  This file points to the sample <code>config/cassandra.yaml</code>.  Note that this file places data in <code>/temp</code> and therefore may be erased on reboot.  Please edit these files as necessary when running Titan Server.</li>
+</ol><p>Once the server has been started, it can be terminated by pressing CTRL+C or sending the corresponding kill signal to the process.</p>
+<p><strong>Note</strong> – Rexster expects a graph name when connecting.  While this is a configurable option in Rexster it is not so in Titan Server.  The name of the graph will always be <code>graph</code> and must be referenced as such.  This name may not be overridden.</p>
+<h3>Connecting to Titan Server Via RexPro<a class="anchor" id="Connecting-to-Titan-Server-Via-RexPro" href="#Connecting-to-Titan-Server-Via-RexPro"></a></h3>
+<p>The client application can now connect to the Titan Server on the configured hostname and port to issue Gremlin queries using <a href="https://github.com/tinkerpop/rexster/wiki/RexPro-Java">RexsterClient</a>.</p>
+<div class="highlight"><pre><span class="n">RexsterClient</span> <span class="n">client</span> <span class="o">=</span> <span class="n">RexsterClientFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="s">"localhost"</span><span class="o">,</span> <span class="s">"graph"</span><span class="o">);</span>
+<span class="n">List</span><span class="o">&lt;</span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span><span class="n">Object</span><span class="o">&gt;&gt;</span> <span class="n">result</span><span class="o">;</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="s">"g.V('name','saturn').in('father').map"</span><span class="o">);</span>
+<span class="c1">// result.toString(): [{name="jupiter", type="god"}]</span>
+
+<span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">params</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span><span class="n">Object</span><span class="o">&gt;();</span>
+<span class="n">params</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span><span class="s">"saturn"</span><span class="o">);</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="s">"g.V('name',name).in('father').map"</span><span class="o">,</span><span class="n">params</span><span class="o">);</span>
+<span class="n">client</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</pre></div>
+<p>First above, a connection to the Titan Server is established. Gremlin queries are issued as strings using the <code>RexsterClient.execute()</code> methods. Each query is executed in its own transaction. Explicit transaction handling is not necessary. The result set is a list of query answers, where each query answer is represented as a map of key-value pairs. <code>RexsterClient</code> provides additional <code>execute()</code> methods where the signature of each query answer can be specified as a template. The second query is semantically identical to the first, but in this case we are passing in the name as a variable binding for the corresponding variable used in the query. Once all queries have been issued, the connection is closed.</p>
+<h3>Connecting to Titan Server Via <span class="caps">HTTP</span>/<span class="caps">REST</span><a class="anchor" id="Connecting-to-Titan-Server-Via-HTTP/REST" href="#Connecting-to-Titan-Server-Via-HTTP/REST"></a></h3>
+<p>Titan Server will expose the same <a href="https://github.com/tinkerpop/rexster/wiki/Basic-REST-API">REST API</a> as Rexster.</p>
+<div class="highlight"><pre>curl http://localhost:8182/graphs
+</pre></div>
+<div class="highlight"><pre><span class="p">{</span>
+    <span class="s2">"version"</span><span class="o">:</span> <span class="s2">"x.y.z"</span><span class="p">,</span>
+    <span class="s2">"name"</span><span class="o">:</span> <span class="s2">"Rexster: A Graph Server"</span><span class="p">,</span>
+    <span class="s2">"graphs"</span><span class="o">:</span> <span class="p">[</span>
+        <span class="s2">"graph"</span>
+    <span class="p">],</span>
+    <span class="s2">"queryTime"</span><span class="o">:</span> <span class="mf">0.217059</span><span class="p">,</span>
+    <span class="s2">"upTime"</span><span class="o">:</span> <span class="s2">"0[d]:00[h]:00[m]:05[s]"</span>
+<span class="p">}</span>
+</pre></div>
+<p>It is also possible to deploy <a href="https://github.com/tinkerpop/rexster/wiki/Extensions">Rexster Extensions</a> in Titan Server.  <a href="https://github.com/tinkerpop/rexster/wiki/Creating-an-Extension">Create</a> an extension and put it in Titan Server’s path (i.e. the <code>lib</code> directory).  Since Titan Server only exposes a single graph, it assumes that all extensions should be automatically deployed and be made available, therefore no specific configuration is required to expose the extension.  If the extension requires specific <a href="https://github.com/tinkerpop/rexster/wiki/Extension-Configuration">configuration</a> for its operations, simple add the configuration to an <code>&lt;extensions&gt;</code> element within the root of the Rexster configuration file.</p>
+<p><strong>Note</strong> – Titan Server does not support <a href="https://github.com/tinkerpop/rexster/wiki/The-Dog-House">Dog House</a>.  It is always configured to be disabled.</p>
+<h3>Connecting to Titan via Rexster Console<a class="anchor" id="Connecting-to-Titan-via-Rexster-Console" href="#Connecting-to-Titan-via-Rexster-Console"></a></h3>
+<p><code>RexsterTitanClient</code> is used to connect to Titan Server from within an application. Outside of an application, use the <a href="https://github.com/tinkerpop/rexster/wiki/Rexster-Console">Rexster Console</a> to connect to a Titan Server and issue Gremlin queries. Rexster Console provides access to a remote Gremlin <span class="caps">REPL</span> that is included in the Titan distribution. Download Rexster Console from the <a href="http://rexster.tinkerpop.com">Rexster project</a></p>
+<p>Start Rexster Console from the command line. The following assumes that Titan Server is running locally on the default port. To configure an alternative hostname or port, refer to the <a href="https://github.com/tinkerpop/rexster/wiki/Rexster-Console">Rexster Console documentation</a></p>
+<div class="highlight"><pre>./bin/rexster-console.sh
+</pre></div>
+<p>Once the console has loaded, issue Gremlin queries against the Titan Server. There will be only one graph configured for the <code>rexster</code> context object and it is called “graph”. Note, that Rexster Console does not manage transactions as <code>RexsterTitanClient</code> does.</p>
+<div class="highlight"><pre>        <span class="o">(</span>l_<span class="o">(</span>l
+<span class="o">(</span>_______<span class="o">(</span> 0 0
+<span class="o">(</span>        <span class="o">(</span>-Y-<span class="o">)</span> &lt;woof&gt;
+l l-----l l
+l l,,   l l,,
+opening session with Rexster <span class="o">[</span>localhost:8185<span class="o">]</span>--&gt; ready
+?h <span class="k">for </span><span class="nb">help</span>
+
+rexster<span class="o">[</span>groovy<span class="o">]</span>&gt; <span class="nv">g</span> <span class="o">=</span> rexster.getGraph<span class="o">(</span><span class="s2">"graph"</span><span class="o">)</span>
+<span class="o">==</span>&gt;titangraph<span class="o">[</span>cassandrathrift:127.0.0.1<span class="o">]</span>
+rexster<span class="o">[</span>groovy<span class="o">]</span>&gt; g.V<span class="o">(</span><span class="s1">'name'</span>,<span class="s1">'saturn'</span><span class="o">)</span>.name
+<span class="o">==</span>&gt;saturn
+</pre></div>
+<h3>Titan Embedding<a class="anchor" id="Titan-Embedding" href="#Titan-Embedding"></a></h3>
+<p>Titan Server is most useful when Titan runs embedded with the storage backend of choice. Under such a deployment scenario, Titan, Rexster, and the storage backend run in the same <span class="caps">JVM</span>. This makes calls between the components very efficient and leads to the best performing setup. Refer to the documentation of the respective <a class="internal present" href="Storage-Backend-Overview.html">storage backends</a> for information on how to run Titan embedded.</p>
+<h2>Next Steps<a class="anchor" id="Next-Steps" href="#Next-Steps"></a></h2>
+<ul><li>Read the <a class="internal present" href="Storage-Backend-Overview.html">Storage Backend Overview</a> for more information on choosing and configuring a storage backend for Titan.</li>
+	<li>Titan Server builds on RexPro, a component of the Rexster Server. Learn about the full <a class="internal present" href="Rexster-Graph-Server.html">Rexster Graph Server</a> that exposes any Titan graph as a <span class="caps">REST</span> endpoint.</li>
+</ul>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-03-29 04:53:16</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

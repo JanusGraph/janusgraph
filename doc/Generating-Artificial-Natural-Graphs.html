@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Generating Artificial Natural Graphs</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Generating Artificial Natural Graphs</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Generating-Artificial-Natural-Graphs"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Generating-Artificial-Natural-Graphs"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><span class="float-left"><span><img src="http://thinkaurelius.files.wordpress.com/2012/04/splash-graph.png" width="200px" /></span></span></p>
+<p>Real-world graphs are not <a href="http://en.wikipedia.org/wiki/Random_graph">random</a>. Example real-world graphs include social graphs, word graphs, neural graphs, airline graphs, water flow graphs, etc. Interestingly enough, there is a simple statistical understanding of most natural graphs. In short, many vertices have few connections and very few vertices have many connections. A popular algorithm to generate a graph that has this connectivity pattern is known as the <a href="http://en.wikipedia.org/wiki/Preferential_attachment">preferential attachment</a> algorithm which can be simply described with the colloquial phrase: “the rich get richer.” This section provides some simple code to artificially generate a natural looking graph in Titan using <a href="http://gremlin.tinkerpop.com">Gremlin</a>.</p>
+<p><br /><br /></p>
+<h2>Generating a Graph with Natural Statistics<a class="anchor" id="Generating-a-Graph-with-Natural-Statistics" href="#Generating-a-Graph-with-Natural-Statistics"></a></h2>
+<p>The first thing to do is to connect to a Cassandra cluster with Titan. In the example below, a local connection is used where <code>storage.batch-loading</code> ensures more speedy performance.</p>
+<div class="highlight"><pre>conf = new BaseConfiguration()
+conf.setProperty('storage.backend','cassandra')
+conf.setProperty('storage.hostname','127.0.0.1')
+conf.setProperty('storage.batch-loading','true');
+g = TitanFactory.open(conf)
+</pre></div>
+<p>Next, the following script generates a graph with <code>size</code> number of edges.</p>
+<div class="highlight"><pre>size = 100000; ids = [g.addVertex().id]; rand = new Random();
+(1..size).each{
+  v = g.addVertex();
+  u = g.v(ids.get(rand.nextInt(ids.size())))
+  g.addEdge(v,u,'linked');
+  ids.add(u.id);
+  ids.add(v.id);
+  if(it % 1000 == 0) 
+    g.commit()
+}
+</pre></div>
+<h2>Computing the In-Degree Distribution of the Graph<a class="anchor" id="Computing-the-In-Degree-Distribution-of-the-Graph" href="#Computing-the-In-Degree-Distribution-of-the-Graph"></a></h2>
+<div class="highlight"><pre>indegree = [:].withDefault{0}
+ids.unique().each{ 
+  count = g.v(it).inE.count();
+  indegree[count] = indegree[count] + 1;
+}
+indegree.sort{a,b -&gt; b.value &lt;=&gt; a.value}
+</pre></div>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-22 02:17:25</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

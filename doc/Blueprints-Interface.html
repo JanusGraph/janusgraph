@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Blueprints Interface</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Blueprints Interface</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Blueprints-Interface"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Blueprints-Interface"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><a href="http://blueprints.tinkerpop.com"><img src="https://github.com/tinkerpop/blueprints/raw/master/doc/images/blueprints-logo.png" alt="" /></a></p>
+<p>Titan natively implements the Blueprints <span class="caps">API</span> which means that Blueprints is the core interface for Titan. <a href="http://blueprints.tinkerpop.com">Blueprints</a> is an open source, community developed Java interface for graph databases that expose a <a href="https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model">property graph</a> data model. By implementing Blueprints natively, Titan delivers two benefits:</p>
+<ol><li>Any technology written against the Blueprints <span class="caps">API</span> works efficiently and seamlessly on Titan. This includes all open-source products in the <a class="internal present" href="TinkerPop-Graph-Stack.html">TinkerPop graph stack</a>.</li>
+	<li>Any application written for Titan can be migrated to another Blueprints enabled graph database, so there is no vendor lock-in.</li>
+</ol><h2>Introduction to TitanGraph<a class="anchor" id="Introduction-to-TitanGraph" href="#Introduction-to-TitanGraph"></a></h2>
+<p><span class="align-center"><span><img src="images/juno-married.png" /></span></span></p>
+<div class="highlight"><pre><span class="n">TitanGraph</span> <span class="n">g</span> <span class="o">=</span> <span class="n">TitanFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="s">"/tmp/titan"</span><span class="o">);</span>
+<span class="n">Vertex</span> <span class="n">juno</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addVertex</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+<span class="n">juno</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"juno"</span><span class="o">);</span>
+<span class="n">Vertex</span> <span class="n">jupiter</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addVertex</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+<span class="n">jupiter</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"jupiter"</span><span class="o">);</span>
+<span class="n">Edge</span> <span class="n">married</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addEdge</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="n">juno</span><span class="o">,</span> <span class="n">jupiter</span><span class="o">,</span> <span class="s">"married"</span><span class="o">);</span>
+</pre></div>
+<p>A <code>TitanGraph</code> implements Blueprints’ <code>Graph</code> interface. A <code>TitanGraph</code> is created via the <code>TitanFactory</code>. The <code>TitanFactory.open()</code> method accepts either a local directory or a configuration file or an Apache configuration object containing a <a class="internal present" href="Graph-Configuration.html">Titan Graph Configuration</a>. In the code example above, a directory is used which opens a local Titan instance storing data at that location. Then, two vertices were created named “jupiter” and “juno.” These two vertices were joined in holy matrimony via a <code>married</code> edge.</p>
+<p>Please review the <a href="http://tinkerpop.com/docs/javadocs/blueprints/2.1.0/com/tinkerpop/blueprints/package-summary.html">Blueprints Core <span class="caps">API</span></a> for a complete listing of all the Blueprints methods available.</p>
+<h2>Vertex Queries<a class="anchor" id="Vertex-Queries" href="#Vertex-Queries"></a></h2>
+<p>Continuing with the example above, more vertices are created that are connected to by Juno.</p>
+<p><span class="align-center"><span><img src="images/super-node.png" /></span></span></p>
+<div class="highlight"><pre><span class="n">Vertex</span> <span class="n">turnus</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addVertex</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+<span class="n">turnus</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"turnus"</span><span class="o">);</span>
+<span class="n">Vertex</span> <span class="n">hercules</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addVertex</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+<span class="n">hercules</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"hercules"</span><span class="o">)</span>
+<span class="n">Vertex</span> <span class="n">dido</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addVertex</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+<span class="n">dido</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"dido"</span><span class="o">);</span>
+<span class="n">Vertex</span> <span class="n">troy</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addVertex</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+<span class="n">troy</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"troy"</span><span class="o">);</span>
+<span class="n">Vertex</span> <span class="n">jupiter</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addVertex</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+<span class="n">jupiter</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"jupiter"</span><span class="o">);</span>
+
+<span class="n">Edge</span> <span class="n">edge</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addEdge</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="n">juno</span><span class="o">,</span> <span class="n">turnus</span><span class="o">,</span> <span class="s">"knows"</span><span class="o">);</span>
+<span class="n">edge</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"since"</span><span class="o">,</span><span class="mi">2010</span><span class="o">);</span>
+<span class="n">edge</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"stars"</span><span class="o">,</span><span class="mi">5</span><span class="o">);</span>
+<span class="n">edge</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addEdge</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="n">juno</span><span class="o">,</span> <span class="n">hercules</span><span class="o">,</span> <span class="s">"knows"</span><span class="o">);</span>
+<span class="n">edge</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"since"</span><span class="o">,</span><span class="mi">2011</span><span class="o">);</span>
+<span class="n">edge</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"stars"</span><span class="o">,</span><span class="mi">1</span><span class="o">);</span>
+<span class="n">edge</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addEdge</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="n">juno</span><span class="o">,</span> <span class="n">dido</span><span class="o">,</span> <span class="s">"knows"</span><span class="o">);</span>
+<span class="n">edge</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"since"</span><span class="o">,</span> <span class="mi">2011</span><span class="o">);</span>
+<span class="n">edge</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"stars"</span><span class="o">,</span> <span class="mi">5</span><span class="o">);</span>
+<span class="n">g</span><span class="o">.</span><span class="na">addEdge</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="n">juno</span><span class="o">,</span> <span class="n">troy</span><span class="o">,</span> <span class="s">"likes"</span><span class="o">).</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"stars"</span><span class="o">,</span><span class="mi">5</span><span class="o">);</span>
+</pre></div>
+<p>Blueprints (and Titan) supports the notion of <a href="https://github.com/tinkerpop/blueprints/wiki/Vertex-Query">vertex-centric queries</a> which can be understood as a query of the elements directly connected to a vertex (i.e. incident edges or adjacent vertices). An example vertex query is provided below:</p>
+<blockquote>
+<p>Find all the people that Juno greatly admires who she has known since the year 2011.</p>
+</blockquote>
+<div class="highlight"><pre><span class="n">Iterable</span><span class="o">&lt;</span><span class="n">Vertex</span><span class="o">&gt;</span> <span class="n">results</span> <span class="o">=</span> <span class="n">juno</span><span class="o">.</span><span class="na">query</span><span class="o">().</span><span class="na">labels</span><span class="o">(</span><span class="s">"knows"</span><span class="o">).</span><span class="na">has</span><span class="o">(</span><span class="s">"since"</span><span class="o">,</span><span class="mi">2011</span><span class="o">).</span><span class="na">has</span><span class="o">(</span><span class="s">"stars"</span><span class="o">,</span><span class="mi">5</span><span class="o">).</span><span class="na">vertices</span><span class="o">()</span>
+</pre></div>
+<p>The benefit of a vertex query is that it reduces the amount of data that needs to be pulled off the disk and filtered in-memory. This is important when considering extremely branchy graphs or graphs with “hot spots” called hubs or super-nodes. In these situations, it is imperative to reduce the search space to only that which is required for the particular query. Given the diagrammed graph above, if no restrictions are given to the query (e.g. <code>juno.query().vertices()</code>), then 5 vertices are returned.</p>
+<div class="highlight"><pre><span class="k">for</span><span class="o">(</span><span class="n">Vertex</span> <span class="n">vertex</span> <span class="o">:</span> <span class="n">juno</span><span class="o">.</span><span class="na">query</span><span class="o">().</span><span class="na">vertices</span><span class="o">())</span> <span class="o">{</span> 
+  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">vertex</span><span class="o">.</span><span class="na">getProperty</span><span class="o">(</span><span class="s">"name"</span><span class="o">))</span> 
+<span class="o">}</span>
+
+<span class="c1">// System.out</span>
+<span class="n">hercules</span>
+<span class="n">turnus</span>
+<span class="n">jupiter</span>
+<span class="n">dido</span>
+<span class="n">troy</span>
+</pre></div>
+<p>However, given the query in the block of code above, only 1 vertex is returned — the Dido vertex. In this way, intelligent filtering provides performance benefits by reducing the processing and memory footprint required of the consuming application.</p>
+<div class="highlight"><pre><span class="k">for</span><span class="o">(</span><span class="n">Vertex</span> <span class="n">vertex</span> <span class="o">:</span> <span class="n">juno</span><span class="o">.</span><span class="na">query</span><span class="o">().</span><span class="na">labels</span><span class="o">(</span><span class="s">"knows"</span><span class="o">).</span><span class="na">has</span><span class="o">(</span><span class="s">"since"</span><span class="o">,</span><span class="mi">2011</span><span class="o">).</span><span class="na">has</span><span class="o">(</span><span class="s">"stars"</span><span class="o">,</span><span class="mi">5</span><span class="o">).</span><span class="na">vertices</span><span class="o">())</span> <span class="o">{</span>
+  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">vertex</span><span class="o">.</span><span class="na">getProperty</span><span class="o">(</span><span class="s">"name"</span><span class="o">));</span>
+<span class="o">}</span>
+
+<span class="c1">// System.out</span>
+<span class="n">dido</span>
+</pre></div>
+<h2>Graph Indices<a class="anchor" id="Graph-Indices" href="#Graph-Indices"></a></h2>
+<p>In the section above, we demonstrated how vertices can be retrieved by following edges in the graph using vertex-centric queries. Vertices can also be retrieved via property indices.</p>
+<div class="highlight"><pre><span class="n">TitanGraph</span> <span class="n">g</span> <span class="o">=</span> <span class="n">TitanFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="s">"/tmp/titan"</span><span class="o">);</span>
+<span class="n">g</span><span class="o">.</span><span class="na">createKeyIndex</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span><span class="n">Vertex</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+<span class="n">Vertex</span> <span class="n">juno</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addVertex</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+<span class="n">juno</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"juno"</span><span class="o">);</span>
+<span class="n">juno</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">getVertices</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span><span class="s">"juno"</span><span class="o">).</span><span class="na">iterator</span><span class="o">().</span><span class="na">next</span><span class="o">();</span>
+</pre></div>
+<p>In the example above, we first create a vertex index for the property key <code>name</code>. Property indices have to be explicitly created, so that Titan knows what needs to be indexed. Next, we create the vertex “juno” and set its name as before. Since we set the property <code>name</code>, the juno vertex is now indexed. We can retrieve it from the index using the <code>getVertices(String,Object)</code> method, which returns an iterable over all vertices that have a matching property.</p>
+<p>Titan can also retrieve edges using property indices. Extending on the example above:</p>
+<div class="highlight"><pre><span class="n">g</span><span class="o">.</span><span class="na">createKeyIndex</span><span class="o">(</span><span class="s">"time"</span><span class="o">,</span><span class="n">Edge</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+<span class="n">Vertex</span> <span class="n">jena</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">addVertex</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+<span class="n">jena</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span> <span class="s">"jena"</span><span class="o">);</span>
+<span class="n">Edge</span> <span class="n">e</span> <span class="o">=</span> <span class="n">jena</span><span class="o">.</span><span class="na">addEdge</span><span class="o">(</span><span class="s">"knows"</span><span class="o">,</span><span class="n">juno</span><span class="o">);</span>
+<span class="n">e</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"time"</span><span class="o">,</span><span class="mi">99</span><span class="o">);</span>
+<span class="n">g</span><span class="o">.</span><span class="na">getEdges</span><span class="o">(</span><span class="s">"time"</span><span class="o">,</span><span class="mi">99</span><span class="o">).</span><span class="na">iterator</span><span class="o">().</span><span class="na">next</span><span class="o">();</span>
+</pre></div>
+<p>As in the previous example, we first create an edge index for the property key <code>time</code>. After adding an edge with a time property, we can retrieve that edge using the index.</p>
+<p>Read more about <a href="https://github.com/tinkerpop/blueprints/wiki/Graph-Indices">Blueprints indices</a> and note the following <a class="internal present" href="Titan-Limitations.html">Titan specific limitations</a>: Key indices need to be created before the key is first used.</p>
+<h2>Next steps<a class="anchor" id="Next-steps" href="#Next-steps"></a></h2>
+<p><span class="float-right"><span><img src="https://github.com/tinkerpop/blueprints/raw/master/doc/images/blueprints-character-2.png" width="100px" /></span></span></p>
+<ul><li>Read the <a href="https://github.com/tinkerpop/blueprints/wiki/">Blueprints Manual</a> or the <a href="http://tinkerpop.com/docs/javadocs/blueprints/2.1.0/com/tinkerpop/blueprints/package-summary.html">Blueprints Core <span class="caps">API</span> JavaDoc</a> for a complete documentation of the Blueprints interface.</li>
+	<li>Read about <a class="internal present" href="Transaction-Handling.html">Transaction Handling</a> for accessing a Titan graph concurrently or in a multi-user environment.</li>
+	<li>Learn about the <a class="internal present" href="Gremlin-Query-Language.html">Gremlin Query Language</a> to query and manipulate graphs in a concise short-hand manner.</li>
+</ul>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 04:27:24</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

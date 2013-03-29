@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Global Graph Analytics</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Global Graph Analytics</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Global-Graph-Analytics"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Global-Graph-Analytics"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><img src="https://raw.github.com/thinkaurelius/titan/master/doc/images/faunus-diagram.png" alt="" /></p>
+<p>Titan is designed to compute numerous, concurrent, short-lived, local graph traversals. Titan is <em>not</em> designed for global graph analysis. In order to understand the difference, a itemization of each term above is defined below.</p>
+<ul><li><strong>Numerous concurrent interactions</strong>: the graph is being queried, in parallel, by different users solving different problems.</li>
+	<li><strong>Short-lived transactions</strong>: each interaction with Titan is intended to be real-time on the order of hundreds of milliseconds.</li>
+	<li><strong>Local graph traversals</strong>: each transaction is touching a small fraction of the entire graph and as such is solving a problem within a localized region of the graph.</li>
+</ul><h2>Faunus: Graph Analytics Engine<a class="anchor" id="Faunus:-Graph-Analytics-Engine" href="#Faunus:-Graph-Analytics-Engine"></a></h2>
+<p>Titan is a multi-client database in the classic sense. For performing global graph analytics, Titan relies on <a href="http://thinkaurelius.github.com/faunus/">Faunus</a>. Faunus is a batch processing framework that is optimized for computing a small number of concurrent, long running, global graph traversals.</p>
+<p>Please review Faunus documentation for instructions on how to connect <a href="https://github.com/thinkaurelius/faunus/wiki/Titan-Format">Titan to Faunus</a>. However, a short example is provided below. With Faunus it is possible to use Titan as the source of a <a href="hadoop.apache.org">Hadoop</a> MapReduce job chain. Like Titan, Faunus uses Gremlin as its traversal language. However, Faunus compiles its Gremlin statements down to MapReduce jobs. Assume the Titan/Cassandra maintains <em>The Graph of the Gods</em>. The Faunus/Gremlin shell can be used to create a <code>FaunusGraph</code>. When the traversal is evaluated, Titan serves as the data source and Hadoop serves as the data processing system.</p>
+<div class="highlight"><pre>faunus$ bin/gremlin.sh 
+
+         \,,,/
+         (o o)
+-----oOOo-(_)-oOOo-----
+gremlin&gt; g = FaunusFactory.open('bin/titan-cassandra-input.properties')
+==&gt;faunusgraph[titancassandrainputformat]
+gremlin&gt; g.V.count()
+12/12/15 23:58:38 INFO mapreduce.FaunusCompiler: Compiled to 1 MapReduce job(s)
+12/12/15 23:58:38 INFO mapreduce.FaunusCompiler: Executing job 1 out of 1: MapSequence[com.thinkaurelius.faunus.mapreduce.transform.VerticesMap.Map, com.thinkaurelius.faunus.mapreduce.util.CountMapReduce.Map, com.thinkaurelius.faunus.mapreduce.util.CountMapReduce.Reduce]
+...
+12/12/15 23:59:16 INFO mapred.JobClient:     Total committed heap usage (bytes)=269619200
+12/12/15 23:59:16 INFO mapred.JobClient:     Combine input records=12
+12/12/15 23:59:16 INFO mapred.JobClient:     SPLIT_RAW_BYTES=120
+12/12/15 23:59:16 INFO mapred.JobClient:     Reduce input records=1
+12/12/15 23:59:16 INFO mapred.JobClient:     Reduce input groups=1
+12/12/15 23:59:16 INFO mapred.JobClient:     Combine output records=1
+12/12/15 23:59:16 INFO mapred.JobClient:     Reduce output records=0
+12/12/15 23:59:16 INFO mapred.JobClient:     Map output records=12
+==&gt;12
+gremlin&gt; 
+</pre></div>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-01-17 17:12:54</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

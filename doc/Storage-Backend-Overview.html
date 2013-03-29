@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Storage Backend Overview</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Storage Backend Overview</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Storage-Backend-Overview"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Storage-Backend-Overview"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p>Titan persists all data in a storage backend. It supports various storage backends which is denoted by the <code>storage.backend</code> option. The choice of backend determines the transactional guarantees and scalability of a particular Titan graph instance. This means, Titan can accomodate any level of isolation, consistency, scalability, or availability that a particular application may require.</p>
+<p>However, the <a href="http://en.wikipedia.org/wiki/CAP_theorem"><span class="caps">CAP</span> theorem</a> stipulates that any practical database can only provide 2 of the 3 desirable properties: Consistency, Availability, and Partitionability (i.e. scalability). The choice of storage backend is therefore a tradeoff guided by the requirements of a particular use case.</p>
+<p>Titan currently supports 3 storage backends covering all 3 edges of the <span class="caps">CAP</span> theorem triangle as shown in the figure below.</p>
+<p><span class="align-center"><span><img src="images/titan-captheorem.png" /></span></span><br /><br /></p>
+<h2>Storage Backend Comparison<a class="anchor" id="Storage-Backend-Comparison" href="#Storage-Backend-Comparison"></a></h2>
+<table><tr><th>Name </th>
+		<th><code>storage.option</code> </th>
+		<th>Consistency </th>
+		<th>Availability </th>
+		<th>Scalability </th>
+		<th>Replication </th>
+	</tr><tr><td> <a class="internal present" href="Using-Cassandra.html">Cassandra</a> </td>
+		<td> <em>cassandra</em> </td>
+		<td> <a href="http://en.wikipedia.org/wiki/Eventual_consistency">eventually consistent</a> </td>
+		<td> highly available </td>
+		<td> linear scalability </td>
+		<td> yes </td>
+	</tr><tr><td> <a class="internal present" href="Using-HBase.html">HBase</a> </td>
+		<td> <em>hbase</em> </td>
+		<td> vertex consistent </td>
+		<td> single point of failure </td>
+		<td> linear scalability </td>
+		<td> yes </td>
+	</tr><tr><td> <a class="internal present" href="Using-BerkeleyDB.html">BerkeleyDB</a> </td>
+		<td> <em>berkeleyje</em> </td>
+		<td> <a href="http://en.wikipedia.org/wiki/ACID"><span class="caps">ACID</span></a> </td>
+		<td> single point of failure </td>
+		<td> single machine </td>
+		<td> HA mode available </td>
+	</tr></table>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2012-10-17 17:26:01</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

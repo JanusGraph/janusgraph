@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>TinkerPop Graph Stack</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>TinkerPop Graph Stack</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/TinkerPop-Graph-Stack"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/TinkerPop-Graph-Stack"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><span class="float-right"><span><img src="https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-system-arch.png" width="350px" height="375px" /></span></span></p>
+<p>Titan natively implements the <a class="internal present" href="Blueprints-Interface.html">Blueprints Interface</a> which means that it supports all of the open-source technologies in the <a href="http://www.tinkerpop.com">TinkerPop graph stack</a>:</p>
+<ul><li><a href="http://blueprints.tinkerpop.com">Blueprints</a> – The property graph model interface implemented by Titan which provides various utilities to aid developers.</li>
+	<li><a href="http://gremlin.tinkerpop.com">Gremlin</a> – A graph traversal language for expressing complex walks through a graph.</li>
+	<li><a href="http://frames.tinkerpop.com">Frames</a> – An object-to-graph mapper for rendering Java objects from graph data.</li>
+	<li><a href="http://rexster.tinkerpop.com">Rexster</a> – A graph server for exposing the graph via <span class="caps">REST</span>, a binary protocol, and <span class="caps">HTML</span>-based <span class="caps">GUI</span> tools.</li>
+</ul><p>Being a native implementation means that Titan directly implements the Blueprints interface without an adapter. This makes Titan one of the most efficient Blueprints implementations which benefits the performance of all TinkerPop projects when running on Titan.</p>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-03-29 04:27:50</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Type Definition Overview</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Type Definition Overview</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Type-Definition-Overview"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Type-Definition-Overview"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><span class="float-left"><span><img src="images/titan-configuration.png" width="200px" /></span></span></p>
+<p>In Titan, edge lables and property keys are <strong>types</strong> which can be individually configured to provide data verification, better storage efficiency, and higher performance. Types are uniquely identified by their name and are themselves vertices in the graph. Type vertices can be retrieved by their name.</p>
+<div class="highlight"><pre><span class="n">TitanGraph</span> <span class="n">graph</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">TitanType</span> <span class="n">name</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="na">getType</span><span class="o">(</span><span class="s">"name"</span><span class="o">);</span>
+</pre></div>
+<p>A <code>TitanType</code> is either a <code>TitanLabel</code> (for edges) or a <code>TitanKey</code> (for properties) which means either <code>TitanType.isEdgeLabel()</code> or <code>TitanType.isPropertyKey()</code> is true and we can cast it to the particular subtype.</p>
+<div class="highlight"><pre><span class="n">TitanType</span> <span class="n">name</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="na">getType</span><span class="o">(</span><span class="s">"name"</span><span class="o">);</span>
+<span class="k">if</span> <span class="o">(</span><span class="n">name</span><span class="o">.</span><span class="na">isPropertyKey</span><span class="o">())</span> 
+  <span class="n">TitanKey</span> <span class="n">namekey</span> <span class="o">=</span> <span class="o">(</span><span class="n">TitanKey</span><span class="o">)</span><span class="n">name</span><span class="o">;</span>
+<span class="k">else</span> 
+  <span class="n">TitanLabel</span> <span class="n">namelabel</span> <span class="o">=</span> <span class="o">(</span><span class="n">TitanLabel</span><span class="o">)</span><span class="n">name</span><span class="o">;</span>
+</pre></div>
+<p>Most methods in Titan are overloaded to allow either the type name or the type object as argument.</p>
+<h2>Type Creation<a class="anchor" id="Type-Creation" href="#Type-Creation"></a></h2>
+<p>Labels and keys are automatically created when their name is first used. However, types can also be created and configured explicitly by the user through a <code>TypeMaker</code> instance returned by <code>TitanGraph.makeType()</code>. The <code>TypeMaker</code> provides the following type configuration options.</p>
+<table><tr><th>Method </th>
+		<th>Description </th>
+		<th>Applies to </th>
+		<th>Default </th>
+		<th>Inspection Method </th>
+	</tr><tr><td> <code>name(String)</code> </td>
+		<td> Defines the name of the type. <strong>Must be unique across all types. Required.</strong> </td>
+		<td> Label and Key </td>
+		<td> – </td>
+		<td> <code>TitanType.getName()</code> </td>
+	</tr><tr><td> <code>unique(Direction)</code> </td>
+		<td> Configures the type to be unique in the given direction and acquires locks to ensure consistency </td>
+		<td> Label and Key </td>
+		<td> not unique </td>
+		<td> <code>TitanType.isUnique(Direction)</code> </td>
+	</tr><tr><td> <code>unique(Direction, lock)</code> </td>
+		<td> Configures the type to be unique in the given direction with the specified consistency guarantee (either <code>LOCK</code> or <code>NO_LOCK</code>). </td>
+		<td> Label and Key </td>
+		<td> not unique </td>
+		<td> <code>TitanType.isUnique(Direction)</code> </td>
+	</tr><tr><td> <code>group(TypeGroup)</code> </td>
+		<td> Assigns the type to the specified <code>TypeGroup</code> which allows grouping of edges for efficient retrieval. </td>
+		<td> Label and Key </td>
+		<td> <code>DEFAULT_GROUP</code> </td>
+		<td> <code>TitanType.getGroup()</code> </td>
+	</tr><tr><td> <code>directed()</code> </td>
+		<td> Configures the type for directed edges, i.e. from out-vertex to in-vertex. </td>
+		<td> Label </td>
+		<td> directed </td>
+		<td> <code>TitanLabel.isDirected()</code> </td>
+	</tr><tr><td> <code>unidirected()</code> </td>
+		<td> Configures the type for unidirected edges, i.e. edges that can only be traversed from out-vertex to in-vertex. Unidirected edges can be stored more efficiently </td>
+		<td> Label </td>
+		<td> directed </td>
+		<td> <code>TitanLabel.isUnidirected()</code> </td>
+	</tr><tr><td> <code>indexed(Element)</code> </td>
+		<td> Configures the key to be indexed for the given element type using the default index which allows elements of that type to be retrieved using <code>graph.query()</code> </td>
+		<td> Key </td>
+		<td> not indexed </td>
+		<td> <code>TitanKey.hasIndex()</code> </td>
+	</tr><tr><td> <code>indexed(Element,String)</code> </td>
+		<td> Configures the key to be indexed for the given element type using the specified index (identified by name) which allows elements of that type to be retrieved using <code>graph.query()</code> </td>
+		<td> Key </td>
+		<td> not indexed </td>
+		<td> <code>TitanKey.hasIndex()</code> </td>
+	</tr><tr><td> <code>dataType(Class)</code> </td>
+		<td> Configures the data type of this key. Property instances for this key will only accept attribute values that are instances of this class. Every property key must have its data type configured. Setting the data type to Object.class allows any type of attribute but comes at the expense of longer serialization because class information<br />
+is stored with the attribute value. See <a href="Graph-Configuration">Graph Configuration</a> for more information on how to define custom attribute data types. </td>
+		<td> Key </td>
+		<td> – </td>
+		<td> <code>TitanKey.getDataType()</code> </td>
+	</tr><tr><td> <code>primaryKey(TitanType...)</code> </td>
+		<td> Configures the composite primary key for this type. </td>
+		<td> Label </td>
+		<td> empty </td>
+		<td> – </td>
+	</tr><tr><td> <code>signature(TitanType...)</code> </td>
+		<td> Configures the signature of this type. </td>
+		<td> Label </td>
+		<td> empty </td>
+		<td> – </td>
+	</tr><tr><td> <code>makeEdgeLabel()</code> </td>
+		<td> Creates an edge label according to the configuration of this TypeMaker. </td>
+		<td> Label </td>
+		<td> – </td>
+		<td> – </td>
+	</tr><tr><td> <code>makePropertyKey()</code> </td>
+		<td> Creates a property key according to the configuration of this TypeMaker. </td>
+		<td> Key </td>
+		<td> – </td>
+		<td> – </td>
+	</tr></table><p>Below are some examples of creating labels and keys using <code>TypeMaker</code>.</p>
+<h3>Unique Types<a class="anchor" id="Unique-Types" href="#Unique-Types"></a></h3>
+<p>A type is unique, if there is at most one edge or property of this type per vertex in the given direction. Specifically, this means:</p>
+<ul><li>A property key is out-unique, if a vertex has at most one value associated with the key. <em>name</em> is an example of an out-unique property key since each god has one name.</li>
+	<li>An edge lable is out-unique, if a vertex has at most one outgoing edge for that label. <em>father</em> is an exmaple of an out-unique edge label, since each god has at most one father.</li>
+	<li>A property key is in-unique, if there is at most one vertex which has any given attribute as its property value. <em>ssn</em> is an example of a in-unique property key since each social security number is uniquely associated with one person.</li>
+</ul><p>Since edges and properties of unique labels and keys must be unique per vertex, inconsistencies could arise when two <code>TitanGraph</code> instances try to update the same unique edge or property concurrently, since one may overwrite the change of the other. To avoid such inconsistencies, Titan will acquire locks on unique edges and properties by default. Acquiring locks, however, can be very expensive depending on the storage backend. In cases where concurrent modifications can be excluded or blind overwrites are acceptable, a unique <code>TitanType</code> can be configured to <em>not</em> acquire locks by passing in <code>UniquenessConsistency.NO_LOCK</code> as a second argument to <code>TypeMaker.unique()</code>. This configuration option should be used with care and only if the extra performance gain is needed.</p>
+<h3>Type Groups<a class="anchor" id="Type-Groups" href="#Type-Groups"></a></h3>
+<p>Titan allows types to be grouped and to retrieve all edges or properties for a type group. For example, in the graph of gods we have <em>father</em>, <em>mother</em>, and <em>brother</em> labels. If we want to retrieve all family members of a vertex, we could do</p>
+<div class="highlight"><pre><span class="n">v</span><span class="o">.</span><span class="na">getVertices</span><span class="o">(</span><span class="n">OUT</span><span class="o">,</span><span class="s">"father"</span><span class="o">,</span><span class="s">"mother"</span><span class="o">,</span><span class="s">"brother"</span><span class="o">)</span>
+</pre></div>
+<p>However, this becomes cumbersome as more family labels like <em>sister</em>, <em>uncle</em>, etc are added. Moreover, each edge label requires and independent index retrieval. In the example above, the database index is accessed three times. Instead, a family type group can group all these labels together.</p>
+<div class="highlight"><pre><span class="n">TypeGroup</span> <span class="n">family</span> <span class="o">=</span> <span class="n">TypeGroup</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span><span class="s">"family"</span><span class="o">);</span>
+<span class="n">TitanLabel</span> <span class="n">father</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">makeType</span><span class="o">().</span><span class="na">name</span><span class="o">(</span><span class="s">"father"</span><span class="o">).</span><span class="na">group</span><span class="o">(</span><span class="n">family</span><span class="o">).</span><span class="na">makeEdgeLabel</span><span class="o">();</span>
+<span class="n">TitanLabel</span> <span class="n">mother</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">makeType</span><span class="o">().</span><span class="na">name</span><span class="o">(</span><span class="s">"mother"</span><span class="o">).</span><span class="na">group</span><span class="o">(</span><span class="n">family</span><span class="o">).</span><span class="na">makeEdgeLabel</span><span class="o">();</span>
+<span class="n">TitanLabel</span> <span class="n">brother</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">makeType</span><span class="o">().</span><span class="na">name</span><span class="o">(</span><span class="s">"brother"</span><span class="o">).</span><span class="na">group</span><span class="o">(</span><span class="n">family</span><span class="o">).</span><span class="na">makeEdgeLabel</span><span class="o">();</span>
+<span class="c1">// Load data...</span>
+
+<span class="n">TitanVertex</span> <span class="n">jupiter</span> <span class="o">=</span> <span class="o">(</span><span class="n">TitanVertex</span><span class="o">)</span><span class="n">g</span><span class="o">.</span><span class="na">getVertices</span><span class="o">(</span><span class="s">"name"</span><span class="o">,</span><span class="s">"jupiter"</span><span class="o">).</span><span class="na">iterator</span><span class="o">().</span><span class="na">next</span><span class="o">();</span>
+<span class="n">jupiter</span><span class="o">.</span><span class="na">query</span><span class="o">().</span><span class="na">group</span><span class="o">(</span><span class="n">family</span><span class="o">).</span><span class="na">vertices</span><span class="o">();</span>
+</pre></div>
+<p>In this example, a <em>family</em> type group is defined with id 2. Type groups are uniquely identified by their id and <span class="caps">NOT</span> their name. That is, two type groups with the same id are considered equivalent. <code>TypeGroup.DEFAULT_GROUP</code> has id=1 and therefore custom type groups should use ids larger than 1. The maximum id is 126.<br />
+Once the type group is defined, we assign the <em>father</em>, <em>mother</em>, and <em>brother</em> labels to this group. Now, all family members of Jupiter can be retrieved in one database operation by specifying the group via <code>TitanQuery.group()</code>.</p>
+<h3>Primary Keys and Signatures<a class="anchor" id="Primary-Keys-and-Signatures" href="#Primary-Keys-and-Signatures"></a></h3>
+<p>Specifying the primary key of a labels allows edges with this label to be efficiently retrieved in the order of the key. Titan builds vertex-centric indexes for each label according to the primary key definition which can significantly speed up queries.</p>
+<div class="highlight"><pre><span class="n">TitanKey</span> <span class="n">time</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">makeType</span><span class="o">().</span><span class="na">name</span><span class="o">(</span><span class="s">"time"</span><span class="o">).</span><span class="na">dataType</span><span class="o">(</span><span class="n">Integer</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">unique</span><span class="o">(</span><span class="n">OUT</span><span class="o">).</span><span class="na">makePropertyKey</span><span class="o">();</span>
+<span class="n">TitanLabel</span> <span class="n">battled</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">makeType</span><span class="o">().</span><span class="na">name</span><span class="o">(</span><span class="s">"battled"</span><span class="o">).</span><span class="na">primaryKey</span><span class="o">(</span><span class="n">time</span><span class="o">).</span><span class="na">makeEdgeLabel</span><span class="o">();</span>
+</pre></div>
+<p>In this example, the out-unique property key time is defined with data type <code>Integer</code>. This property key is then used as the primary key for the <em>battled</em> edge label. Hence, <em>battled</em> edges will be sorted by time in ascending order and battles that happened in a certain time range can be queried for more efficiently. Moreover, <em>battled</em> edges are stored more compactly on disk.</p>
+<p>Note, that <code>TitanTypes</code> used in the primary key must be out-unique property keys or out-unique, unidirected edge labels.</p>
+<p>If one is not interested in configuring the order of edges but only wants to benefit from the storage efficiencies introduced by primary keys, one can alternatively configure the signature of a label. Specifying the signature of a label tells the graph database to <em>expect</em> that edges with this label always have or are likely to have an incident property or unidirected edge of the type included in the signature. This allows the graph database to store such edges more compactly and retrieve them more quickly.</p>
+<div class="highlight"><pre><span class="n">TitanKey</span> <span class="n">time</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">makeType</span><span class="o">().</span><span class="na">name</span><span class="o">(</span><span class="s">"time"</span><span class="o">).</span><span class="na">dataType</span><span class="o">(</span><span class="n">Integer</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">unique</span><span class="o">(</span><span class="n">OUT</span><span class="o">).</span><span class="na">makePropertyKey</span><span class="o">();</span>
+<span class="n">TitanLabel</span> <span class="n">battled</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">makeType</span><span class="o">().</span><span class="na">name</span><span class="o">(</span><span class="s">"battled"</span><span class="o">).</span><span class="na">signature</span><span class="o">(</span><span class="n">time</span><span class="o">).</span><span class="na">makeEdgeLabel</span><span class="o">();</span>
+</pre></div>
+<p>This example is almost identical to the primary key example above with the only difference that <em>time</em> is configured to be part of the signature.</p>
+<p>If a type is used in the primary key, it cannot be part of the signature.<br />
+As before, <code>TitanTypes</code> used in the signature must be either out-unique property keys or out-unique, unidirected edge lables.</p>
+<h2>Default Type Creation<a class="anchor" id="Default-Type-Creation" href="#Default-Type-Creation"></a></h2>
+<p>Titan will create edge labels and property keys the first time they are referenced by name using a default configuration unless they have been previously configured using <code>TypeMaker</code> as discussed above.</p>
+<p>By default, property keys are configured to be out-unique but non-locking with <code>Object.class</code> as the data type. Note, that it is more efficient to define an appropriate data type via <code>TypeMaker</code>. Hence, property keys don’t have an index by default. To create an indexed key with this default configuration, invoke <code>Graph.createKeyIndex("name",Vertex.class)</code> before the property key is being used.</p>
+<p>Edge labels are created according to the default configuration shown in the table above.</p>
+<p>The default type creation behavior is configured via the <code>autotype</code> configuration option. By default, it uses the configuration value <code>blueprints</code> which creates types automatically as described above. To disable automatic type creation, set <code>autotype=none</code>. Setting the option to none requires that all types are explicitly created and will throw an <code>IllegalArgumentException</code> each time a non-existent type is referenced which is useful to avoid type name typos.</p>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 05:26:15</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

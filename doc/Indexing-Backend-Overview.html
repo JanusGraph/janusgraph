@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Indexing Backend Overview</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Indexing Backend Overview</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Indexing-Backend-Overview"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Indexing-Backend-Overview"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><span class="float-left"><span><img src="https://raw.github.com/thinkaurelius/titan/master/doc/images/titan-elasticsearch.png" width="150px" /></span></span></p>
+<p>Titan interfaces with multiple indexing systems to provide support for geo, numeric range, and full-text search. Similar to storage backends, index backends are configured once initially and managed entirely by Titan. The choice of index backend determines which search features are supported, as well as the performance and scalability of the index.</p>
+<p>Titan currently supports two index backends: <a class="internal present" href="Using-Elastic-Search.html">Elastic Search</a> and <a class="internal present" href="Using-Lucene.html">Lucene</a>.</p>
+<p><br /><br /><br /></p>
+<h2>Configuration<a class="anchor" id="Configuration" href="#Configuration"></a></h2>
+<p>To configure an instance of an index backend with Titan, one has to give that instance a unique name. That name is important because it is used to identify the index in the initial configuration and when defining vertex and edge key indices in the graph. Once configured, this name cannot be changed.</p>
+<p>All index configuration options start with <code>storage.index</code> followed by the name of the index. For instance, to configure the index <code>search</code> to use the elasticsearch index backend, one would add the following configuration option:</p>
+<div class="highlight"><pre>storage.index.search.backend=elasticsearch
+</pre></div>
+<p>All other configuration options pertaining to that particular index instance would likewise start with <code>storage.index.search</code>. Please refer to the documentation pages of the respective index backends for individual configuration options.</p>
+<h2>Defining Key Indices<a class="anchor" id="Defining-Key-Indices" href="#Defining-Key-Indices"></a></h2>
+<p>Once an index instance has been configured, that instance can be used to index vertices and edges by their properties. To index properties of a particular key, the key has to be defined as <em>indexed</em> when it is first created.</p>
+<div class="highlight"><pre><span class="n">graph</span><span class="o">.</span><span class="na">makeType</span><span class="o">().</span><span class="na">name</span><span class="o">(</span><span class="s">"age"</span><span class="o">).</span><span class="na">dataType</span><span class="o">(</span><span class="n">Integer</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">indexed</span><span class="o">(</span><span class="s">"search"</span><span class="o">,</span> <span class="n">Vertex</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">unique</span><span class="o">(</span><span class="n">Direction</span><span class="o">.</span><span class="na">OUT</span><span class="o">).</span><span class="na">makePropertyKey</span><span class="o">();</span>
+</pre></div>
+<p>In the example above, the property key <em>age</em> is defined and all vertices are indexed by their <em>age</em> property using the <em>search</em> index instance configured previously. To index both vertices and edges by age we would define:</p>
+<div class="highlight"><pre><span class="n">graph</span><span class="o">.</span><span class="na">makeType</span><span class="o">().</span><span class="na">name</span><span class="o">(</span><span class="s">"age"</span><span class="o">).</span><span class="na">dataType</span><span class="o">(</span><span class="n">Integer</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">indexed</span><span class="o">(</span><span class="s">"search"</span><span class="o">,</span> <span class="n">Vertex</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">indexed</span><span class="o">(</span><span class="s">"search"</span><span class="o">,</span><span class="n">Edge</span><span class="o">.</span><span class="na">class</span><span class="o">).</span><span class="na">unique</span><span class="o">(</span><span class="n">Direction</span><span class="o">.</span><span class="na">OUT</span><span class="o">).</span><span class="na">makePropertyKey</span><span class="o">();</span>
+</pre></div>
+<h2>Using the Index<a class="anchor" id="Using-the-Index" href="#Using-the-Index"></a></h2>
+<p>Vertices and Edges are retrieved from the index using <code>GraphQuery</code> by specifying a condition on the property key. For instance, the following example retrieves all vertices with an age greater than 50:</p>
+<div class="highlight"><pre><span class="n">g</span><span class="o">.</span><span class="na">query</span><span class="o">().</span><span class="na">has</span><span class="o">(</span><span class="s">"age"</span><span class="o">,</span><span class="n">GREATER_THAN</span><span class="o">,</span><span class="mi">50</span><span class="o">).</span><span class="na">vertices</span><span class="o">()</span>
+</pre></div>
+<p>To query for edges, only the last method changes:</p>
+<div class="highlight"><pre><span class="n">g</span><span class="o">.</span><span class="na">query</span><span class="o">().</span><span class="na">has</span><span class="o">(</span><span class="s">"age"</span><span class="o">,</span><span class="n">GREATER_THAN</span><span class="o">,</span><span class="mi">50</span><span class="o">).</span><span class="na">edges</span><span class="o">()</span>
+</pre></div>
+<p>One can combine multiple conditions to form complex queries. For more examples of global graph index queries, please refer to the <a class="internal present" href="Getting-Started.html">Getting started</a> page.</p>
+<h2>Next Steps<a class="anchor" id="Next-Steps" href="#Next-Steps"></a></h2>
+<p>Read more about the supported index backends:</p>
+<ul><li><a class="internal present" href="Using-Elastic-Search.html">Using Elastic Search</a></li>
+	<li><a class="internal present" href="Using-Lucene.html">Using Lucene</a></li>
+</ul>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 06:17:51</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

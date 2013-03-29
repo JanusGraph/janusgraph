@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Upgrade Instructions</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Upgrade Instructions</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Upgrade-Instructions"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Upgrade-Instructions"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p>Please follow these instructions when upgrading from an older Titan release.</p>
+<h2>Titan 0.y.z<a class="anchor" id="Titan-0.y.z" href="#Titan-0.y.z"></a></h2>
+<h3>Version 0.3.0 (March 29, 2013)<a class="anchor" id="Version-0.3.0-(March-29,-2013)" href="#Version-0.3.0-(March-29,-2013)"></a></h3>
+<p><strong>From prior versions</strong></p>
+<p>Titan 0.3.0 is incompatible with prior version of Titan. The upgrade process is in development and not yet available.</p>
+<h3>Version 0.2.1 (March 22, 2013)<a class="anchor" id="Version-0.2.1-(March-22,-2013)" href="#Version-0.2.1-(March-22,-2013)"></a></h3>
+<p><strong>From Version 0.2.0</strong></p>
+<p>No special upgrade necessary.</p>
+<p><strong>From prior versions</strong></p>
+<p>Upgrade to 0.2.0 first as described below.</p>
+<h3>Version 0.2.0 (December 27, 2012)<a class="anchor" id="Version-0.2.0-(December-27,-2012)" href="#Version-0.2.0-(December-27,-2012)"></a></h3>
+<p><strong>From Version 0.1.0</strong></p>
+<ol><li>Shut down all running instances of Titan. If the storage backend is Cassandra or HBase, do not shut down the respective storage backend but leave it running. So, only terminate the Titan processes.</li>
+	<li>Create a backup of the storage backend. For BerkeleyDB, simply archive the contents of the storage directory. For <a href="http://www.datastax.com/docs/1.0/operations/backup_restore">Cassandra</a> and <a href="http://hbase.apache.org/book/ops.backup.html">HBase</a>, follow the directions for the respective backup functionalities. Store the backup in a secure place.</li>
+	<li>Download and unzip Titan 0.2.0 on the (or one of the) machines that has been running Titan previously.</li>
+	<li>Execute the upgrade010to020.sh/bat script in the bin directory of Titan 0.2.0 with the file name of the Titan configuration file (i.e. the argument passed into <code>TitanFactory.open()</code>) as the only argument. Follow the instructions. If asked to confirm the id block size, please ensure that the displayed value matches your configuration. If you did not configure this value, simply enter yes. Ensure that the script completes successfully.</li>
+	<li>Install Titan 0.2.0 on all machines. Start Titan 0.2.0. Only use the 0.2.0 version of Titan from this point on.</li>
+</ol><h3>Version 0.1.0 (September 7, 2012)<a class="anchor" id="Version-0.1.0-(September-7,-2012)" href="#Version-0.1.0-(September-7,-2012)"></a></h3>
+<p><strong>From Version 0.1-<span class="caps">SNAPSHOT</span></strong></p>
+<ol><li>Shut down all running instances of Titan prior to upgrading <span class="caps">ALL</span> instances to the current release to avoid data corruption.</li>
+</ol><hr />
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 04:47:52</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

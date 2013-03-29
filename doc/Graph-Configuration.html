@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Graph Configuration</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+  <h1>Graph Configuration</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Graph-Configuration"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Graph-Configuration"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><span class="float-left"><span><img src="images/titan-configuration.png" width="200px" /></span></span></p>
+<p>This page summarizes Titan’s configurations options. To configure a <code>TitanGraph</code> invoke the <code>TitanFactory.open()</code> method with a <a href="http://commons.apache.org/configuration/">commons configuration</a> object or the file name of a properties configuration file. The <code>TitanFactory</code> will return a <code>TitanGraph</code> according to the configuration.</p>
+<p>The following example opens a <code>TitanGraph</code> with the configured local storage directory.<br /></p><div class="highlight"><pre><span class="n">Configuration</span> <span class="n">conf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BaseConfiguration</span><span class="o">();</span>
+<span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.directory"</span><span class="o">,</span><span class="s">"/tmp/titan"</span><span class="o">);</span>
+<span class="n">TitanGraph</span> <span class="n">g</span> <span class="o">=</span> <span class="n">TitanFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="n">conf</span><span class="o">);</span>
+</pre></div><br />
+Alternatively, we could have written the configuration into a properties file and opened a <code>TitanGraph</code> as follows<br /><div class="highlight"><pre><span class="n">TitanGraph</span> <span class="n">g</span> <span class="o">=</span> <span class="n">TitanFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="s">"/tmp/titan/configuration.properties"</span><span class="o">);</span>
+</pre></div>
+<p>It is very important to note that some configuration options should <strong><span class="caps">NEVER</span></strong> be modified after the <code>TitanGraph</code> is first initialized. Doing so may corrupt the graph or lead to unexpected behavior. The <em>modifiable</em> column indicates whether a particular configuration option can be changed after the graph has been created.</p>
+<h2>Storage Configuration<a class="anchor" id="Storage-Configuration" href="#Storage-Configuration"></a></h2>
+<p>Titan leverages various storage backends for persistence. Use the following options to configure one of the pre-defined storage backends or your own. Particular storage backends may provide or require additional configuration options. For more information on how to configure a <code>TitanGraph</code> over <a href="Using-Cassandra">Cassandra</a> or <a href="Using-HBase">HBase</a> please review the respective wiki pages.</p>
+<table><tr><th>Option </th>
+		<th>Description </th>
+		<th>Value </th>
+		<th>Default </th>
+		<th>Modifiable </th>
+	</tr><tr><td> storage.backend </td>
+		<td> Full class name of the <code>StorageManager</code> implementation defining the storage backend to be used for persistence or one of the following pre-defined storage backends: <strong>cassandra</strong>, <strong>hbase</strong>, <strong>local</strong> </td>
+		<td> Class name or pre-defined short-hand </td>
+		<td> <strong>local</strong> </td>
+		<td> no </td>
+	</tr><tr><td> storage.directory </td>
+		<td> Storage directory for those storage backends that require local storage </td>
+		<td> path </td>
+		<td> – </td>
+		<td> no </td>
+	</tr><tr><td> storage.read-only </td>
+		<td> Specifies whether write operations are supported on the graph </td>
+		<td> <em>true</em> or <em>false</em> </td>
+		<td> <em>false</em> </td>
+		<td> yes </td>
+	</tr><tr><td> storage.batch-loading </td>
+		<td> Enables batch loading which improves write performance but assumes that only one thread is interacting with the graph and that vertices retrieved by id exist. Under these assumptions locking and some read operations can be avoided. Furthermore, the configured storage backend will make backend specific configurations that facilitate loading performance. <strong>Be careful:</strong> enabling batch loading when the assumptions are violated can result in an inconsistent or partially corrupt graph. </td>
+		<td> <em>true</em> or <em>false</em> </td>
+		<td> <em>false</em> </td>
+		<td> yes </td>
+	</tr><tr><td> storage.buffer-size </td>
+		<td> Buffers graph mutations locally up to the specified number before persisting them against the storage backend. Set to 0 to disable buffering. Buffering is disabled automatically if the storage backend does not support buffered mutations. </td>
+		<td> &gt;0 </td>
+		<td> 1024 </td>
+		<td> yes </td>
+	</tr><tr><td> storage.write-attempts </td>
+		<td> Number of times the database attempts to persist the transactional state to the storage layer. </td>
+		<td> &gt;0 </td>
+		<td> 5 </td>
+		<td> yes </td>
+	</tr><tr><td> storage.read-attempts </td>
+		<td> Number of times the database attempts to execute a read operation against the storage layer in the current transaction. </td>
+		<td> &gt;0 </td>
+		<td> 3 </td>
+		<td> yes </td>
+	</tr><tr><td> storage.attempt-wait </td>
+		<td> Time in milliseconds that Titan waits after an unsuccessful storage attempt before retrying. </td>
+		<td> &gt;=0 </td>
+		<td> 250 </td>
+		<td> yes </td>
+	</tr></table><h2>ID Management Configuration<a class="anchor" id="ID-Management-Configuration" href="#ID-Management-Configuration"></a></h2>
+<p>These configuration settings how Titan allocates and assigns ids.</p>
+<table><tr><th>Option </th>
+		<th>Description </th>
+		<th>Value </th>
+		<th>Default </th>
+		<th>Modifiable </th>
+	</tr><tr><td> ids.block-size </td>
+		<td> Size of the id block to be acquired. Larger block sizes require fewer block applications but also leave a larger fraction of the id pool occupied and potentially lost. For write heavy applications, larger block sizes should be chosen. </td>
+		<td> positive integer </td>
+		<td> 10,000 </td>
+		<td> No* </td>
+	</tr><tr><td> ids.flush </td>
+		<td> If flush ids is enabled, vertices and edges are assigned ids immediately upon creation. If not, then ids are only assigned when the transaction is committed. </td>
+		<td> <em>true</em> or <em>false</em> </td>
+		<td> <em>true</em> </td>
+		<td> yes </td>
+	</tr></table><h2>Distributed Locking and ID Management Configuration<a class="anchor" id="Distributed-Locking-and-ID-Management-Configuration" href="#Distributed-Locking-and-ID-Management-Configuration"></a></h2>
+<p>When Titan is used in distributed mode over multiple machines, locking may be required to ensure consistency of certain operations. In particular, locking is required when allocating id blocks for id assignment to individual <code>TitanGraph</code> instances. Locking is also required for certain key type configuration as described in <a href="Type-configuration">Type Configuration</a>. These options control how locks are acquired.</p>
+<table><tr><th>Option </th>
+		<th>Description </th>
+		<th>Value </th>
+		<th>Default </th>
+		<th>Modifiable </th>
+	</tr><tr><td> storage.machine-id </td>
+		<td> A unique identifier for the machine running the <code>TitanGraph</code> instance. Ensures that no other machine accessing the storage backend can have the same identifier. </td>
+		<td> String </td>
+		<td> Machine IP </td>
+		<td> Yes </td>
+	</tr><tr><td> storage.machine-id-appendix </td>
+		<td> A locally unique identifier for a particular <code>TitanGraph</code> instance. This only needs to be configured when multiple <code>TitanGraph</code> instances are running on the same machine. A unique machine specific appendix guarantees a globally unique identifier. </td>
+		<td> short integer </td>
+		<td> 0 </td>
+		<td> Yes </td>
+	</tr><tr><td> storage.lock-wait-time </td>
+		<td> The number of milliseconds the system waits for a lock application to be acknowledged by the storage backend. Also, the time waited at the end of all lock applications before verifying that the applications were successful. This value should be a small multiple of the average consistent write time. </td>
+		<td> positive integer </td>
+		<td> 100 </td>
+		<td> No </td>
+	</tr><tr><td> storage.lock-retries </td>
+		<td> Number of times the system attempts to acquire a lock before giving up and throwing an exception. </td>
+		<td> positive integer </td>
+		<td> 3 </td>
+		<td> Yes </td>
+	</tr><tr><td> storage.lock-expiry-time </td>
+		<td> Number of milliseconds after which a lock is considered to have expired. Lock applications that were not released are considered expired after this time and released. This value should be larger than the maximum time a transaction can take in order to guarantee that no correctly held applications are expired pre-maturely and as small as possible to avoid dead lock. </td>
+		<td> positive integer </td>
+		<td> 300,000 </td>
+		<td> No </td>
+	</tr><tr><td> storage.idauthority-wait-time </td>
+		<td> The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend. Also, the time waited after the application before verifying that the application was successful. </td>
+		<td> positive integer </td>
+		<td> 300 </td>
+		<td> No </td>
+	</tr><tr><td> storage.idauthority-retries </td>
+		<td> Number of times the system attempts to acquire a unique id block before giving up and throwing an exception. </td>
+		<td> positive integer </td>
+		<td> 20 </td>
+		<td> Yes </td>
+	</tr></table><p>If the <em>modifiable</em> column has a <em>No*</em> this means that the option cannot be adjusted while Titan instances are running. To change the option, all Titan instances must be shutdown and the value must be changed across the entire cluster be starting instances again. Also note, that while all configuration options mentioned on this page must be identical for all Titan instances running in the same cluster, the <em>storage.machine-id</em> and <em>storage.machine-id-appendix</em> must be configured uniquely for each Titan instance individually unless the default values are chosen.</p>
+<h2>Index Configuration<a class="anchor" id="Index-Configuration" href="#Index-Configuration"></a></h2>
+<p>Titan can interface with multiple index system to provide support for geo, numeric range, and full-text search.</p>
+<table><tr><th>Option </th>
+		<th>Description </th>
+		<th>Value </th>
+		<th>Default </th>
+		<th>Modifiable </th>
+	</tr><tr><td> storage.index.<em><span class="caps">INDEX</span>-<span class="caps">NAME</span></em>.backend </td>
+		<td> Implementation of the index backend configured for <em><span class="caps">INDEX</span>-<span class="caps">NAME</span></em>. Additional configuration options specific to this index are configured in the same configuration namespace. Please refer to the documentation page of the index backend for more information  </td>
+		<td> <em>elasticsearch</em> or <em>lucene</em> </td>
+		<td> none </td>
+		<td> No </td>
+	</tr></table><h2>General Configuration<a class="anchor" id="General-Configuration" href="#General-Configuration"></a></h2>
+<p>This section contains general configuration options to customize Titan’s behavior.</p>
+<table><tr><th>Option </th>
+		<th>Description </th>
+		<th>Value </th>
+		<th>Default </th>
+		<th>Modifiable </th>
+	</tr><tr><td> autotype </td>
+		<td> Specifies the factory to use when automatically creating types. See <a href="Type-Configuration">Default Type Creation</a> for more details.  </td>
+		<td> <em>blueprints</em> or <em>none</em> </td>
+		<td> <em>blueprints</em> </td>
+		<td> Yes </td>
+	</tr></table><h2>Next Steps<a class="anchor" id="Next-Steps" href="#Next-Steps"></a></h2>
+<p>This page lists all the <em>common</em> configuration options for Titan. Learn more about some special purpose configuration:</p>
+<ul><li><a class="internal present" href="Datatype-and-Attribute-Serializer-Configuration.html">Datatype and Attribute Serializer Configuration</a></li>
+</ul><p>Each storage backend has additional configuration options which are listed on the following pages:</p>
+<ul><li><a class="internal present" href="Using-Cassandra.html">Cassandra Configuration</a></li>
+	<li><a class="internal present" href="Using-HBase.html">HBase Configuration</a></li>
+	<li><a class="internal present" href="Using-BerkeleyDB.html">BerkeleyDB Configuration</a></li>
+</ul><p>Each index backend has additional configuration options which are listed on the following pages:</p>
+<ul><li><a class="internal present" href="Using-Elastic-Search.html">Elastic Search Configuration</a></li>
+	<li><a class="internal present" href="Using-Lucene.html">Lucene Configuration</a></li>
+</ul>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 05:46:20</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>
