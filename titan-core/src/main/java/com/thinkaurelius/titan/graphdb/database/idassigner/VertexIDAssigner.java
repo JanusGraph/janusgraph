@@ -75,7 +75,7 @@ public class VertexIDAssigner {
             hasLocalPartitions = false;
             placementStrategy = new DefaultPlacementStrategy(0);
         }
-        log.info("Partition IDs? [{}], Local Partitions? [{}]",partitionIDs,hasLocalPartitions);
+        log.debug("Partition IDs? [{}], Local Partitions? [{}]",partitionIDs,hasLocalPartitions);
         idManager = new IDManager(partitionBits, groupBits);
         Preconditions.checkArgument(idManager.getMaxPartitionID() < Integer.MAX_VALUE);
         this.maxPartitionID = (int) idManager.getMaxPartitionID();
