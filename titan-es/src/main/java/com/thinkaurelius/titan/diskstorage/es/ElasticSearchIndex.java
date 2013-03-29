@@ -73,7 +73,7 @@ public class ElasticSearchIndex implements IndexProvider {
     public static final String LOCAL_MODE_KEY = "local-mode";
     public static final boolean LOCAL_MODE_DEFAULT = false;
 
-    public static final String HOST_NAMES_KEY = "hosts";
+//    public static final String HOST_NAMES_KEY = "hosts";
     public static final int HOST_PORT_DEFAULT = 9300;
 
     public static final String ES_YML_KEY = "config-file";
@@ -89,7 +89,7 @@ public class ElasticSearchIndex implements IndexProvider {
     public ElasticSearchIndex(Configuration config) {
         indexName = config.getString(INDEX_NAME_KEY, INDEX_NAME_DEFAULT);
 
-        if (!config.containsKey(HOST_NAMES_KEY)) {
+        if (!config.containsKey(GraphDatabaseConfiguration.HOSTNAME_KEY)) {
             boolean clientOnly = config.getBoolean(CLIENT_ONLY_KEY, CLIENT_ONLY_DEFAULT);
             boolean local = config.getBoolean(LOCAL_MODE_KEY,LOCAL_MODE_DEFAULT);
 
@@ -134,7 +134,7 @@ public class ElasticSearchIndex implements IndexProvider {
             }
             settings.put("client.transport.sniff", true);
             TransportClient tc = new TransportClient(settings.build());
-            for (String host : config.getStringArray(HOST_NAMES_KEY)) {
+            for (String host : config.getStringArray(GraphDatabaseConfiguration.HOSTNAME_KEY)) {
                 String[] hostparts = host.split(":");
                 String hostname = hostparts[0];
                 int hostport = HOST_PORT_DEFAULT;

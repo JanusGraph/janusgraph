@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.es;
+package com.thinkaurelius.titan.graphdb.berkeleyje;
 
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.graphdb.TitanIndexTest;
