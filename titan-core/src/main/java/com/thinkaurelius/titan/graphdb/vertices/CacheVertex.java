@@ -44,15 +44,14 @@ public class CacheVertex extends StandardVertex {
                     }
                 }
             }
-            synchronized (this) {
             if (queryCache.isCovered(query)) {
-                return relationCache.subSet(new Entry(query.getSliceStart(),null),new Entry(query.getSliceEnd(),null));
+                SortedSet<Entry> results = relationCache.subSet(new Entry(query.getSliceStart(),null),new Entry(query.getSliceEnd(),null));
+                return results;
             } else {
                 List<Entry> results = lookup.get(query);
                 relationCache.addAll(results);
                 queryCache.add(query);
                 return results;
-            }
             }
         }
     }

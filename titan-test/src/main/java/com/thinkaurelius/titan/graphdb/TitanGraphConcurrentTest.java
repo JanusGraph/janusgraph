@@ -23,8 +23,8 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
     // Parallelism settings
     private static final int CORE_COUNT = ManagementFactory.
             getOperatingSystemMXBean().getAvailableProcessors();
-    private static final int THREAD_COUNT = CORE_COUNT * 4;
-    private static final int TASK_COUNT = 16;//THREAD_COUNT * 512;
+    private static final int THREAD_COUNT = CORE_COUNT * 8;
+    private static final int TASK_COUNT = THREAD_COUNT * 256;
 
     // Graph structure settings
     private static final int NODE_COUNT = 1000;

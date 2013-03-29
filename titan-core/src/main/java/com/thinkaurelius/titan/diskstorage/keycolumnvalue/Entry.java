@@ -49,7 +49,7 @@ public class Entry implements Comparable<Entry> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(column).toHashCode();
+        return new HashCodeBuilder().append(column.duplicate()).toHashCode();
     }
 
     @Override
@@ -58,12 +58,12 @@ public class Entry implements Comparable<Entry> {
         if (obj == null) return false;
         if (!getClass().isInstance(obj)) return false;
         Entry other = (Entry) obj;
-        return column.equals(other.column);
+        return column.duplicate().equals(other.column.duplicate());
     }
 
     @Override
     public int compareTo(Entry entry) {
-        return ByteBufferUtil.compare(column,entry.column);
+        return ByteBufferUtil.compare(column.duplicate(),entry.column.duplicate());
     }
 
     public ImmutableLongObjectMap getCache() {
