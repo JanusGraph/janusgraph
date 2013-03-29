@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.kryo;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
@@ -10,16 +11,19 @@ public class KryoDataOutput implements DataOutput {
 
 
     private final Output output;
-    private final KryoSerializer kryo;
+    private final KryoSerializer serializer;
+    private final Kryo kryo;
 
     KryoDataOutput(Output output) {
         this(output,null);
     }
 
-    KryoDataOutput(Output output, KryoSerializer kryo) {
+    KryoDataOutput(Output output, KryoSerializer serializer) {
         Preconditions.checkNotNull(output);
         this.output=output;
-        this.kryo=kryo;
+        this.serializer = serializer;
+        if (serializer !=null) kryo = serializer.getKryo();
+        else kryo = null;
     }
 
     public DataOutput putLong(long val) {
@@ -48,23 +52,23 @@ public class KryoDataOutput implements DataOutput {
     }
 
     public DataOutput writeObject(Object object, Class<?> type) {
-        Preconditions.checkArgument(kryo != null, "This DataOutput has not been initialized for object writing!");
-        Preconditions.checkArgument(kryo.isValidObject(object), "Cannot de-/serialize object: %s", object);
+        Preconditions.checkArgument(serializer != null, "This DataOutput has not been initialized for object writing!");
+        Preconditions.checkArgument(serializer.isValidObject(kryo,object), "Cannot de-/serialize object: %s", object);
         kryo.writeObjectOrNull(output, object, type);
         return this;
     }
 
     public DataOutput writeObjectNotNull(Object object) {
         Preconditions.checkNotNull(object);
-        Preconditions.checkArgument(kryo != null, "This DataOutput has not been initialized for object writing!");
-        Preconditions.checkArgument(kryo.isValidObject(object), "Cannot de-/serialize object: %s", object);
+        Preconditions.checkArgument(serializer != null, "This DataOutput has not been initialized for object writing!");
+        Preconditions.checkArgument(serializer.isValidObject(kryo,object), "Cannot de-/serialize object: %s", object);
         kryo.writeObject(output, object);
         return this;
     }
 
     public DataOutput writeClassAndObject(Object object) {
-        Preconditions.checkArgument(kryo != null, "This DataOutput has not been initialized for object writing!");
-        Preconditions.checkArgument(kryo.isValidObject(object), "Cannot de-/serialize object: %s", object);
+        Preconditions.checkArgument(serializer != null, "This DataOutput has not been initialized for object writing!");
+        Preconditions.checkArgument(serializer.isValidObject(kryo,object), "Cannot de-/serialize object: %s", object);
         kryo.writeClassAndObject(output, object);
         return this;
     }

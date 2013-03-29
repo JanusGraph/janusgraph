@@ -16,36 +16,70 @@ import com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitializati
 
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
-public class KryoSerializer extends Kryo implements Serializer {
+public class KryoSerializer implements Serializer {
 
     private static final int MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
 
-    public KryoSerializer(boolean allowAllSerializable) {
-        this.setRegistrationRequired(!allowAllSerializable);
-        super.register(Class.class,new DefaultSerializers.ClassSerializer());
+    private final boolean registerRequired;
+    private final ThreadLocal<Kryo> kryos;
+    private final Map<Integer,TypeRegistration> registrations;
+
+    private boolean initialized=false;
+
+
+    public KryoSerializer(final boolean allowAllSerializable) {
+        this.registerRequired=!allowAllSerializable;
+        this.registrations = new HashMap<Integer,TypeRegistration>();
+
+        kryos = new ThreadLocal<Kryo>() {
+            public Kryo initialValue() {
+                initialized=true;
+                Kryo k = new Kryo();
+                k.setRegistrationRequired(registerRequired);
+                k.register(Class.class,new DefaultSerializers.ClassSerializer());
+                for (Map.Entry<Integer,TypeRegistration> entry : registrations.entrySet()) {
+                    if (entry.getValue().serializer==null) {
+                        k.register(entry.getValue().type,entry.getKey());
+                    } else {
+                        k.register(entry.getValue().type,entry.getValue().serializer,entry.getKey());
+                    }
+                }
+                return k;
+            }
+        };
         SerializerInitialization.initialize(this);
     }
 
     @Override
-    public <T> void registerClass(Class<T> type, int id) {
+    public synchronized  <T> void registerClass(Class<T> type, int id) {
+        Preconditions.checkArgument(!initialized,"Serializer has already been initialized!");
         Preconditions.checkArgument(id>0,"Invalid id provided: %s",id);
+        Preconditions.checkArgument(!registrations.containsKey(id),"ID has already been registered: %s",id);
         Preconditions.checkArgument(isValidClass(type),"Class does not have a default constructor: %s",type.getName());
-        super.register(type,id);
+        registrations.put(id,new TypeRegistration(type,null));
         objectVerificationCache.put(type,Boolean.TRUE);
     }
 
     @Override
-    public <T> void registerClass(Class<T> type, AttributeSerializer<T> serializer, int id) {
+    public synchronized  <T> void registerClass(Class<T> type, AttributeSerializer<T> serializer, int id) {
+        Preconditions.checkArgument(!initialized,"Serializer has already been initialized!");
         Preconditions.checkArgument(id>0,"Invalid id provided: %s",id);
-        super.register(type, new KryoAttributeSerializerAdapter<T>(serializer),id);
+        Preconditions.checkArgument(!registrations.containsKey(id),"ID has already been registered: %s",id);
+        registrations.put(id,new TypeRegistration(type,new KryoAttributeSerializerAdapter<T>(serializer)));
         objectVerificationCache.put(type,Boolean.TRUE);
+    }
+
+    Kryo getKryo() {
+        return kryos.get();
     }
 
     @Override
     public Object readClassAndObject(ByteBuffer buffer) {
         Input i = getInput(buffer);
-        Object value = super.readClassAndObject(i);
+        Object value = getKryo().readClassAndObject(i);
         updateBBPosition(i,buffer);
         return value;
     }
@@ -53,14 +87,14 @@ public class KryoSerializer extends Kryo implements Serializer {
     @Override
     public <T> T readObject(ByteBuffer buffer, Class<T> type) {
         Input i = getInput(buffer);
-        T value = super.readObjectOrNull(i, type);
+        T value = getKryo().readObjectOrNull(i, type);
         updateBBPosition(i,buffer);
         return value;
     }
 
     public <T> T readObjectNotNull(ByteBuffer buffer, Class<T> type) {
         Input i = getInput(buffer);
-        T value = super.readObject(i, type);
+        T value = getKryo().readObject(i, type);
         updateBBPosition(i,buffer);
         return value;
     }
@@ -91,18 +125,18 @@ public class KryoSerializer extends Kryo implements Serializer {
     private final Cache<Class<?>,Boolean> objectVerificationCache = CacheBuilder.newBuilder()
                                 .maximumSize(10000).concurrencyLevel(4).initialCapacity(32).build();
 
-    final boolean isValidObject(final Object o) {
+    final boolean isValidObject(Kryo kryo, final Object o) {
         if (o==null) return true;
         Boolean status = objectVerificationCache.getIfPresent(o.getClass());
         if (status==null) {
-            if (!(getSerializer(o.getClass()) instanceof FieldSerializer)) status=Boolean.TRUE;
+            if (!(kryo.getSerializer(o.getClass()) instanceof FieldSerializer)) status=Boolean.TRUE;
             else if (!isValidClass(o.getClass())) status=Boolean.FALSE;
             else {
                 try {
                     Output out = new Output(128, MAX_OUTPUT_SIZE);
-                    this.writeClassAndObject(out,o);
+                    kryo.writeClassAndObject(out,o);
                     Input in = new Input(out.getBuffer(),0,out.position());
-                    Object ocopy = this.readClassAndObject(in);
+                    Object ocopy = kryo.readClassAndObject(in);
                     status=(o.equals(ocopy)?Boolean.TRUE:Boolean.FALSE);
                 } catch (Throwable e) {
                     status=Boolean.FALSE;
@@ -125,6 +159,18 @@ public class KryoSerializer extends Kryo implements Serializer {
             }
             return false;
         }
+    }
+
+    private static class TypeRegistration {
+
+        final Class type;
+        final com.esotericsoftware.kryo.Serializer serializer;
+
+        TypeRegistration(Class type, com.esotericsoftware.kryo.Serializer serializer) {
+            this.type=type;
+            this.serializer=serializer;
+        }
+
     }
 
 }
