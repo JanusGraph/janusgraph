@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 
 import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 import java.nio.ByteBuffer;
 import java.util.Date;
@@ -17,9 +18,9 @@ public class DateSerializer implements AttributeSerializer<Date> {
     }
 
     @Override
-    public void writeObjectData(ByteBuffer buffer, Date attribute) {
+    public void writeObjectData(DataOutput out, Date attribute) {
         long utc = attribute.getTime();
-        ls.writeObjectData(buffer,-utc);
+        ls.writeObjectData(out,-utc);
     }
 
 }

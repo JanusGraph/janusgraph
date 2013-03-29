@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 
 import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 import java.nio.ByteBuffer;
 
@@ -14,8 +15,8 @@ public class LongSerializer implements AttributeSerializer<Long> {
     }
 
     @Override
-    public void writeObjectData(ByteBuffer buffer, Long object) {
-        buffer.putLong(object.longValue() - Long.MIN_VALUE);
+    public void writeObjectData(DataOutput out, Long object) {
+        out.putLong(object.longValue() - Long.MIN_VALUE);
     }
 
 }

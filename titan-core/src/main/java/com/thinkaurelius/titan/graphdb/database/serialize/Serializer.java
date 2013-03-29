@@ -6,9 +6,9 @@ import java.nio.ByteBuffer;
 
 public interface Serializer {
 
-    public <T> void registerClass(Class<T> type);
+    public <T> void registerClass(Class<T> type, int id);
 
-    public <T> void registerClass(Class<T> type, AttributeSerializer<T> serializer);
+    public <T> void registerClass(Class<T> type, AttributeSerializer<T> serializer, int id);
 
     public Object readClassAndObject(ByteBuffer buffer);
 

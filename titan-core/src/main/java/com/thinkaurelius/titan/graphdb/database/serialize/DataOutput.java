@@ -12,8 +12,10 @@ public interface DataOutput {
 
     public DataOutput putByte(byte val);
 
+    public DataOutput putString(String string);
 
-    public DataOutput writeObject(Object object);
+
+    public DataOutput writeObject(Object object, Class<?> type);
 
     public DataOutput writeObjectNotNull(Object object);
 

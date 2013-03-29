@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 
 import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 import java.nio.ByteBuffer;
 
@@ -24,9 +25,9 @@ public class DoubleSerializer implements AttributeSerializer<Double> {
     }
 
     @Override
-    public void writeObjectData(ByteBuffer buffer, Double object) {
+    public void writeObjectData(DataOutput out, Double object) {
         long convert = (long) (object.doubleValue() * MULTIPLIER) - Long.MIN_VALUE;
-        buffer.putLong(convert);
+        out.putLong(convert);
     }
 
 }

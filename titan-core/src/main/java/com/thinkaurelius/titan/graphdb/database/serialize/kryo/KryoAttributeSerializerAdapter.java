@@ -1,12 +1,15 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.kryo;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 
 import java.nio.ByteBuffer;
 
-public class KryoAttributeSerializerAdapter<T> extends Serializer {
+public class KryoAttributeSerializerAdapter<T> extends Serializer<T> {
 
     private final AttributeSerializer<T> serializer;
 
@@ -16,13 +19,16 @@ public class KryoAttributeSerializerAdapter<T> extends Serializer {
     }
 
     @Override
-    public T readObjectData(ByteBuffer buffer, Class type) {
-        return serializer.read(buffer);
+    public T read(Kryo kryo, Input in, Class<T> type) {
+        ByteBuffer b = KryoSerializer.getByteBuffer(in);
+        T value = serializer.read(b);
+        KryoSerializer.updateInputPosition(in,b);
+        return value;
     }
 
     @Override
-    public void writeObjectData(ByteBuffer buffer, Object att) {
-        serializer.writeObjectData(buffer, (T) att);
+    public void write(Kryo kryo, Output output, T o) {
+        serializer.writeObjectData(new KryoDataOutput(output), o);
     }
 
 }

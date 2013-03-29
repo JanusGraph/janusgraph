@@ -1,9 +1,11 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.kryo;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.ObjectBuffer;
-import com.esotericsoftware.kryo.serialize.ClassSerializer;
-import com.esotericsoftware.kryo.serialize.FieldSerializer;
+import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -17,42 +19,73 @@ import java.nio.ByteBuffer;
 
 public class KryoSerializer extends Kryo implements Serializer {
 
+    private static final int MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
+
     public KryoSerializer(boolean allowAllSerializable) {
-        setRegistrationOptional(allowAllSerializable);
-        register(Class.class, new ClassSerializer(this));
-        registerClass(String[].class);
+        this.setRegistrationRequired(!allowAllSerializable);
+        super.register(Class.class,new DefaultSerializers.ClassSerializer());
         SerializerInitialization.initialize(this);
     }
 
     @Override
-    public <T> void registerClass(Class<T> type) {
+    public <T> void registerClass(Class<T> type, int id) {
+        Preconditions.checkArgument(id>0,"Invalid id provided: %s",id);
         Preconditions.checkArgument(isValidClass(type),"Class does not have a default constructor: %s",type.getName());
-        super.register(type);
+        super.register(type,id);
         objectVerificationCache.put(type,Boolean.TRUE);
     }
 
     @Override
-    public <T> void registerClass(Class<T> type, AttributeSerializer<T> serializer) {
-        super.register(type, new KryoAttributeSerializerAdapter<T>(serializer));
+    public <T> void registerClass(Class<T> type, AttributeSerializer<T> serializer, int id) {
+        Preconditions.checkArgument(id>0,"Invalid id provided: %s",id);
+        super.register(type, new KryoAttributeSerializerAdapter<T>(serializer),id);
         objectVerificationCache.put(type,Boolean.TRUE);
     }
 
-    //	public Object readClassAndObject(ByteBuffer buffer) {
-//		return super.readClassAndObject(buffer);
-//	}
-// 	
-//	public<T> T readObject(ByteBuffer buffer, Class<T> type) {
-//		return super.readObject(buffer, type);
-//	}
-//	
+    @Override
+    public Object readClassAndObject(ByteBuffer buffer) {
+        Input i = getInput(buffer);
+        Object value = super.readClassAndObject(i);
+        updateBBPosition(i,buffer);
+        return value;
+    }
+
+    @Override
+    public <T> T readObject(ByteBuffer buffer, Class<T> type) {
+        Input i = getInput(buffer);
+        T value = super.readObjectOrNull(i, type);
+        updateBBPosition(i,buffer);
+        return value;
+    }
+
     public <T> T readObjectNotNull(ByteBuffer buffer, Class<T> type) {
-        return super.readObjectData(buffer, type);
+        Input i = getInput(buffer);
+        T value = super.readObject(i, type);
+        updateBBPosition(i,buffer);
+        return value;
+    }
+
+    static final Input getInput(ByteBuffer b) {
+        return new Input(b.array(),b.position()+b.arrayOffset(),b.limit()+b.arrayOffset());
+    }
+
+    static final void updateBBPosition(Input in, ByteBuffer b) {
+        b.position(in.position()-b.arrayOffset());
+    }
+
+    static final void updateInputPosition(Input in, ByteBuffer b) {
+        in.setPosition(b.position()+b.arrayOffset());
+    }
+
+    static final ByteBuffer getByteBuffer(Input in) {
+        return ByteBuffer.wrap(in.getBuffer(), in.position(), in.limit()-in.position());
     }
 
     @Override
     public DataOutput getDataOutput(int capacity, boolean serializeObjects) {
-        if (serializeObjects) return new KryoDataOutput(capacity, this);
-        else return new KryoDataOutput(capacity);
+        Output output = new Output(capacity,MAX_OUTPUT_SIZE);
+        if (serializeObjects) return new KryoDataOutput(output, this);
+        else return new KryoDataOutput(output);
     }
 
     private final Cache<Class<?>,Boolean> objectVerificationCache = CacheBuilder.newBuilder()
@@ -66,9 +99,10 @@ public class KryoSerializer extends Kryo implements Serializer {
             else if (!isValidClass(o.getClass())) status=Boolean.FALSE;
             else {
                 try {
-                    ObjectBuffer objects = new ObjectBuffer(this, 128, 100000);
-                    ByteBuffer b = ByteBuffer.wrap(objects.writeClassAndObject(o));
-                    Object ocopy = readClassAndObject(b);
+                    Output out = new Output(128, MAX_OUTPUT_SIZE);
+                    this.writeClassAndObject(out,o);
+                    Input in = new Input(out.getBuffer(),0,out.position());
+                    Object ocopy = this.readClassAndObject(in);
                     status=(o.equals(ocopy)?Boolean.TRUE:Boolean.FALSE);
                 } catch (Throwable e) {
                     status=Boolean.FALSE;

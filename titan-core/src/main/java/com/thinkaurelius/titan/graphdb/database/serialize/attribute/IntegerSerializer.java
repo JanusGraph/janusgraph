@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 
 import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 import java.nio.ByteBuffer;
 
@@ -14,8 +15,8 @@ public class IntegerSerializer implements AttributeSerializer<Integer> {
     }
 
     @Override
-    public void writeObjectData(ByteBuffer buffer, Integer object) {
-        buffer.putInt(object.intValue() - Integer.MIN_VALUE);
+    public void writeObjectData(DataOutput out, Integer object) {
+        out.putInt(object.intValue() - Integer.MIN_VALUE);
     }
 
 }

@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.StandardLabelDefinition;
 import com.thinkaurelius.titan.graphdb.types.StandardTypeGroup;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import static com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization.RESERVED_ID_OFFSET;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
 import com.tinkerpop.blueprints.Vertex;
 import org.junit.After;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -37,14 +39,14 @@ public class SerializerTest {
     @Before
     public void setUp() throws Exception {
         serialize = new KryoSerializer(false);
-        serialize.registerClass(TestEnum.class);
-        serialize.registerClass(TestClass.class);
-        serialize.registerClass(short[].class);
-        serialize.registerClass(boolean[].class);
-        serialize.registerClass(IndexType.class);
-        serialize.registerClass(StandardLabelDefinition.class);
-        serialize.registerClass(StandardTypeGroup.class);
-        serialize.registerClass(StandardKeyDefinition.class);
+        serialize.registerClass(TestEnum.class,RESERVED_ID_OFFSET+1);
+        serialize.registerClass(TestClass.class,RESERVED_ID_OFFSET+2);
+        serialize.registerClass(short[].class,RESERVED_ID_OFFSET+3);
+        serialize.registerClass(boolean[].class,RESERVED_ID_OFFSET+4);
+        serialize.registerClass(IndexType.class,RESERVED_ID_OFFSET+5);
+        serialize.registerClass(StandardLabelDefinition.class,RESERVED_ID_OFFSET+6);
+        serialize.registerClass(StandardTypeGroup.class,RESERVED_ID_OFFSET+7);
+        serialize.registerClass(StandardKeyDefinition.class,RESERVED_ID_OFFSET+8);
 
         printStats = true;
     }
@@ -60,16 +62,19 @@ public class SerializerTest {
         Number n = new Double(3.555);
         out.writeObjectNotNull(str);
         out.putInt(i);
-        out.writeObject(c);
+        out.writeObject(c,TestClass.class);
         out.writeClassAndObject(n);
         ByteBuffer b = out.getByteBuffer();
         if (printStats) log.debug(bufferStats(b));
         String str2 = serialize.readObjectNotNull(b, String.class);
         assertEquals(str, str2);
+        if (printStats) log.debug(bufferStats(b));
         assertEquals(b.getInt(), i);
         TestClass c2 = serialize.readObject(b, TestClass.class);
         assertEquals(c, c2);
+        if (printStats) log.debug(bufferStats(b));
         assertEquals(n, serialize.readClassAndObject(b));
+        if (printStats) log.debug(bufferStats(b));
         assertFalse(b.hasRemaining());
     }
 
@@ -81,9 +86,9 @@ public class SerializerTest {
         out.writeClassAndObject(l);
         Calendar c = Calendar.getInstance();
         out.writeClassAndObject(c);
-        BigDecimal b = BigDecimal.ONE;
+        NoDefaultConstructor dc = new NoDefaultConstructor(5);
         try {
-            out.writeClassAndObject(b);
+            out.writeClassAndObject(dc);
             fail();
         } catch (IllegalArgumentException e) {
 
@@ -95,7 +100,7 @@ public class SerializerTest {
         } catch (IllegalArgumentException e) {
 
         }
-        out.writeObject(null);
+        out.writeObject(null,TestClass.class);
     }
 
 
@@ -192,7 +197,7 @@ public class SerializerTest {
     @Test(expected = IllegalArgumentException.class)
     public void checkNonObject() {
         DataOutput out = serialize.getDataOutput(128, false);
-        out.writeObject("This is a test");
+        out.writeObject("This is a test",String.class);
     }
 
 

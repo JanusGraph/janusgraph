@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -42,6 +44,6 @@ public interface AttributeSerializer<V> {
      * @param buffer    ByteBuffer to write attribute to
      * @param attribute Attribute to write to ByteBuffer
      */
-    public void writeObjectData(ByteBuffer buffer, V attribute);
+    public void writeObjectData(DataOutput buffer, V attribute);
 
 }

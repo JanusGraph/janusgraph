@@ -309,21 +309,18 @@ public class EdgeSerializer {
             IDHandler.writeInlineEdgeType(out, type.getID(), idManager);
         }
 
-        if (value == null) {
-            if (type.isPropertyKey()) {
-                out.writeObject(null);
+        if (type.isPropertyKey()) {
+            if (hasGenericDataType((TitanKey) type)) {
+                out.writeClassAndObject(value);
             } else {
-                assert type.isEdgeLabel();
-                VariableLong.writePositive(out, 0);
+                out.writeObject(value,((TitanKey) type).getDataType());
             }
         } else {
-            if (type.isPropertyKey()) {
-                if (hasGenericDataType((TitanKey) type))
-                    out.writeClassAndObject(value);
-                else out.writeObject(value);
+            assert type.isEdgeLabel();
+            Preconditions.checkArgument(((TitanLabel)type).isUnidirected());
+            if (value==null) {
+                VariableLong.writePositive(out, 0);
             } else {
-                Preconditions.checkArgument(type.isEdgeLabel());
-                Preconditions.checkArgument(((TitanLabel)type).isUnidirected());
                 VariableLong.writePositive(out, ((InternalVertex)value).getID());
             }
         }
@@ -398,17 +395,20 @@ public class EdgeSerializer {
                         KeyAtom<TitanType> equals = null;
                         for (KeyAtom<TitanType> a : cons) if (a.getRelation()== Cmp.EQUAL) equals=a;
                         if (equals!=null) {
+                            Object condition = equals.getCondition();
                             if (kt.isEdgeLabel()) {
                                 long id = 0;
-                                if (equals.getCondition() != null) id = ((TitanVertex) equals.getCondition()).getID();
+                                if (condition != null) id = ((TitanVertex) condition).getID();
                                 VariableLong.writePositive(start, id);
                                 VariableLong.writePositive(end, id);
                             } else {
-                                start.writeObject(equals.getCondition());
-                                end.writeObject(equals.getCondition());
+                                Preconditions.checkArgument(!hasGenericDataType((TitanKey)kt));
+                                start.writeObject(condition,((TitanKey) kt).getDataType());
+                                end.writeObject(condition, ((TitanKey) kt).getDataType());
                             }
                         } else {
                             Preconditions.checkArgument(kt.isPropertyKey());
+                            Preconditions.checkArgument(!hasGenericDataType((TitanKey)kt));
                             //Range constraint
                             Comparable lower=null, upper=null;
                             boolean lowerInc=true, upperInc=true;
@@ -431,7 +431,7 @@ public class EdgeSerializer {
                             }
 
                             if (lower != null) {
-                                start.writeObject(lower);
+                                start.writeObject(lower,((TitanKey) kt).getDataType());
                                 sliceStart = start.getByteBuffer();
                                 if (!lowerInc)
                                     sliceStart = ByteBufferUtil.nextBiggerBuffer(sliceStart);
@@ -440,7 +440,7 @@ public class EdgeSerializer {
                             }
 
                             if (upper != null) {
-                                end.writeObject(upper);
+                                end.writeObject(upper,((TitanKey) kt).getDataType());
                             }
                             sliceEnd = end.getByteBuffer();
                             if (upperInc) sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceEnd);

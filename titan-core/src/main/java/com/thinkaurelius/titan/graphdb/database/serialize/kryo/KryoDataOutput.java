@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.kryo;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.ObjectBuffer;
+import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
@@ -9,92 +8,69 @@ import java.nio.ByteBuffer;
 
 public class KryoDataOutput implements DataOutput {
 
-    private static final int initialKryoCapacity = 128;
-    private static final int maxKryoCapacity = 10 * 1024 * 1024;
 
-    private static final int capacityFactor = 2;
-
-    private ByteBuffer buffer;
-
-    private final ObjectBuffer objects;
+    private final Output output;
     private final KryoSerializer kryo;
 
-    KryoDataOutput(int capacity) {
-        this(capacity, null);
-
+    KryoDataOutput(Output output) {
+        this(output,null);
     }
 
-    KryoDataOutput(int capacity, KryoSerializer kryo) {
-        buffer = ByteBuffer.allocate(capacity);
+    KryoDataOutput(Output output, KryoSerializer kryo) {
+        Preconditions.checkNotNull(output);
+        this.output=output;
         this.kryo=kryo;
-        if (kryo != null) objects = new ObjectBuffer(kryo, initialKryoCapacity, maxKryoCapacity);
-        else objects = null;
-
     }
 
     public DataOutput putLong(long val) {
-        ensureCapacity(8);
-        buffer.putLong(val);
+        output.writeLong(val);
         return this;
     }
 
     public DataOutput putInt(int val) {
-        ensureCapacity(4);
-        buffer.putInt(val);
+        output.writeInt(val);
         return this;
     }
 
     public DataOutput putShort(short val) {
-        ensureCapacity(2);
-        buffer.putShort(val);
+        output.writeShort(val);
         return this;
     }
 
     public DataOutput putByte(byte val) {
-        ensureCapacity(1);
-        buffer.put(val);
+        output.writeByte(val);
         return this;
     }
 
-    private void ensureCapacity(int noBytes) {
-        if (buffer.remaining() < noBytes) {
-            ByteBuffer larger = ByteBuffer.allocate(Math.max(buffer.capacity() * capacityFactor,
-                    buffer.position() + noBytes + 10));
-            buffer.flip();
-            larger.put(buffer);
-            buffer = larger;
-        }
+    public DataOutput putString(String string) {
+        output.writeString(string);
+        return this;
     }
 
-    private void append(byte[] bytes) {
-        ensureCapacity(bytes.length);
-        buffer.put(bytes);
-    }
-
-    public DataOutput writeObject(Object object) {
-        Preconditions.checkArgument(objects != null, "This DataOutput has not been initialized for object writing!");
-        Preconditions.checkArgument(kryo.isValidObject(object),"Cannot de-/serialize object: %s",object);
-        append(objects.writeObject(object));
+    public DataOutput writeObject(Object object, Class<?> type) {
+        Preconditions.checkArgument(kryo != null, "This DataOutput has not been initialized for object writing!");
+        Preconditions.checkArgument(kryo.isValidObject(object), "Cannot de-/serialize object: %s", object);
+        kryo.writeObjectOrNull(output, object, type);
         return this;
     }
 
     public DataOutput writeObjectNotNull(Object object) {
-        Preconditions.checkArgument(objects != null, "This DataOutput has not been initialized for object writing!");
-        Preconditions.checkArgument(kryo.isValidObject(object),"Cannot de-/serialize object: %s",object);
-        append(objects.writeObjectData(object));
+        Preconditions.checkNotNull(object);
+        Preconditions.checkArgument(kryo != null, "This DataOutput has not been initialized for object writing!");
+        Preconditions.checkArgument(kryo.isValidObject(object), "Cannot de-/serialize object: %s", object);
+        kryo.writeObject(output, object);
         return this;
     }
 
     public DataOutput writeClassAndObject(Object object) {
-        Preconditions.checkArgument(objects != null, "This DataOutput has not been initialized for object writing!");
-        Preconditions.checkArgument(kryo.isValidObject(object),"Cannot de-/serialize object: %s",object);
-        append(objects.writeClassAndObject(object));
+        Preconditions.checkArgument(kryo != null, "This DataOutput has not been initialized for object writing!");
+        Preconditions.checkArgument(kryo.isValidObject(object), "Cannot de-/serialize object: %s", object);
+        kryo.writeClassAndObject(output, object);
         return this;
     }
 
     public ByteBuffer getByteBuffer() {
-        buffer.flip();
-        return buffer;
+        return ByteBuffer.wrap(output.getBuffer(),0,output.position());
     }
 
 }

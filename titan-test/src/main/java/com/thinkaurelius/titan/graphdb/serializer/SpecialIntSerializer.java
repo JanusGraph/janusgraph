@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.serializer;
 
 import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 import java.nio.ByteBuffer;
 
@@ -16,7 +17,7 @@ public class SpecialIntSerializer implements AttributeSerializer<SpecialInt> {
     }
 
     @Override
-    public void writeObjectData(ByteBuffer buffer, SpecialInt attribute) {
-        buffer.putInt(attribute.getValue());
+    public void writeObjectData(DataOutput out, SpecialInt attribute) {
+        out.putInt(attribute.getValue());
     }
 }
