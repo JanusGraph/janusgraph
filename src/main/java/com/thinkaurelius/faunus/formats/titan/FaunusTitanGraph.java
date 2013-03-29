@@ -36,8 +36,6 @@ public class FaunusTitanGraph extends StandardTitanGraph {
                 FaunusVertexLoader.RelationFactory factory = loader.getFactory();
                 super.edgeSerializer.readRelation(factory,data,tx);
                 factory.build();
-            } catch (com.esotericsoftware.kryo.SerializationException e) {
-                //Simply ignore
             } catch (Exception e) {
                 //Log exception
             }
