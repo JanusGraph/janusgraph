@@ -1,32 +1,88 @@
 Titan: Distributed Graph Database
 "http://thinkaurelius.github.com/titan/":http://thinkaurelius.github.com/titan/
 
+[[https://raw.github.com/thinkaurelius/titan/master/doc/images/titan-globe.png|width=100px]]
+
 h2. Titan 0.y.z
 
-h3. Version 0.3.0 (NOT OFFICIALLY RELEASED)
+h3. Version 0.3.0 (March 29, 2013)
 
 ```xml
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
-   <artifactId>titan</artifactId>
-   <version>0.3.0-SNAPSHOT</version>
+   <artifactId>titan-core</artifactId>
+   <version>0.3.0</version>
+</dependency>
+```
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94
+* BerkeleyJE 5.0.73
+
+*Features:*
+
+* Geo, numeric range, and full-text indexing supporting multiple index backends
+* Edge Indexing
+* Refactoring of Titan-core for enhanced performance due to selective de-serialization
+* New query optimizer for vertex-centric and graph queries
+* Vertex centric query caching for selective queries
+* InMemoryGraph implementation
+* IdGraph support
+* Relaxed transactional scope requirement for vertices
+* Edge now longer extends Vertex
+* Updated to Kryo 2
+
+*Bugfixes:*
+
+* Cassandra Thrift Max-Message-Size issue
+* JMX settings for Titan Server
+* Out-unique edges
+* Modified state in global graph operations
+* see issue tracker for a full list
+
+h3. Version 0.2.1 (March 22, 2013)
+
+```xml
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.2.1</version>
 </dependency>
 ```
 *Tested Compatibility:*
 
 * Cassandra 1.2.0
+* HBase 0.94
+* BerkeleyJE 5.0.58
 
 *Features:*
 
 * Refactored POM into multi-module project
-* Compatible with Cassandra 1.2.0
+* Support for global vertex (g.V) and edge (g.E) iteration for cassandra and hbase backends
+* Compatible with Cassandra 1.2.0 for all three storage adapters: embedded, thrift, astyanax
+* Improved HBase adapter:
+** Automatic Master launch for testing
+** Refactored batch mutation and reading
+** Optimized HBase operations
+* Updated to Blueprints 2.3.0
+* Better integration with Rexster Rexpro
+* Automatic directory creation for local storage backends
+* Internal Titan version handling and compatibility checks
+* Added additional performance tests
 
 *Bugfixes:*
 
 * Resolved issues around Java 1.7
+* Shutdown error in astyanax adapter
+* Made thrift frame and message size configurable for cassandra adapters
+* see issue tracker for a full list
 
 *Special Thanks to:*
 
+* Pavel Yaskevich ("xedin":https://github.com/xedin)
+
+==<hr/>==
 
 h3. Version 0.2.0 (December 24, 2012)
 
@@ -44,7 +100,7 @@ h3. Version 0.2.0 (December 24, 2012)
 * BerkeleyDB 5.0.58
 * TinkerPop (Blueprints, Gremlin, Rexster) 2.2.0
 
-* This version is incompatible with the previous version of Titan. Please follow the [[Upgrade Instructions]] to switch to the new version. *
+* This version is incompatible with the previous version of Titan. Please follow the [[Upgrade Instructions]] to switch to the new version.
 
 *Features:*
 
@@ -67,6 +123,8 @@ h3. Version 0.2.0 (December 24, 2012)
 * Nicolas LaCasse ("nlacasse":https://github.com/nlacasse)
 * Vadas Gintautas ("vadasg":https://github.com/vadasg)
 
+==<hr/>==
+
 h3. Version 0.1.0 (September 7, 2012)
 
 ```xml
@@ -76,7 +134,6 @@ h3. Version 0.1.0 (September 7, 2012)
    <version>0.1.0</version>
 </dependency>
 ```
-
 *Tested Compatibility:*
 
 * Cassandra 1.1.3 & 1.1.4
@@ -91,7 +148,7 @@ h3. Version 0.1.0 (September 7, 2012)
 
 * Fixed concurrency and synchronization issues
 
-*Special thanks to:*
+*Special Thanks to:*
 
 * Danny Thomas ("BinaryRage":https://github.com/BinaryRage)
 * "jramsdale":https://github.com/jramsdale
@@ -100,5 +157,3 @@ h3. Version 0.1.0 (September 7, 2012)
 * Dan Forest-Barbier ("DPanth3r":https://github.com/DPanth3r)
 * "jncorpron":https://github.com/jncorpron
 * Marc Abramowitz ("msabramo":https://github.com/msabramo)
-
-==<hr/>==
