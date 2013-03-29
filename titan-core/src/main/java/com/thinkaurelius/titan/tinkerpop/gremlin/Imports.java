@@ -1,5 +1,9 @@
 package com.thinkaurelius.titan.tinkerpop.gremlin;
 
+import com.thinkaurelius.titan.core.attribute.Geo;
+import com.thinkaurelius.titan.core.attribute.Text;
+import com.tinkerpop.blueprints.Query;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +22,10 @@ public class Imports {
         imports.add("com.thinkaurelius.titan.core.attribute.*");
         imports.add("com.thinkaurelius.titan.example.*");
         imports.add("org.apache.commons.configuration.*");
+        imports.add("static " + Geo.class.getName() + ".*");
+        imports.add("static " + Text.class.getName() + ".*");
+        // todo: remove with Gremlin 2.3.1+
+        imports.add("static " + Query.Compare.class.getName() + ".*");
     }
 
     public static List<String> getImports() {
