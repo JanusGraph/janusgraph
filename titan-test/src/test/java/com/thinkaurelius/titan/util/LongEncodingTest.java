@@ -2,9 +2,10 @@ package com.thinkaurelius.titan.util;
 
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 import java.util.Random;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)

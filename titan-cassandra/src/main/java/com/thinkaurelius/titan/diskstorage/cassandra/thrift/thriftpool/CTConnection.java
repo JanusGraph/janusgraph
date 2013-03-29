@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool;
 
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.Cassandra.Client;
-import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TTransport;
 
 import java.io.Closeable;

@@ -10,7 +10,6 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)

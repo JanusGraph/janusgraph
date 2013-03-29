@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.tinkerpop.blueprints.Direction;
+
 import static com.tinkerpop.blueprints.util.StringFactory.*;
 
 /**

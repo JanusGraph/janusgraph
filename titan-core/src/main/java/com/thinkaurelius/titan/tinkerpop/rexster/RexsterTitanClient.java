@@ -9,18 +9,14 @@ import com.tinkerpop.rexster.server.RexsterSettings;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.msgpack.MessageTypeException;
-import org.msgpack.template.Template;
 import org.msgpack.type.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.msgpack.template.Templates.*;
 
 /**
  * Basic client for interacting with a Titan backed Rexster Server

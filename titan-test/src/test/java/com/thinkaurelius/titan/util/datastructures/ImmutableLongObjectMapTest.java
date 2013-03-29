@@ -1,15 +1,12 @@
 package com.thinkaurelius.titan.util.datastructures;
 
 import com.google.common.collect.Iterables;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 /**

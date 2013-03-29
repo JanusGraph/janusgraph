@@ -12,10 +12,11 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.lang.StringUtils;
-import static com.tinkerpop.blueprints.Direction.*;
 
 import java.util.*;
-import java.util.regex.Pattern;
+
+import static com.tinkerpop.blueprints.Direction.IN;
+import static com.tinkerpop.blueprints.Direction.OUT;
 
 public class StandardTypeMaker implements TypeMaker {
 

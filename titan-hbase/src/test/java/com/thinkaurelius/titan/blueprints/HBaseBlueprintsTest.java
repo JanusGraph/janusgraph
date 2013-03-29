@@ -1,13 +1,13 @@
 package com.thinkaurelius.titan.blueprints;
 
-import java.io.IOException;
-
 import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Graph;
+
+import java.io.IOException;
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
  */

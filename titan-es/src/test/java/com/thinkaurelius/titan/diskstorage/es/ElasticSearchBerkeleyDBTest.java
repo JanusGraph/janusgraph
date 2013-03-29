@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage.es;
 
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.graphdb.TitanIndexTest;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 

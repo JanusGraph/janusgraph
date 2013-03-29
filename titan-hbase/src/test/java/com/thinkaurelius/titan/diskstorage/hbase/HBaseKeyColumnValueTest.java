@@ -1,13 +1,13 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
-import java.io.*;
-
 import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
+
+import java.io.IOException;
 
 public class HBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
     @BeforeClass

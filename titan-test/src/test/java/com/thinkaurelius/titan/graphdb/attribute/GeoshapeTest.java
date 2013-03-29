@@ -3,9 +3,7 @@ package com.thinkaurelius.titan.graphdb.attribute;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)

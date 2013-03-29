@@ -1,14 +1,9 @@
 package com.thinkaurelius.titan;
 
 
-import com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
-
-import java.io.File;
 
 public class BerkeleyJeStorageSetup extends StorageSetup {
 

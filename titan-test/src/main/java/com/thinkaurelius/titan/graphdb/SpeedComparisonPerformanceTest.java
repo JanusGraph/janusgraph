@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb;
 
-import com.thinkaurelius.titan.core.TitanVertexQuery;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.TitanVertexQuery;
 import com.thinkaurelius.titan.core.VertexList;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;

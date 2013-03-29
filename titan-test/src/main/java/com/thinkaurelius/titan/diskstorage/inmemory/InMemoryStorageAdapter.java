@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.tinkerpop.pipes.util.FastNoSuchElementException;
 import org.apache.commons.configuration.Configuration;
 
 import java.nio.ByteBuffer;

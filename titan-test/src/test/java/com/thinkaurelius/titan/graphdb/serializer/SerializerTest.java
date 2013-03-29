@@ -1,15 +1,14 @@
 package com.thinkaurelius.titan.graphdb.serializer;
 
 
-import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
-import com.thinkaurelius.titan.graphdb.types.*;
+import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.thinkaurelius.titan.graphdb.types.StandardKeyDefinition;
 import com.thinkaurelius.titan.graphdb.types.StandardLabelDefinition;
 import com.thinkaurelius.titan.graphdb.types.StandardTypeGroup;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
-import static com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization.RESERVED_ID_OFFSET;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
 import com.tinkerpop.blueprints.Vertex;
 import org.junit.After;
@@ -18,15 +17,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Calendar;
-import java.util.Date;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization.RESERVED_ID_OFFSET;
+import static org.junit.Assert.*;
 
 public class SerializerTest {
 

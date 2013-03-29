@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.primitives.Longs;
-import com.thinkaurelius.titan.graphdb.database.serialize.attribute.LongSerializer;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;

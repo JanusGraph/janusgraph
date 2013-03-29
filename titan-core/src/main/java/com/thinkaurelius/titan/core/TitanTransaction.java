@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.core;
 
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
 
 /**
  * TitanTransaction defines a transactional context for a {@link TitanGraph}. Since TitanGraph is a transactional graph

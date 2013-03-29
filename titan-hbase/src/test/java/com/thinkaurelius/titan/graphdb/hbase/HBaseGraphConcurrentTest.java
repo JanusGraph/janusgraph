@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.graphdb.hbase;
 
-import java.io.IOException;
-
 import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.graphdb.TitanGraphConcurrentTest;
 import org.junit.BeforeClass;
+
+import java.io.IOException;
 
 public class HBaseGraphConcurrentTest extends TitanGraphConcurrentTest {
     @BeforeClass

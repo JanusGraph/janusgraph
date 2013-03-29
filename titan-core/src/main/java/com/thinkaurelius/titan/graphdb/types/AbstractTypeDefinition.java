@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.carrotsearch.hppc.LongIntMap;
-import com.carrotsearch.hppc.LongIntOpenHashMap;
-import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.tinkerpop.blueprints.Direction;

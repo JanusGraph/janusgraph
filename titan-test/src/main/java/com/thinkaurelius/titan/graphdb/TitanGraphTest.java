@@ -7,7 +7,10 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
-import com.tinkerpop.blueprints.*;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Query;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -337,7 +340,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         v = tx.getVertex(v.getId());
         assertNotNull(v);
         assertEquals(1,Iterables.size(v.getEdges(Direction.IN, "self")));
-        assertEquals(1,Iterables.size(v.getEdges(Direction.OUT, "self")));
+        assertEquals(1, Iterables.size(v.getEdges(Direction.OUT, "self")));
         assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
     }
 
@@ -402,7 +405,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         tx.removeVertex(v1);
         v2 = tx.getVertices("name", "v2").iterator().next(); // generates IllegalArgumentException
         assertNotNull(v2);
-        assertEquals(0,Iterables.size(tx.getVertices("name","v1")));
+        assertEquals(0,Iterables.size(tx.getVertices("name", "v1")));
     }
 
     @Test
