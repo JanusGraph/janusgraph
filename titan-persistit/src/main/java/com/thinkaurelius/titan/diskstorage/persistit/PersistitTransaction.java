@@ -110,10 +110,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     @Override
     public synchronized void commit() throws StorageException {
-        if (!tx.isActive())
-            return;
         begin();
-
         int retries = 3;
         try {
             int i = 0;
@@ -140,7 +137,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     public Exchange getExchange(String treeName, Boolean create) throws StorageException {
         try {
-            db.setSessionId(sessionId);
+            assign();
             return db.getExchange(db.getSystemVolume().getName(), treeName, create);
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex);

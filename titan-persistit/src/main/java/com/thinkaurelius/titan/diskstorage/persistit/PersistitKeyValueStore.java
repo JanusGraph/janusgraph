@@ -36,13 +36,14 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
     private static ByteBuffer getByteBuffer(byte[] bytes) {
         ByteBuffer b = ByteBuffer.wrap(bytes, 0, bytes.length);
-        b.rewind();
         return b;
     }
 
     private static byte[] getByteArray(ByteBuffer buffer) {
-        buffer.rewind();
-        return buffer.array();
+        int offset = buffer.arrayOffset();
+        byte[] bytes = new byte[buffer.remaining() - offset];
+        System.arraycopy(buffer.array(), offset, bytes, offset, bytes.length);
+        return bytes;
     }
 
     private final String name;
@@ -140,32 +141,30 @@ public class PersistitKeyValueStore implements KeyValueStore {
     }
 
     static void toKey(Exchange exchange, ByteBuffer key) {
-//        exchange.getKey().to(new String(key.array()));
         byte[] k = getByteArray(key);
         Key ek = exchange.getKey();
-        ek.clear();
-        ek.appendByteArray(k, 0, k.length);
+        ek.to(k);
+//        ek.clear();
+//        ek.appendByteArray(k, 0, k.length);
+//        ek.setEncodedSize(k.length);
     }
 
     static ByteBuffer getKey(Exchange exchange) {
         return getByteBuffer(exchange.getKey().decodeByteArray());
-//        return getByteBuffer(exchange.getKey().decodeString().getBytes());
     }
 
     static void setValue(Exchange exchange, ByteBuffer val) throws PersistitException{
-        exchange.getValue().put(new String(val.array()));
-//        byte[] v = getByteArray(val);
-//        Value ev = exchange.getValue();
-//        ev.clear();
-//        ev.putByteArray(v, 0, v.length);
-
+        byte[] v = getByteArray(val);
+        exchange.getValue().clear();
+        exchange.getValue().setEncodedSize(v.length);
+        exchange.getValue().putEncodedBytes(v, 0, v.length);
         exchange.store();
     }
 
     static ByteBuffer getValue(Exchange exchange) {
-        byte[] bytes = exchange.getValue().getString().getBytes();
-        return ByteBuffer.wrap(bytes);
-//        return getByteBuffer(exchange.getValue().getByteArray());
+        byte[] dst = new byte[exchange.getValue().getEncodedSize()];
+        System.arraycopy(exchange.getValue().getEncodedBytes(), 0, dst, 0, dst.length);
+        return ByteBuffer.wrap(dst);
     }
 
     @Override
