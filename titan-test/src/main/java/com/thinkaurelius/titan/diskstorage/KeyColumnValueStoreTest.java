@@ -170,27 +170,27 @@ public abstract class KeyColumnValueStoreTest {
         checkValues(values);
     }
 
-    @Test
-    public void storeAndRetrievePerformance() throws StorageException {
-        int keys = 100, columns = 2000;
-        String[][] values = KeyValueStoreUtil.generateData(keys,columns);
-        log.debug("Loading values: "+keys+"x"+columns);
-        long time = System.currentTimeMillis();
-        loadValues(values);
-        System.out.println("Loading time (ms): " + (System.currentTimeMillis()-time));
-        //print(values);
-        Random r = new Random();
-        int trials = 10000;
-        int delta = 10;
-        log.debug("Reading values: "+trials+" trials");
-        time = System.currentTimeMillis();
-        for (int t=0;t<trials;t++) {
-            int key = r.nextInt(keys);
-            int start = r.nextInt(columns-delta);
-            store.getSlice(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(start+delta), tx);
-        }
-        System.out.println("Reading time (ms): " + (System.currentTimeMillis()-time));
-    }
+//    @Test
+//    public void storeAndRetrievePerformance() throws StorageException {
+//        int keys = 100, columns = 2000;
+//        String[][] values = KeyValueStoreUtil.generateData(keys,columns);
+//        log.debug("Loading values: "+keys+"x"+columns);
+//        long time = System.currentTimeMillis();
+//        loadValues(values);
+//        System.out.println("Loading time (ms): " + (System.currentTimeMillis()-time));
+//        //print(values);
+//        Random r = new Random();
+//        int trials = 10000;
+//        int delta = 10;
+//        log.debug("Reading values: "+trials+" trials");
+//        time = System.currentTimeMillis();
+//        for (int t=0;t<trials;t++) {
+//            int key = r.nextInt(keys);
+//            int start = r.nextInt(columns-delta);
+//            store.getSlice(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(start+delta), tx);
+//        }
+//        System.out.println("Reading time (ms): " + (System.currentTimeMillis()-time));
+//    }
 
     @Test
     public void storeAndRetrieveWithClosing() throws StorageException {
@@ -382,6 +382,15 @@ public abstract class KeyColumnValueStoreTest {
         List<Entry> result =
                 store.getSlice(key, columnStart, columnEnd, cols, txn);
         Assert.assertEquals(cols, result.size());
+
+        for (int i=0; i<result.size(); i++) {
+            Entry src = entries.get(i);
+            Entry dst = result.get(i);
+            if (!src.equals(dst)) {
+                int x = 1;
+            }
+        }
+
         Assert.assertEquals(entries, result);
         result =
                 store.getSlice(key, columnStart, columnEnd, cols + 10, txn);
