@@ -69,7 +69,9 @@ public class PersistitTransaction extends AbstractStoreTransaction {
         super(level);
         db = p;
         sessionId = getSessionIdHack();
-        tx = getTransactionHack(db, sessionId);
+        assign();
+        tx = db.getTransaction();
+        assert sessionId == tx.getSessionId();
 
         try {
             tx.begin();
@@ -79,6 +81,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     }
 
     private void begin() throws StorageException {
+        assign();
         if (!tx.isActive()) {
             try {
                 tx.begin();
@@ -86,7 +89,14 @@ public class PersistitTransaction extends AbstractStoreTransaction {
                 throw new PermanentStorageException(ex);
             }
         }
-        db.setSessionId(tx.getSessionId());
+    }
+
+    /**
+     * Assigns the session id to the current thread
+     */
+    public synchronized void assign() {
+        db.setSessionId(sessionId);
+        if (tx != null) assert sessionId == tx.getSessionId();
     }
 
     @Override

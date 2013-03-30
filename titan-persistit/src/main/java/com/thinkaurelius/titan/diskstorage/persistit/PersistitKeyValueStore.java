@@ -194,19 +194,19 @@ public class PersistitKeyValueStore implements KeyValueStore {
     }
 
     static void setValue(Exchange exchange, ByteBuffer val) throws PersistitException{
-//        exchange.getValue().put(new String(val.array()));
-        byte[] v = getByteArray(val);
-        Value ev = exchange.getValue();
-        ev.clear();
-        ev.putByteArray(v, 0, v.length);
+        exchange.getValue().put(new String(val.array()));
+//        byte[] v = getByteArray(val);
+//        Value ev = exchange.getValue();
+//        ev.clear();
+//        ev.putByteArray(v, 0, v.length);
 
         exchange.store();
     }
 
     static ByteBuffer getValue(Exchange exchange) {
-//        byte[] bytes = exchange.getValue().getString().getBytes();
-//        return ByteBuffer.wrap(bytes);
-        return getByteBuffer(exchange.getValue().getByteArray());
+        byte[] bytes = exchange.getValue().getString().getBytes();
+        return ByteBuffer.wrap(bytes);
+//        return getByteBuffer(exchange.getValue().getByteArray());
     }
 
     @Override
@@ -363,11 +363,14 @@ public class PersistitKeyValueStore implements KeyValueStore {
         return getSlice(keyStart, keyEnd, null, limit, (PersistitTransaction) txh);
     }
 
+    public static HashMap<String, String> inserts = new HashMap<String, String>();
     @Override
     public void insert(final ByteBuffer key, final ByteBuffer value, final StoreTransaction txh) throws StorageException {
         PersistitJob j = new PersistitJob() {
             @Override
             public void runTransaction() throws PersistitException, RollbackException {
+                byte[] culprit = {0,0,0,0,0,0,0,8,-127,-114,-115};
+                inserts.put(new String(key.array()), new String(value.array()));
                 toKey(exchange, key);
                 setValue(exchange, value);
             }
