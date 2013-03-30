@@ -1,5 +1,5 @@
 ==============================================================
- Titan: A Highly Scalable, Distributed Graph Database
+ Titan: Distributed Graph Database
  Copyright 2012 and onwards Aurelius
 ==============================================================
 
@@ -27,7 +27,7 @@ It also includes software from other open source projects including, but not lim
  * Apache Hadoop [http://hadoop.apache.org/]
  * Apache Cassandra [http://cassandra.apache.org/]
  * Apache Lucene [http://lucene.apache.org/]
- * Elastic Searhc [http://www.elasticsearch.org/]
+ * Elastic Search [http://www.elasticsearch.org/]
  * Astyanax [https://github.com/Netflix/astyanax]
  * JUnit [http://www.junit.org/]
  * Mockito [http://code.google.com/p/mockito/]
