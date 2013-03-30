@@ -30,7 +30,7 @@ h3. Version 0.3.0 (March 29, 2013)
 * InMemoryGraph implementation
 * IdGraph support
 * Relaxed transactional scope requirement for vertices
-* Edge now longer extends Vertex
+* Edge no longer extends Vertex
 * Updated to Kryo 2
 
 *Bugfixes:*
