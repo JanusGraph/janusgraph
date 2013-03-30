@@ -34,32 +34,6 @@ import java.util.List;
  */
 public class PersistitKeyValueStore implements KeyValueStore {
 
-    /**
-     * extension of TransactionRunnable that runs operations on an exchange
-     * in the context of an arbitrary transaction and provides a method for
-     * getting the result of the job
-     */
-    static abstract class PersistitJob implements TransactionRunnable {
-        Object result = null;
-        Exchange exchange = null;
-
-        public void setExchange(Exchange exchange) {
-            this.exchange = exchange;
-        }
-
-        public Exchange getExchange() {
-            return exchange;
-        }
-
-        /**
-         * Returns the result of the job
-         * @return
-         */
-        public Object getResult() {
-            return result;
-        }
-    }
-
     private static ByteBuffer getByteBuffer(byte[] bytes) {
         ByteBuffer b = ByteBuffer.wrap(bytes, 0, bytes.length);
         b.rewind();
@@ -105,45 +79,30 @@ public class PersistitKeyValueStore implements KeyValueStore {
         Object nextKey = null;
         private boolean isClosed = false;
 
-        private PersistitJob getNextKeyJob;
-
         public KeysIterator(PersistitTransaction tx, Exchange exchange) throws StorageException {
             transaction = tx;
             this.exchange = exchange;
-
-            getNextKeyJob = new PersistitJob() {
-                @Override
-                public void runTransaction() throws PersistitException, RollbackException {
-                    if (exchange.hasNext()) {
-                        exchange.next();
-//                        result = getByteBuffer(exchange.getKey().decodeByteArray());
-                        result = getKey(exchange);
-                    } else {
-                        result = null;
-                    }
-                }
-            };
-            getNextKeyJob.setExchange(exchange);
-
             begin();
             getNextKey();
         }
 
         private void getNextKey() throws StorageException {
-            transaction.run(getNextKeyJob);
-            nextKey = getNextKeyJob.getResult();
+            transaction.assign();
+            try {
+                if (exchange.hasNext()) {
+                    exchange.next();
+                    nextKey = getKey(exchange);
+                } else {
+                    nextKey = null;
+                }
+            } catch (PersistitException e) {
+                throw new PermanentStorageException(e);
+            }
         }
 
         private void begin() throws StorageException {
-            PersistitJob j = new PersistitJob() {
-                @Override
-                public void runTransaction() throws PersistitException, RollbackException {
-                    exchange.getKey().to(Key.BEFORE);
-                }
-            };
-
-            j.setExchange(exchange);
-            transaction.run(j);
+            transaction.assign();
+            exchange.getKey().to(Key.BEFORE);
         }
 
         @Override
@@ -211,48 +170,58 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
     @Override
     public ByteBuffer get(final ByteBuffer key, StoreTransaction txh) throws StorageException {
-        PersistitJob j = new PersistitJob() {
-            @Override
-            public void runTransaction() throws PersistitException, RollbackException {
-                toKey(exchange, key);
-
-                exchange.fetch();
-                if (exchange.getValue().isDefined()) {
-                    result = getValue(exchange);
-                } else {
-                    result = null;
-                }
-            }
-        };
         final PersistitTransaction tx = (PersistitTransaction) txh;
+        tx.assign();
         final Exchange exchange = tx.getExchange(name);
+
         try {
-            j.setExchange(exchange);
-            tx.run(j);
+            toKey(exchange, key);
+            exchange.fetch();
+            if (exchange.getValue().isDefined()) {
+                return getValue(exchange);
+            } else {
+                return null;
+            }
+        } catch (PersistitException ex) {
+            throw new PermanentStorageException(ex);
         } finally {
             tx.releaseExchange(exchange);
         }
-        return (ByteBuffer) j.getResult();
     }
 
     @Override
     public boolean containsKey(final ByteBuffer key, StoreTransaction txh) throws StorageException {
-        PersistitJob j = new PersistitJob() {
-            @Override
-            public void runTransaction() throws PersistitException, RollbackException {
-                toKey(exchange, key);
-                result = exchange.isValueDefined();
-            }
-        };
         final PersistitTransaction tx = (PersistitTransaction) txh;
+        tx.assign();
         final Exchange exchange = tx.getExchange(name);
         try {
-            j.setExchange(exchange);
-            tx.run(j);
+            toKey(exchange, key);
+            return exchange.isValueDefined();
+        } catch (PersistitException ex) {
+            throw new PermanentStorageException(ex);
         } finally {
             tx.releaseExchange(exchange);
         }
-        return (Boolean) j.getResult();
+    }
+
+    /**
+     * Compare 2 byte arrays, return 0 if equal, 1 if a > b, -1 if b > a
+     */
+    private int compare(final byte[] a, final byte[] b) {
+        final int size = Math.min(a.length, b.length);
+        for (int i = 0; i < size; i++) {
+            if (a[i] != b[i]) {
+                if ((a[i] & 0xFF) > (b[i] & 0xFF))
+                    return 1;
+                else
+                    return -1;
+            }
+        }
+        if (a.length < b.length)
+            return -1;
+        if (a.length > b.length)
+            return 1;
+        return 0;
     }
 
     /**
@@ -270,82 +239,56 @@ public class PersistitKeyValueStore implements KeyValueStore {
      * @throws StorageException
      */
     private List<KeyValueEntry> getSlice(final ByteBuffer keyStart, final ByteBuffer keyEnd, final KeySelector selector, final Integer limit, StoreTransaction txh) throws StorageException {
-        PersistitJob j = new PersistitJob() {
-
-            /**
-             * Compare 2 byte arrays, return 0 if equal, 1 if a > b, -1 if b > a
-             */
-            private int compare(final byte[] a, final byte[] b) {
-                final int size = Math.min(a.length, b.length);
-                for (int i = 0; i < size; i++) {
-                    if (a[i] != b[i]) {
-                        if ((a[i] & 0xFF) > (b[i] & 0xFF))
-                            return 1;
-                        else
-                            return -1;
-                    }
-                }
-                if (a.length < b.length)
-                    return -1;
-                if (a.length > b.length)
-                    return 1;
-                return 0;
-            }
-            @Override
-            public void runTransaction() throws PersistitException, RollbackException {
-                ArrayList<KeyValueEntry> results = new ArrayList<KeyValueEntry>();
-
-                byte[] start = getByteArray(keyStart);
-                byte[] end = getByteArray(keyEnd);
-
-                //bail out if the start key comes after the end
-                if (compare(start, end) > 0) {
-                    result = results;
-                    return;
-                }
-
-                KeyFilter.Term[] terms = {KeyFilter.rangeTerm(start, end, true, false, null)};
-//                KeyFilter.Term[] terms = {KeyFilter.rangeTerm(new String(start), new String(), true, false, null)};
-                KeyFilter keyFilter = new KeyFilter(terms);
-
-                toKey(exchange, keyStart);
-                exchange.fetch();
-
-                int i = 0;
-                while (keyFilter.selected(exchange.getKey())) {
-                    ByteBuffer k = getKey(exchange);
-                    exchange.fetch();
-
-                    //check the key against the selector, and that is has a corresponding value
-                    if (exchange.getValue().isDefined() && (selector == null || selector.include(k))){
-                        if (limit != null && limit >= 0 && i >= limit) break;
-
-                        ByteBuffer v = getValue(exchange);
-                        KeyValueEntry kv = new KeyValueEntry(k, v);
-                        results.add(kv);
-                        i++;
-
-                        if (selector != null && selector.reachedLimit()) break;
-                    }
-                    if (exchange.hasNext()) {
-                        exchange.next();
-                    } else {
-                        break;
-                    }
-                }
-                result = results;
-            }
-        };
 
         final PersistitTransaction tx = (PersistitTransaction) txh;
+        tx.assign();
         final Exchange exchange = tx.getExchange(name);
+
         try {
-            j.setExchange(exchange);
-            tx.run(j);
+            ArrayList<KeyValueEntry> results = new ArrayList<KeyValueEntry>();
+
+            byte[] start = getByteArray(keyStart);
+            byte[] end = getByteArray(keyEnd);
+
+            //bail out if the start key comes after the end
+            if (compare(start, end) > 0) {
+                return results;
+            }
+
+            KeyFilter.Term[] terms = {KeyFilter.rangeTerm(start, end, true, false, null)};
+            KeyFilter keyFilter = new KeyFilter(terms);
+
+            toKey(exchange, keyStart);
+            exchange.fetch();
+
+            int i = 0;
+            while (keyFilter.selected(exchange.getKey())) {
+                ByteBuffer k = getKey(exchange);
+                exchange.fetch();
+
+                //check the key against the selector, and that is has a corresponding value
+                if (exchange.getValue().isDefined() && (selector == null || selector.include(k))){
+
+                    ByteBuffer v = getValue(exchange);
+                    KeyValueEntry kv = new KeyValueEntry(k, v);
+                    results.add(kv);
+                    i++;
+
+                    if (limit != null && limit >= 0 && i >= limit) break;
+                    if (selector != null && selector.reachedLimit()) break;
+                }
+                if (exchange.hasNext()) {
+                    exchange.next();
+                } else {
+                    break;
+                }
+            }
+            return results;
+        } catch (PersistitException ex) {
+            throw new PermanentStorageException(ex);
         } finally {
             tx.releaseExchange(exchange);
         }
-        return (List<KeyValueEntry>) j.getResult();
     }
 
     @Override
@@ -366,20 +309,16 @@ public class PersistitKeyValueStore implements KeyValueStore {
     public static HashMap<String, String> inserts = new HashMap<String, String>();
     @Override
     public void insert(final ByteBuffer key, final ByteBuffer value, final StoreTransaction txh) throws StorageException {
-        PersistitJob j = new PersistitJob() {
-            @Override
-            public void runTransaction() throws PersistitException, RollbackException {
-                byte[] culprit = {0,0,0,0,0,0,0,8,-127,-114,-115};
-                inserts.put(new String(key.array()), new String(value.array()));
-                toKey(exchange, key);
-                setValue(exchange, value);
-            }
-        };
         final PersistitTransaction tx = (PersistitTransaction) txh;
+        tx.assign();
         final Exchange exchange = tx.getExchange(name);
         try {
-            j.setExchange(exchange);
-            tx.run(j);
+            byte[] culprit = {0,0,0,0,0,0,0,8,-127,-114,-115};
+            inserts.put(new String(key.array()), new String(value.array()));
+            toKey(exchange, key);
+            setValue(exchange, value);
+        } catch (PersistitException ex) {
+            throw new PermanentStorageException(ex);
         } finally {
             tx.releaseExchange(exchange);
         }
@@ -387,18 +326,14 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
     @Override
     public void delete(final ByteBuffer key, StoreTransaction txh) throws StorageException {
-        PersistitJob j = new PersistitJob() {
-            @Override
-            public void runTransaction() throws PersistitException, RollbackException {
-                toKey(exchange, key);
-                exchange.remove();
-            }
-        };
         final PersistitTransaction tx = (PersistitTransaction) txh;
+        tx.assign();
         final Exchange exchange = tx.getExchange(name);
         try {
-            j.setExchange(exchange);
-            tx.run(j);
+            toKey(exchange, key);
+            exchange.remove();
+        } catch (PersistitException ex) {
+            throw new PermanentStorageException(ex);
         } finally {
             tx.releaseExchange(exchange);
         }

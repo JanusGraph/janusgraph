@@ -134,22 +134,6 @@ public class PersistitTransaction extends AbstractStoreTransaction {
         }
     }
 
-    /**
-     * Runs a unit of work within this transaction
-     *
-     * @param r: the runnable job
-     * @throws StorageException
-     */
-    public void run(PersistitKeyValueStore.PersistitJob r) throws StorageException {
-        begin();
-
-        try {
-            tx.run(r);
-        } catch (PersistitException ex) {
-            throw new PermanentStorageException(ex.toString());
-        }
-    }
-
     public Exchange getExchange(String treeName) throws StorageException {
         return getExchange(treeName, true);
     }
