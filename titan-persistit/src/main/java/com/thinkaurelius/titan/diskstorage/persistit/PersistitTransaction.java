@@ -100,7 +100,8 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     @Override
     public synchronized void commit() throws StorageException {
-        if (!tx.isActive()) return;
+        if (!tx.isActive())
+            return;
         begin();
 
         int retries = 3;
