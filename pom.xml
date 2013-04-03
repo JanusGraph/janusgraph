@@ -234,7 +234,7 @@
             <plugin>
                 <groupId>org.codehaus.gmaven</groupId>
                 <artifactId>gmaven-plugin</artifactId>
-                <version>1.4</version>
+                <version>1.5</version>
                 <executions>
                     <execution>
                         <goals>
@@ -244,7 +244,7 @@
                             <goal>testCompile</goal>
                         </goals>
                         <configuration>
-                            <providerSelection>1.7</providerSelection>
+                            <providerSelection>1.8</providerSelection>
                         </configuration>
                     </execution>
                 </executions>
