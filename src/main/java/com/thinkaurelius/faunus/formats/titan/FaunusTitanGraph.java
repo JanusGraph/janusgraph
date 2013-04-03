@@ -6,11 +6,9 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
-import org.apache.cassandra.db.IColumn;
 import org.apache.commons.configuration.Configuration;
 
 import java.nio.ByteBuffer;
-import java.util.SortedMap;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -34,7 +32,7 @@ public class FaunusTitanGraph extends StandardTitanGraph {
         for (Entry data : entries) {
             try {
                 FaunusVertexLoader.RelationFactory factory = loader.getFactory();
-                super.edgeSerializer.readRelation(factory,data,tx);
+                super.edgeSerializer.readRelation(factory, data, tx);
                 factory.build();
             } catch (Exception e) {
                 //Log exception

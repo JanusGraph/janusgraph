@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.MapReduceFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.faunus.mapreduce.IdentityMap;
 import com.thinkaurelius.faunus.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.faunus.mapreduce.filter.CyclicPathFilterMap;
 import com.thinkaurelius.faunus.mapreduce.filter.DuplicateFilterMap;
@@ -17,7 +18,6 @@ import com.thinkaurelius.faunus.mapreduce.sideeffect.SideEffectMap;
 import com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.EdgesVerticesMap;
-import com.thinkaurelius.faunus.mapreduce.IdentityMap;
 import com.thinkaurelius.faunus.mapreduce.transform.OrderMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.PathMap;
 import com.thinkaurelius.faunus.mapreduce.transform.PropertyMap;

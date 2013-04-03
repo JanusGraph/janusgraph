@@ -73,7 +73,7 @@ public class FaunusRexsterExtension extends AbstractRexsterExtension {
     }
 
     @ExtensionDefinition(extensionPoint = ExtensionPoint.GRAPH, produces = MediaType.APPLICATION_OCTET_STREAM,
-                         method = HttpMethod.GET, path = EXTENSION_METHOD_STREAM)
+            method = HttpMethod.GET, path = EXTENSION_METHOD_STREAM)
     @ExtensionDescriptor(description = "streaming vertices for faunus")
     public ExtensionResponse getVertices(@RexsterContext final RexsterResourceContext context,
                                          @RexsterContext final Graph graph) {

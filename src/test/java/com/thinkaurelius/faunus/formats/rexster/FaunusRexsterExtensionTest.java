@@ -2,17 +2,12 @@ package com.thinkaurelius.faunus.formats.rexster;
 
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraphFactory;
-import com.tinkerpop.rexster.RexsterApplicationGraph;
-import com.tinkerpop.rexster.RexsterResourceContext;
 import com.tinkerpop.rexster.extension.ExtensionResponse;
 import junit.framework.Assert;
 import org.codehaus.jettison.json.JSONObject;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.StreamingOutput;
-import java.io.DataInputStream;
-import java.io.InputStream;
 
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
@@ -20,7 +15,7 @@ import java.io.InputStream;
 public class FaunusRexsterExtensionTest {
 
     @Test
-    public void getVertexCountValid(){
+    public void getVertexCountValid() {
         final FaunusRexsterExtension ext = new FaunusRexsterExtension();
         final Graph g = TinkerGraphFactory.createTinkerGraph();
 
