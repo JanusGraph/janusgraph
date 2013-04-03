@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus;
 import com.thinkaurelius.faunus.util.MicroEdge;
 import com.thinkaurelius.faunus.util.MicroElement;
 import com.thinkaurelius.faunus.util.MicroVertex;
+import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.util.ElementHelper;
 import org.apache.hadoop.io.WritableComparable;
@@ -12,6 +13,7 @@ import org.apache.hadoop.io.WritableUtils;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,6 +31,8 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         WritableComparator.define(FaunusElement.class, new Comparator());
     }
 
+    protected static final KryoSerializer serialize = new KryoSerializer(true);
+
     protected static final Map<String, String> TYPE_MAP = new HashMap<String, String>() {
         @Override
         public final String get(final Object object) {
@@ -42,16 +46,6 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
             }
         }
     };
-
-    public static final Set<Class<?>> SUPPORTED_ATTRIBUTE_TYPES = new HashSet<Class<?>>() {{
-        add(Integer.class);
-        add(Long.class);
-        add(Float.class);
-        add(Double.class);
-        add(String.class);
-        add(Boolean.class);
-    }};
-
 
     protected long id;
     protected Map<String, Object> properties = null;
@@ -240,51 +234,18 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
     public static class ElementProperties {
 
-        public enum PropertyType {
-            INT((byte) 0),
-            LONG((byte) 1),
-            FLOAT((byte) 2),
-            DOUBLE((byte) 3),
-            STRING((byte) 4),
-            BOOLEAN((byte) 5);
-            public byte val;
-
-            private PropertyType(byte v) {
-                this.val = v;
-            }
-        }
-
         public static void write(final Map<String, Object> properties, final DataOutput out) throws IOException {
-            if (null == properties) {
+            if (null == properties || properties.size() == 0)
                 WritableUtils.writeVInt(out, 0);
-            } else {
+            else {
                 WritableUtils.writeVInt(out, properties.size());
+                final com.thinkaurelius.titan.graphdb.database.serialize.DataOutput o = serialize.getDataOutput(128, true);
                 for (final Map.Entry<String, Object> entry : properties.entrySet()) {
-                    out.writeUTF(entry.getKey());
-                    final Class valueClass = entry.getValue().getClass();
-                    final Object valueObject = entry.getValue();
-                    if (valueClass.equals(Integer.class)) {
-                        out.writeByte(PropertyType.INT.val);
-                        WritableUtils.writeVInt(out, (Integer) valueObject);
-                    } else if (valueClass.equals(Long.class)) {
-                        out.writeByte(PropertyType.LONG.val);
-                        WritableUtils.writeVLong(out, (Long) valueObject);
-                    } else if (valueClass.equals(Float.class)) {
-                        out.writeByte(PropertyType.FLOAT.val);
-                        out.writeFloat((Float) valueObject);
-                    } else if (valueClass.equals(Double.class)) {
-                        out.writeByte(PropertyType.DOUBLE.val);
-                        out.writeDouble((Double) valueObject);
-                    } else if (valueClass.equals(String.class)) {
-                        out.writeByte(PropertyType.STRING.val);
-                        WritableUtils.writeString(out, (String) valueObject);
-                    } else if (valueClass.equals(Boolean.class)) {
-                        out.writeByte(PropertyType.BOOLEAN.val);
-                        out.writeBoolean((Boolean) valueObject);
-                    } else {
-                        throw new IOException("Property value type of " + valueClass + " is not supported");
-                    }
+                    o.writeObject(entry.getKey(), String.class);
+                    o.writeClassAndObject(entry.getValue());
                 }
+                WritableUtils.writeVInt(out, o.getByteBuffer().array().length);
+                out.write(o.getByteBuffer().array());
             }
         }
 
@@ -294,25 +255,12 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                 return null;
             else {
                 final Map<String, Object> properties = new HashMap<String, Object>();
+                byte[] bytes = new byte[WritableUtils.readVInt(in)];
+                in.readFully(bytes);
+                final ByteBuffer buffer = ByteBuffer.wrap(bytes);
                 for (int i = 0; i < numberOfProperties; i++) {
-                    final String key = in.readUTF();
-                    final byte valueClass = in.readByte();
-                    final Object valueObject;
-                    if (valueClass == PropertyType.INT.val) {
-                        valueObject = WritableUtils.readVInt(in);
-                    } else if (valueClass == PropertyType.LONG.val) {
-                        valueObject = WritableUtils.readVLong(in);
-                    } else if (valueClass == PropertyType.FLOAT.val) {
-                        valueObject = in.readFloat();
-                    } else if (valueClass == PropertyType.DOUBLE.val) {
-                        valueObject = in.readDouble();
-                    } else if (valueClass == PropertyType.STRING.val) {
-                        valueObject = WritableUtils.readString(in);
-                    } else if (valueClass == PropertyType.BOOLEAN.val) {
-                        valueObject = in.readBoolean();
-                    } else {
-                        throw new IOException("Property value type of " + valueClass + " is not supported");
-                    }
+                    final String key = serialize.readObject(buffer, String.class);
+                    final Object valueObject = serialize.readClassAndObject(buffer);
                     properties.put(TYPE_MAP.get(key), valueObject);
                 }
                 return properties;

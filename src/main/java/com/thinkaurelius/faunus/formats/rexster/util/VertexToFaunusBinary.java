@@ -1,7 +1,7 @@
 package com.thinkaurelius.faunus.formats.rexster.util;
 
-import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
+import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -19,6 +19,7 @@ public class VertexToFaunusBinary {
 
     private static final ElementIdHandler DEFAULT_ELEMENT_ID_HANDLER = new DefaultElementIdHandler();
     private final ElementIdHandler elementIdHandler;
+    protected static final KryoSerializer serialize = new KryoSerializer(true);
 
     public VertexToFaunusBinary() {
         this(DEFAULT_ELEMENT_ID_HANDLER);
@@ -42,7 +43,6 @@ public class VertexToFaunusBinary {
         out.writeBoolean(false);
         WritableUtils.writeVLong(out, 0);
         writeProperties(vertex, out);
-
         writeEdges(vertex, Direction.IN, out);
         writeEdges(vertex, Direction.OUT, out);
 
@@ -69,32 +69,14 @@ public class VertexToFaunusBinary {
 
     private static void writeProperties(final Element element, final DataOutput out) throws IOException {
         WritableUtils.writeVInt(out, element.getPropertyKeys().size());
-        for (final String key : element.getPropertyKeys()) {
-            out.writeUTF(key);
-            final Object valueObject = element.getProperty(key);
-            final Class valueClass = valueObject.getClass();
-
-            if (valueClass.equals(Integer.class)) {
-                out.writeByte(FaunusElement.ElementProperties.PropertyType.INT.val);
-                WritableUtils.writeVInt(out, (Integer) valueObject);
-            } else if (valueClass.equals(Long.class)) {
-                out.writeByte(FaunusElement.ElementProperties.PropertyType.LONG.val);
-                WritableUtils.writeVLong(out, (Long) valueObject);
-            } else if (valueClass.equals(Float.class)) {
-                out.writeByte(FaunusElement.ElementProperties.PropertyType.FLOAT.val);
-                out.writeFloat((Float) valueObject);
-            } else if (valueClass.equals(Double.class)) {
-                out.writeByte(FaunusElement.ElementProperties.PropertyType.DOUBLE.val);
-                out.writeDouble((Double) valueObject);
-            } else if (valueClass.equals(String.class)) {
-                out.writeByte(FaunusElement.ElementProperties.PropertyType.STRING.val);
-                WritableUtils.writeString(out, (String) valueObject);
-            } else if (valueClass.equals(Boolean.class)) {
-                out.writeByte(FaunusElement.ElementProperties.PropertyType.BOOLEAN.val);
-                out.writeBoolean((Boolean) valueObject);
-            } else {
-                throw new IOException("Property value type of " + valueClass + " is not supported");
+        if (element.getPropertyKeys().size() > 0) {
+            final com.thinkaurelius.titan.graphdb.database.serialize.DataOutput o = serialize.getDataOutput(128, true);
+            for (final String key : element.getPropertyKeys()) {
+                o.writeObject(key, String.class);
+                o.writeClassAndObject(element.getProperty(key));
             }
+            WritableUtils.writeVInt(out, o.getByteBuffer().array().length);
+            out.write(o.getByteBuffer().array());
         }
     }
 }

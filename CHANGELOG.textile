@@ -20,6 +20,7 @@ h3. Version 0.3.0 (NOT OFFICIALLY RELEASED YET)
 * Bumped to support Hadoop 1.1.2
 * Moved @IdentityMap@ to base directory as changed in Pipes 2.3.0
 * Refactored the means by which test cases are written
+* @FaunusVertex@ property value serialization support using Kryo 2.2.1
 
 ==<hr/>==
 

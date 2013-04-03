@@ -2,7 +2,6 @@ package com.thinkaurelius.faunus.formats.titan;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusEdge;
-import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
@@ -45,15 +44,9 @@ public class FaunusVertexLoader {
         return new RelationFactory();
     }
 
-    private static Object prepareAttribute(Object attribute) {
-        if (!FaunusElement.SUPPORTED_ATTRIBUTE_TYPES.contains(attribute.getClass()))
-            attribute = attribute.toString();
-        return attribute;
-    }
-
     public class RelationFactory implements com.thinkaurelius.titan.graphdb.database.RelationFactory {
 
-        private final Map<String,Object> properties = new HashMap<String,Object>();
+        private final Map<String, Object> properties = new HashMap<String, Object>();
 
         private Direction dir;
         private TitanType type;
@@ -69,7 +62,7 @@ public class FaunusVertexLoader {
 
         @Override
         public void setDirection(Direction dir) {
-            this.dir=dir;
+            this.dir = dir;
         }
 
         @Override
@@ -85,17 +78,17 @@ public class FaunusVertexLoader {
 
         @Override
         public void setOtherVertexID(long vertexId) {
-            this.otherVertexID=vertexId;
+            this.otherVertexID = vertexId;
         }
 
         @Override
         public void setValue(Object value) {
-            this.value=value;
+            this.value = value;
         }
 
         @Override
         public void addProperty(TitanType type, Object value) {
-            properties.put(type.getName(),value);
+            properties.put(type.getName(), value);
         }
 
         public void build() {
@@ -103,7 +96,7 @@ public class FaunusVertexLoader {
 
             if (type.isPropertyKey()) {
                 Preconditions.checkNotNull(value);
-                vertex.setProperty(type.getName(), prepareAttribute(value));
+                vertex.setProperty(type.getName(), value);
             } else {
                 Preconditions.checkArgument(type.isEdgeLabel());
                 FaunusEdge edge = null;
@@ -118,9 +111,9 @@ public class FaunusVertexLoader {
                         throw ExceptionFactory.bothIsNotSupported();
                 }
                 //Add properties
-                for (Map.Entry<String,Object> entry : properties.entrySet()) {
-                    if (entry.getValue()!=null) {
-                        edge.setProperty(entry.getKey(),prepareAttribute(entry.getValue()));
+                for (Map.Entry<String, Object> entry : properties.entrySet()) {
+                    if (entry.getValue() != null) {
+                        edge.setProperty(entry.getKey(), entry.getValue());
                     }
                 }
                 vertex.addEdge(dir, edge);
