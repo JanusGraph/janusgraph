@@ -36,6 +36,8 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(-1, new FaunusVertex.Comparator().compare(bytes1.toByteArray(), 0, bytes1.size(), bytes2.toByteArray(), 0, bytes2.size()));
         assertEquals(1, new FaunusVertex.Comparator().compare(bytes2.toByteArray(), 0, bytes2.size(), bytes1.toByteArray(), 0, bytes1.size()));
         assertEquals(0, new FaunusVertex.Comparator().compare(bytes1.toByteArray(), 0, bytes1.size(), bytes1.toByteArray(), 0, bytes1.size()));
+
+        System.out.println("Vertex with 0 properties has a byte size of: " + bytes1.toByteArray().length);
     }
 
     public void testSimpleSerialization() throws IOException {
@@ -54,6 +56,7 @@ public class FaunusVertexTest extends BaseTest {
         // in edge types size 1 byte (variable int)
         assertEquals(bytes.toByteArray().length, 6);
         FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        System.out.println("Vertex with 0 properties has a byte size of: " + bytes.toByteArray().length);
 
         assertEquals(vertex1, vertex2);
         assertEquals(vertex1.compareTo(vertex2), 0);
@@ -95,6 +98,7 @@ public class FaunusVertexTest extends BaseTest {
 
         vertex1.write(new DataOutputStream(bytes));
         FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        System.out.println("Vertex with 6 properties and 2 outgoing edges has a byte size of: " + bytes.toByteArray().length);
 
         assertEquals(vertex1, vertex2);
         assertEquals(vertex1.compareTo(vertex2), 0);
@@ -140,6 +144,7 @@ public class FaunusVertexTest extends BaseTest {
 
         vertex1.write(new DataOutputStream(bytes));
         FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        System.out.println("Vertex with 4 properties and 2 paths has a byte size of: " + bytes.toByteArray().length);
 
         assertEquals(vertex1, vertex2);
         assertEquals(vertex1.compareTo(vertex2), 0);
@@ -190,6 +195,8 @@ public class FaunusVertexTest extends BaseTest {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes));
         FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+
+        System.out.println("Vertex with 0 properties and 1 outgoing edge has a byte size of: " + bytes.toByteArray().length);
 
         assertEquals(vertex1, vertex2);
         assertEquals(vertex1.getId(), 1l);
