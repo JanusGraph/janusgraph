@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.tinkerpop.gremlin;
 
+import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Text;
 import com.tinkerpop.blueprints.Query;
@@ -25,6 +26,7 @@ public class Imports {
         imports.add("org.apache.commons.configuration.*");
         imports.add("static " + Geo.class.getName() + ".*");
         imports.add("static " + Text.class.getName() + ".*");
+        imports.add("static " + TypeMaker.UniquenessConsistency.class.getName() + ".*");
         // todo: remove with Gremlin 2.3.1+
         imports.add("static " + Query.Compare.class.getName() + ".*");
     }
