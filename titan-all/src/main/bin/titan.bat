@@ -20,11 +20,13 @@ cd ..
 set OLD_CLASSPATH=%CLASSPATH%
 set CP=
 
-set JAVA_OPTIONS=-Xms32m^
- -Xmx512m^
+set JAVA_OPTIONS=-Xms1G^
+ -Xmx1G^
  -Dcom.sun.management.jmxremote.port=7199^
  -Dcom.sun.management.jmxremote.ssl=false^
  -Dcom.sun.management.jmxremote.authenticate=false
+
+echo %JAVA_OPTIONS%
 
 :: Launch the application
 
