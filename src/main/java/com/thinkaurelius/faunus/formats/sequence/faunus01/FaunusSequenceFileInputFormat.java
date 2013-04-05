@@ -10,6 +10,9 @@ import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import java.io.IOException;
 
 /**
+ * Reads a [NullWritable,FaunusVertex] SequenceFile as encoded in Faunus 0.1.z.
+ * Writes a [NullWrtiable,FaunusVertex] SequenceFile as encoded in the current Faunus version.
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class FaunusSequenceFileInputFormat extends SequenceFileInputFormat<NullWritable, FaunusVertex> {

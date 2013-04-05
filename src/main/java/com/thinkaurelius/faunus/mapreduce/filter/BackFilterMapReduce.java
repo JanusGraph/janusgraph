@@ -6,8 +6,6 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
-import com.thinkaurelius.faunus.util.MicroEdge;
-import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -57,8 +55,8 @@ public class BackFilterMapReduce {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    for (final List<MicroElement> path : value.getPaths()) {
-                        if (path.get(this.step) instanceof MicroEdge)
+                    for (final List<FaunusElement.MicroElement> path : value.getPaths()) {
+                        if (path.get(this.step) instanceof FaunusEdge.MicroEdge)
                             throw new IOException("Back does not support backing up to previous edges");
 
                         final long backElementId = path.get(this.step).getId();
@@ -73,8 +71,8 @@ public class BackFilterMapReduce {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
-                        for (final List<MicroElement> path : edge.getPaths()) {
-                            if (path.get(this.step) instanceof MicroEdge)
+                        for (final List<FaunusElement.MicroElement> path : edge.getPaths()) {
+                            if (path.get(this.step) instanceof FaunusEdge.MicroEdge)
                                 throw new IOException("Back does not support backing up to previous edges");
 
                             final long backElementId = path.get(this.step).getId();

@@ -1,7 +1,5 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.util.MicroElement;
-import com.thinkaurelius.faunus.util.MicroVertex;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.WritableUtils;
 
@@ -134,11 +132,11 @@ public class FaunusElementTest extends TestCase {
         assertEquals(vertex1.pathCount(), 0);
         vertex1.enablePath(true);
         assertEquals(vertex1.pathCount(), 0);
-        vertex1.addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(2l)), false);
-        vertex1.addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
-        vertex1.addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(4l)), false);
+        vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(2l)), false);
+        vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(3l)), false);
+        vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(4l)), false);
         assertEquals(vertex1.pathCount(), 3);
-        Iterator<List<MicroElement>> itty = vertex1.getPaths().iterator();
+        Iterator<List<FaunusElement.MicroElement>> itty = vertex1.getPaths().iterator();
         while (itty.hasNext()) {
             if (itty.next().get(1).getId() == 3l)
                 itty.remove();
@@ -147,8 +145,8 @@ public class FaunusElementTest extends TestCase {
     }
 
     public void testPathHash() {
-        List<MicroElement> path1 = (List) Arrays.asList(new MicroVertex(1l), new MicroVertex(2l));
-        List<MicroElement> path2 = (List) Arrays.asList(new MicroVertex(1l), new MicroVertex(1l));
+        List<FaunusElement.MicroElement> path1 = (List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(2l));
+        List<FaunusElement.MicroElement> path2 = (List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(1l));
 
         assertEquals(new HashSet(path1).size(), 2);
         assertEquals(new HashSet(path2).size(), 1);

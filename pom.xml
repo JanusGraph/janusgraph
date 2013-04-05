@@ -143,13 +143,6 @@
             <name>Aduna repository</name>
             <url>http://repo.aduna-software.org/maven2/releases</url>
         </repository>
-        <repository>
-            <id>sonatype-oss-public</id>
-            <url>https://oss.sonatype.org/content/groups/public/</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
     </repositories>
     <build>
         <directory>${basedir}/target</directory>

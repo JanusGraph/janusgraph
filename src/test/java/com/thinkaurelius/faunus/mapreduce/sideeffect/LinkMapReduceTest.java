@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -43,8 +42,8 @@ public class LinkMapReduceTest extends BaseTest {
             vertex.removeEdges(Tokens.Action.DROP, Direction.BOTH);
 
         }
-        graph.get(3l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
-        graph.get(5l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(5l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(3l)), false);
+        graph.get(5l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(5l)), false);
 
         graph = runWithGraph(graph, mapReduceDriver);
         assertEquals(asList(graph.get(1l).getEdges(OUT, "knowsCreated")).size(), 2);
@@ -70,8 +69,8 @@ public class LinkMapReduceTest extends BaseTest {
         for (FaunusVertex vertex : graph.values()) {
             vertex.removeEdges(Tokens.Action.DROP, Direction.BOTH);
         }
-        graph.get(3l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(3l)), false);
-        graph.get(5l).addPath((List) Arrays.asList(new MicroVertex(1l), new MicroVertex(5l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(3l)), false);
+        graph.get(5l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(5l)), false);
 
         graph = runWithGraph(graph, mapReduceDriver);
         assertEquals(asList(graph.get(1l).getEdges(IN, "created2")).size(), 2);

@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.formats.sequence.faunus01.util;
+package com.thinkaurelius.faunus.formats.sequence.faunus01;
 
 import com.thinkaurelius.faunus.Tokens;
 import com.tinkerpop.blueprints.Direction;
@@ -386,6 +386,20 @@ public class FaunusVertex01 extends FaunusElement01 implements Vertex {
                     edge.writeCompressed(out, idToWrite);
                 }
             }
+        }
+    }
+
+    public static class MicroVertex01 extends MicroElement01 {
+
+        private static final String V1 = "v[";
+        private static final String V2 = "]";
+
+        public MicroVertex01(final long id) {
+            super(id);
+        }
+
+        public String toString() {
+            return V1 + this.id + V2;
         }
     }
 }

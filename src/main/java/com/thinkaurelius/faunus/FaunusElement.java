@@ -1,8 +1,5 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.util.MicroEdge;
-import com.thinkaurelius.faunus.util.MicroElement;
-import com.thinkaurelius.faunus.util.MicroVertex;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.util.ElementHelper;
@@ -79,7 +76,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         this.pathEnabled = enablePath;
         if (this.pathEnabled) {
             if (null == this.microVersion)
-                this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+                this.microVersion = (this instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(this.id) : new FaunusEdge.MicroEdge(this.id);
             if (null == this.paths)
                 this.paths = new ArrayList<List<MicroElement>>();
         }
@@ -141,7 +138,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     public void clearPaths() {
         if (this.pathEnabled) {
             this.paths = new ArrayList<List<MicroElement>>();
-            this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+            this.microVersion = (this instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(this.id) : new FaunusEdge.MicroEdge(this.id);
         } else
             this.pathCounter = 0;
     }
@@ -205,7 +202,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         this.pathEnabled = in.readBoolean();
         if (this.pathEnabled) {
             this.paths = ElementPaths.readFields(in);
-            this.microVersion = (this instanceof FaunusVertex) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+            this.microVersion = (this instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(this.id) : new FaunusEdge.MicroEdge(this.id);
         } else
             this.pathCounter = WritableUtils.readVLong(in);
         this.properties = ElementProperties.readFields(in);
@@ -281,7 +278,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                 for (final List<MicroElement> path : paths) {
                     WritableUtils.writeVInt(out, path.size());
                     for (MicroElement element : path) {
-                        if (element instanceof MicroVertex)
+                        if (element instanceof FaunusVertex.MicroVertex)
                             out.writeChar('v');
                         else
                             out.writeChar('e');
@@ -303,9 +300,9 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                     for (int j = 0; j < pathSize; j++) {
                         char type = in.readChar();
                         if (type == 'v')
-                            path.add(new MicroVertex(WritableUtils.readVLong(in)));
+                            path.add(new FaunusVertex.MicroVertex(WritableUtils.readVLong(in)));
                         else
-                            path.add(new MicroEdge(WritableUtils.readVLong(in)));
+                            path.add(new FaunusEdge.MicroEdge(WritableUtils.readVLong(in)));
                     }
                     paths.add(path);
                 }
@@ -338,5 +335,24 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         }
     }
 
+    public static abstract class MicroElement {
 
+        protected final long id;
+
+        public MicroElement(final long id) {
+            this.id = id;
+        }
+
+        public long getId() {
+            return this.id;
+        }
+
+        public int hashCode() {
+            return Long.valueOf(this.id).hashCode();
+        }
+
+        public boolean equals(final Object object) {
+            return (object.getClass().equals(this.getClass()) && this.id == ((MicroElement) object).getId());
+        }
+    }
 }

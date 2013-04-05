@@ -128,4 +128,19 @@ public class FaunusEdge extends FaunusElement implements Edge {
     public String toString() {
         return StringFactory.edgeString(this);
     }
+
+
+    public static class MicroEdge extends MicroElement {
+
+        private static final String E1 = "e[";
+        private static final String E2 = "]";
+
+        public MicroEdge(final long id) {
+            super(id);
+        }
+
+        public String toString() {
+            return E1 + this.id + E2;
+        }
+    }
 }

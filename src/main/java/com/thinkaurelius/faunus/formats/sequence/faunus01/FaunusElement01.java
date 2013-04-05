@@ -1,8 +1,5 @@
-package com.thinkaurelius.faunus.formats.sequence.faunus01.util;
+package com.thinkaurelius.faunus.formats.sequence.faunus01;
 
-import com.thinkaurelius.faunus.util.MicroEdge;
-import com.thinkaurelius.faunus.util.MicroElement;
-import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.util.ElementHelper;
 import org.apache.hadoop.io.WritableComparable;
@@ -55,8 +52,8 @@ public abstract class FaunusElement01 implements Element, WritableComparable<Fau
 
     protected long id;
     protected Map<String, Object> properties = null;
-    protected List<List<MicroElement>> paths = null;
-    private MicroElement microVersion = null;
+    protected List<List<MicroElement01>> paths = null;
+    private MicroElement01 microVersion = null;
     protected boolean pathEnabled = false;
     protected long pathCounter = 0;
 
@@ -76,14 +73,14 @@ public abstract class FaunusElement01 implements Element, WritableComparable<Fau
         this.pathEnabled = enablePath;
         if (this.pathEnabled) {
             if (null == this.microVersion)
-                this.microVersion = (this instanceof FaunusVertex01) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+                this.microVersion = (this instanceof FaunusVertex01) ? new FaunusVertex01.MicroVertex01(this.id) : new FaunusEdge01.MicroEdge01(this.id);
             if (null == this.paths)
-                this.paths = new ArrayList<List<MicroElement>>();
+                this.paths = new ArrayList<List<MicroElement01>>();
         }
         // TODO: else make pathCounter = paths.size()?
     }
 
-    public void addPath(final List<MicroElement> path, final boolean append) throws IllegalStateException {
+    public void addPath(final List<MicroElement01> path, final boolean append) throws IllegalStateException {
         if (this.pathEnabled) {
             if (append) path.add(this.microVersion);
             this.paths.add(path);
@@ -92,10 +89,10 @@ public abstract class FaunusElement01 implements Element, WritableComparable<Fau
         }
     }
 
-    public void addPaths(final List<List<MicroElement>> paths, final boolean append) throws IllegalStateException {
+    public void addPaths(final List<List<MicroElement01>> paths, final boolean append) throws IllegalStateException {
         if (this.pathEnabled) {
             if (append) {
-                for (final List<MicroElement> path : paths) {
+                for (final List<MicroElement01> path : paths) {
                     this.addPath(path, append);
                 }
             } else
@@ -105,7 +102,7 @@ public abstract class FaunusElement01 implements Element, WritableComparable<Fau
         }
     }
 
-    public List<List<MicroElement>> getPaths() throws IllegalStateException {
+    public List<List<MicroElement01>> getPaths() throws IllegalStateException {
         if (this.pathEnabled)
             return this.paths;
         else
@@ -137,8 +134,8 @@ public abstract class FaunusElement01 implements Element, WritableComparable<Fau
 
     public void clearPaths() {
         if (this.pathEnabled) {
-            this.paths = new ArrayList<List<MicroElement>>();
-            this.microVersion = (this instanceof FaunusVertex01) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+            this.paths = new ArrayList<List<MicroElement01>>();
+            this.microVersion = (this instanceof FaunusVertex01) ? new FaunusVertex01.MicroVertex01(this.id) : new FaunusEdge01.MicroEdge01(this.id);
         } else
             this.pathCounter = 0;
     }
@@ -153,7 +150,7 @@ public abstract class FaunusElement01 implements Element, WritableComparable<Fau
     public void startPath() {
         if (this.pathEnabled) {
             this.clearPaths();
-            final List<MicroElement> startPath = new ArrayList<MicroElement>();
+            final List<MicroElement01> startPath = new ArrayList<MicroElement01>();
             startPath.add(this.microVersion);
             this.paths.add(startPath);
         } else {
@@ -206,7 +203,7 @@ public abstract class FaunusElement01 implements Element, WritableComparable<Fau
         this.pathEnabled = in.readBoolean();
         if (this.pathEnabled) {
             this.paths = ElementPaths.readFields(in);
-            this.microVersion = (this instanceof FaunusVertex01) ? new MicroVertex(this.id) : new MicroEdge(this.id);
+            this.microVersion = (this instanceof FaunusVertex01) ? new FaunusVertex01.MicroVertex01(this.id) : new FaunusEdge01.MicroEdge01(this.id);
         } else
             this.pathCounter = WritableUtils.readVLong(in);
         this.properties = ElementProperties.readFields(in);
@@ -320,15 +317,15 @@ public abstract class FaunusElement01 implements Element, WritableComparable<Fau
 
     protected static class ElementPaths {
 
-        public static void write(final List<List<MicroElement>> paths, final DataOutput out) throws IOException {
+        public static void write(final List<List<MicroElement01>> paths, final DataOutput out) throws IOException {
             if (null == paths) {
                 WritableUtils.writeVInt(out, 0);
             } else {
                 WritableUtils.writeVInt(out, paths.size());
-                for (final List<MicroElement> path : paths) {
+                for (final List<MicroElement01> path : paths) {
                     WritableUtils.writeVInt(out, path.size());
-                    for (MicroElement element : path) {
-                        if (element instanceof MicroVertex)
+                    for (MicroElement01 element : path) {
+                        if (element instanceof FaunusVertex01.MicroVertex01)
                             out.writeChar('v');
                         else
                             out.writeChar('e');
@@ -338,21 +335,21 @@ public abstract class FaunusElement01 implements Element, WritableComparable<Fau
             }
         }
 
-        public static List<List<MicroElement>> readFields(final DataInput in) throws IOException {
+        public static List<List<MicroElement01>> readFields(final DataInput in) throws IOException {
             int pathsSize = WritableUtils.readVInt(in);
             if (pathsSize == 0)
-                return new ArrayList<List<MicroElement>>();
+                return new ArrayList<List<MicroElement01>>();
             else {
-                final List<List<MicroElement>> paths = new ArrayList<List<MicroElement>>(pathsSize);
+                final List<List<MicroElement01>> paths = new ArrayList<List<MicroElement01>>(pathsSize);
                 for (int i = 0; i < pathsSize; i++) {
                     int pathSize = WritableUtils.readVInt(in);
-                    final List<MicroElement> path = new ArrayList<MicroElement>(pathSize);
+                    final List<MicroElement01> path = new ArrayList<MicroElement01>(pathSize);
                     for (int j = 0; j < pathSize; j++) {
                         char type = in.readChar();
                         if (type == 'v')
-                            path.add(new MicroVertex(WritableUtils.readVLong(in)));
+                            path.add(new FaunusVertex01.MicroVertex01(WritableUtils.readVLong(in)));
                         else
-                            path.add(new MicroEdge(WritableUtils.readVLong(in)));
+                            path.add(new FaunusEdge01.MicroEdge01(WritableUtils.readVLong(in)));
                     }
                     paths.add(path);
                 }
@@ -385,5 +382,24 @@ public abstract class FaunusElement01 implements Element, WritableComparable<Fau
         }
     }
 
+    public static abstract class MicroElement01 {
 
+        protected final long id;
+
+        public MicroElement01(final long id) {
+            this.id = id;
+        }
+
+        public long getId() {
+            return this.id;
+        }
+
+        public int hashCode() {
+            return Long.valueOf(this.id).hashCode();
+        }
+
+        public boolean equals(final Object object) {
+            return (object.getClass().equals(this.getClass()) && this.id == ((MicroElement01) object).getId());
+        }
+    }
 }

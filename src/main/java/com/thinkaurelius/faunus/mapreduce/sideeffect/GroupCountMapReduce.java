@@ -6,8 +6,6 @@ import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
 import com.thinkaurelius.faunus.mapreduce.util.SafeMapperOutputs;
 import com.thinkaurelius.faunus.mapreduce.util.SafeReducerOutputs;
-import com.thinkaurelius.faunus.util.MicroEdge;
-import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -86,7 +84,7 @@ public class GroupCountMapReduce {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    final Object object = (null == this.keyClosure) ? new MicroVertex(value.getIdAsLong()) : this.keyClosure.call(value);
+                    final Object object = (null == this.keyClosure) ? new FaunusVertex.MicroVertex(value.getIdAsLong()) : this.keyClosure.call(value);
                     final Number number = (null == this.valueClosure) ? 1 : (Number) this.valueClosure.call(value);
                     this.map.incr(object, number.longValue() * value.pathCount());
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
@@ -96,7 +94,7 @@ public class GroupCountMapReduce {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
-                        final Object object = (null == this.keyClosure) ? new MicroEdge(edge.getIdAsLong()) : this.keyClosure.call(edge);
+                        final Object object = (null == this.keyClosure) ? new FaunusEdge.MicroEdge(edge.getIdAsLong()) : this.keyClosure.call(edge);
                         final Number number = (null == this.valueClosure) ? 1 : (Number) this.valueClosure.call(edge);
                         this.map.incr(object, number.longValue() * edge.pathCount());
                         edgesProcessed++;

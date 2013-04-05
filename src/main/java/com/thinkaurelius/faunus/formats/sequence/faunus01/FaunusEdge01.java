@@ -1,4 +1,4 @@
-package com.thinkaurelius.faunus.formats.sequence.faunus01.util;
+package com.thinkaurelius.faunus.formats.sequence.faunus01;
 
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -127,5 +127,19 @@ public class FaunusEdge01 extends FaunusElement01 implements Edge {
 
     public String toString() {
         return StringFactory.edgeString(this);
+    }
+
+    public static class MicroEdge01 extends MicroElement01 {
+
+        private static final String E1 = "e[";
+        private static final String E2 = "]";
+
+        public MicroEdge01(final long id) {
+            super(id);
+        }
+
+        public String toString() {
+            return E1 + this.id + E2;
+        }
     }
 }

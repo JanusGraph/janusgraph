@@ -1,7 +1,5 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.util.MicroElement;
-import com.thinkaurelius.faunus.util.MicroVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -137,8 +135,8 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1.getProperty("longitude"), 10.01d);
         assertEquals(vertex1.getProperty("latitude"), 11.399f);
         assertEquals(vertex1.getProperty("size"), 10l);
-        vertex1.addPath((List) Arrays.asList(new MicroVertex(10l), new MicroVertex(1l)), false);
-        vertex1.addPath((List) Arrays.asList(new MicroVertex(10l), new MicroVertex(2l)), false);
+        vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(10l), new FaunusVertex.MicroVertex(1l)), false);
+        vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(10l), new FaunusVertex.MicroVertex(2l)), false);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
@@ -158,7 +156,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1.getProperty("size"), 10l);
         assertEquals(vertex2.pathCount(), 2);
         assertTrue(vertex2.hasPaths());
-        for (List<MicroElement> path : vertex2.getPaths()) {
+        for (List<FaunusElement.MicroElement> path : vertex2.getPaths()) {
             assertEquals(path.get(0).getId(), 10l);
             assertTrue(path.get(1).getId() == 1l || path.get(1).getId() == 2l);
             assertEquals(path.size(), 2);

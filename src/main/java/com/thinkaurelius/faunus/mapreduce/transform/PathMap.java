@@ -1,11 +1,11 @@
 package com.thinkaurelius.faunus.mapreduce.transform;
 
 import com.thinkaurelius.faunus.FaunusEdge;
+import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.SafeMapperOutputs;
-import com.thinkaurelius.faunus.util.MicroElement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -55,7 +55,7 @@ public class PathMap {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
             if (this.isVertex && value.hasPaths()) {
-                for (final List<MicroElement> path : value.getPaths()) {
+                for (final List<FaunusElement.MicroElement> path : value.getPaths()) {
                     this.textWritable.set(path.toString());
                     this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.textWritable);
                 }
@@ -65,7 +65,7 @@ public class PathMap {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
-                        for (final List<MicroElement> path : edge.getPaths()) {
+                        for (final List<FaunusElement.MicroElement> path : edge.getPaths()) {
                             this.textWritable.set(path.toString());
                             this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.textWritable);
                         }

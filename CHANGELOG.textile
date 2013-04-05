@@ -15,12 +15,14 @@ h3. Version 0.3.0 (NOT OFFICIALLY RELEASED YET)
 </dependency>
 ```
 
-* Skipped Faunus 0.2.y line in order to synchronize with Titan 0.3.y
+* Skipped Faunus 0.2.y line in order to synchronize with Titan 0.3.z
 * Bumped to support Titan 0.3.0
 * Bumped to support Hadoop 1.1.2
 * Moved @IdentityMap@ to base directory as changed in Pipes 2.3.0
 * Refactored the means by which test cases are written
 * @FaunusVertex@ property value serialization support using Kryo 2.2.1
+* @FaunusVertex01@ provides history deserialization support for Faunus 0.1.z -> Faunus 0.3.z conversion
+* Moved @util.MicroElement@ classes into respective @FaunusElement@ inner classes
 
 ==<hr/>==
 
