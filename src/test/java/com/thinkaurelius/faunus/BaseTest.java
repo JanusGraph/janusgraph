@@ -51,53 +51,53 @@ public abstract class BaseTest extends TestCase {
             vertices = new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
         else {
             vertices = new ArrayList<FaunusVertex>();
-            FaunusVertex saturn = new FaunusVertex(1l);
+            FaunusVertex saturn = new FaunusVertex(4l);
             vertices.add(saturn);
             saturn.setProperty("name", "saturn");
             saturn.setProperty("age", 10000);
             saturn.setProperty("type", "titan");
 
-            FaunusVertex sky = new FaunusVertex(2l);
+            FaunusVertex sky = new FaunusVertex(8l);
             vertices.add(sky);
             ElementHelper.setProperties(sky, "name", "sky", "type", "location");
 
-            FaunusVertex sea = new FaunusVertex(3l);
+            FaunusVertex sea = new FaunusVertex(12l);
             vertices.add(sea);
             ElementHelper.setProperties(sea, "name", "sea", "type", "location");
 
-            FaunusVertex jupiter = new FaunusVertex(4l);
+            FaunusVertex jupiter = new FaunusVertex(16l);
             vertices.add(jupiter);
             ElementHelper.setProperties(jupiter, "name", "jupiter", "age", 5000, "type", "god");
 
-            FaunusVertex neptune = new FaunusVertex(5l);
+            FaunusVertex neptune = new FaunusVertex(20l);
             vertices.add(neptune);
             ElementHelper.setProperties(neptune, "name", "neptune", "age", 4500, "type", "god");
 
-            FaunusVertex hercules = new FaunusVertex(6l);
+            FaunusVertex hercules = new FaunusVertex(24l);
             vertices.add(hercules);
             ElementHelper.setProperties(hercules, "name", "hercules", "age", 30, "type", "demigod");
 
-            FaunusVertex alcmene = new FaunusVertex(7l);
+            FaunusVertex alcmene = new FaunusVertex(28l);
             vertices.add(alcmene);
             ElementHelper.setProperties(alcmene, "name", "alcmene", "age", 45, "type", "human");
 
-            FaunusVertex pluto = new FaunusVertex(8l);
+            FaunusVertex pluto = new FaunusVertex(32l);
             vertices.add(pluto);
             ElementHelper.setProperties(pluto, "name", "pluto", "age", 4000, "type", "god");
 
-            FaunusVertex nemean = new FaunusVertex(9l);
+            FaunusVertex nemean = new FaunusVertex(36l);
             vertices.add(nemean);
             ElementHelper.setProperties(nemean, "name", "nemean", "type", "monster");
 
-            FaunusVertex hydra = new FaunusVertex(10l);
+            FaunusVertex hydra = new FaunusVertex(40l);
             vertices.add(hydra);
             ElementHelper.setProperties(hydra, "name", "hydra", "type", "monster");
 
-            FaunusVertex cerberus = new FaunusVertex(11l);
+            FaunusVertex cerberus = new FaunusVertex(44l);
             vertices.add(cerberus);
             ElementHelper.setProperties(cerberus, "name", "cerberus", "type", "monster");
 
-            FaunusVertex tartarus = new FaunusVertex(12l);
+            FaunusVertex tartarus = new FaunusVertex(48l);
             vertices.add(tartarus);
             ElementHelper.setProperties(tartarus, "name", "tartarus", "type", "location");
 
@@ -212,6 +212,7 @@ public abstract class BaseTest extends TestCase {
         return string + "]";
     }
 
+    // TODO: Remove the body of this with VertexHelper.areEqual() with the release of TinkerPop 2.3.2
     public static void identicalStructure(final Map<Long, FaunusVertex> vertices, final ExampleGraph exampleGraph) throws Exception {
         Map<Long, FaunusVertex> otherVertices = generateGraph(exampleGraph, new Configuration());
         assertEquals(vertices.size(), otherVertices.size());
@@ -223,13 +224,15 @@ public abstract class BaseTest extends TestCase {
             for (final String key : v1.getPropertyKeys()) {
                 assertEquals(v1.getProperty(key), v2.getProperty(key));
             }
-            assertEquals(asList(v1.getEdges(Direction.BOTH)).size(), asList(v2.getEdges(Direction.BOTH)).size());
-            assertEquals(asList(v1.getEdges(Direction.IN)).size(), asList(v2.getEdges(Direction.IN)).size());
-            assertEquals(asList(v1.getEdges(Direction.OUT)).size(), asList(v2.getEdges(Direction.OUT)).size());
+            if (exampleGraph != ExampleGraph.GRAPH_OF_THE_GODS_2) {
+                assertEquals(asList(v1.getEdges(Direction.BOTH)).size(), asList(v2.getEdges(Direction.BOTH)).size());
+                assertEquals(asList(v1.getEdges(Direction.IN)).size(), asList(v2.getEdges(Direction.IN)).size());
+                assertEquals(asList(v1.getEdges(Direction.OUT)).size(), asList(v2.getEdges(Direction.OUT)).size());
 
-            assertEquals(v1.getEdgeLabels(Direction.BOTH).size(), v2.getEdgeLabels(Direction.BOTH).size());
-            assertEquals(v1.getEdgeLabels(Direction.IN).size(), v2.getEdgeLabels(Direction.IN).size());
-            assertEquals(v1.getEdgeLabels(Direction.OUT).size(), v2.getEdgeLabels(Direction.OUT).size());
+                assertEquals(v1.getEdgeLabels(Direction.BOTH).size(), v2.getEdgeLabels(Direction.BOTH).size());
+                assertEquals(v1.getEdgeLabels(Direction.IN).size(), v2.getEdgeLabels(Direction.IN).size());
+                assertEquals(v1.getEdgeLabels(Direction.OUT).size(), v2.getEdgeLabels(Direction.OUT).size());
+            }
         }
 
         if (exampleGraph.equals(ExampleGraph.TINKERGRAPH)) {

@@ -15,6 +15,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -374,13 +375,12 @@ public class FaunusVertexTest extends BaseTest {
         NullWritable key = NullWritable.get();
         FaunusVertex value = new FaunusVertex();
 
-        /*final Map<Long, FaunusVertex> graph = new HashMap<Long, FaunusVertex>();
+        final Map<Long, FaunusVertex> graph = new HashMap<Long, FaunusVertex>();
         while (reader.next(key, value)) {
-            System.out.println(value.getProperties());
             graph.put(value.getIdAsLong(), value);
+            value = new FaunusVertex();
         }
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS_2);
-        */
-
+        reader.close();
     }
 }
