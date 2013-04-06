@@ -4,6 +4,10 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.SequenceFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -11,6 +15,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -252,7 +257,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex.getProperty("name"), "marko");
     }
 
-    public void testGetVerticesAndQuery() throws IOException {
+    public void testGetVerticesAndQuery() throws Exception {
         Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, new Configuration());
         for (FaunusVertex vertex : graph.values()) {
             if (vertex.getId().equals(1l)) {
@@ -288,7 +293,7 @@ public class FaunusVertexTest extends BaseTest {
         }
     }
 
-    public void testGetEdges() throws IOException {
+    public void testGetEdges() throws Exception {
         Map<Long, FaunusVertex> vertices = generateGraph(ExampleGraph.TINKERGRAPH, new Configuration());
 
         assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT, "knows")).size(), 2);
@@ -361,5 +366,22 @@ public class FaunusVertexTest extends BaseTest {
     public void testNoPathsOnConstruction() throws Exception {
         noPaths(generateGraph(ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class);
         noPaths(generateGraph(ExampleGraph.TINKERGRAPH, new Configuration()), Edge.class);
+    }
+
+    public void testSequenceFileRepresentation() throws Exception {
+        final Configuration conf = new Configuration();
+        final SequenceFile.Reader reader = new SequenceFile.Reader(
+                FileSystem.get(conf), new Path(FaunusVertexTest.class.getResource("graph-of-the-gods-2.seq").toURI()), conf);
+        NullWritable key = NullWritable.get();
+        FaunusVertex value = new FaunusVertex();
+
+        /*final Map<Long, FaunusVertex> graph = new HashMap<Long, FaunusVertex>();
+        while (reader.next(key, value)) {
+            System.out.println(value.getProperties());
+            graph.put(value.getIdAsLong(), value);
+        }
+        identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS_2);
+        */
+
     }
 }

@@ -9,7 +9,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Map;
 
 /**
@@ -25,7 +25,7 @@ public class EdgesVerticesMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testInVertices() throws IOException {
+    public void testInVertices() throws Exception {
         Configuration config = EdgesVerticesMap.createConfiguration(Direction.IN);
         mapReduceDriver.withConfiguration(config);
 
@@ -46,7 +46,7 @@ public class EdgesVerticesMapTest extends BaseTest {
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
-    public void testOutVertices() throws IOException {
+    public void testOutVertices() throws Exception {
         Configuration config = EdgesVerticesMap.createConfiguration(Direction.OUT);
 
         mapReduceDriver.withConfiguration(config);
@@ -69,7 +69,7 @@ public class EdgesVerticesMapTest extends BaseTest {
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
-    public void testBothVertices() throws IOException {
+    public void testBothVertices() throws Exception {
         Configuration config = EdgesVerticesMap.createConfiguration(Direction.BOTH);
 
         mapReduceDriver.withConfiguration(config);

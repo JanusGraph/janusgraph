@@ -11,7 +11,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Map;
 
 /**
@@ -27,7 +27,7 @@ public class IdentityMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testIdentityNoPaths() throws IOException {
+    public void testIdentityNoPaths() throws Exception {
         mapReduceDriver.withConfiguration(new Configuration());
 
         Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), mapReduceDriver);
@@ -52,7 +52,7 @@ public class IdentityMapTest extends BaseTest {
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
-    public void testIdentityPaths() throws IOException {
+    public void testIdentityPaths() throws Exception {
         mapReduceDriver.withConfiguration(new Configuration());
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class), mapReduceDriver);

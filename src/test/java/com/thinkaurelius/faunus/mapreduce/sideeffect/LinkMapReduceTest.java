@@ -10,7 +10,7 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,7 @@ public class LinkMapReduceTest extends BaseTest {
         mapReduceDriver.setReducer(new LinkMapReduce.Reduce());
     }
 
-    public void testKnowsCreatedTraversal() throws IOException {
+    public void testKnowsCreatedTraversal() throws Exception {
 
         Configuration config = LinkMapReduce.createConfiguration(Direction.IN, 0, "knowsCreated", null);
         mapReduceDriver.withConfiguration(config);
@@ -60,7 +60,7 @@ public class LinkMapReduceTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(LinkMapReduce.Counters.IN_EDGES_CREATED).getValue(), 2);
     }
 
-    public void testCreated2Traversal() throws IOException {
+    public void testCreated2Traversal() throws Exception {
 
         Configuration config = LinkMapReduce.createConfiguration(Direction.OUT, 0, "created2", null);
         mapReduceDriver.withConfiguration(config);

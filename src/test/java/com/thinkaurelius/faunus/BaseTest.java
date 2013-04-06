@@ -2,10 +2,12 @@ package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import junit.framework.TestCase;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -25,7 +27,7 @@ import java.util.Map;
  */
 public abstract class BaseTest extends TestCase {
 
-    public static enum ExampleGraph {GRAPH_OF_THE_GODS, TINKERGRAPH}
+    public static enum ExampleGraph {GRAPH_OF_THE_GODS, GRAPH_OF_THE_GODS_2, TINKERGRAPH}
 
     public static <T> List<T> asList(final Iterable<T> iterable) {
         final List<T> list = new ArrayList<T>();
@@ -35,18 +37,95 @@ public abstract class BaseTest extends TestCase {
         return list;
     }
 
-    public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example) throws IOException {
+    public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example) throws Exception {
         Configuration configuration = new Configuration();
         configuration.setBoolean(FaunusCompiler.PATH_ENABLED, false);
         return generateGraph(example, configuration);
     }
 
-    public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws IOException {
+    public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws Exception {
         final List<FaunusVertex> vertices;
         if (ExampleGraph.TINKERGRAPH.equals(example))
             vertices = new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
-        else
+        else if (ExampleGraph.GRAPH_OF_THE_GODS.equals(example))
             vertices = new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
+        else {
+            vertices = new ArrayList<FaunusVertex>();
+            FaunusVertex saturn = new FaunusVertex(1l);
+            vertices.add(saturn);
+            saturn.setProperty("name", "saturn");
+            saturn.setProperty("age", 10000);
+            saturn.setProperty("type", "titan");
+
+            FaunusVertex sky = new FaunusVertex(2l);
+            vertices.add(sky);
+            ElementHelper.setProperties(sky, "name", "sky", "type", "location");
+
+            FaunusVertex sea = new FaunusVertex(3l);
+            vertices.add(sea);
+            ElementHelper.setProperties(sea, "name", "sea", "type", "location");
+
+            FaunusVertex jupiter = new FaunusVertex(4l);
+            vertices.add(jupiter);
+            ElementHelper.setProperties(jupiter, "name", "jupiter", "age", 5000, "type", "god");
+
+            FaunusVertex neptune = new FaunusVertex(5l);
+            vertices.add(neptune);
+            ElementHelper.setProperties(neptune, "name", "neptune", "age", 4500, "type", "god");
+
+            FaunusVertex hercules = new FaunusVertex(6l);
+            vertices.add(hercules);
+            ElementHelper.setProperties(hercules, "name", "hercules", "age", 30, "type", "demigod");
+
+            FaunusVertex alcmene = new FaunusVertex(7l);
+            vertices.add(alcmene);
+            ElementHelper.setProperties(alcmene, "name", "alcmene", "age", 45, "type", "human");
+
+            FaunusVertex pluto = new FaunusVertex(8l);
+            vertices.add(pluto);
+            ElementHelper.setProperties(pluto, "name", "pluto", "age", 4000, "type", "god");
+
+            FaunusVertex nemean = new FaunusVertex(9l);
+            vertices.add(nemean);
+            ElementHelper.setProperties(nemean, "name", "nemean", "type", "monster");
+
+            FaunusVertex hydra = new FaunusVertex(10l);
+            vertices.add(hydra);
+            ElementHelper.setProperties(hydra, "name", "hydra", "type", "monster");
+
+            FaunusVertex cerberus = new FaunusVertex(11l);
+            vertices.add(cerberus);
+            ElementHelper.setProperties(cerberus, "name", "cerberus", "type", "monster");
+
+            FaunusVertex tartarus = new FaunusVertex(12l);
+            vertices.add(tartarus);
+            ElementHelper.setProperties(tartarus, "name", "tartarus", "type", "location");
+
+            // edges
+
+            jupiter.addEdge("father", saturn);
+            jupiter.addEdge("lives", sky).setProperty("reason", "loves fresh breezes");
+            jupiter.addEdge("brother", neptune);
+            jupiter.addEdge("brother", pluto);
+
+            neptune.addEdge("lives", sea).setProperty("reason", "loves waves");
+            neptune.addEdge("brother", jupiter);
+            neptune.addEdge("brother", pluto);
+
+            hercules.addEdge("father", jupiter);
+            hercules.addEdge("mother", alcmene);
+            ElementHelper.setProperties(hercules.addEdge("battled", nemean), "time", 1, "place", Geoshape.point(38.1f, 23.7f));
+            ElementHelper.setProperties(hercules.addEdge("battled", hydra), "time", 2, "place", Geoshape.point(37.7f, 23.9f));
+            ElementHelper.setProperties(hercules.addEdge("battled", cerberus), "time", 12, "place", Geoshape.point(39f, 22f));
+
+            pluto.addEdge("brother", jupiter);
+            pluto.addEdge("brother", neptune);
+            pluto.addEdge("lives", tartarus).setProperty("reason", "no fear of death");
+            pluto.addEdge("pet", cerberus);
+
+            cerberus.addEdge("lives", tartarus);
+        }
+
 
         for (final FaunusVertex vertex : vertices) {
             vertex.enablePath(configuration.getBoolean(FaunusCompiler.PATH_ENABLED, false));
@@ -133,7 +212,7 @@ public abstract class BaseTest extends TestCase {
         return string + "]";
     }
 
-    public static void identicalStructure(final Map<Long, FaunusVertex> vertices, final ExampleGraph exampleGraph) throws IOException {
+    public static void identicalStructure(final Map<Long, FaunusVertex> vertices, final ExampleGraph exampleGraph) throws Exception {
         Map<Long, FaunusVertex> otherVertices = generateGraph(exampleGraph, new Configuration());
         assertEquals(vertices.size(), otherVertices.size());
         for (long id : vertices.keySet()) {
@@ -165,17 +244,6 @@ public abstract class BaseTest extends TestCase {
             assertEquals(vertices.get(11l).getEdges(Direction.IN, "battled").iterator().next().getProperty("time"), 12);
         }
     }
-
-    /*public void testConverter() throws IOException {
-        //Graph graph = new TinkerGraph();
-        //GraphMLReader.inputGraph(graph, JSONUtility.class.getResourceAsStream("graph-of-the-gods.xml"));
-        Graph graph = TinkerGraphFactory.createTinkerGraph();
-        BufferedWriter bw = new BufferedWriter(new FileWriter("target/graph-example-1.json"));
-        for (final Vertex vertex : graph.getVertices()) {
-            bw.write(JSONUtility.toJSON(vertex).toString() + "\n");
-        }
-        bw.close();
-    }*/
 
     public File computeTestDataRoot() {
         final String clsUri = this.getClass().getName().replace('.', '/') + ".class";

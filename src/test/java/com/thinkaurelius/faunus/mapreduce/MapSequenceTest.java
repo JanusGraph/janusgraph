@@ -7,7 +7,7 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Map;
 
 /**
@@ -23,7 +23,7 @@ public class MapSequenceTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<Writable, Writable, Writable, Writable>());
     }
 
-    public void testVertexFiltering() throws IOException {
+    public void testVertexFiltering() throws Exception {
         Configuration config = new Configuration();
         config.setStrings(MapSequence.MAP_CLASSES, IdentityMap.Map.class.getName(), IdentityMap.Map.class.getName(), IdentityMap.Map.class.getName());
         this.mapReduceDriver.withConfiguration(config);
@@ -32,7 +32,7 @@ public class MapSequenceTest extends BaseTest {
         identicalStructure(results, ExampleGraph.TINKERGRAPH);
     }
 
-    /*public void testMapReduceOneJob() throws IOException {
+    /*public void testMapReduceOneJob() throws Exception {
         Configuration config = new Configuration();
         config.setStrings(MapSequence.MAP_CLASSES, VerticesVerticesMapReduce.Map.class.getName());
         this.mapReduceDriver.withConfiguration(config);

@@ -12,7 +12,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,7 @@ public class DuplicateFilterMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testDedupVertices() throws IOException {
+    public void testDedupVertices() throws Exception {
         Configuration config = DuplicateFilterMap.createConfiguration(Vertex.class);
         mapReduceDriver.withConfiguration(config);
 
@@ -66,7 +66,7 @@ public class DuplicateFilterMapTest extends BaseTest {
     }
 
 
-    public void testDedupVerticesWithPaths() throws IOException {
+    public void testDedupVerticesWithPaths() throws Exception {
         Configuration config = DuplicateFilterMap.createConfiguration(Vertex.class);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
         mapReduceDriver.withConfiguration(config);
@@ -104,7 +104,7 @@ public class DuplicateFilterMapTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testDedupEdgesWithPaths() throws IOException {
+    public void testDedupEdgesWithPaths() throws Exception {
         Configuration config = DuplicateFilterMap.createConfiguration(Edge.class);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 

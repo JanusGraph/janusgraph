@@ -11,7 +11,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class CyclicPathFilterMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testVertices() throws IOException {
+    public void testVertices() throws Exception {
         Configuration config = CyclicPathFilterMap.createConfiguration(Vertex.class);
         mapReduceDriver.withConfiguration(config);
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
@@ -68,7 +68,7 @@ public class CyclicPathFilterMapTest extends BaseTest {
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
-    public void testEdges() throws IOException {
+    public void testEdges() throws Exception {
         Configuration config = CyclicPathFilterMap.createConfiguration(Edge.class);
 
         mapReduceDriver.withConfiguration(config);

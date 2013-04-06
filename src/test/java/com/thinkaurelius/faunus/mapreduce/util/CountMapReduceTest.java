@@ -11,7 +11,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
-import java.io.IOException;
+
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +29,7 @@ public class CountMapReduceTest extends BaseTest {
         mapReduceDriver.setReducer(new CountMapReduce.Reduce());
     }
 
-    public void testVertexCount() throws IOException {
+    public void testVertexCount() throws Exception {
         Configuration config = CountMapReduce.createConfiguration(Vertex.class);
         mapReduceDriver.withConfiguration(config);
 
@@ -45,7 +45,7 @@ public class CountMapReduceTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testEdgeCount() throws IOException {
+    public void testEdgeCount() throws Exception {
         Configuration config = CountMapReduce.createConfiguration(Edge.class);
         mapReduceDriver.withConfiguration(config);
 
@@ -61,7 +61,7 @@ public class CountMapReduceTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testMultiVertexCount() throws IOException {
+    public void testMultiVertexCount() throws Exception {
         Configuration config = new Configuration();
         config.setClass(CountMapReduce.CLASS, Vertex.class, Element.class);
         mapReduceDriver.withConfiguration(config);

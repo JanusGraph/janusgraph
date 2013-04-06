@@ -11,7 +11,7 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Map;
 
 /**
@@ -28,7 +28,7 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
         mapReduceDriver.setReducer(new VerticesVerticesMapReduce.Reduce());
     }
 
-    public void testOutCreatedTraversal() throws IOException {
+    public void testOutCreatedTraversal() throws Exception {
         Configuration config = VerticesVerticesMapReduce.createConfiguration(Direction.OUT, "created");
         mapReduceDriver.withConfiguration(config);
 
@@ -45,7 +45,7 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testOutAllTraversal() throws IOException {
+    public void testOutAllTraversal() throws Exception {
         Configuration config = VerticesVerticesMapReduce.createConfiguration(Direction.OUT, "knows", "created");
         mapReduceDriver.withConfiguration(config);
 
@@ -62,7 +62,7 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testInAllTraversal() throws IOException {
+    public void testInAllTraversal() throws Exception {
         Configuration config = VerticesVerticesMapReduce.createConfiguration(Direction.IN);
         mapReduceDriver.withConfiguration(config);
 
@@ -79,7 +79,7 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testBothAllTraversal() throws IOException {
+    public void testBothAllTraversal() throws Exception {
         Configuration config = VerticesVerticesMapReduce.createConfiguration(Direction.BOTH);
         mapReduceDriver.withConfiguration(config);
 
@@ -96,7 +96,7 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testBothCreatedTraversal() throws IOException {
+    public void testBothCreatedTraversal() throws Exception {
         Configuration config = VerticesVerticesMapReduce.createConfiguration(Direction.BOTH, "created");
         mapReduceDriver.withConfiguration(config);
 
@@ -120,7 +120,7 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testOutKnowsWithPaths() throws IOException {
+    public void testOutKnowsWithPaths() throws Exception {
         Configuration config = VerticesVerticesMapReduce.createConfiguration(Direction.OUT, "knows");
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
@@ -149,7 +149,7 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testOutKnowsWithPathsOnlyMarko() throws IOException {
+    public void testOutKnowsWithPathsOnlyMarko() throws Exception {
         Configuration config = VerticesVerticesMapReduce.createConfiguration(Direction.OUT, "created");
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 

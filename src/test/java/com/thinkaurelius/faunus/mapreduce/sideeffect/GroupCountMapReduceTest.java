@@ -11,7 +11,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
-import java.io.IOException;
+
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +29,7 @@ public class GroupCountMapReduceTest extends BaseTest {
         mapReduceDriver.setReducer(new GroupCountMapReduce.Reduce());
     }
 
-    public void testOutDegreeDistribution() throws IOException {
+    public void testOutDegreeDistribution() throws Exception {
         Configuration config = GroupCountMapReduce.createConfiguration(Vertex.class, "{ it -> it.outE.count() }", null);
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
@@ -57,7 +57,7 @@ public class GroupCountMapReduceTest extends BaseTest {
         assertEquals(12, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
     }
 
-    public void testEdgePropertySizeDistribution() throws IOException {
+    public void testEdgePropertySizeDistribution() throws Exception {
         Configuration config = GroupCountMapReduce.createConfiguration(Edge.class, "{ it -> it.map.next().size() }", "{ it -> 2}");
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
@@ -79,7 +79,7 @@ public class GroupCountMapReduceTest extends BaseTest {
         assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
     }
 
-    public void testVertexDistribution() throws IOException {
+    public void testVertexDistribution() throws Exception {
         Configuration config = GroupCountMapReduce.createConfiguration(Vertex.class, null, "{ it -> 3.2}");
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
@@ -97,7 +97,7 @@ public class GroupCountMapReduceTest extends BaseTest {
 
     }
 
-    public void testEdgeDistribution() throws IOException {
+    public void testEdgeDistribution() throws Exception {
         Configuration config = GroupCountMapReduce.createConfiguration(Edge.class, null, null);
         this.mapReduceDriver.withConfiguration(config);
         final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);

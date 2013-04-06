@@ -11,7 +11,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Map;
 
 /**
@@ -27,7 +27,7 @@ public class FilterMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testVerticesOnName() throws IOException {
+    public void testVerticesOnName() throws Exception {
         Configuration config = FilterMap.createConfiguration(Vertex.class, "{it -> it.name.startsWith('v')}");
         mapReduceDriver.withConfiguration(config);
 
@@ -47,7 +47,7 @@ public class FilterMapTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testEdgesOnWeight() throws IOException {
+    public void testEdgesOnWeight() throws Exception {
         Configuration config = FilterMap.createConfiguration(Edge.class, "{it -> it.weight > 0.19 && it.weight < 0.21}");
         mapReduceDriver.withConfiguration(config);
 

@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.util.ElementHelper;
@@ -30,7 +31,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     protected static final KryoSerializer serialize = new KryoSerializer(true);
 
     /*static {
-        serialize.registerClass(Geoshape.class, 1);
+        serialize.registerClass(Geoshape.class,9090);
     }*/
 
     protected static final Map<String, String> TYPE_MAP = new HashMap<String, String>() {

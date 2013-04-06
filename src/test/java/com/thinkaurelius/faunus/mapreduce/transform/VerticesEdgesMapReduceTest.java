@@ -13,7 +13,7 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Map;
 
 /**
@@ -29,7 +29,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
         mapReduceDriver.setReducer(new VerticesEdgesMapReduce.Reduce());
     }
 
-    public void testOutCreatedTraversalWithPaths() throws IOException {
+    public void testOutCreatedTraversalWithPaths() throws Exception {
         Configuration config = VerticesEdgesMapReduce.createConfiguration(Direction.OUT, "created");
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
@@ -72,7 +72,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 4);
     }
 
-    public void testOutAllTraversalWithPaths() throws IOException {
+    public void testOutAllTraversalWithPaths() throws Exception {
         Configuration config = VerticesEdgesMapReduce.createConfiguration(Direction.OUT);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
@@ -102,7 +102,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 6);
     }
 
-    public void testOutAllTraversal() throws IOException {
+    public void testOutAllTraversal() throws Exception {
         Configuration config = VerticesEdgesMapReduce.createConfiguration(Direction.OUT);
         mapReduceDriver.withConfiguration(config);
 
@@ -133,7 +133,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 6);
     }
 
-    public void testBothCreatedTraversal() throws IOException {
+    public void testBothCreatedTraversal() throws Exception {
         Configuration config = VerticesEdgesMapReduce.createConfiguration(Direction.BOTH, "created");
         mapReduceDriver.withConfiguration(config);
 

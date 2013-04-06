@@ -11,7 +11,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Map;
 
 /**
@@ -27,7 +27,7 @@ public class IntervalFilterMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testVerticesOnAge() throws IOException {
+    public void testVerticesOnAge() throws Exception {
         Configuration config = IntervalFilterMap.createConfiguration(Vertex.class, "age", 10, 30);
         mapReduceDriver.withConfiguration(config);
 
@@ -46,7 +46,7 @@ public class IntervalFilterMapTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testEdgesOnWeight() throws IOException {
+    public void testEdgesOnWeight() throws Exception {
         Configuration config = IntervalFilterMap.createConfiguration(Edge.class, "weight", 0.3f, 0.45f);
         mapReduceDriver.withConfiguration(config);
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);

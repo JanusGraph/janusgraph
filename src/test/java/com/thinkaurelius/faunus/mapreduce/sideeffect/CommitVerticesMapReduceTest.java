@@ -11,7 +11,7 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Map;
 
 /**
@@ -28,7 +28,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
         mapReduceDriver.setReducer(new CommitVerticesMapReduce.Reduce());
     }
 
-    public void testKeepAllVertices() throws IOException {
+    public void testKeepAllVertices() throws Exception {
 
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.KEEP);
         mapReduceDriver.withConfiguration(config);
@@ -48,7 +48,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     }
 
-    public void testDropAllVertices() throws IOException {
+    public void testDropAllVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.DROP);
         mapReduceDriver.withConfiguration(config);
 
@@ -60,7 +60,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     }
 
-    public void testKeepProjectVertices() throws IOException {
+    public void testKeepProjectVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.KEEP);
         mapReduceDriver.withConfiguration(config);
 
@@ -81,7 +81,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     }
 
-    public void testDropProjectVertices() throws IOException {
+    public void testDropProjectVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.KEEP);
         mapReduceDriver.withConfiguration(config);
 

@@ -12,7 +12,7 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,7 @@ public class BackFilterMapReduceTest extends BaseTest {
         mapReduceDriver.setReducer(new BackFilterMapReduce.Reduce());
     }
 
-    public void testVerticesFullStart() throws IOException {
+    public void testVerticesFullStart() throws Exception {
         Configuration config = BackFilterMapReduce.createConfiguration(Vertex.class, 0);
         mapReduceDriver.withConfiguration(config);
 
@@ -48,7 +48,7 @@ public class BackFilterMapReduceTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testVerticesBiasedStart() throws IOException {
+    public void testVerticesBiasedStart() throws Exception {
         Configuration config = BackFilterMapReduce.createConfiguration(Vertex.class, 0);
         mapReduceDriver.withConfiguration(config);
 
@@ -73,7 +73,7 @@ public class BackFilterMapReduceTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testBackingUpToEdgesException() throws IOException {
+    public void testBackingUpToEdgesException() throws Exception {
         Configuration config = BackFilterMapReduce.createConfiguration(Vertex.class, 1);
         mapReduceDriver.withConfiguration(config);
 
@@ -88,12 +88,12 @@ public class BackFilterMapReduceTest extends BaseTest {
         try {
             graph = runWithGraph(graph, mapReduceDriver);
             assertFalse(true);
-        } catch (IOException e) {
+        } catch (Exception e) {
             assertTrue(true);
         }
     }
 
-    public void testBackingUpToVerticesFromEdges() throws IOException {
+    public void testBackingUpToVerticesFromEdges() throws Exception {
         Configuration config = BackFilterMapReduce.createConfiguration(Edge.class, 0);
         mapReduceDriver.withConfiguration(config);
 

@@ -8,7 +8,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Map;
 
 /**
@@ -26,7 +26,7 @@ public class SideEffectMapTest extends BaseTest {
 
     /*
         // TODO: Assumptions around breadth- vs. depth-first traversal
-        public void testVertexSideEffect() throws IOException {
+        public void testVertexSideEffect() throws Exception {
         Configuration config = new Configuration();
         config.setClass(SideEffectMap.CLASS, Vertex.class, Element.class);
         config.set(SideEffectMap.CLOSURE, "{it -> if(it.count) {it.count++} else {it.count=1}}");
@@ -49,7 +49,7 @@ public class SideEffectMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
     }*/
 
-    public void testVertexSideEffectOutDegree() throws IOException {
+    public void testVertexSideEffectOutDegree() throws Exception {
         Configuration config = SideEffectMap.createConfiguration(Vertex.class, "{it -> it.degree = it.outE().count()}");
         mapReduceDriver.withConfiguration(config);
 
@@ -68,7 +68,7 @@ public class SideEffectMapTest extends BaseTest {
     }
 
 
-    public void testVertexSideEffectInDegree() throws IOException {
+    public void testVertexSideEffectInDegree() throws Exception {
 
         Configuration config = SideEffectMap.createConfiguration(Vertex.class, "{it -> it.degree = it.inE.count()}");
         mapReduceDriver.withConfiguration(config);

@@ -12,7 +12,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
-import java.io.IOException;
+
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +29,7 @@ public class PropertyMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, WritableComparable, NullWritable, WritableComparable>());
     }
 
-    public void testVertexPropertiesName() throws IOException {
+    public void testVertexPropertiesName() throws Exception {
         Configuration config = PropertyMap.createConfiguration(Vertex.class, "name", Text.class);
         mapReduceDriver.withConfiguration(config);
 
@@ -58,7 +58,7 @@ public class PropertyMapTest extends BaseTest {
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
-    public void testVertexPropertiesAge() throws IOException {
+    public void testVertexPropertiesAge() throws Exception {
         Configuration config = PropertyMap.createConfiguration(Vertex.class, "age", IntWritable.class);
         mapReduceDriver.withConfiguration(config);
 
@@ -88,7 +88,7 @@ public class PropertyMapTest extends BaseTest {
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
-    public void testVertexPropertiesNameDifferingPaths() throws IOException {
+    public void testVertexPropertiesNameDifferingPaths() throws Exception {
         Configuration config = PropertyMap.createConfiguration(Vertex.class, "name", Text.class);
         mapReduceDriver.withConfiguration(config);
 
@@ -117,7 +117,7 @@ public class PropertyMapTest extends BaseTest {
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
-    public void testVertexPropertiesAgeDifferingPaths() throws IOException {
+    public void testVertexPropertiesAgeDifferingPaths() throws Exception {
         Configuration config = PropertyMap.createConfiguration(Vertex.class, "age", IntWritable.class);
         mapReduceDriver.withConfiguration(config);
 

@@ -11,7 +11,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Map;
 
 /**
@@ -27,7 +27,7 @@ public class VerticesMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testVerticesWithNoPaths() throws IOException {
+    public void testVerticesWithNoPaths() throws Exception {
         Configuration config = new Configuration();
         mapReduceDriver.withConfiguration(config);
 
@@ -54,7 +54,7 @@ public class VerticesMapTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testVerticesWithPaths() throws IOException {
+    public void testVerticesWithPaths() throws Exception {
         Configuration config = new Configuration();
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 

@@ -12,7 +12,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
-import java.io.IOException;
+
 import java.util.List;
 
 /**
@@ -28,7 +28,7 @@ public class TransformMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, Text, NullWritable, Text>());
     }
 
-    public void testVerticesPropertyKeySize() throws IOException {
+    public void testVerticesPropertyKeySize() throws Exception {
         Configuration config = TransformMap.createConfiguration(Vertex.class, "{it -> it.propertyKeys.size()}");
         mapReduceDriver.withConfiguration(config);
 
@@ -41,7 +41,7 @@ public class TransformMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.EDGES_PROCESSED).getValue(), 0);
     }
 
-    public void testVerticesPropertyKeySizeWithPaths() throws IOException {
+    public void testVerticesPropertyKeySizeWithPaths() throws Exception {
         Configuration config = TransformMap.createConfiguration(Vertex.class, "{it -> it.propertyKeys.size()}");
         config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
         mapReduceDriver.withConfiguration(config);
@@ -56,7 +56,7 @@ public class TransformMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.EDGES_PROCESSED).getValue(), 0);
     }
 
-    public void testEdgesPropertyKeySize() throws IOException {
+    public void testEdgesPropertyKeySize() throws Exception {
         Configuration config = TransformMap.createConfiguration(Edge.class, "{it -> it.propertyKeys.size()}");
         mapReduceDriver.withConfiguration(config);
 

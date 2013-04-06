@@ -32,5 +32,7 @@ public class FaunusSequenceFileRecordReaderTest extends BaseTest {
             graph.put(value.getIdAsLong(), VertexConverter.buildFaunusVertex(value));
         }
         identicalStructure(graph, BaseTest.ExampleGraph.GRAPH_OF_THE_GODS);
+
+        reader.close();
     }
 }

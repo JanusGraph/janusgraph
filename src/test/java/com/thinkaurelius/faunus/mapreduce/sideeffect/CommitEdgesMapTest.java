@@ -11,7 +11,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Map;
 
 /**
@@ -27,7 +27,7 @@ public class CommitEdgesMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testDropAllEdges() throws IOException {
+    public void testDropAllEdges() throws Exception {
         Configuration config = CommitEdgesMap.createConfiguration(Tokens.Action.DROP);
         mapReduceDriver.withConfiguration(config);
 
@@ -50,7 +50,7 @@ public class CommitEdgesMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_KEPT).getValue(), 0);
     }
 
-    public void testKeepAllEdges() throws IOException {
+    public void testKeepAllEdges() throws Exception {
         Configuration config = CommitEdgesMap.createConfiguration(Tokens.Action.KEEP);
         mapReduceDriver.withConfiguration(config);
 
@@ -73,7 +73,7 @@ public class CommitEdgesMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_KEPT).getValue(), 6);
     }
 
-    public void testDropAllCreatedEdge() throws IOException {
+    public void testDropAllCreatedEdge() throws Exception {
         Configuration config = CommitEdgesMap.createConfiguration(Tokens.Action.DROP);
         mapReduceDriver.withConfiguration(config);
 
@@ -106,7 +106,7 @@ public class CommitEdgesMapTest extends BaseTest {
         assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_KEPT).getValue(), 2);
     }
 
-    public void testKeepAllCreatedEdge() throws IOException {
+    public void testKeepAllCreatedEdge() throws Exception {
         Configuration config = new Configuration();
         config.set(CommitEdgesMap.ACTION, Tokens.Action.KEEP.name());
 

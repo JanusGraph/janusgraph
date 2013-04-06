@@ -11,7 +11,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
-import java.io.IOException;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class PathMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, Text, NullWritable, Text>());
     }
 
-    public void testPathsFromVertices() throws IOException {
+    public void testPathsFromVertices() throws Exception {
         Configuration config = PathMap.createConfiguration(Vertex.class);
         mapReduceDriver.withConfiguration(config);
 
@@ -62,7 +62,7 @@ public class PathMapTest extends BaseTest {
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
 
-    public void testPathsAndGetException() throws IOException {
+    public void testPathsAndGetException() throws Exception {
         Configuration config = PathMap.createConfiguration(Vertex.class);
         config.setBoolean(FaunusCompiler.PATH_ENABLED, false);
 

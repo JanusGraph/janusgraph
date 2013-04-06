@@ -32,7 +32,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         mapReduceDriver.setReducer(new TinkerGraphOutputMapReduce.Reduce());
     }
 
-    public void testTinkerGraphMapping() throws IOException {
+    public void testTinkerGraphMapping() throws Exception {
         mapReduceDriver.withConfiguration(new Configuration());
         final Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class), mapReduceDriver);
         for (FaunusVertex vertex : graph.values()) {

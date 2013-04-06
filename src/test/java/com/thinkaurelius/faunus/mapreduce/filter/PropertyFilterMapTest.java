@@ -12,7 +12,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import java.io.IOException;
+
 import java.util.Map;
 
 /**
@@ -28,7 +28,7 @@ public class PropertyFilterMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
-    public void testVerticesOnName() throws IOException {
+    public void testVerticesOnName() throws Exception {
         Configuration config = PropertyFilterMap.createConfiguration(Vertex.class, "name", Query.Compare.EQUAL, "marko", "vadas");
         mapReduceDriver.withConfiguration(config);
 
@@ -48,7 +48,7 @@ public class PropertyFilterMapTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
-    public void testEdgesOnWeight() throws IOException {
+    public void testEdgesOnWeight() throws Exception {
         Configuration config = PropertyFilterMap.createConfiguration(Edge.class, "weight", Query.Compare.EQUAL, 0.2f);
         mapReduceDriver.withConfiguration(config);
 
