@@ -13,7 +13,6 @@ import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
