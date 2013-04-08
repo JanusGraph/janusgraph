@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceTest;
 public class BerkeleyJEGraphPerformanceTest extends TitanGraphPerformanceTest {
 
     public BerkeleyJEGraphPerformanceTest() {
-        super(BerkeleyJeStorageSetup.getBerkeleyJEGraphConfiguration(), 0, 1, false);
+        super(BerkeleyJeStorageSetup.getBerkeleyJEGraphConfiguration(), 2, 8, false);
     }
 
 }

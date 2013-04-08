@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.persistit;
 
+import static com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager.VOLUME_NAME;
+
 import com.persistit.*;
 import com.persistit.exception.PersistitException;
 import com.persistit.exception.RollbackException;
@@ -11,6 +13,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @todo: read this and make sure multiple threads aren't sharing transactions http://akiban.github.com/persistit/javadoc/com/persistit/Transaction.html#_threadManagement
@@ -64,6 +68,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     private Transaction tx;
     private SessionId sessionId;
 
+    private Map<String, Exchange> exchangeCache = new HashMap<String, Exchange>();
 
     public PersistitTransaction(Persistit p, ConsistencyLevel level) throws StorageException {
         super(level);
@@ -102,7 +107,9 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     @Override
     public synchronized void abort() throws StorageException {
         if (!tx.isActive()) return;
-        begin();
+        
+        // Transaction being aborted as already begun; can't begin() it again.
+        // begin();
 
         tx.rollback();
         tx.end();
@@ -110,7 +117,8 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     @Override
     public synchronized void commit() throws StorageException {
-        begin();
+        // Transaction being committed as already begun; can't begin() it again.
+        // begin();
         int retries = 3;
         try {
             int i = 0;
@@ -136,16 +144,27 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     }
 
     public Exchange getExchange(String treeName, Boolean create) throws StorageException {
+        Exchange exchange = exchangeCache.get(treeName);
+        if (exchange != null) {
+            return exchange;
+        }
         try {
             assign();
-            return db.getExchange(db.getSystemVolume().getName(), treeName, create);
+            exchange = db.getExchange(VOLUME_NAME, treeName, create);
+            exchangeCache.put(treeName, exchange);
+            return exchange;
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex);
         }
     }
 
     public void releaseExchange(Exchange exchange) {
-        db.releaseExchange(exchange);
+        // For now, do not release the Exchange.  This is a workaround for the temporary
+        // behavior in which a new SessionId is created for every transaction.  Calling
+        // releaseExchange stores an Exchange in a map keyed by a SessionId that will never
+        // be used again or removed.
+        //
+        // db.releaseExchange(exchange);
     }
 
     public Transaction getTx() {

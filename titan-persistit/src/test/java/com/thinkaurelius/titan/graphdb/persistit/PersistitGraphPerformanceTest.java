@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceTest;
 
 public class PersistitGraphPerformanceTest extends TitanGraphPerformanceTest {
     public PersistitGraphPerformanceTest() {
-        super(PersistitStorageSetup.getPersistitGraphConfig());
+        // Changed to match corresponding Berkeley JE test
+        super(PersistitStorageSetup.getPersistitGraphConfig(), 2, 8, false);
     }
 }

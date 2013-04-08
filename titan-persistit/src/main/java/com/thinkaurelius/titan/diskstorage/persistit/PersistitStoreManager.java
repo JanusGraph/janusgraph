@@ -30,6 +30,8 @@ public class PersistitStoreManager implements KeyValueStoreManager {
 
     private final Map<String, PersistitKeyValueStore> stores;
     private static final StoreFeatures features = new StoreFeatures();
+    final static String VOLUME_NAME = "titan";
+    
     static {
         features.supportsTransactions = true;
         features.isDistributed = false;
@@ -43,12 +45,12 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         features.hasLocalKeyPartition = false;
     }
 
-    private Persistit db;
+    private static Persistit db;
     private Exchange exchange;
 
     private Configuration config;
     private Properties properties;
-    private final File directory;
+    private  File directory;
 
     //@todo: unhack this
     private final static String BACKEND_VERSION = TitanConstants.VERSION;
@@ -57,28 +59,31 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         stores = new HashMap<String, PersistitKeyValueStore>();
 
         config = cloneConfig(configuration);
-        //read config and setup
-        properties = new Properties();
-        String datapath = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
-        Preconditions.checkArgument(datapath != null, "Need to specify storage directory");
-        directory = getOrCreateDataDirectory(datapath);
-        properties.put("datapath", datapath);
-        String volumeName = "titan";
+        if (db == null) {
+            // read config and setup
+            properties = new Properties();
+            String datapath = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
+            Preconditions.checkArgument(datapath != null, "Need to specify storage directory");
+            directory = getOrCreateDataDirectory(datapath);
+            properties.put("datapath", datapath);
 
-        properties.put("journalpath", directory + File.pathSeparator + volumeName);
-        properties.put("logfile", directory + File.pathSeparator + volumeName + ".log");
+            // On pathSeparator is ":" on 'Nix systems - File.separator is what is intended.
+            
+            properties.put("journalpath", directory + File.separator + VOLUME_NAME);
+            properties.put("logfile", directory + File.separator + VOLUME_NAME + ".log");
 
-        //@todo: make these tunable
-        properties.put("buffer.count.16384", "32");
-        properties.put("volume.1", directory + File.pathSeparator + volumeName + ",create,pageSize:16384,initialPages:5,extensionPages:5,maximumPages:100000");
+            // @todo: make these tunable
+            properties.put("buffer.count.16384", "5000");
+            properties.put("volume.1", directory + File.separator + VOLUME_NAME
+                    + ",create,pageSize:16384,initialPages:1000,extensionPages:1000,maximumPages:1000000");
 
-        try {
-            db = new Persistit(properties);
-            db.initialize();
-        } catch (PersistitException ex) {
-            throw new PermanentStorageException(ex.toString());
+            try {
+                db = new Persistit(properties);
+                db.initialize();
+            } catch (PersistitException ex) {
+                throw new PermanentStorageException(ex.toString());
+            }
         }
-
         //do some additional config setup
         config.addProperty(Backend.TITAN_BACKEND_VERSION, BACKEND_VERSION);
     }
@@ -118,13 +123,14 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         Iterator<String> keys = src.getKeys();
         while (keys.hasNext()) {
             String k = keys.next();
-            dst.addProperty(k, src.getString(k));
+            dst.addProperty(k, src.getProperty(k));
         }
         return dst;
     }
 
     @Override
     public void close() throws StorageException {
+        /*
         if (db != null) {
             if (!stores.isEmpty()) {
                 throw new IllegalStateException("Cannot shutdown manager since some databases are still open");
@@ -135,6 +141,7 @@ public class PersistitStoreManager implements KeyValueStoreManager {
                 throw new PermanentStorageException(ex.toString());
             }
         }
+        */
     }
 
     /**
@@ -163,7 +170,7 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         Volume volume;
         String[] treeNames;
         try {
-            volume = db.getSystemVolume();
+            volume = db.getVolume(VOLUME_NAME);
             treeNames = volume.getTreeNames();
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex.toString());

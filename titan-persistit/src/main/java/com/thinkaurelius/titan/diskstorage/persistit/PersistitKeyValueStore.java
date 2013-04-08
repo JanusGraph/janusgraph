@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStore
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.List;
-
+import static com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager.VOLUME_NAME;
 /**
  * Persistit implicitly assigns units of work to transactions depending
  * on the thread being executed. Titan seems to look at units of work and
@@ -66,7 +66,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
      */
     public void clear() throws StorageException {
         try {
-            Exchange exchange = persistit.getExchange(persistit.getSystemVolume().getName(), name, true);
+            Exchange exchange = persistit.getExchange(VOLUME_NAME, name, true);
             exchange.removeTree();
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex.toString());
@@ -144,6 +144,9 @@ public class PersistitKeyValueStore implements KeyValueStore {
         byte[] k = getByteArray(key);
         Key ek = exchange.getKey();
         ek.to(k);
+//
+// Following is redundant with the above (and wrong, since the encoded size is necessarily
+// larger to handle the quoting of nulls in the key.
 //        ek.clear();
 //        ek.appendByteArray(k, 0, k.length);
 //        ek.setEncodedSize(k.length);
@@ -155,15 +158,24 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
     static void setValue(Exchange exchange, ByteBuffer val) throws PersistitException{
         byte[] v = getByteArray(val);
-        exchange.getValue().clear();
-        exchange.getValue().setEncodedSize(v.length);
-        exchange.getValue().putEncodedBytes(v, 0, v.length);
+//
+// Changed this to use Persistit's native encoding if byte-array values
+//
+        exchange.getValue().put(v);
+        
+//        exchange.getValue().clear();
+//        exchange.getValue().setEncodedSize(v.length);
+//        exchange.getValue().putEncodedBytes(v, 0, v.length);
         exchange.store();
     }
 
     static ByteBuffer getValue(Exchange exchange) {
-        byte[] dst = new byte[exchange.getValue().getEncodedSize()];
-        System.arraycopy(exchange.getValue().getEncodedBytes(), 0, dst, 0, dst.length);
+//
+// Changed this to use Persistit's native encoding if byte-array values
+//
+        byte[] dst = exchange.getValue().getByteArray();
+//        byte[] dst = new byte[exchange.getValue().getEncodedSize()];
+//        System.arraycopy(exchange.getValue().getEncodedBytes(), 0, dst, 0, dst.length);
         return ByteBuffer.wrap(dst);
     }
 
@@ -257,13 +269,21 @@ public class PersistitKeyValueStore implements KeyValueStore {
             KeyFilter.Term[] terms = {KeyFilter.rangeTerm(start, end, true, false, null)};
             KeyFilter keyFilter = new KeyFilter(terms);
 
-            toKey(exchange, keyStart);
-            exchange.fetch();
+//
+// Unnecessary
+//            toKey(exchange, keyStart);
+//            exchange.fetch();
 
             int i = 0;
-            while (keyFilter.selected(exchange.getKey())) {
+            //
+            // Changed to use KeyFilter as intended.
+            //
+            while (exchange.next(keyFilter)) {
                 ByteBuffer k = getKey(exchange);
-                exchange.fetch();
+                
+                // Unnecessary - value is fetched as a side-effect of the call to next(KeyFilter) above.
+                //
+                //exchange.fetch();
 
                 //check the key against the selector, and that is has a corresponding value
                 if (exchange.getValue().isDefined() && (selector == null || selector.include(k))){
@@ -276,11 +296,14 @@ public class PersistitKeyValueStore implements KeyValueStore {
                     if (limit != null && limit >= 0 && i >= limit) break;
                     if (selector != null && selector.reachedLimit()) break;
                 }
-                if (exchange.hasNext()) {
-                    exchange.next();
-                } else {
-                    break;
-                }
+//
+// This is handled by the next(KeyFilter method above)
+//
+//                if (exchange.hasNext()) {
+//                    exchange.next();
+//                } else {
+//                    break;
+//                }
             }
             return results;
         } catch (PersistitException ex) {
@@ -305,7 +328,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
         return getSlice(keyStart, keyEnd, null, limit, (PersistitTransaction) txh);
     }
 
-    public static HashMap<String, String> inserts = new HashMap<String, String>();
+//    public static HashMap<String, String> inserts = new HashMap<String, String>();
     @Override
     public void insert(final ByteBuffer key, final ByteBuffer value, final StoreTransaction txh) throws StorageException {
         final PersistitTransaction tx = (PersistitTransaction) txh;
@@ -313,7 +336,8 @@ public class PersistitKeyValueStore implements KeyValueStore {
         final Exchange exchange = tx.getExchange(name);
         try {
             byte[] culprit = {0,0,0,0,0,0,0,8,-127,-114,-115};
-            inserts.put(new String(key.array()), new String(value.array()));
+            // Following line caused massing heap consumption during labeledEdgeInsertion
+            // inserts.put(new String(key.array()), new String(value.array()));
             toKey(exchange, key);
             setValue(exchange, value);
         } catch (PersistitException ex) {
