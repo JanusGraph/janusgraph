@@ -10,14 +10,16 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
+import java.io.IOException;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class ScriptInputFormat extends FileInputFormat<NullWritable, FaunusVertex> {
 
     @Override
-    public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit split, final TaskAttemptContext context) {
-        return new ScriptRecordReader();
+    public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
+        return new ScriptRecordReader(context);
     }
 
     @Override

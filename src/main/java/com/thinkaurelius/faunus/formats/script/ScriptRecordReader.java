@@ -20,7 +20,7 @@ import java.io.InputStreamReader;
  */
 public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
-    private static final String SCRIPT_FILE = "faunus.input.script.file";
+    private static final String INPUT_SCRIPT_FILE = "faunus.input.script.file";
     private static final String READ_CALL = "read(vertex,line)";
     private static final String VERTEX = "vertex";
     private static final String LINE = "line";
@@ -31,21 +31,21 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
     private final LineRecordReader lineRecordReader;
     private FaunusVertex value;
 
-    public ScriptRecordReader() {
+    public ScriptRecordReader(final TaskAttemptContext context) throws IOException {
         this.lineRecordReader = new LineRecordReader();
         this.value = new FaunusVertex();
+        this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
+
+        final FileSystem fs = FileSystem.get(context.getConfiguration());
+        try {
+            this.engine.eval(new InputStreamReader(fs.open(new Path(context.getConfiguration().get(INPUT_SCRIPT_FILE)))));
+        } catch (Exception e) {
+            throw new IOException(e.getMessage());
+        }
     }
 
     public void initialize(final InputSplit genericSplit, final TaskAttemptContext context) throws IOException {
         this.lineRecordReader.initialize(genericSplit, context);
-        this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
-        final FileSystem fs = FileSystem.get(context.getConfiguration());
-        try {
-            this.engine.eval(new InputStreamReader(fs.open(new Path(context.getConfiguration().get(SCRIPT_FILE)))));
-        } catch (Exception e) {
-            throw new IOException(e.getMessage());
-        }
-
     }
 
     public boolean nextKeyValue() throws IOException {

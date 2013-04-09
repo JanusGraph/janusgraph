@@ -1,18 +1,20 @@
 import com.thinkaurelius.faunus.FaunusVertex
-import com.tinkerpop.blueprints.Direction
 import com.tinkerpop.blueprints.Edge
+
+import static com.tinkerpop.blueprints.Direction.OUT
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 
-def void write(FaunusVertex vertex, DataOutputStream out) {
-    out.writeUTF(vertex.getId().toString() + ":");
-    Iterator<Edge> itty = vertex.getEdges(Direction.OUT).iterator()
+def String write(FaunusVertex vertex) {
+    StringBuilder builder = new StringBuilder();
+    builder.append(vertex.getId().toString() + ":");
+    Iterator<Edge> itty = vertex.getEdges(OUT).iterator()
     while (itty.hasNext()) {
-        out.writeUTF(itty.next().getId().toString());
+        builder.append(itty.next().getId());
         if (itty.hasNext())
-            out.writeUTF(',');
+            builder.append(',');
     }
-    out.writeUTF('\n');
+    return builder.toString();
 }

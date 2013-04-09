@@ -32,7 +32,7 @@ public abstract class FaunusFileOutputFormat extends FileOutputFormat<NullWritab
         final Path file = super.getDefaultWorkFile(job, extension);
         final FileSystem fs = file.getFileSystem(conf);
         if (!isCompressed) {
-            return fs.create(file, false);
+            return new DataOutputStream(fs.create(file, false));
         } else {
             return new DataOutputStream(codec.createOutputStream(fs.create(file, false)));
         }

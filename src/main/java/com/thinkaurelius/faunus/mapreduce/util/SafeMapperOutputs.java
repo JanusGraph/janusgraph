@@ -23,7 +23,7 @@ public class SafeMapperOutputs {
         this.testing = this.context.getConfiguration().getBoolean(FaunusCompiler.TESTING, false);
     }
 
-    public void write(final String type, Writable key, Writable value) throws IOException, InterruptedException {
+    public void write(final String type, final Writable key, final Writable value) throws IOException, InterruptedException {
         if (this.testing) {
             if (type.equals(Tokens.SIDEEFFECT))
                 this.context.write(key, value);
