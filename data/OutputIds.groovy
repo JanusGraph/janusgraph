@@ -6,13 +6,13 @@ import com.tinkerpop.blueprints.Edge
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 
-def void write(FaunusVertex vertex, PrintWriter out) {
-    out.write(vertex.getId().toString() + ":");
+def void write(FaunusVertex vertex, DataOutputStream out) {
+    out.writeUTF(vertex.getId().toString() + ":");
     Iterator<Edge> itty = vertex.getEdges(Direction.OUT).iterator()
     while (itty.hasNext()) {
-        out.write(itty.next().getId().toString());
+        out.writeUTF(itty.next().getId().toString());
         if (itty.hasNext())
-            out.write(',');
+            out.writeUTF(',');
     }
-    out.write('\n');
+    out.writeUTF('\n');
 }
