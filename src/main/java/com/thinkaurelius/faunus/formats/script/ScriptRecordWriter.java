@@ -27,6 +27,7 @@ public class ScriptRecordWriter extends RecordWriter<NullWritable, FaunusVertex>
     private static final String WRITE_CALL = "write(vertex)";
     private static final String VERTEX = "vertex";
     // TODO: make it work with the DataOutputStream passed into the write() method
+    // TODO: if you can't do this, then make a null return be a skip
     // private static final String OUT = "out";
 
     private static final String UTF8 = "UTF-8";

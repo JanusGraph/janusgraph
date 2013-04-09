@@ -13,6 +13,16 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import java.io.IOException;
 
 /**
+ * ScriptInputFormat supports the arbitrary parsing of a \n-based file format.
+ * Each line of the file is passed to the Gremlin/Groovy script identified by the faunus.input.script.file property.
+ * The Gremlin/Groovy file must have a method with the following signature:
+ * <p/>
+ * def boolean read(FaunusVertex vertex, String line) { ... }
+ * <p/>
+ * The FaunusVertex argument is a reusable object to avoid object creation (see FaunusVertex.reuse(long)).
+ * The String argument is the \n-line out of the file at the faunus.input.location.
+ * The boolean denotes whether or not the provided line yielded a successful creation of a FaunusVertex.
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class ScriptInputFormat extends FileInputFormat<NullWritable, FaunusVertex> {

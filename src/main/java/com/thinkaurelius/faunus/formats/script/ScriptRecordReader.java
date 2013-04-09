@@ -20,7 +20,7 @@ import java.io.InputStreamReader;
  */
 public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
-    private static final String INPUT_SCRIPT_FILE = "faunus.input.script.file";
+    public static final String INPUT_SCRIPT_FILE = "faunus.input.script.file";
     private static final String READ_CALL = "read(vertex,line)";
     private static final String VERTEX = "vertex";
     private static final String LINE = "line";
@@ -49,18 +49,22 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
     }
 
     public boolean nextKeyValue() throws IOException {
-        if (!this.lineRecordReader.nextKeyValue())
-            return false;
-
-        try {
-            this.engine.put(VERTEX, this.value);
-            this.engine.put(LINE, this.lineRecordReader.getCurrentValue().toString());
-            engine.eval(READ_CALL);
-        } catch (Exception e) {
-            throw new IOException(e.getMessage());
+        while (true) {
+            if (!this.lineRecordReader.nextKeyValue())
+                return false;
+            else {
+                try {
+                    this.engine.put(LINE, this.lineRecordReader.getCurrentValue().toString());
+                    this.engine.put(VERTEX, this.value);
+                    if ((Boolean) engine.eval(READ_CALL)) {
+                        this.value.enablePath(this.pathEnabled);
+                        return true;
+                    }
+                } catch (Exception e) {
+                    throw new IOException(e.getMessage());
+                }
+            }
         }
-        this.value.enablePath(this.pathEnabled);
-        return true;
     }
 
     @Override
