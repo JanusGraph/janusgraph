@@ -22,7 +22,7 @@ public class RDFRecordReaderTest extends BaseTest {
         int counter = 0;
         while (reader.nextKeyValue()) {
             assertEquals(reader.getCurrentKey(), NullWritable.get());
-            reader.getCurrentValue();
+            // reader.getCurrentValue();
             counter++;
 
         }
