@@ -26,6 +26,7 @@ h3. Version 0.3.0 (NOT OFFICIALLY RELEASED YET)
 * Added numerous test cases for file-based @RecordReader@ formats
 * Added @ScriptInputFormat@ to support the arbitrary reading of an HDFS file lines into a @FaunusVertex@
 * Added @ScriptOutputFormat@ to support the arbitrary writing of an HDFS file line from a @FaunusVertex@
+* Introduced the @faunus.engine@ property namespace for properties that are global to the pipeline
 
 ==<hr/>==
 

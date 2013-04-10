@@ -55,11 +55,14 @@ public class GroupCountMapReduce {
         private boolean isVertex;
         private CounterMap<Object> map;
 
+        private int mapSpillOver;
+
         private SafeMapperOutputs outputs;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             try {
+                this.mapSpillOver = context.getConfiguration().getInt(Tokens.FAUNUS_ENGINE_MAP_SPILL_OVER, Tokens.DEFAULT_MAP_SPILL_OVER);
                 final String keyClosureString = context.getConfiguration().get(KEY_CLOSURE, null);
                 if (null == keyClosureString)
                     this.keyClosure = null;
@@ -104,7 +107,7 @@ public class GroupCountMapReduce {
             }
 
             // protected against memory explosion
-            if (this.map.size() > Tokens.MAP_SPILL_OVER) {
+            if (this.map.size() > this.mapSpillOver) {
                 this.dischargeMap(context);
             }
 

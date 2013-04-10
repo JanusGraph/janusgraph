@@ -51,12 +51,14 @@ public class ValueGroupCountMapReduce {
         private boolean isVertex;
         // making use of in-map aggregation/combiner
         private CounterMap<Object> map;
+        private int mapSpillOver;
 
         private SafeMapperOutputs outputs;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.map = new CounterMap<Object>();
+            this.mapSpillOver = context.getConfiguration().getInt(Tokens.FAUNUS_ENGINE_MAP_SPILL_OVER, Tokens.DEFAULT_MAP_SPILL_OVER);
             this.property = context.getConfiguration().get(PROPERTY);
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
             this.handler = new WritableHandler(context.getConfiguration().getClass(TYPE, Text.class, WritableComparable.class));
@@ -83,7 +85,7 @@ public class ValueGroupCountMapReduce {
             }
 
             // protected against memory explosion
-            if (this.map.size() > Tokens.MAP_SPILL_OVER) {
+            if (this.map.size() > this.mapSpillOver) {
                 this.dischargeMap(context);
             }
 

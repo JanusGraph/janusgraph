@@ -52,5 +52,7 @@ public class Tokens {
 
     public static final String BZ2 = "bz2";
 
-    public static int MAP_SPILL_OVER = 500;
+    public static int DEFAULT_MAP_SPILL_OVER = 500;
+    public static final String FAUNUS_ENGINE_MAP_SPILL_OVER = "faunus.engine.map-spill-over";
+
 }
