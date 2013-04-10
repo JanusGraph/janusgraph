@@ -13,6 +13,7 @@ import java.io.IOException;
  */
 public class GraphSONOutputFormat extends FaunusFileOutputFormat {
 
+    @Override
     public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
         return new GraphSONRecordWriter(super.getDataOuputStream(job));
     }

@@ -1,7 +1,6 @@
 package com.thinkaurelius.faunus.formats.sequence.faunus01;
 
 import com.thinkaurelius.faunus.FaunusVertex;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.serializer.Deserializer;
@@ -32,16 +31,7 @@ public class FaunusSequenceFileRecordReader extends RecordReader<NullWritable, F
             final Field inField = SequenceFileRecordReader.class.getDeclaredField("in");
             inField.setAccessible(true);
             final SequenceFile.Reader reader = (SequenceFile.Reader) inField.get(this.recordReader);
-            prepareSerializationReader(reader, context.getConfiguration());
-        } catch (Exception e) {
-            throw new InterruptedException(e.getMessage());
-        }
-
-    }
-
-    protected static void prepareSerializationReader(final SequenceFile.Reader reader, final Configuration configuration) throws InterruptedException {
-        try {
-            SerializationFactory serializationFactory = new SerializationFactory(configuration);
+            SerializationFactory serializationFactory = new SerializationFactory(context.getConfiguration());
             final Field valClassNameField = SequenceFile.Reader.class.getDeclaredField("valClassName");
             final Field valClassField = SequenceFile.Reader.class.getDeclaredField("valClass");
             final Field valDerserializerField = SequenceFile.Reader.class.getDeclaredField("valDeserializer");
@@ -56,10 +46,10 @@ public class FaunusSequenceFileRecordReader extends RecordReader<NullWritable, F
             valClassField.set(reader, FaunusVertex01.class);
             valDerserializerField.set(reader, serializationFactory.getDeserializer(FaunusVertex01.class));
             ((Deserializer) valDerserializerField.get(reader)).open((DataInputStream) valInField.get(reader));
-
         } catch (Exception e) {
             throw new InterruptedException(e.getMessage());
         }
+
     }
 
     @Override

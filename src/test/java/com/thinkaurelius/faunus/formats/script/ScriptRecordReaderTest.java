@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
@@ -14,14 +15,15 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
  */
 public class ScriptRecordReaderTest extends BaseTest {
 
-    public void testConversionWithReader() throws Exception {
+    public void testRecordReader() throws Exception {
         final Configuration conf = new Configuration();
-        conf.setStrings(ScriptRecordReader.INPUT_SCRIPT_FILE, ScriptRecordReaderTest.class.getResource("InputIds.groovy").getFile());
+        conf.setStrings(ScriptInputFormat.INPUT_SCRIPT_FILE, ScriptRecordReaderTest.class.getResource("InputIds.groovy").getFile());
         ScriptRecordReader reader = new ScriptRecordReader(new TaskAttemptContext(conf, new TaskAttemptID()));
         reader.initialize(new FileSplit(new Path(ScriptRecordReaderTest.class.getResource("graph-of-the-gods.id").toURI()), 0, Long.MAX_VALUE, new String[]{}),
                 new TaskAttemptContext(conf, new TaskAttemptID()));
         int counter = 0;
         while (reader.nextKeyValue()) {
+            assertEquals(reader.getCurrentKey(), NullWritable.get());
             FaunusVertex vertex = reader.getCurrentValue();
             long id = vertex.getIdAsLong();
             assertEquals(id, counter++);

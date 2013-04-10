@@ -23,7 +23,6 @@ public class ScriptRecordWriter extends RecordWriter<NullWritable, FaunusVertex>
     protected final DataOutputStream out;
     private final ScriptEngine engine = new FaunusGremlinScriptEngine();
 
-    private static final String OUTPUT_SCRIPT_FILE = "faunus.output.script.file";
     private static final String WRITE_CALL = "write(vertex)";
     private static final String VERTEX = "vertex";
     // TODO: make it work with the DataOutputStream passed into the write() method
@@ -46,7 +45,7 @@ public class ScriptRecordWriter extends RecordWriter<NullWritable, FaunusVertex>
         final FileSystem fs = FileSystem.get(configuration);
         try {
             // this.engine.put(OUT, this.out);
-            this.engine.eval(new InputStreamReader(fs.open(new Path(configuration.get(OUTPUT_SCRIPT_FILE)))));
+            this.engine.eval(new InputStreamReader(fs.open(new Path(configuration.get(ScriptOutputFormat.OUTPUT_SCRIPT_FILE)))));
         } catch (Exception e) {
             throw new IOException(e.getMessage());
         }

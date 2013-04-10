@@ -15,10 +15,12 @@ public class NoOpRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
     public NoOpRecordWriter() {
     }
 
-    public final void write(final NullWritable nullKey, final FaunusVertex vertex) throws IOException {
+    @Override
+    public final void write(final NullWritable key, final FaunusVertex vertex) throws IOException {
 
     }
 
+    @Override
     public final synchronized void close(final TaskAttemptContext context) throws IOException {
     }
 }

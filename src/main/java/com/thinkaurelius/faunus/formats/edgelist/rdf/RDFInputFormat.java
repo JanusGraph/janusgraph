@@ -16,6 +16,8 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
+import java.io.IOException;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -31,8 +33,8 @@ public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement>
     public static final String NAME = "name";
 
     @Override
-    public RecordReader<NullWritable, FaunusElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) {
-        return new RDFRecordReader();
+    public RecordReader<NullWritable, FaunusElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
+        return new RDFRecordReader(context.getConfiguration());
     }
 
     @Override

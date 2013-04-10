@@ -20,7 +20,6 @@ import java.io.InputStreamReader;
  */
 public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
-    public static final String INPUT_SCRIPT_FILE = "faunus.input.script.file";
     private static final String READ_CALL = "read(vertex,line)";
     private static final String VERTEX = "vertex";
     private static final String LINE = "line";
@@ -38,7 +37,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
 
         final FileSystem fs = FileSystem.get(context.getConfiguration());
         try {
-            this.engine.eval(new InputStreamReader(fs.open(new Path(context.getConfiguration().get(INPUT_SCRIPT_FILE)))));
+            this.engine.eval(new InputStreamReader(fs.open(new Path(context.getConfiguration().get(ScriptInputFormat.INPUT_SCRIPT_FILE)))));
         } catch (Exception e) {
             throw new IOException(e.getMessage());
         }

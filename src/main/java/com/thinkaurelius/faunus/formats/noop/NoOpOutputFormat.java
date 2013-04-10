@@ -15,6 +15,7 @@ import java.io.IOException;
  */
 public class NoOpOutputFormat extends FileOutputFormat<NullWritable, FaunusVertex> {
 
+    @Override
     public final RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
         return new NoOpRecordWriter();
     }

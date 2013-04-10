@@ -13,6 +13,7 @@ import java.io.IOException;
  */
 public class EdgeListOutputFormat extends FaunusFileOutputFormat {
 
+    @Override
     public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
         return new EdgeListRecordWriter(super.getDataOuputStream(job));
     }

@@ -13,6 +13,9 @@ import java.io.IOException;
  */
 public class ScriptOutputFormat extends FaunusFileOutputFormat {
 
+    public static final String OUTPUT_SCRIPT_FILE = "faunus.output.script.file";
+
+    @Override
     public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
         return new ScriptRecordWriter(super.getDataOuputStream(job), job.getConfiguration());
     }

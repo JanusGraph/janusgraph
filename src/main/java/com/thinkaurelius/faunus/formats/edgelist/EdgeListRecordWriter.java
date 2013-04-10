@@ -34,7 +34,8 @@ public class EdgeListRecordWriter extends RecordWriter<NullWritable, FaunusVerte
         this.out = out;
     }
 
-    public void write(final NullWritable nullKey, final FaunusVertex vertex) throws IOException {
+    @Override
+    public void write(final NullWritable key, final FaunusVertex vertex) throws IOException {
         if (null != vertex) {
             final byte[] id = vertex.getId().toString().getBytes(UTF8);
             for (final Edge edge : vertex.getEdges(Direction.OUT)) {
@@ -48,6 +49,7 @@ public class EdgeListRecordWriter extends RecordWriter<NullWritable, FaunusVerte
         }
     }
 
+    @Override
     public synchronized void close(TaskAttemptContext context) throws IOException {
         out.close();
     }
