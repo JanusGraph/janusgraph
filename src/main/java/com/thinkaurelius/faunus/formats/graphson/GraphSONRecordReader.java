@@ -23,6 +23,7 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
     public GraphSONRecordReader() {
         this.lineRecordReader = new LineRecordReader();
     }
+
     @Override
     public void initialize(final InputSplit genericSplit, final TaskAttemptContext context) throws IOException {
         this.lineRecordReader.initialize(genericSplit, context);

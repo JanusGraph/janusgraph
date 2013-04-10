@@ -19,10 +19,13 @@ h3. Version 0.3.0 (NOT OFFICIALLY RELEASED YET)
 * Bumped to support Titan 0.3.0
 * Bumped to support Hadoop 1.1.2
 * Moved @IdentityMap@ to base directory as changed in Pipes 2.3.0
-* Refactored the means by which test cases are written
+* Refactored the means by which MapReduce test cases are written
 * @FaunusVertex@ property value serialization support using Kryo 2.2.1
 * @FaunusVertex01@ provides history deserialization support for Faunus 0.1.z -> Faunus 0.3.z conversion
 * Moved @util.MicroElement@ classes into respective @FaunusElement@ inner classes
+* Added numerous test cases for file-based @RecordReader@ formats
+* Added @ScriptInputFormat@ to support the arbitrary reading of an HDFS file lines into a @FaunusVertex@
+* Added @ScriptOutputFormat@ to support the arbitrary writing of an HDFS file line from a @FaunusVertex@
 
 ==<hr/>==
 

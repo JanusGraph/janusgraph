@@ -31,6 +31,8 @@ public class Imports {
         imports.add("com.thinkaurelius.faunus.formats.graphson.*");
         imports.add("com.thinkaurelius.faunus.formats.noop.*");
         imports.add("com.thinkaurelius.faunus.formats.rexster.*");
+        imports.add("com.thinkaurelius.faunus.formats.script.*");
+        imports.add("com.thinkaurelius.faunus.formats.sequence.faunus01.*");
         imports.add("com.thinkaurelius.faunus.formats.titan.*");
         imports.add("com.thinkaurelius.faunus.formats.titan.hbase.*");
         imports.add("com.thinkaurelius.faunus.formats.titan.cassandra.*");
@@ -41,10 +43,9 @@ public class Imports {
         imports.add("com.thinkaurelius.faunus.Tokens.F");
 
         // titan
-        imports.add("com.thinkaurelius.titan.core.*");
-        imports.add("org.apache.commons.configuration.BaseConfiguration");
+        imports.addAll(com.thinkaurelius.titan.tinkerpop.gremlin.Imports.getImports());
 
-        // tinkerpop
+        // tinkerpop (most likely inherited from Titan, but just to be safe)
         imports.addAll(com.tinkerpop.gremlin.Imports.getImports());
 
         evaluates.add("hdfs = FileSystem.get(new Configuration())");

@@ -40,6 +40,7 @@ public class GraphSONRecordWriter extends RecordWriter<NullWritable, FaunusVerte
             this.out.write(NEWLINE);
         }
     }
+
     @Override
     public synchronized void close(TaskAttemptContext context) throws IOException {
         this.out.close();
