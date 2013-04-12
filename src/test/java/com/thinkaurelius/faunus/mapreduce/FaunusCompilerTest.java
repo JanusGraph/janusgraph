@@ -20,10 +20,14 @@ public class FaunusCompilerTest extends TestCase {
         FaunusGraph graph = new FaunusGraph();
         graph.getConfiguration().setInt("a_property", 2);
         FaunusCompiler compiler = new FaunusCompiler(graph);
+        assertEquals(compiler.getConf().getInt("a_property", -1), 2);
+        assertEquals(compiler.getConf().getInt("b_property", -1), -1);
         compiler.addMap(IdentityMap.Map.class, NullWritable.class, FaunusVertex.class, new Configuration());
         compiler.completeSequence();
         assertEquals(compiler.jobs.get(0).getConfiguration().getInt("a_property", -1), 2);
         assertEquals(compiler.jobs.get(0).getConfiguration().getInt("b_property", -1), -1);
+        assertEquals(compiler.getConf().getInt("a_property", -1), 2);
+        assertEquals(compiler.getConf().getInt("b_property", -1), -1);
     }
 
     public void testJobListSize() {
