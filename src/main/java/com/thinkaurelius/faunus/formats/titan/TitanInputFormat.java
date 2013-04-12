@@ -14,5 +14,10 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusV
     public static final String FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT = "faunus.graph.input.titan.storage.port";
     public static final String FAUNUS_GRAPH_INPUT_TITAN = "faunus.graph.input.titan";
 
+    public static final String FAUNUS_GRAPH_INPUT_TITAN_COMPONENTS = "faunus.graph.input.titan.load-vertex-components";
+
+    public static final String OUT_EDGES = "outEdges";
+    public static final String IN_EDGES = "inEdges";
+    public static final String PROPERTIES = "properties";
 
 }

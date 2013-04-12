@@ -9,6 +9,9 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
+ * Converts a Faunus/Hadoop configuration file to a Titan configuration file.
+ * For all Titan specific properties, the conversion chomps the Faunus prefix and provides to Titan's graph factory.
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class GraphFactory {
@@ -21,9 +24,10 @@ public class GraphFactory {
         final BaseConfiguration titanconfig = new BaseConfiguration();
         final Iterator<Map.Entry<String, String>> itty = config.iterator();
         while (itty.hasNext()) {
-            Map.Entry<String, String> entry = itty.next();
-            String key = entry.getKey();
-            String value = entry.getValue();
+            final Map.Entry<String, String> entry = itty.next();
+            final String key = entry.getKey();
+            final String value = entry.getValue();
+            titanconfig.setProperty(key, value);
             if (key.startsWith(prefix)) {
                 titanconfig.setProperty(key.substring(prefix.length() + 1), value);
             }

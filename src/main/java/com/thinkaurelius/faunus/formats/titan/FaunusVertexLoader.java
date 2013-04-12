@@ -15,7 +15,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * Creates a FaunusVertex given a TitanVertex reference.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Marko A. Rodriguez (marko@markorodriguez.com)
  */
 
 public class FaunusVertexLoader {
@@ -32,12 +35,12 @@ public class FaunusVertexLoader {
 
     public FaunusVertexLoader(final long id) {
         Preconditions.checkArgument(id > 0);
-        vertex = new FaunusVertex(id);
+        this.vertex = new FaunusVertex(id);
     }
 
     public FaunusVertex getVertex() {
-        if (filterSystemTypes && isSystemType) return null;
-        else return vertex;
+        if (this.filterSystemTypes && this.isSystemType) return null;
+        else return this.vertex;
     }
 
     public RelationFactory getFactory() {
@@ -48,7 +51,7 @@ public class FaunusVertexLoader {
 
         private final Map<String, Object> properties = new HashMap<String, Object>();
 
-        private Direction dir;
+        private Direction direction;
         private TitanType type;
         private long relationID;
         private long otherVertexID;
@@ -61,62 +64,65 @@ public class FaunusVertexLoader {
         }
 
         @Override
-        public void setDirection(Direction dir) {
-            this.dir = dir;
+        public void setDirection(final Direction direction) {
+            this.direction = direction;
         }
 
         @Override
-        public void setType(TitanType type) {
+        public void setType(final TitanType type) {
             if (type == SystemKey.TypeClass) isSystemType = true;
             this.type = type;
         }
 
         @Override
-        public void setRelationID(long relationID) {
+        public void setRelationID(final long relationID) {
             this.relationID = relationID;
         }
 
         @Override
-        public void setOtherVertexID(long vertexId) {
+        public void setOtherVertexID(final long vertexId) {
             this.otherVertexID = vertexId;
         }
 
         @Override
-        public void setValue(Object value) {
+        public void setValue(final Object value) {
             this.value = value;
         }
 
         @Override
-        public void addProperty(TitanType type, Object value) {
+        public void addProperty(final TitanType type, final Object value) {
             properties.put(type.getName(), value);
         }
 
-        public void build() {
-            if (filterSystemTypes && type instanceof SystemType) return;
+        public final boolean isSystemType() {
+            return this.type instanceof SystemType;
+        }
 
-            if (type.isPropertyKey()) {
+        public void build(final boolean loadProperties, final boolean loadInEdges, final boolean loadOutEdges) {
+            if (filterSystemTypes && this.isSystemType()) return;
+
+            if (loadProperties && this.type.isPropertyKey()) {
                 Preconditions.checkNotNull(value);
-                vertex.setProperty(type.getName(), value);
+                vertex.setProperty(this.type.getName(), this.value);
             } else {
-                Preconditions.checkArgument(type.isEdgeLabel());
+                Preconditions.checkArgument(this.type.isEdgeLabel());
                 FaunusEdge edge = null;
-                switch (dir) {
-                    case IN:
-                        edge = new FaunusEdge(relationID, otherVertexID, getVertexID(), type.getName());
-                        break;
-                    case OUT:
-                        edge = new FaunusEdge(relationID, getVertexID(), otherVertexID, type.getName());
-                        break;
-                    default:
-                        throw ExceptionFactory.bothIsNotSupported();
-                }
-                //Add properties
-                for (Map.Entry<String, Object> entry : properties.entrySet()) {
-                    if (entry.getValue() != null) {
-                        edge.setProperty(entry.getKey(), entry.getValue());
+                if (loadInEdges & this.direction.equals(Direction.IN))
+                    edge = new FaunusEdge(this.relationID, this.otherVertexID, getVertexID(), this.type.getName());
+                else if (loadOutEdges & this.direction.equals(Direction.OUT))
+                    edge = new FaunusEdge(this.relationID, getVertexID(), this.otherVertexID, this.type.getName());
+                else if (this.direction.equals(Direction.BOTH))
+                    throw ExceptionFactory.bothIsNotSupported();
+
+                if (null != edge) {
+                    // load edge properties
+                    for (final Map.Entry<String, Object> entry : this.properties.entrySet()) {
+                        if (entry.getValue() != null) {
+                            edge.setProperty(entry.getKey(), entry.getValue());
+                        }
                     }
+                    vertex.addEdge(this.direction, edge);
                 }
-                vertex.addEdge(dir, edge);
             }
         }
     }
