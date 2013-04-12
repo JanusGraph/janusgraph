@@ -65,7 +65,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public FaunusCompiler(final FaunusGraph graph) {
         this.graph = graph;
-        this.setConf(new Configuration());
+        this.setConf(this.graph.getConfiguration());
     }
 
     private String toStringOfJob(final Class sequenceClass) {
@@ -188,7 +188,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
             this.jobs.add(job);
 
-            this.setConf(new Configuration());
+            this.setConf(this.graph.getConfiguration());
             this.mapSequenceClasses.clear();
             this.combinerClass = null;
             this.reduceClass = null;
