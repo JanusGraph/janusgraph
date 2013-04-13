@@ -204,7 +204,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         return Iterators.filter(rows.iterator(), new Predicate<Row>() {
             @Override
             public boolean apply(@Nullable Row row) {
-                return (row == null) ? false : !(row.cf == null || row.cf.isMarkedForDelete() || row.cf.getColumnCount() == 0);
+                return !(row == null || row.cf == null || row.cf.isMarkedForDelete() || row.cf.hasOnlyTombstones());
             }
         });
     }
