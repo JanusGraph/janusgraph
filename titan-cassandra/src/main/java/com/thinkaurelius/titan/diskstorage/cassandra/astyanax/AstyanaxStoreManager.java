@@ -161,7 +161,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
         this.clusterContext = createCluster(getContextBuilder(config, maxClusterConnsPerHost, "Cluster"));
 
-        ensureKeyspaceExists(clusterContext.getEntity());
+        ensureKeyspaceExists(clusterContext.getClient());
 
         this.keyspaceContext = getContextBuilder(config, maxConnsPerHost, "Keyspace").buildKeyspace(ThriftFamilyFactory.getInstance());
         this.keyspaceContext.start();
@@ -171,7 +171,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     public Partitioner getPartitioner() throws StorageException {
-        Cluster cl = clusterContext.getEntity();
+        Cluster cl = clusterContext.getClient();
         try {
             return Partitioner.getPartitioner(cl.describePartitioner());
         } catch (ConnectionException e) {
@@ -197,7 +197,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         if (openStores.containsKey(name)) return openStores.get(name);
         else {
             ensureColumnFamilyExists(name);
-            AstyanaxOrderedKeyColumnValueStore store = new AstyanaxOrderedKeyColumnValueStore(name, keyspaceContext.getEntity(), this, retryPolicy);
+            AstyanaxOrderedKeyColumnValueStore store = new AstyanaxOrderedKeyColumnValueStore(name, keyspaceContext.getClient(), this, retryPolicy);
             openStores.put(name, store);
             return store;
         }
@@ -205,9 +205,9 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> batch, StoreTransaction txh) throws StorageException {
-        MutationBatch m = keyspaceContext.getEntity().prepareMutationBatch()
-                .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanaxConsistency())
-                .withRetryPolicy(retryPolicy.duplicate());
+        MutationBatch m = keyspaceContext.getClient().prepareMutationBatch()
+                                                     .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanaxConsistency())
+                                                     .withRetryPolicy(retryPolicy.duplicate());
 
         final long delTS = TimeUtility.getApproxNSSinceEpoch(false);
         final long addTS = TimeUtility.getApproxNSSinceEpoch(true);
@@ -215,6 +215,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         for (Map.Entry<String, Map<ByteBuffer, KCVMutation>> batchentry : batch.entrySet()) {
             String storeName = batchentry.getKey();
             Preconditions.checkArgument(openStores.containsKey(storeName), "Store cannot be found: " + storeName);
+
             ColumnFamily<ByteBuffer, ByteBuffer> columnFamily = openStores.get(storeName).getColumnFamily();
 
             Map<ByteBuffer, KCVMutation> mutations = batchentry.getValue();
@@ -222,23 +223,22 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 // The CLMs for additions and deletions are separated because
                 // Astyanax's operation timestamp cannot be set on a per-delete
                 // or per-addition basis.
-                ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, ent.getKey());
-                dels.setTimestamp(delTS);
-                ColumnListMutation<ByteBuffer> adds = m.withRow(columnFamily, ent.getKey());
-                adds.setTimestamp(addTS);
-
                 KCVMutation titanMutation = ent.getValue();
 
                 if (titanMutation.hasDeletions()) {
-                    for (ByteBuffer b : titanMutation.getDeletions()) {
+                    ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, ent.getKey().duplicate());
+                    dels.setTimestamp(delTS);
+
+                    for (ByteBuffer b : titanMutation.getDeletions())
                         dels.deleteColumn(b);
-                    }
                 }
 
                 if (titanMutation.hasAdditions()) {
-                    for (Entry e : titanMutation.getAdditions()) {
-                        adds.putColumn(e.getColumn(), e.getValue(), null);
-                    }
+                    ColumnListMutation<ByteBuffer> upds = m.withRow(columnFamily, ent.getKey().duplicate());
+                    upds.setTimestamp(addTS);
+
+                    for (Entry e : titanMutation.getAdditions())
+                        upds.putColumn(e.getColumn(), e.getValue());
                 }
             }
         }
@@ -253,7 +253,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     @Override
     public void clearStorage() throws StorageException {
         try {
-            Cluster cluster = clusterContext.getEntity();
+            Cluster cluster = clusterContext.getClient();
 
             Keyspace ks = cluster.getKeyspace(keySpaceName);
 
@@ -278,7 +278,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     private void ensureColumnFamilyExists(String name, String comparator) throws StorageException {
-        Cluster cl = clusterContext.getEntity();
+        Cluster cl = clusterContext.getClient();
         try {
             KeyspaceDefinition ksDef = cl.describeKeyspace(keySpaceName);
             boolean found = false;
@@ -357,7 +357,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                         .setConnectionPoolType(poolType)
                                         .setDiscoveryType(discType))
                         .withConnectionPoolConfiguration(cpool)
-                        .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
+                        .withConnectionPoolMonitor(new CountingConnectionPoolMonitor())
+                        .withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setTargetCassandraVersion("1.2"));
 
         return builder;
     }
@@ -448,7 +449,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             ensureColumnFamilyExists(SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
 
             OperationResult<Column<String>> result =
-                    keyspaceContext.getEntity().prepareQuery(PROPERTIES_CF)
+                    keyspaceContext.getClient().prepareQuery(PROPERTIES_CF)
                                                .setConsistencyLevel(ConsistencyLevel.CL_QUORUM)
                                                .withRetryPolicy(retryPolicy.duplicate())
                                                .getKey(SYSTEM_PROPERTIES_KEY).getColumn(key)
@@ -467,7 +468,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         try {
             ensureColumnFamilyExists(SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
 
-            Keyspace ks = keyspaceContext.getEntity();
+            Keyspace ks = keyspaceContext.getClient();
 
             OperationResult<Void> result = ks.prepareColumnMutation(PROPERTIES_CF, SYSTEM_PROPERTIES_KEY, key)
                                                     .setConsistencyLevel(ConsistencyLevel.CL_QUORUM)
