@@ -26,7 +26,9 @@ public class IdentityMap {
     }
 
     public static Configuration createConfiguration() {
-        return new Configuration();
+        Configuration configuration = new Configuration();
+        configuration.clear();
+        return configuration;
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {

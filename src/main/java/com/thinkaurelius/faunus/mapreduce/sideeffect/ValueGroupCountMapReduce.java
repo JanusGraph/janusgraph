@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
 import com.thinkaurelius.faunus.mapreduce.util.ElementPicker;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.thinkaurelius.faunus.mapreduce.util.SafeMapperOutputs;
 import com.thinkaurelius.faunus.mapreduce.util.SafeReducerOutputs;
 import com.thinkaurelius.faunus.mapreduce.util.WritableHandler;
@@ -37,7 +38,7 @@ public class ValueGroupCountMapReduce {
     }
 
     public static Configuration createConfiguration(final Class<? extends Element> klass, final String key, final Class<? extends Writable> type) {
-        final Configuration configuration = new Configuration();
+        final Configuration configuration = new EmptyConfiguration();
         configuration.setClass(CLASS, klass, Element.class);
         configuration.set(PROPERTY, key);
         configuration.setClass(TYPE, type, Writable.class);

@@ -3,6 +3,8 @@ package com.thinkaurelius.faunus.mapreduce;
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusPipeline;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
+import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraOutputFormat;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
@@ -80,5 +82,36 @@ public class FaunusCompilerTest extends TestCase {
         assertEquals(compiler.jobs.get(1).getCombinerClass(), null);
         assertEquals(compiler.jobs.get(1).getReducerClass(), Reducer.class);
 
+    }
+
+    public void testConfigurationPersistence() throws Exception {
+        Configuration conf = new Configuration();
+        conf.setInt("mapred.reduce.tasks", 2);
+        conf.setBoolean(TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, false);
+        FaunusGraph graph = new FaunusGraph(conf);
+        FaunusPipeline pipeline = new FaunusPipeline(graph);
+        FaunusCompiler compiler = pipeline.getCompiler();
+        TitanOutputFormat outputFormat = new TitanCassandraOutputFormat();
+
+        assertEquals(graph.getConfiguration().getInt("mapred.reduce.tasks", -1), 2);
+        assertEquals(compiler.getConf().getInt("mapred.reduce.tasks", -1), 2);
+        assertFalse(graph.getConfiguration().getBoolean(TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
+        assertFalse(compiler.getConf().getBoolean(TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
+        outputFormat.addMapReduceJobs(compiler);
+        assertEquals(compiler.jobs.size(), 1);
+        assertEquals(compiler.jobs.get(0).getConfiguration().getInt("mapred.reduce.tasks", -1), 2);
+        assertFalse(compiler.jobs.get(0).getConfiguration().getBoolean(TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
+        assertEquals(graph.getConfiguration().getInt("mapred.reduce.tasks", -1), 2);
+        assertEquals(compiler.getConf().getInt("mapred.reduce.tasks", -1), 2);
+
+        compiler.addMap(IdentityMap.Map.class, NullWritable.class, FaunusVertex.class, IdentityMap.createConfiguration());
+        compiler.completeSequence();
+        assertEquals(compiler.jobs.size(), 2);
+        assertEquals(compiler.jobs.get(0).getConfiguration().getInt("mapred.reduce.tasks", -1), 2);
+        assertFalse(compiler.jobs.get(0).getConfiguration().getBoolean(TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
+        assertEquals(compiler.jobs.get(1).getConfiguration().getInt("mapred.reduce.tasks", -1), 0);
+        assertFalse(compiler.jobs.get(1).getConfiguration().getBoolean(TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
+        assertEquals(graph.getConfiguration().getInt("mapred.reduce.tasks", -1), 2);
+        assertEquals(compiler.getConf().getInt("mapred.reduce.tasks", -1), 2);
     }
 }

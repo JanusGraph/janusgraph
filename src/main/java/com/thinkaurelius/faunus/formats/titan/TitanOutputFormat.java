@@ -39,5 +39,4 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
                 FaunusVertex.class,
                 BlueprintsGraphOutputMapReduce.createConfiguration());
     }
-
 }

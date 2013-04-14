@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.TransactionalGraph;
@@ -65,7 +66,7 @@ public class BlueprintsGraphOutputMapReduce {
     }
 
     public static Configuration createConfiguration() {
-        final Configuration configuration = new Configuration();
+        final Configuration configuration = new EmptyConfiguration();
         configuration.setBoolean("mapred.map.tasks.speculative.execution", false);
         configuration.setBoolean("mapred.reduce.tasks.speculative.execution", false);
         return configuration;
