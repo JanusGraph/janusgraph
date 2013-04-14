@@ -46,13 +46,7 @@ public class FaunusGraphSONUtility {
 
     private static final FaunusElementFactory elementFactory = new FaunusElementFactory();
 
-    private static final Map<Set<String>, com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility> graphsonVertexCache
-            = new HashMap<Set<String>, com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility>();
-    private static final Map<Set<String>, com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility> graphsonEdgeCache
-            = new HashMap<Set<String>, com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility>();
-
-    private static final com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility graphson
-            = new com.tinkerpop.blueprints.util.io.graphson.GraphSONUtility(GraphSONMode.COMPACT, elementFactory,
+    private static final GraphSONUtility graphson = new GraphSONUtility(GraphSONMode.COMPACT, elementFactory,
             ElementPropertyConfig.ExcludeProperties(VERTEX_IGNORE, EDGE_IGNORE));
 
     public static List<FaunusVertex> fromJSON(final InputStream in) throws IOException {
