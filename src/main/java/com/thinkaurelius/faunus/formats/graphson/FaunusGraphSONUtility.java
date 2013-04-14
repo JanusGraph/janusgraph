@@ -34,7 +34,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-public class GraphSONUtility {
+public class FaunusGraphSONUtility {
 
     private static final String _OUT_E = "_outE";
     private static final String _IN_E = "_inE";
@@ -59,7 +59,7 @@ public class GraphSONUtility {
         final BufferedReader bfs = new BufferedReader(new InputStreamReader(in));
         String line = "";
         while ((line = bfs.readLine()) != null) {
-            vertices.add(GraphSONUtility.fromJSON(line));
+            vertices.add(FaunusGraphSONUtility.fromJSON(line));
         }
         bfs.close();
         return vertices;

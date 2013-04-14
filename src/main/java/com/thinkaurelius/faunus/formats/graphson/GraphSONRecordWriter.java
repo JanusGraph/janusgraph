@@ -36,7 +36,7 @@ public class GraphSONRecordWriter extends RecordWriter<NullWritable, FaunusVerte
     @Override
     public void write(final NullWritable key, final FaunusVertex vertex) throws IOException {
         if (null != vertex) {
-            this.out.write(GraphSONUtility.toJSON(vertex).toString().getBytes(UTF8));
+            this.out.write(FaunusGraphSONUtility.toJSON(vertex).toString().getBytes(UTF8));
             this.out.write(NEWLINE);
         }
     }

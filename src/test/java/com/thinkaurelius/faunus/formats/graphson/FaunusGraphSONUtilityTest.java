@@ -16,16 +16,16 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class GraphSONUtilityTest extends TestCase {
+public class FaunusGraphSONUtilityTest extends TestCase {
 
     public void testParser1() throws IOException {
-        FaunusVertex vertex = GraphSONUtility.fromJSON("{\"_id\":1}");
+        FaunusVertex vertex = FaunusGraphSONUtility.fromJSON("{\"_id\":1}");
         assertEquals(vertex.getId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
     }
 
     public void testParser2() throws IOException {
-        FaunusVertex vertex = GraphSONUtility.fromJSON("{\"_id\":1, \"name\":\"marko\",\"age\":32}");
+        FaunusVertex vertex = FaunusGraphSONUtility.fromJSON("{\"_id\":1, \"name\":\"marko\",\"age\":32}");
         assertEquals(vertex.getId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
         assertFalse(vertex.getEdges(IN).iterator().hasNext());
@@ -35,7 +35,7 @@ public class GraphSONUtilityTest extends TestCase {
     }
 
     public void testParser3() throws IOException {
-        FaunusVertex vertex = GraphSONUtility.fromJSON("{\"_id\":1, \"name\":\"marko\",\"age\":32, \"_outE\":[{\"_inV\":2, \"_label\":\"knows\"}, {\"_inV\":3, \"_label\":\"created\"}]}");
+        FaunusVertex vertex = FaunusGraphSONUtility.fromJSON("{\"_id\":1, \"name\":\"marko\",\"age\":32, \"_outE\":[{\"_inV\":2, \"_label\":\"knows\"}, {\"_inV\":3, \"_label\":\"created\"}]}");
         assertEquals(vertex.getId(), 1l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
         assertFalse(vertex.getEdges(IN).iterator().hasNext());
@@ -50,7 +50,7 @@ public class GraphSONUtilityTest extends TestCase {
     }
 
     public void testParser4() throws IOException {
-        FaunusVertex vertex = GraphSONUtility.fromJSON("{\"_id\":4, \"name\":\"josh\", \"age\":32, \"_outE\":[{\"_inV\":3, \"_label\":\"created\", \"weight\":0.4}, {\"_inV\":5, \"_label\":\"created\", \"weight\":1.0}], \"_inE\":[{\"_outV\":1, \"_label\":\"knows\", \"weight\":1.0}]}");
+        FaunusVertex vertex = FaunusGraphSONUtility.fromJSON("{\"_id\":4, \"name\":\"josh\", \"age\":32, \"_outE\":[{\"_inV\":3, \"_label\":\"created\", \"weight\":0.4}, {\"_inV\":5, \"_label\":\"created\", \"weight\":1.0}], \"_inE\":[{\"_outV\":1, \"_label\":\"knows\", \"weight\":1.0}]}");
         assertEquals(vertex.getId(), 4l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
         assertTrue(vertex.getEdges(IN).iterator().hasNext());
@@ -81,8 +81,8 @@ public class GraphSONUtilityTest extends TestCase {
         marko.addEdge(OUT, new FaunusEdge(marko.getIdAsLong(), stephen.getIdAsLong(), "knows")).setProperty("weight", 2);
         marko.addEdge(IN, new FaunusEdge(vadas.getIdAsLong(), marko.getIdAsLong(), "knows")).setProperty("weight", 1);
 
-        JSONObject m = GraphSONUtility.toJSON(marko);
-        JSONObject s = GraphSONUtility.toJSON(stephen);
+        JSONObject m = FaunusGraphSONUtility.toJSON(marko);
+        JSONObject s = FaunusGraphSONUtility.toJSON(stephen);
 
         assertEquals(m.getString("name"), "marko");
         assertEquals(m.getLong("_id"), 1l);

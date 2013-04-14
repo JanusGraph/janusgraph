@@ -1,6 +1,6 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.formats.graphson.GraphSONUtility;
+import com.thinkaurelius.faunus.formats.graphson.FaunusGraphSONUtility;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.tinkerpop.blueprints.Direction;
@@ -46,9 +46,9 @@ public abstract class BaseTest extends TestCase {
     public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws Exception {
         final List<FaunusVertex> vertices;
         if (ExampleGraph.TINKERGRAPH.equals(example))
-            vertices = new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
+            vertices = new FaunusGraphSONUtility().fromJSON(FaunusGraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
         else if (ExampleGraph.GRAPH_OF_THE_GODS.equals(example))
-            vertices = new GraphSONUtility().fromJSON(GraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
+            vertices = new FaunusGraphSONUtility().fromJSON(FaunusGraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
         else {
             vertices = new ArrayList<FaunusVertex>();
             FaunusVertex saturn = new FaunusVertex(4l);

@@ -35,7 +35,7 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
         if (!this.lineRecordReader.nextKeyValue())
             return false;
 
-        this.value = GraphSONUtility.fromJSON(this.lineRecordReader.getCurrentValue().toString());
+        this.value = FaunusGraphSONUtility.fromJSON(this.lineRecordReader.getCurrentValue().toString());
         this.value.enablePath(this.pathEnabled);
         return true;
     }
