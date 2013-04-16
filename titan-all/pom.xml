@@ -23,6 +23,11 @@
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-persistit</artifactId>
+            <version>${titan.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-hbase</artifactId>
             <version>${titan.version}</version>
         </dependency>
