@@ -68,7 +68,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     private Transaction tx;
     private SessionId sessionId;
 
-    private Map<String, Exchange> exchangeCache = new HashMap<String, Exchange>();
+//    private Map<String, Exchange> exchangeCache = new HashMap<String, Exchange>();
 
     public PersistitTransaction(Persistit p, ConsistencyLevel level) throws StorageException {
         super(level);
@@ -144,14 +144,16 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     }
 
     public Exchange getExchange(String treeName, Boolean create) throws StorageException {
-        Exchange exchange = exchangeCache.get(treeName);
-        if (exchange != null) {
-            return exchange;
-        }
+        Exchange exchange;
+        //@todo: make a thread id / tree name based exchange cache
+//        exchange = exchangeCache.get(treeName);
+//        if (exchange != null) {
+//            return exchange;
+//        }
         try {
             assign();
             exchange = db.getExchange(VOLUME_NAME, treeName, create);
-            exchangeCache.put(treeName, exchange);
+//            exchangeCache.put(treeName, exchange);
             return exchange;
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex);
