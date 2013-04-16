@@ -39,7 +39,7 @@ public class LinkMapReduce {
         OUT_EDGES_CREATED
     }
 
-    public static Configuration createConfiguration(final Direction direction, final int step, final String label, final String mergeWeightKey) {
+    public static Configuration createConfiguration(final Direction direction, final String label, final int step, final String mergeWeightKey) {
         final Configuration configuration = new EmptyConfiguration();
         configuration.setInt(STEP, step);
         configuration.set(DIRECTION, direction.name());

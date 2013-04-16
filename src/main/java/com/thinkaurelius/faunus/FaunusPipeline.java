@@ -835,8 +835,8 @@ public class FaunusPipeline {
      * @param mergeWeightKey the property key to use for weight
      * @return the extended FaunusPipeline
      */
-    public FaunusPipeline linkIn(final String step, final String label, final String mergeWeightKey) {
-        return this.link(IN, step, label, mergeWeightKey);
+    public FaunusPipeline linkIn(final String label, final String step, final String mergeWeightKey) {
+        return this.link(IN, label, step, mergeWeightKey);
     }
 
     /**
@@ -846,8 +846,8 @@ public class FaunusPipeline {
      * @param label the label of the edge to project
      * @return the extended FaunusPipeline
      */
-    public FaunusPipeline linkIn(final String step, final String label) {
-        return this.link(IN, step, label, null);
+    public FaunusPipeline linkIn(final String label, final String step) {
+        return this.link(IN, label, step, null);
     }
 
     /**
@@ -860,8 +860,8 @@ public class FaunusPipeline {
      * @param mergeWeightKey the property key to use for weight
      * @return the extended FaunusPipeline
      */
-    public FaunusPipeline linkOut(final String step, final String label, final String mergeWeightKey) {
-        return link(OUT, step, label, mergeWeightKey);
+    public FaunusPipeline linkOut(final String label, final String step, final String mergeWeightKey) {
+        return link(OUT, label, step, mergeWeightKey);
     }
 
     /**
@@ -871,11 +871,11 @@ public class FaunusPipeline {
      * @param label the label of the edge to project
      * @return the extended FaunusPipeline
      */
-    public FaunusPipeline linkOut(final String step, final String label) {
-        return this.link(OUT, step, label, null);
+    public FaunusPipeline linkOut(final String label, final String step) {
+        return this.link(OUT, label, step, null);
     }
 
-    private FaunusPipeline link(final Direction direction, final String step, final String label, final String mergeWeightKey) {
+    private FaunusPipeline link(final Direction direction, final String label, final String step, final String mergeWeightKey) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
@@ -887,12 +887,12 @@ public class FaunusPipeline {
                 Holder.class,
                 NullWritable.class,
                 FaunusVertex.class,
-                LinkMapReduce.createConfiguration(direction, this.state.getStep(step), label, mergeWeightKey));
+                LinkMapReduce.createConfiguration(direction, label, this.state.getStep(step), mergeWeightKey));
 
         if (null != mergeWeightKey)
-            makeMapReduceString(LinkMapReduce.class, direction.name(), step, label, mergeWeightKey);
+            makeMapReduceString(LinkMapReduce.class, direction.name(), label, step, mergeWeightKey);
         else
-            makeMapReduceString(LinkMapReduce.class, direction.name(), step, label);
+            makeMapReduceString(LinkMapReduce.class, direction.name(), label, step);
         return this;
     }
 

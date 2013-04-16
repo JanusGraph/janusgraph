@@ -32,7 +32,7 @@ public class LinkMapReduceTest extends BaseTest {
 
     public void testKnowsCreatedTraversal() throws Exception {
 
-        Configuration config = LinkMapReduce.createConfiguration(Direction.IN, 0, "knowsCreated", null);
+        Configuration config = LinkMapReduce.createConfiguration(Direction.IN, "knowsCreated", 0, null);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
@@ -61,7 +61,7 @@ public class LinkMapReduceTest extends BaseTest {
 
     public void testCreated2Traversal() throws Exception {
 
-        Configuration config = LinkMapReduce.createConfiguration(Direction.OUT, 0, "created2", null);
+        Configuration config = LinkMapReduce.createConfiguration(Direction.OUT, "created2", 0, null);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
