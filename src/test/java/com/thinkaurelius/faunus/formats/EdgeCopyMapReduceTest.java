@@ -15,63 +15,63 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class EdgeInverterMapReduceTest extends BaseTest {
+public class EdgeCopyMapReduceTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new EdgeInverterMapReduce.Map());
-        mapReduceDriver.setCombiner(new EdgeInverterMapReduce.Combiner());
-        mapReduceDriver.setReducer(new EdgeInverterMapReduce.Reduce());
+        mapReduceDriver.setMapper(new EdgeCopyMapReduce.Map());
+        mapReduceDriver.setCombiner(new EdgeCopyMapReduce.Combiner());
+        mapReduceDriver.setReducer(new EdgeCopyMapReduce.Reduce());
     }
 
     public void testInversionWithTinkerGraphOutEdges() throws Exception {
-        mapReduceDriver.setConfiguration(EdgeInverterMapReduce.createConfiguration(Direction.OUT));
+        mapReduceDriver.setConfiguration(EdgeCopyMapReduce.createConfiguration(Direction.OUT));
         Map<Long, FaunusVertex> halfGraph = BaseTest.generateGraph(ExampleGraph.TINKERGRAPH);
         for (FaunusVertex vertex : halfGraph.values()) {
             vertex.removeEdges(Tokens.Action.DROP, Direction.IN);
         }
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.TINKERGRAPH);
-        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeInverterMapReduce.Counters.EDGES_INVERTED).getValue(),
-                mapReduceDriver.getCounters().findCounter(EdgeInverterMapReduce.Counters.EDGES_AGGREGATED).getValue());
+        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_INVERTED).getValue(),
+                mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_AGGREGATED).getValue());
     }
 
     public void testInversionWithTinkerGraphInEdges() throws Exception {
-        mapReduceDriver.setConfiguration(EdgeInverterMapReduce.createConfiguration(Direction.IN));
+        mapReduceDriver.setConfiguration(EdgeCopyMapReduce.createConfiguration(Direction.IN));
         Map<Long, FaunusVertex> halfGraph = BaseTest.generateGraph(ExampleGraph.TINKERGRAPH);
         for (FaunusVertex vertex : halfGraph.values()) {
             vertex.removeEdges(Tokens.Action.DROP, Direction.OUT);
         }
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.TINKERGRAPH);
-        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeInverterMapReduce.Counters.EDGES_INVERTED).getValue(),
-                mapReduceDriver.getCounters().findCounter(EdgeInverterMapReduce.Counters.EDGES_AGGREGATED).getValue());
+        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_INVERTED).getValue(),
+                mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_AGGREGATED).getValue());
     }
 
     public void testInversionWithGraphOfTheGodsOutEdges() throws Exception {
-        mapReduceDriver.setConfiguration(EdgeInverterMapReduce.createConfiguration(Direction.OUT));
+        mapReduceDriver.setConfiguration(EdgeCopyMapReduce.createConfiguration(Direction.OUT));
         Map<Long, FaunusVertex> halfGraph = BaseTest.generateGraph(ExampleGraph.GRAPH_OF_THE_GODS);
         for (FaunusVertex vertex : halfGraph.values()) {
             vertex.removeEdges(Tokens.Action.DROP, Direction.IN);
         }
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeInverterMapReduce.Counters.EDGES_INVERTED).getValue(),
-                mapReduceDriver.getCounters().findCounter(EdgeInverterMapReduce.Counters.EDGES_AGGREGATED).getValue());
+        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_INVERTED).getValue(),
+                mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_AGGREGATED).getValue());
     }
 
     public void testInversionWithGraphOfTheGodsInEdges() throws Exception {
-        mapReduceDriver.setConfiguration(EdgeInverterMapReduce.createConfiguration(Direction.IN));
+        mapReduceDriver.setConfiguration(EdgeCopyMapReduce.createConfiguration(Direction.IN));
         Map<Long, FaunusVertex> halfGraph = BaseTest.generateGraph(ExampleGraph.GRAPH_OF_THE_GODS);
         for (FaunusVertex vertex : halfGraph.values()) {
             vertex.removeEdges(Tokens.Action.DROP, Direction.OUT);
         }
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeInverterMapReduce.Counters.EDGES_INVERTED).getValue(),
-                mapReduceDriver.getCounters().findCounter(EdgeInverterMapReduce.Counters.EDGES_AGGREGATED).getValue());
+        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_INVERTED).getValue(),
+                mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_AGGREGATED).getValue());
     }
 
 }

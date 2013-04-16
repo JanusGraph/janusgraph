@@ -18,9 +18,9 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class EdgeInverterMapReduce {
+public class EdgeCopyMapReduce {
 
-    public static final String FAUNUS_GRAPH_INPUT_EDGE_INVERTER = "faunus.graph.input.edge-inverter.direction";
+    public static final String FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION = "faunus.graph.input.edge-copy.direction";
 
     public enum Counters {
         EDGES_INVERTED,
@@ -30,7 +30,7 @@ public class EdgeInverterMapReduce {
 
     public static Configuration createConfiguration(final Direction direction) {
         final Configuration configuration = new EmptyConfiguration();
-        configuration.setEnum(FAUNUS_GRAPH_INPUT_EDGE_INVERTER, direction);
+        configuration.setEnum(FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, direction);
         return configuration;
     }
 
@@ -43,7 +43,7 @@ public class EdgeInverterMapReduce {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.direction = context.getConfiguration().getEnum(FAUNUS_GRAPH_INPUT_EDGE_INVERTER, Direction.OUT);
+            this.direction = context.getConfiguration().getEnum(FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
         }
 
         @Override
@@ -72,7 +72,7 @@ public class EdgeInverterMapReduce {
 
         @Override
         public void setup(final Reducer<LongWritable, Holder<FaunusVertex>, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
-            this.direction = context.getConfiguration().getEnum(FAUNUS_GRAPH_INPUT_EDGE_INVERTER, Direction.OUT);
+            this.direction = context.getConfiguration().getEnum(FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
         }
 
         @Override
@@ -96,7 +96,7 @@ public class EdgeInverterMapReduce {
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
-            this.direction = context.getConfiguration().getEnum(FAUNUS_GRAPH_INPUT_EDGE_INVERTER, Direction.OUT);
+            this.direction = context.getConfiguration().getEnum(FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
         }
 
         @Override

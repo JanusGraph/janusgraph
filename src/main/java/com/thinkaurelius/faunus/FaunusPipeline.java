@@ -1,6 +1,6 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.faunus.formats.EdgeInverterMapReduce;
+import com.thinkaurelius.faunus.formats.EdgeCopyMapReduce;
 import com.thinkaurelius.faunus.formats.MapReduceFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.IdentityMap;
@@ -213,16 +213,16 @@ public class FaunusPipeline {
             }
         }
 
-        if (null != this.graph.getConfiguration().get(EdgeInverterMapReduce.FAUNUS_GRAPH_INPUT_EDGE_INVERTER)) {
-            this.compiler.addMapReduce(EdgeInverterMapReduce.Map.class,
-                    EdgeInverterMapReduce.Combiner.class,
-                    EdgeInverterMapReduce.Reduce.class,
+        if (null != this.graph.getConfiguration().get(EdgeCopyMapReduce.FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION)) {
+            this.compiler.addMapReduce(EdgeCopyMapReduce.Map.class,
+                    EdgeCopyMapReduce.Combiner.class,
+                    EdgeCopyMapReduce.Reduce.class,
                     null,
                     LongWritable.class,
                     Holder.class,
                     NullWritable.class,
                     FaunusVertex.class,
-                    EdgeInverterMapReduce.createConfiguration(this.graph.getConfiguration().getEnum(EdgeInverterMapReduce.FAUNUS_GRAPH_INPUT_EDGE_INVERTER, Direction.OUT)));
+                    EdgeCopyMapReduce.createConfiguration(this.graph.getConfiguration().getEnum(EdgeCopyMapReduce.FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT)));
         }
     }
 
