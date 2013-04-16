@@ -23,11 +23,11 @@ public class ScriptRecordWriter extends RecordWriter<NullWritable, FaunusVertex>
     protected final DataOutputStream out;
     private final ScriptEngine engine = new FaunusGremlinScriptEngine();
 
-    private static final String WRITE_CALL = "write(vertex)";
+    private static final String WRITE_CALL = "write(vertex,output)";
     private static final String VERTEX = "vertex";
     // TODO: make it work with the DataOutputStream passed into the write() method
     // TODO: if you can't do this, then make a null return be a skip
-    // private static final String OUT = "out";
+    private static final String OUTPUT = "output";
 
     private static final String UTF8 = "UTF-8";
     private static final byte[] NEWLINE;
@@ -44,7 +44,7 @@ public class ScriptRecordWriter extends RecordWriter<NullWritable, FaunusVertex>
         this.out = out;
         final FileSystem fs = FileSystem.get(configuration);
         try {
-            // this.engine.put(OUT, this.out);
+            this.engine.put(OUTPUT, this.out);
             this.engine.eval(new InputStreamReader(fs.open(new Path(configuration.get(ScriptOutputFormat.FAUNUS_GRAPH_OUTPUT_SCRIPT_FILE)))));
         } catch (Exception e) {
             throw new IOException(e.getMessage());
@@ -55,8 +55,7 @@ public class ScriptRecordWriter extends RecordWriter<NullWritable, FaunusVertex>
         if (null != vertex) {
             try {
                 this.engine.put(VERTEX, vertex);
-                this.out.write(((String) this.engine.eval(WRITE_CALL)).getBytes(UTF8));
-                this.out.write(NEWLINE);
+                this.engine.eval(WRITE_CALL);
             } catch (final ScriptException e) {
                 throw new IOException(e.getMessage());
             }
