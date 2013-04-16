@@ -6,7 +6,6 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.SubsetConfiguration;
 
 public class PersistitKeyValueTest extends KeyValueStoreTest {
 

@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.persistit;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
@@ -52,9 +51,6 @@ public class PersistitStoreManager implements KeyValueStoreManager {
     private Properties properties;
     private  File directory;
 
-    //@todo: unhack this
-    private final static String BACKEND_VERSION = TitanConstants.VERSION;
-
     public PersistitStoreManager(Configuration configuration) throws StorageException {
         stores = new HashMap<String, PersistitKeyValueStore>();
 
@@ -68,7 +64,7 @@ public class PersistitStoreManager implements KeyValueStoreManager {
             properties.put("datapath", datapath);
 
             // On pathSeparator is ":" on 'Nix systems - File.separator is what is intended.
-            
+
             properties.put("journalpath", directory + File.separator + VOLUME_NAME);
             properties.put("logfile", directory + File.separator + VOLUME_NAME + ".log");
 
@@ -84,8 +80,9 @@ public class PersistitStoreManager implements KeyValueStoreManager {
                 throw new PermanentStorageException(ex.toString());
             }
         }
+
         //do some additional config setup
-        config.addProperty(Backend.TITAN_BACKEND_VERSION, BACKEND_VERSION);
+        config.addProperty(Backend.TITAN_BACKEND_VERSION, "0.2.1");
     }
 
     @Override
