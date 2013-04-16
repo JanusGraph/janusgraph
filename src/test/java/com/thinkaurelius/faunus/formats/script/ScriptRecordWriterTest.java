@@ -15,7 +15,7 @@ import java.util.Map;
  */
 public class ScriptRecordWriterTest extends BaseTest {
 
-    public void testWriter() throws Exception {
+    public void testRecordWriter() throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream stream = new DataOutputStream(new PrintStream(baos));
         Configuration conf = new Configuration();

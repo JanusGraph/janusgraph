@@ -14,7 +14,6 @@ import javax.script.ScriptException;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -25,20 +24,7 @@ public class ScriptRecordWriter extends RecordWriter<NullWritable, FaunusVertex>
 
     private static final String WRITE_CALL = "write(vertex,output)";
     private static final String VERTEX = "vertex";
-    // TODO: make it work with the DataOutputStream passed into the write() method
-    // TODO: if you can't do this, then make a null return be a skip
     private static final String OUTPUT = "output";
-
-    private static final String UTF8 = "UTF-8";
-    private static final byte[] NEWLINE;
-
-    static {
-        try {
-            NEWLINE = "\n".getBytes(UTF8);
-        } catch (UnsupportedEncodingException uee) {
-            throw new IllegalArgumentException("Can not find " + UTF8 + " encoding");
-        }
-    }
 
     public ScriptRecordWriter(final DataOutputStream out, final Configuration configuration) throws IOException {
         this.out = out;
