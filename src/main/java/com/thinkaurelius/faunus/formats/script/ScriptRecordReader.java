@@ -37,7 +37,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
 
         final FileSystem fs = FileSystem.get(context.getConfiguration());
         try {
-            this.engine.eval(new InputStreamReader(fs.open(new Path(context.getConfiguration().get(ScriptInputFormat.INPUT_SCRIPT_FILE)))));
+            this.engine.eval(new InputStreamReader(fs.open(new Path(context.getConfiguration().get(ScriptInputFormat.FAUNUS_GRAPH_INPUT_SCRIPT_FILE)))));
         } catch (Exception e) {
             throw new IOException(e.getMessage());
         }

@@ -13,7 +13,7 @@ import java.io.IOException;
  */
 public class ScriptOutputFormat extends FaunusFileOutputFormat {
 
-    public static final String OUTPUT_SCRIPT_FILE = "faunus.output.script.file";
+    public static final String FAUNUS_GRAPH_OUTPUT_SCRIPT_FILE = "faunus.graph.output.script.file";
 
     @Override
     public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
