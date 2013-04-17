@@ -13,6 +13,7 @@ h2. Features
   **  EdgeList multi-relational text format stored in HDFS.
   *** "RDF":http://www.w3.org/RDF/ text formats stored in HDFS
   ** Hadoop binary "sequence files":http://wiki.apache.org/hadoop/SequenceFile stored in HDFS.
+  ** User defined import/export "scripts":https://github.com/thinkaurelius/faunus/wiki/Script-Format
 * Native integration with the "TinkerPop":http://www.tinkerpop.com graph stack:
 ** "Gremlin":http://gremlin.tinkerpop.com graph query language
 ** "Blueprints":http://blueprints.tinkerpop.com standard graph API
