@@ -16,6 +16,7 @@ import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.NullWritable;
@@ -25,6 +26,7 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.List;
 
 /**
@@ -51,7 +53,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
 
     @Override
     public void setConf(final Configuration config) {
-        config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
+        //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
         config.set(TableInputFormat.INPUT_TABLE, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_TABLENAME));
         config.set(HConstants.ZOOKEEPER_QUORUM, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
         if (config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
@@ -60,12 +62,16 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
         config.set("autotype", "none");
         Scan scanner = new Scan();
         scanner.addFamily(Backend.EDGESTORE_NAME.getBytes());
-        //TODO: add scanner.setFilter(getColumnFilter(inputFilter));
-        //TODO: remove line 54 and add config.set(TableInputFormat.SCAN,scan) - how?
-        //This URL: http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/mapreduce/TableInputFormat.html#SCAN
-        //says to use a method that does not have public access...
-        
+        scanner.setFilter(getColumnFilter(new InputGraphFilter(config)));
         //TODO (minor): should we set other options in http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html for optimization?
+        Method converter;
+        try {
+            converter = TableMapReduceUtil.class.getDeclaredMethod("convertScanToString",Scan.class);
+            converter.setAccessible(true);
+            config.set(TableInputFormat.SCAN,(String)converter.invoke(null,scanner));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         this.tableInputFormat.setConf(config);
         this.graph = new FaunusTitanHBaseGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
