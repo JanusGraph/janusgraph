@@ -1,12 +1,20 @@
 package com.thinkaurelius.faunus.formats.titan.hbase;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.InputGraphFilter;
 import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.ColumnPaginationFilter;
+import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
+import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -50,9 +58,38 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
             config.set(HConstants.ZOOKEEPER_CLIENT_PORT, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT));
         config.set("storage.read-only", "true");
         config.set("autotype", "none");
+        Scan scanner = new Scan();
+        scanner.addFamily(Backend.EDGESTORE_NAME.getBytes());
+        //TODO: add scanner.setFilter(getColumnFilter(inputFilter));
+        //TODO: remove line 54 and add config.set(TableInputFormat.SCAN,scan) - how?
+        //This URL: http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/mapreduce/TableInputFormat.html#SCAN
+        //says to use a method that does not have public access...
+        
+        //TODO (minor): should we set other options in http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html for optimization?
+
         this.tableInputFormat.setConf(config);
         this.graph = new FaunusTitanHBaseGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
         this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
+    }
+
+    private Filter getColumnFilter(InputGraphFilter inputFilter) {
+        return getFilter(TitanInputFormat.inputSlice(inputFilter,graph));
+    }
+
+    //TODO: replace by HBaseKeyColumnValueStore.getFilter(SliceQuery) when Titan 0.3.1 is released!
+    public static Filter getFilter(SliceQuery query) {
+        byte[] colStartBytes = query.getSliceEnd().hasRemaining() ? ByteBufferUtil.getArray(query.getSliceStart()) : null;
+        byte[] colEndBytes = query.getSliceEnd().hasRemaining() ? ByteBufferUtil.getArray(query.getSliceEnd()) : null;
+
+        Filter filter = new ColumnRangeFilter(colStartBytes, true, colEndBytes, false);
+
+        if (query.hasLimit()) {
+            filter = new FilterList(FilterList.Operator.MUST_PASS_ALL,
+                    filter,
+                    new ColumnPaginationFilter(query.getLimit(), 0));
+        }
+
+        return filter;
     }
 
     @Override
