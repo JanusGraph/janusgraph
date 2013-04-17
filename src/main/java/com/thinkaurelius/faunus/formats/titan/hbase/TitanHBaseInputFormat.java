@@ -53,6 +53,9 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
 
     @Override
     public void setConf(final Configuration config) {
+        this.graph = new FaunusTitanHBaseGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
+        this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
+
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
         config.set(TableInputFormat.INPUT_TABLE, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_TABLENAME));
         config.set(HConstants.ZOOKEEPER_QUORUM, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
@@ -74,8 +77,6 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
         }
 
         this.tableInputFormat.setConf(config);
-        this.graph = new FaunusTitanHBaseGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
-        this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
     }
 
     private Filter getColumnFilter(InputGraphFilter inputFilter) {
