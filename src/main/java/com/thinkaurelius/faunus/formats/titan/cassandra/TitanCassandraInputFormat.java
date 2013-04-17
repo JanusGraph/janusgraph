@@ -1,10 +1,12 @@
 package com.thinkaurelius.faunus.formats.titan.cassandra;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.InputGraphFilter;
 import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.cassandra.hadoop.ConfigHelper;
@@ -47,13 +49,14 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
         config.set("cassandra.input.keyspace", config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_KEYSPACE));
         ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), Backend.EDGESTORE_NAME);
         final SlicePredicate predicate = new SlicePredicate();
+        //TODO: remove
         final SliceRange sliceRange = new SliceRange();
         sliceRange.setStart(new byte[0]);
         sliceRange.setFinish(new byte[0]);
         sliceRange.setCount(config.getInt("cassandra.range.batch.size", Integer.MAX_VALUE));
         predicate.setSlice_range(sliceRange);
+        //TODO: replace by: predicate.setSlice_range(getSliceRange(inputFilter, config.getInt("cassandra.range.batch.size", Integer.MAX_VALUE)));
         ConfigHelper.setInputSlicePredicate(config, predicate);
-
         ConfigHelper.setInputInitialAddress(config, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
         ConfigHelper.setInputRpcPort(config, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT));
         config.set("storage.read-only", "true");
@@ -61,6 +64,15 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
         this.graph = new FaunusTitanCassandraGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
         this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
         this.config = config;
+    }
+
+    private SliceRange getSliceRange(InputGraphFilter inputFilter, int limit) {
+        SliceQuery slice = TitanInputFormat.inputSlice(inputFilter,graph);
+        final SliceRange sliceRange = new SliceRange();
+        sliceRange.setStart(slice.getSliceStart());
+        sliceRange.setFinish(slice.getSliceEnd());
+        sliceRange.setCount(Math.min(limit,slice.getLimit()));
+        return sliceRange;
     }
 
     @Override
