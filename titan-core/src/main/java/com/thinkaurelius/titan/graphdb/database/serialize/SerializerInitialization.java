@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
 import com.thinkaurelius.titan.graphdb.types.*;
 
@@ -34,7 +35,8 @@ public class SerializerInitialization {
         serializer.registerClass(Long.class, new LongSerializer(),KRYO_OFFSET+19);
         serializer.registerClass(IndexType.class,KRYO_OFFSET+20);
         serializer.registerClass(IndexType[].class,KRYO_OFFSET+21);
-        Preconditions.checkArgument(KRYO_OFFSET+21<RESERVED_ID_OFFSET,"ID allocation overflow!");
+        serializer.registerClass(Geoshape.class,KRYO_OFFSET+22);
+        Preconditions.checkArgument(KRYO_OFFSET+22<RESERVED_ID_OFFSET,"ID allocation overflow!");
     }
 
 }
