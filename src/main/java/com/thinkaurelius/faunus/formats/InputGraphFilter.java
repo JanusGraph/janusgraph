@@ -1,5 +1,8 @@
 package com.thinkaurelius.faunus.formats;
 
+import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.Tokens;
+import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 
 /**
@@ -34,5 +37,10 @@ public class InputGraphFilter {
 
     public void setConfiguration(final Configuration configuration) {
         configuration.setBoolean(FAUNUS_GRAPH_INPUT_FILTER, this.filterEdges);
+    }
+
+    public void defaultVertexFilter(final FaunusVertex vertex) {
+        if(filterEdges)
+            vertex.removeEdges(Tokens.Action.DROP, Direction.BOTH);
     }
 }
