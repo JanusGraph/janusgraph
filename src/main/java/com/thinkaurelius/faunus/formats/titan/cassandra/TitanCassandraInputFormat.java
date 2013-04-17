@@ -46,32 +46,28 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
 
     @Override
     public void setConf(final Configuration config) {
+        this.graph = new FaunusTitanCassandraGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
+        this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
+
         config.set("cassandra.input.keyspace", config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_KEYSPACE));
         ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), Backend.EDGESTORE_NAME);
         final SlicePredicate predicate = new SlicePredicate();
-        //TODO: remove
-        final SliceRange sliceRange = new SliceRange();
-        sliceRange.setStart(new byte[0]);
-        sliceRange.setFinish(new byte[0]);
-        sliceRange.setCount(config.getInt("cassandra.range.batch.size", Integer.MAX_VALUE));
-        predicate.setSlice_range(sliceRange);
-        //TODO: replace by: predicate.setSlice_range(getSliceRange(inputFilter, config.getInt("cassandra.range.batch.size", Integer.MAX_VALUE)));
+        predicate.setSlice_range(getSliceRange(new InputGraphFilter(config), config.getInt("cassandra.range.batch.size", Integer.MAX_VALUE)));
         ConfigHelper.setInputSlicePredicate(config, predicate);
         ConfigHelper.setInputInitialAddress(config, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
         ConfigHelper.setInputRpcPort(config, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT));
         config.set("storage.read-only", "true");
         config.set("autotype", "none");
-        this.graph = new FaunusTitanCassandraGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
-        this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
+
         this.config = config;
     }
 
-    private SliceRange getSliceRange(InputGraphFilter inputFilter, int limit) {
-        SliceQuery slice = TitanInputFormat.inputSlice(inputFilter,graph);
+    private SliceRange getSliceRange(final InputGraphFilter inputFilter, final int limit) {
+        final SliceQuery slice = TitanInputFormat.inputSlice(inputFilter, this.graph);
         final SliceRange sliceRange = new SliceRange();
         sliceRange.setStart(slice.getSliceStart());
         sliceRange.setFinish(slice.getSliceEnd());
-        sliceRange.setCount(Math.min(limit,slice.getLimit()));
+        sliceRange.setCount(Math.min(limit, slice.getLimit()));
         return sliceRange;
     }
 

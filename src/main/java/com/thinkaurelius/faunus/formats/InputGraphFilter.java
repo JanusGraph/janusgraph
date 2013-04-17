@@ -1,23 +1,38 @@
 package com.thinkaurelius.faunus.formats;
 
+import org.apache.hadoop.conf.Configuration;
+
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * A filtering mechanism for, if possible, only getting particular aspects of a vertex from the graph.
+ * A minimum, the filtering is done on the Hadoop side of the computation.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Marko A. Rodriguez (marko@thinkaurelius.com)
  */
 
 public class InputGraphFilter {
 
+    public static final String FAUNUS_GRAPH_INPUT_FILTER = "faunus.graph.input.filter";
+
     private boolean filterEdges;
 
-
     public InputGraphFilter() {
-        filterEdges = false;
+        this.filterEdges = false;
+    }
+
+    public InputGraphFilter(final Configuration configuration) {
+        this.filterEdges = configuration.getBoolean(FAUNUS_GRAPH_INPUT_FILTER, false);
     }
 
     public void setFilterEdges(final boolean filterEdges) {
-        this.filterEdges=filterEdges;
+        this.filterEdges = filterEdges;
     }
 
     public boolean hasFilterEdges() {
         return this.filterEdges;
+    }
+
+    public void setConfiguration(final Configuration configuration) {
+        configuration.setBoolean(FAUNUS_GRAPH_INPUT_FILTER, this.filterEdges);
     }
 }
