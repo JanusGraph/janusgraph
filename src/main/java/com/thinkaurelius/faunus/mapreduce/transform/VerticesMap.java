@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.transform;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
@@ -24,7 +25,7 @@ public class VerticesMap {
     }
 
     public static Configuration createConfiguration(final boolean processEdges) {
-        final Configuration configuration = new Configuration();
+        final Configuration configuration = new EmptyConfiguration();
         configuration.setBoolean(PROCESS_EDGES, processEdges);
         return configuration;
     }

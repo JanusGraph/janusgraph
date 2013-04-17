@@ -155,8 +155,6 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public void completeSequence() {
         if (this.mapSequenceClasses.size() > 0) {
-            // TODO: might not need this line given constructor and complete sequence final line
-            this.addConfiguration(this.graph.getConfiguration());
             this.getConf().setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
             final Job job;
             try {

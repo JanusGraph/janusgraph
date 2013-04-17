@@ -27,7 +27,7 @@ import java.io.IOException;
  */
 public class ScriptInputFormat extends FileInputFormat<NullWritable, FaunusVertex> {
 
-    public static final String INPUT_SCRIPT_FILE = "faunus.input.script.file";
+    public static final String FAUNUS_GRAPH_INPUT_SCRIPT_FILE = "faunus.graph.input.script.file";
 
     @Override
     public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {

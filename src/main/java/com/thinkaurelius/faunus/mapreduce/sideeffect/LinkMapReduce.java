@@ -7,6 +7,7 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -38,8 +39,8 @@ public class LinkMapReduce {
         OUT_EDGES_CREATED
     }
 
-    public static Configuration createConfiguration(final Direction direction, final int step, final String label, final String mergeWeightKey) {
-        final Configuration configuration = new Configuration();
+    public static Configuration createConfiguration(final Direction direction, final String label, final int step, final String mergeWeightKey) {
+        final Configuration configuration = new EmptyConfiguration();
         configuration.setInt(STEP, step);
         configuration.set(DIRECTION, direction.name());
         configuration.set(LABEL, label);

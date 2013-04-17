@@ -9,14 +9,15 @@ h2. Features
   *** "Apache Cassandra":http://cassandra.apache.org/
   *** "Apache HBase":http://hbase.apache.org/
   ** "Rexster":http://rexster.tinkerpop.com fronted graph databases
-  ** "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library text format stored in HDFS.
-  **  EdgeList multi-relational text format stored in HDFS.
+  ** "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library text format stored in HDFS
+  **  EdgeList multi-relational text format stored in HDFS
   *** "RDF":http://www.w3.org/RDF/ text formats stored in HDFS
-  ** Hadoop binary "sequence files":http://wiki.apache.org/hadoop/SequenceFile stored in HDFS.
+  ** Hadoop binary "sequence files":http://wiki.apache.org/hadoop/SequenceFile stored in HDFS
+  ** User defined import/export "scripts":https://github.com/thinkaurelius/faunus/wiki/Script-Format
 * Native integration with the "TinkerPop":http://www.tinkerpop.com graph stack:
 ** "Gremlin":http://gremlin.tinkerpop.com graph query language
 ** "Blueprints":http://blueprints.tinkerpop.com standard graph API
-* Open source with the liberal "Apache 2 license":http://www.apache.org/licenses/LICENSE-2.0.html.
+* Open source with the liberal "Apache 2 license":http://www.apache.org/licenses/LICENSE-2.0.html
 
 h2. Getting Started
 

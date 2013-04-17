@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -28,7 +29,7 @@ public class BackFilterMapReduce {
     public static final String STEP = Tokens.makeNamespace(BackFilterMapReduce.class) + ".step";
 
     public static Configuration createConfiguration(final Class<? extends Element> klass, final int step) {
-        final Configuration configuration = new Configuration();
+        final Configuration configuration = new EmptyConfiguration();
         configuration.setInt(STEP, step);
         configuration.setClass(CLASS, klass, Element.class);
         configuration.setBoolean(FaunusCompiler.PATH_ENABLED, true);

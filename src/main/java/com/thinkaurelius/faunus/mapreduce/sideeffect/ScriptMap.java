@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.thinkaurelius.faunus.mapreduce.util.SafeMapperOutputs;
 import com.thinkaurelius.faunus.tinkerpop.gremlin.FaunusGremlinScriptEngine;
 import org.apache.hadoop.conf.Configuration;
@@ -31,7 +32,7 @@ public class ScriptMap {
     private static final String CLEANUP_ARGS = "cleanup(args)";
 
     public static Configuration createConfiguration(final String scriptUri, final String... args) {
-        Configuration configuration = new Configuration();
+        Configuration configuration = new EmptyConfiguration();
         configuration.set(SCRIPT_PATH, scriptUri);
         configuration.setStrings(SCRIPT_ARGS, args);
         return configuration;

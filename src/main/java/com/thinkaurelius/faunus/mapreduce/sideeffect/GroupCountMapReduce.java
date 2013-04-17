@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.thinkaurelius.faunus.mapreduce.util.SafeMapperOutputs;
 import com.thinkaurelius.faunus.mapreduce.util.SafeReducerOutputs;
 import com.tinkerpop.blueprints.Direction;
@@ -39,7 +40,7 @@ public class GroupCountMapReduce {
     }
 
     public static Configuration createConfiguration(final Class<? extends Element> klass, final String keyClosure, final String valueClosure) {
-        final Configuration configuration = new Configuration();
+        final Configuration configuration = new EmptyConfiguration();
         configuration.setClass(CLASS, klass, Element.class);
         if (null != keyClosure)
             configuration.set(KEY_CLOSURE, keyClosure);

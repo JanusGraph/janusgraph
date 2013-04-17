@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.filter;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -32,7 +33,7 @@ public class FilterMap {
     }
 
     public static Configuration createConfiguration(final Class<? extends Element> klass, final String closure) {
-        final Configuration configuration = new Configuration();
+        final Configuration configuration = new EmptyConfiguration();
         configuration.setClass(CLASS, klass, Element.class);
         configuration.set(CLOSURE, closure);
         return configuration;

@@ -28,7 +28,7 @@ public class CountMapReduce {
     }
 
     public static Configuration createConfiguration(final Class<? extends Element> klass) {
-        final Configuration configuration = new Configuration();
+        final Configuration configuration = new EmptyConfiguration();
         configuration.setClass(CLASS, klass, Element.class);
         return configuration;
     }

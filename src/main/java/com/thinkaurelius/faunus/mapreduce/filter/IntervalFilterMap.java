@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.util.ElementChecker;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -33,7 +34,7 @@ public class IntervalFilterMap {
     }
 
     public static Configuration createConfiguration(final Class<? extends Element> klass, final String key, final Object startValue, final Object endValue) {
-        final Configuration configuration = new Configuration();
+        final Configuration configuration = new EmptyConfiguration();
         configuration.setClass(CLASS, klass, Element.class);
         configuration.set(KEY, key);
         configuration.setBoolean(NULL_WILDCARD, false);  // TODO: Parameterize?
