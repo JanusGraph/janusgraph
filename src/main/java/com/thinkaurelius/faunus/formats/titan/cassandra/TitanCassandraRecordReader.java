@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.formats.titan.cassandra;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -17,11 +18,13 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     private ColumnFamilyRecordReader reader;
     private FaunusTitanCassandraGraph graph;
     private boolean pathEnabled;
+    private VertexQueryFilter vertexQuery;
 
     private FaunusVertex vertex;
 
-    public TitanCassandraRecordReader(final FaunusTitanCassandraGraph graph, final boolean pathEnabled, final ColumnFamilyRecordReader reader) {
+    public TitanCassandraRecordReader(final FaunusTitanCassandraGraph graph, final VertexQueryFilter vertexQuery, final boolean pathEnabled, final ColumnFamilyRecordReader reader) {
         this.graph = graph;
+        this.vertexQuery = vertexQuery;
         this.pathEnabled = pathEnabled;
         this.reader = reader;
 
@@ -39,6 +42,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
             if (null != temp) {
                 if (this.pathEnabled) temp.enablePath(true);
                 this.vertex = temp;
+                this.vertexQuery.defaultFilter(this.vertex);
                 return true;
             }
         }

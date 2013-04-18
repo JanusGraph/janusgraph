@@ -1,7 +1,7 @@
 package com.thinkaurelius.faunus.formats.titan.hbase;
 
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.formats.InputGraphFilter;
+import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
@@ -39,6 +39,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
 
     private final TableInputFormat tableInputFormat = new TableInputFormat();
     private FaunusTitanHBaseGraph graph;
+    private VertexQueryFilter vertexQuery;
     private boolean pathEnabled;
 
     @Override
@@ -48,12 +49,13 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
 
     @Override
     public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        return new TitanHBaseRecordReader(this.graph, this.pathEnabled, (TableRecordReader) this.tableInputFormat.createRecordReader(inputSplit, taskAttemptContext));
+        return new TitanHBaseRecordReader(this.graph, this.vertexQuery, this.pathEnabled, (TableRecordReader) this.tableInputFormat.createRecordReader(inputSplit, taskAttemptContext));
     }
 
     @Override
     public void setConf(final Configuration config) {
         this.graph = new FaunusTitanHBaseGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
+        this.vertexQuery = VertexQueryFilter.create(config);
         this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
 
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
@@ -65,13 +67,13 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
         config.set("autotype", "none");
         Scan scanner = new Scan();
         scanner.addFamily(Backend.EDGESTORE_NAME.getBytes());
-        scanner.setFilter(getColumnFilter(new InputGraphFilter(config)));
+        scanner.setFilter(getColumnFilter(this.vertexQuery));
         //TODO (minor): should we set other options in http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html for optimization?
         Method converter;
         try {
-            converter = TableMapReduceUtil.class.getDeclaredMethod("convertScanToString",Scan.class);
+            converter = TableMapReduceUtil.class.getDeclaredMethod("convertScanToString", Scan.class);
             converter.setAccessible(true);
-            config.set(TableInputFormat.SCAN,(String)converter.invoke(null,scanner));
+            config.set(TableInputFormat.SCAN, (String) converter.invoke(null, scanner));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -79,8 +81,8 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
         this.tableInputFormat.setConf(config);
     }
 
-    private Filter getColumnFilter(InputGraphFilter inputFilter) {
-        return getFilter(TitanInputFormat.inputSlice(inputFilter,graph));
+    private Filter getColumnFilter(VertexQueryFilter inputFilter) {
+        return getFilter(TitanInputFormat.inputSlice(inputFilter, graph));
     }
 
     //TODO: replace by HBaseKeyColumnValueStore.getFilter(SliceQuery) when Titan 0.3.1 is released!

@@ -1,6 +1,9 @@
 package com.thinkaurelius.faunus.formats.script;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.VertexQueryFilter;
+import org.apache.hadoop.conf.Configurable;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
@@ -25,18 +28,31 @@ import java.io.IOException;
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class ScriptInputFormat extends FileInputFormat<NullWritable, FaunusVertex> {
+public class ScriptInputFormat extends FileInputFormat<NullWritable, FaunusVertex> implements Configurable {
 
     public static final String FAUNUS_GRAPH_INPUT_SCRIPT_FILE = "faunus.graph.input.script.file";
+    private VertexQueryFilter vertexQuery;
+    private Configuration config;
 
     @Override
     public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
-        return new ScriptRecordReader(context);
+        return new ScriptRecordReader(this.vertexQuery, context);
     }
 
     @Override
     protected boolean isSplitable(final JobContext context, final Path file) {
         return null == new CompressionCodecFactory(context.getConfiguration()).getCodec(file);
+    }
+
+    @Override
+    public void setConf(final Configuration config) {
+        this.config = config;
+        this.vertexQuery = VertexQueryFilter.create(config);
+    }
+
+    @Override
+    public Configuration getConf() {
+        return this.config;
     }
 
 }

@@ -2,6 +2,8 @@ package com.thinkaurelius.faunus.formats.script;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.VertexQueryFilter;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -18,7 +20,7 @@ public class ScriptRecordReaderTest extends BaseTest {
     public void testRecordReader() throws Exception {
         final Configuration conf = new Configuration();
         conf.setStrings(ScriptInputFormat.FAUNUS_GRAPH_INPUT_SCRIPT_FILE, ScriptRecordReaderTest.class.getResource("ScriptInput.groovy").getFile());
-        ScriptRecordReader reader = new ScriptRecordReader(new TaskAttemptContext(conf, new TaskAttemptID()));
+        ScriptRecordReader reader = new ScriptRecordReader(VertexQueryFilter.create(new EmptyConfiguration()), new TaskAttemptContext(conf, new TaskAttemptID()));
         reader.initialize(new FileSplit(new Path(ScriptRecordReaderTest.class.getResource("graph-of-the-gods.id").toURI()), 0, Long.MAX_VALUE, new String[]{}),
                 new TaskAttemptContext(conf, new TaskAttemptID()));
         int counter = 0;

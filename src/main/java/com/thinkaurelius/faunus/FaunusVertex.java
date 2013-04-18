@@ -240,7 +240,8 @@ public class FaunusVertex extends FaunusElement implements Vertex {
                         if (!keep.contains(label))
                             this.outEdges.remove(label);
                     }
-                }
+                } else if (direction.equals(OUT))
+                    this.inEdges.clear();
             }
 
             if (direction.equals(BOTH) || direction.equals(IN)) {
@@ -249,7 +250,8 @@ public class FaunusVertex extends FaunusElement implements Vertex {
                         if (!keep.contains(label))
                             this.inEdges.remove(label);
                     }
-                }
+                } else if (direction.equals(IN))
+                    this.outEdges.clear();
             }
         } else {
             if (direction.equals(BOTH) || direction.equals(OUT)) {

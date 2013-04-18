@@ -94,22 +94,18 @@ public class FaunusVertexLoader {
             properties.put(type.getName(), value);
         }
 
-        public final boolean isSystemType() {
-            return this.type instanceof SystemType;
-        }
+        public void build() {
+            if (filterSystemTypes && this.type instanceof SystemType) return;
 
-        public void build(final boolean loadProperties, final boolean loadInEdges, final boolean loadOutEdges) {
-            if (filterSystemTypes && this.isSystemType()) return;
-
-            if (loadProperties && this.type.isPropertyKey()) {
+            if (this.type.isPropertyKey()) {
                 Preconditions.checkNotNull(value);
                 vertex.setProperty(this.type.getName(), this.value);
             } else {
                 Preconditions.checkArgument(this.type.isEdgeLabel());
                 FaunusEdge edge = null;
-                if (loadInEdges & this.direction.equals(Direction.IN))
+                if (this.direction.equals(Direction.IN))
                     edge = new FaunusEdge(this.relationID, this.otherVertexID, getVertexID(), this.type.getName());
-                else if (loadOutEdges & this.direction.equals(Direction.OUT))
+                else if (this.direction.equals(Direction.OUT))
                     edge = new FaunusEdge(this.relationID, getVertexID(), this.otherVertexID, this.type.getName());
                 else if (this.direction.equals(Direction.BOTH))
                     throw ExceptionFactory.bothIsNotSupported();

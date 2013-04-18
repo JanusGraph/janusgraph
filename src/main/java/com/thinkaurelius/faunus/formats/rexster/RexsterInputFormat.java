@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.formats.rexster;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -22,6 +23,7 @@ public class RexsterInputFormat extends InputFormat<NullWritable, FaunusVertex> 
     private long estimatedVertexCount;
 
     private RexsterConfiguration rexsterConf;
+    private VertexQueryFilter vertexQuery;
 
     @Override
     public List<InputSplit> getSplits(JobContext jobContext) throws IOException, InterruptedException {
@@ -50,13 +52,14 @@ public class RexsterInputFormat extends InputFormat<NullWritable, FaunusVertex> 
 
     @Override
     public RecordReader<NullWritable, FaunusVertex> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        return new RexsterRecordReader(this.rexsterConf);
+        return new RexsterRecordReader(this.rexsterConf, this.vertexQuery);
     }
 
     @Override
-    public void setConf(Configuration entries) {
-        this.rexsterConf = new RexsterConfiguration(entries);
+    public void setConf(Configuration config) {
+        this.rexsterConf = new RexsterConfiguration(config);
         this.estimatedVertexCount = this.rexsterConf.getEstimatedVertexCount();
+        this.vertexQuery = VertexQueryFilter.create(config);
     }
 
     @Override

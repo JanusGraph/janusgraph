@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.formats.titan.hbase;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -16,15 +17,16 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
 
     private TableRecordReader reader;
     private FaunusTitanHBaseGraph graph;
+    private VertexQueryFilter vertexQuery;
     private boolean pathEnabled;
 
     private FaunusVertex vertex;
 
-    public TitanHBaseRecordReader(final FaunusTitanHBaseGraph graph, final boolean pathEnabled, final TableRecordReader reader) {
+    public TitanHBaseRecordReader(final FaunusTitanHBaseGraph graph, final VertexQueryFilter vertexQuery, final boolean pathEnabled, final TableRecordReader reader) {
         this.graph = graph;
+        this.vertexQuery = vertexQuery;
         this.pathEnabled = pathEnabled;
         this.reader = reader;
-
     }
 
     @Override
@@ -39,6 +41,7 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
             if (null != temp) {
                 if (this.pathEnabled) temp.enablePath(true);
                 this.vertex = temp;
+                this.vertexQuery.defaultFilter(this.vertex);
                 return true;
             }
         }

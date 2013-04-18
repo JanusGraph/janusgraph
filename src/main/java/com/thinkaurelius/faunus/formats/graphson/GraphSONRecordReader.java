@@ -2,7 +2,7 @@ package com.thinkaurelius.faunus.formats.graphson;
 
 
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.formats.InputGraphFilter;
+import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -19,18 +19,18 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
 
     private boolean pathEnabled;
     private final LineRecordReader lineRecordReader;
-    private FaunusVertex value = null;
-    private InputGraphFilter filter;
+    private final VertexQueryFilter vertexQuery;
+    private FaunusVertex vertex = null;
 
-    public GraphSONRecordReader() {
+    public GraphSONRecordReader(VertexQueryFilter vertexQuery) {
         this.lineRecordReader = new LineRecordReader();
+        this.vertexQuery = vertexQuery;
     }
 
     @Override
     public void initialize(final InputSplit genericSplit, final TaskAttemptContext context) throws IOException {
         this.lineRecordReader.initialize(genericSplit, context);
         this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
-        this.filter = new InputGraphFilter(context.getConfiguration());
     }
 
     @Override
@@ -38,9 +38,9 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
         if (!this.lineRecordReader.nextKeyValue())
             return false;
 
-        this.value = FaunusGraphSONUtility.fromJSON(this.lineRecordReader.getCurrentValue().toString());
-        this.value.enablePath(this.pathEnabled);
-        this.filter.defaultVertexFilter(this.value);
+        this.vertex = FaunusGraphSONUtility.fromJSON(this.lineRecordReader.getCurrentValue().toString());
+        this.vertexQuery.defaultFilter(this.vertex);
+        this.vertex.enablePath(this.pathEnabled);
         return true;
     }
 
@@ -51,7 +51,7 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
 
     @Override
     public FaunusVertex getCurrentValue() {
-        return this.value;
+        return this.vertex;
     }
 
     @Override

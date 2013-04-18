@@ -1,7 +1,7 @@
 package com.thinkaurelius.faunus.formats.titan.cassandra;
 
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.formats.InputGraphFilter;
+import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
@@ -33,6 +33,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
     private FaunusTitanCassandraGraph graph;
     private boolean pathEnabled;
     private Configuration config;
+    private VertexQueryFilter vertexQuery;
 
     @Override
     public List<InputSplit> getSplits(final JobContext jobContext) throws IOException, InterruptedException {
@@ -41,18 +42,19 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
 
     @Override
     public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        return new TitanCassandraRecordReader(this.graph, this.pathEnabled, (ColumnFamilyRecordReader) this.columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext));
+        return new TitanCassandraRecordReader(this.graph, this.vertexQuery, this.pathEnabled, (ColumnFamilyRecordReader) this.columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext));
     }
 
     @Override
     public void setConf(final Configuration config) {
         this.graph = new FaunusTitanCassandraGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
+        this.vertexQuery = VertexQueryFilter.create(config);
         this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
 
         config.set("cassandra.input.keyspace", config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_KEYSPACE));
         ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), Backend.EDGESTORE_NAME);
         final SlicePredicate predicate = new SlicePredicate();
-        predicate.setSlice_range(getSliceRange(new InputGraphFilter(config), config.getInt("cassandra.range.batch.size", Integer.MAX_VALUE)));
+        predicate.setSlice_range(getSliceRange(this.vertexQuery, config.getInt("cassandra.range.batch.size", Integer.MAX_VALUE)));
         ConfigHelper.setInputSlicePredicate(config, predicate);
         ConfigHelper.setInputInitialAddress(config, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
         ConfigHelper.setInputRpcPort(config, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT));
@@ -62,7 +64,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
         this.config = config;
     }
 
-    private SliceRange getSliceRange(final InputGraphFilter inputFilter, final int limit) {
+    private SliceRange getSliceRange(final VertexQueryFilter inputFilter, final int limit) {
         final SliceQuery slice = TitanInputFormat.inputSlice(inputFilter, this.graph);
         final SliceRange sliceRange = new SliceRange();
         sliceRange.setStart(slice.getSliceStart());

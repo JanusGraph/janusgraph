@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.formats.rexster;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.formats.rexster.util.HttpHelper;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import org.apache.hadoop.io.NullWritable;
@@ -21,13 +22,14 @@ import java.net.HttpURLConnection;
 public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
     private final RexsterConfiguration rexsterConf;
+    private VertexQueryFilter vertexQuery;
 
     private final NullWritable key = NullWritable.get();
 
     /**
      * The current vertex in the reader.
      */
-    private FaunusVertex value = new FaunusVertex();
+    private FaunusVertex vertex = new FaunusVertex();
 
     private DataInputStream rexsterInputStream;
 
@@ -38,8 +40,9 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
 
     private boolean pathEnabled;
 
-    public RexsterRecordReader(final RexsterConfiguration conf) {
+    public RexsterRecordReader(final RexsterConfiguration conf, final VertexQueryFilter vertexQuery) {
         this.rexsterConf = conf;
+        this.vertexQuery = vertexQuery;
     }
 
     @Override
@@ -56,9 +59,10 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         boolean isNext;
 
         try {
-            this.value.readFields(this.rexsterInputStream);
+            this.vertex.readFields(this.rexsterInputStream);
+            this.vertexQuery.defaultFilter(this.vertex);
             if (this.pathEnabled)
-                this.value.enablePath(true);
+                this.vertex.enablePath(true);
             itemsIterated++;
             isNext = true;
         } catch (Exception e) {
@@ -75,7 +79,7 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
 
     @Override
     public FaunusVertex getCurrentValue() throws IOException, InterruptedException {
-        return this.value;
+        return this.vertex;
     }
 
     @Override
