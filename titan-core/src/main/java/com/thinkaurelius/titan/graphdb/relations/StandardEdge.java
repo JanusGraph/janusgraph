@@ -43,8 +43,8 @@ public class StandardEdge extends AbstractEdge implements StandardRelation {
     }
 
     @Override
-    public Object getPropertyDirect(TitanType type) {
-        return properties.get(type);
+    public <O> O getPropertyDirect(TitanType type) {
+        return (O)properties.get(type);
     }
 
     @Override
@@ -69,9 +69,9 @@ public class StandardEdge extends AbstractEdge implements StandardRelation {
     }
 
     @Override
-    public Object removePropertyDirect(TitanType type) {
+    public <O> O removePropertyDirect(TitanType type) {
         if (!properties.isEmpty())
-            return properties.remove(type);
+            return (O)properties.remove(type);
         else return null;
     }
 

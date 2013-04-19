@@ -88,7 +88,7 @@ public class CacheEdge extends AbstractEdge {
     }
 
     @Override
-    public Object getPropertyDirect(TitanType type) {
+    public <O> O getPropertyDirect(TitanType type) {
         return getMap().get(type.getID());
     }
 
@@ -109,7 +109,7 @@ public class CacheEdge extends AbstractEdge {
     }
 
     @Override
-    public Object removePropertyDirect(TitanType type) {
+    public <O> O removePropertyDirect(TitanType type) {
         return update().removePropertyDirect(type);
     }
 

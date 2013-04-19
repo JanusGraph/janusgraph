@@ -31,15 +31,15 @@ public interface InternalRelation extends TitanRelation, InternalElement {
 
     public boolean isHidden();
 
-    public Object getProperty(TitanType type);
+    public <O> O getProperty(TitanType type);
 
-    public Object getPropertyDirect(TitanType type);
+    public <O> O getPropertyDirect(TitanType type);
 
     public void setPropertyDirect(TitanType type, Object value);
 
     public Iterable<TitanType> getPropertyKeysDirect();
 
-    public Object removePropertyDirect(TitanType type);
+    public <O> O  removePropertyDirect(TitanType type);
 
 
 }

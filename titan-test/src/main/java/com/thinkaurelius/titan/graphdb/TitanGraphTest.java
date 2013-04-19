@@ -714,7 +714,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         log.debug("Loaded edge types");
         n2 = tx.getVertex(name, "Node2");
         assertNotNull(n2.toString());
-        assertEquals("Node2", n2.getProperty(name, String.class));
+        assertEquals("Node2", n2.getProperty(name));
         e = Iterables.getOnlyElement(n2.getTitanEdges(BOTH, connect));
         assertNotNull(e.toString());
         n1 = e.getVertex(OUT);
@@ -744,7 +744,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         e = Iterables.getOnlyElement(n2.getTitanEdges(OUT, tx.getEdgeLabel("knows")));
         assertEquals(3.0, e.getProperty(weight));
-        assertEquals("HasProperties TitanRelation", e.getProperty(name, String.class));
+        assertEquals("HasProperties TitanRelation", e.getProperty(name));
         n3 = e.getVertex(IN);
 
         e = Iterables.getOnlyElement(n3.getTitanEdges(OUT, tx.getEdgeLabel("knows")));
@@ -767,8 +767,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         clopen();
         n2 = tx.getVertex("name", "Node2");
         e = Iterables.getOnlyElement(n2.getTitanEdges(OUT, tx.getEdgeLabel("knows")));
-        assertEquals("New TitanRelation", e.getProperty(tx.getPropertyKey("name"), String.class));
-        assertEquals(111.5, e.getProperty("weight", Double.class).doubleValue(), 0.01);
+        assertEquals("New TitanRelation", e.getProperty(tx.getPropertyKey("name")));
+        assertEquals(111.5, ((Double)e.getProperty("weight")).doubleValue(), 0.01);
 
     }
 
@@ -957,7 +957,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             for (int k : knowsOff) {
                 TitanVertex n2 = nodes[wrapAround(i + k, noNodes)];
                 TitanEdge r = n.addEdge(knows, n2);
-                r.setProperty(id, n.getProperty(id, Number.class).intValue() + n2.getProperty(id, Number.class).intValue());
+                r.setProperty(id, ((Number)n.getProperty(id)).intValue() + ((Number)n2.getProperty(id)).intValue());
                 r.setProperty(weight, k * 1.5);
                 r.setProperty(name, i + "-" + k);
                 nodeEdges[i].add(r);
@@ -986,7 +986,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         for (int i = 0; i < noNodes; i++) {
             TitanVertex n = tx.getVertex(id, ids[i]);
             assertEquals(n, tx.getVertex(name, names[i]));
-            assertEquals(names[i], n.getProperty(name, String.class));
+            assertEquals(names[i], n.getProperty(name));
             nodes[i] = n;
             assertEquals(nodeIds[i], n.getID());
         }
@@ -1001,11 +1001,11 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             assertEquals(connectOff.length + knowsOff.length + 2, Iterables.size(n.query().direction(OUT).relations()));
             for (TitanEdge r : n.getTitanEdges(OUT, knows)) {
                 TitanVertex n2 = r.getOtherVertex(n);
-                int idsum = n.getProperty(id, Number.class).intValue() + n2.getProperty(id, Number.class).intValue();
-                assertEquals(idsum, r.getProperty(id, Number.class).intValue());
-                double k = r.getProperty(weight, Number.class).doubleValue() / 1.5;
+                int idsum = ((Number)n.getProperty(id)).intValue() + ((Number)n2.getProperty(id)).intValue();
+                assertEquals(idsum, r.getProperty(id));
+                double k = ((Number)r.getProperty(weight)).doubleValue() / 1.5;
                 int ki = (int) k;
-                assertEquals(i + "-" + ki, r.getProperty(name, String.class));
+                assertEquals(i + "-" + ki, r.getProperty(name));
             }
 
             Set edgeIds = new HashSet(10);

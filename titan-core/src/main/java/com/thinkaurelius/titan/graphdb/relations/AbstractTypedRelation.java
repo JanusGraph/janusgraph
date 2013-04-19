@@ -95,13 +95,13 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 	 */
 
     @Override
-    public Object removeProperty(String key) {
+    public <O> O removeProperty(String key) {
         if (!tx().containsType(key)) return null;
         else return removeProperty(tx().getType(key));
     }
 
     @Override
-    public Object removeProperty(TitanType type) {
+    public <O> O removeProperty(TitanType type) {
         Preconditions.checkArgument(!it().isRemoved(),"Cannot modified removed relation");
         return it().removePropertyDirect(type);
     }
@@ -135,17 +135,17 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     @Override
-    public Object getProperty(TitanKey key) {
+    public <O> O getProperty(TitanKey key) {
         return it().getPropertyDirect(key);
     }
 
     @Override
-    public Object getProperty(String key) {
+    public <O> O getProperty(String key) {
         if (!tx().containsType(key)) return null;
         TitanType type = tx().getType(key);
         if (type==null) return null;
         else if (type.isPropertyKey()) return getProperty((TitanKey) type);
-        else return getProperty((TitanLabel)type);
+        else return (O)getProperty((TitanLabel)type);
     }
 
     @Override
@@ -158,20 +158,11 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     @Override
-    public Object getProperty(TitanType type) {
-        if (type.isEdgeLabel()) return getProperty((TitanLabel)type);
+    public <O> O getProperty(TitanType type) {
+        if (type.isEdgeLabel()) return (O)getProperty((TitanLabel)type);
         else return getProperty((TitanKey)type);
     }
 
-    @Override
-    public <O> O getProperty(TitanKey key, Class<O> clazz) {
-        return clazz.cast(getProperty(key));
-    }
-
-    @Override
-    public <O> O getProperty(String key, Class<O> clazz) {
-        return clazz.cast(getProperty(key));
-    }
 
 
     @Override

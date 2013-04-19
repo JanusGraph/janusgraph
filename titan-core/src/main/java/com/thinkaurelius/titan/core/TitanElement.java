@@ -93,28 +93,6 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
     public void setProperty(TitanKey key, Object value);
 
     /**
-     * Retrieves the value associated with the given key on this vertex.
-     * If the key is out-unique, then there can be at most one value and this value is returned (or null).
-     * If the key is not out-unique, then a list of all associated values is returned, or an empty list of non exist.
-     * <p/>
-     *
-     * @param key key
-     * @return value or list of values associated with key
-     */
-    public Object getProperty(TitanKey key);
-
-    /**
-     * Retrieves the value associated with the given key on this vertex.
-     * If the key is out-unique, then there can be at most one value and this value is returned (or null).
-     * If the key is not out-unique, then a list of all associated values is returned, or an empty list of non exist.
-     * <p/>
-     *
-     * @param key string identifying a key
-     * @return value or list of values associated with key
-     */
-    public Object getProperty(String key);
-
-    /**
      * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
      * If the key is out-unique, then there can be at most one value and this value is returned (or null).
      * If the key is not out-unique, then a list of all associated values is returned, or an empty list of non exist.
@@ -123,7 +101,7 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
      * @param key key
      * @return value or list of values associated with key
      */
-    public <O> O getProperty(TitanKey key, Class<O> clazz);
+    public <O> O getProperty(TitanKey key);
 
     /**
      * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
@@ -134,7 +112,7 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
      * @param key string identifying a key
      * @return value or list of values associated with key
      */
-    public <O> O getProperty(String key, Class<O> clazz);
+    public <O> O getProperty(String key);
 
     /**
      * Removes the value associated with the given key for this vertex (if exists).
@@ -143,7 +121,7 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
      * @return the object value associated with that key prior to removal, or NULL if such does not exist.
      * @see #removeProperty(TitanType)
      */
-    public Object removeProperty(String key);
+    public <O> O removeProperty(String key);
 
     /**
      * Removes the value associated with the given key for this vertex (if exists).
@@ -153,7 +131,7 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
      * @param type the key
      * @return the object value associated with that key prior to removal, or NULL if such does not exist.
      */
-    public Object removeProperty(TitanType type);
+    public <O> O removeProperty(TitanType type);
 
 
     //########### LifeCycle Status ##########

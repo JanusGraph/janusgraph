@@ -36,10 +36,10 @@ public class ImmutableLongObjectMap implements Iterable<ImmutableLongObjectMap.E
     }
 
 
-    public Object get(long key) {
+    public <O> O get(long key) {
         int pos = Arrays.binarySearch(keys,key);
         if (pos<0) return null;
-        else return values[pos];
+        else return (O)values[pos];
     }
 
     public long getKey(int index) {
