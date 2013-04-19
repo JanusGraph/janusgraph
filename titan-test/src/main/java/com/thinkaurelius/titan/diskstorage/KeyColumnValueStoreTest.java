@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
 
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.After;
@@ -281,6 +282,24 @@ public abstract class KeyColumnValueStoreTest {
         String[][] values = generateValues();
         log.debug("Loading values...");
         loadValues(values);
+        Set<KeyColumn> deleted = Sets.newHashSet();
+        clopen();
+        int trails = 5000;
+        for (int t = 0; t < trails; t++) {
+            int key = RandomGenerator.randomInt(0, numKeys);
+            int start = RandomGenerator.randomInt(0, numColumns);
+            int end = RandomGenerator.randomInt(start, numColumns);
+            int limit = RandomGenerator.randomInt(1, 30);
+            checkSlice(values, deleted, key, start, end, limit);
+            checkSlice(values, deleted, key, start, end, -1);
+        }
+    }
+
+    @Test
+    public void intervalTest2() throws StorageException {
+        String[][] values = generateValues();
+        log.debug("Loading values...");
+        loadValues(values);
         Set<KeyColumn> deleted = deleteValues(7);
         clopen();
         int trails = 5000;
@@ -292,8 +311,6 @@ public abstract class KeyColumnValueStoreTest {
             checkSlice(values, deleted, key, start, end, limit);
             checkSlice(values, deleted, key, start, end, -1);
         }
-
-
     }
 
 

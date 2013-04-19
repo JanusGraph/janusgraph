@@ -4,8 +4,17 @@ import com.google.common.base.Preconditions;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Comparator;
 
 public class ByteBufferUtil {
+
+    public static final Comparator<ByteBuffer> COMPARATOR = new Comparator<ByteBuffer>() {
+
+        @Override
+        public int compare(ByteBuffer byteBuffer, ByteBuffer byteBuffer2) {
+            return ByteBufferUtil.compare(byteBuffer.duplicate(), byteBuffer2.duplicate());
+        }
+    };
 
     public static final int longSize = 8;
     public static final int intSize = 4;

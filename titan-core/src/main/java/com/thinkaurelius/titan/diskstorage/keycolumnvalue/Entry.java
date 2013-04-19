@@ -34,7 +34,7 @@ public class Entry implements Comparable<Entry> {
      * @return Column ByteBuffer
      */
     public ByteBuffer getColumn() {
-        return column;
+        return column.duplicate();
     }
 
 
@@ -44,7 +44,7 @@ public class Entry implements Comparable<Entry> {
      * @return Value ByteBuffer
      */
     public ByteBuffer getValue() {
-        return value;
+        return value.duplicate();
     }
 
     @Override
