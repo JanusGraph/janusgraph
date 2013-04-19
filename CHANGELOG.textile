@@ -1,5 +1,5 @@
 Faunus: Graph Analytics Engine
-"http://thinkaurelius.github.com/faunus/":http://thinkaurelius.github.com/faunus/
+"http://faunus.thinkaurelius.com":http://faunus.thinkaurelius.com
 
 [[https://raw.github.com/thinkaurelius/faunus/master/doc/images/graph-globe.png|width=100px]]
 
