@@ -136,7 +136,10 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+        return getHelper(query.getKey(), getFilter(query));
+    }
 
+    public static Filter getFilter(SliceQuery query) {
         byte[] colStartBytes = query.getSliceEnd().hasRemaining() ? ByteBufferUtil.getArray(query.getSliceStart()) : null;
         byte[] colEndBytes = query.getSliceEnd().hasRemaining() ? ByteBufferUtil.getArray(query.getSliceEnd()) : null;
 
@@ -144,11 +147,11 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
         if (query.hasLimit()) {
             filter = new FilterList(FilterList.Operator.MUST_PASS_ALL,
-                                    filter,
-                                    new ColumnPaginationFilter(query.getLimit(), 0));
+                    filter,
+                    new ColumnPaginationFilter(query.getLimit(), 0));
         }
 
-        return getHelper(query.getKey(), filter);
+        return filter;
     }
 
     private List<Entry> getHelper(ByteBuffer key, Filter getFilter) throws StorageException {
