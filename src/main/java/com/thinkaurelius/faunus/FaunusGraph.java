@@ -2,6 +2,8 @@ package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.Inverter;
 import com.thinkaurelius.faunus.hdfs.HDFSTools;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
+import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -10,13 +12,12 @@ import org.apache.hadoop.mapreduce.OutputFormat;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusGraph {
+public class FaunusGraph implements Configurable {
 
     public static final String FAUNUS_GRAPH_INPUT_FORMAT = "faunus.graph.input.format";
     public static final String FAUNUS_INPUT_LOCATION = "faunus.input.location";
@@ -26,7 +27,7 @@ public class FaunusGraph {
     public static final String FAUNUS_OUTPUT_LOCATION = "faunus.output.location";
     public static final String FAUNUS_OUTPUT_LOCATION_OVERWRITE = "faunus.output.location.overwrite";
 
-    private final Configuration configuration;
+    private Configuration configuration;
 
     public FaunusGraph() {
         this(new Configuration());
@@ -36,8 +37,23 @@ public class FaunusGraph {
         this.configuration = new Configuration(configuration);
     }
 
-    public Configuration getConfiguration() {
+    public Configuration getConf() {
         return this.configuration;
+    }
+
+    public Configuration getConf(final String prefix) {
+        final Configuration prefixConf = new EmptyConfiguration();
+        final Iterator<Map.Entry<String, String>> itty = this.configuration.iterator();
+        while (itty.hasNext()) {
+            final Map.Entry<String, String> entry = itty.next();
+            if (entry.getKey().startsWith(prefix + "."))
+                prefixConf.set(entry.getKey(), entry.getValue());
+        }
+        return prefixConf;
+    }
+
+    public void setConf(final Configuration configuration) {
+        this.configuration = configuration;
     }
 
     // GRAPH INPUT AND OUTPUT FORMATS
@@ -108,30 +124,15 @@ public class FaunusGraph {
     }
 
     public void shutdown() {
-        // for API sake
+        this.configuration.clear();
     }
 
     public String toString() {
         return "faunusgraph[" + this.configuration.getClass(FAUNUS_GRAPH_INPUT_FORMAT, InputFormat.class).getSimpleName().toLowerCase() + "->" + this.configuration.getClass(FAUNUS_GRAPH_OUTPUT_FORMAT, OutputFormat.class).getSimpleName().toLowerCase() + "]";
     }
 
-    public Map<String, Object> getProperties(final String prefix) {
-        final Map<String, Object> map = new LinkedHashMap<String, Object>();
-        final Iterator<Map.Entry<String, String>> itty = this.configuration.iterator();
-        while (itty.hasNext()) {
-            final Map.Entry<String, String> entry = itty.next();
-            if (entry.getKey().startsWith(prefix + "."))
-                map.put(entry.getKey(), entry.getValue());
-        }
-        return map;
-    }
-
-    public Map<String, Object> getProperties() {
-        return this.getProperties("faunus");
-    }
-
     public FaunusGraph getNextGraph() throws IOException {
-        FaunusGraph graph = new FaunusGraph(this.getConfiguration());
+        FaunusGraph graph = new FaunusGraph(this.getConf());
         if (null != this.getGraphOutputFormat())
             graph.setGraphInputFormat(Inverter.invertOutputFormat(this.getGraphOutputFormat()));
         if (null != this.getOutputLocation()) {

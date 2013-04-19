@@ -36,7 +36,7 @@ public class ResultHookClosure extends Closure {
             try {
                 final FaunusPipeline pipeline = (FaunusPipeline) result;
                 pipeline.submit();
-                final FileSystem hdfs = FileSystem.get(pipeline.getGraph().getConfiguration());
+                final FileSystem hdfs = FileSystem.get(pipeline.getGraph().getConf());
                 final Path output = HDFSTools.getOutputsFinalJob(hdfs, pipeline.getGraph().getOutputLocation().toString());
                 itty = new TextFileLineIterator(hdfs, hdfs.globStatus(new Path(output.toString() + "/" + Tokens.SIDEEFFECT + "*")), LINES);
 

@@ -31,6 +31,7 @@ h3. Version 0.3.0 (NOT OFFICIALLY RELEASED YET)
 * Fixed a severe bug in the propagation of @Configurations@ throughout a Faunus job sequence (@EmptyConfiguration@)
 * Renamed @GraphSONUtility@ to @FaunusGraphSONUtility@ to avoid name conflicts with Blueprints
 * Added @EdgeCopyMapReduce@ to support graph transpose for bidirectional edges
+* @FaunusGraph@ now implements @Configurable@ and thus @getConf()@ instead of @getConfiguration()@
 
 ==<hr/>==
 

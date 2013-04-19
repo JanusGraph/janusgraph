@@ -66,7 +66,7 @@ public class FaunusCompiler extends Configured implements Tool {
     public FaunusCompiler(final FaunusGraph graph) {
         this.graph = graph;
         this.setConf(new Configuration());
-        this.addConfiguration(this.graph.getConfiguration());
+        this.addConfiguration(this.graph.getConf());
     }
 
     private String toStringOfJob(final Class sequenceClass) {
@@ -189,7 +189,7 @@ public class FaunusCompiler extends Configured implements Tool {
             this.jobs.add(job);
 
             this.setConf(new Configuration());
-            this.addConfiguration(this.graph.getConfiguration());
+            this.addConfiguration(this.graph.getConf());
             this.mapSequenceClasses.clear();
             this.combinerClass = null;
             this.reduceClass = null;
@@ -229,7 +229,7 @@ public class FaunusCompiler extends Configured implements Tool {
         if (this.pathEnabled)
             logger.warn("Path calculations are enabled for this Faunus job (space and time expensive)");
 
-        final FileSystem hdfs = FileSystem.get(this.graph.getConfiguration());
+        final FileSystem hdfs = FileSystem.get(this.graph.getConf());
         final String outputJobPrefix = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
         hdfs.mkdirs(this.graph.getOutputLocation());
 

@@ -213,7 +213,7 @@ public class FaunusPipeline {
             }
         }
 
-        if (null != this.graph.getConfiguration().get(EdgeCopyMapReduce.FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION)) {
+        if (null != this.graph.getConf().get(EdgeCopyMapReduce.FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION)) {
             this.compiler.addMapReduce(EdgeCopyMapReduce.Map.class,
                     EdgeCopyMapReduce.Combiner.class,
                     EdgeCopyMapReduce.Reduce.class,
@@ -222,7 +222,7 @@ public class FaunusPipeline {
                     Holder.class,
                     NullWritable.class,
                     FaunusVertex.class,
-                    EdgeCopyMapReduce.createConfiguration(this.graph.getConfiguration().getEnum(EdgeCopyMapReduce.FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT)));
+                    EdgeCopyMapReduce.createConfiguration(this.graph.getConf().getEnum(EdgeCopyMapReduce.FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT)));
         }
     }
 
