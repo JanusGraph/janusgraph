@@ -62,11 +62,7 @@ public class EdgeSerializer {
         ImmutableLongObjectMap map;
         StandardTitanTx tx = vertex.tx();
         if (data.getCache()==null) {
-            synchronized (data) {
-                if (data.getCache()==null) {
-                    map = parseProperties(vertex.getID(),data,true,tx);
-                } else map = data.getCache();
-            }
+            map = parseProperties(vertex.getID(),data,true,tx);
         } else map = data.getCache();
         Direction dir = (Direction) map.get(DIRECTION_ID);
         long typeid = (Long)map.get(TYPE_ID);
@@ -128,8 +124,8 @@ public class EdgeSerializer {
         Preconditions.checkArgument(vertexid>0);
         ImmutableLongObjectMap.Builder builder = new ImmutableLongObjectMap.Builder();
 
-        ByteBuffer column = data.getColumn().duplicate();
-        ByteBuffer value = data.getValue().duplicate();
+        ByteBuffer column = data.getColumn();
+        ByteBuffer value = data.getValue();
 
         int dirID = IDHandler.getDirectionID(column.get(column.position()));
         Direction dir=null;
