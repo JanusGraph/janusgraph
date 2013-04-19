@@ -59,7 +59,7 @@ public class ValueGroupCountMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.map = new CounterMap<Object>();
-            this.mapSpillOver = context.getConfiguration().getInt(Tokens.FAUNUS_ENGINE_MAP_SPILL_OVER, Tokens.DEFAULT_MAP_SPILL_OVER);
+            this.mapSpillOver = context.getConfiguration().getInt(Tokens.FAUNUS_PIPELINE_MAP_SPILL_OVER, Tokens.DEFAULT_MAP_SPILL_OVER);
             this.property = context.getConfiguration().get(PROPERTY);
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
             this.handler = new WritableHandler(context.getConfiguration().getClass(TYPE, Text.class, WritableComparable.class));

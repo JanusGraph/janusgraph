@@ -63,7 +63,7 @@ public class GroupCountMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             try {
-                this.mapSpillOver = context.getConfiguration().getInt(Tokens.FAUNUS_ENGINE_MAP_SPILL_OVER, Tokens.DEFAULT_MAP_SPILL_OVER);
+                this.mapSpillOver = context.getConfiguration().getInt(Tokens.FAUNUS_PIPELINE_MAP_SPILL_OVER, Tokens.DEFAULT_MAP_SPILL_OVER);
                 final String keyClosureString = context.getConfiguration().get(KEY_CLOSURE, null);
                 if (null == keyClosureString)
                     this.keyClosure = null;

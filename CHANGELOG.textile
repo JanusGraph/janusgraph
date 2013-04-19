@@ -26,7 +26,7 @@ h3. Version 0.3.0 (NOT OFFICIALLY RELEASED YET)
 * Added numerous test cases for file-based @RecordReader@ formats
 * Added @ScriptInputFormat@ to support the arbitrary reading of an HDFS file lines into a @FaunusVertex@
 * Added @ScriptOutputFormat@ to support the arbitrary writing of an HDFS file line from a @FaunusVertex@
-* Introduced the @faunus.engine@ property namespace for properties that are global to the pipeline
+* Introduced the @faunus.pipeline@ property namespace for properties that are global to the pipeline
 * Added support for vertex-centric "filters" for isolating subsets of a graph @InputFormat@
 * Fixed a severe bug in the propagation of @Configurations@ throughout a Faunus job sequence (@EmptyConfiguration@)
 * Renamed @GraphSONUtility@ to @FaunusGraphSONUtility@ to avoid name conflicts with Blueprints
