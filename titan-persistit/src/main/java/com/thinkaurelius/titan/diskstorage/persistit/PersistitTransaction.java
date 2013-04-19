@@ -13,8 +13,9 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * @todo: read this and make sure multiple threads aren't sharing transactions http://akiban.github.com/persistit/javadoc/com/persistit/Transaction.html#_threadManagement
@@ -68,12 +69,22 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     private Transaction tx;
     private SessionId sessionId;
 
-//    private Map<String, Exchange> exchangeCache = new HashMap<String, Exchange>();
+    private static Queue<SessionId> sessionPool = new ConcurrentLinkedQueue<SessionId>();
+    private static SessionId getSessionId() {
+        SessionId s = sessionPool.poll();
+        if (s == null) {
+            s = getSessionIdHack();
+        }
+        return s;
+    }
+    private static void returnSessionId(SessionId s) {
+        sessionPool.offer(s);
+    }
 
     public PersistitTransaction(Persistit p, ConsistencyLevel level) throws StorageException {
         super(level);
         db = p;
-        sessionId = getSessionIdHack();
+        sessionId = getSessionId();
         assign();
         tx = db.getTransaction();
         assert sessionId == tx.getSessionId();
@@ -104,6 +115,15 @@ public class PersistitTransaction extends AbstractStoreTransaction {
         if (tx != null) assert sessionId == tx.getSessionId();
     }
 
+    private void close() {
+        if (tx.isActive()) {
+            tx.end();
+        }
+        returnSessionId(sessionId);
+        sessionId = null;
+        tx = null;
+    }
+
     @Override
     public synchronized void abort() throws StorageException {
         if (!tx.isActive()) return;
@@ -112,7 +132,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
         // begin();
 
         tx.rollback();
-        tx.end();
+        close();
     }
 
     @Override
@@ -135,7 +155,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex);
         } finally {
-            tx.end();
+            close();
         }
     }
 
@@ -171,5 +191,14 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     public Transaction getTx() {
         return tx;
+    }
+
+    @Override
+    protected void finalize() {
+        try {
+            abort();
+        } catch (StorageException e) {
+            //
+        }
     }
 }
