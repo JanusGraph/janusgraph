@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -275,8 +276,13 @@ public abstract class BaseTest extends TestCase {
     }
 
     public static long count(final Iterable iterable) {
+        return count(iterable.iterator());
+    }
+
+    public static long count(final Iterator iterator) {
         long counter = 0;
-        for (Object o : iterable) {
+        while (iterator.hasNext()) {
+            iterator.next();
             counter++;
         }
         return counter;
