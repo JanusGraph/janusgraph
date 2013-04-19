@@ -1,5 +1,5 @@
 Titan: Distributed Graph Database
-"http://thinkaurelius.github.com/titan/":http://thinkaurelius.github.com/titan/
+"http://titan.thinkaurelius.com":http://titan.thinkaurelius.com
 
 [[https://raw.github.com/thinkaurelius/titan/master/doc/images/titan-globe.png|width=100px]]
 
