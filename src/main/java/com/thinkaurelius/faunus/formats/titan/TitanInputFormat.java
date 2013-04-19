@@ -26,8 +26,8 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusV
 
     public static SliceQuery inputSlice(final VertexQueryFilter inputFilter, final TitanGraph graph) {
         if (inputFilter.limit == 0) {
-            IDManager idManager = (IDManager) ((StandardTitanGraph) graph).getIDInspector();
-            ByteBuffer startColumn, endColumn;
+            final IDManager idManager = (IDManager) ((StandardTitanGraph) graph).getIDInspector();
+            final ByteBuffer startColumn, endColumn;
             startColumn = IDHandler.getEdgeTypeGroup(0, 0, idManager);
             endColumn = IDHandler.getEdgeTypeGroup(idManager.getMaxGroupID() + 1, 0, idManager);
             return new SliceQuery(startColumn, endColumn, Integer.MAX_VALUE);

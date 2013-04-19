@@ -126,7 +126,6 @@ public class BlueprintsGraphOutputMapReduce {
                     context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
                 } catch (Exception e) {
                     LOGGER.error("Could not commit transaction during Map.map():", e);
-                    System.err.println("Could not commit transaction during Map.map():" + e);
                     context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
                 }
             }
@@ -141,7 +140,6 @@ public class BlueprintsGraphOutputMapReduce {
                 }
             } catch (Exception e) {
                 LOGGER.error("Could not commit transaction during Map.cleanup():", e);
-                System.err.println("Could not commit transaction during Map.cleanup(): " + e);
                 context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
             }
             this.graph.shutdown();
@@ -205,7 +203,6 @@ public class BlueprintsGraphOutputMapReduce {
                                     context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
                                 } catch (Exception e) {
                                     LOGGER.error("Could not commit transaction during Reduce.reduce():", e);
-                                    System.err.println("Could not commit transaction during Reduce.reduce():" + e);
                                     context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
                                 }
                                 // needed for Titan 0.2.0 and below.
@@ -214,18 +211,15 @@ public class BlueprintsGraphOutputMapReduce {
                             }
                         } else {
                             LOGGER.warn("No target vertex: faunusVertex[" + faunusEdge.getVertex(IN).getId() + "] blueprintsVertex[" + otherId + "]");
-                            System.err.println("No target vertex: faunusVertex[" + faunusEdge.getVertex(IN).getId() + "] blueprintsVertex[" + otherId + "]");
                             context.getCounter(Counters.NULL_VERTEX_EDGES_IGNORED).increment(1l);
                         }
                     }
                 } else {
                     LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "] blueprintsVertex[" + blueprintsId + "]");
-                    System.err.println("No source vertex: faunusVertex[" + key.get() + "] blueprintsVertex[" + blueprintsId + "]");
                     context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                 }
             } else {
                 LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "]");
-                System.err.println("No source vertex: faunusVertex[" + key.get() + "]");
                 context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
             }
 
@@ -242,7 +236,6 @@ public class BlueprintsGraphOutputMapReduce {
                 }
             } catch (Exception e) {
                 LOGGER.error("Could not commit transaction during Reduce.cleanup():", e);
-                System.err.println("Could not commit transaction during Reduce.cleanup():" + e);
                 context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
             }
             this.graph.shutdown();

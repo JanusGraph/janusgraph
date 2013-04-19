@@ -23,8 +23,8 @@ public class EdgeCopyMapReduce {
     public static final String FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION = "faunus.graph.input.edge-copy.direction";
 
     public enum Counters {
-        EDGES_INVERTED,
-        EDGES_AGGREGATED
+        EDGES_COPIED,
+        EDGES_ADDED
     }
 
 
@@ -59,7 +59,7 @@ public class EdgeCopyMapReduce {
             }
             this.longWritable.set(value.getIdAsLong());
             context.write(this.longWritable, this.vertexHolder.set('r', value));
-            context.getCounter(Counters.EDGES_INVERTED).increment(edgesInverted);
+            context.getCounter(Counters.EDGES_COPIED).increment(edgesInverted);
         }
 
     }
@@ -112,7 +112,7 @@ public class EdgeCopyMapReduce {
                 }
             }
             context.write(NullWritable.get(), this.vertex);
-            context.getCounter(Counters.EDGES_AGGREGATED).increment(edgesAggregated);
+            context.getCounter(Counters.EDGES_ADDED).increment(edgesAggregated);
         }
     }
 }

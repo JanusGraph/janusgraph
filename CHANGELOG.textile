@@ -28,8 +28,9 @@ h3. Version 0.3.0 (NOT OFFICIALLY RELEASED YET)
 * Added @ScriptOutputFormat@ to support the arbitrary writing of an HDFS file line from a @FaunusVertex@
 * Introduced the @faunus.engine@ property namespace for properties that are global to the pipeline
 * Added support for vertex-centric "filters" for isolating subsets of a graph @InputFormat@
-* Fixed a severe bug in the propagation of @Configurations@ throughout a Faunus job sequence
+* Fixed a severe bug in the propagation of @Configurations@ throughout a Faunus job sequence (@EmptyConfiguration@)
 * Renamed @GraphSONUtility@ to @FaunusGraphSONUtility@ to avoid name conflicts with Blueprints
+* Added @EdgeCopyMapReduce@ to support graph transpose for bidirectional edges
 
 ==<hr/>==
 
