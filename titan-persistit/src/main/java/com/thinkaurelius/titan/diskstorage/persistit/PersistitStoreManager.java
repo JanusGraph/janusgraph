@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.persistit;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
@@ -44,7 +45,7 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         features.hasLocalKeyPartition = false;
     }
 
-    private static Persistit db;
+    private Persistit db;
     private Exchange exchange;
 
     private Configuration config;
@@ -55,34 +56,32 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         stores = new HashMap<String, PersistitKeyValueStore>();
 
         config = cloneConfig(configuration);
-        if (db == null) {
-            // read config and setup
-            properties = new Properties();
-            String datapath = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
-            Preconditions.checkArgument(datapath != null, "Need to specify storage directory");
-            directory = getOrCreateDataDirectory(datapath);
-            properties.put("datapath", datapath);
+        // read config and setup
+        properties = new Properties();
+        String datapath = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
+        Preconditions.checkArgument(datapath != null, "Need to specify storage directory");
+        directory = getOrCreateDataDirectory(datapath);
+        properties.put("datapath", datapath);
 
-            // On pathSeparator is ":" on 'Nix systems - File.separator is what is intended.
+        // On pathSeparator is ":" on 'Nix systems - File.separator is what is intended.
 
-            properties.put("journalpath", directory + File.separator + VOLUME_NAME);
-            properties.put("logfile", directory + File.separator + VOLUME_NAME + ".log");
+        properties.put("journalpath", directory + File.separator + VOLUME_NAME);
+        properties.put("logfile", directory + File.separator + VOLUME_NAME + ".log");
 
-            // @todo: make these tunable
-            properties.put("buffer.count.16384", "5000");
-            properties.put("volume.1", directory + File.separator + VOLUME_NAME
-                    + ",create,pageSize:16384,initialPages:1000,extensionPages:1000,maximumPages:1000000");
+        // @todo: make these tunable
+        properties.put("buffer.count.16384", "5000");
+        properties.put("volume.1", directory + File.separator + VOLUME_NAME
+                + ",create,pageSize:16384,initialPages:1000,extensionPages:1000,maximumPages:1000000");
 
-            try {
-                db = new Persistit(properties);
-                db.initialize();
-            } catch (PersistitException ex) {
-                throw new PermanentStorageException(ex.toString());
-            }
+        try {
+            db = new Persistit(properties);
+            db.initialize();
+        } catch (PersistitException ex) {
+            throw new PermanentStorageException(ex.toString());
         }
 
         //do some additional config setup
-        config.addProperty(Backend.TITAN_BACKEND_VERSION, "0.2.1");
+        config.addProperty(Backend.TITAN_BACKEND_VERSION, "0.2.2-SNAPSHOT");
     }
 
     @Override
@@ -127,7 +126,6 @@ public class PersistitStoreManager implements KeyValueStoreManager {
 
     @Override
     public void close() throws StorageException {
-        /*
         if (db != null) {
             if (!stores.isEmpty()) {
                 throw new IllegalStateException("Cannot shutdown manager since some databases are still open");
@@ -138,7 +136,6 @@ public class PersistitStoreManager implements KeyValueStoreManager {
                 throw new PermanentStorageException(ex.toString());
             }
         }
-        */
     }
 
     /**
@@ -184,7 +181,7 @@ public class PersistitStoreManager implements KeyValueStoreManager {
 
         }
         close();
-        //@todo: delete storage directory?
+        IOUtils.deleteFromDirectory(directory);
     }
 
     @Override
