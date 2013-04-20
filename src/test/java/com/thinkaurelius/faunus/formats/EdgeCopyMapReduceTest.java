@@ -22,7 +22,6 @@ public class EdgeCopyMapReduceTest extends BaseTest {
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new EdgeCopyMapReduce.Map());
-        mapReduceDriver.setCombiner(new EdgeCopyMapReduce.Combiner());
         mapReduceDriver.setReducer(new EdgeCopyMapReduce.Reduce());
     }
 

@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus;
 
 import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraOutputFormat;
+import com.tinkerpop.pipes.transform.TransformPipe;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -54,7 +55,7 @@ public class FaunusPipelineTest extends BaseTest {
         }
 
         try {
-            pipe.order(Tokens.Order.INCREASING, "name").V();
+            pipe.order(TransformPipe.Order.INCR, "name").V();
             assertTrue(false);
         } catch (IllegalStateException e) {
             assertTrue(true);

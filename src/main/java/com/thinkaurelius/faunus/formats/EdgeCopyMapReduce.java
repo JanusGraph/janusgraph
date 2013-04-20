@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.util.ExceptionFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -44,6 +45,8 @@ public class EdgeCopyMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = context.getConfiguration().getEnum(FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
+            if (this.direction.equals(Direction.BOTH))
+                throw new InterruptedException(ExceptionFactory.bothIsNotSupported().getMessage());
         }
 
         @Override
@@ -64,31 +67,6 @@ public class EdgeCopyMapReduce {
 
     }
 
-    public static class Combiner extends Reducer<LongWritable, Holder<FaunusVertex>, LongWritable, Holder<FaunusVertex>> {
-
-        private Direction direction = Direction.OUT;
-        private final FaunusVertex vertex = new FaunusVertex();
-        private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
-
-        @Override
-        public void setup(final Reducer<LongWritable, Holder<FaunusVertex>, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
-            this.direction = context.getConfiguration().getEnum(FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
-        }
-
-        @Override
-        public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
-            this.vertex.reuse(key.get());
-            for (final Holder<FaunusVertex> holder : values) {
-                if (holder.getTag() == 's') {
-                    this.vertex.addEdges(this.direction.opposite(), holder.get());
-                } else {
-                    context.write(key, holder);
-                }
-            }
-            context.write(key, this.vertexHolder.set('s', this.vertex));
-        }
-    }
-
     public static class Reduce extends Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> {
 
         private Direction direction = Direction.OUT;
@@ -97,6 +75,8 @@ public class EdgeCopyMapReduce {
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
             this.direction = context.getConfiguration().getEnum(FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
+            if (this.direction.equals(Direction.BOTH))
+                throw new InterruptedException(ExceptionFactory.bothIsNotSupported().getMessage());
         }
 
         @Override

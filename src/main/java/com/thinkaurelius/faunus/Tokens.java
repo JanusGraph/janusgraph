@@ -7,20 +7,6 @@ public class Tokens {
 
     public enum Action {DROP, KEEP}
 
-    public enum Order {INCREASING, DECREASING}
-
-
-    public static enum F {
-        /**
-         * decreasing order
-         */
-        decr,
-        /**
-         * increasing order
-         */
-        incr
-    }
-
     private static final String NAMESPACE = "faunus.mapreduce";
 
     public static String makeNamespace(final Class klass) {

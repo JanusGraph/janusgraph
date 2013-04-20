@@ -1,5 +1,7 @@
 package com.thinkaurelius.faunus.tinkerpop.gremlin;
 
+import com.tinkerpop.pipes.transform.TransformPipe;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +42,7 @@ public class Imports {
         imports.add("com.thinkaurelius.faunus.tinkerpop.gremlin.*");
         imports.add("com.tinkerpop.gremlin.Tokens.T");
         imports.add("com.tinkerpop.gremlin.groovy.*");
-        imports.add("com.thinkaurelius.faunus.Tokens.F");
+        imports.add("static " + TransformPipe.Order.class.getName() + ".*");
 
         // titan
         imports.addAll(com.thinkaurelius.titan.tinkerpop.gremlin.Imports.getImports());

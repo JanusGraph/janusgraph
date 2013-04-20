@@ -72,7 +72,7 @@ public class FaunusCompilerTest extends TestCase {
         assertEquals(mapClasses[1], VerticesVerticesMapReduce.Map.class.getName());
         assertEquals(compiler.jobs.get(0).getConfiguration().getStrings(VerticesVerticesMapReduce.LABELS + "-1").length, 1);
         assertEquals(compiler.jobs.get(0).getConfiguration().getStrings(VerticesVerticesMapReduce.LABELS + "-1")[0], "knows");
-        assertEquals(compiler.jobs.get(0).getCombinerClass(), VerticesVerticesMapReduce.Combiner.class);
+        assertEquals(compiler.jobs.get(0).getCombinerClass(), null);
         assertEquals(compiler.jobs.get(0).getReducerClass(), VerticesVerticesMapReduce.Reduce.class);
 
         assertEquals(compiler.jobs.get(1).getMapperClass(), MapSequence.Map.class);

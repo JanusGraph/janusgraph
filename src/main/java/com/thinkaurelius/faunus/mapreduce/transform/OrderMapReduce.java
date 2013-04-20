@@ -13,6 +13,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.pipes.transform.TransformPipe;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
@@ -54,18 +55,18 @@ public class OrderMapReduce {
         return configuration;
     }
 
-    public static Class<? extends WritableComparator> createComparator(final Tokens.Order order, final Class<? extends WritableComparable> comparable) {
+    public static Class<? extends WritableComparator> createComparator(final TransformPipe.Order order, final Class<? extends WritableComparable> comparable) {
         Class<? extends WritableComparator> comparatorClass = null;
         if (comparable.equals(LongWritable.class))
-            comparatorClass = order.equals(Tokens.Order.INCREASING) ? LongWritable.Comparator.class : LongWritable.DecreasingComparator.class;
+            comparatorClass = order.equals(TransformPipe.Order.INCR) ? LongWritable.Comparator.class : LongWritable.DecreasingComparator.class;
         else if (comparable.equals(IntWritable.class))
-            comparatorClass = order.equals(Tokens.Order.INCREASING) ? IntWritable.Comparator.class : WritableComparators.DecreasingIntComparator.class;
+            comparatorClass = order.equals(TransformPipe.Order.INCR) ? IntWritable.Comparator.class : WritableComparators.DecreasingIntComparator.class;
         else if (comparable.equals(FloatWritable.class))
-            comparatorClass = order.equals(Tokens.Order.INCREASING) ? FloatWritable.Comparator.class : WritableComparators.DecreasingFloatComparator.class;
+            comparatorClass = order.equals(TransformPipe.Order.INCR) ? FloatWritable.Comparator.class : WritableComparators.DecreasingFloatComparator.class;
         else if (comparable.equals(DoubleWritable.class))
-            comparatorClass = order.equals(Tokens.Order.INCREASING) ? DoubleWritable.Comparator.class : WritableComparators.DecreasingDoubleComparator.class;
+            comparatorClass = order.equals(TransformPipe.Order.INCR) ? DoubleWritable.Comparator.class : WritableComparators.DecreasingDoubleComparator.class;
         else if (comparable.equals(Text.class))
-            comparatorClass = order.equals(Tokens.Order.INCREASING) ? Text.Comparator.class : WritableComparators.DecreasingTextComparator.class;
+            comparatorClass = order.equals(TransformPipe.Order.INCR) ? Text.Comparator.class : WritableComparators.DecreasingTextComparator.class;
         return comparatorClass;
     }
 

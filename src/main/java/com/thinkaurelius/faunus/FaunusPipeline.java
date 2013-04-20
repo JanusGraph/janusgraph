@@ -34,6 +34,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.pipes.transform.TransformPipe;
 import com.tinkerpop.pipes.util.structures.Pair;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
@@ -88,14 +89,6 @@ public class FaunusPipeline {
             return Query.Compare.LESS_THAN;
         else
             return Query.Compare.LESS_THAN_EQUAL;
-    }
-
-    private Tokens.Order convert(final Tokens.F order) {
-        if (order.equals(Tokens.F.decr))
-            return Tokens.Order.DECREASING;
-        else
-            return Tokens.Order.INCREASING;
-
     }
 
     protected class State {
@@ -215,7 +208,7 @@ public class FaunusPipeline {
 
         if (null != this.graph.getConf().get(EdgeCopyMapReduce.FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION)) {
             this.compiler.addMapReduce(EdgeCopyMapReduce.Map.class,
-                    EdgeCopyMapReduce.Combiner.class,
+                    null,
                     EdgeCopyMapReduce.Reduce.class,
                     null,
                     LongWritable.class,
@@ -361,7 +354,7 @@ public class FaunusPipeline {
         this.state.incrStep();
 
         this.compiler.addMapReduce(VerticesVerticesMapReduce.Map.class,
-                VerticesVerticesMapReduce.Combiner.class,
+                null,
                 VerticesVerticesMapReduce.Reduce.class,
                 null,
                 LongWritable.class,
@@ -411,15 +404,15 @@ public class FaunusPipeline {
         this.state.assertAtVertex();
         this.state.incrStep();
 
-        this.compiler.addMapReduce(VerticesVerticesMapReduce.Map.class,
-                VerticesVerticesMapReduce.Combiner.class,
-                VerticesVerticesMapReduce.Reduce.class,
+        this.compiler.addMapReduce(VerticesEdgesMapReduce.Map.class,
+                null,
+                VerticesEdgesMapReduce.Reduce.class,
                 null,
                 LongWritable.class,
                 Holder.class,
                 NullWritable.class,
                 FaunusVertex.class,
-                VerticesVerticesMapReduce.createConfiguration(direction, labels));
+                VerticesEdgesMapReduce.createConfiguration(direction, labels));
         this.state.set(Edge.class);
         makeMapReduceString(VerticesEdgesMapReduce.class, direction.name(), Arrays.asList(labels));
         return this;
@@ -549,7 +542,7 @@ public class FaunusPipeline {
      * @param elementKey the key of the element to associate it with
      * @return the extended FaunusPipeline
      */
-    public FaunusPipeline order(final Tokens.Order order, final String elementKey) {
+    public FaunusPipeline order(final TransformPipe.Order order, final String elementKey) {
         this.state.assertNotLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null != pair) {
@@ -576,7 +569,7 @@ public class FaunusPipeline {
      * @param order increasing and descending order
      * @return the extended FaunusPipeline
      */
-    public FaunusPipeline order(final Tokens.Order order) {
+    public FaunusPipeline order(final TransformPipe.Order order) {
         return this.order(order, Tokens.ID);
     }
 
@@ -588,8 +581,8 @@ public class FaunusPipeline {
      * @param elementKey the key of the element to associate it with
      * @return the extended FaunusPipeline
      */
-    public FaunusPipeline order(final Tokens.F order, final String elementKey) {
-        return this.order(convert(order), elementKey);
+    public FaunusPipeline order(final com.tinkerpop.gremlin.Tokens.T order, final String elementKey) {
+        return this.order(com.tinkerpop.gremlin.Tokens.mapOrder(order), elementKey);
     }
 
     /**
@@ -598,8 +591,8 @@ public class FaunusPipeline {
      * @param order increasing and descending order
      * @return the extended FaunusPipeline
      */
-    public FaunusPipeline order(final Tokens.F order) {
-        return this.order(convert(order));
+    public FaunusPipeline order(final com.tinkerpop.gremlin.Tokens.T order) {
+        return this.order(com.tinkerpop.gremlin.Tokens.mapOrder(order));
     }
 
 

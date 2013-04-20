@@ -87,36 +87,6 @@ public class VerticesVerticesMapReduce {
         }
     }
 
-    public static class Combiner extends Reducer<LongWritable, Holder, LongWritable, Holder> {
-        private FaunusVertex vertex;
-
-        @Override
-        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
-        }
-
-        private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
-
-        @Override
-        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
-            this.vertex.reuse(key.get());
-            char outTag = 'x';
-            for (final Holder holder : values) {
-                final char tag = holder.getTag();
-                if (tag == 'v') {
-                    this.vertex.addAll((FaunusVertex) holder.get());
-                    outTag = 'v';
-                } else if (tag == 'p') {
-                    this.vertex.getPaths(holder.get(), true);
-                } else {
-                    this.vertex.getPaths(holder.get(), false);
-                }
-            }
-            context.write(key, this.holder.set(outTag, this.vertex));
-        }
-
-    }
-
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
         private FaunusVertex vertex;
