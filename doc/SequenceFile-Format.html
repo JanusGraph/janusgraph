@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>SequenceFile Format</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+  <h1>SequenceFile Format</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/SequenceFile-Format"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/SequenceFile-Format"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><img src="https://raw.github.com/thinkaurelius/faunus/master/doc/images/hadoop-logo.jpg" alt="" /></p>
+<ul><li><strong>InputFormat</strong>: <code>org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat</code></li>
+	<li><strong>OutputFormat</strong>: <code>org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat</code></li>
+</ul><p><a href="http://hadoop.apache.org">Hadoop’s</a> native binary data file is the <a href="http://wiki.apache.org/hadoop/SequenceFile">SequenceFile</a>. Every <code>Writable</code> object implements methods that enable it to both read itself <em>from</em> and write itself <em>to</em> a SequenceFile. Because both <code>FaunusVertex</code> and <code>FaunusEdge</code> implement <code>Writable</code>, they can be captured by a SequenceFile. Moreover, given that a SequenceFile is a binary format, it supports a more compact representation that found with other text-based formats such as <a class="internal present" href="GraphSON-Format.html">GraphSON</a>.</p>
+<h2>Faunus-Specific Compression<a class="anchor" id="Faunus-Specific-Compression" href="#Faunus-Specific-Compression"></a></h2>
+<p>The following is a list of compression techniques used by Faunus within a SequenceFile.</p>
+<ul><li><a href="http://en.wikipedia.org/wiki/Variable-width_encoding">Variable-width encoding</a> of all ints and longs.</li>
+	<li>Edge’s sorted by direction to reduce the number of direction encodings.</li>
+	<li>Edge’s sorted by label to reduce the number of label encodings.</li>
+	<li>Only the adjacent vertex id stored as the root vertex’s id can be inferred.</li>
+	<li>Element property type encoding represented by a single byte.</li>
+</ul><h2>Intermediate Format<a class="anchor" id="Intermediate-Format" href="#Intermediate-Format"></a></h2>
+<p>Given that a SequenceFile is compact, splittable, and a native Hadoop format, Faunus makes use of the SequenceFile as the intermediate representation between consecutive Faunus jobs. In other words, when a Faunus computation requires more than one MapReduce phase, a SequenceFile representing the output of the first MapReduce job is temporarily persisted in <a href="http://en.wikipedia.org/wiki/Apache_Hadoop#Hadoop_Distributed_File_System"><span class="caps">HDFS</span></a> and fed as the input to the second MapReduce job.</p>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-01-13 11:09:23</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

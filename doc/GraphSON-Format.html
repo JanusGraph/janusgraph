@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>GraphSON Format</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+  <h1>GraphSON Format</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/GraphSON-Format"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/GraphSON-Format"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><img src="http://www.json.org/img/json160.gif" alt="" /></p>
+<ul><li><strong>InputFormat</strong>: <code>com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat</code></li>
+	<li><strong>OutputFormat</strong>: <code>com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat</code></li>
+</ul><p><a href="https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library">GraphSON</a> is a <a href="http://www.json.org/"><span class="caps">JSON</span></a> based graph format developed by <a href="http://tinkerpop.com">TinkerPop</a> with readers and writers provided by <a href="https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library">Blueprints</a>. Faunus makes use of a slight variation of the typical form that is:</p>
+<ul><li><strong>vertex-centric</strong>: a row in a Faunus GraphSON file is a vertex, its properties, and its incident edges (and their respective properties).</li>
+	<li><strong>long id based</strong>: vertex and edge ids must be longs as Faunus uses the long address space for all its graph computing operations.</li>
+	<li><strong>less verbose</strong>: a row does not include <code>_type</code> information nor are both <code>_inV</code> and <code>_outV</code> long ids required to be represented by an edge as one of the ids can be inferred from the incident vertex.</li>
+</ul><p><em>The Graph of the Gods</em> dataset deployed with all Aurelius products is represented below in Faunus GraphSON.</p>
+<div class="highlight"><pre><span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"saturn"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"titan"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"father"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">12</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">1</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"jupiter"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"god"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">"_outE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"lives"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">13</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">4</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">16</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">3</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">14</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">2</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"father"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">12</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">0</span><span class="p">}],</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">17</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">3</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">2</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"father"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">24</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">7</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"neptune"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"god"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="nt">"_outE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"lives"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">20</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">5</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">19</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">3</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">1</span><span class="p">}],</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">18</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">3</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">14</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">1</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"pluto"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"god"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="nt">"_outE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"pet"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">23</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">11</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"lives"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">6</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">17</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">1</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">18</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">2</span><span class="p">}],</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">19</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">2</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">16</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">1</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"sky"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"location"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"lives"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">13</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">1</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"sea"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"location"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">5</span><span class="p">,</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"lives"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">20</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">2</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"tartarus"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"location"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"lives"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">3</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"lives"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">22</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">11</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"hercules"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"demigod"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span><span class="nt">"_outE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"mother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">25</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">8</span><span class="p">},{</span><span class="nt">"time"</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"battled"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">26</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">9</span><span class="p">},{</span><span class="nt">"time"</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"battled"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">27</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">10</span><span class="p">},{</span><span class="nt">"time"</span><span class="p">:</span><span class="mi">12</span><span class="p">,</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"battled"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">28</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">11</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"father"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">24</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">1</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"alcmene"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"human"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">8</span><span class="p">,</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"mother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">25</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">7</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"nemean"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"monster"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">9</span><span class="p">,</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"time"</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"battled"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">26</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">7</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"hydra"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"monster"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">10</span><span class="p">,</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"time"</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"battled"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">27</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">7</span><span class="p">}]}</span>
+<span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"cerberus"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"monster"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">11</span><span class="p">,</span><span class="nt">"_outE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"lives"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">22</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">6</span><span class="p">}],</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"pet"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">23</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">3</span><span class="p">},{</span><span class="nt">"time"</span><span class="p">:</span><span class="mi">12</span><span class="p">,</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"battled"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">28</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">7</span><span class="p">}]}</span>
+</pre></div>
+<p>GraphSON is a space-expensive graph format in that it is a text-based <a href="http://en.wikipedia.org/wiki/Markup_language">markup language</a>. However, it is convenient for many developers to work with as its structure is simple (easy to create and parse). Note that Faunus only uses GraphSON as one of its supported formats for reading and writing a graph. Within a larger <a href="http://en.wikipedia.org/wiki/MapReduce">MapReduce</a> job chain, Faunus makes use of a Hadoop’s binary <a class="internal present" href="SequenceFile-Format.html">SequenceFile</a>.</p>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-01-18 16:56:38</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

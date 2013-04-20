@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Gremlin Steps</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+  <h1>Gremlin Steps</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Gremlin-Steps"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Gremlin-Steps"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><span class="float-left"><span><img src="https://github.com/tinkerpop/gremlin/raw/master/doc/images/gremlin-standing-small.png" /></span></span> <span class="float-right"><span><img src="images/faunus-head.png" width="105px" /></span></span> <a href="http://gremlin.tinkerpop.com">Gremlin</a> is a graph traversal language developed by <a href="http://tinkerpop.com">TinkerPop</a>. Faunus’ Gremlin steps are implemented in <a href="http://hadoop.apache.org/mapreduce/">MapReduce</a>. For sake of clarity, the Gremlin that compiles down to <a href="http://pipes.tinkerpop.com">Pipes</a> and is used for real-time traversals against a <a href="http://en.wikipedia.org/wiki/Graph_database">graph database</a> is denoted Gremlin/Pipes. The Gremlin that is distributed with Faunus and compiles down to MapReduce is denoted Gremlin/Faunus.</p>
+<p><br /></p>
+<p>There are major conceptual differences between Gremlin/Pipes and Gremlin/Faunus. These differences are itemized below.</p>
+<ul><li>Gremlin/Faunus is <a href="http://en.wikipedia.org/wiki/Breadth-first_search">breadth-first</a>. Gremlin/Pipes is <a href="http://en.wikipedia.org/wiki/Depth-first_search">depth-first</a>.</li>
+	<li>Gremlin/Faunus processes rows of an adjacency matrix (vertex-centric). Gremlin/Pipes processes elements in a linked-list (element-centric).</li>
+	<li>Gremlin/Faunus is inherently parallel with each vertex being operated on simultaneously. Gremlin/Pipes is inherently serial with one element at a time being pushed through the pipeline.</li>
+</ul><p>The table below presents the steps provided with Gremlin/Faunus.</p>
+<table><tr><th>Gremlin/Faunus step </th>
+		<th>Description </th>
+		<th>Reduce? </th>
+	</tr><tr><th>transforms </th>
+		<td> </td>
+		<td> </td>
+	</tr><tr><td> <code>_</code> </td>
+		<td> the identity step that simply updates Hadoop counters </td>
+		<td> false </td>
+	</tr><tr><td> <code>transform(closure)</code> </td>
+		<td> evaluate the closure on current elements </td>
+		<td> false </td>
+	</tr><tr><td> <code>V</code> </td>
+		<td> start a traversal at all vertices </td>
+		<td> false </td>
+	</tr><tr><td> <code>E</code> </td>
+		<td> start a traversal at all edges </td>
+		<td> false </td>
+	</tr><tr><td> <code>v(id..)</code> </td>
+		<td> start a traversal at vertices with provided id </td>
+		<td> false </td>
+	</tr><tr><td> <code>out(labels..)</code> </td>
+		<td> traverse out from vertices to label-related vertices </td>
+		<td> true </td>
+	</tr><tr><td> <code>in(labels..)</code> </td>
+		<td> traverse in from vertices to label-related vertices </td>
+		<td> true </td>
+	</tr><tr><td> <code>both(labels..)</code> </td>
+		<td> traverse both directions from vertices to label-related vertices </td>
+		<td> true </td>
+	</tr><tr><td> <code>outE(labels..)</code> </td>
+		<td> traverse from vertices to outgoing label edges </td>
+		<td> true </td>
+	</tr><tr><td> <code>inE(labels..)</code> </td>
+		<td> traverse from vertices to incoming label edges </td>
+		<td> true </td>
+	</tr><tr><td> <code>bothE(labels..)</code> </td>
+		<td> traverse from vertices to in and out label edges </td>
+		<td> true </td>
+	</tr><tr><td> <code>outV</code> </td>
+		<td> traverse from edges to outgoing vertices </td>
+		<td> false </td>
+	</tr><tr><td> <code>inV</code> </td>
+		<td> traverse from edges to incoming vertices </td>
+		<td> false </td>
+	</tr><tr><td> <code>bothV</code> </td>
+		<td> traverse from edges to both in and out vertices </td>
+		<td>  false </td>
+	</tr><tr><td> <code>property(key,class?)</code> </td>
+		<td> emit element property values (class? for optimization) </td>
+		<td> false </td>
+	</tr><tr><td> <code>path</code> </td>
+		<td> emit the path taken up to the current elements </td>
+		<td> false </td>
+	</tr><tr><td> <code>order(order,key)</code> </td>
+		<td> order the previous properties and identify element by key </td>
+		<td> true </td>
+	</tr><tr><th>filters </th>
+		<td> </td>
+		<td> </td>
+	</tr><tr><td> <code>filter(closure)</code> </td>
+		<td> A generic filter that takes a boolean-closure </td>
+		<td> false </td>
+	</tr><tr><td> <code>has(key,values..)</code> </td>
+		<td> filter elements that don’t have key/value property (values or’d) </td>
+		<td> false </td>
+	</tr><tr><td> <code>has(key,compare,values..)</code> </td>
+		<td> filter elements that don’t have compared key/value property (values or’d) </td>
+		<td> false </td>
+	</tr><tr><td> <code>hasNot(key,values..)</code> </td>
+		<td> filter elements that do have key/value property (values or’d) </td>
+		<td> false </td>
+	</tr><tr><td> <code>hasNot(key,compare,values..)</code> </td>
+		<td> filter elements that do have compared key/value property (values or’d) </td>
+		<td> false </td>
+	</tr><tr><td> <code>interval(key,value1,value2)</code> </td>
+		<td> filter elements that don’t have value in range </td>
+		<td> false </td>
+	</tr><tr><td> <code>dedup</code> </td>
+		<td> remove any duplicates in current traversal step </td>
+		<td> false </td>
+	</tr><tr><td> <code>back(step)</code> </td>
+		<td> go back to elements seen at previous step </td>
+		<td> true </td>
+	</tr><tr><td> <code>simplePath</code> </td>
+		<td> filter all elements reached by a cyclic, non-simple path </td>
+		<td> false </td>
+	</tr><tr><th>side-effects </th>
+		<td> </td>
+		<td> </td>
+	</tr><tr><td> <code>sideEffect(closure)</code> </td>
+		<td> mutate elements according to the provided closure </td>
+		<td> false </td>
+	</tr><tr><td> <code>as(name)</code> </td>
+		<td> name the previous step for future reference </td>
+		<td> false </td>
+	</tr><tr><td> <code>linkOut(label,step,key?)</code> </td>
+		<td> create outgoing edge to previous vertices with <code>key?</code> being a weight property </td>
+		<td> true </td>
+	</tr><tr><td> <code>linkIn(label,step,key?)</code> </td>
+		<td> create incoming edge to previous vertices with <code>key?</code> being a weight property </td>
+		<td> true </td>
+	</tr><tr><td> <code>keep</code> </td>
+		<td> remove all elements not at current step (of current type) </td>
+		<td> true[v]/false[e] </td>
+	</tr><tr><td> <code>drop</code> </td>
+		<td> remove all elements at current step (of current type) </td>
+		<td> true[v]/false[e] </td>
+	</tr><tr><td> <code>groupCount</code> </td>
+		<td> count the number of previously specified properties (a distribution) </td>
+		<td> true </td>
+	</tr><tr><td> <code>groupCount(closure,closure)</code> </td>
+		<td> process current elements with closure and incr count with closure </td>
+		<td> true </td>
+	</tr><tr><td> <code>script(filename,args..)</code> </td>
+		<td> compute the script file against all vertices in the graph </td>
+		<td> false </td>
+	</tr></table><h2>Note on Path-Based Traversals<a class="anchor" id="Note-on-Path-Based-Traversals" href="#Note-on-Path-Based-Traversals"></a></h2>
+<p>When a computation requires the history of a traversal, <a href="http://en.wikipedia.org/wiki/Combinatorics">combinatoric</a> explosions can occur which are expensive in terms of both space (the size of the output) and time (computing the output). The following steps are steps that turn <strong>on</strong> path computations. By default, path computations are turned <strong>off</strong> unless <code>enablePath()</code> is explicitly called within the expression.</p>
+<ul><li><code>path</code></li>
+	<li><code>simplePath</code></li>
+	<li><code>back</code></li>
+	<li><code>linkOut</code></li>
+	<li><code>linkIn</code></li>
+</ul><p>When paths are turned on, Faunus provides a <code>WARN</code> message.</p>
+<div class="highlight"><pre>gremlin&gt; g.V.out.path
+12/09/17 09:00:25 WARN mapreduce.FaunusCompiler: Path calculations are enabled for this Faunus job (space and time expensive)
+...
+</pre></div>
+<p>In short, be wary of long (or non-filtering) traversals that make use of path information as this can greatly hinder performance and lead to memory issues (even disk memory issues!).</p>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-04-16 17:30:58</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

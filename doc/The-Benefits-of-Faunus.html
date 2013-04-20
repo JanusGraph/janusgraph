@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>The Benefits of Faunus</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+  <h1>The Benefits of Faunus</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/The-Benefits-of-Faunus"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/The-Benefits-of-Faunus"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><img src="images/faunus-head.png" alt="" /><img src="images/hadoop-elephant.png" alt="" /></p>
+<p>Faunus is a <a href="http://hadoop.apache.org/">Hadoop</a> centric <a href="http://en.wikipedia.org/wiki/Graph_(mathematics)">graph</a> analytics engine. It is used to compute <a href="http://en.wikipedia.org/wiki/Graph_rewriting">graph derivations</a>, <a href="http://en.wikipedia.org/wiki/Network_theory">graph statistics</a>, and graph data mappings (input/output mappings) on massive-scale graphs represented across a multi-machine cluster. Beyond this foundation, other benefits are itemized below.</p>
+<ul><li>Process “infinite sized” graphs using the functional, parallel <a href="http://hadoop.apache.org/docs/stable/mapred_tutorial.html">MapReduce</a> computing model.</li>
+	<li>Express complex global graph traversals or graph statistics as simple <a href="http://gremlin.tinkerpop.com">Gremlin queries</a> (via <a href="http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop"><span class="caps">REPL</span></a> or <a href="http://en.wikipedia.org/wiki/Command-line_interface"><span class="caps">CLI</span></a>). No knowledge of MapReduce or Java code required as Gremlin expressions are automatically compiled to MapReduce steps.</li>
+	<li>Leverage <a href="https://github.com/thinkaurelius/faunus/wiki/Distributed-Graph-Computing-with-Gremlin">vertex-centric distributed graph computing</a> against a live graph database.</li>
+	<li>Numerous input/output formats supported which enables Faunus to be used as a graph data mapping tool.</li>
+	<li>Process graphs in the distributed graph database <a href="http://thinkaurelius.github.com/titan/">Titan</a>. Take advantage of <a href="http://cassandra.apache.org/">Cassandra’s</a> and <a href="http://hbase.apache.org/">HBase’s</a> native Hadoop connectivity.</li>
+	<li>Process graphs exposed by TinkerPop’s <a href="http://rexster.tinkerpop.com">Rexster</a> graph server. Simply pull graph data out of any <a href="http://blueprints.tinkerpop.com">Blueprints</a> enabled <a href="http://en.wikipedia.org/wiki/Graph_database">graph database</a>.</li>
+	<li>Process graphs represented in <a href="https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library">GraphSON</a>. Simply store the text-representation in <a href="http://hadoop.apache.org/hdfs/"><span class="caps">HDFS</span></a>.</li>
+	<li>Process graphs represented in various <a href="http://www.w3.org/RDF/"><span class="caps">RDF</span></a> formats. Simply store the text-representation in <span class="caps">HDFS</span>.</li>
+	<li>Output graphs as an edge list to easily interoperate with other graph analysis packages (e.g. <a href="http://www.r-project.org/">R</a> <a href="http://igraph.sourceforge.net/">iGRaph</a>).</li>
+	<li>Custom input and output format scripts can be provided for general purpose data import/export.</li>
+</ul>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-04-20 12:29:15</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

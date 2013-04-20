@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Faunus and Hadoop</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+  <h1>Faunus and Hadoop</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Faunus-and-Hadoop"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Faunus-and-Hadoop"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><img src="images/faunus-elephants.png" alt="" /></p>
+<p>Faunus is designed to support global graph traversals over massive-scale graphs. In particular, this typically leads to two particular use cases: graph derivations and graph statistics.</p>
+<ul><li><strong>Graph derivation</strong>: Given an input graph, derive a new graph based upon the input graph’s structure and semantics. Other terms include <a href="http://en.wikipedia.org/wiki/Graph_rewriting">graph rewriting</a> and graph transformations.
+	<ul><li>deriving a <em>cousin</em>-graph from <em>father</em> and <em>brother</em> edges.</li>
+		<li>deriving a youth <em>friend</em>-graph by removing all vertices with age greater than 30 and keeping only <em>friend</em> edges.</li>
+		<li>adding properties to the graph elements according to some traversal.</li>
+	</ul></li>
+	<li><strong>Graph statistic</strong>: A graph is a complex structure that can best be understood when the nature of its structure is distilled down to a manageable set of numbers. An analogous term is <a href="http://en.wikipedia.org/wiki/Network_science">graph/network analysis</a>.
+	<ul><li>counting the number of vertices and edges in the graph.</li>
+		<li>determining the <a href="http://en.wikipedia.org/wiki/Degree_distribution">degree distribution</a> of the graph.</li>
+		<li>determining the distribution of edges labels in the graph.</li>
+		<li>counting the number of paths that lead to vertices.</li>
+		<li>emanating all paths of length 3 between two sets of vertices.</li>
+	</ul></li>
+</ul><h2>Introduction to Hadoop<a class="anchor" id="Introduction-to-Hadoop" href="#Introduction-to-Hadoop"></a></h2>
+<p><img src="images/hadoop-logo.jpg" alt="" /></p>
+<p><a href="http://hadoop.apache.org">Hadoop</a> is a distributed storage and processing system that greatly simplifies the creation of distributed computing jobs. The default storage layer for Hadoop is <a href="http://hadoop.apache.org/docs/stable/hdfs_user_guide.html"><span class="caps">HDFS</span></a>. <span class="caps">HDFS</span> is similar to any other file system in that it can be used to store arbitrarily formatted files (e.g. binary, text, etc.). However, <span class="caps">HDFS</span> allows for the storage of files so large that they can not be represented on a single machine. As such, <span class="caps">HDFS</span> is a distributed file system. Given files distributed over <span class="caps">HDFS</span>, it is possible to process these files using Hadoop’s distributed processing framework, <a href="http://hadoop.apache.org/docs/stable/mapred_tutorial.html">MapReduce</a>. MapReduce represents a computation as a series of parallel/atomic key/value pair computations. There are two steps to MapReduce:</p>
+<ul><li><strong>Map</strong>: For every <code>&lt;key1,value1&gt;</code> input, yield <code>&lt;key2,value2&gt;</code> outputs.</li>
+	<li><strong>Reduce</strong>: For every <code>&lt;key2,list&lt;value2&gt;&gt;</code> input, yield <code>&lt;key3, value3&gt;</code> outputs.</li>
+</ul><p>In this way, the map-step can be seen as a parallel analysis of all the <code>&lt;key1,value1&gt;</code> pairs represented in the source file/location. The reduce-step aggregates all the values (<code>value2</code>) emitted by the previous map-step that have the same key (<code>key2</code>). In the reduce-step, some algorithm is evaluated over those values (<code>list&lt;value2&gt;</code>) to ultimately write an arbitrary number of <code>&lt;key3,value3&gt;</code> pairs to the sink file/location.</p>
+<h2>Introduction to Graphs<a class="anchor" id="Introduction-to-Graphs" href="#Introduction-to-Graphs"></a></h2>
+<p><span class="float-left"><span><img src="images/graph-globe.png" width="175px" /></span></span></p>
+<p>A <a href="http://en.wikipedia.org/wiki/Graph_(mathematics)">graph</a> is a data structure composed of vertices (dots,things) and edges (lines,links). A vertex has a set of incoming edges and a set of outgoing edges. There are numerous <a href="http://arxiv.org/abs/1006.2361">types of graphs</a> and the one used by Faunus is the <a href="https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model">property graph model</a> exposed by the <a href="http://blueprints.tinkerpop.com">Blueprints</a> <span class="caps">API</span>. A property graph is multi-relational in that edges are labeled to denote different types of relationships between vertices. Moreover, every vertex/edge (generally known as an element) can have an arbitrary number of key/value pairs associated with it (note that these key/value pairs should not be confused with the key/value pairs of Hadoop). Graphs are typically processed using traversals. A traversal is a algorithmic walk over the graph in order to arrive at a particular destination (e.g. search or <strong>derivation</strong>) or to yield some side-effect in the process (e.g. a ranking or recommendation or <strong>statistic</strong>).</p>
+<h2>Faunus and Hadoop<a class="anchor" id="Faunus-and-Hadoop" href="#Faunus-and-Hadoop"></a></h2>
+<p>Faunus leverages <a href="http://hadoop.apache.org/">Hadoop</a> for what Hadoop’s MapReduce is best at: parallel processing a massive number of atomic records with (as best as possible) limited communication between records. With Faunus, these atomic records are the vertices of a graph and the processing is global graph traversals.</p>
+<p><img src="images/adjacency-list.png" alt="" /></p>
+<p>A graph can be represented by an <a href="http://en.wikipedia.org/wiki/Adjacency_list">adjacency list</a>. Each “row” represents a vertex along with its incident edges. For property graphs, the vertex and edge properties are stored in the row as well. Faunus interprets a graph from this perspective. Every key/value in Hadoop is a single vertex along with its properties and its incoming and outgoing edges. As such, a Faunus MapReduce job operates on each vertex in parallel.</p>
+<p><img src="images/faunus-graph-workflow.png" alt="" /></p>
+<p>There are two types of derivation operations in Faunus.</p>
+<ul><li><strong>Map-Only</strong>: Filters, Element Mutations
+	<ul><li><strong>Map</strong>: For every <code>&lt;null,vertex&gt;</code> input, yield a <code>&lt;null,vertex&gt;</code> output.</li>
+	</ul></li>
+	<li><strong>MapReduce</strong>: Traversals, Vertex Filters, Groupings/Aggregations
+	<ul><li><strong>Map</strong>: For every <code>&lt;null,vertex&gt;</code> input, yield a <code>&lt;id,tagged_element&gt;</code> output.</li>
+		<li><strong>Reduce</strong>: For every <code>&lt;id,list&lt;tagged_element&gt;&gt;</code> input, yield a <code>&lt;null,vertex&gt;</code> output.</li>
+	</ul></li>
+</ul><p>For every vertex in a map-only step, the vertex is either allowed or filtered from the next processing step or the vertex is mutated in some way (e.g. properties removed/added). For every vertex in a map-reduce step, the vertex’s edges are analyzed and messages are sent to the adjacent vertices. These messages are then aggregated at the reduce step and the message receiving vertex is updated in some way.</p>
+<p>Given that the input and output of both map-only and map-reduce steps is <code>&lt;null,vertex&gt;</code>, it is possible to chain these steps together to yield a more complex derivation. The language used to do the chaining is called <a href="http://gremlin.tinkerpop.com">Gremlin</a>. Faunus’ implementation of Gremlin is breadth-first, cluster oriented, and massively parallel.</p>
+<p>The purpose of Faunus (as with Gremlin in general) is to either yield a graph derivation or a graph statistic. These two concepts are graphically represented below.</p>
+<p><strong>Graph derivation</strong></p>
+<p><img src="images/graph-derivation.png" alt="" /></p>
+<p><strong>Graph statistic</strong></p>
+<p><img src="images/graph-statistic.png" alt="" /></p>
+<h2>References<a class="anchor" id="References" href="#References"></a></h2>
+<p>The following articles provided insight into the various theoretical and technical issues encountered during Faunus’ design and development.</p>
+<ul><li>Rodriguez M.A., Shinavier, J., <a href="http://arxiv.org/abs/0806.2274">Exposing Multi-Relational Networks to Single-Relational Network Analysis Algorithms,</a> Journal of Informetrics, 4(1), pp. 29—41, December 2009.</li>
+</ul><ul><li>Lin, J., Dyer, C., <a href="http://lintool.github.com/MapReduceAlgorithms/index.html">Data-Intensive Text Processing with MapReduce,</a> Morgan &amp; Claypool Publishers, 2010.</li>
+</ul><ul><li>Kepner, J., Gilbert, J., <a href="http://www.amazon.com/Algorithms-Language-Algebra-Software-Environments/dp/0898719909">Graph Algorithms in the Language of Linear Algebra,</a> Society for Industrial &amp; Applied Mathematics, 2011.</li>
+</ul><ul><li>White, T., <a href="http://www.amazon.com/Hadoop-Definitive-Guide-Tom-White/dp/1449311520/">Hadoop: The Definitive Guide,</a> O’Reilly Media, 2012.</li>
+</ul><ul><li>Katsov, I., <a href="http://highlyscalable.wordpress.com/2012/02/01/mapreduce-patterns/">MapReduce Patterns, Algorithms, and Use Cases,</a> Highly Scalable Blog, February 2012.</li>
+</ul>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>vadasg</b>, 2012-11-07 05:40:44</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

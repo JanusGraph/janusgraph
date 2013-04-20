@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Rexster Format</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+  <h1>Rexster Format</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Rexster-Format"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Rexster-Format"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><img src="https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-logo.png" alt="" /></p>
+<ul><li><strong>InputFormat</strong>: <code>com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat</code></li>
+</ul><p><a href="http://rexster.tinkerpop.com">Rexster</a> is a graph server that exposes any <a href="http://blueprints.tinkerpop.com">Blueprints</a> graph (e.g. TinkerGraph, Neo4j, OrientDB, <span class="caps">DEX</span>, Titan, and Sail <span class="caps">RDF</span> Stores) through <span class="caps">REST</span> and a binary protocol called RexPro. (See the <a href="https://github.com/tinkerpop/rexster/wiki/The-Benefits-of-Rexster">Benefits of Rexster</a>).</p>
+<h2>Rexster and Faunus<a class="anchor" id="Rexster-and-Faunus" href="#Rexster-and-Faunus"></a></h2>
+<p>Faunus can be configured to be used with Rexster (version 2.1.0+, see the Rexster Operations section of <a class="internal present" href="Gotchas-and-Limitations.html">Gotchas and Limitations</a>) through a Faunus <a href="https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles">Rexster Kibble</a> (also known as an <a href="https://github.com/tinkerpop/rexster/wiki/Extensions">Extension</a>).</p>
+<p>The easiest way to get started is with one of the standard “toy” graphs that comes with Rexster: the <a href="https://github.com/tinkerpop/gremlin/wiki/Defining-a-More-Complex-Property-Graph">Grateful Dead Graph</a>. To deploy Faunus to Rexster, first make a directory as in:</p>
+<div class="highlight"><pre>mkdir REXSTER_HOME/ext/faunus
+</pre></div>
+<p>Then, if building Faunus from source:</p>
+<div class="highlight"><pre>cp FAUNUS_HOME/target/faunus-x.y.z-standalone/lib/*.* REXSTER_HOME/ext/faunus
+</pre></div>
+<p>or, if using the Faunus zipped distribution download:</p>
+<div class="highlight"><pre>cp FAUNUS_HOME/lib/*.* REXSTER_HOME/ext/faunus
+</pre></div>
+<p><strong><span class="caps">NOTE</span></strong>: Future releases will have a much more efficient/simple packaging model.</p>
+<p>Next, edit the following segment of the <code>rexster.xml</code> file to tell Rexster to expose the Faunus Kibble on the <code>gratefulgraph</code>:</p>
+<div class="highlight"><pre><span class="nt">&lt;graph&gt;</span>
+    <span class="nt">&lt;graph-name&gt;</span>gratefulgraph<span class="nt">&lt;/graph-name&gt;</span>
+    <span class="nt">&lt;graph-type&gt;</span>com.tinkerpop.rexster.config.TinkerGraphGraphConfiguration<span class="nt">&lt;/graph-type&gt;</span>
+    <span class="nt">&lt;graph-location&gt;</span>data/graph-example-2<span class="nt">&lt;/graph-location&gt;</span>
+    <span class="nt">&lt;extensions&gt;</span>
+        <span class="nt">&lt;allows&gt;</span>
+            <span class="nt">&lt;allow&gt;</span>tp:gremlin<span class="nt">&lt;/allow&gt;</span>
+            <span class="nt">&lt;allow&gt;</span>faunus:rexsterinputformat<span class="nt">&lt;/allow&gt;</span>
+         <span class="nt">&lt;/allows&gt;</span>
+     <span class="nt">&lt;/extensions&gt;</span>
+ <span class="nt">&lt;/graph&gt;</span>
+</pre></div>
+<p>Start Rexster (See <a href="https://github.com/tinkerpop/rexster/wiki/Getting-Started">Getting Started</a> with Rexster) and note the inclusion of the Faunus Kibble in the console on <code>gratefulgraph</code>:</p>
+<div class="highlight"><pre>rexster$ bin/rexster.sh -s -c ./bin/rexster.xml
+[INFO] WebServer - .:Welcome to Rexster:.
+...
+[INFO] RexsterApplicationGraph - Graph [gratefulgraph] - configured with allowable namespace [tp:gremlin]
+[INFO] RexsterApplicationGraph - Graph [gratefulgraph] - configured with allowable namespace [faunus:rexsterinputformat]
+...
+[INFO] WebServer - Rexster Server running on: [http://localhost:8182]
+[INFO] WebServer - Rexster configured with no security.
+[INFO] WebServer - RexPro serving on port: [8184]
+[INFO] ShutdownManager$ShutdownSocketListener - Bound shutdown socket to /127.0.0.1:8183. Starting listener thread for shutdown requests.
+</pre></div>
+<p>Next, a <code>rexster-input.properties</code> is created with the following properties. Note that <code>bin/rexster-input.properties</code> is provided by default with Faunus.</p>
+<div class="highlight"><pre><span class="na">faunus.graph.input.format</span><span class="o">=</span><span class="s">com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat</span>
+<span class="na">faunus.graph.input.rexster.hostname</span><span class="o">=</span><span class="s">127.0.0.1</span>
+<span class="na">faunus.graph.input.rexster.port</span><span class="o">=</span><span class="s">8182</span>
+<span class="na">faunus.graph.input.rexster.ssl</span><span class="o">=</span><span class="s">false</span>
+<span class="na">faunus.graph.input.rexster.graph</span><span class="o">=</span><span class="s">gratefulgraph</span>
+<span class="na">faunus.graph.input.rexster.v-estimate</span><span class="o">=</span><span class="s">800</span>
+
+<span class="na">faunus.graph.output.format</span><span class="o">=</span><span class="s">com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat</span>
+<span class="na">faunus.sideeffect.output.format</span><span class="o">=</span><span class="s">org.apache.hadoop.mapreduce.lib.output.TextOutputFormat</span>
+<span class="na">faunus.output.location</span><span class="o">=</span><span class="s">output</span>
+<span class="na">faunus.output.location.overwrite</span><span class="o">=</span><span class="s">true</span>
+</pre></div>
+<p>From here, any Faunus job can be run where now, the source data is being pulled from Rexster.  Start a Gremlin terminal from Faunus:</p>
+<div class="highlight"><pre>faunus$ bin/gremlin.sh
+</pre></div>
+<p>Then do a simple label distribution:</p>
+<div class="highlight"><pre>gremlin&gt; g = FaunusFactory.open('bin/rexster-input.properties')
+==&gt;faunusgraph[rexsterinputformat-&gt;graphsonoutputformat]
+gremlin&gt; g.V.in('followed_by').name.groupCount()
+12/09/18 19:01:36 INFO mapreduce.FaunusCompiler: Compiled to 2 MapReduce job(s)
+...
+==&gt;A MIND TO GIVE UP LIVIN	1
+==&gt;ADDAMS FAMILY	2
+==&gt;AINT SUPERSTITIOUS	9
+==&gt;ALABAMA GETAWAY	14
+==&gt;ALL ALONG THE WATCHTOWER	26
+==&gt;ALTHEA	58
+==&gt;ARE YOU LONELY FOR ME	
+==&gt;...
+</pre></div>
+<h2>Configuration Cheatsheet<a class="anchor" id="Configuration-Cheatsheet" href="#Configuration-Cheatsheet"></a></h2>
+<p><img src="images/rexster-gremlin-elephant.png" /></p>
+<p>All settings Rexster specific configuration settings in <code>bin/rexster-input.properties</code> are prefixed with <code>faunus.graph.input.rexster</code>.</p>
+<table><tr><th>Setting </th>
+		<th>Description </th>
+	</tr><tr><td> <code>hostname</code> </td>
+		<td> The IP address or hostname of the Rexster server. </td>
+	</tr><tr><td> <code>port</code> </td>
+		<td> The port that Rexster is serving the <span class="caps">REST</span> <span class="caps">API</span> from. </td>
+	</tr><tr><td> <code>ssl</code> </td>
+		<td> Tells Faunus if it should connect to Rexster with <code>http</code> or <code>https</code>. </td>
+	</tr><tr><td> <code>graph</code> </td>
+		<td> The name of the graph as <a href="https://github.com/tinkerpop/rexster/wiki/Rexster-Configuration">configured</a> in Rexster. </td>
+	</tr><tr><td> <code>v-estimate</code> </td>
+		<td> The estimated number of vertices in the target graph.  Helps Faunus understand how to split the job into even bits for better efficiency in processing. Set this value to <code>-1</code> to have Faunus request the actual vertex count from Rexster.  This configuration will come at the expense of a full iteration of the vertices in the graph.</td>
+	</tr><tr><td> <code>username</code> </td>
+		<td> The username to send on the authentication header, if basic <a href="https://github.com/tinkerpop/rexster/wiki/Rexster-Security">Rexster Security</a> is configured. </td>
+	</tr><tr><td> <code>password</code> </td>
+		<td> The password to send on the authentication header, if basic <a href="https://github.com/tinkerpop/rexster/wiki/Rexster-Security">Rexster Security</a> is configured. </td>
+	</tr></table><h2>Blueprints Graph Implementations<a class="anchor" id="Blueprints-Graph-Implementations" href="#Blueprints-Graph-Implementations"></a></h2>
+<p>Rexster can expose any Blueprints graph to Faunus.  It is important to note that Faunus is only capable of working with graph vertex and edge identifiers that are of the <code>long</code> data type.  Using a Blueprints graph that does not have identifiers that resolve to <code>long</code> will produce errors.</p>
+<h3>OrientDB Configuration<a class="anchor" id="OrientDB-Configuration" href="#OrientDB-Configuration"></a></h3>
+<p><a href="http://www.orientdb.org">OrientDB</a> does not use <code>long</code> identifiers and instead has a compound identifier which consists of a <code>cluster id</code> and unique identifier for the item in the cluster.  The Faunus Kibble is capable of converting this compound identifier to something Faunus can operate with.  To tell the Faunus Kibble to convert the compound identifier to <code>long</code>, add the following configuration to <code>rexster.xml</code> for any OrientDB database:</p>
+<div class="highlight"><pre><span class="nt">&lt;graph&gt;</span>
+    <span class="nt">&lt;graph-name&gt;</span>orientdbsample<span class="nt">&lt;/graph-name&gt;</span>
+    <span class="nt">&lt;graph-type&gt;</span>orientgraph<span class="nt">&lt;/graph-type&gt;</span>
+    <span class="nt">&lt;graph-location&gt;</span>local:/tmp/orientdb<span class="nt">&lt;/graph-location&gt;</span>
+    <span class="nt">&lt;properties&gt;</span>
+        <span class="nt">&lt;username&gt;</span>admin<span class="nt">&lt;/username&gt;</span>
+        <span class="nt">&lt;password&gt;</span>admin<span class="nt">&lt;/password&gt;</span>
+    <span class="nt">&lt;/properties&gt;</span>
+    <span class="nt">&lt;extensions&gt;</span>
+        <span class="nt">&lt;allows&gt;</span>
+            <span class="nt">&lt;allow&gt;</span>tp:gremlin<span class="nt">&lt;/allow&gt;</span>
+            <span class="nt">&lt;allow&gt;</span>faunus:rexsterinputformat<span class="nt">&lt;/allow&gt;</span>
+         <span class="nt">&lt;/allows&gt;</span>
+         <span class="nt">&lt;extension&gt;</span>
+	     <span class="nt">&lt;namespace&gt;</span>faunus<span class="nt">&lt;/namespace&gt;</span>
+             <span class="nt">&lt;name&gt;</span>rexsterinputformat<span class="nt">&lt;/name&gt;</span>
+             <span class="nt">&lt;configuration&gt;</span>
+                 <span class="nt">&lt;id-handler&gt;</span>orientdb<span class="nt">&lt;/id-handler&gt;</span>
+             <span class="nt">&lt;/configuration&gt;</span>
+         <span class="nt">&lt;/extension&gt;</span>
+     <span class="nt">&lt;/extensions&gt;</span>
+ <span class="nt">&lt;/graph&gt;</span>
+</pre></div>
+<h3>Titan BerkeleyDB Configuration<a class="anchor" id="Titan-BerkeleyDB-Configuration" href="#Titan-BerkeleyDB-Configuration"></a></h3>
+<p>The <a href="https://github.com/thinkaurelius/titan/wiki/Using-BerkeleyDB">Titan BerkeleyDB</a> can be exposed to Faunus via Rexster.  It does not expose <code>long</code> identifiers for edges through its Blueprints interface.  The Faunus Kibble is capable of converting the identifier it does use to something Faunus can operate with.  To tell the Faunus Kibble to convert the identifier to <code>long</code>, add the following configuration to <code>rexster.xml</code> for any Titan BerkeleyDB database:</p>
+<div class="highlight"><pre><span class="nt">&lt;graph&gt;</span>
+  <span class="nt">&lt;graph-name&gt;</span>titanexample<span class="nt">&lt;/graph-name&gt;</span>
+  <span class="nt">&lt;graph-type&gt;</span>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration<span class="nt">&lt;/graph-type&gt;</span>
+  <span class="nt">&lt;graph-location&gt;</span>/tmp/titan<span class="nt">&lt;/graph-location&gt;</span>
+  <span class="nt">&lt;graph-read-only&gt;</span>false<span class="nt">&lt;/graph-read-only&gt;</span>
+  <span class="nt">&lt;properties&gt;</span>
+    <span class="nt">&lt;storage.backend&gt;</span>local<span class="nt">&lt;/storage.backend&gt;</span>
+    <span class="nt">&lt;buffer-size&gt;</span>100<span class="nt">&lt;/buffer-size&gt;</span>
+  <span class="nt">&lt;/properties&gt;</span>
+  <span class="nt">&lt;extensions&gt;</span>
+    <span class="nt">&lt;allows&gt;</span>
+      <span class="nt">&lt;allow&gt;</span>tp:gremlin<span class="nt">&lt;/allow&gt;</span>
+      <span class="nt">&lt;allow&gt;</span>faunus:rexsterinputformat<span class="nt">&lt;/allow&gt;</span>
+    <span class="nt">&lt;/allows&gt;</span>
+    <span class="nt">&lt;extension&gt;</span>
+      <span class="nt">&lt;namespace&gt;</span>faunus<span class="nt">&lt;/namespace&gt;</span>
+      <span class="nt">&lt;name&gt;</span>rexsterinputformat<span class="nt">&lt;/name&gt;</span>
+      <span class="nt">&lt;configuration&gt;</span>
+        <span class="nt">&lt;id-handler&gt;</span>titan-berkeleyje<span class="nt">&lt;/id-handler&gt;</span>
+      <span class="nt">&lt;/configuration&gt;</span>
+    <span class="nt">&lt;/extension&gt;</span>
+  <span class="nt">&lt;/extensions&gt;</span>
+<span class="nt">&lt;/graph&gt;</span>
+</pre></div>
+<p>It is important to note that this configuration is for BerkeleyDB configuration only.  For all other modes of Titan operations (i.e. Cassandra), use the appropriate <a class="internal present" href="Titan-Format.html">Titan Formats</a>.</p>
+<h2>Usage in EC2<a class="anchor" id="Usage-in-EC2" href="#Usage-in-EC2"></a></h2>
+<p><a href="http://aws.amazon.com/ec2/"><img src="http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick//logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png" alt="" /></a></p>
+<p>It’s not difficult to get Faunus running with Rexster in <a href="http://aws.amazon.com/ec2/">Amazon EC2</a>.  There are just a few EC2 and Rexster configuration steps to consider in addition to the instructions for <a class="internal present" href="Running-Faunus-on-Amazon-EC2.html">Running Faunus on Amazon EC2</a>.</p>
+<p>After downloading Rexster to the EC2 instance, ensure that the <code>base-uri</code> and <code>rexster-server-host</code> configuration properties of <code>rexster.xml</code> are set to the private IP address of the EC2 instance.  The configuration should look something like the following:</p>
+<div class="highlight"><pre><span class="nt">&lt;rexster&gt;</span>
+  ...
+  <span class="nt">&lt;rexster-server-host&gt;</span>10.118.95.50<span class="nt">&lt;/rexster-server-host&gt;</span>
+  <span class="nt">&lt;base-uri&gt;</span>http://10.118.95.50<span class="nt">&lt;/base-uri&gt;</span>
+  ...
+<span class="nt">&lt;/rexster&gt;</span>
+</pre></div>
+<p>By default, Faunus creates an EC2 security group called <code>jclouds#faunuscluster</code>, which all the Hadoop nodes are created in.  To allow the nodes in this cluster to talk to the Rexster instance, the security group that Rexster is in must allow access to that security group.</p>
+<p>To provide this access, first utilize Whirr to establish the Hadoop cluster (as described <a class="internal present" href="Running-Faunus-on-Amazon-EC2.html">here</a>) and find the <code>jclouds#faunuscluster</code> security group in the Amazon EC2 Console:</p>
+<p><img src="images/faunus-security-group-screenshot.png" alt="" /></p>
+<p>Take note of the security group identifier.  In the case above, it is <code>sg-02e38b6a</code>.  Edit the Inbound settings for the security group that Rexster is in.  In the following screenshot, Rexster exists in a security group that is aptly named “Rexster Group”.</p>
+<p><img src="images/faunus-rexster-security-group-screenshot.png" alt="" /></p>
+<p>Add a rule that allows the <code>jclouds#faunuscluster</code> to access the Rexster Group over port 8182 (the default port established in <code>rexster.xml</code>).  Utilize the security group identifier as shown in the above screenshot to create this rule.  It is now possible to run a Faunus job against Rexster.</p>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>spmallette</b>, 2013-02-04 10:56:19</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Performance Tuning</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+  <h1>Performance Tuning</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Performance-Tuning"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Performance-Tuning"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><img src="http://4.bp.blogspot.com/_j6mB7TMmJJY/TNBQJUikfGI/AAAAAAAAAgo/2VZCtGMBBgE/s1600/p1.png" width="500px" /><br />
+  — Courtesy of Ricky Ho’s <a href="http://horicky.blogspot.com/">Pragmatic Programmer</a> blog.</p>
+<p><a href="http://hadoop.apache.org/">Hadoop</a> is a complex piece of software with a variegation of components including a distributed file system, a  distributed computing framework with job trackers, data nodes, and numerous simultaneously running <span class="caps">JVM</span> instances. With any complex software environment, there are tunings that can be employed to ensure both efficient use of <strong>space</strong> (network bandwidth, hard drive, memory, etc.) and <strong>time</strong> (object creation, combiners, in-memory combiners, etc.). This section presents various tricks to Hadoop/Faunus that can be used to tune Faunus job sequences and developed Faunus MapReduce extensions.</p>
+<h2>Faunus Specific Tunings<a class="anchor" id="Faunus-Specific-Tunings" href="#Faunus-Specific-Tunings"></a></h2>
+<p><img src="images/faunus-head-logo.png" alt="" /></p>
+<ul><li><strong>Use SequenceFiles for repeated analyses</strong>: The Hadoop <a class="internal present" href="SequenceFile-Format.html">SequenceFile</a> is the most optimal file format for Faunus. If repeated analysis is going to be done on a graph, then it is beneficial to first generate a SequenceFile representation of that graph in <span class="caps">HDFS</span>. This file can then serve as the input for repeated analyses. Generating a SequenceFile is as simple as running the identity step <code>g._</code> with the following Faunus properties.</li>
+</ul><div class="highlight"><pre><span class="na">faunus.graph.output.format</span><span class="o">=</span><span class="s">org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat</span>
+</pre></div>
+<ul><li><strong>Avoid text-based representations of graphs</strong>: The <a class="internal present" href="GraphSON-Format.html">GraphSON</a> representation of a graph is easy to read/write, but inefficient. DBpedia as a GraphSON file is 23gigs and 11gigs as a <a class="internal present" href="SequenceFile-Format.html">SequenceFile</a>. If possible, avoid using verbose text-based formats.</li>
+</ul><ul><li><strong>Reduce the size of the graph early in a job chain</strong>: A Faunus graph is typically multi-relational in that there are numerous types of edges in the graph. In many situations, all that information is not necessary for the graph derivation or statistic. As such, use filtering steps early on in the expression to reduce the graph down to the requisite information needed for the computation. Below, because only <em>battled</em> and <em>father</em> edges are used for the traversal, all other edges are filtered out prior to doing the traversal.</li>
+</ul><div class="highlight"><pre><span class="n">g</span><span class="o">.</span><span class="na">E</span><span class="o">.</span><span class="na">has</span><span class="o">(</span><span class="s1">'label'</span><span class="o">,</span><span class="s1">'battled'</span><span class="o">,</span><span class="s1">'father'</span><span class="o">).</span><span class="na">keep</span><span class="o">.</span><span class="na">V</span><span class="o">.</span><span class="na">as</span><span class="o">(</span><span class="s1">'x'</span><span class="o">).</span><span class="na">in</span><span class="o">(</span><span class="s1">'battled'</span><span class="o">).</span><span class="na">in</span><span class="o">(</span><span class="s1">'father'</span><span class="o">).</span><span class="na">linkOut</span><span class="o">(</span><span class="s1">'x'</span><span class="o">,</span><span class="s1">'enemy-father'</span><span class="o">)</span>
+</pre></div>
+<ul><li><strong>Make use of repeated map steps</strong>: When a chain of map-steps are issued, Faunus will process that chain in-memory and thus, there is no I/O within the chain. As such, it is best to organize the traversal (if possible) with all the maps front-loading the traversal/query.</li>
+</ul><ul><li><strong>A vertex must be storable in main memory</strong>: The atomic unit of Faunus is a vertex. A <code>FaunusVertex</code> is composed of the vertex’s properties, its incoming edges, its outgoing edges, the properties of those edges, and the path information of the traversal up to the elements. A vertex (and any working data structure) must be able to fit in main memory. As such, this is the limit of what can be processed by Faunus. Be sure to make use of <code>mapred.child.java.opts</code> if more memory is required for the largest vertex being processed (e.g. <code>-Xmx512m</code>).</li>
+</ul><ul><li><strong>Avoid long, non-filtering path-enabled traversals</strong>: When the history of a traversal is not needed, then the only information propagated between elements is the number of counter at the current element (as a long). When history is required, then an array of an array of element ids is propagated. With complex graph structures and with the breadth-first nature of Gremlin/Faunus, this can lead to a combinatorial explosion.</li>
+</ul><ul><li><strong>If no graph output needed, use <code>NoOpOutputFormat</code></strong>: If a graph derivation is not required, but instead some sideeffect computation, then set the final output format of the graph to be <code>NoOpOutputFormat</code>. If no output is needed at all, used Hadoop’s native <code>NullOutputFormat</code>.</li>
+</ul><div class="highlight"><pre><span class="na">faunus.graph.output.format</span><span class="o">=</span><span class="s">com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat</span>
+</pre></div>
+<h2>Hadoop Specific Tunings<a class="anchor" id="Hadoop-Specific-Tunings" href="#Hadoop-Specific-Tunings"></a></h2>
+<p><img src="images/hadoop-logo.jpg" alt="" /></p>
+<p>There are numerous Hadoop specific tunings. Below is a collection of blog posts that discuss tips and tricks for Hadoop.</p>
+<ul><li><a href="http://wiki.apache.org/hadoop/HowManyMapsAndReduces">http://wiki.apache.org/hadoop/HowManyMapsAndReduces</a></li>
+	<li><a href="http://allthingshadoop.com/2010/04/28/map-reduce-tips-tricks-your-first-real-cluster/">http://allthingshadoop.com/2010/04/28/map-reduce-tips-tricks-your-first-real-cluster/</a></li>
+	<li><a href="http://yaseminavcular.blogspot.com/2011/03/hadoop-java-heap-space-error.html">http://yaseminavcular.blogspot.com/2011/03/hadoop-java-heap-space-error.html</a></li>
+	<li><a href="http://www.cloudera.com/blog/2009/12/7-tips-for-improving-mapreduce-performance/">http://www.cloudera.com/blog/2009/12/7-tips-for-improving-mapreduce-performance/</a></li>
+	<li><a href="http://blog.erdemagaoglu.com/post/4605524309/lzo-vs-snappy-vs-lzf-vs-zlib-a-comparison-of">http://blog.erdemagaoglu.com/post/4605524309/lzo-vs-snappy-vs-lzf-vs-zlib-a-comparison-of</a></li>
+</ul>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-01-13 12:18:19</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

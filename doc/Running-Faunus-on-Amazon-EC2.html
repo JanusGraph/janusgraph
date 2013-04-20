@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Running Faunus on Amazon EC2</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+  <h1>Running Faunus on Amazon EC2</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Running-Faunus-on-Amazon-EC2"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Running-Faunus-on-Amazon-EC2"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><a href="http://aws.amazon.com/ec2/"><img src="http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick//logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png" alt="" /></a></p>
+<p><a href="http://aws.amazon.com/ec2/">Amazon EC2</a> and <a href="http://whirr.apache.org/">Whirr</a> make it easy to set up a <a href="http://hadoop.apache.org/">Hadoop</a> compute cluster that can then be utilized by Faunus. This section of documentation will explain how to set up a Hadoop cluster on Amazon EC2 and execute Faunus scripts.</p>
+<h2>Setting Up Whirr<a class="anchor" id="Setting-Up-Whirr" href="#Setting-Up-Whirr"></a></h2>
+<p><span class="float-left"><span><img src="http://whirr.apache.org/images/whirr-logo.png" width="150px" /></span></span></p>
+<blockquote>
+<p>Apache Whirr is a set of libraries for running cloud services. Whirr provides a cloud-neutral way to run services (you don’t have to worry about the idiosyncrasies of each provider), a common service <span class="caps">API</span> (the details of provisioning are particular to the service), and smart defaults for services (you can get a properly configured system running quickly, while still being able to override settings as needed). You can also use Whirr as a command line tool for deploying clusters. — <a href="http://whirr.apache.org/">The Apache Whirr Homepage</a></p>
+</blockquote>
+<p><br /></p>
+<p>Faunus provides a Whirr recipe for loading up a Hadoop cluster that is properly versioned for the Hadoop currently used by Faunus. This recipe is reproduced below. Please see the Whirr <a href="http://whirr.apache.org/docs/0.7.1/quick-start-guide.html">Quick Start</a> for more information about the parameters and how to set up an Amazon EC2 account (e.g. <code>ssh-keygen -t rsa -P ''</code> and setting <span class="caps">AWS</span> keys as environmental variables).</p>
+<div class="highlight"><pre>whirr.cluster-name<span class="o">=</span>faunuscluster
+whirr.instance-templates<span class="o">=</span>1 hadoop-jobtracker+hadoop-namenode,3 hadoop-datanode+hadoop-tasktracker
+whirr.provider<span class="o">=</span>aws-ec2
+whirr.identity<span class="o">=</span><span class="k">${</span><span class="nv">env</span><span class="p">:</span><span class="nv">AWS_ACCESS_KEY_ID</span><span class="k">}</span>
+whirr.credential<span class="o">=</span><span class="k">${</span><span class="nv">env</span><span class="p">:</span><span class="nv">AWS_SECRET_ACCESS_KEY</span><span class="k">}</span>
+whirr.private-key-file<span class="o">=</span><span class="k">${</span><span class="nv">sys</span><span class="p">:</span><span class="nv">user</span><span class="p">.home</span><span class="k">}</span>/.ssh/id_rsa
+whirr.public-key-file<span class="o">=</span><span class="k">${</span><span class="nv">sys</span><span class="p">:</span><span class="nv">user</span><span class="p">.home</span><span class="k">}</span>/.ssh/id_rsa.pub
+whirr.hadoop.version<span class="o">=</span>1.1.1
+</pre></div>
+<p>Once your Amazon EC2 keys and ssh key files have been properly set up, a Hadoop cluster can be launched. The recipe above creates a 4 node cluster.</p>
+<div class="highlight"><pre>faunus<span class="nv">$ </span>whirr launch-cluster --config bin/whirr.properties
+Bootstrapping cluster
+Configuring template
+Configuring template
+Starting 3 node<span class="o">(</span>s<span class="o">)</span> with roles <span class="o">[</span>hadoop-datanode, hadoop-tasktracker<span class="o">]</span>
+Starting 1 node<span class="o">(</span>s<span class="o">)</span> with roles <span class="o">[</span>hadoop-namenode, hadoop-jobtracker<span class="o">]</span>
+...
+</pre></div>
+<p><img src="images/ec2-screenshot.png" alt="" /></p>
+<p>When logging into the <a href="http://console.aws.amazon.com/ec2/">Amazon EC2 Console</a>, the cluster machines are visible. After running the Hadoop proxy shell script (in another window), the Hadoop cluster is ready for job submissions.</p>
+<div class="highlight"><pre>faunus<span class="nv">$.</span> ~/.whirr/faunuscluster/hadoop-proxy.sh
+Running proxy to Hadoop cluster at ec2-23-20-32-211.compute-1.amazonaws.com. Use Ctrl-c to quit. 
+</pre></div>
+<p>A simple check to ensure that the Hadoop cluster is working is to see if <span class="caps">HDFS</span> is available.</p>
+<div class="highlight"><pre>faunus<span class="nv">$ </span><span class="nb">export </span><span class="nv">HADOOP_CONF_DIR</span><span class="o">=</span>~/.whirr/faunuscluster
+faunus<span class="nv">$ </span>hadoop fs -ls /
+Found 3 items
+drwxr-xr-x   - hadoop supergroup          0 2012-07-20 19:13 /hadoop
+drwxrwxrwx   - hadoop supergroup          0 2012-07-20 19:13 /tmp
+drwxrwxrwx   - hadoop supergroup          0 2012-07-20 19:13 /user
+</pre></div>
+<h2>Recommended Map/Reduce Tasks Per Node<a class="anchor" id="Recommended-Map/Reduce-Tasks-Per-Node" href="#Recommended-Map/Reduce-Tasks-Per-Node"></a></h2>
+<p>Below is the recommended number of tasks for each <span class="caps">AWS</span> EC2 machine type. These numbers are the default values used by Amazon’s Elastic MapReduce service</p>
+<div class="highlight"><pre>m1.small 
+  mapred.tasktracker.map.tasks.maximum    = "2";
+  mapred.tasktracker.reduce.tasks.maximum = "1";
+c1.medium 
+  mapred.tasktracker.map.tasks.maximum    = "4";
+  mapred.tasktracker.reduce.tasks.maximum = "2";
+m1.large 
+  mapred.tasktracker.map.tasks.maximum    = "4";
+  mapred.tasktracker.reduce.tasks.maximum = "2";
+m1.xlarge
+  mapred.tasktracker.map.tasks.maximum    = "8";
+  mapred.tasktracker.reduce.tasks.maximum = "4";
+c1.xlarge 
+  mapred.tasktracker.map.tasks.maximum    = "8";
+  mapred.tasktracker.reduce.tasks.maximum = "4";
+</pre></div>
+<p>This can be set in Whirr recipe using the following properties:</p>
+<div class="highlight"><pre><span class="na">hadoop-mapreduce.mapred.tasktracker.map.tasks.maximum</span><span class="o">=</span><span class="s">8</span>
+<span class="na">hadoop-mapreduce.mapred.tasktracker.reduce.tasks.maximum</span><span class="o">=</span><span class="s">4</span>
+</pre></div>
+<p>Note that it is typically best to go with less than this amount as when a Hadoop cluster is under heavy load, JVMs can start to fail. Moreover, even with less mappers/reducers, performance is not greatly effected as there is less OS time spent dealing with swapping threads in and out of processing. Given that EC2 is a virtual machine environment, <span class="caps">CPU</span> statistics can be inaccurate. A safe configuration to use is:</p>
+<div class="highlight"><pre><span class="na">hadoop-mapreduce.mapred.tasktracker.jetty.cpu.check.enabled</span><span class="o">=</span><span class="s">false</span>
+</pre></div>
+<p>Finally, if Oracle’s Java <span class="caps">JVM</span> is desired, newer version of Whirr support the following Java install function.</p>
+<div class="highlight"><pre><span class="na">whirr.java.install-function</span><span class="o">=</span><span class="s">install_oab_java</span>
+</pre></div>
+<h2>Running a Faunus Script<a class="anchor" id="Running-a-Faunus-Script" href="#Running-a-Faunus-Script"></a></h2>
+<p><img src="images/faunus-elephants.png" alt="" /></p>
+<p>Faunus can deploy jobs to the Amazon EC2 cluster. The first thing to do is to put a graph on <span class="caps">HDFS</span>. For this example, use the toy <code>data/graph-of-the-gods.json</code> file. Once the file is in <span class="caps">HDFS</span>, a <code>faunus.sh</code> derivation can be executed.</p>
+<div class="highlight"><pre>faunus$ bin/gremlin.sh
+
+         \,,,/
+         (o o)
+-----oOOo-(_)-oOOo-----
+gremlin&gt; hdfs.copyFromLocal('data/graph-of-the-gods.json','graph-of-the-gods.json')
+==&gt;null
+gremlin&gt; g = FaunusFactory.open('bin/faunus.properties')
+==&gt;faunusgraph[graphsoninputformat-&gt;graphsonoutputformat]
+gremlin&gt; g.V.out.type
+12/09/18 00:29:34 INFO mapreduce.FaunusCompiler: Compiled to 2 MapReduce job(s)
+12/09/18 00:29:34 INFO mapreduce.FaunusCompiler: Executing job 1 out of 2: MapSequence[com.thinkaurelius.faunus.mapreduce.transform.VerticesMap.Map, com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce.Map, com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce.Reduce]
+12/09/18 00:29:34 INFO mapreduce.FaunusCompiler: Job data location: output/job-0
+...
+==&gt;titan
+==&gt;god
+==&gt;god
+==&gt;god
+==&gt;god
+==&gt;god
+==&gt;god
+==&gt;god
+==&gt;location
+==&gt;location
+==&gt;location
+==&gt;location
+==&gt;human
+==&gt;monster
+==&gt;monster
+==&gt;...
+gremlin&gt; hdfs.ls('output/*') 
+==&gt;rw-r--r-- ubuntu supergroup 0 _SUCCESS
+==&gt;rwxr-xr-x ubuntu supergroup 0 (D) _logs
+==&gt;rw-r--r-- ubuntu supergroup 0 _SUCCESS
+==&gt;rwxr-xr-x ubuntu supergroup 0 (D) _logs
+==&gt;rw-r--r-- ubuntu supergroup 435 graph-m-00000.bz2
+==&gt;rw-r--r-- ubuntu supergroup 75 sideeffect-m-00000.bz2
+</pre></div>
+<p><img src="images/dead-elephants.png" alt="" /></p>
+<p>When the cluster is no longer needed, Whirr can be used to shutdown the cluster.</p>
+<div class="highlight"><pre>faunus$ whirr destroy-cluster --config bin/whirr.properties 
+Starting to run scripts on cluster for phase destroyinstances: us-east-1/i-16376a6e, us-east-1/i-0c376a74, us-east-1/i-0a376a72
+Running destroy phase script on: us-east-1/i-16376a6e
+Running destroy phase script on: us-east-1/i-0c376a74
+Starting to run scripts on cluster for phase destroyinstances: us-east-1/i-08376a70
+Running destroy phase script on: us-east-1/i-0a376a72
+Running destroy phase script on: us-east-1/i-08376a70
+destroy phase script run completed on: us-east-1/i-0c376a74
+destroy phase script run completed on: us-east-1/i-0a376a72
+destroy phase script run completed on: us-east-1/i-16376a6e
+Successfully executed destroy script: [output=, error=, exitCode=0]
+destroy phase script run completed on: us-east-1/i-08376a70
+Successfully executed destroy script: [output=, error=, exitCode=0]
+Successfully executed destroy script: [output=, error=, exitCode=0]
+Successfully executed destroy script: [output=, error=, exitCode=0]
+Finished running destroy phase scripts on all cluster instances
+Destroying faunuscluster cluster
+Cluster faunuscluster destroyed
+faunus$
+</pre></div>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-03-21 12:45:50</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

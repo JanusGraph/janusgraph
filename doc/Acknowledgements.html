@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Acknowledgements</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+  <h1>Acknowledgements</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Acknowledgements"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Acknowledgements"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><img src="images/faunus-logo.png" width="400px" /></p>
+<p>Faunus is an ongoing effort by various developers, contributors, and organizations. Along with this explicit list of contributors, Faunus is also possible because of the excellent open source products that compose Faunus. Please see a list of these projects in the Faunus <a href="https://github.com/thinkaurelius/faunus/blob/master/pom.xml">pom.xml</a>.</p>
+<h2>People<a class="anchor" id="People" href="#People"></a></h2>
+<ol><li><a href="http://markorodriguez.com">Marko A. Rodriguez</a>: Creator and primary developer for Faunus.</li>
+	<li><a href="http://stephen.genoprime.com/">Stephen Mallette</a>: Provided support for <a href="https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library">GraphSON</a> and <a href="http://rexster.tinkerpop.com">Rexster</a> connectivity.</li>
+	<li><a href="http://matthiasb.com/">Matthias Broecheler</a>: Provided support for <a href="http://thinkaurelius.github.com/titan/">Titan</a> connectivity.</li>
+	<li><a href="http://www.ketrinayim.com/">Ketrina Yim</a>: Created the Faunus logo.</li>
+</ol><h2>Organizations<a class="anchor" id="Organizations" href="#Organizations"></a></h2>
+<ol><li><a href="http://thinkaurelius.com">Aurelius</a>: Provided the development team and maintains the Faunus codebase.</li>
+</ol>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2012-08-31 13:46:48</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

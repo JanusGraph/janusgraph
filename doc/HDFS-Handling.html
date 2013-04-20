@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>HDFS Handling</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+  <h1>HDFS Handling</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/HDFS-Handling"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/HDFS-Handling"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><img src="images/hdfs-logo.jpg" alt="" /></p>
+<p>The Hadoop Distributed File System (<span class="caps">HDFS</span>) is a filesystem that is supported by the nodes in the Hadoop compute cluster. <span class="caps">HDFS</span> has numerous similarities to typical filesystems such as those of the <a href="http://en.wikipedia.org/wiki/Linux">*nix</a> variety. The <code>hadoop</code> <span class="caps">CLI</span> utility provides a <a href="http://hadoop.apache.org/docs/r1.0.3/file_system_shell.html">collection of commands</a> that can be run from the local command line.</p>
+<p><span class="float-left"><span><img src="images/gremlin-elephant.png" width="120px" /></span></span></p>
+<p>Gremlin provides methods to easily interact with both the local file system and <span class="caps">HDFS</span> from within the <span class="caps">REPL</span>. These methods are provided in the table below. Note that the global variables <code>local</code> and <code>hdfs</code> reference the local and <span class="caps">HDFS</span> file systems, respectively. Finally, <em>pattern</em> refers to a regular expression pattern and <em>path</em> refers to an explicit path to a file or directory.</p>
+<p><br /><br /></p>
+<table><tr><th>Method </th>
+		<th>Description </th>
+	</tr><tr><td> <code>ls()</code> </td>
+		<td> list all the contents in the home directory </td>
+	</tr><tr><td> <code>ls(pattern)</code> </td>
+		<td> list all the contents that match the pattern </td>
+	</tr><tr><td> <code>result(path)</code> </td>
+		<td> display the directory of the final result of a Faunus job </td>
+	</tr><tr><td> <code>exists(path)</code> </td>
+		<td> return true or false on whether path exists </td>
+	</tr><tr><td> <code>rm(pattern)</code> </td>
+		<td> remove all paths that match the pattern </td>
+	</tr><tr><td> <code>rmr(pattern)</code> </td>
+		<td> recursively remove all paths that match the pattern </td>
+	</tr><tr><td> <code>copyToLocal(from,to)</code> </td>
+		<td> copy the <span class="caps">HDFS</span> path to the local filesystem </td>
+	</tr><tr><td> <code>copyFromLocal(from,to)</code> </td>
+		<td> copy the local path to <span class="caps">HDFS</span> </td>
+	</tr><tr><td> <code>mergeToLocal(from,to)</code> </td>
+		<td> merge the files at <span class="caps">HDFS</span> path to a single file on the local filesystem </td>
+	</tr><tr><td> <code>head(pattern,lines?)</code> </td>
+		<td> look at the top <code>?lines</code> of the files that match pattern </td>
+	</tr><tr><td> <code>unzip(from,to,delete)</code> </td>
+		<td> <a href="http://en.wikipedia.org/wiki/Bzip2">BZ2</a> unzip the path to another path </td>
+	</tr></table><h2>Useful Tricks<a class="anchor" id="Useful-Tricks" href="#Useful-Tricks"></a></h2>
+<ul><li>Use Gremlin/<span class="caps">HDFS</span> like *nix/file system.</li>
+</ul><div class="highlight"><pre>gremlin&gt; hdfs.ls('dbpedia')._().count()
+==&gt;228
+gremlin&gt; hdfs.head('output')._().sort{-(it.split()[1] as Integer)}
+==&gt;wikiPageWikiLink	158373970
+==&gt;sameAs	18707022
+==&gt;subject	15184863
+==&gt;wikiPageInterLanguageLink	13184401
+==&gt;wasDerivedFrom	11547302
+…
+</pre></div>
+<ul><li>Use Gremlin on a side-effect to configure another job.</li>
+</ul><div class="highlight"><pre>gremlin&gt; g.E.label.groupCount()
+gremlin&gt; x = hdfs.head('output')._().filter{(it.split()[1] as Integer) &gt; 1000}.transform{it.split()[0]}.toList().asArray()
+gremlin&gt; g.E.has('label',x).keep()
+</pre></div>
+<ol><li>Generate an edge label distribution and store the side-effect in <code>output</code>.</li>
+	<li>Get the side-effect and set <code>x</code> to only those edge labels that have more than 1000 counts.</li>
+	<li>Trim all edges from the graph that don’t have a label in <code>x</code>.</li>
+</ol>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-01-18 10:53:47</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>

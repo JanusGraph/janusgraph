@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+  <link rel="stylesheet" type="text/css" href="css/gollum.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/editor.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/dialog.css" media="all">
+  <link rel="stylesheet" type="text/css" href="css/template.css" media="all">
+  
+
+  <!--[if IE 7]>
+  <link rel="stylesheet" type="text/css" href="css/ie7.css" media="all">
+  <![endif]-->
+
+  <script>var baseUrl = ''</script>
+  <script type="text/javascript" src="css/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="css/mousetrap.min.js"></script>
+  <script type="text/javascript" src="css/gollum.js"></script>
+  <script type="text/javascript" src="css/gollum.dialog.js"></script>
+  <script type="text/javascript" src="css/gollum.placeholder.js"></script>
+  <script type="text/javascript" src="css/editor/gollum.editor.js"></script>
+
+
+  <title>Command Line Usage</title>
+</head>
+<body>
+
+<script>
+Mousetrap.bind(['e'], function( e ) {
+  e.preventDefault();
+  window.location = "/edit" + window.location.pathname;
+  return false;
+});
+</script>
+<div id="wiki-wrapper" class="page">
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+  <h1>Command Line Usage</h1>
+  <ul class="actions">
+    <li class="minibutton">
+      <div id="searchbar">
+        <form action="/search" method="get" id="search-form">
+        <div id="searchbar-fauxtext">
+          <input type="text" name="q" id="search-query" value="Search&hellip;" autocomplete="off">
+          <a href="#" id="search-submit" title="Search this wiki">
+            <span>Search</span>
+          </a>
+        </div>
+        </form>
+      </div>    </li>
+    <li class="minibutton"><a href="/"
+       class="action-edit-page">Home</a></li>
+    <li class="minibutton"><a href="/pages"
+      class="action-all-pages">All</a></li>
+    <li class="minibutton"><a href="/fileview"
+    class="action-all-pages">Files</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-new-page">New</a></li>
+    <li class="minibutton" class="jaws">
+      <a href="#" id="minibutton-rename-page">Rename</a></li>
+    <li class="minibutton"><a href="/edit/Command-Line-Usage"
+       class="action-edit-page">Edit</a></li>
+    <li class="minibutton"><a href="/history/Command-Line-Usage"
+       class="action-page-history">History</a></li>
+  </ul>
+</div>
+<div id="wiki-content">
+<div class="wrap">
+  <div id="wiki-body" class="gollum-textile-content">
+    <div id="template">
+      <p><img src="https://raw.github.com/thinkaurelius/faunus/master/doc/images/gremlin-terminal.png" alt="" /></p>
+<p>There are three ways to use Gremlin/Faunus:</p>
+<ol><li>Gremlin <span class="caps">REPL</span>: the interactive Gremlin shell.</li>
+	<li>Gremlin script: submitting a Gremlin traversal as a file.</li>
+	<li>Gremlin inline: submitting a Gremlin traversal as an inline parameter.</li>
+</ol><h2>Gremlin <span class="caps">REPL</span><a class="anchor" id="Gremlin-REPL" href="#Gremlin-REPL"></a></h2>
+<p>To start the Gremlin <span class="caps">REPL</span>, simply do:</p>
+<div class="highlight"><pre>faunus$ bin/gremlin.sh 
+
+         \,,,/
+         (o o)
+-----oOOo-(_)-oOOo-----
+gremlin&gt; 
+</pre></div>
+<h2>Gremlin Script<a class="anchor" id="Gremlin-Script" href="#Gremlin-Script"></a></h2>
+<p>Assume a file as follows:</p>
+<div class="highlight"><pre><span class="n">g</span> <span class="o">=</span> <span class="n">FaunusFactory</span><span class="o">.</span><span class="na">open</span><span class="o">(</span><span class="s1">'bin/faunus.properties'</span><span class="o">)</span>
+<span class="n">g</span><span class="o">.</span><span class="na">V</span><span class="o">.</span><span class="na">out</span><span class="o">(</span><span class="s1">'father'</span><span class="o">).</span><span class="na">name</span><span class="o">.</span><span class="na">submit</span><span class="o">()</span>
+</pre></div>
+<p>Note that <code>FaunusPipeline.submit()</code> is required to ultimately submit the job to the Hadoop cluster. In the Gremlin <span class="caps">REPL</span>, this is handled for the user automatically.</p>
+<div class="highlight"><pre>faunus$ bin/gremlin.sh -e test.groovy
+12/09/18 15:35:39 INFO mapreduce.FaunusCompiler: Compiled to 2 MapReduce job(s)
+...
+</pre></div>
+<h2>Gremlin Inline<a class="anchor" id="Gremlin-Inline" href="#Gremlin-Inline"></a></h2>
+<p>The arguments are as follows:</p>
+<ul><li>The location of the properties file denoting the <code>FaunusGraph</code>.</li>
+	<li>The Gremlin/Faunus script in quotes.</li>
+	<li>A set of overriding property values prefixed with <code>-D</code> (optional)
+	<ul><li>e.g. <code>-Dfaunus.input.location=agraph mapred.map.tasks=1</code></li>
+	</ul></li>
+</ul><div class="highlight"><pre>faunus$ bin/gremlin.sh -i bin/faunus.properties "g.V.out('father').name"
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler: Faunus: Graph Analytics Engine
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:         ,
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:     ,   |\ ,__
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:     |\   \/   `\
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:     \ `-.:.     `\
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:      `-.__ `\/\/\|
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:         / `'/ () \
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:       .'   /\     )
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:    .-'  .'| \  \__
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:  .'  __(  \  '`(()
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler: /_.'`  `.  |    )(
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:          \ |
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:           |/
+</pre></div>
+    </div>
+  </div>
+  </div>
+
+</div>
+<div id="footer">
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-03-06 22:15:07</p>
+  <p>
+    
+  </p>
+</div>
+</div>
+
+
+</body>
+</html>
