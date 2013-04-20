@@ -126,7 +126,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     @Override
     public synchronized void abort() throws StorageException {
-        if (!tx.isActive()) return;
+        if (tx == null || !tx.isActive()) return;
         
         // Transaction being aborted as already begun; can't begin() it again.
         // begin();
