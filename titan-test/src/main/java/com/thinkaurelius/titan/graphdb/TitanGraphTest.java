@@ -76,7 +76,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         TitanKey someid = tx.makeType().name("someid").unique(Direction.OUT).dataType(Object.class).indexed(Vertex.class).makePropertyKey();
 
-        TitanKey number = tx.makeType().name("number").dataType(Number.class).unique(Direction.OUT).makePropertyKey();
+
 
         TitanKey boolval = tx.makeType().name("boolval").dataType(Boolean.class).unique(Direction.OUT).makePropertyKey();
 
@@ -90,6 +90,11 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         try {
             tx.makeType().name("pint").dataType(int.class).makePropertyKey();
+            fail();
+        } catch (IllegalArgumentException e) {}
+
+        try {
+            tx.makeType().name("number").dataType(Number.class).unique(Direction.OUT).makePropertyKey();
             fail();
         } catch (IllegalArgumentException e) {}
 
@@ -188,7 +193,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         v1.setProperty("uid", "v1");
         v1.setProperty("someid", 100l);
         try {
-            v1.addProperty(number, 10.5);
+            v1.addProperty("int", 10.5);
             fail();
         } catch (IllegalArgumentException e) {
         }
@@ -225,7 +230,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         v2.setProperty("uid", "v2");
         v2.setProperty("someid", 200l);
         try {
-            v2.addProperty(number, 10.5);
+            v2.addProperty("int", 10.5);
             fail();
         } catch (IllegalArgumentException e) {
         }
