@@ -124,6 +124,7 @@ public class StandardTypeMaker implements TypeMaker {
         checkGeneralArguments();
         isUnidirectional=false;
         Preconditions.checkArgument(dataType!=null,"Need to specify a datatype");
+        Preconditions.checkArgument(!dataType.isPrimitive(),"Primitive types are not supported. Use the corresponding object type, e.g. Integer.class instead of int.class [%s]",dataType);
         Preconditions.checkArgument(!isUnique[EdgeDirection.position(IN)] ||
                 indexes.contains(IndexType.of(Vertex.class)), "A unique key requires the existence of a standard vertex index");
         return tx.makePropertyKey(new StandardKeyDefinition(name, group, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,

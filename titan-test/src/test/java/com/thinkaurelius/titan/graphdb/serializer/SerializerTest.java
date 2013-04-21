@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.graphdb.serializer;
 
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.attribute.DoubleSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.attribute.FloatSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.StandardKeyDefinition;
@@ -37,11 +39,6 @@ public class SerializerTest {
         serialize.registerClass(TestEnum.class,RESERVED_ID_OFFSET+1);
         serialize.registerClass(TestClass.class,RESERVED_ID_OFFSET+2);
         serialize.registerClass(short[].class,RESERVED_ID_OFFSET+3);
-        serialize.registerClass(boolean[].class,RESERVED_ID_OFFSET+4);
-        serialize.registerClass(IndexType.class,RESERVED_ID_OFFSET+5);
-        serialize.registerClass(StandardLabelDefinition.class,RESERVED_ID_OFFSET+6);
-        serialize.registerClass(StandardTypeGroup.class,RESERVED_ID_OFFSET+7);
-        serialize.registerClass(StandardKeyDefinition.class,RESERVED_ID_OFFSET+8);
 
         printStats = true;
     }
@@ -72,6 +69,73 @@ public class SerializerTest {
         if (printStats) log.debug(bufferStats(b));
         assertFalse(b.hasRemaining());
     }
+
+    @Test
+    public void classSerialization() {
+        DataOutput out = serialize.getDataOutput(128, true);
+        out.writeObjectNotNull(Boolean.class);
+        out.writeObjectNotNull(Byte.class);
+        out.writeObjectNotNull(Double.class);
+        ByteBuffer b = out.getByteBuffer();
+        assertEquals(Boolean.class,serialize.readObjectNotNull(b,Class.class));
+        assertEquals(Byte.class,serialize.readObjectNotNull(b,Class.class));
+        assertEquals(Double.class,serialize.readObjectNotNull(b,Class.class));
+    }
+
+    @Test
+    public void primitiveSerialization() {
+        DataOutput out = serialize.getDataOutput(128, true);
+        out.writeObjectNotNull(Boolean.FALSE);
+        out.writeObjectNotNull(Boolean.TRUE);
+        out.writeObjectNotNull(Byte.MIN_VALUE);
+        out.writeObjectNotNull(Byte.MAX_VALUE);
+        out.writeObjectNotNull(new Byte((byte)0));
+        out.writeObjectNotNull(Short.MIN_VALUE);
+        out.writeObjectNotNull(Short.MAX_VALUE);
+        out.writeObjectNotNull(new Short((short)0));
+        out.writeObjectNotNull(Character.MIN_VALUE);
+        out.writeObjectNotNull(Character.MAX_VALUE);
+        out.writeObjectNotNull(new Character('a'));
+        out.writeObjectNotNull(Integer.MIN_VALUE);
+        out.writeObjectNotNull(Integer.MAX_VALUE);
+        out.writeObjectNotNull(new Integer(0));
+        out.writeObjectNotNull(Long.MIN_VALUE);
+        out.writeObjectNotNull(Long.MAX_VALUE);
+        out.writeObjectNotNull(new Long(0));
+        out.writeObjectNotNull(FloatSerializer.MIN_VALUE);
+        out.writeObjectNotNull(FloatSerializer.MAX_VALUE);
+        out.writeObjectNotNull(new Float((float)0.0));
+        out.writeObjectNotNull(DoubleSerializer.MIN_VALUE);
+        out.writeObjectNotNull(DoubleSerializer.MAX_VALUE);
+        out.writeObjectNotNull(new Double(0.0));
+
+        ByteBuffer b = out.getByteBuffer();
+        assertEquals(Boolean.FALSE,serialize.readObjectNotNull(b,Boolean.class));
+        assertEquals(Boolean.TRUE,serialize.readObjectNotNull(b,Boolean.class));
+        assertEquals(Byte.MIN_VALUE,serialize.readObjectNotNull(b,Byte.class).longValue());
+        assertEquals(Byte.MAX_VALUE,serialize.readObjectNotNull(b,Byte.class).longValue());
+        assertEquals(0,serialize.readObjectNotNull(b,Byte.class).longValue());
+        assertEquals(Short.MIN_VALUE,serialize.readObjectNotNull(b,Short.class).longValue());
+        assertEquals(Short.MAX_VALUE,serialize.readObjectNotNull(b,Short.class).longValue());
+        assertEquals(0,serialize.readObjectNotNull(b,Short.class).longValue());
+        assertEquals(Character.MIN_VALUE,serialize.readObjectNotNull(b,Character.class).charValue());
+        assertEquals(Character.MAX_VALUE,serialize.readObjectNotNull(b,Character.class).charValue());
+        assertEquals(new Character('a'),serialize.readObjectNotNull(b,Character.class));
+        assertEquals(Integer.MIN_VALUE,serialize.readObjectNotNull(b,Integer.class).longValue());
+        assertEquals(Integer.MAX_VALUE,serialize.readObjectNotNull(b,Integer.class).longValue());
+        assertEquals(0,serialize.readObjectNotNull(b,Integer.class).longValue());
+        assertEquals(Long.MIN_VALUE,serialize.readObjectNotNull(b,Long.class).longValue());
+        assertEquals(Long.MAX_VALUE,serialize.readObjectNotNull(b,Long.class).longValue());
+        assertEquals(0,serialize.readObjectNotNull(b,Long.class).longValue());
+        assertEquals(FloatSerializer.MIN_VALUE,serialize.readObjectNotNull(b,Float.class).floatValue(),1e-20);
+        assertEquals(FloatSerializer.MAX_VALUE,serialize.readObjectNotNull(b,Float.class).floatValue(),1e-20);
+        assertEquals(0.0,serialize.readObjectNotNull(b,Float.class).floatValue(),1e-20);
+        assertEquals(DoubleSerializer.MIN_VALUE,serialize.readObjectNotNull(b,Double.class).doubleValue(),1e-40);
+        assertEquals(DoubleSerializer.MAX_VALUE,serialize.readObjectNotNull(b,Double.class).doubleValue(),1e-40);
+        assertEquals(0.0,serialize.readObjectNotNull(b,Double.class).doubleValue(),1e-20);
+
+    }
+
 
     @Test
     public void testObjectVerification() {

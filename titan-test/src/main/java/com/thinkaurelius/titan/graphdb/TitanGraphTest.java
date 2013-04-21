@@ -78,6 +78,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         TitanKey number = tx.makeType().name("number").dataType(Number.class).unique(Direction.OUT).makePropertyKey();
 
+        TitanKey boolval = tx.makeType().name("boolval").dataType(Boolean.class).unique(Direction.OUT).makePropertyKey();
+
         TitanKey sint = tx.makeType().name("int").dataType(SpecialInt.class).unique(Direction.OUT).makePropertyKey();
 
         TitanLabel link = tx.makeType().name("link").unidirected().makeEdgeLabel();
@@ -85,6 +87,13 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         TitanLabel connect = tx.makeType().name("connect").signature(id,weight).unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).makeEdgeLabel();
 
         TitanLabel parent = tx.makeType().name("parent").unique(Direction.OUT).makeEdgeLabel();
+
+        try {
+            tx.makeType().name("pint").dataType(int.class).makePropertyKey();
+            fail();
+        } catch (IllegalArgumentException e) {}
+
+        TitanKey arrType = tx.makeType().name("barr").dataType(byte[].class).unique(Direction.OUT).makePropertyKey();
 
         clopen();
 
@@ -127,6 +136,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         weight = tx.getPropertyKey("weight");
         assertEquals(Double.class, weight.getDataType());
 
+        boolval = tx.getPropertyKey("boolval");
+        assertEquals(Boolean.class,boolval.getDataType());
+
 
         //Failures
         try {
@@ -164,6 +176,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         TitanVertex v = tx.addVertex();
         v.addProperty(id, "Hello");
         v.addProperty(weight, 0.5);
+        v.addProperty(boolval,true);
         try {
             v.addProperty(weight, "0.5");
             fail();

@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 
+import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
@@ -18,12 +19,23 @@ public class TestBed {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
+
+        double[] d = {0.5, 0.2};
+        Double[] dd = {new Double(0.6),new Double(0.3)};
+
+        System.out.println(Array.getLength(d));
+        System.out.println(((Number)Array.get(d,1)).doubleValue());
+        System.out.println(((Number)Array.get(dd,1)).doubleValue());
+
+        System.exit(0);
+
+
+
         for (String s : new String[]{"36028797018963978", "5629499534213184", "21392098230009920"}) {
             BigInteger i2 = new BigInteger(s, 10);
             System.out.println(i2.toString(2));
         }
 
-        System.exit(0);
 
         int[] localPartition = {0, 200};
         ByteBuffer lower = ByteBuffer.allocate(4);
