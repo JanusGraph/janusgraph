@@ -10,7 +10,7 @@
     <groupId>com.thinkaurelius.faunus</groupId>
     <artifactId>faunus</artifactId>
     <!-- DON'T FORGET TO UPDATE Tokens.java -->
-    <version>0.3.0</version>
+    <version>0.4.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <url>http://thinkaurelius.github.com/faunus/</url>
     <name>Faunus: Graph Analytics Engine</name>
@@ -20,7 +20,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sesame.version>2.6.10</sesame.version>
         <tinkerpop.version>2.3.0</tinkerpop.version>
-        <titan.version>0.3.0</titan.version>
+        <titan.version>0.4.0-SNAPSHOT</titan.version>
     </properties>
     <developers>
         <developer>
