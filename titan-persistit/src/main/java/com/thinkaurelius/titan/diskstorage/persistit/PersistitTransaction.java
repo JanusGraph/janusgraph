@@ -14,7 +14,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -66,8 +65,8 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     }
 
     private Persistit db;
-    private Transaction tx;
     private SessionId sessionId;
+    private boolean isOpen = false;
 
     private static Queue<SessionId> sessionPool = new ConcurrentLinkedQueue<SessionId>();
     private static SessionId getSessionId() {
@@ -86,76 +85,72 @@ public class PersistitTransaction extends AbstractStoreTransaction {
         db = p;
         sessionId = getSessionId();
         assign();
-        tx = db.getTransaction();
+        Transaction tx = db.getTransaction();
         assert sessionId == tx.getSessionId();
 
         try {
             tx.begin();
+            isOpen = true;
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex);
-        }
-    }
-
-    private void begin() throws StorageException {
-        assign();
-        if (!tx.isActive()) {
-            try {
-                tx.begin();
-            } catch (PersistitException ex) {
-                throw new PermanentStorageException(ex);
-            }
         }
     }
 
     /**
      * Assigns the session id to the current thread
      */
-    public synchronized void assign() {
-        db.setSessionId(sessionId);
-        if (tx != null) assert sessionId == tx.getSessionId();
+    public void assign() {
+        synchronized (this) {
+            db.setSessionId(sessionId);
+            Transaction tx = db.getTransaction();
+            if (tx != null) assert sessionId == tx.getSessionId();
+        }
     }
 
     private void close() {
-        if (tx.isActive()) {
-            tx.end();
-        }
         returnSessionId(sessionId);
         sessionId = null;
-        tx = null;
+        isOpen = false;
     }
 
     @Override
-    public synchronized void abort() throws StorageException {
-        if (tx == null || !tx.isActive()) return;
-        
-        // Transaction being aborted as already begun; can't begin() it again.
-        // begin();
-
-        tx.rollback();
-        close();
-    }
-
-    @Override
-    public synchronized void commit() throws StorageException {
-        // Transaction being committed as already begun; can't begin() it again.
-        // begin();
-        int retries = 3;
-        try {
-            int i = 0;
-            while (true) {
-                try {
-                    tx.commit();
-                    break;
-                } catch (RollbackException ex) {
-                    if (i++ >= retries) {
-                        throw ex;
-                    }
-                }
+    public void abort() throws StorageException {
+        synchronized (this) {
+            assign();
+            Transaction tx = db.getTransaction();
+            if (tx.isActive() && !tx.isCommitted()) {
+                tx.rollback();
             }
-        } catch (PersistitException ex) {
-            throw new PermanentStorageException(ex);
-        } finally {
+            tx.end();
             close();
+        }
+    }
+
+    @Override
+    public void commit() throws StorageException {
+        synchronized (this) {
+            assign();
+            Transaction tx = db.getTransaction();
+            int retries = 3;
+            try {
+                if (tx.isActive() && !tx.isRollbackPending()){
+                    int i = 0;
+                    while (true) {
+                        try {
+                            tx.commit(Transaction.CommitPolicy.HARD);
+                            tx.end();
+                            break;
+                        } catch (RollbackException ex) {
+                            if (i++ >= retries) {
+                                throw ex;
+                            }
+                        }
+                    }
+                    close();
+                }
+            } catch (PersistitException ex) {
+                throw new PermanentStorageException(ex);
+            }
         }
     }
 
@@ -165,15 +160,9 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     public Exchange getExchange(String treeName, Boolean create) throws StorageException {
         Exchange exchange;
-        //@todo: make a thread id / tree name based exchange cache
-//        exchange = exchangeCache.get(treeName);
-//        if (exchange != null) {
-//            return exchange;
-//        }
         try {
             assign();
             exchange = db.getExchange(VOLUME_NAME, treeName, create);
-//            exchangeCache.put(treeName, exchange);
             return exchange;
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex);
@@ -181,24 +170,6 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     }
 
     public void releaseExchange(Exchange exchange) {
-        // For now, do not release the Exchange.  This is a workaround for the temporary
-        // behavior in which a new SessionId is created for every transaction.  Calling
-        // releaseExchange stores an Exchange in a map keyed by a SessionId that will never
-        // be used again or removed.
         //
-        // db.releaseExchange(exchange);
-    }
-
-    public Transaction getTx() {
-        return tx;
-    }
-
-    @Override
-    protected void finalize() {
-        try {
-            abort();
-        } catch (StorageException e) {
-            //
-        }
     }
 }
