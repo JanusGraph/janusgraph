@@ -165,7 +165,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
                 break;
             }
 
-            result.add(new Entry(colName, c.getByteBufferValue()));
+            result.add(CacheEntry.of(colName, c.getByteBufferValue()));
 
             if (++i == limit) {
                 break;

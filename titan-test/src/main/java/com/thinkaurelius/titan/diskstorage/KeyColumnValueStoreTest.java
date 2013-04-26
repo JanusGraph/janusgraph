@@ -71,7 +71,7 @@ public abstract class KeyColumnValueStoreTest {
         for (int i = 0; i < values.length; i++) {
             List<Entry> entries = new ArrayList<Entry>();
             for (int j = 0; j < values[i].length; j++) {
-                entries.add(new Entry(KeyValueStoreUtil.getBuffer(j), KeyValueStoreUtil.getBuffer(values[i][j])));
+                entries.add(new SimpleEntry(KeyValueStoreUtil.getBuffer(j), KeyValueStoreUtil.getBuffer(values[i][j])));
             }
             store.mutate(KeyValueStoreUtil.getBuffer(i), entries, null, tx);
         }
@@ -168,7 +168,8 @@ public abstract class KeyColumnValueStoreTest {
 
     @Test
     public void storeAndRetrievePerformance() throws StorageException {
-        int keys = 100, columns = 2000;
+        int multiplier = 4;
+        int keys = 50*multiplier, columns = 2000;
         String[][] values = KeyValueStoreUtil.generateData(keys,columns);
         log.debug("Loading values: "+keys+"x"+columns);
         long time = System.currentTimeMillis();
@@ -176,7 +177,7 @@ public abstract class KeyColumnValueStoreTest {
         System.out.println("Loading time (ms): " + (System.currentTimeMillis()-time));
         //print(values);
         Random r = new Random();
-        int trials = 10000;
+        int trials = 500*multiplier;
         int delta = 10;
         log.debug("Reading values: "+trials+" trials");
         time = System.currentTimeMillis();
@@ -381,7 +382,7 @@ public abstract class KeyColumnValueStoreTest {
         List<Entry> entries = new LinkedList<Entry>();
         for (int i = 0; i < cols; i++) {
             ByteBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(i);
-            entries.add(new Entry(col, col));
+            entries.add(new SimpleEntry(col, col));
         }
         store.mutate(key, entries, null, txn);
         txn.commit();
@@ -430,10 +431,10 @@ public abstract class KeyColumnValueStoreTest {
         // First insert four test Entries
         StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
         List<Entry> entries = Arrays.asList(
-                new Entry(columnBeforeStart, columnBeforeStart),
-                new Entry(columnStart, columnStart),
-                new Entry(columnEnd, columnEnd),
-                new Entry(columnAfterEnd, columnAfterEnd));
+                (Entry)new SimpleEntry(columnBeforeStart, columnBeforeStart),
+                new SimpleEntry(columnStart, columnStart),
+                new SimpleEntry(columnEnd, columnEnd),
+                new SimpleEntry(columnAfterEnd, columnAfterEnd));
         store.mutate(key, entries, null, txn);
         txn.commit();
 

@@ -8,14 +8,6 @@ import java.util.Comparator;
 
 public class ByteBufferUtil {
 
-    public static final Comparator<ByteBuffer> COMPARATOR = new Comparator<ByteBuffer>() {
-
-        @Override
-        public int compare(ByteBuffer byteBuffer, ByteBuffer byteBuffer2) {
-            return ByteBufferUtil.compare(byteBuffer.duplicate(), byteBuffer2.duplicate());
-        }
-    };
-
     public static final int longSize = 8;
     public static final int intSize = 4;
 
@@ -178,18 +170,19 @@ public class ByteBufferUtil {
     {
         int length = buffer.remaining();
 
-        if (buffer.hasArray())
-        {
+        if (buffer.hasArray()) {
             int boff = buffer.arrayOffset() + buffer.position();
             if (boff == 0 && length == buffer.array().length)
                 return buffer.array();
             else
                 return Arrays.copyOfRange(buffer.array(), boff, boff + length);
+        } else {
+            // else, DirectByteBuffer.get() is the fastest route
+            byte[] bytes = new byte[length];
+            buffer.mark();
+            buffer.get(bytes);
+            buffer.reset();
+            return bytes;
         }
-        // else, DirectByteBuffer.get() is the fastest route
-        byte[] bytes = new byte[length];
-        buffer.duplicate().get(bytes);
-
-        return bytes;
     }
 }

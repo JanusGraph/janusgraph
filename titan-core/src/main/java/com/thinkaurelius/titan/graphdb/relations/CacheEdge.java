@@ -5,6 +5,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.CacheEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
@@ -80,7 +81,8 @@ public class CacheEdge extends AbstractEdge {
     }
 
     private ImmutableLongObjectMap getMap() {
-        ImmutableLongObjectMap map = data.getCache();
+        ImmutableLongObjectMap map = null;
+        if (data instanceof CacheEntry) map = ((CacheEntry)data).getCache();
         if (map==null) {
             map = tx().getGraph().getEdgeSerializer().readProperties(getVertex(position),data,tx());
         }

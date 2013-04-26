@@ -2,10 +2,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.NoLock;
 
@@ -25,7 +22,7 @@ class ColumnValueStore {
     private Data data;
 
     public ColumnValueStore() {
-        data = new Data(new Entry[0],0);
+        data = new Data(new CacheEntry[0],0);
     }
 
     boolean isEmpty(StoreTransaction txh) {
@@ -77,35 +74,46 @@ class ColumnValueStore {
 
     synchronized void mutate(List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) {
         //Prepare data
-        Entry[] add;
+        CacheEntry[] add;
         if (additions!=null && !additions.isEmpty()) {
-            add = additions.toArray(new Entry[additions.size()]);
+            add = new CacheEntry[additions.size()];
+            int pos = 0;
+            for (Entry e : additions) {
+                add[pos]=new CacheEntry(e);
+                pos++;
+            }
             Arrays.sort(add);
-        } else add=new Entry[0];
+        } else add=new CacheEntry[0];
 
         //Filter out deletions that are also added
         ByteBuffer[] del;
         if (deletions!=null && !deletions.isEmpty()) {
             Iterator<ByteBuffer> iter = deletions.iterator();
             while (iter.hasNext()) {
-                if (Arrays.binarySearch(add,new Entry(iter.next(),null))>=0) {
+                if (Arrays.binarySearch(add,new SimpleEntry(iter.next(),null))>=0) {
                     iter.remove();
                 }
             }
             del = deletions.toArray(new ByteBuffer[deletions.size()]);
-            Arrays.sort(del,ByteBufferUtil.COMPARATOR);
+            Arrays.sort(del,new Comparator<ByteBuffer>() {
+
+                @Override
+                public int compare(ByteBuffer byteBuffer, ByteBuffer byteBuffer2) {
+                    return ByteBufferUtil.compare(byteBuffer, byteBuffer2);
+                }
+            });
         } else del = new ByteBuffer[0];
 
         Lock lock = getLock(txh);
         lock.lock();
         try {
-            Entry[] olddata = data.array;
-            Entry[] newdata = new Entry[olddata.length+add.length];
+            CacheEntry[] olddata = data.array;
+            CacheEntry[] newdata = new CacheEntry[olddata.length+add.length];
 
             //Merge sort
             int i=0,iold=0, iadd=0, idel=0;
             while (iold<olddata.length) {
-                Entry e = olddata[iold];
+                CacheEntry e = olddata[iold];
                 iold++;
                 //Compare with additions
                 if (iadd<add.length) {
@@ -134,8 +142,8 @@ class ColumnValueStore {
 
             if (i*1.0/newdata.length<SIZE_THRESHOLD) {
                 //shrink array to free space
-                Entry[] tmpdata = newdata;
-                newdata = new Entry[i];
+                CacheEntry[] tmpdata = newdata;
+                newdata = new CacheEntry[i];
                 System.arraycopy(tmpdata,0,newdata,0,i);
             }
             data = new Data(newdata,i);
@@ -161,10 +169,10 @@ class ColumnValueStore {
 
     private static class Data {
 
-        final Entry[] array;
+        final CacheEntry[] array;
         final int size;
 
-        Data(final Entry[] array, final int size) {
+        Data(final CacheEntry[] array, final int size) {
             Preconditions.checkArgument(size>=0 && size<=array.length);
             assert isSorted();
             this.array =array;
@@ -176,7 +184,7 @@ class ColumnValueStore {
         }
 
         int getIndex(ByteBuffer column) {
-            return Arrays.binarySearch(array,0,size,new Entry(column,null));
+            return Arrays.binarySearch(array,0,size,new SimpleEntry(column,null));
         }
 
         Entry get(int index) {

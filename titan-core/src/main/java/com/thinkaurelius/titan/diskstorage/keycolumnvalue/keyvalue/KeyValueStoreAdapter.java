@@ -108,7 +108,7 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
         if (entries == null) return null;
         List<Entry> newentries = new ArrayList<Entry>(entries.size());
         for (KeyValueEntry entry : entries) {
-            newentries.add(new Entry(getColumn(entry.getKey()), entry.getValue()));
+            newentries.add(new CacheEntry(getColumn(entry.getKey()), entry.getValue()));
         }
         return newentries;
     }
@@ -128,7 +128,7 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
                 key = currentKey;
                 newentries = new ArrayList<Entry>((int) Math.sqrt(entries.size()));
             }
-            newentries.add(new Entry(getColumn(entry.getKey()), entry.getValue()));
+            newentries.add(new CacheEntry(getColumn(entry.getKey()), entry.getValue()));
         }
         if (key != null) {
             assert newentries != null;

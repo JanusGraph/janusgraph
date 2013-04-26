@@ -74,7 +74,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
         Assert.assertNull(store1.get(b1, b1, tx));
 
-        List<Entry> additions = Arrays.asList(new Entry(b1, b1));
+        List<Entry> additions = Arrays.asList(SimpleEntry.of(b1, b1));
 
         List<ByteBuffer> deletions = Arrays.asList(b1);
 
@@ -190,7 +190,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
             for (ByteBuffer col : deletions) {
 
-                if (null != additions && additions.contains(new Entry(col, col))) {
+                if (null != additions && additions.contains(SimpleEntry.of(col, col))) {
                     skipped++;
                     continue;
                 }
@@ -296,7 +296,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
                 result.put(key, m);
             }
 
-            result.get(key).getAdditions().add(new Entry(col, col));
+            result.get(key).getAdditions().add(SimpleEntry.of(col, col));
 
         }
 
@@ -356,7 +356,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
                     colRand.nextBytes(colBuf);
                     ByteBuffer col = ByteBuffer.wrap(colBuf);
 
-                    additions.add(new Entry(col, col));
+                    additions.add(SimpleEntry.of(col, col));
                 }
 
             }

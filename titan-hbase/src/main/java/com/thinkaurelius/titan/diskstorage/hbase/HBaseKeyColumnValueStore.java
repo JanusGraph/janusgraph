@@ -181,7 +181,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
             if (null != fmap) {
                 for (Map.Entry<byte[], byte[]> ent : fmap.entrySet()) {
-                    ret.add(new Entry(ByteBuffer.wrap(ent.getKey()), ByteBuffer.wrap(ent.getValue())));
+                    ret.add(CacheEntry.of(ByteBuffer.wrap(ent.getKey()), ByteBuffer.wrap(ent.getValue())));
                 }
             }
 

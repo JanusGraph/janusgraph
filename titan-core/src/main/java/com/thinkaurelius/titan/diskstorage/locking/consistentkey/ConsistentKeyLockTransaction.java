@@ -2,10 +2,7 @@ package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
@@ -173,7 +170,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
         try {
             for (int i = 0; i < backer.getLockRetryCount(); i++) {
                 tsNS = TimeUtility.getApproxNSSinceEpoch(false);
-                Entry addition = new Entry(lc.getLockCol(tsNS, backer.getRid()), valBuf);
+                Entry addition = SimpleEntry.of(lc.getLockCol(tsNS, backer.getRid()), valBuf);
 
                 long before = System.currentTimeMillis();
                 backer.getLockStore().mutate(lockKey, Arrays.asList(addition), null, consistentTx);

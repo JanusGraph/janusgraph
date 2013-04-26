@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SimpleEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
 import java.io.UnsupportedEncodingException;
@@ -29,7 +30,7 @@ public class KeyColumnValueStoreUtil {
         ByteBuffer k = longToByteBuffer(key);
         ByteBuffer c = stringToByteBuffer(col);
         ByteBuffer v = stringToByteBuffer(val);
-        store.mutate(k, Arrays.asList(new Entry(c, v)), null, txn);
+        store.mutate(k, Arrays.asList(SimpleEntry.of(c, v)), null, txn);
     }
 
     public static String byteBufferToString(ByteBuffer b) {

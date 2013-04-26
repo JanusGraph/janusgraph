@@ -124,7 +124,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                 // Skip column if it is equal to columnEnd because columnEnd is exclusive
                 if (query.getSliceEnd().equals(c.bufferForName())) continue;
 
-                result.add(new Entry(c.bufferForName(), c.bufferForValue()));
+                result.add(CacheEntry.of(c.bufferForName(), c.bufferForValue()));
             }
             return result;
         } catch (Exception e) {

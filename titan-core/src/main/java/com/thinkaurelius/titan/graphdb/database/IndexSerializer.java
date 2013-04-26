@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SimpleEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
@@ -72,10 +73,10 @@ public class IndexSerializer {
             if (index.equals(Titan.Token.STANDARD_INDEX)) {
                 if (key.isUnique(Direction.IN)) {
                     tx.mutateVertexIndex(getIndexKey(prop.getValue()),
-                            Lists.newArrayList(new Entry(getUniqueIndexColumn(key), getIndexValue(prop))), null);
+                            Lists.newArrayList(SimpleEntry.of(getUniqueIndexColumn(key), getIndexValue(prop))), null);
                 } else {
                     tx.mutateVertexIndex(getIndexKey(prop.getValue()),
-                            Lists.newArrayList(new Entry(getIndexColumn(key, prop.getID()), getIndexValue(prop))), null);
+                            Lists.newArrayList(SimpleEntry.of(getIndexColumn(key, prop.getID()), getIndexValue(prop))), null);
                 }
             } else {
                 addKeyValue(prop.getVertex(),key,prop.getValue(),index,tx);
@@ -122,7 +123,7 @@ public class IndexSerializer {
                     Object value = relation.getPropertyDirect(key);
                     if (index.equals(Titan.Token.STANDARD_INDEX)) {
                         tx.mutateEdgeIndex(getIndexKey(value),
-                                Lists.newArrayList(new Entry(getIndexColumn(key, relation.getID()),
+                                Lists.newArrayList(SimpleEntry.of(getIndexColumn(key, relation.getID()),
                                         relationID2ByteBuffer((RelationIdentifier) relation.getId()))), null);
                     } else {
                         addKeyValue(relation,key,value,index,tx);
@@ -206,7 +207,7 @@ public class IndexSerializer {
             }
             List<Object> results = new ArrayList<Object>(r.size());
             for (Entry entry : r) {
-                ByteBuffer entryValue = entry.getValue().duplicate();
+                ByteBuffer entryValue = entry.getValue();
                 if (query.getType()== StandardElementQuery.Type.VERTEX) {
                     results.add(Long.valueOf(VariableLong.readPositive(entryValue)));
                 } else {

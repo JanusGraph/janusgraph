@@ -375,7 +375,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             if (columnEnd.equals(name))
                 continue;
 
-            result.add(new Entry(name, value));
+            result.add(CacheEntry.of(name, value));
         }
 
         return result;

@@ -6,7 +6,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.CacheEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SimpleEntry;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -61,9 +63,11 @@ public class EdgeSerializer {
     public InternalRelation readRelation(InternalVertex vertex, Entry data) {
         ImmutableLongObjectMap map;
         StandardTitanTx tx = vertex.tx();
-        if (data.getCache()==null) {
+        if (data instanceof CacheEntry && ((CacheEntry)data).getCache()!=null) {
+            map = ((CacheEntry)data).getCache();
+        } else {
             map = parseProperties(vertex.getID(),data,true,tx);
-        } else map = data.getCache();
+        }
         Direction dir = (Direction) map.get(DIRECTION_ID);
         long typeid = (Long)map.get(TYPE_ID);
         TitanType type = tx.getExistingType(typeid);
@@ -109,15 +113,18 @@ public class EdgeSerializer {
     }
 
     public ImmutableLongObjectMap readProperties(InternalVertex vertex, Entry data, StandardTitanTx tx) {
-        if (data.getCache()==null) {
-            synchronized (data) {
-                if (data.getCache()==null) {
-                    ImmutableLongObjectMap props = parseProperties(vertex.getID(),data,false,tx);
-                    data.setCache(props);
-                    return props;
-                } else return data.getCache();
-            }
-        } else return data.getCache();
+        if (data instanceof CacheEntry) {
+            CacheEntry cdata = (CacheEntry)data;
+            if (cdata.getCache()==null) {
+                synchronized (cdata) {
+                    if (cdata.getCache()==null) {
+                        ImmutableLongObjectMap props = parseProperties(vertex.getID(),cdata,false,tx);
+                        cdata.setCache(props);
+                        return props;
+                    } else return cdata.getCache();
+                }
+            } else return cdata.getCache();
+        } else return parseProperties(vertex.getID(),data,false,tx);
     }
 
     private ImmutableLongObjectMap parseProperties(long vertexid, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
@@ -250,7 +257,7 @@ public class EdgeSerializer {
 
         DataOutput writer = colOut;
         if (type.isUnique(dir)) {
-            if (!writeValue) return new Entry(colOut.getByteBuffer(),null);
+            if (!writeValue) return new SimpleEntry(colOut.getByteBuffer(),null);
             writer = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
         }
 
@@ -272,7 +279,7 @@ public class EdgeSerializer {
         VariableLong.writePositive(writer, relation.getID());
 
         if (!type.isUnique(dir)) {
-            if (!writeValue) return new Entry(colOut.getByteBuffer(),null);
+            if (!writeValue) return new SimpleEntry(colOut.getByteBuffer(),null);
             writer = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
         }
 
@@ -295,7 +302,7 @@ public class EdgeSerializer {
             }
         }
 
-        return new Entry(colOut.getByteBuffer(), writer.getByteBuffer());
+        return new SimpleEntry(colOut.getByteBuffer(), writer.getByteBuffer());
     }
 
     private void writeInline(DataOutput out, TitanType type, Object value, boolean writeEdgeType) {

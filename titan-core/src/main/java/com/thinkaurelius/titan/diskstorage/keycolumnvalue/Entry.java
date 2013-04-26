@@ -14,28 +14,14 @@ import java.nio.ByteBuffer;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
-public class Entry implements Comparable<Entry> {
-
-    private final ByteBuffer column;
-    private final ByteBuffer value;
-
-    private volatile transient ImmutableLongObjectMap cache;
-
-    public Entry(ByteBuffer column, ByteBuffer value) {
-        Preconditions.checkNotNull(column);
-        this.column = column;
-        this.value = value;
-        this.cache = null;
-    }
+public interface Entry extends Comparable<Entry> {
 
     /**
      * Returns the column ByteBuffer of this entry.
      *
      * @return Column ByteBuffer
      */
-    public ByteBuffer getColumn() {
-        return column.duplicate();
-    }
+    public ByteBuffer getColumn();
 
 
     /**
@@ -43,36 +29,6 @@ public class Entry implements Comparable<Entry> {
      *
      * @return Value ByteBuffer
      */
-    public ByteBuffer getValue() {
-        return value.duplicate();
-    }
-
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder().append(column.duplicate()).toHashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null) return false;
-        if (!getClass().isInstance(obj)) return false;
-        Entry other = (Entry) obj;
-        return column.duplicate().equals(other.column.duplicate());
-    }
-
-    @Override
-    public int compareTo(Entry entry) {
-        return ByteBufferUtil.compare(column.duplicate(),entry.column.duplicate());
-    }
-
-    public ImmutableLongObjectMap getCache() {
-        return cache;
-    }
-
-    public void setCache(ImmutableLongObjectMap cache) {
-        Preconditions.checkNotNull(cache);
-        this.cache=cache;
-    }
+    public ByteBuffer getValue();
 
 }
