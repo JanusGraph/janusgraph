@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
@@ -16,6 +17,8 @@ public class Mutation<E,K> {
     private List<K> deletions;
 
     public Mutation(List<E> additions, List<K> deletions) {
+        Preconditions.checkNotNull(additions);
+        Preconditions.checkNotNull(deletions);
         this.additions = additions;
         this.deletions = deletions;
     }
@@ -26,7 +29,7 @@ public class Mutation<E,K> {
     }
 
     public boolean hasAdditions() {
-        return additions != null && !additions.isEmpty();
+        return additions!=null && !additions.isEmpty();
     }
 
     public boolean hasDeletions() {
@@ -54,10 +57,7 @@ public class Mutation<E,K> {
     }
 
     public void merge(Mutation<E,K> m) {
-
-        if (null == m) {
-            return;
-        }
+        Preconditions.checkNotNull(m);
 
         if (null != m.additions) {
             if (null == additions) additions = m.additions;

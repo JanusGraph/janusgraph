@@ -73,7 +73,7 @@ public abstract class KeyColumnValueStoreTest {
             for (int j = 0; j < values[i].length; j++) {
                 entries.add(new SimpleEntry(KeyValueStoreUtil.getBuffer(j), KeyValueStoreUtil.getBuffer(values[i][j])));
             }
-            store.mutate(KeyValueStoreUtil.getBuffer(i), entries, null, tx);
+            store.mutate(KeyValueStoreUtil.getBuffer(i), entries, KeyColumnValueStore.NO_DELETIONS, tx);
         }
     }
 
@@ -90,7 +90,7 @@ public abstract class KeyColumnValueStoreTest {
                     deletions.add(KeyValueStoreUtil.getBuffer(j));
                 }
             }
-            store.mutate(KeyValueStoreUtil.getBuffer(i), null, deletions, tx);
+            store.mutate(KeyValueStoreUtil.getBuffer(i), KeyColumnValueStore.NO_ADDITIONS, deletions, tx);
         }
         return removed;
     }
@@ -104,7 +104,7 @@ public abstract class KeyColumnValueStoreTest {
                 for (int j = 0; j < numColumns; j++) {
                     deletions.add(KeyValueStoreUtil.getBuffer(j));
                 }
-                store.mutate(KeyValueStoreUtil.getBuffer(i), null, deletions, tx);
+                store.mutate(KeyValueStoreUtil.getBuffer(i), KeyColumnValueStore.NO_ADDITIONS, deletions, tx);
             }
         }
         return removed;
@@ -384,7 +384,7 @@ public abstract class KeyColumnValueStoreTest {
             ByteBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(i);
             entries.add(new SimpleEntry(col, col));
         }
-        store.mutate(key, entries, null, txn);
+        store.mutate(key, entries, KeyColumnValueStore.NO_DELETIONS, txn);
         txn.commit();
 
         txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
@@ -435,7 +435,7 @@ public abstract class KeyColumnValueStoreTest {
                 new SimpleEntry(columnStart, columnStart),
                 new SimpleEntry(columnEnd, columnEnd),
                 new SimpleEntry(columnAfterEnd, columnAfterEnd));
-        store.mutate(key, entries, null, txn);
+        store.mutate(key, entries, KeyColumnValueStore.NO_DELETIONS, txn);
         txn.commit();
 
         // getSlice() with only start inclusive

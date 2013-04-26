@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 
 import java.nio.ByteBuffer;
@@ -8,6 +9,9 @@ import java.util.List;
 public interface KeyColumnValueStore {
 
     public static final int PAGE_SIZE = 10; /* default page size for "slice" or "paged" operations */
+
+    public static final List<Entry> NO_ADDITIONS = ImmutableList.of();
+    public static final List<ByteBuffer> NO_DELETIONS = ImmutableList.of();
 
     /**
      * Returns true if the specified key exists in the store, i.e. there is at least one column-value
@@ -58,8 +62,8 @@ public interface KeyColumnValueStore {
      * Both, the list of additions or deletions, may be empty or NULL if there is nothing to be added and/or deleted.
      *
      * @param key       Key
-     * @param additions List of entries (column + value) to be added
-     * @param deletions List of columns to be removed
+     * @param additions List of entries (column + value) to be added (possibly empty but not NULL)
+     * @param deletions List of columns to be removed (possibly empty but not NULL)
      * @param txh       Transaction under which to execute the operation
      */
     public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException;

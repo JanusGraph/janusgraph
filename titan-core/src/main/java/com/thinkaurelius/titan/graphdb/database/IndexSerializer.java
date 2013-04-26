@@ -28,6 +28,7 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -73,10 +74,10 @@ public class IndexSerializer {
             if (index.equals(Titan.Token.STANDARD_INDEX)) {
                 if (key.isUnique(Direction.IN)) {
                     tx.mutateVertexIndex(getIndexKey(prop.getValue()),
-                            Lists.newArrayList(SimpleEntry.of(getUniqueIndexColumn(key), getIndexValue(prop))), null);
+                            Lists.newArrayList(SimpleEntry.of(getUniqueIndexColumn(key), getIndexValue(prop))), NO_DELETIONS);
                 } else {
                     tx.mutateVertexIndex(getIndexKey(prop.getValue()),
-                            Lists.newArrayList(SimpleEntry.of(getIndexColumn(key, prop.getID()), getIndexValue(prop))), null);
+                            Lists.newArrayList(SimpleEntry.of(getIndexColumn(key, prop.getID()), getIndexValue(prop))), NO_DELETIONS);
                 }
             } else {
                 addKeyValue(prop.getVertex(),key,prop.getValue(),index,tx);
@@ -89,10 +90,10 @@ public class IndexSerializer {
         for (String index : key.getIndexes(Vertex.class)) {
             if (index.equals(Titan.Token.STANDARD_INDEX)) {
                 if (key.isUnique(Direction.IN)) {
-                    tx.mutateVertexIndex(getIndexKey(prop.getValue()), null,
+                    tx.mutateVertexIndex(getIndexKey(prop.getValue()), NO_ADDITIONS,
                             Lists.newArrayList(getUniqueIndexColumn(key)));
                 } else {
-                    tx.mutateVertexIndex(getIndexKey(prop.getValue()), null,
+                    tx.mutateVertexIndex(getIndexKey(prop.getValue()), NO_ADDITIONS,
                             Lists.newArrayList(getIndexColumn(key, prop.getID())));
                 }
             } else {
@@ -124,7 +125,7 @@ public class IndexSerializer {
                     if (index.equals(Titan.Token.STANDARD_INDEX)) {
                         tx.mutateEdgeIndex(getIndexKey(value),
                                 Lists.newArrayList(SimpleEntry.of(getIndexColumn(key, relation.getID()),
-                                        relationID2ByteBuffer((RelationIdentifier) relation.getId()))), null);
+                                        relationID2ByteBuffer((RelationIdentifier) relation.getId()))), NO_DELETIONS);
                     } else {
                         addKeyValue(relation,key,value,index,tx);
                     }
@@ -141,7 +142,7 @@ public class IndexSerializer {
                 for (String index : key.getIndexes(Edge.class)) {
                     Object value = relation.getPropertyDirect(key);
                     if (index.equals(Titan.Token.STANDARD_INDEX)) {
-                        tx.mutateEdgeIndex(getIndexKey(value), null,
+                        tx.mutateEdgeIndex(getIndexKey(value), NO_ADDITIONS,
                                 Lists.newArrayList(getIndexColumn(key, relation.getID())));
                     } else {
                         removeKeyValue(relation, key, index, tx);

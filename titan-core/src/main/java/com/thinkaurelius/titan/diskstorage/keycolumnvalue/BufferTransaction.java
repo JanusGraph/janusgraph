@@ -57,7 +57,7 @@ public class BufferTransaction implements StoreTransaction {
 
     public void mutate(String store, ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException {
         Preconditions.checkNotNull(store);
-        if ((additions == null || additions.isEmpty()) && (deletions == null || deletions.isEmpty())) return;
+        if (additions.isEmpty() && deletions.isEmpty()) return;
 
         KCVMutation m = new KCVMutation(additions, deletions);
         Map<ByteBuffer, KCVMutation> storeMutation = mutations.get(store);
@@ -72,8 +72,8 @@ public class BufferTransaction implements StoreTransaction {
             storeMutation.put(key, m);
         }
 
-        if (additions != null) numMutations += additions.size();
-        if (deletions != null) numMutations += deletions.size();
+        numMutations += additions.size();
+        numMutations += deletions.size();
 
         if (numMutations >= bufferSize) {
             flushInternal();

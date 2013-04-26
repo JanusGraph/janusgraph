@@ -49,14 +49,14 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
 
     @Override
     public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
-        if (deletions != null && !deletions.isEmpty()) {
+        if (!deletions.isEmpty()) {
             for (ByteBuffer column : deletions) {
                 ByteBuffer del = concatenate(key, column);
                 store.delete(del, txh);
             }
 
         }
-        if (additions != null && !additions.isEmpty()) {
+        if (!additions.isEmpty()) {
             for (Entry entry : additions) {
                 ByteBuffer newkey = concatenate(key, entry.getColumn());
                 store.insert(newkey, entry.getValue(), txh);

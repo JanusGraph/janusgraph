@@ -154,7 +154,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                         //Delete claim to not pollute id space
                         try {
                             for (int attempt = 0; attempt < rollbackAttempts; attempt++) {
-                                idStore.mutate(partitionKey, null, Arrays.asList(target), txh);
+                                idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(target), txh);
                                 break;
                             }
                         } catch (StorageException e) {

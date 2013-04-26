@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
@@ -301,15 +302,12 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
      * @return Delete command or null if deletions were null or empty.
      */
     private final static Delete makeDeletionCommand(byte[] cfName, byte[] key, List<ByteBuffer> deletions) {
-        if (deletions == null || deletions.size() == 0)
-            return null;
+        Preconditions.checkArgument(!deletions.isEmpty());
 
         Delete deleteCommand = new Delete(key);
-
         for (ByteBuffer del : deletions) {
             deleteCommand.deleteColumn(cfName, ByteBufferUtil.getArray(del));
         }
-
         return deleteCommand;
     }
 
@@ -323,33 +321,29 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
      * @return Put command or null if additions were null or empty.
      */
     private final static Put makePutCommand(byte[] cfName, byte[] key, List<Entry> modifications) {
-        if (modifications == null || modifications.size() == 0)
-            return null;
+        Preconditions.checkArgument(!modifications.isEmpty());
 
         Put putCommand = new Put(key);
-
         for (Entry e : modifications) {
             putCommand.add(cfName, ByteBufferUtil.getArray(e.getColumn()), ByteBufferUtil.getArray(e.getValue()));
         }
-
         return putCommand;
     }
 
     public final static List<Row> makeBatch(byte[] cfName, byte[] key, List<Entry> additions, List<ByteBuffer> deletions) {
-        Put putCommand = makePutCommand(cfName, key, additions);
-        Delete deleteCommand = makeDeletionCommand(cfName, key, deletions);
-
-        if (putCommand == null && deleteCommand == null)
-            return Collections.emptyList();
+        if (additions.isEmpty() && deletions.isEmpty()) return Collections.emptyList();
 
         List<Row> batch = new ArrayList<Row>(2);
 
-        if (putCommand != null)
+        if (!additions.isEmpty()) {
+            Put putCommand = makePutCommand(cfName, key, additions);
             batch.add(putCommand);
+        }
 
-        if (deleteCommand != null)
+        if (!deletions.isEmpty()) {
+            Delete deleteCommand = makeDeletionCommand(cfName, key, deletions);
             batch.add(deleteCommand);
-
+        }
         return batch;
     }
 }

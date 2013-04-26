@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.*;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -93,24 +94,24 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
         Assert.assertEquals(b1, result);
 
-        store1.mutate(b1, null, deletions, tx);
+        store1.mutate(b1, NO_ADDITIONS, deletions, tx);
         tx.flush();
 
         for (int i = 0; i < 100; i++) {
             ByteBuffer n = store1.get(b1, b1, tx);
             Assert.assertNull(n);
-            store1.mutate(b1, additions, null, tx);
+            store1.mutate(b1, additions, NO_DELETIONS, tx);
             tx.flush();
-            store1.mutate(b1, null, deletions, tx);
+            store1.mutate(b1, NO_ADDITIONS, deletions, tx);
             tx.flush();
             n = store1.get(b1, b1, tx);
             Assert.assertNull(n);
         }
 
         for (int i = 0; i < 100; i++) {
-            store1.mutate(b1, null, deletions, tx);
+            store1.mutate(b1, NO_ADDITIONS, deletions, tx);
             tx.flush();
-            store1.mutate(b1, additions, null, tx);
+            store1.mutate(b1, additions, NO_DELETIONS, tx);
             tx.flush();
             Assert.assertEquals(b1, store1.get(b1, b1, tx));
         }

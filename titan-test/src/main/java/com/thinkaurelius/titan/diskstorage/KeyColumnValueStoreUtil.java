@@ -14,7 +14,7 @@ public class KeyColumnValueStoreUtil {
     public static void delete(KeyColumnValueStore store, StoreTransaction txn, long key, String col) throws StorageException {
         ByteBuffer k = longToByteBuffer(key);
         ByteBuffer c = stringToByteBuffer(col);
-        store.mutate(k, null, Arrays.asList(c), txn);
+        store.mutate(k, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(c), txn);
     }
 
     public static String get(KeyColumnValueStore store, StoreTransaction txn, long key, String col) throws StorageException {
@@ -30,7 +30,7 @@ public class KeyColumnValueStoreUtil {
         ByteBuffer k = longToByteBuffer(key);
         ByteBuffer c = stringToByteBuffer(col);
         ByteBuffer v = stringToByteBuffer(val);
-        store.mutate(k, Arrays.asList(SimpleEntry.of(c, v)), null, txn);
+        store.mutate(k, Arrays.asList(SimpleEntry.of(c, v)), KeyColumnValueStore.NO_DELETIONS, txn);
     }
 
     public static String byteBufferToString(ByteBuffer b) {

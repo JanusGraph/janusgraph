@@ -173,13 +173,13 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
                 Entry addition = SimpleEntry.of(lc.getLockCol(tsNS, backer.getRid()), valBuf);
 
                 long before = System.currentTimeMillis();
-                backer.getLockStore().mutate(lockKey, Arrays.asList(addition), null, consistentTx);
+                backer.getLockStore().mutate(lockKey, Arrays.asList(addition), KeyColumnValueStore.NO_DELETIONS, consistentTx);
                 long after = System.currentTimeMillis();
 
                 if (backer.getLockWaitMS() < after - before) {
                     // Too slow
                     // Delete lock claim and loop again
-                    backer.getLockStore().mutate(lockKey, null, Arrays.asList(lc.getLockCol(tsNS, backer.getRid())), consistentTx);
+                    backer.getLockStore().mutate(lockKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(lc.getLockCol(tsNS, backer.getRid())), consistentTx);
                 } else {
                     ok = true;
                     lastLockApplicationTimesMS.put(backer, before);
@@ -346,7 +346,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 
             try {
                 // Release lock remotely
-                lc.getBacker().getLockStore().mutate(lockKeyBuf, null, Arrays.asList(lockColBuf), consistentTx);
+                lc.getBacker().getLockStore().mutate(lockKeyBuf, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(lockColBuf), consistentTx);
 
                 if (log.isTraceEnabled()) {
                     log.trace("Wrote unlock {}", lc);

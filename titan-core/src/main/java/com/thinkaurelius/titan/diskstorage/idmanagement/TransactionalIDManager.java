@@ -44,7 +44,7 @@ public class TransactionalIDManager extends AbstractIDManager {
                 long current = getCurrentID(partitionKey, txh);
                 Preconditions.checkArgument(Long.MAX_VALUE - blockSize > current, "ID overflow detected");
                 long next = current + blockSize;
-                idStore.mutate(partitionKey, ImmutableList.of(SimpleEntry.of(DEFAULT_COLUMN, ByteBufferUtil.getLongByteBuffer(next))), null, txh);
+                idStore.mutate(partitionKey, ImmutableList.of(SimpleEntry.of(DEFAULT_COLUMN, ByteBufferUtil.getLongByteBuffer(next))), KeyColumnValueStore.NO_DELETIONS, txh);
                 txh.commit();
                 return new long[]{current, next};
             } catch (StorageException e) {

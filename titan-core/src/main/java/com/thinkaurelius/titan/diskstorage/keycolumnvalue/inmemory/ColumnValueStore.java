@@ -75,7 +75,7 @@ class ColumnValueStore {
     synchronized void mutate(List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) {
         //Prepare data
         CacheEntry[] add;
-        if (additions!=null && !additions.isEmpty()) {
+        if (!additions.isEmpty()) {
             add = new CacheEntry[additions.size()];
             int pos = 0;
             for (Entry e : additions) {
@@ -87,7 +87,7 @@ class ColumnValueStore {
 
         //Filter out deletions that are also added
         ByteBuffer[] del;
-        if (deletions!=null && !deletions.isEmpty()) {
+        if (!deletions.isEmpty()) {
             Iterator<ByteBuffer> iter = deletions.iterator();
             while (iter.hasNext()) {
                 if (Arrays.binarySearch(add,new SimpleEntry(iter.next(),null))>=0) {
