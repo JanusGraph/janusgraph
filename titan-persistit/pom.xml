@@ -34,7 +34,7 @@
         <dependency>
             <groupId>com.akiban</groupId>
             <artifactId>akiban-persistit</artifactId>
-            <version>3.2.2</version>
+            <version>3.2.7</version>
         </dependency>
     </dependencies>
 
@@ -55,7 +55,7 @@
                                 <exclude>**/Internal*.java</exclude>
                                 <exclude>**/*Suite.java</exclude>
                             </excludes>
-                            <forkMode>always</forkMode>
+                            <forkMode>never</forkMode>
                         </configuration>
                     </plugin>
                 </plugins>
