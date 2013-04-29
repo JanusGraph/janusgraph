@@ -28,9 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Experimental storage manager for HBase.
- * <p/>
- * This is not ready for production.
+ * Storage Manager for HBase
  *
  * @author Dan LaRocque <dalaro@hopcount.org>
  */

@@ -6,9 +6,20 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+/**
+ * Interface to a data store that has a BigTable like representation of its data. In other words, the data store is comprised of a set of rows
+ * each of which is uniquely identified by a key. Each row is composed of a column-value pairs. For a given key, a subset of the column-value
+ * pairs that fall within a column interval can be quickly retrieved.
+ *
+ * This interface provides methods for retrieving and mutating the data.
+ *
+ * In this generic representation keys, columns and values are represented as ByteBuffers.
+ *
+ * See {@linktourl http://en.wikipedia.org/wiki/BigTable}
+ * @author Matthias Br&ouml;cheler (me@matthiasb.com);
+ *
+ */
 public interface KeyColumnValueStore {
-
-    public static final int PAGE_SIZE = 10; /* default page size for "slice" or "paged" operations */
 
     public static final List<Entry> NO_ADDITIONS = ImmutableList.of();
     public static final List<ByteBuffer> NO_DELETIONS = ImmutableList.of();
@@ -35,27 +46,8 @@ public interface KeyColumnValueStore {
      */
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException;
 
-
-    /**
-     * Retrieves the value for the specified column and key under the given transaction
-     * from the store if such exists, otherwise NULL
-     *
-     * @param key    Key
-     * @param column Column
-     * @param txh    Transaction
-     * @return Value for key and column or NULL
-     */
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException;
-
-    /**
-     * Returns true if the specified key-column pair exists in the store.
-     *
-     * @param key    Key
-     * @param column Column
-     * @param txh    Transaction
-     * @return TRUE, if key has at least one column-value pair, else FALSE
-     */
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException;
+    //TODO: for declarative query optimization
+    //public List<List<Entry>> getSlice(List<ByteBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException;
 
     /**
      * Applies the specified insertion and deletion mutations to the provided key.
@@ -95,6 +87,10 @@ public interface KeyColumnValueStore {
      * @throws UnsupportedOperationException if the underlying store does not support this operation. Check {@link StoreFeatures#supportsScan()} first.
      */
     public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException;
+
+    //TODO: for Fulgora, replace with these two: one for stores that maintain key order and those without according to StoreFeatures.isKeyOrdered()
+//    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException;
+//    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException; - like current getKeys if slice is empty, i.e. start==end
 
 
     /**

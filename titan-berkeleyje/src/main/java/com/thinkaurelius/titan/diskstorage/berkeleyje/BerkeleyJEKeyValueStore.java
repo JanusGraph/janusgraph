@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeySelector;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.LimitedSelector;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import org.slf4j.Logger;
@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-public class BerkeleyJEKeyValueStore implements KeyValueStore {
+public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
     private Logger log = LoggerFactory.getLogger(BerkeleyJEKeyValueStore.class);
 
@@ -52,22 +52,6 @@ public class BerkeleyJEKeyValueStore implements KeyValueStore {
     }
 
     @Override
-    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
-        log.trace("Contains query");
-        Transaction tx = getTransaction(txh);
-        try {
-            DatabaseEntry dbkey = getDataEntry(key);
-            DatabaseEntry data = new DatabaseEntry();
-
-            OperationStatus status = db.get(tx, dbkey, data, LockMode.DEFAULT);
-            return status == OperationStatus.SUCCESS;
-
-        } catch (DatabaseException e) {
-            throw new PermanentStorageException(e);
-        }
-    }
-
-    @Override
     public void close() throws StorageException {
         try {
             db.close();
@@ -77,10 +61,8 @@ public class BerkeleyJEKeyValueStore implements KeyValueStore {
         manager.removeDatabase(this);
     }
 
-
     @Override
     public ByteBuffer get(ByteBuffer key, StoreTransaction txh) throws StorageException {
-        log.trace("Get query");
         Transaction tx = getTransaction(txh);
         try {
             DatabaseEntry dbkey = getDataEntry(key);
@@ -98,27 +80,20 @@ public class BerkeleyJEKeyValueStore implements KeyValueStore {
     }
 
     @Override
+    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
+        return get(key,txh)!=null;
+    }
+
+    @Override
     public void acquireLock(ByteBuffer key, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
-        log.trace("Acquiring lock.");
         if (getTransaction(txh) == null) {
-//            throw new PermanentLockingException("Enable transaction for locking in BerkeleyDB!");
+            log.info("Attempt to acquire lock with transactions disabled");
         } //else we need no locking
     }
 
     @Override
     public ByteBuffer[] getLocalKeyPartition() throws StorageException {
         throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, StoreTransaction txh) throws StorageException {
-        return getSlice(keyStart, keyEnd, Integer.MAX_VALUE, txh);
-    }
-
-    @Override
-    public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, int limit, StoreTransaction txh) throws StorageException {
-        return getSlice(keyStart, keyEnd, new LimitedSelector(limit), txh);
     }
 
     @Override

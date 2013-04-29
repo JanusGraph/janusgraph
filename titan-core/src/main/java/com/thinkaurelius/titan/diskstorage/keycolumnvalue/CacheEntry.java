@@ -8,9 +8,8 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import java.nio.ByteBuffer;
 
 /**
- * An entry is the primitive persistence unit used in the graph database middleware.
- * <p/>
- * An entry consists of a column and value both of which are general {@link java.nio.ByteBuffer}s.
+ * {@link Entry} implementation that is thread safe and provides a cache for the parsed
+ * representation of the Entry to improve read performance.
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */

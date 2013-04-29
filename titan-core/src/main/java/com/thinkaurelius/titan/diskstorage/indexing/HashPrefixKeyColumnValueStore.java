@@ -69,16 +69,6 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return store.get(prefixKey(key), column, txh);
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return store.containsKeyColumn(prefixKey(key), column, txh);
-    }
-
-    @Override
     public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
         store.mutate(prefixKey(key), additions, deletions, txh);
     }

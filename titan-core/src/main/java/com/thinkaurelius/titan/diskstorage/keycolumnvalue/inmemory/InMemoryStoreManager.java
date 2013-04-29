@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * In-memory backend storage engine.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 

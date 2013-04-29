@@ -57,12 +57,6 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     public void close() throws StorageException {
     }
 
-    @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        Preconditions.checkNotNull(txh);
-        return getInternal(keyspace, columnFamily, key, column, getTx(txh).getReadConsistencyLevel().getDBConsistency());
-    }
-
     static ByteBuffer getInternal(String keyspace,
                                          String columnFamily,
                                          ByteBuffer key,
@@ -111,12 +105,6 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-                                     StoreTransaction txh) throws StorageException {
-        return null != get(key, column, txh);
-    }
-
-    @Override
     public void acquireLock(ByteBuffer key, ByteBuffer column,
                             ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException();
@@ -136,7 +124,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         return new RecordIterator<ByteBuffer>() {
             private Iterator<Row> keys = getKeySlice(partitioner.getMinimumToken(),
                                                      maximumToken,
-                                                     PAGE_SIZE);
+                                                     storeManager.getPageSize());
 
             private ByteBuffer lastSeenKey = null;
 
@@ -145,7 +133,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                 boolean hasNext = keys.hasNext();
 
                 if (!hasNext && lastSeenKey != null) {
-                    keys = getKeySlice(partitioner.getToken(lastSeenKey), maximumToken, PAGE_SIZE);
+                    keys = getKeySlice(partitioner.getToken(lastSeenKey), maximumToken, storeManager.getPageSize());
                     hasNext = keys.hasNext();
                 }
 

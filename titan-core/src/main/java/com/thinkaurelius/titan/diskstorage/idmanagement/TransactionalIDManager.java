@@ -14,9 +14,15 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 
 /**
+ * {@link com.thinkaurelius.titan.diskstorage.IDAuthority} implementation assuming that the backing store
+ * supports consistent transactions.
+ *
+ * With transactional isolation guarantees, unique id block assignments are just a matter of reading the current
+ * counter, incrementing it and committing the transaction. If the transaction fails, another process applied for the same
+ * id and the process is retried.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
-
 public class TransactionalIDManager extends AbstractIDManager {
 
     private static final Logger log = LoggerFactory.getLogger(TransactionalIDManager.class);
@@ -68,10 +74,10 @@ public class TransactionalIDManager extends AbstractIDManager {
     }
 
     private long getCurrentID(ByteBuffer partitionKey, StoreTransaction txh) throws StorageException {
-        if (!idStore.containsKeyColumn(partitionKey, DEFAULT_COLUMN, txh)) {
+        if (!KCVSUtil.containsKeyColumn(idStore,partitionKey, DEFAULT_COLUMN, txh)) {
             return BASE_ID;
         } else {
-            long current = idStore.get(partitionKey, DEFAULT_COLUMN, txh).getLong();
+            long current = KCVSUtil.get(idStore,partitionKey, DEFAULT_COLUMN, txh).getLong();
             return current;
         }
     }

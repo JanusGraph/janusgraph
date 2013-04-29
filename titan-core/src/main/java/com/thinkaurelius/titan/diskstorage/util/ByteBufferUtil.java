@@ -6,6 +6,10 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Comparator;
 
+/**
+ * Utility methods for dealing with {@link ByteBuffer}.
+ *
+ */
 public class ByteBufferUtil {
 
     public static final int longSize = 8;

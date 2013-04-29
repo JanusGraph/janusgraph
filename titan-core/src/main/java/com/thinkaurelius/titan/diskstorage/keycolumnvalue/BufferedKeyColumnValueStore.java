@@ -7,6 +7,9 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
+ * Wraps a {@link KeyColumnValueStore} and buffers all mutations in a corresponding {@link BufferTransaction}.
+ * The buffered mutations are flushed in batches to increase write performance.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -34,16 +37,6 @@ public class BufferedKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         return store.getSlice(query, getTx(txh));
-    }
-
-    @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return store.get(key, column, getTx(txh));
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return store.containsKeyColumn(key, column, getTx(txh));
     }
 
     @Override

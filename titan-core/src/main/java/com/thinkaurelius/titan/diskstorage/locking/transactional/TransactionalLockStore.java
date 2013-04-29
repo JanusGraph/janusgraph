@@ -7,6 +7,10 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
+ * Implementation of a lock application against a transactional KCVS.
+ *
+ * Since the underlying store will guarantee consistency in the context of the transaction, locks are simply ignored.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -26,16 +30,6 @@ public class TransactionalLockStore implements KeyColumnValueStore {
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         return store.getSlice(query, txh);
-    }
-
-    @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return store.get(key, column, txh);
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return store.containsKeyColumn(key, column, txh);
     }
 
     @Override

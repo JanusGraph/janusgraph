@@ -14,6 +14,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Buffers mutations against multiple {@link KeyColumnValueStore} from the same storage backend for increased
+ * write performance. The buffer size (i.e. number of mutations after which to flush) is configurable.
+ *
+ * A BufferTransaction also attempts to flush multiple times in the event of temporary storage failures for increased
+ * write robustness.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -24,7 +30,7 @@ public class BufferTransaction implements StoreTransaction {
             LoggerFactory.getLogger(BufferTransaction.class);
 
     private final StoreTransaction tx;
-    private final BufferMutationKeyColumnValueStore store;
+    private final KeyColumnValueStoreManager manager;
     private final int bufferSize;
     private final int mutationAttempts;
     private final int attemptWaitTime;
@@ -32,18 +38,18 @@ public class BufferTransaction implements StoreTransaction {
     private int numMutations;
     private final Map<String, Map<ByteBuffer, KCVMutation>> mutations;
 
-    public BufferTransaction(StoreTransaction tx, BufferMutationKeyColumnValueStore store,
+    public BufferTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager,
                              int bufferSize, int attempts, int waitTime) {
-        this(tx, store, bufferSize, attempts, waitTime, 8);
+        this(tx, manager, bufferSize, attempts, waitTime, 8);
     }
 
-    public BufferTransaction(StoreTransaction tx, BufferMutationKeyColumnValueStore store,
+    public BufferTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager,
                              int bufferSize, int attempts, int waitTime, int expectedNumStores) {
         Preconditions.checkNotNull(tx);
-        Preconditions.checkNotNull(store);
+        Preconditions.checkNotNull(manager);
         Preconditions.checkArgument(bufferSize > 1, "Buffering only makes sense when bufferSize>1");
         this.tx = tx;
-        this.store = store;
+        this.manager = manager;
         this.numMutations = 0;
         this.bufferSize = bufferSize;
         this.mutationAttempts = attempts;
@@ -90,7 +96,7 @@ public class BufferTransaction implements StoreTransaction {
         if (numMutations > 0) {
             for (int attempt = 0; attempt < mutationAttempts; attempt++) {
                 try {
-                    store.mutateMany(mutations, tx);
+                    manager.mutateMany(mutations, tx);
                     clear();
                     break;
                 } catch (TemporaryStorageException e) {

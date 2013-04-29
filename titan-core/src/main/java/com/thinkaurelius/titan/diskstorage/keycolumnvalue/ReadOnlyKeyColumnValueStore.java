@@ -5,6 +5,11 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+/**
+ * Wraps a {@link KeyColumnValueStore} and throws exceptions when a mutation is attempted.
+ *
+ * @author Matthias Br&ouml;cheler (me@matthiasb.com);
+ */
 public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
 
     protected final KeyColumnValueStore store;
@@ -37,18 +42,6 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public String getName() {
         return store.getName();
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-                                     StoreTransaction txh) throws StorageException {
-        return store.containsKeyColumn(key, column, txh);
-    }
-
-    @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-                          StoreTransaction txh) throws StorageException {
-        return store.get(key, column, txh);
     }
 
     @Override

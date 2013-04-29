@@ -16,12 +16,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Caches KeySliceQuery results which are marked <i>static</i> and hence do not change.
+ * Wraps a {@link KeyColumnValueStore} and caches KeySliceQuery results which are marked <i>static</i> and hence do not change.
  *
  * @see SliceQuery
  *
- * TODO: generalize cache to check for subsumption instead of equality of KeySliceQuery
- * and allow having a limit
+ * TODO: generalize cache to check for subsumption instead of equality of KeySliceQuery and allow having a limit
  *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
@@ -90,16 +89,6 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
         } else {
             return store.getSlice(query,txh);
         }
-    }
-
-    @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return store.get(key,column,txh);
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return store.containsKeyColumn(key,column,txh);
     }
 
     @Override

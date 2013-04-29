@@ -10,23 +10,33 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-public class KeyValueStoreAdapter implements KeyColumnValueStore {
+/**
+ * Wraps a {@link OrderedKeyValueStore} and exposes it as a {@link KeyColumnValueStore}.
+ *
+ * An optional key length parameter can be specified if it is known and guaranteed that all keys
+ * passed into and read through the {@link KeyColumnValueStore} have that length. If this length is
+ * static, specifying that length will make the representation of a {@link KeyColumnValueStore} in a {@link OrderedKeyValueStore}
+ * more concise and more performant.
+ *
+ * @author Matthias Br&ouml;cheler (me@matthiasb.com);
+ */
+public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
-    private final Logger log = LoggerFactory.getLogger(KeyValueStoreAdapter.class);
+    private final Logger log = LoggerFactory.getLogger(OrderedKeyValueStoreAdapter.class);
 
     public static final int variableKeyLength = 0;
 
     public static final int maxVariableKeyLength = Short.MAX_VALUE;
     public static final int variableKeyLengthSize = 2;
 
-    private final KeyValueStore store;
+    private final OrderedKeyValueStore store;
     private final int keyLength;
 
-    public KeyValueStoreAdapter(KeyValueStore store) {
+    public OrderedKeyValueStoreAdapter(OrderedKeyValueStore store) {
         this(store, variableKeyLength);
     }
 
-    public KeyValueStoreAdapter(KeyValueStore store, int keyLength) {
+    public OrderedKeyValueStoreAdapter(OrderedKeyValueStore store, int keyLength) {
         Preconditions.checkNotNull(store);
         Preconditions.checkArgument(keyLength >= 0);
         this.store = store;
@@ -62,18 +72,6 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
                 store.insert(newkey, entry.getValue(), txh);
             }
         }
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-                                     StoreTransaction txh) throws StorageException {
-        return store.containsKey(concatenate(key, column), txh);
-    }
-
-    @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-                          StoreTransaction txh) throws StorageException {
-        return store.get(concatenate(key, column), txh);
     }
 
     @Override
@@ -145,7 +143,6 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
         return keyLength > 0;
     }
 
-
     private final int getLength(ByteBuffer key) {
         int length = keyLength;
         if (hasFixedKeyLength()) { //fixed key length
@@ -157,7 +154,7 @@ public class KeyValueStoreAdapter implements KeyColumnValueStore {
         return length;
     }
 
-    private final ByteBuffer concatenate(ByteBuffer front, ByteBuffer end) {
+    final ByteBuffer concatenate(ByteBuffer front, ByteBuffer end) {
         return concatenate(front, end, true);
     }
 

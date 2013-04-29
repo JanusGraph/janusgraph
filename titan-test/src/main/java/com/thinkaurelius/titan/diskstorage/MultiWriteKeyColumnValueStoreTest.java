@@ -73,7 +73,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         ByteBuffer b1 = ByteBuffer.allocate(1);
         b1.put((byte) 1).rewind();
 
-        Assert.assertNull(store1.get(b1, b1, tx));
+        Assert.assertNull(KCVSUtil.get(store1,b1, b1, tx));
 
         List<Entry> additions = Arrays.asList(SimpleEntry.of(b1, b1));
 
@@ -90,7 +90,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         store1.mutate(b1, additions, deletions, tx);
         tx.flush();
 
-        ByteBuffer result = store1.get(b1, b1, tx);
+        ByteBuffer result = KCVSUtil.get(store1,b1, b1, tx);
 
         Assert.assertEquals(b1, result);
 
@@ -98,13 +98,13 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         tx.flush();
 
         for (int i = 0; i < 100; i++) {
-            ByteBuffer n = store1.get(b1, b1, tx);
+            ByteBuffer n = KCVSUtil.get(store1,b1, b1, tx);
             Assert.assertNull(n);
             store1.mutate(b1, additions, NO_DELETIONS, tx);
             tx.flush();
             store1.mutate(b1, NO_ADDITIONS, deletions, tx);
             tx.flush();
-            n = store1.get(b1, b1, tx);
+            n = KCVSUtil.get(store1,b1, b1, tx);
             Assert.assertNull(n);
         }
 
@@ -113,13 +113,13 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
             tx.flush();
             store1.mutate(b1, additions, NO_DELETIONS, tx);
             tx.flush();
-            Assert.assertEquals(b1, store1.get(b1, b1, tx));
+            Assert.assertEquals(b1, KCVSUtil.get(store1,b1, b1, tx));
         }
 
         for (int i = 0; i < 100; i++) {
             store1.mutate(b1, additions, deletions, tx);
             tx.flush();
-            Assert.assertEquals(b1, store1.get(b1, b1, tx));
+            Assert.assertEquals(b1, KCVSUtil.get(store1,b1, b1, tx));
         }
     }
 
@@ -164,7 +164,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
             for (ByteBuffer col : state.get(key).keySet()) {
                 ByteBuffer val = state.get(key).get(col);
 
-                Assert.assertEquals(val, store.get(key, col, tx));
+                Assert.assertEquals(val, KCVSUtil.get(store,key, col, tx));
 
                 checked++;
             }
@@ -196,7 +196,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
                     continue;
                 }
 
-                Assert.assertNull(store.get(key, col, tx));
+                Assert.assertNull(KCVSUtil.get(store,key, col, tx));
 
                 checked++;
             }

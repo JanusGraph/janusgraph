@@ -4,7 +4,7 @@ import com.thinkaurelius.titan.BerkeleyJeStorageSetup;
 import com.thinkaurelius.titan.diskstorage.HashKeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManagerAdapter;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
 import org.apache.commons.configuration.Configuration;
 
 
@@ -13,7 +13,7 @@ public class BerkeleyJeHashKeyColumnValueTest extends HashKeyColumnValueStoreTes
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
         Configuration config = BerkeleyJeStorageSetup.getBerkeleyJEStorageConfiguration();
         BerkeleyJEStoreManager sm = new BerkeleyJEStoreManager(config);
-        return new KeyValueStoreManagerAdapter(sm);
+        return new OrderedKeyValueStoreManagerAdapter(sm);
     }
 
 }

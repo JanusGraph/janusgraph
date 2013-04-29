@@ -11,6 +11,9 @@ import org.apache.commons.configuration.Configuration;
 import java.nio.ByteBuffer;
 
 /**
+ * Base Class for {@link IDAuthority} implementations.
+ * Handles common aspects such as maintaining the {@link IDBlockSizer} and shared configuration options
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -54,10 +57,20 @@ public abstract class AbstractIDManager implements IDAuthority {
         this.blockSizer = sizer;
     }
 
+    /**
+     * Returns a byte buffer representation for the given partition id
+     * @param partition
+     * @return
+     */
     protected ByteBuffer getPartitionKey(int partition) {
         return ByteBufferUtil.getIntByteBuffer(partition);
     }
 
+    /**
+     * Returns the block size of the specified partition as determined by the configured {@link IDBlockSizer}.
+     * @param partition
+     * @return
+     */
     protected long getBlockSize(int partition) {
         Preconditions.checkArgument(blockSizer != null, "Blocksizer has not yet been initialized");
         isActive = true;

@@ -35,16 +35,6 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
             }
 
             @Override
-            public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-                return null;
-            }
-
-            @Override
-            public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-                return false;
-            }
-
-            @Override
             public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
                 //Do nothing
             }

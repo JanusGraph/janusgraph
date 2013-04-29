@@ -4,6 +4,11 @@ import com.google.common.base.Preconditions;
 
 import java.nio.ByteBuffer;
 
+/**
+ * A {@link KeySelector} that returns keys up to a given limit.
+ *
+ * @author Matthias Br&ouml;cheler (me@matthiasb.com);
+ */
 public class LimitedSelector implements KeySelector {
 
     private final int limit;

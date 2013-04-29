@@ -64,29 +64,6 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     }
 
     @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-                          StoreTransaction txh) throws StorageException {
-        try {
-            OperationResult<Column<ByteBuffer>> result =
-                    keyspace.prepareQuery(columnFamily)
-                            .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
-                            .withRetryPolicy(retryPolicy.duplicate())
-                            .getKey(key).getColumn(column).execute();
-            return result.getResult().getByteBufferValue();
-        } catch (NotFoundException e) {
-            return null;
-        } catch (ConnectionException e) {
-            throw new TemporaryStorageException(e);
-        }
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-                                     StoreTransaction txh) throws StorageException {
-        return null != get(key, column, txh);
-    }
-
-    @Override
     public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
         try {
             // See getSlice() below for a warning suppression justification
@@ -200,7 +177,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
         Rows<ByteBuffer, ByteBuffer> result;
         try {
             /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
-            result = allRowsQuery.setRowLimit(PAGE_SIZE) // pre-fetch that many rows at a time
+            result = allRowsQuery.setRowLimit(storeManager.getPageSize()) // pre-fetch that many rows at a time
                                .setConcurrencyLevel(1) // one execution thread for fetching portion of rows
                                .setExceptionCallback(new ExceptionCallback() {
                                    private int retries = 0;

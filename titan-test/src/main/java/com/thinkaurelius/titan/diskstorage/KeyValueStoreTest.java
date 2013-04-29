@@ -4,9 +4,10 @@ package com.thinkaurelius.titan.diskstorage;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVUtil;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -28,9 +29,9 @@ public abstract class KeyValueStoreTest {
     private String storeName = "testStore1";
 
 
-    protected KeyValueStoreManager manager;
+    protected OrderedKeyValueStoreManager manager;
     protected StoreTransaction tx;
-    protected KeyValueStore store;
+    protected OrderedKeyValueStore store;
 
     @Before
     public void setUp() throws Exception {
@@ -44,7 +45,7 @@ public abstract class KeyValueStoreTest {
         store = manager.openDatabase(storeName);
     }
 
-    public abstract KeyValueStoreManager openStorageManager() throws StorageException;
+    public abstract OrderedKeyValueStoreManager openStorageManager() throws StorageException;
 
     @After
     public void tearDown() throws Exception {
@@ -184,9 +185,9 @@ public abstract class KeyValueStoreTest {
     public void checkSlice(String[] values, Set<Integer> removed, int start, int end, int limit) throws StorageException {
         List<KeyValueEntry> entries;
         if (limit <= 0)
-            entries = store.getSlice(KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), tx);
+            entries = KVUtil.getSlice(store,KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), tx);
         else
-            entries = store.getSlice(KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), limit, tx);
+            entries = KVUtil.getSlice(store,KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), limit, tx);
 
         int pos = 0;
         for (int i = start; i < end; i++) {

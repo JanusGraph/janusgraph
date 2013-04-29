@@ -6,6 +6,8 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
+ * {@link Mutation} type for {@link KeyColumnValueStore}.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 

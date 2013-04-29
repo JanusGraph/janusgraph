@@ -86,6 +86,10 @@ public class StoreFeatures {
         return supportsLocking;
     }
 
+    /**
+     * Whether this storage backend supports batch mutations via {@link KeyColumnValueStoreManager#mutateMany(java.util.Map, StoreTransaction)}.
+     * @return
+     */
     public boolean supportsBatchMutation() {
         verify();
         return supportsBatchMutation;

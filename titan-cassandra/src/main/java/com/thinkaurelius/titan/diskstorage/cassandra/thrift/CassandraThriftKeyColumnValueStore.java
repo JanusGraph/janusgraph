@@ -165,51 +165,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-
-    @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-                          StoreTransaction txh) throws StorageException {
-        ColumnPath path = new ColumnPath(columnFamily);
-        path.setColumn(column);
-        CTConnection conn = null;
-        try {
-            conn = pool.genericBorrowObject(keyspace);
-            Cassandra.Client client = conn.getClient();
-            ColumnOrSuperColumn result =
-                    client.get(key, path, getTx(txh).getReadConsistencyLevel().getThriftConsistency());
-            return result.getColumn().bufferForValue();
-        } catch (NotFoundException e) {
-            return null;
-        } catch (Exception e) {
-            throw convertException(e);
-        } finally {
-            if (null != conn)
-                pool.genericReturnObject(keyspace, conn);
-        }
-    }
-
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-                                     StoreTransaction txh) throws StorageException {
-        ColumnParent parent = new ColumnParent(columnFamily);
-        ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThriftConsistency();
-        SlicePredicate predicate = new SlicePredicate();
-        predicate.setColumn_names(Arrays.asList(column.duplicate()));
-        CTConnection conn = null;
-        try {
-            conn = pool.genericBorrowObject(keyspace);
-            Cassandra.Client client = conn.getClient();
-            List<?> result = client.get_slice(key, parent, predicate, consistency);
-            return 0 < result.size();
-        } catch (Exception ex) {
-            throw convertException(ex);
-        } finally {
-            if (null != conn)
-                pool.genericReturnObject(keyspace, conn);
-        }
-    }
-
     @Override
     public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue,
                             StoreTransaction txh) throws StorageException {
@@ -236,7 +191,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                 Iterator<KeySlice> keys = getKeySlice(client,
                                                       ArrayUtils.EMPTY_BYTE_ARRAY,
                                                       ArrayUtils.EMPTY_BYTE_ARRAY,
-                                                      PAGE_SIZE);
+                        storeManager.getPageSize());
 
                 private ByteBuffer lastSeenKey = null;
 
@@ -245,7 +200,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                     boolean hasNext = keys.hasNext();
 
                     if (!hasNext && lastSeenKey != null) {
-                        keys = getKeySlice(client, partitioner.getToken(lastSeenKey), maximumToken, PAGE_SIZE);
+                        keys = getKeySlice(client, partitioner.getToken(lastSeenKey), maximumToken, storeManager.getPageSize());
                         hasNext = keys.hasNext();
                     }
 

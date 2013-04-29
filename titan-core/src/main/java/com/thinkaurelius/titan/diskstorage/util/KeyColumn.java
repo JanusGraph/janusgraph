@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.diskstorage.util;
 import java.nio.ByteBuffer;
 
 /**
- * This is just a (key, column) pair.
+ * Class representing a (key, column) pair.
  *
  * @author Dan LaRocque <dalaro@hopcount.org>
  */

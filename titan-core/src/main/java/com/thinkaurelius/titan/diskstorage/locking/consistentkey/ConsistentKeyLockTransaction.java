@@ -323,7 +323,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 
 
             // Check expectedValue
-            ByteBuffer bb = backer.getDataStore().get(lc.getKey(), lc.getColumn(), baseTx);
+            ByteBuffer bb = KCVSUtil.get(backer.getDataStore(),lc.getKey(), lc.getColumn(), baseTx);
             if ((null == bb && null != lc.getExpectedValue()) ||
                     (null != bb && null == lc.getExpectedValue()) ||
                     (null != bb && null != lc.getExpectedValue() && !lc.getExpectedValue().equals(bb))) {

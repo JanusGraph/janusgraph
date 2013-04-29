@@ -5,6 +5,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 /**
+ * Implementation of a lock that has no effect, i.e. does not actually lock anything.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 

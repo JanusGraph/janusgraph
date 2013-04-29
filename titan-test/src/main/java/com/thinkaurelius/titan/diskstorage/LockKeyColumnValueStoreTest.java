@@ -138,7 +138,7 @@ public abstract class LockKeyColumnValueStoreTest {
         tx[0][0].commit();
 
         tx[0][0] = newTransaction(manager[0]);
-        Assert.assertEquals(v1, store[0].get(k, c1, tx[0][0]));
+        Assert.assertEquals(v1, KCVSUtil.get(store[0],k, c1, tx[0][0]));
     }
 
     @Test
@@ -150,7 +150,7 @@ public abstract class LockKeyColumnValueStoreTest {
         tx[0][0].commit();
 
         tx[0][0] = newTransaction(manager[0]);
-        Assert.assertEquals(v1, store[0].get(k, c1, tx[0][0]));
+        Assert.assertEquals(v1, KCVSUtil.get(store[0],k, c1, tx[0][0]));
     }
 
     @Test(expected = PermanentLockingException.class)
@@ -218,7 +218,7 @@ public abstract class LockKeyColumnValueStoreTest {
 
         tx[0][0].commit();
         tx[0][0] = newTransaction(manager[0]);
-        Assert.assertEquals(v1, store[0].get(k, c1, tx[0][0]));
+        Assert.assertEquals(v1, KCVSUtil.get(store[0],k, c1, tx[0][0]));
     }
 
     @Test
@@ -290,8 +290,8 @@ public abstract class LockKeyColumnValueStoreTest {
     private void tryWrites(KeyColumnValueStore store1, KeyColumnValueStoreManager checkmgr,
                            StoreTransaction tx1, KeyColumnValueStore store2,
                            StoreTransaction tx2) throws StorageException {
-        Assert.assertNull(store1.get(k, c1, tx1));
-        Assert.assertNull(store2.get(k, c2, tx2));
+        Assert.assertNull(KCVSUtil.get(store1,k, c1, tx1));
+        Assert.assertNull(KCVSUtil.get(store2,k, c2, tx2));
 
         store1.acquireLock(k, c1, null, tx1);
         store2.acquireLock(k, c2, null, tx2);
@@ -304,8 +304,8 @@ public abstract class LockKeyColumnValueStoreTest {
             tx2.commit();
 
         StoreTransaction checktx = newTransaction(checkmgr);
-        Assert.assertEquals(v1, store1.get(k, c1, checktx));
-        Assert.assertEquals(v2, store2.get(k, c2, checktx));
+        Assert.assertEquals(v1, KCVSUtil.get(store1,k, c1, checktx));
+        Assert.assertEquals(v2, KCVSUtil.get(store2,k, c2, checktx));
         checktx.commit();
     }
 

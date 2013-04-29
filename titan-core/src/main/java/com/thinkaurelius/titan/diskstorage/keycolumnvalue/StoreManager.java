@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 
 /**
+ * Generic interface to a backend storage engine.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 

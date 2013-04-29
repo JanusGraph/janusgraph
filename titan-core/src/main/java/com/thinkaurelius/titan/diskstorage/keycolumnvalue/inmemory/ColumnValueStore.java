@@ -12,6 +12,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
+ * Implements a row in the in-memory implementation {@link InMemoryKeyColumnValueStore} which is comprised of
+ * column-value pairs. This data is held in a sorted array for space and retrieval efficiency.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -30,18 +33,6 @@ class ColumnValueStore {
         lock.lock();
         try {
             return data.isEmpty();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    ByteBuffer get(ByteBuffer column, StoreTransaction txh) {
-        Lock lock = getLock(txh);
-        lock.lock();
-        try {
-            int index = data.getIndex(column);
-            if (index>=0) return data.get(index).getValue();
-            else return null;
         } finally {
             lock.unlock();
         }

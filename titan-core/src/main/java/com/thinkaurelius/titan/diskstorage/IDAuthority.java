@@ -5,21 +5,24 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import java.nio.ByteBuffer;
 
 /**
+ * Handles the unique allocation of ids. Returns blocks of ids that are uniquely allocated to the caller so that
+ * they can be used to uniquely identify elements. *
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
 public interface IDAuthority {
 
     /**
-     * Returns an array that specifies a block of idAuthorities, i.e. the idAuthorities between return[0] (inclusive) and return[1] (exclusive).
-     * It is guaranteed that the block of idAuthorities for the particular partition id is uniquely assigned, that is,
-     * the block of idAuthorities has not been previously and will not subsequently be assigned again when invoking this method
+     * Returns an array that specifies a block of new ids, i.e. the ids between return[0] (inclusive) and return[1] (exclusive).
+     * It is guaranteed that the block of ids for the particular partition id is uniquely assigned, that is,
+     * the block of ids has not been previously and will not subsequently be assigned again when invoking this method
      * on the local or any remote machine that is connected to the underlying storage backend.
      * <p/>
-     * In other words, this method has to ensure that idAuthorities are uniquely assigned per partition.
+     * In other words, this method has to ensure that ids are uniquely assigned per partition.
      *
      * @param partition Partition for which to request an id block. Must be bigger or equal to 0
-     * @return a range of idAuthorities for the particular partition
+     * @return a range of ids for the particular partition
      */
     public long[] getIDBlock(int partition) throws StorageException;
 

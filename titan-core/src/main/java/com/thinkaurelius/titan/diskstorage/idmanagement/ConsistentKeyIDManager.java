@@ -17,6 +17,20 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * {@link com.thinkaurelius.titan.diskstorage.IDAuthority} implementation assuming that the backing store
+ * supports consistent key operations.
+ *
+ * ID blocks are allocated by first applying for an id block, waiting for a specified period of time and then
+ * checking that the application was the first received for that particular id block. If so, the application is
+ * considered successful. If not, some other process won the application and a new application is tried.
+ *
+ * The partition id is used as the key and since key operations are considered consistent, this protocol guarantees
+ * unique id block assignments.
+ *
+ * (c) Matthias Broecheler (me@matthiasb.com)
+ */
+
 public class ConsistentKeyIDManager extends AbstractIDManager {
 
     private static final Logger log = LoggerFactory.getLogger(ConsistentKeyIDManager.class);

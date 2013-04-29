@@ -6,6 +6,8 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import java.io.File;
 
 /**
+ * Utility methods for dealing with directory structures that are not provided by Apache Commons.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 

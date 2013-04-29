@@ -66,56 +66,6 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        byte[] keyBytes = ByteBufferUtil.getArray(key);
-        byte[] colBytes = ByteBufferUtil.getArray(column);
-
-        Get g = new Get(keyBytes).addColumn(columnFamilyBytes, colBytes);
-
-        try {
-            g.setMaxVersions(1);
-        } catch (IOException e1) {
-            throw new RuntimeException(e1);
-        }
-
-        try {
-            HTableInterface table = null;
-            Result r = null;
-
-            try {
-                table = pool.getTable(tableName);
-                r = table.get(g);
-            } finally {
-                IOUtils.closeQuietly(table);
-            }
-
-            if (null == r) {
-                return null;
-            } else if (1 == r.size()) {
-                return ByteBuffer.wrap(r.getValue(columnFamilyBytes, colBytes));
-            } else if (0 == r.size()) {
-                return null;
-            } else {
-                logger.warn("Found {} results for key {}, column {}, family {} (expected 0 or 1 results)",
-                        new Object[]{r.size(),
-                                new String(Hex.encodeHex(keyBytes)),
-                                new String(Hex.encodeHex(colBytes)),
-                                new String(Hex.encodeHex(columnFamilyBytes))}
-                );
-                return null;
-            }
-        } catch (IOException e) {
-            throw new TemporaryStorageException(e);
-        }
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return null != get(key, column, txh);
-    }
-
-
-    @Override
     public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
         byte[] keyBytes = ByteBufferUtil.getArray(key);
 

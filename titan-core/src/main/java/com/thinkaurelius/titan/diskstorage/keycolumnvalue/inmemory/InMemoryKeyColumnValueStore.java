@@ -18,6 +18,10 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
+ * An in-memory implementation of {@link KeyColumnValueStore}.
+ * This implementation is thread-safe. All data is held in memory, which means that the capacity of this store is
+ * determined by the available heap space. No data is persisted and all data lost when the jvm terminates or store closed.
+ *
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -43,18 +47,6 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         ColumnValueStore cvs = kcv.get(query.getKey());
         if (cvs==null) return Lists.newArrayList();
         else return cvs.getSlice(query,txh);
-    }
-
-    @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        ColumnValueStore cvs = kcv.get(key);
-        if (cvs==null) return null;
-        else return cvs.get(column,txh);
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return get(key,column,txh)!=null;
     }
 
     @Override

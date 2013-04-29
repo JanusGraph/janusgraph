@@ -65,9 +65,6 @@ public class GraphDatabaseConfiguration {
     public static final String STORAGE_BACKEND_KEY = "backend";
     public static final String STORAGE_BACKEND_DEFAULT = "local";
 
-//    public static final String STORAGE_IS_ORDERED_KEY = "key-ordered";
-//    public static final boolean STORAGE_IS_ORDERED_DEFAULT = false;
-
     /**
      * Specifies whether write operations are supported
      */
@@ -195,6 +192,14 @@ public class GraphDatabaseConfiguration {
      */
     public static final int CONNECTION_POOL_SIZE_DEFAULT = 32;
     public static final String CONNECTION_POOL_SIZE_KEY = "connection-pool-size";
+
+    /**
+     * Default number of results to pull over the wire when iterating over a distributed
+     * storage backend.
+     * This is batch size of results to pull when iterating a result set.
+     */
+    public static final int PAGE_SIZE_DEFAULT = 100;
+    public static final String PAGE_SIZE_KEY = "page-size";
 
     // ################ IDS ###########################
     // ################################################
