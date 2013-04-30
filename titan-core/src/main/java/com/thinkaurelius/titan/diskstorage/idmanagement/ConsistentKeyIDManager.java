@@ -118,7 +118,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 boolean success = false;
                 try {
                     long before = System.currentTimeMillis();
-                    idStore.mutate(partitionKey, Arrays.asList(SimpleEntry.of(target, ByteBuffer.allocate(0))), null, txh);
+                    idStore.mutate(partitionKey, Arrays.asList(SimpleEntry.of(target, ByteBuffer.allocate(0))), KeyColumnValueStore.NO_DELETIONS, txh);
                     long after = System.currentTimeMillis();
 
                     if (idApplicationWaitMS < after - before) {

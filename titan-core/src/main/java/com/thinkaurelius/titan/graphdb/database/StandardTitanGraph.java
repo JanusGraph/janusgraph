@@ -235,7 +235,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     } else { //STANDARD TitanRelation
                         for (int pos = 0; pos < relation.getLen(); pos++) {
                             InternalVertex node = relation.getVertex(pos);
-                            mutations.put(node, relation);
+                            if (pos==0 || !relation.isLoop()) mutations.put(node, relation);
                             Direction dir = EdgeDirection.fromPosition(pos);
                             if (acquireLocks && relation.getType().isUnique(dir) && !node.isNew()
                                     && ((InternalType) relation.getType()).uniqueLock(dir)) {

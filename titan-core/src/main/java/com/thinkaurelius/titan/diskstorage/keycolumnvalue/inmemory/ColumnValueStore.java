@@ -70,7 +70,7 @@ class ColumnValueStore {
             add = new CacheEntry[additions.size()];
             int pos = 0;
             for (Entry e : additions) {
-                add[pos]=new CacheEntry(e);
+                add[pos]=convert(e);
                 pos++;
             }
             Arrays.sort(add);
@@ -99,11 +99,12 @@ class ColumnValueStore {
         lock.lock();
         try {
             CacheEntry[] olddata = data.array;
-            CacheEntry[] newdata = new CacheEntry[olddata.length+add.length];
+            int oldsize = data.size;
+            CacheEntry[] newdata = new CacheEntry[oldsize+add.length];
 
             //Merge sort
             int i=0,iold=0, iadd=0, idel=0;
-            while (iold<olddata.length) {
+            while (iold<oldsize) {
                 CacheEntry e = olddata[iold];
                 iold++;
                 //Compare with additions
@@ -112,6 +113,8 @@ class ColumnValueStore {
                     if (compare>=0) {
                         e=add[iadd];
                         iadd++;
+                        //Skip duplicates
+                        while (iadd<add.length && e.equals(add[iadd])) iadd++;
                     }
                     if (compare>0) iold--;
                 }
@@ -143,6 +146,23 @@ class ColumnValueStore {
         }
     }
 
+    private static final CacheEntry convert(Entry e) {
+        ByteBuffer column = e.getColumn();
+        if (column.remaining()!=column.capacity()) {
+            ByteBuffer newcolumn = ByteBuffer.allocate(column.remaining());
+            newcolumn.put(column);
+            newcolumn.flip();
+            column=newcolumn;
+        }
+        ByteBuffer value = e.getValue();
+        if (value.remaining()!=value.capacity()) {
+            ByteBuffer newvalue = ByteBuffer.allocate(value.remaining());
+            newvalue.put(value);
+            newvalue.flip();
+            value=newvalue;
+        }
+        return new CacheEntry(column,value);
+    }
 
     private ReentrantLock lock=null;
     private Lock getLock(StoreTransaction txh) {

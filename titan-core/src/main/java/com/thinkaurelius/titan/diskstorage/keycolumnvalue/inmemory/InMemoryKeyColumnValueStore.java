@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -9,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.NoLock;
 import org.apache.commons.lang.StringUtils;
 
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,11 +69,24 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
+    public RecordIterator<ByteBuffer> getKeys(final StoreTransaction txh) throws StorageException {
         Preconditions.checkArgument(txh.getConsistencyLevel()==ConsistencyLevel.DEFAULT);
         return new RecordIterator<ByteBuffer>() {
 
-            private final Iterator<ByteBuffer> iter = kcv.keySet().iterator();
+            private final Iterator<ByteBuffer> iter =
+                    Iterators.transform(
+                    Iterators.filter(kcv.entrySet().iterator(), new Predicate<Map.Entry<ByteBuffer, ColumnValueStore>>() {
+                @Override
+                public boolean apply(@Nullable Map.Entry<ByteBuffer, ColumnValueStore> entry) {
+                    return !entry.getValue().isEmpty(txh);
+                }
+            }), new Function<Map.Entry<ByteBuffer, ColumnValueStore>, ByteBuffer>() {
+                        @Nullable
+                        @Override
+                        public ByteBuffer apply(@Nullable Map.Entry<ByteBuffer, ColumnValueStore> entry) {
+                            return entry.getKey();
+                        }
+                    });
 
             @Override
             public boolean hasNext() throws StorageException {
@@ -78,7 +95,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
             @Override
             public ByteBuffer next() throws StorageException {
-                return iter.next();
+                return iter.next().duplicate();
             }
 
             @Override
