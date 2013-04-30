@@ -22,8 +22,10 @@ public class Mutation<E,K> {
     public Mutation(List<E> additions, List<K> deletions) {
         Preconditions.checkNotNull(additions);
         Preconditions.checkNotNull(deletions);
-        this.additions = additions;
-        this.deletions = deletions;
+        if (additions.isEmpty()) this.additions=null;
+        else this.additions = additions;
+        if (deletions.isEmpty()) this.deletions=null;
+        else this.deletions = deletions;
     }
 
     public Mutation() {

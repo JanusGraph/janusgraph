@@ -84,8 +84,8 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         Map<ByteBuffer, KCVMutation> addOnly = new HashMap<ByteBuffer, KCVMutation>(1);
 
         combination.put(b1, new KCVMutation(additions, deletions));
-        deleteOnly.put(b1, new KCVMutation(null, deletions));
-        addOnly.put(b1, new KCVMutation(additions, null));
+        deleteOnly.put(b1, new KCVMutation(KeyColumnValueStore.NO_ADDITIONS, deletions));
+        addOnly.put(b1, new KCVMutation(additions, KeyColumnValueStore.NO_DELETIONS));
 
         store1.mutate(b1, additions, deletions, tx);
         tx.flush();
@@ -254,7 +254,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
                     result.put(key, m);
                 }
 
-                result.get(key).getDeletions().add(col);
+                result.get(key).deletion(col);
 
                 dels++;
 
@@ -297,7 +297,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
                 result.put(key, m);
             }
 
-            result.get(key).getAdditions().add(SimpleEntry.of(col, col));
+            result.get(key).addition(SimpleEntry.of(col, col));
 
         }
 
