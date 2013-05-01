@@ -248,7 +248,7 @@ public class ElasticSearchIndex implements IndexProvider {
     @Override
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, TransactionHandle tx) throws StorageException {
         BulkRequestBuilder brb = client.prepareBulk();
-        int requests = 0;
+        int bulkrequests = 0;
         try {
             for (Map.Entry<String,Map<String, IndexMutation>> stores : mutations.entrySet()) {
                 String storename = stores.getKey();
@@ -264,7 +264,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (mutation.isDeleted()) {
                             log.trace("Deleting entire document {}",docid);
                             brb.add(new DeleteRequest(indexName,storename,docid));
-                            requests++;
+                            bulkrequests++;
                         } else {
                             Set<String> deletions = Sets.newHashSet(mutation.getDeletions());
                             if (mutation.hasAdditions()) {
@@ -273,13 +273,13 @@ public class ElasticSearchIndex implements IndexProvider {
                                 }
                             }
                             if (!deletions.isEmpty()) {
+                                //TODO make part of batch mutation if/when possible
                                 StringBuilder script = new StringBuilder();
                                 for (String key : deletions) {
                                     script.append("ctx._source.remove(\""+key+"\"); ");
                                 }
                                 log.trace("Deleting individual fields [{}] for document {}",deletions,docid);
                                 client.prepareUpdate(indexName,storename,docid).setScript(script.toString()).execute().actionGet();
-                                requests++;
                             }
                         }
                     }
@@ -288,21 +288,20 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (mutation.isNew()) { //Index
                             log.trace("Adding entire document {}",docid);
                             brb.add(new IndexRequest(indexName,storename,docid).source(getContent(mutation.getAdditions())));
-                            requests++;
-                        } else { //Update
+                            bulkrequests++;
+                        } else { //Update: TODO make part of batch mutation if/when possible
                             boolean needUpsert = !mutation.hasDeletions();
                             XContentBuilder builder = getContent(mutation.getAdditions());
                             UpdateRequestBuilder update = client.prepareUpdate(indexName,storename,docid).setDoc(builder);
                             if (needUpsert) update.setUpsertRequest(builder);
                             log.trace("Updating document {} with upsert {}",docid,needUpsert);
                             update.execute().actionGet();
-                            requests++;
                         }
                     }
 
                 }
             }
-            brb.execute().actionGet();
+            if (bulkrequests>0) brb.execute().actionGet();
         }  catch (Exception e) {  throw convert(e);  }
     }
 
