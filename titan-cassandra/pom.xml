@@ -10,7 +10,9 @@
     <artifactId>titan-cassandra</artifactId>
     <name>Titan-Cassandra: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
-
+    <properties>
+        <astyanax.version>1.56.37</astyanax.version>
+    </properties>
     <!-- Libraries -->
     <dependencies>
         <dependency>
@@ -77,8 +79,18 @@
         </dependency>
         <dependency>
             <groupId>com.netflix.astyanax</groupId>
-            <artifactId>astyanax</artifactId>
-            <version>1.0.6</version>
+            <artifactId>astyanax-core</artifactId>
+            <version>${astyanax.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.netflix.astyanax</groupId>
+            <artifactId>astyanax-thrift</artifactId>
+            <version>${astyanax.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.netflix.astyanax</groupId>
+            <artifactId>astyanax-cassandra</artifactId>
+            <version>${astyanax.version}</version>
         </dependency>
         <!-- The latest Snappy-java because 1.4.0.1 is broken on Mac OS X with JDK 7 -->
         <dependency>

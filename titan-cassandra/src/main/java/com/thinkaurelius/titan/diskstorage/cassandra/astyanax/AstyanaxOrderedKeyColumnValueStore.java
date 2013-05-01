@@ -153,15 +153,11 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     }
 
     @Override
-    public void mutate(ByteBuffer key, List<Entry> additions,
-                       List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
-        Map<ByteBuffer, KCVMutation> mutations = ImmutableMap.of(key, new
-                KCVMutation(additions, deletions));
-        mutateMany(mutations, txh);
+    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
+        mutateMany(ImmutableMap.of(key, new KCVMutation(additions, deletions)), txh);
     }
 
-    public void mutateMany(Map<ByteBuffer, KCVMutation> mutations,
-                           StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<ByteBuffer, KCVMutation> mutations, StoreTransaction txh) throws StorageException {
         storeManager.mutateMany(ImmutableMap.of(columnFamilyName, mutations), txh);
     }
 
