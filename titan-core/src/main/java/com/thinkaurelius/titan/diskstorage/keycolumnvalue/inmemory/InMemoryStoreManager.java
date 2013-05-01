@@ -80,7 +80,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
 
     @Override
     public KeyColumnValueStore openDatabase(final String name) throws StorageException {
-        if (!stores.contains(name)) {
+        if (!stores.containsKey(name)) {
             stores.putIfAbsent(name,new InMemoryKeyColumnValueStore(name));
         }
         KeyColumnValueStore store = stores.get(name);
