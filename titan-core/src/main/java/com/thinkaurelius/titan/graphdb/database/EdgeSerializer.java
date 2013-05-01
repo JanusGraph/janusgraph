@@ -61,13 +61,9 @@ public class EdgeSerializer {
     }
 
     public InternalRelation readRelation(InternalVertex vertex, Entry data) {
-        ImmutableLongObjectMap map;
         StandardTitanTx tx = vertex.tx();
-        if (data instanceof CacheEntry && ((CacheEntry)data).getCache()!=null) {
-            map = ((CacheEntry)data).getCache();
-        } else {
-            map = parseProperties(vertex.getID(),data,true,tx);
-        }
+        ImmutableLongObjectMap map = getProperties(vertex.getID(),data,true,tx);
+
         Direction dir = (Direction) map.get(DIRECTION_ID);
         long typeid = (Long)map.get(TYPE_ID);
         TitanType type = tx.getExistingType(typeid);
@@ -88,7 +84,7 @@ public class EdgeSerializer {
     }
 
     public void readRelation(RelationFactory factory, Entry data, StandardTitanTx tx) {
-        ImmutableLongObjectMap map = parseProperties(factory.getVertexID(),data,false,tx);
+        ImmutableLongObjectMap map = getProperties(factory.getVertexID(),data,false,tx);
 
         factory.setDirection((Direction) map.get(DIRECTION_ID));
         long typeid = (Long)map.get(TYPE_ID);
@@ -113,19 +109,25 @@ public class EdgeSerializer {
     }
 
     public ImmutableLongObjectMap readProperties(InternalVertex vertex, Entry data, StandardTitanTx tx) {
+        return getProperties(vertex.getID(),data, false, tx);
+    }
+
+    public ImmutableLongObjectMap getProperties(long vertexid, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
         if (data instanceof CacheEntry) {
             CacheEntry cdata = (CacheEntry)data;
-            if (cdata.getCache()==null) {
+            ImmutableLongObjectMap map = cdata.getCache();
+            if (map==null) {
                 synchronized (cdata) {
                     if (cdata.getCache()==null) {
-                        ImmutableLongObjectMap props = parseProperties(vertex.getID(),cdata,false,tx);
-                        cdata.setCache(props);
-                        return props;
-                    } else return cdata.getCache();
+                        map = parseProperties(vertexid,cdata,parseHeaderOnly,tx);
+                        if (!parseHeaderOnly) cdata.setCache(map);
+                    } else map = cdata.getCache();
                 }
-            } else return cdata.getCache();
-        } else return parseProperties(vertex.getID(),data,false,tx);
+            }
+            return map;
+        } else return parseProperties(vertexid,data,parseHeaderOnly,tx);
     }
+
 
     private ImmutableLongObjectMap parseProperties(long vertexid, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
         Preconditions.checkArgument(vertexid>0);

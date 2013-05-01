@@ -83,6 +83,37 @@ public class SerializerTest {
     }
 
     @Test
+    public void parallelDeserialization() throws InterruptedException {
+        DataOutput out = serialize.getDataOutput(128, true);
+        out.putLong(8);
+        out.writeClassAndObject(Long.valueOf(8));
+        TestClass c = new TestClass(5, 8, new short[]{1, 2, 3, 4, 5}, TestEnum.Two);
+        out.writeObject(c,TestClass.class);
+        final ByteBuffer b = out.getByteBuffer();
+
+        int numThreads = 100;
+        Thread[] threads = new Thread[numThreads];
+        for (int i=0;i<numThreads;i++) {
+            threads[i]=new Thread(new Runnable(){
+                @Override
+                public void run() {
+                    for (int j=0;j<100000;j++) {
+                        ByteBuffer c = b.duplicate();
+                        assertEquals(8,c.getLong());
+                        Long l = (Long)serialize.readClassAndObject(c);
+                        assertEquals(8,l.longValue());
+                        TestClass c2 = serialize.readObjectNotNull(c,TestClass.class);
+                    }
+                }
+            });
+            threads[i].start();
+        }
+        for (int i=0;i<numThreads;i++) {
+            threads[i].join();
+        }
+    }
+
+    @Test
     public void primitiveSerialization() {
         DataOutput out = serialize.getDataOutput(128, true);
         out.writeObjectNotNull(Boolean.FALSE);
