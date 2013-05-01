@@ -16,6 +16,7 @@ import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 
 import javax.annotation.Nullable;
@@ -24,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.Partitioner;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
@@ -40,8 +43,10 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     private final AstyanaxStoreManager storeManager;
 
 
-    AstyanaxOrderedKeyColumnValueStore(String columnFamilyName, Keyspace keyspace,
-                                       AstyanaxStoreManager storeManager, RetryPolicy retryPolicy) {
+    AstyanaxOrderedKeyColumnValueStore(String columnFamilyName,
+                                       Keyspace keyspace,
+                                       AstyanaxStoreManager storeManager,
+                                       RetryPolicy retryPolicy) {
         this.keyspace = keyspace;
         this.columnFamilyName = columnFamilyName;
         this.retryPolicy = retryPolicy;
@@ -168,6 +173,9 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
     @Override
     public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
+        if (storeManager.getPartitioner() != Partitioner.RANDOM)
+            throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");;
+
         AllRowsQuery<ByteBuffer, ByteBuffer> allRowsQuery = keyspace.prepareQuery(columnFamily).getAllRows();
 
         Rows<ByteBuffer, ByteBuffer> result;
