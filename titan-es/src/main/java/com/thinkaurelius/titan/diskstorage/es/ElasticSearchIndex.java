@@ -329,7 +329,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 }
             } else if (value instanceof String) {
                 if (relation == Text.CONTAINS) {
-                    return FilterBuilders.termFilter(key,(String)value);
+                    return FilterBuilders.termFilter(key,((String)value).toLowerCase());
 //                } else if (relation == Txt.PREFIX) {
 //                    return new PrefixFilter(new Term(key+STR_SUFFIX,(String)value));
 //                } else if (relation == Cmp.EQUAL) {

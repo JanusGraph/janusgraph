@@ -11,7 +11,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class LuceneBerkeleyDBTest extends TitanIndexTest {
+public abstract class LuceneBerkeleyDBTest extends TitanIndexTest {
 
     public LuceneBerkeleyDBTest() {
         super(getLuceneBDBConfig(), true, true, true);

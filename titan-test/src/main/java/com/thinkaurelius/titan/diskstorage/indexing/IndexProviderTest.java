@@ -102,6 +102,14 @@ public abstract class IndexProviderTest {
             assertEquals(1,result.size());
             assertEquals("doc1",result.get(0));
 
+            result = tx.query(new IndexQuery(store, KeyAtom.of("text", Text.CONTAINS, "Bob")));
+            assertEquals(1,result.size());
+            assertEquals("doc3",result.get(0));
+
+            result = tx.query(new IndexQuery(store, KeyAtom.of("text", Text.CONTAINS, "bob")));
+            assertEquals(1,result.size());
+            assertEquals("doc3",result.get(0));
+
             result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Text.CONTAINS, "world"), KeyAtom.of("weight", Cmp.GREATER_THAN,6.0))));
             assertEquals(1,result.size());
             assertEquals("doc2",result.get(0));
