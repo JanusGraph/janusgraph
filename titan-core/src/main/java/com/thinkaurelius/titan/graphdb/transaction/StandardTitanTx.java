@@ -289,6 +289,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     public void removeRelation(InternalRelation relation) {
         Preconditions.checkArgument(!relation.isRemoved());
+        relation = relation.it();
         //Delete from Vertex
         for (int i=0;i<relation.getLen();i++) {
             relation.getVertex(i).removeRelation(relation);
@@ -337,6 +338,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     @Override
     public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, TitanLabel label) {
         verifyWriteAccess(outVertex, inVertex);
+        outVertex = ((InternalVertex)outVertex).it();
+        inVertex = ((InternalVertex)inVertex).it();
         Preconditions.checkNotNull(label);
         Lock uniqueLock = FakeLock.INSTANCE;
         if (config.hasVerifyUniqueness() && (label.isUnique(Direction.OUT) || label.isUnique(Direction.IN))) uniqueLock=getUniquenessLock(outVertex,label,inVertex);
@@ -379,6 +382,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     public TitanProperty addPropertyInternal(TitanVertex vertex, TitanKey key, Object value) {
         verifyWriteAccess(vertex);
+        vertex = ((InternalVertex)vertex).it();
         Preconditions.checkNotNull(key);
         value = AttributeUtil.verifyAttribute(key,value);
         Lock uniqueLock = FakeLock.INSTANCE;

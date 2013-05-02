@@ -703,6 +703,16 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             assertEquals(1,v.query().direction(Direction.OUT).labels("knows").count());
             assertEquals(5,((Number)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"knows")).getProperty("time")).intValue()%10);
         }
+
+        graph.commit();
+
+        v1 = graph.addVertex(null);
+        v2 = graph.addVertex(null);
+        graph.addEdge(null,v1,v2,"knows");
+        graph.commit();
+        v3 = graph.addVertex(null);
+        Edge e = graph.addEdge(null,v1,v3,"knows");
+        assertNull(e.getProperty("age"));
     }
 
     @Test
