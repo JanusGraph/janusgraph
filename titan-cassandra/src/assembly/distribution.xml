@@ -30,6 +30,13 @@
             <directory>target/*.jar</directory>
             <outputDirectory>/lib</outputDirectory>
         </fileSet>
+        <fileSet>
+            <directory>../bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>cassandra*</include>
+            </includes>
+        </fileSet>
     </fileSets>
     <files>
         <file>
@@ -56,14 +63,6 @@
              <source>../titan-all/src/main/bin/README.txt</source>
              <outputDirectory>/</outputDirectory>
          </file>
-        <file>
-            <source>../bin/cassandra.local</source>
-            <outputDirectory>bin</outputDirectory>
-        </file>
-        <file>
-            <source>../bin/cassandra-es.local</source>
-            <outputDirectory>bin</outputDirectory>
-        </file>
     </files>
 
     <dependencySets>

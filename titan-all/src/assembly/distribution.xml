@@ -15,9 +15,10 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>../bin</directory>
+            <outputDirectory>bin</outputDirectory>
             <includes>
-                <include>../bin/cassandra.local</include>
-                <include>../bin/hbase.local</include>
+                <include>*.local</include>
             </includes>
         </fileSet>
         <fileSet>

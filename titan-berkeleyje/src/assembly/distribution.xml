@@ -30,6 +30,13 @@
             <directory>target/*.jar</directory>
             <outputDirectory>/lib</outputDirectory>
         </fileSet>
+        <fileSet>
+            <directory>../bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>berkeleyje*</include>
+            </includes>
+        </fileSet>
     </fileSets>
     <files>
         <file>
@@ -55,10 +62,6 @@
         <file>
             <source>../titan-all/src/main/bin/README.txt</source>
             <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>../bin/berkeleyje-es.local</source>
-            <outputDirectory>bin</outputDirectory>
         </file>
     </files>
 

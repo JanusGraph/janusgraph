@@ -30,8 +30,8 @@
             </includes>
         </fileSet>
         <fileSet>
-          <directory>./config</directory>
-          <outputDirectory>config</outputDirectory>
+            <directory>./config</directory>
+            <outputDirectory>config</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>src</directory>
@@ -49,6 +49,13 @@
         <fileSet>
             <directory>target/*.jar</directory>
             <outputDirectory>/lib</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>../bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>hbase*</include>
+            </includes>
         </fileSet>
     </fileSets>
     <files>
@@ -75,14 +82,6 @@
         <file>
             <source>../titan-all/src/main/bin/README.txt</source>
             <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>../bin/hbase.local</source>
-            <outputDirectory>bin</outputDirectory>
-        </file>
-        <file>
-            <source>../bin/hbase-es.local</source>
-            <outputDirectory>bin</outputDirectory>
         </file>
     </files>
 
