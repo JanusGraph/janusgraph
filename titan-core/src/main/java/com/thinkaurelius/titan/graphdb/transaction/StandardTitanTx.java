@@ -32,6 +32,9 @@ import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
 import com.thinkaurelius.titan.graphdb.transaction.addedrelations.AddedRelationsContainer;
 import com.thinkaurelius.titan.graphdb.transaction.addedrelations.ConcurrentBufferAddedRelations;
 import com.thinkaurelius.titan.graphdb.transaction.addedrelations.SimpleBufferAddedRelations;
+import com.thinkaurelius.titan.graphdb.transaction.indexcache.ConcurrentIndexCache;
+import com.thinkaurelius.titan.graphdb.transaction.indexcache.IndexCache;
+import com.thinkaurelius.titan.graphdb.transaction.indexcache.SimpleIndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.ConcurrentVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.SimpleVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.VertexCache;
@@ -89,6 +92,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     private final AddedRelationsContainer addedRelations;
     private Map<Long,InternalRelation> deletedRelations;
     private final Cache<StandardElementQuery,List<Object>> indexCache;
+    private final IndexCache newVertexIndexEntries;
     private ConcurrentMap<UniqueLockApplication,Lock> uniqueLocks;
 
     private final Map<String,TitanType> typeCache;
@@ -120,12 +124,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             addedRelations = new SimpleBufferAddedRelations();
             concurrencyLevel = 1;
             typeCache = new HashMap<String,TitanType>();
+            newVertexIndexEntries = new SimpleIndexCache();
         } else {
             vertexCache = new ConcurrentVertexCache();
             addedRelations = new ConcurrentBufferAddedRelations();
             concurrencyLevel = 4;
             typeCache = new ConcurrentHashMap<String, TitanType>();
-
+            newVertexIndexEntries = new ConcurrentIndexCache();
         }
         for (SystemType st : SystemKey.values()) typeCache.put(st.getName(),st);
 
@@ -273,6 +278,15 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
      * ------------------------------------ Adding and Removing Relations ------------------------------------
      */
 
+    private static final boolean isVertexIndexProperty(InternalRelation relation) {
+        if (!(relation instanceof TitanProperty)) return false;
+        return isVertexIndexProperty(((TitanProperty) relation).getPropertyKey());
+    }
+
+    private static final boolean isVertexIndexProperty(TitanKey key) {
+        return key.hasIndex(Titan.Token.STANDARD_INDEX,Vertex.class);
+    }
+
     public void removeRelation(InternalRelation relation) {
         Preconditions.checkArgument(!relation.isRemoved());
         //Delete from Vertex
@@ -282,6 +296,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         //Update transaction data structures
         if (relation.isNew()) {
             addedRelations.remove(relation);
+            if (isVertexIndexProperty(relation)) newVertexIndexEntries.remove((TitanProperty)relation);
         } else {
             Preconditions.checkArgument(relation.isLoaded());
             if (deletedRelations == EMPTY_DELETED_RELATIONS) {
@@ -353,6 +368,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             if (!success) throw new AssertionError("Could not connect relation: " + r);
         }
         addedRelations.add(r);
+        if (isVertexIndexProperty(r)) newVertexIndexEntries.add((TitanProperty)r);
     }
 
     @Override
@@ -624,25 +640,43 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             if (query.getType()==StandardElementQuery.Type.VERTEX && hasModifications()) {
                 //Collect all keys from the query - ASSUMPTION: query is an AND of KeyAtom
                 final Set<TitanKey> keys = Sets.newHashSet();
-                for (KeyCondition<TitanKey> atom : query.getCondition().getChildren()) {
-                    keys.add(((KeyAtom<TitanKey>)atom).getKey());
+                KeyAtom<TitanKey> standardIndexKey = null;
+                for (KeyCondition<TitanKey> cond : query.getCondition().getChildren()) {
+                    KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>)cond;
+                    if (atom.getRelation()==Cmp.EQUAL && isVertexIndexProperty(atom.getKey()))
+                        standardIndexKey = atom;
+                    keys.add(atom.getKey());
                 }
-                Set<TitanVertex> vertices = Sets.newHashSet();
-                for (TitanRelation r : addedRelations.getView(new Predicate<InternalRelation>() {
-                    @Override
-                    public boolean apply(@Nullable InternalRelation relation) {
-                        return keys.contains(relation.getType());
+                Iterator<TitanVertex> vertices;
+                if (standardIndexKey==null) {
+                    Set<TitanVertex> vertexSet = Sets.newHashSet();
+                    for (TitanRelation r : addedRelations.getView(new Predicate<InternalRelation>() {
+                        @Override
+                        public boolean apply(@Nullable InternalRelation relation) {
+                            return keys.contains(relation.getType());
+                        }
+                    })) {
+                        vertexSet.add(((TitanProperty)r).getVertex());
                     }
-                })) {
-                    vertices.add(((TitanProperty)r).getVertex());
-                }
-                for (TitanRelation r : deletedRelations.values()) {
-                    if (keys.contains(r.getType())) {
-                        TitanVertex v = ((TitanProperty)r).getVertex();
-                        if (!v.isRemoved()) vertices.add(v);
+                    for (TitanRelation r : deletedRelations.values()) {
+                        if (keys.contains(r.getType())) {
+                            TitanVertex v = ((TitanProperty)r).getVertex();
+                            if (!v.isRemoved()) vertexSet.add(v);
+                        }
                     }
+                    vertices=vertexSet.iterator();
+                } else {
+                    vertices = Iterators.transform(newVertexIndexEntries.get(standardIndexKey.getCondition(),standardIndexKey.getKey()).iterator(),new Function<TitanProperty, TitanVertex>() {
+                        @Nullable
+                        @Override
+                        public TitanVertex apply(@Nullable TitanProperty o) {
+                            return o.getVertex();
+                        }
+                    });
                 }
-                return (Iterator)Iterators.filter(vertices.iterator(),new Predicate<TitanVertex>() {
+
+
+                return (Iterator)Iterators.filter(vertices,new Predicate<TitanVertex>() {
                     @Override
                     public boolean apply(@Nullable TitanVertex vertex) {
                         return query.matches(vertex);

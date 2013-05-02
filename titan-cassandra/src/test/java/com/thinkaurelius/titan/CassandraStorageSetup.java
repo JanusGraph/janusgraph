@@ -19,7 +19,7 @@ public class CassandraStorageSetup {
                     "cassandra-tmp", "conf", "127.0.0.1", "cassandra.yaml"},
             File.separator);
     public static final String cassandraOrderedYamlPath = StringUtils.join(
-            new String[]{"file://", System.getProperty("user.dir"), "titan-cassandra", "target",
+            new String[]{"file://", System.getProperty("user.dir"), "target",
                     "cassandra-tmp", "conf", "127.0.0.1", "cassandra-ordered.yaml"},
             File.separator);
 

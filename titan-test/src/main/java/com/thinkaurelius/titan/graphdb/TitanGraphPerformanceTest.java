@@ -98,6 +98,25 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
     }
 
     @Test
+    public void testInTxIndex() throws Exception {
+        int trials = 2; int numV = 2000; int offset = 10000;
+        tx.makeType().name("uid").dataType(Long.class).indexed(Vertex.class).unique(Direction.OUT).makePropertyKey();
+        newTx();
+
+        long start = System.currentTimeMillis();
+        for (int t=0;t<trials;t++) {
+            for (int i=offset;i<offset+numV;i++) {
+                if (Iterables.isEmpty(tx.getVertices("uid",Long.valueOf(i)))) {
+                    Vertex v = tx.addVertex();
+                    v.setProperty("uid",Long.valueOf(i));
+                }
+            }
+        }
+        assertEquals(numV,Iterables.size(tx.getVertices()));
+        System.out.println("Total time (ms): " + (System.currentTimeMillis()-start));
+    }
+
+    @Test
     public void unlabeledEdgeInsertion() throws Exception {
         runEdgeInsertion(new UnlabeledEdgeInsertion());
     }
