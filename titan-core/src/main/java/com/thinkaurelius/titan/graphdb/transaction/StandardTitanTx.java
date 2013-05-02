@@ -357,6 +357,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     @Override
     public TitanProperty addProperty(TitanVertex vertex, TitanKey key, Object value) {
+        if (key.isUnique(Direction.OUT)) return setProperty(vertex,key,value);
+        else return addPropertyInternal(vertex,key,value);
+    }
+
+    public TitanProperty addPropertyInternal(TitanVertex vertex, TitanKey key, Object value) {
         verifyWriteAccess(vertex);
         Preconditions.checkNotNull(key);
         value = AttributeUtil.verifyAttribute(key,value);
@@ -368,11 +373,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             if (config.hasVerifyUniqueness()) {
                 if (key.isUnique(Direction.OUT)) {
                     Preconditions.checkArgument(Iterables.isEmpty(query(vertex).includeHidden().type(key).direction(Direction.OUT).properties()),
-                            "An property with the given type already exists on the vertex");
+                            "An property with the given key already exists on the vertex and the property key is defined as out-unique");
                 }
                 if (key.isUnique(Direction.IN)) {
                     Preconditions.checkArgument(Iterables.isEmpty(getVertices(key,value)),
-                            "The given value is already used as a property");
+                            "The given value is already used as a property and the property key is defined as in-unique");
                 }
             }
             StandardProperty prop = new StandardProperty(temporaryID.decrementAndGet(),key,(InternalVertex)vertex,value,ElementLifeCycle.New);
@@ -384,7 +389,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         }
     }
 
-    public void setProperty(TitanVertex vertex, final TitanKey key, Object value) {
+    public TitanProperty setProperty(TitanVertex vertex, final TitanKey key, Object value) {
         Preconditions.checkNotNull(key);
         Preconditions.checkArgument(key.isUnique(Direction.OUT),"Not an out-unique key: %s",key.getName());
 
@@ -407,7 +412,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                     r.remove();
                 }
             }
-            addProperty(vertex,key,value);
+            return addPropertyInternal(vertex,key,value);
         } finally {
             uniqueLock.unlock();
         }

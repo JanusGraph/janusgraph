@@ -1,15 +1,21 @@
 package com.thinkaurelius.titan.graphdb.query;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.keycondition.*;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * (c) Matthias Broecheler (me@matthiasb.com)
@@ -129,11 +135,27 @@ public class StandardElementQuery implements Query<StandardElementQuery> {
     public static final<T extends TitanType> boolean matchesCondition(TitanElement element, KeyCondition<T> condition) {
         if (condition instanceof KeyAtom) {
             KeyAtom<T> atom = (KeyAtom<T>) condition;
-            Object value = null;
+            List<Object> values = null;
             T type = atom.getKey();
-            if (type.isPropertyKey()) value = element.getProperty((TitanKey)type);
-            else value = ((TitanRelation)element).getProperty((TitanLabel)type);
-            return atom.getRelation().satisfiesCondition(value,atom.getCondition());
+            if (type.isPropertyKey()) {
+                if (type.isUnique(Direction.OUT)) values = ImmutableList.of(element.getProperty((TitanKey)type));
+                else {
+                    Iterator<TitanProperty> iter = ((VertexCentricQueryBuilder)((TitanVertex)element).query()).type(type).includeHidden().properties().iterator();
+                    values = new ArrayList<Object>();
+                    while (iter.hasNext()) {
+                        values.add(iter.next().getValue());
+                    }
+                }
+            } else {
+                Preconditions.checkArgument(type.isUnique(Direction.OUT));
+                values = ImmutableList.of((Object) ((TitanRelation) element).getProperty((TitanLabel) type));
+
+            }
+            Preconditions.checkArgument(!values.isEmpty());
+            for (Object value : values) {
+                if (!atom.getRelation().satisfiesCondition(value,atom.getCondition())) return false;
+            }
+            return true;
         } else if (condition instanceof KeyNot) {
             return !matchesCondition(element, ((KeyNot) condition).getChild());
         } else if (condition instanceof KeyAnd) {

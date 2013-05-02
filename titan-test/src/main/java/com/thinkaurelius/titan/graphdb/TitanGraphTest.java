@@ -69,8 +69,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         TitanLabel friend = tx.makeType().name("friend").directed().unique(Direction.OUT).
                 group(TypeGroup.of(5, "group1")).makeEdgeLabel();
 
-        TitanKey id = tx.makeType().name("uid").unique(Direction.OUT).indexed(Vertex.class).unique(Direction.IN).
-                dataType(String.class).makePropertyKey();
+        TitanKey id = tx.makeType().name("uid").unique(Direction.BOTH).indexed(Vertex.class).dataType(String.class).makePropertyKey();
 
         TitanKey weight = tx.makeType().name("weight").unique(Direction.OUT).dataType(Double.class).makePropertyKey();
 
@@ -240,6 +239,82 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(154, ((SpecialInt) v2.getProperty("int")).getValue());
         assertEquals(v2, Iterables.getOnlyElement(tx.getVertices("someid", 200l)));
         assertEquals(v2, Iterables.getOnlyElement(tx.getVertices(id, "v2")));
+
+        clopen();
+
+        v = tx.addVertex();
+        v.setProperty("uid","unique1");
+        assertEquals(1,Iterables.size(tx.getVertices("uid","unique1")));
+        clopen();
+
+        try {
+            v = tx.addVertex();
+            v.setProperty("uid","unique1");
+            fail();
+        } catch (IllegalArgumentException e) {
+
+        } finally {
+            tx.rollback();
+            tx=null;
+        }
+        clopen();
+        v = tx.addVertex();
+        v.setProperty("uid","unique2");
+        try {
+            v = tx.addVertex();
+            v.setProperty("uid","unique2");
+            fail();
+        } catch (IllegalArgumentException e) {
+
+        } finally {
+            tx.rollback();
+            tx=null;
+        }
+
+        newTx();
+        tx.makeType().name("domain").unique(Direction.IN).indexed(Vertex.class).dataType(String.class).makePropertyKey();
+        v1 = tx.addVertex();
+        try {
+            v1.setProperty("domain","unique1");
+        } catch (IllegalArgumentException e) {
+
+        } finally {
+            tx.rollback(); tx=null;
+        }
+        newTx();
+
+
+//        tx.makeType().name("domain").unique(Direction.IN).indexed(Vertex.class).dataType(String.class).makePropertyKey();
+//        v1 = tx.addVertex();
+//        v1.addProperty("domain","unique1");
+//        try {
+//            v2 = tx.addVertex();
+//            v2.addProperty("domain","unique1");
+//            fail();
+//        } catch (IllegalArgumentException e) {
+//            e.printStackTrace();
+//        } finally {
+//            tx.rollback();
+//            tx=null;
+//        }
+//        newTx();
+
+        tx.makeType().name("domain").unique(Direction.IN).indexed(Vertex.class).dataType(String.class).makePropertyKey();
+        clopen();
+        v1 = tx.addVertex();
+        v1.addProperty("domain","unique1");
+        assertEquals(1,Iterables.size(tx.getVertices("domain","unique1")));
+        try {
+            v2 = tx.addVertex();
+            v2.addProperty("domain","unique1");
+            fail();
+        } catch (IllegalArgumentException e) {
+            
+        } finally {
+            tx.rollback();
+            tx=null;
+        }
+        newTx();
     }
 
     @Test
