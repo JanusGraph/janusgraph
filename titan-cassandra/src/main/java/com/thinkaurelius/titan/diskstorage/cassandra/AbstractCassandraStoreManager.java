@@ -150,12 +150,15 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             if (partitioner == Partitioner.RANDOM) {
                 features.isKeyOrdered = false;
                 features.hasLocalKeyPartition = false;
+                features.supportsScan = true;
             } else if (partitioner == Partitioner.BYTEORDER) {
                 features.isKeyOrdered = true;
                 features.hasLocalKeyPartition = false;
+                features.supportsScan = false;
             } else if (partitioner == Partitioner.LOCALBYTEORDER) {
                 features.isKeyOrdered = true;
                 features.hasLocalKeyPartition = true;
+                features.supportsScan = false;
             } else throw new IllegalArgumentException("Unrecognized partitioner: " + partitioner);
         }
         return features;

@@ -114,15 +114,22 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
         final IPartitioner<?> partitioner = StorageService.getPartitioner();
 
-        if (!(partitioner instanceof RandomPartitioner) && !(partitioner instanceof Murmur3Partitioner))
+        final Token minimumToken, maximumToken;
+        if (partitioner instanceof RandomPartitioner) {
+            minimumToken = ((RandomPartitioner) partitioner).getMinimumToken();
+            maximumToken = new BigIntegerToken(RandomPartitioner.MAXIMUM);
+        } else if (partitioner instanceof Murmur3Partitioner) {
+            minimumToken = ((Murmur3Partitioner) partitioner).getMinimumToken();
+            maximumToken = new LongToken(Murmur3Partitioner.MAXIMUM);
+//        } else if (partitioner instanceof ByteOrderedPartitioner) {
+//            minimumToken = new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.zeroByteBuffer(8));
+//            maximumToken = new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.oneByteBuffer(8));
+        } else {
             throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
-
-        final Token maximumToken = (partitioner instanceof RandomPartitioner)
-                                    ? new BigIntegerToken(RandomPartitioner.MAXIMUM)
-                                    : new LongToken(Murmur3Partitioner.MAXIMUM);
+        }
 
         return new RecordIterator<ByteBuffer>() {
-            private Iterator<Row> keys = getKeySlice(partitioner.getMinimumToken(),
+            private Iterator<Row> keys = getKeySlice(minimumToken,
                                                      maximumToken,
                                                      storeManager.getPageSize());
 

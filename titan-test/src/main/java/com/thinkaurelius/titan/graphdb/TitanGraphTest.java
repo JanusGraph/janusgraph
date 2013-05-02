@@ -334,6 +334,27 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     }
 
     @Test
+    public void testVertexDeletion() throws Exception {
+
+        TitanKey name = makeUniqueStringPropertyKey("name");
+        newTx();
+
+        TitanVertex v = tx.addVertex();
+        TitanProperty p = v.addProperty("name", "oldName");
+        newTx();
+
+        TitanVertex v1 = tx.getVertex(v.getID());
+
+        tx.removeVertex(v1);
+        newTx();
+        if (graph.getFeatures().supportsVertexIteration) {
+            int count = 0;
+            for (Vertex vertex: tx.getVertices()) count++;
+            assertEquals(0, count);
+        }
+    }
+
+    @Test
     public void testDate() throws ParseException {
         tx.makeType().name("birthday").unique(Direction.OUT).dataType(GregorianCalendar.class).makePropertyKey();
 
