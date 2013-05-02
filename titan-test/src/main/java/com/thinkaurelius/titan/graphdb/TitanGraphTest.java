@@ -284,20 +284,20 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         newTx();
 
 
-//        tx.makeType().name("domain").unique(Direction.IN).indexed(Vertex.class).dataType(String.class).makePropertyKey();
-//        v1 = tx.addVertex();
-//        v1.addProperty("domain","unique1");
-//        try {
-//            v2 = tx.addVertex();
-//            v2.addProperty("domain","unique1");
-//            fail();
-//        } catch (IllegalArgumentException e) {
-//            e.printStackTrace();
-//        } finally {
-//            tx.rollback();
-//            tx=null;
-//        }
-//        newTx();
+        tx.makeType().name("domain").unique(Direction.IN).indexed(Vertex.class).dataType(String.class).makePropertyKey();
+        v1 = tx.addVertex();
+        v1.addProperty("domain","unique1");
+        try {
+            v2 = tx.addVertex();
+            v2.addProperty("domain","unique1");
+            fail();
+        } catch (IllegalArgumentException e) {
+
+        } finally {
+            tx.rollback();
+            tx=null;
+        }
+        newTx();
 
         tx.makeType().name("domain").unique(Direction.IN).indexed(Vertex.class).dataType(String.class).makePropertyKey();
         clopen();
@@ -309,7 +309,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             v2.addProperty("domain","unique1");
             fail();
         } catch (IllegalArgumentException e) {
-            
+
         } finally {
             tx.rollback();
             tx=null;
