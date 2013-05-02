@@ -74,9 +74,9 @@
         <module>titan-test</module>
         <module>titan-berkeleyje</module>
         <module>titan-cassandra</module>
-        <module>titan-hbase</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
+        <module>titan-hbase</module>
         <module>titan-all</module>
     </modules>
     <build>
