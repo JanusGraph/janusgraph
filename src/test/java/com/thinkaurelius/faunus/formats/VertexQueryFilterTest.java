@@ -22,6 +22,14 @@ public class VertexQueryFilterTest extends BaseTest {
         assertEquals(query.hasContainers.size(), 0);
         assertEquals(query.direction, Direction.BOTH);
         assertEquals(query.labels.length, 0);
+        FaunusVertex vertex = new FaunusVertex(1);
+        vertex.setProperty("name", "marko");
+        vertex.addEdge("knows", vertex).setProperty("time", 1);
+        query.defaultFilter(vertex);
+        assertEquals(vertex.getProperty("name"), "marko");
+        assertEquals(vertex.getPropertyKeys().size(), 1);
+        assertEquals(vertex.getVertices(Direction.OUT).iterator().next(), vertex);
+        assertEquals(vertex.getEdges(Direction.OUT).iterator().next().getProperty("time"), new Integer(1));
     }
 
     public void testVertexQueryConstruction() {
