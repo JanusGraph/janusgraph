@@ -27,7 +27,8 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         InternalVertex v = getVertex(0);
         if (v==v.it()) return this;
         else {
-            InternalRelation next = (InternalRelation)getId().findRelation(tx());
+            InternalRelation next = (InternalRelation) RelationIdentifier.get(getVertex(0)
+                                                , type, super.getID()).findRelation(tx());
             if (next==null) throw new InvalidElementException("Relation has been removed",this);
             else return next;
         }

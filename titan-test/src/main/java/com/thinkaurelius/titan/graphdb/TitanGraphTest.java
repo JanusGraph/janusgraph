@@ -677,7 +677,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(55,v3.getProperty("age"));
         v3.setProperty("age", 65);
         assertEquals(65, v3.getProperty("age"));
-
+        e1 = graph.getEdge(e1);
 
         for (Vertex v : new Vertex[]{v1,v2,v3}) {
             assertEquals(2,v.query().direction(Direction.BOTH).labels("knows").count());
@@ -688,6 +688,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         graph.commit();
 
         assertEquals(45,e3.getProperty("time"));
+        assertEquals(5,e1.getProperty("time"));
 
         try {
             //TODO: how to address this? Only allow transactional passing for vertices?
