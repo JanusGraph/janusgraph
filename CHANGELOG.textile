@@ -5,6 +5,20 @@ Faunus: Graph Analytics Engine
 
 h2. Faunus 0.x.y
 
+h3. Version 0.3.1 (Not Officially Released Yet)
+
+```xml
+<dependency>
+  <groupId>com.thinkaurelius.faunus</groupId>
+  <artifactId>faunus</artifactId>
+  <version>0.3.1-SNAPSHOT</version>
+</dependency>
+```
+
+* Optimized the default in-memory filter for @VertexQueryFilter@
+
+==<hr/>==
+
 h3. Version 0.3.0 (April 20, 2013)
 
 ```xml
