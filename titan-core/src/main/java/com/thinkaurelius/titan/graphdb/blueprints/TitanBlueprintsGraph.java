@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.blueprints;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Parameter;
@@ -73,6 +74,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     public abstract TitanTransaction newThreadBoundTransaction();
 
     private TitanTransaction getAutoStartTx() {
+        if (txs==null)  ExceptionFactory.graphShutdown();
         TitanTransaction tx = txs.get();
         if (tx == null) {
             tx = newThreadBoundTransaction();

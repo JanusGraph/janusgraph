@@ -27,6 +27,7 @@ import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Features;
 import org.slf4j.Logger;
@@ -109,6 +110,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     public StandardTitanTx newTransaction(TransactionConfig configuration) {
+        if (!isOpen) ExceptionFactory.graphShutdown();
         try {
             return new StandardTitanTx(this, configuration, backend.beginTransaction());
         } catch (StorageException e) {
