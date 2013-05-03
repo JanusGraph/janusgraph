@@ -5,6 +5,11 @@ import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization;
 
+/**
+ * Helper class for registering data types with Titan
+ *
+ * @param <T>
+ */
 public class RegisteredAttributeClass<T> implements Comparable<RegisteredAttributeClass> {
 
     private final Class<T> type;

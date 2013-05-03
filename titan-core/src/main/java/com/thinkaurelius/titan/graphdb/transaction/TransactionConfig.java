@@ -17,7 +17,7 @@ public class TransactionConfig {
 
     private final DefaultTypeMaker defaultTypeMaker;
 
-    private final boolean verifyNodeExistence;
+    private final boolean verifyVertexExistence;
 
     private final boolean verifyUniqueness;
 
@@ -38,11 +38,11 @@ public class TransactionConfig {
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         if (graphConfig.isBatchLoading()) {
             verifyUniqueness = false;
-            verifyNodeExistence = false;
+            verifyVertexExistence = false;
             acquireLocks = false;
         } else {
             verifyUniqueness = true;
-            verifyNodeExistence = true;
+            verifyVertexExistence = true;
             acquireLocks = true;
         }
         this.threadBound = threadBound;
@@ -54,7 +54,7 @@ public class TransactionConfig {
         this.assignIDsImmediately = assignIDsImmediately;
         this.isReadOnly = false;
         verifyUniqueness = true;
-        verifyNodeExistence = true;
+        verifyVertexExistence = true;
         acquireLocks = true;
         this.threadBound = threadBound;
         singleThreaded = threadBound;
@@ -77,13 +77,13 @@ public class TransactionConfig {
     }
 
     /**
-     * Whether the graph transaction is configured to verify that a node of a given id actually exists
+     * Whether the graph transaction is configured to verify that a vertex of a given id actually exists
      * in the database or not.
      *
-     * @return True, if node existence is verified, else false
+     * @return True, if vertex existence is verified, else false
      */
-    public final boolean hasVerifyNodeExistence() {
-        return verifyNodeExistence;
+    public final boolean hasVerifyVertexExistence() {
+        return verifyVertexExistence;
     }
 
     /**
@@ -105,7 +105,7 @@ public class TransactionConfig {
     /**
      * Whether the graph transaction is configured to verify that an added key does not yet exist in the database.
      *
-     * @return True, if node existence is verified, else false
+     * @return True, if vertex existence is verified, else false
      */
     public final boolean hasVerifyUniqueness() {
         return verifyUniqueness;

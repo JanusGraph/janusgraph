@@ -14,9 +14,11 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 /**
+ * Blueprints specific implementation for {@link TitanGraph}.
+ * Handles thread-bound transactions.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     // ########## TRANSACTION HANDLING ###########################

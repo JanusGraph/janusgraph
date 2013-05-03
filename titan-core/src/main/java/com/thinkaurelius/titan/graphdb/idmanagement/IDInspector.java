@@ -1,22 +1,27 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
+/**
+ * Interface for determining the type of element a particular id refers to.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public interface IDInspector {
 
-    public boolean isEdgeID(long id);
+    public boolean isRelationID(long id);
 
-    public boolean isEdgeTypeID(long id);
+    public boolean isTypeID(long id);
 
-    public boolean isRelationshipTypeID(long id);
+    public boolean isEdgeLabelID(long id);
 
-    public boolean isPropertyTypeID(long id);
+    public boolean isPropertyKeyID(long id);
 
-    public boolean isNodeID(long id);
+    public boolean isVertexID(long id);
 
     public long getPartitionID(long id);
 
     public long getGroupID(long etId);
 
-    public boolean isValidEdgeTypGroupID(long groupid);
+    public boolean isValidTypGroupID(long groupid);
 
 
 }

@@ -212,7 +212,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     @Override
     public TitanVertex getVertex(final long id) {
         verifyOpen();
-        if (config.hasVerifyNodeExistence() && !containsVertex(id)) return null;
+        if (config.hasVerifyVertexExistence() && !containsVertex(id)) return null;
         return getExistingVertex(id);
     }
 
@@ -229,17 +229,17 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             Preconditions.checkArgument(id>0);
 
             InternalVertex vertex = null;
-            if (idInspector.isEdgeTypeID(id)) {
+            if (idInspector.isTypeID(id)) {
                 Preconditions.checkArgument(id>0);
-                if (idInspector.isPropertyTypeID(id)) {
+                if (idInspector.isPropertyKeyID(id)) {
                     vertex = new TitanKeyVertex(StandardTitanTx.this,id,ElementLifeCycle.Loaded);
                 } else {
-                    Preconditions.checkArgument(idInspector.isRelationshipTypeID(id));
+                    Preconditions.checkArgument(idInspector.isEdgeLabelID(id));
                     vertex = new TitanLabelVertex(StandardTitanTx.this,id,ElementLifeCycle.Loaded);
                 }
                 //If its a newly created type, add to type cache
                 typeCache.put(((TitanType)vertex).getName(),(TitanType)vertex);
-            } else if (idInspector.isNodeID(id)) {
+            } else if (idInspector.isVertexID(id)) {
                 vertex = new CacheVertex(StandardTitanTx.this,id,ElementLifeCycle.Loaded);
             } else throw new IllegalArgumentException("ID could not be recognized");
             return vertex;

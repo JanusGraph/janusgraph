@@ -78,7 +78,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         //Finally remove internal/hidden relations
         for (TitanRelation r : QueryUtil.queryAll(it())) {
             if (r.getType().equals(SystemKey.VertexState)) r.remove();
-            else throw new IllegalStateException("Cannot remove node since it is still connected");
+            else throw new IllegalStateException("Cannot remove vertex since it is still connected");
         }
     }
 

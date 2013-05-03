@@ -56,23 +56,23 @@ public class IDManagementTest {
     public void testEntityID(int partitionBits, int groupBits, long count, int partition, int group) {
         IDManager eid = new IDManager(partitionBits, groupBits);
 
-        long id = eid.getNodeID(count, partition);
-        assertTrue(eid.isNodeID(id));
+        long id = eid.getVertexID(count, partition);
+        assertTrue(eid.isVertexID(id));
         assertEquals(eid.getPartitionID(id), partition);
 
-        id = eid.getEdgeID(count, partition);
-        assertTrue(eid.isEdgeID(id));
+        id = eid.getRelationID(count, partition);
+        assertTrue(eid.isRelationID(id));
         assertEquals(eid.getPartitionID(id), partition);
 
-        id = eid.getPropertyTypeID(count, group, partition);
-        assertTrue(eid.isPropertyTypeID(id));
-        assertTrue(eid.isEdgeTypeID(id));
+        id = eid.getPropertyKeyID(count, group, partition);
+        assertTrue(eid.isPropertyKeyID(id));
+        assertTrue(eid.isTypeID(id));
         assertEquals(eid.getPartitionID(id), partition);
         assertEquals(group, eid.getGroupID(id));
 
-        id = eid.getRelationshipTypeID(count, group, partition);
-        assertTrue(eid.isRelationshipTypeID(id));
-        assertTrue(eid.isEdgeTypeID(id));
+        id = eid.getEdgeLabelID(count, group, partition);
+        assertTrue(eid.isEdgeLabelID(id));
+        assertTrue(eid.isTypeID(id));
         assertEquals(group, eid.getGroupID(id));
         assertEquals(eid.getPartitionID(id), partition);
     }
@@ -91,20 +91,20 @@ public class IDManagementTest {
             long partitionID = RandomGenerator.randomLong(1, eid.getMaxPartitionID());
             boolean isProperty = false;
             if (Math.random() < 0.5) {
-                id = eid.getRelationshipTypeID(RandomGenerator.randomLong(1, eid.getMaxEdgeTypeID()),
+                id = eid.getEdgeLabelID(RandomGenerator.randomLong(1, eid.getMaxTitanTypeID()),
                         groupID, partitionID);
-                assertTrue(eid.isRelationshipTypeID(id));
+                assertTrue(eid.isEdgeLabelID(id));
 
             } else {
                 isProperty = true;
-                id = eid.getPropertyTypeID(RandomGenerator.randomLong(1, eid.getMaxEdgeTypeID()),
+                id = eid.getPropertyKeyID(RandomGenerator.randomLong(1, eid.getMaxTitanTypeID()),
                         groupID, partitionID);
-                assertTrue(eid.isPropertyTypeID(id));
+                assertTrue(eid.isPropertyKeyID(id));
 
             }
             assertEquals(groupID, eid.getGroupID(id));
             assertEquals(partitionID, eid.getPartitionID(id));
-            assertTrue(eid.isEdgeTypeID(id));
+            assertTrue(eid.isTypeID(id));
 
             long nogroup = eid.removeGroupID(id);
             assertTrue(nogroup >= 0);
@@ -129,7 +129,7 @@ public class IDManagementTest {
         KryoSerializer serializer = new KryoSerializer(true);
         for (int dir = 0; dir < 4; dir++) {
             for (int t = 0; t < 1000; t++) {
-                long etid = RandomGenerator.randomLong(1, eid.getMaxEdgeTypeID());
+                long etid = RandomGenerator.randomLong(1, eid.getMaxTitanTypeID());
                 ByteBuffer b = IDHandler.getEdgeType(etid, dir, eid);
                 DataOutput out = serializer.getDataOutput(100, true);
                 IDHandler.writeEdgeType(out, etid, dir, eid);
@@ -152,7 +152,7 @@ public class IDManagementTest {
     //@Test
     public void testBinaryFormat() {
         IDManager eid = new IDManager(0, 6);
-        long id = eid.getRelationshipTypeID(15, 13, 0);
+        long id = eid.getEdgeLabelID(15, 13, 0);
         printBinary(id);
         printBinary(eid.removeGroupID(id));
     }

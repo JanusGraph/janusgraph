@@ -7,11 +7,22 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Properties;
 
+/**
+ * Collection of constants used throughput the Titan codebase.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class TitanConstants {
     
     public static final String TITAN_PROPERTIES_FILE = "titan.properties";
-    
+
+    /**
+     * Version of this TitanGraph
+     */
     public static final String VERSION;
+    /**
+     * Version numbers of compatible
+     */
     public static final List<String> COMPATIBLE_VERSIONS;
 
     static {

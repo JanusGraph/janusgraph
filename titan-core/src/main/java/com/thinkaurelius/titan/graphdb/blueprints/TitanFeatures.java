@@ -5,6 +5,8 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Features;
 
 /**
+ * Blueprint's features of a TitanGraph.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 

@@ -139,7 +139,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     // ################### READ #########################
 
     public boolean containsVertexID(long id, BackendTransaction tx) {
-        log.trace("Checking node existence for {}", id);
+        log.trace("Checking vertex existence for {}", id);
         return tx.edgeStoreContainsKey(IDHandler.getKey(id));
     }
 
@@ -236,13 +236,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         otherEdgeTypes.put(itype, relation);
                     } else { //STANDARD TitanRelation
                         for (int pos = 0; pos < relation.getLen(); pos++) {
-                            InternalVertex node = relation.getVertex(pos);
-                            if (pos==0 || !relation.isLoop()) mutations.put(node, relation);
+                            InternalVertex vertex = relation.getVertex(pos);
+                            if (pos==0 || !relation.isLoop()) mutations.put(vertex, relation);
                             Direction dir = EdgeDirection.fromPosition(pos);
-                            if (acquireLocks && relation.getType().isUnique(dir) && !node.isNew()
+                            if (acquireLocks && relation.getType().isUnique(dir) && !vertex.isNew()
                                     && ((InternalType) relation.getType()).uniqueLock(dir)) {
                                 Entry entry = edgeSerializer.writeRelation(relation, pos, false, tx);
-                                mutator.acquireEdgeLock(IDHandler.getKey(node.getID()), entry.getColumn(), null);
+                                mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry.getColumn(), null);
                             }
                         }
                     }
@@ -288,11 +288,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         assert mutatedEdges != null && !mutatedEdges.isEmpty();
 
         Collection<V> vertices = mutatedEdges.keySet();
-//		if (sortNodes) {
-//			List<V> sortedvertices = new ArrayList<V>(vertices);
-//			Collections.sort(sortedvertices);
-//			vertices=sortedvertices;
-//		}
+
         BackendTransaction mutator = tx.getTxHandle();
         for (V vertex : vertices) {
             Preconditions.checkArgument(vertex.getID()>0,"Vertex has no id: %s",vertex.getID());

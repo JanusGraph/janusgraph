@@ -8,7 +8,11 @@ import com.thinkaurelius.titan.util.datastructures.Retriever;
 
 import java.util.List;
 
-
+/**
+ * Internal Vertex interface adding methods that should only be used by Titan
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public interface InternalVertex extends TitanVertex, InternalElement {
 
     public InternalVertex it();
@@ -20,27 +24,50 @@ public interface InternalVertex extends TitanVertex, InternalElement {
 
 
     /**
-     * Deleted edge e from the adjacency list of this node and updates the state of the node to reflect
+     * Deleted relation e from the adjacency list of this vertex and updates the state of the vertex to reflect
      * the modification.
-     * Note that this method tolerates the prior removal of the node and hence does not throw an exception
-     * if the edge could not actually be removed from the adjacency list. This behavior was chosen to allow
-     * edge deletion while iterating over the list of adjacent edges, in which case the edge deletion is taken
-     * care of by the iterator and only node status update needs to be executed.
+     * Note that this method tolerates the prior removal of the vertex and hence does not throw an exception
+     * if the relation could not actually be removed from the adjacency list. This behavior was chosen to allow
+     * relation deletion while iterating over the list of adjacent relations, in which case the relation deletion is taken
+     * care of by the iterator and only vertex status update needs to be executed.
      *
      * @param e TitanRelation to be removed
      */
     public void removeRelation(InternalRelation e);
 
+    /**
+     * Add a new relation to the vertex
+     * @param e
+     * @return
+     */
     public boolean addRelation(InternalRelation e);
 
-
+    /**
+     * Returns an iterable over all newly added relations incident on this vertex that match the given predicate
+     * @param query
+     * @return
+     */
     public List<InternalRelation> getAddedRelations(Predicate<InternalRelation> query);
 
+    /**
+     * Returns all relations that match the given query. If these matching relations are not currently
+     * held in memory, it uses the given {@link Retriever} to retrieve the edges from backend storage.
+     * @param query
+     * @param lookup
+     * @return
+     */
     public Iterable<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery,List<Entry>> lookup);
 
-
+    /**
+     * Whether this vertex has removed relations
+     * @return
+     */
     public boolean hasRemovedRelations();
 
+    /**
+     * Whether this vertex has added relations
+     * @return
+     */
     public boolean hasAddedRelations();
 
 

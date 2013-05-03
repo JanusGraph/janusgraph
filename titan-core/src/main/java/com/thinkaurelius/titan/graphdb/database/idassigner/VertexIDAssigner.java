@@ -257,13 +257,13 @@ public class VertexIDAssigner {
             PartitionPool pool = (PartitionPool) poolObj;
             try {
                 if (vertex instanceof InternalRelation) {
-                    id = idManager.getEdgeID(pool.relation.nextID(), partitionID);
+                    id = idManager.getRelationID(pool.relation.nextID(), partitionID);
                 } else if (vertex instanceof TitanKey) {
-                    id = idManager.getPropertyTypeID(pool.relationType.nextID(), ((TitanType) vertex).getGroup().getID(), 0);
+                    id = idManager.getPropertyKeyID(pool.relationType.nextID(), ((TitanType) vertex).getGroup().getID(), 0);
                 } else if (vertex instanceof TitanLabel) {
-                    id = idManager.getRelationshipTypeID(pool.relationType.nextID(), ((TitanType) vertex).getGroup().getID(), 0);
+                    id = idManager.getEdgeLabelID(pool.relationType.nextID(), ((TitanType) vertex).getGroup().getID(), 0);
                 } else {
-                    id = idManager.getNodeID(pool.vertex.nextID(), partitionID);
+                    id = idManager.getVertexID(pool.vertex.nextID(), partitionID);
                 }
                 pool.accessed();
             } catch (IDPoolExhaustedException e) {
@@ -320,10 +320,10 @@ public class VertexIDAssigner {
         long lastAccess;
 
         PartitionPool(int partitionID, IDAuthority idAuthority, IDManager idManager, boolean includeRelationType) {
-            vertex = new StandardIDPool(idAuthority, PoolType.VERTEX.getFullPartitionID(partitionID), idManager.getMaxNodeID());
-            relation = new StandardIDPool(idAuthority, PoolType.RELATION.getFullPartitionID(partitionID), idManager.getMaxEdgeID());
+            vertex = new StandardIDPool(idAuthority, PoolType.VERTEX.getFullPartitionID(partitionID), idManager.getMaxVertexID());
+            relation = new StandardIDPool(idAuthority, PoolType.RELATION.getFullPartitionID(partitionID), idManager.getMaxRelationID());
             if (includeRelationType)
-                relationType = new StandardIDPool(idAuthority, PoolType.RELATIONTYPE.getFullPartitionID(partitionID), idManager.getMaxEdgeTypeID());
+                relationType = new StandardIDPool(idAuthority, PoolType.RELATIONTYPE.getFullPartitionID(partitionID), idManager.getMaxTitanTypeID());
             else relationType = null;
         }
 
