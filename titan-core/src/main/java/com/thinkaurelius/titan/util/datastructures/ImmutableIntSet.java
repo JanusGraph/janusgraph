@@ -2,6 +2,11 @@ package com.thinkaurelius.titan.util.datastructures;
 
 import com.google.common.base.Preconditions;
 
+/**
+ * Immutable set of integers
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class ImmutableIntSet implements IntSet {
 
     private final int[] values;

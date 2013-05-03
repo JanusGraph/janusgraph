@@ -2,6 +2,11 @@ package com.thinkaurelius.titan.util.datastructures;
 
 import java.io.Serializable;
 
+/**
+ * A counter with a long value
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class LongCounter implements Serializable {
 
     private static final long serialVersionUID = -880751358315110930L;

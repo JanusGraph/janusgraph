@@ -4,6 +4,11 @@ import cern.colt.list.AbstractIntList;
 import cern.colt.list.AbstractLongList;
 import cern.colt.list.LongArrayList;
 
+/**
+ * Utility class for merging and sorting lists of longs
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class AbstractLongListUtil {
 
 

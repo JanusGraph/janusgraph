@@ -1,5 +1,10 @@
 package com.thinkaurelius.titan.util.datastructures;
 
+/**
+ * Utility class for analyzing exceptions
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class ExceptionUtil {
 
     public static final boolean isCausedBy(Throwable exception, Class<?> exType) {

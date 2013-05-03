@@ -4,7 +4,13 @@ import com.google.common.base.Preconditions;
 
 import java.util.*;
 
-
+/**
+ * A list that allows efficient random removals.
+ *
+ * @param <T>
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class RandomRemovalList<T> implements Collection<T>, Iterator<T> {
 
     public static final Random random = new Random();

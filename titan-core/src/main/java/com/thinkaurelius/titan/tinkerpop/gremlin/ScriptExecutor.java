@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * Executes Gremlin scripts from the Command line
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class ScriptExecutor {

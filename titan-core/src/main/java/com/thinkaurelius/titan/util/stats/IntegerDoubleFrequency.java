@@ -4,6 +4,11 @@ import cern.colt.list.IntArrayList;
 import cern.colt.map.AbstractIntDoubleMap;
 import cern.colt.map.OpenIntDoubleHashMap;
 
+/**
+ * Count relative integer frequencies
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class IntegerDoubleFrequency {
 
     private final AbstractIntDoubleMap counts;
