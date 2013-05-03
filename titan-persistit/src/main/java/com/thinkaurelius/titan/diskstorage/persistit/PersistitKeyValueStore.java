@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage.persistit;
 
 import com.persistit.*;
 import com.persistit.exception.PersistitException;
-import com.persistit.exception.RollbackException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
@@ -89,22 +88,26 @@ public class PersistitKeyValueStore implements KeyValueStore {
         }
 
         private void getNextKey() throws StorageException {
-            transaction.assign();
-            try {
-                if (exchange.hasNext()) {
-                    exchange.next();
-                    nextKey = getKey(exchange);
-                } else {
-                    nextKey = null;
+            synchronized (transaction) {
+                transaction.assign();
+                try {
+                    if (exchange.hasNext()) {
+                        exchange.next();
+                        nextKey = getKey(exchange);
+                    } else {
+                        nextKey = null;
+                    }
+                } catch (PersistitException e) {
+                    throw new PermanentStorageException(e);
                 }
-            } catch (PersistitException e) {
-                throw new PermanentStorageException(e);
             }
         }
 
         private void begin() throws StorageException {
-            transaction.assign();
-            exchange.getKey().to(Key.BEFORE);
+            synchronized (transaction) {
+                transaction.assign();
+                exchange.getKey().to(Key.BEFORE);
+            }
         }
 
         @Override
@@ -122,8 +125,10 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
         @Override
         public void close() {
-            transaction.releaseExchange(exchange);
-            isClosed = true;
+            synchronized (transaction) {
+                transaction.releaseExchange(exchange);
+                isClosed = true;
+            }
         }
 
         @Override
@@ -166,36 +171,40 @@ public class PersistitKeyValueStore implements KeyValueStore {
     @Override
     public ByteBuffer get(final ByteBuffer key, StoreTransaction txh) throws StorageException {
         final PersistitTransaction tx = (PersistitTransaction) txh;
-        tx.assign();
-        final Exchange exchange = tx.getExchange(name);
+        synchronized (tx) {
+            tx.assign();
+            final Exchange exchange = tx.getExchange(name);
 
-        try {
-            toKey(exchange, key);
-            exchange.fetch();
-            if (exchange.getValue().isDefined()) {
-                return getValue(exchange);
-            } else {
-                return null;
+            try {
+                toKey(exchange, key);
+                exchange.fetch();
+                if (exchange.getValue().isDefined()) {
+                    return getValue(exchange);
+                } else {
+                    return null;
+                }
+            } catch (PersistitException ex) {
+                throw new PermanentStorageException(ex);
+            } finally {
+                tx.releaseExchange(exchange);
             }
-        } catch (PersistitException ex) {
-            throw new PermanentStorageException(ex);
-        } finally {
-            tx.releaseExchange(exchange);
         }
     }
 
     @Override
     public boolean containsKey(final ByteBuffer key, StoreTransaction txh) throws StorageException {
         final PersistitTransaction tx = (PersistitTransaction) txh;
-        tx.assign();
-        final Exchange exchange = tx.getExchange(name);
-        try {
-            toKey(exchange, key);
-            return exchange.isValueDefined();
-        } catch (PersistitException ex) {
-            throw new PermanentStorageException(ex);
-        } finally {
-            tx.releaseExchange(exchange);
+        synchronized (tx) {
+            tx.assign();
+            final Exchange exchange = tx.getExchange(name);
+            try {
+                toKey(exchange, key);
+                return exchange.isValueDefined();
+            } catch (PersistitException ex) {
+                throw new PermanentStorageException(ex);
+            } finally {
+                tx.releaseExchange(exchange);
+            }
         }
     }
 
@@ -234,45 +243,46 @@ public class PersistitKeyValueStore implements KeyValueStore {
      * @throws StorageException
      */
     private List<KeyValueEntry> getSlice(final ByteBuffer keyStart, final ByteBuffer keyEnd, final KeySelector selector, final Integer limit, StoreTransaction txh) throws StorageException {
-
         final PersistitTransaction tx = (PersistitTransaction) txh;
-        tx.assign();
-        final Exchange exchange = tx.getExchange(name);
+        synchronized (tx) {
+            tx.assign();
+            final Exchange exchange = tx.getExchange(name);
 
-        try {
-            ArrayList<KeyValueEntry> results = new ArrayList<KeyValueEntry>();
+            try {
+                ArrayList<KeyValueEntry> results = new ArrayList<KeyValueEntry>();
 
-            byte[] start = getByteArray(keyStart);
-            byte[] end = getByteArray(keyEnd);
+                byte[] start = getByteArray(keyStart);
+                byte[] end = getByteArray(keyEnd);
 
-            //bail out if the start key comes after the end
-            if (compare(start, end) > 0) {
-                return results;
-            }
-
-            KeyFilter.Term[] terms = {KeyFilter.rangeTerm(start, end, true, false, null)};
-            KeyFilter keyFilter = new KeyFilter(terms);
-
-            int i = 0;
-            while (exchange.next(keyFilter)) {
-                ByteBuffer k = getKey(exchange);
-                //check the key against the selector, and that is has a corresponding value
-                if (exchange.getValue().isDefined() && (selector == null || selector.include(k))){
-
-                    ByteBuffer v = getValue(exchange);
-                    KeyValueEntry kv = new KeyValueEntry(k, v);
-                    results.add(kv);
-                    i++;
-
-                    if (limit != null && limit >= 0 && i >= limit) break;
-                    if (selector != null && selector.reachedLimit()) break;
+                //bail out if the start key comes after the end
+                if (compare(start, end) > 0) {
+                    return results;
                 }
+
+                KeyFilter.Term[] terms = {KeyFilter.rangeTerm(start, end, true, false, null)};
+                KeyFilter keyFilter = new KeyFilter(terms);
+
+                int i = 0;
+                while (exchange.next(keyFilter)) {
+                    ByteBuffer k = getKey(exchange);
+                    //check the key against the selector, and that is has a corresponding value
+                    if (exchange.getValue().isDefined() && (selector == null || selector.include(k))){
+
+                        ByteBuffer v = getValue(exchange);
+                        KeyValueEntry kv = new KeyValueEntry(k, v);
+                        results.add(kv);
+                        i++;
+
+                        if (limit != null && limit >= 0 && i >= limit) break;
+                        if (selector != null && selector.reachedLimit()) break;
+                    }
+                }
+                return results;
+            } catch (PersistitException ex) {
+                throw new PermanentStorageException(ex);
+            } finally {
+                tx.releaseExchange(exchange);
             }
-            return results;
-        } catch (PersistitException ex) {
-            throw new PermanentStorageException(ex);
-        } finally {
-            tx.releaseExchange(exchange);
         }
     }
 
@@ -294,30 +304,34 @@ public class PersistitKeyValueStore implements KeyValueStore {
     @Override
     public void insert(final ByteBuffer key, final ByteBuffer value, final StoreTransaction txh) throws StorageException {
         final PersistitTransaction tx = (PersistitTransaction) txh;
-        tx.assign();
-        final Exchange exchange = tx.getExchange(name);
-        try {
-            toKey(exchange, key);
-            setValue(exchange, value);
-        } catch (PersistitException ex) {
-            throw new PermanentStorageException(ex);
-        } finally {
-            tx.releaseExchange(exchange);
+        synchronized (tx) {
+            tx.assign();
+            final Exchange exchange = tx.getExchange(name);
+            try {
+                toKey(exchange, key);
+                setValue(exchange, value);
+            } catch (PersistitException ex) {
+                throw new PermanentStorageException(ex);
+            } finally {
+                tx.releaseExchange(exchange);
+            }
         }
     }
 
     @Override
     public void delete(final ByteBuffer key, StoreTransaction txh) throws StorageException {
         final PersistitTransaction tx = (PersistitTransaction) txh;
-        tx.assign();
-        final Exchange exchange = tx.getExchange(name);
-        try {
-            toKey(exchange, key);
-            exchange.remove();
-        } catch (PersistitException ex) {
-            throw new PermanentStorageException(ex);
-        } finally {
-            tx.releaseExchange(exchange);
+        synchronized (tx) {
+            tx.assign();
+            final Exchange exchange = tx.getExchange(name);
+            try {
+                toKey(exchange, key);
+                exchange.remove();
+            } catch (PersistitException ex) {
+                throw new PermanentStorageException(ex);
+            } finally {
+                tx.releaseExchange(exchange);
+            }
         }
     }
 
