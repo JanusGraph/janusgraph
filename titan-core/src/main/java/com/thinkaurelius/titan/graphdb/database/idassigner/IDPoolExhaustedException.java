@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.database.idassigner;
 import com.thinkaurelius.titan.core.TitanException;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class IDPoolExhaustedException extends TitanException {

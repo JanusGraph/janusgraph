@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 /**
  * Contains constants for this Titan Graph Database.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class Titan {
 

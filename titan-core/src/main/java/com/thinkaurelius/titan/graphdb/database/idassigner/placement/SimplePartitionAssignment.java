@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
 import com.google.common.base.Preconditions;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class SimplePartitionAssignment implements PartitionAssignment {

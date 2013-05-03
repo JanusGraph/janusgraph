@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Comparison relations for text objects.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public enum Text implements Relation {

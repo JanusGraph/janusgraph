@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * TODO: generalize cache to check for subsumption instead of equality of KeySliceQuery and allow having a limit
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class CachedKeyColumnValueStore implements KeyColumnValueStore {

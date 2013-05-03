@@ -11,7 +11,7 @@ import java.util.List;
  *
  * Since the underlying store will guarantee consistency in the context of the transaction, locks are simply ignored.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class TransactionalLockStore implements KeyColumnValueStore {

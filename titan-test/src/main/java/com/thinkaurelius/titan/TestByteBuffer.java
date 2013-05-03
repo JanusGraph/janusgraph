@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class TestByteBuffer {

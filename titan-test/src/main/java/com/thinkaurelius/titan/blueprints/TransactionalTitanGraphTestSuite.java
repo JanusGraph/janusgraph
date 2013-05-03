@@ -7,7 +7,7 @@ import com.tinkerpop.blueprints.TransactionalGraphTestSuite;
 import com.tinkerpop.blueprints.impls.GraphTest;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class TransactionalTitanGraphTestSuite extends TransactionalGraphTestSuite {

@@ -4,7 +4,7 @@ import com.thinkaurelius.titan.core.TitanType;
 import com.tinkerpop.blueprints.Direction;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public interface RelationFactory {

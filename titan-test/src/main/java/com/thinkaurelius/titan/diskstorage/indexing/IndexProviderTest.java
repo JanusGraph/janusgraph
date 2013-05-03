@@ -21,7 +21,7 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class IndexProviderTest {

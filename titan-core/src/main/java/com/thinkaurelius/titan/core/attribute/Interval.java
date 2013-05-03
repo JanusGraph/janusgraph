@@ -6,7 +6,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 /**
  * Generic interval representation with a start and end point.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class Interval<V extends Comparable<V>> {

@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
  * Extends a {@link SliceQuery} by a key range which identifies the range of keys (start inclusive, end exclusive)
  * to which the slice query is applied.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class KeyRangeQuery extends SliceQuery {

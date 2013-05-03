@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.query;
 import java.util.Iterator;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public interface QueryExecutor<Q extends Query<Q>,R> {

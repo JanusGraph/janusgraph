@@ -13,7 +13,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  * Abstract Store Manager used as the basis for local StoreManager implementations.
  * Simplifies common configuration management.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class LocalStoreManager extends AbstractStoreManager {

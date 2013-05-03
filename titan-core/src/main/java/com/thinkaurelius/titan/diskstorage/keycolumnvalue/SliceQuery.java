@@ -13,7 +13,7 @@ import java.nio.ByteBuffer;
  *
  * If a SliceQuery is marked <i>static</i> it is expected that the result set does not change.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class SliceQuery {

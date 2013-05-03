@@ -19,7 +19,7 @@ import com.tinkerpop.blueprints.Direction;
 import java.util.Comparator;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class VertexCentricQuery implements Query<VertexCentricQuery> {

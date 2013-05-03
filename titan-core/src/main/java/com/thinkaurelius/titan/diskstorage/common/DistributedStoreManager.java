@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.common;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
@@ -15,10 +14,12 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.Random;
 
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+
 /**
  * Abstract class that handles configuration options shared by all distributed storage backends
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class DistributedStoreManager extends AbstractStoreManager {

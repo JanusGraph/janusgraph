@@ -11,7 +11,7 @@ import org.apache.cassandra.dht.IPartitioner;
 import org.apache.commons.configuration.Configuration;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class AbstractCassandraStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {

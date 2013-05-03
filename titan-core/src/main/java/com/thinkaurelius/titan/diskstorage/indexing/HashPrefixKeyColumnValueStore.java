@@ -13,7 +13,7 @@ import java.util.List;
  * Adds a hash prefix of configurable length to the wrapped {@link KeyColumnValueStore} to randomize the
  * position of index values on a byte-ordered key ring.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {

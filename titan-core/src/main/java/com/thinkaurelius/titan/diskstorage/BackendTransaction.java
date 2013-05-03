@@ -19,7 +19,7 @@ import java.util.concurrent.Callable;
  * methods for convenience.
  * Also increases robustness of read call by attempting read calls multiple times on failure.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class BackendTransaction implements TransactionHandle {

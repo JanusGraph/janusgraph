@@ -10,7 +10,7 @@ import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.LOCAL_MO
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class ElasticSearchBerkeleyDBTest extends TitanIndexTest {

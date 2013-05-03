@@ -11,7 +11,7 @@ import java.util.List;
  * the entire entry is being deleted. These can be used by an {@link IndexProvider} to execute updates more
  * efficiently.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class IndexMutation extends Mutation<IndexEntry,String> {

@@ -9,7 +9,7 @@ package com.thinkaurelius.titan.core.attribute;
  *
  * When order preservation is not important, use FullDouble as the data type.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class FullDouble extends Number {

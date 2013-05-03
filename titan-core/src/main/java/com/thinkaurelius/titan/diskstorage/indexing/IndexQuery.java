@@ -11,7 +11,7 @@ import org.apache.commons.lang.StringUtils;
  * A query is comprised of the store identifier against which the query ought to be executed and a query condition
  * which defines which entries match the query.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class IndexQuery {

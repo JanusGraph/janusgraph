@@ -8,7 +8,7 @@ import org.apache.commons.configuration.Configuration;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class LuceneBerkeleyDBTest extends TitanIndexTest {

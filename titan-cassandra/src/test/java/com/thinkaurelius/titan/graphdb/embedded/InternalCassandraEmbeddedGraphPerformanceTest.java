@@ -4,7 +4,7 @@ import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceTest;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class InternalCassandraEmbeddedGraphPerformanceTest extends TitanGraphPerformanceTest {

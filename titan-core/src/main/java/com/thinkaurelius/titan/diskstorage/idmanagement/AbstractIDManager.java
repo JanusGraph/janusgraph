@@ -14,7 +14,7 @@ import java.nio.ByteBuffer;
  * Base Class for {@link IDAuthority} implementations.
  * Handles common aspects such as maintaining the {@link IDBlockSizer} and shared configuration options
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class AbstractIDManager implements IDAuthority {

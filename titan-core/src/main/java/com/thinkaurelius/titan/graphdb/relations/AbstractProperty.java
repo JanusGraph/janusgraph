@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import static com.tinkerpop.blueprints.util.StringFactory.*;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class AbstractProperty extends AbstractTypedRelation implements TitanProperty {

@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class LuceneExample {

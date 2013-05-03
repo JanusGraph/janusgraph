@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.graphdb.query;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.keycondition.*;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -12,13 +10,11 @@ import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class StandardElementQuery implements Query<StandardElementQuery> {

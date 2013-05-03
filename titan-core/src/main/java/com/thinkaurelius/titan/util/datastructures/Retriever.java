@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.util.datastructures;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public interface Retriever<I,O> {

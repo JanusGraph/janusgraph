@@ -10,7 +10,7 @@ import java.util.List;
  * Container for collection mutations against a data store.
  * Mutations are either additions or deletions.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class Mutation<E,K> {

@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 @RunWith(Parameterized.class)

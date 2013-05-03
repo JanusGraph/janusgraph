@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 /**
  * Generic interface to a backend storage engine.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public interface StoreManager {

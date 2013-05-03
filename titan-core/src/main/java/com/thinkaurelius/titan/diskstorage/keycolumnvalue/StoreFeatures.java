@@ -7,7 +7,7 @@ import java.lang.reflect.Field;
 /**
  * Specifies the features that a given store supports
  * <p/>
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class StoreFeatures {

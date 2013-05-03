@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.core.TitanProperty;
 import javax.annotation.Nullable;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class SimpleIndexCache implements IndexCache {

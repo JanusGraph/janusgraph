@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 import java.nio.ByteBuffer;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public interface KeyIterator extends RecordIterator<ByteBuffer> {

@@ -10,7 +10,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  * Used to identify a lock for relations with a uniqueness property so that a corresponding lock can be acquired during
  * creation to ensure uniqueness.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class UniqueLockApplication {

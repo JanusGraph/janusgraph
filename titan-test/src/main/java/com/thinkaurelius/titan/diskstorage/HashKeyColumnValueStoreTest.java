@@ -4,7 +4,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStor
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class HashKeyColumnValueStoreTest extends KeyColumnValueStoreTest {

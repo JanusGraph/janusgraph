@@ -3,14 +3,12 @@ package com.thinkaurelius.titan.diskstorage.common;
 import org.apache.commons.configuration.Configuration;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL_DEFAULT;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL_KEY;
 
 /**
  * Abstract Store Manager used as the basis for concrete StoreManager implementations.
  * Simplifies common configuration management.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class AbstractStoreManager {

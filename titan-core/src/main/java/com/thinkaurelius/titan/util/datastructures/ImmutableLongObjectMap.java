@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class ImmutableLongObjectMap implements Iterable<ImmutableLongObjectMap.Entry> {

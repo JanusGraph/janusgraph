@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanVertex;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class AbstractElement implements InternalElement {

@@ -5,7 +5,7 @@ import com.google.common.base.Preconditions;
 /**
  *
  * from: http://stackoverflow.com/questions/2938482/encode-decode-a-long-to-a-string-using-a-fixed-set-of-letters-in-java
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class LongEncoding {

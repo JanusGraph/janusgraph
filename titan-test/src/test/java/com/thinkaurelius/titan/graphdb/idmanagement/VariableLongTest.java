@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 import static junit.framework.Assert.assertEquals;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class VariableLongTest {

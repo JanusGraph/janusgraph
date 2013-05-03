@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class TitanBlueprintsGraph implements TitanGraph {

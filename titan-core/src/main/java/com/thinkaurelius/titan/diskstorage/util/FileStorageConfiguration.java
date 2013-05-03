@@ -16,7 +16,7 @@ import java.io.File;
  * This class implementation this feature using a local configuration file. Hence, it is only suitable for
  * local storage backends.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class FileStorageConfiguration {

@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class KeyAtom<K> implements KeyCondition<K> {

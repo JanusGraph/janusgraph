@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
  * counter, incrementing it and committing the transaction. If the transaction fails, another process applied for the same
  * id and the process is retried.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class TransactionalIDManager extends AbstractIDManager {
 

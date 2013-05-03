@@ -16,7 +16,7 @@ import com.thinkaurelius.titan.util.datastructures.Retriever;
 import java.util.List;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class StandardVertex extends AbstractVertex {

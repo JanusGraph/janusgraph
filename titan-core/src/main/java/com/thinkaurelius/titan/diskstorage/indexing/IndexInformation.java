@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
 /**
  * An IndexInformation gives basic information on what a particular {@link IndexProvider} supports.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public interface IndexInformation {

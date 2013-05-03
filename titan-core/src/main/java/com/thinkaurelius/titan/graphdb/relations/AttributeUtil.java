@@ -12,7 +12,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.attribute.FloatSeriali
 import java.lang.reflect.Array;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class AttributeUtil {

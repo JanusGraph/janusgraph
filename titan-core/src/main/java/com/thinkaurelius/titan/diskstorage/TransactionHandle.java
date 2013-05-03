@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.diskstorage;
 /**
  * Represents a transaction for a particular storage backend.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public interface TransactionHandle {

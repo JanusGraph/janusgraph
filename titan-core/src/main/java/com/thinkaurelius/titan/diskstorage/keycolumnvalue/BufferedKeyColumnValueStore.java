@@ -10,7 +10,7 @@ import java.util.List;
  * Wraps a {@link KeyColumnValueStore} and buffers all mutations in a corresponding {@link BufferTransaction}.
  * The buffered mutations are flushed in batches to increase write performance.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class BufferedKeyColumnValueStore implements KeyColumnValueStore {

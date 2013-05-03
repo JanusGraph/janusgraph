@@ -20,7 +20,7 @@ import java.util.Map;
  * A BufferTransaction also attempts to flush multiple times in the event of temporary storage failures for increased
  * write robustness.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class BufferTransaction implements StoreTransaction {

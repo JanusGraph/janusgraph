@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 /**
  * Consistency Levels for transactions.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 public enum ConsistencyLevel {
 

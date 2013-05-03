@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import java.nio.ByteBuffer;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class VariableLong {

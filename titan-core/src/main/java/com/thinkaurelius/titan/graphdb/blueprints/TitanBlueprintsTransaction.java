@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class TitanBlueprintsTransaction implements TitanTransaction {

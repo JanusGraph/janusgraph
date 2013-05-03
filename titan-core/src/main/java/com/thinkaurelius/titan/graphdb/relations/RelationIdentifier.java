@@ -8,7 +8,7 @@ import com.tinkerpop.blueprints.Direction;
 import java.util.Arrays;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public final class RelationIdentifier {

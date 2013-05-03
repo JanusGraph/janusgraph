@@ -7,26 +7,21 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.diskstorage.util.NoLock;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * An in-memory implementation of {@link KeyColumnValueStore}.
  * This implementation is thread-safe. All data is held in memory, which means that the capacity of this store is
  * determined by the available heap space. No data is persisted and all data lost when the jvm terminates or store closed.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {

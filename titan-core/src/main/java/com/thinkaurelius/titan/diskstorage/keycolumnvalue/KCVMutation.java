@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * {@link Mutation} type for {@link KeyColumnValueStore}.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class KCVMutation extends Mutation<Entry,ByteBuffer> {

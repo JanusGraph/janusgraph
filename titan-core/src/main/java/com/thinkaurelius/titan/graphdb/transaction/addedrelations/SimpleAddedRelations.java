@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class SimpleAddedRelations extends ArrayList<InternalRelation> implements AddedRelationsContainer {

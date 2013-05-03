@@ -18,7 +18,7 @@ import java.util.Map;
 import static junit.framework.Assert.*;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class RexsterServerClientTest extends TitanGraphTestCommon {

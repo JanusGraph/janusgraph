@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import java.nio.ByteBuffer;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class IDHandler {

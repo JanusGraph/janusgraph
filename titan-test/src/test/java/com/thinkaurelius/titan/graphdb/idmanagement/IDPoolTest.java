@@ -11,7 +11,7 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class IDPoolTest {

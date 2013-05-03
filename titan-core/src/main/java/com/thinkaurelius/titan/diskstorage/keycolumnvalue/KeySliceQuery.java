@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 
 /**
  * Extends {@link SliceQuery} by a key that identifies the location of the slice in the key-ring.
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class KeySliceQuery extends SliceQuery {

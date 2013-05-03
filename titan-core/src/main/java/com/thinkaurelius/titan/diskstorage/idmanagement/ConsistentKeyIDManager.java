@@ -28,7 +28,7 @@ import java.util.List;
  * The partition id is used as the key and since key operations are considered consistent, this protocol guarantees
  * unique id block assignments.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class ConsistentKeyIDManager extends AbstractIDManager {

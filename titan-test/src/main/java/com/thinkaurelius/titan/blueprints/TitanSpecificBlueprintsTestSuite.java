@@ -5,7 +5,7 @@ import com.tinkerpop.blueprints.impls.GraphTest;
 import org.junit.Assert;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class TitanSpecificBlueprintsTestSuite extends TestSuite {

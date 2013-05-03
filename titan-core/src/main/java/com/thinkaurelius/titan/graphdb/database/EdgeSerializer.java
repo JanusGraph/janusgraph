@@ -35,7 +35,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class EdgeSerializer {

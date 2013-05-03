@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.vertices.querycache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class ConcurrentQueryCache extends SimpleQueryCache implements QueryCache {
