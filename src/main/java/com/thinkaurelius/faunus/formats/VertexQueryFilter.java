@@ -65,11 +65,11 @@ public class VertexQueryFilter extends DefaultVertexQuery {
     }
 
     public Object vertexIds() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("This VertexQuery is used for graph filtering, not id aggregation");
     }
 
     public long count() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("This VertexQuery is used for graph filtering, not element counting");
     }
 
     public void defaultFilter(final FaunusVertex vertex) {
