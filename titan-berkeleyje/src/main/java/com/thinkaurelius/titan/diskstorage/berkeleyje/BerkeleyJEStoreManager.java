@@ -143,6 +143,12 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
             if (!stores.isEmpty())
                 throw new IllegalStateException("Cannot shutdown manager since some databases are still open");
             try {
+                //Wait just a little bit before closing so that independent transaction threads can clean up.
+                Thread.sleep(30);
+            } catch (InterruptedException e) {
+                //Ignore
+            }
+            try {
                 environment.close();
             } catch (DatabaseException e) {
                 throw new PermanentStorageException("Could not close BerkeleyJE database", e);
