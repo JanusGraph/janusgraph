@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
@@ -121,9 +120,10 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         } else if (partitioner instanceof Murmur3Partitioner) {
             minimumToken = ((Murmur3Partitioner) partitioner).getMinimumToken();
             maximumToken = new LongToken(Murmur3Partitioner.MAXIMUM);
-//        } else if (partitioner instanceof ByteOrderedPartitioner) {
-//            minimumToken = new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.zeroByteBuffer(8));
-//            maximumToken = new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.oneByteBuffer(8));
+        } else if (partitioner instanceof ByteOrderedPartitioner) {
+            //TODO: This makes the assumption that its an EdgeStore (i.e. 8 byte keys)
+            minimumToken = new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.zeroByteBuffer(8));
+            maximumToken = new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.oneByteBuffer(8));
         } else {
             throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
         }
