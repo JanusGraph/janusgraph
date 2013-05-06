@@ -38,6 +38,10 @@
             <directory>target/${project.artifactId}-${project.version}-standalone/lib</directory>
             <outputDirectory>lib</outputDirectory>
         </fileSet>
+        <fileSet>
+            <directory>target/${project.artifactId}-${project.version}-standalone/ext</directory>
+            <outputDirectory>ext</outputDirectory>
+        </fileSet>
     </fileSets>
     <files>
         <file>
