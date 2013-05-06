@@ -124,7 +124,7 @@ public class StandardIDPool implements IDPool {
     public synchronized long nextID() {
         assert nextID <= currentMaxID;
         if (!initialized) {
-            renewBuffer();
+            startNextIDAcquisition();
             initialized = true;
         }
 
@@ -137,11 +137,7 @@ public class StandardIDPool implements IDPool {
         }
 
         if (nextID == renewBufferID) {
-            Preconditions.checkArgument(idBlockRenewer == null || !idBlockRenewer.isAlive(), idBlockRenewer);
-            //Renew buffer
-            log.debug("Starting id block renewal thread upon {}", nextID);
-            idBlockRenewer = new IDBlockThread();
-            idBlockRenewer.start();
+            startNextIDAcquisition();
         }
         long returnId = nextID;
         nextID++;
@@ -158,6 +154,14 @@ public class StandardIDPool implements IDPool {
         } catch (InterruptedException e) {
             throw new TitanException("Interrupted while waiting for id renewer thread to finish", e);
         }
+    }
+
+    private void startNextIDAcquisition() {
+        Preconditions.checkArgument(idBlockRenewer == null || !idBlockRenewer.isAlive(), idBlockRenewer);
+        //Renew buffer
+        log.debug("Starting id block renewal thread upon {}", nextID);
+        idBlockRenewer = new IDBlockThread();
+        idBlockRenewer.start();
     }
 
     private class IDBlockThread extends Thread {

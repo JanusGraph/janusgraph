@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
+import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.StandardIDPool;
 import com.thinkaurelius.titan.util.datastructures.IntHashSet;
@@ -94,6 +95,20 @@ public class IDPoolTest {
             for (int j=0;j<all.length;j++) if (all[j]>max) max=all[j];
             for (int j=1;j<=max;j++) assertTrue(set.contains(j));
         }
+    }
+
+    @Test
+    public void testAllocationTimeout() {
+        final MockIDAuthority idauth = new MockIDAuthority(10000);
+        idauth.setDelayAcquisition(5000);
+        StandardIDPool pool = new StandardIDPool(idauth, 1, Integer.MAX_VALUE, 4000, 0.1);
+        try {
+            pool.nextID();
+            fail();
+        } catch (TitanException e) {
+
+        }
+
     }
 
     @Test
