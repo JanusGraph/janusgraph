@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -269,8 +270,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 if (!mutations.isEmpty()) persist(mutations, tx);
                 return true;
             }
+
+            @Override
+            public String toString() { return "PersistingTransaction"; }
         };
-        BackendTransaction.execute(persist,maxWriteRetryAttempts,retryStorageWaitTime);
+        BackendOperation.execute(persist, maxWriteRetryAttempts, retryStorageWaitTime);
     }
 
 

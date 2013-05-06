@@ -857,7 +857,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         try {
             txHandle.rollback();
         } catch (Exception e) {
-            throw new TitanException("Could not rollback transaction due to exception during persistence", e);
+            throw new TitanException("Could not rollback transaction due to exception", e);
         } finally {
             close();
         }

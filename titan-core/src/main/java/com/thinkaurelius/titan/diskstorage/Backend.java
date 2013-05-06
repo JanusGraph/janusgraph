@@ -18,6 +18,7 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
@@ -188,18 +189,20 @@ public class Backend {
                 edgeIndexStore = new HashPrefixKeyColumnValueStore(edgeIndexStore, 4);
             }
 
-            String version = BackendTransaction.execute(new Callable<String>(){
+            String version = BackendOperation.execute(new Callable<String>() {
                 @Override
                 public String call() throws Exception {
                     String version = storeManager.getConfigurationProperty(TITAN_BACKEND_VERSION);
                     if (!TitanConstants.VERSION.equals(version) && (version == null ||
-                                (TitanConstants.COMPATIBLE_VERSIONS.contains(version))) ) {
-                            storeManager.setConfigurationProperty(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
-                            version = TitanConstants.VERSION;
+                            (TitanConstants.COMPATIBLE_VERSIONS.contains(version)))) {
+                        storeManager.setConfigurationProperty(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
+                        version = TitanConstants.VERSION;
                     }
                     return version;
                 }
-            },config.getLong(SETUP_WAITTIME_KEY,SETUP_WAITTIME_DEFAULT));
+                @Override
+                public String toString() { return "ConfigurationRead"; }
+            }, config.getLong(SETUP_WAITTIME_KEY, SETUP_WAITTIME_DEFAULT));
             if (!TitanConstants.VERSION.equals(version)) {
                 throw new TitanException("StorageBackend is incompatible with Titan version: " + TitanConstants.VERSION + " vs. " + version);
             }
