@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
@@ -26,6 +27,8 @@ public class MockIDAuthority implements IDAuthority {
     private int blockSizeLimit = BLOCK_SIZE_LIMIT;
     private int[] localPartition = {0, -1};
 
+    private int delayAcquisitionMS = 0;
+
     public MockIDAuthority() {
         this(100);
     }
@@ -39,8 +42,21 @@ public class MockIDAuthority implements IDAuthority {
         this.blockSizeLimit = blockSizeLimit;
     }
 
+    public void setDelayAcquisition(int timeMS) {
+        Preconditions.checkArgument(timeMS>=0);
+        this.delayAcquisitionMS=timeMS;
+    }
+
     @Override
     public synchronized long[] getIDBlock(int partition) throws StorageException {
+        //Delay artificially
+        if (delayAcquisitionMS>0) {
+            try {
+                Thread.sleep(delayAcquisitionMS);
+            } catch (InterruptedException e) {
+                throw new TemporaryStorageException(e);
+            }
+        }
         Integer p = Integer.valueOf(partition);
         long size = blockSizer.getBlockSize(partition);
         AtomicLong id = ids.get(p);

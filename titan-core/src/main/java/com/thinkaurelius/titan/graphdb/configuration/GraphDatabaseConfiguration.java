@@ -223,11 +223,27 @@ public class GraphDatabaseConfiguration {
     public static final boolean IDS_PARTITION_DEFAULT = false;
 
     /**
-     * If flush idAuthorities is enabled, vertices and edges are assigned idAuthorities immediately upon creation. If not, then idAuthorities are only
+     * If flush ids is enabled, vertices and edges are assigned ids immediately upon creation. If not, then ids are only
      * assigned when the transaction is committed.
      */
     public static final String IDS_FLUSH_KEY = "flush";
     public static final boolean IDS_FLUSH_DEFAULT = true;
+
+    /**
+     * The number of milliseconds that the Titan id pool manager will wait before giving up on allocating a new block
+     * of ids. Note, that failure to allocate a new id block will cause the entire database to fail, hence this value
+     * should be set conservatively. Choose a high value if there is a lot of contention around id allocation.
+     */
+    public static final String IDS_RENEW_TIMEOUT_KEY = "renew-timeout";
+    public static final long IDS_RENEW_TIMEOUT_DEFAULT = 60 * 1000; // 1 minute
+
+    /**
+     * Configures when the id pool manager will attempt to allocate a new id block. When all but the configured percentage
+     * of the current block is consumed, a new block will be allocated. Larger values should be used if a lot of ids
+     * are allocated in a short amount of time. Value must be in (0,1].
+     */
+    public static final String IDS_RENEW_BUFFER_PERCENTAGE_KEY = "renew-percentage";
+    public static final double IDS_RENEW_BUFFER_PERCENTAGE_DEFAULT = 0.3; // 30 %
 
     // ############## Attributes ######################
     // ################################################
