@@ -10,7 +10,6 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
-import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -27,9 +26,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.NO_DELETIONS;
+
 public abstract class LockKeyColumnValueStoreTest {
 
-    public final int concurrency = 2;
+    public final int concurrency = 8;
     public final int numTx = 2;
     public KeyColumnValueStoreManager[] manager;
     public StoreTransaction[][] tx;
