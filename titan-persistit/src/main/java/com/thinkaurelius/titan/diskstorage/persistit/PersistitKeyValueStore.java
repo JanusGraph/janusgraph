@@ -55,7 +55,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
         storeManager = mgr;
         persistit = db;
         try {
-            db.getExchange(VOLUME_NAME, name, true).getTree();
+            mgr.getVolume().getTree(name, true);
         } catch (PersistitException e) {
             throw new PermanentStorageException(e);
         }

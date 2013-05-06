@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
+ * @todo: confirm that the initial sessions created on store startup are not hanging around forever
  *
  */
 public class PersistitStoreManager implements KeyValueStoreManager {
@@ -84,13 +85,19 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         config.addProperty(Backend.TITAN_BACKEND_VERSION, "0.2.2-SNAPSHOT");
     }
 
+    Volume getVolume() {
+        return db.getVolume(VOLUME_NAME);
+    }
+
     @Override
     public PersistitKeyValueStore openDatabase(String name) throws StorageException {
         if (stores.containsKey(name)) {
             return stores.get(name);
         }
 
+        PersistitTransaction tx = new PersistitTransaction(db, ConsistencyLevel.DEFAULT);
         PersistitKeyValueStore store = new PersistitKeyValueStore(name, this, db);
+        tx.commit();
         stores.put(name, store);
         return store;
     }
