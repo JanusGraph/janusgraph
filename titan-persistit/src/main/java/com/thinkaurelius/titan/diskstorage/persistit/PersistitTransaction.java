@@ -23,47 +23,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class PersistitTransaction extends AbstractStoreTransaction {
 
-    /**
-     * Temporary hack to get around the private session id constructor
-     * @return
-     */
-    private static SessionId getSessionIdHack() {
-        Constructor<SessionId> constructor = null;
-        try {
-            constructor = SessionId.class.getDeclaredConstructor();
-        } catch (NoSuchMethodException e) {
-            throw new AssertionError(e);
-        }
-        constructor.setAccessible(true);
-        try {
-            return constructor.newInstance();
-        } catch (InstantiationException e) {
-            throw new AssertionError(e);
-        } catch (IllegalAccessException e) {
-            throw new AssertionError(e);
-        } catch (InvocationTargetException e) {
-            throw new AssertionError(e);
-        }
-    }
-
-    /**
-     * Temporary hack to get around the private transaction constructor
-     * @return
-     */
-    private static Transaction getTransactionHack(Persistit db, SessionId sid) {
-        Constructor constructor = Transaction.class.getDeclaredConstructors()[0];
-        constructor.setAccessible(true);
-        try {
-            return (Transaction) constructor.newInstance(db, sid);
-        } catch (InstantiationException e) {
-            throw new AssertionError(e);
-        } catch (IllegalAccessException e) {
-            throw new AssertionError(e);
-        } catch (InvocationTargetException e) {
-            throw new AssertionError(e);
-        }
-    }
-
     private Persistit db;
     private SessionId sessionId;
     private boolean isOpen = false;
@@ -72,7 +31,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     private static SessionId getSessionId() {
         SessionId s = sessionPool.poll();
         if (s == null) {
-            s = getSessionIdHack();
+            s = new SessionId();
         }
         return s;
     }
