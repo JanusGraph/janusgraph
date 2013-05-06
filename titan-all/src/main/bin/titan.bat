@@ -2,7 +2,11 @@
 
 @echo off
 
-set LIBDIR=..\lib
+set work=%CD%
+
+if [%work:~-3%]==[bin] cd ..
+
+set LIBDIR=lib
 set EXTDIR=ext/*
 
 cd ext
