@@ -41,8 +41,8 @@ public abstract class KeyColumnValueStoreTest {
 
     public void open() throws StorageException {
         manager = openStorageManager();
-        tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
         store = manager.openDatabase(storeName);
+        tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
     }
 
     public void clopen() throws StorageException {

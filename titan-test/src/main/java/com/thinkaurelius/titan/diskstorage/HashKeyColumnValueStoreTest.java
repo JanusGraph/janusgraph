@@ -12,8 +12,8 @@ public abstract class HashKeyColumnValueStoreTest extends KeyColumnValueStoreTes
     @Override
     public void open() throws StorageException {
         manager = openStorageManager();
-        tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
         store = new HashPrefixKeyColumnValueStore(manager.openDatabase(storeName), 4);
+        tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
     }
 
 }
