@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -187,14 +188,20 @@ public class Backend {
                 edgeIndexStore = new HashPrefixKeyColumnValueStore(edgeIndexStore, 4);
             }
 
-            String version = storeManager.getConfigurationProperty(TITAN_BACKEND_VERSION);
-            if (!TitanConstants.VERSION.equals(version)) {
-                if (version == null ||
-                        (TitanConstants.COMPATIBLE_VERSIONS.contains(version))) {
-                    storeManager.setConfigurationProperty(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
-                } else {
-                    throw new TitanException("StorageBackend is incompatible with Titan version: " + TitanConstants.VERSION + " vs. " + version);
+            String version = BackendTransaction.execute(new Callable<String>(){
+                @Override
+                public String call() throws Exception {
+                    String version = storeManager.getConfigurationProperty(TITAN_BACKEND_VERSION);
+                    if (!TitanConstants.VERSION.equals(version) && (version == null ||
+                                (TitanConstants.COMPATIBLE_VERSIONS.contains(version))) ) {
+                            storeManager.setConfigurationProperty(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
+                            version = TitanConstants.VERSION;
+                    }
+                    return version;
                 }
+            },config.getLong(SETUP_WAITTIME_KEY,SETUP_WAITTIME_DEFAULT));
+            if (!TitanConstants.VERSION.equals(version)) {
+                throw new TitanException("StorageBackend is incompatible with Titan version: " + TitanConstants.VERSION + " vs. " + version);
             }
         } catch (StorageException e) {
             throw new TitanException("Could not initialize backend", e);

@@ -4,7 +4,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.BackendTransaction;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
@@ -37,6 +39,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 public class StandardTitanGraph extends TitanBlueprintsGraph {
 
@@ -185,7 +188,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     public void save(final Collection<InternalRelation> addedRelations,
-                     final Collection<InternalRelation> deletedRelations, final StandardTitanTx tx) throws StorageException {
+                     final Collection<InternalRelation> deletedRelations, final StandardTitanTx tx) {
         //Setup
         log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
 
@@ -196,9 +199,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (!tx.getConfiguration().hasAssignIDsImmediately())
             idAssigner.assignIDs(addedRelations);
 
-        for (int saveAttempt = 0; saveAttempt < maxWriteRetryAttempts; saveAttempt++) {
-//        while (true) { //Indefinite loop, broken if no exception occurs, otherwise retried or failed immediately
-            try {
+        Callable<Boolean> persist = new Callable<Boolean>(){
+            @Override
+            public Boolean call() throws Exception {
                 //2. Collect deleted edges
                 ListMultimap<InternalVertex, InternalRelation> mutations = ArrayListMultimap.create();
                 if (deletedRelations != null && !deletedRelations.isEmpty()) {
@@ -264,22 +267,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 }
 
                 if (!mutations.isEmpty()) persist(mutations, tx);
-
-
-                //Successfully completed - return to break out of loop
-                break;
-            } catch (Throwable e) {
-                if (e instanceof TemporaryStorageException) {
-                    if (saveAttempt < maxWriteRetryAttempts - 1) BackendTransaction.temporaryStorageException(e,retryStorageWaitTime);
-                    else
-                        throw new PermanentStorageException("Tried committing " + maxWriteRetryAttempts + " times on temporary exception without success", e);
-                } else if (e instanceof StorageException) {
-                    throw (StorageException) e;
-                } else {
-                    throw new PermanentStorageException("Unidentified exception occurred during persistence", e);
-                }
+                return true;
             }
-        }
+        };
+        BackendTransaction.execute(persist,maxWriteRetryAttempts,retryStorageWaitTime);
     }
 
 

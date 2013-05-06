@@ -211,39 +211,64 @@ public class BackendTransaction implements TransactionHandle {
 
 
     private final<V> V executeRead(Callable<V> exe) throws TitanException {
-        for (int readAttempt = 0; readAttempt < maxReadRetryAttempts; readAttempt++) {
+        return execute(exe,maxReadRetryAttempts,retryStorageWaitTime);
+    }
+
+    private static final long BASE_REATTEMPT_TIME_MS=50;
+
+    public static final<V> V execute(Callable<V> exe, long maxTimeMS) throws TitanException {
+        long waitTime = BASE_REATTEMPT_TIME_MS;
+        long maxTime = System.currentTimeMillis()+maxTimeMS;
+        StorageException lastException = null;
+        do {
             try {
                 return exe.call();
             } catch (StorageException e) {
-                if (e instanceof TemporaryStorageException) {
-                    if (readAttempt < maxReadRetryAttempts - 1) temporaryStorageException(e,retryStorageWaitTime);
-                    else throw readException(e, maxReadRetryAttempts);
-                } else throw readException(e,0);
-            } catch (Exception e) {
-                throw readException(e,0);
+                if (e instanceof TemporaryStorageException) lastException = e;
+                else throw new TitanException("Permanent exception during backend operation",e); //Its permanent
+            } catch (Throwable e) {
+                throw new TitanException("Unexpected exception during backend operation",e);
             }
-        }
-        throw new AssertionError("Invalid state");
+            //Wait and retry
+            Preconditions.checkNotNull(lastException);
+            if (System.currentTimeMillis()+waitTime<=maxTime) {
+                log.info("Temporary storage exception during backend operation. Attempting retry in {} ms.",waitTime,lastException);
+                try {
+                    Thread.sleep(waitTime);
+                } catch (InterruptedException r) {
+                    throw new TitanException("Interrupted while waiting to retry failed storage operation", r);
+                }
+            }
+            waitTime*=2; //Exponential backoff
+        } while (System.currentTimeMillis()<maxTime);
+        throw new TitanException("Could not successfully complete backend operation due to repeated temporary exceptions after "+maxTimeMS+" ms",lastException);
     }
 
-    private final static TitanException readException(Exception e, int attempts) {
-        if (attempts == 0)
-            return new TitanException("Could not read from storage", e);
-        else
-            return new TitanException("Could not read from storage after " + attempts + " attempts", e);
-    }
-
-    public final static void temporaryStorageException(Throwable e, int retryStorageWaitTime) {
-        Preconditions.checkArgument(e instanceof TemporaryStorageException);
-        log.info("Temporary exception in storage backend. Attempting retry in {} ms. {}", retryStorageWaitTime, e);
-        //Wait before retry
-        if (retryStorageWaitTime > 0) {
+    public static final<V> V execute(Callable<V> exe, int maxRetryAttempts, long retryWaittime) throws TitanException {
+        int retryAttempts = 0;
+        StorageException lastException = null;
+        do {
             try {
-                Thread.sleep(retryStorageWaitTime);
-            } catch (InterruptedException r) {
-                throw new TitanException("Interrupted while waiting to retry failed storage operation", e);
+                return exe.call();
+            } catch (StorageException e) {
+                if (e instanceof TemporaryStorageException) lastException = e;
+                else throw new TitanException("Permanent exception during backend operation",e); //Its permanent
+            } catch (Throwable e) {
+                throw new TitanException("Unexpected exception during backend operation",e);
             }
-        }
+            //Wait and retry
+            retryAttempts++;
+            Preconditions.checkNotNull(lastException);
+            if (retryAttempts<maxRetryAttempts) {
+                log.info("Temporary storage exception during backend operation. Attempting retry in {} ms.",retryWaittime,lastException);
+                try {
+                    Thread.sleep(retryWaittime);
+                } catch (InterruptedException r) {
+                    throw new TitanException("Interrupted while waiting to retry failed backend operation", r);
+                }
+            }
+        } while (retryAttempts<maxRetryAttempts);
+        throw new TitanException("Could not successfully complete backend operation due to repeated temporary exceptions after "+maxRetryAttempts+" attempts",lastException);
     }
 
 }

@@ -839,7 +839,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                 graph.save(addedRelations.getAll(), deletedRelations.values(), this);
             }
             txHandle.commit();
-        } catch (StorageException e) {
+        } catch (Exception e) {
             try {
                 txHandle.rollback();
             } catch (StorageException e1) {
@@ -856,7 +856,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         try {
             txHandle.rollback();
-        } catch (StorageException e) {
+        } catch (Exception e) {
             throw new TitanException("Could not rollback transaction due to exception during persistence", e);
         } finally {
             close();

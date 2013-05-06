@@ -186,6 +186,19 @@ public class GraphDatabaseConfiguration {
     public static final String CONNECTION_TIMEOUT_KEY = "connection-timeout";
 
     /**
+     * Time in milliseconds for backend manager to wait for the storage backends to
+     * become available when Titan is run in server mode. Should the backend manager
+     * experience exceptions when attempting to access the storage backend it will retry
+     * until this timeout is exceeded.
+     * <p/>
+     * A wait time of 0 disables waiting.
+     *
+     * Value = {@value}
+     */
+    public static final int SETUP_WAITTIME_DEFAULT = 60000;
+    public static final String SETUP_WAITTIME_KEY = "setup-wait";
+
+    /**
      * Default number of connections to pool when connecting to a remote database.
      * <p/>
      * Value = {@value}

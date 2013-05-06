@@ -358,8 +358,8 @@ public abstract class LockKeyColumnValueStoreTest {
 
     @Test
     public void testMultiIDAcquisition() throws StorageException, InterruptedException {
-        final int numPartitions = 2;
-        final int numAcquisitionsPerThreadPartition = 10;
+        final int numPartitions = 4;
+        final int numAcquisitionsPerThreadPartition = 50;
         final int blockSize = 250;
         final IDBlockSizer blockSizer = new IDBlockSizer() {
             @Override
@@ -387,6 +387,7 @@ public abstract class LockKeyColumnValueStoreTest {
                                 long[] block = idAuthority.getIDBlock(p);
                                 Assert.assertTrue(nextId <= block[0]);
                                 Assert.assertEquals(block[0] + blockSize, block[1]);
+                                Assert.assertFalse(ids.get(p).contains(block[0]));
                                 ids.get(p).add(block[0]);
                             }
                         }

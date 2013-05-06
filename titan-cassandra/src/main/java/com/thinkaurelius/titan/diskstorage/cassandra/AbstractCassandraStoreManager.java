@@ -145,7 +145,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             try {
                 partitioner = getPartitioner();
             } catch (StorageException e) {
-                throw new TitanException("Could not read partitioner information", e);
+                throw new TitanException("Could not connect to Cassandra to read partitioner information. Please check the connection", e);
             }
             features.supportsScan = true;
             if (partitioner == Partitioner.RANDOM) {

@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -74,20 +73,6 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     public static final String CASSANDRA_CONFIG_DIR_DEFAULT = "./config/cassandra.yaml";
     public static final String CASSANDRA_CONFIG_DIR_KEY = "cassandra-config-dir";
 
-    /**
-     * Time in milliseconds for the embedded store manager to wait after starting the
-     * Cassandra daemon. The purpose of this wait time is to give this Cassandra node
-     * enough time to connect to its peers so that the cluster can settle in before
-     * any operations are attempted against it.
-     * <p/>
-     * A wait time of 0 disables waiting. Configure this wait time when using embedded
-     * cassandra with multiple nodes.
-     *
-     * Value = {@value}
-     */
-    public static final int CASSANDRA_CONFIG_INITIAL_WAIT_DEFAULT = 0;
-    public static final String CASSANDRA_CONFIG_INITIAL_WAIT_KEY = "cassandra-setup-wait";
-
     private final Map<String, CassandraEmbeddedKeyColumnValueStore> openStores;
 
     private final IRequestScheduler requestScheduler;
@@ -109,15 +94,6 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         this.openStores = new HashMap<String, CassandraEmbeddedKeyColumnValueStore>(8);
         this.requestScheduler = DatabaseDescriptor.getRequestScheduler();
-
-        long waittimems = config.getLong(CASSANDRA_CONFIG_INITIAL_WAIT_KEY,CASSANDRA_CONFIG_INITIAL_WAIT_DEFAULT);
-        if (waittimems>0) {
-            try {
-                Thread.sleep(waittimems);
-            } catch (InterruptedException e) {
-                throw new TitanException("Interrupted while waiting for "+waittimems+" ms for cluster to settle");
-            }
-        }
     }
 
     @Override
