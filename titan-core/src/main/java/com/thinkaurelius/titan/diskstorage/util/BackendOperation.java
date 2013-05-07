@@ -35,7 +35,7 @@ public class BackendOperation {
             }
             //Wait and retry
             Preconditions.checkNotNull(lastException);
-            if (System.currentTimeMillis()+waitTime<=maxTime) {
+            if (System.currentTimeMillis()+waitTime<maxTime) {
                 log.info("Temporary storage exception during backend operation. Attempting backoff retry",exe.toString(),lastException);
                 try {
                     Thread.sleep(waitTime);

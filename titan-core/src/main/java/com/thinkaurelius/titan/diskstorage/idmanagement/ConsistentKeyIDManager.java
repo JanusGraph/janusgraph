@@ -166,15 +166,15 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 } finally {
                     if (!success) {
                         //Delete claim to not pollute id space
-                        try {
-                            for (int attempt = 0; attempt < rollbackAttempts; attempt++) {
+                        for (int attempt = 0; attempt < rollbackAttempts; attempt++) {
+                            try {
                                 idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(target), txh);
                                 break;
+                            } catch (StorageException e) {
+                                log.warn("Storage exception while deleting old block application - retrying in {} ms", rollbackWaitTime, e);
+                                if (rollbackWaitTime > 0)
+                                    TimeUtility.sleepUntil(System.currentTimeMillis() + rollbackWaitTime, log);
                             }
-                        } catch (StorageException e) {
-                            log.warn("Storage exception while deleting old block application - retrying in {} ms: {}", rollbackWaitTime, e);
-                            if (rollbackWaitTime > 0)
-                                TimeUtility.sleepUntil(System.currentTimeMillis() + rollbackWaitTime, log);
                         }
                     }
                 }

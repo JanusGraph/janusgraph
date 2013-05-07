@@ -84,6 +84,8 @@ public abstract class LockKeyColumnValueStoreTest {
             sc.addProperty(ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, "store" + i);
             sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, (short) i);
             sc.addProperty(GraphDatabaseConfiguration.LOCK_EXPIRE_MS, EXPIRE_MS);
+            sc.addProperty(GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_KEY,50);
+            sc.addProperty(GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS_KEY,100);
 
             if (!storeFeatures.supportsLocking()) {
                 if (storeFeatures.supportsTransactions()) {
@@ -359,7 +361,7 @@ public abstract class LockKeyColumnValueStoreTest {
     @Test
     public void testMultiIDAcquisition() throws StorageException, InterruptedException {
         final int numPartitions = 4;
-        final int numAcquisitionsPerThreadPartition = 50;
+        final int numAcquisitionsPerThreadPartition = 100;
         final int blockSize = 250;
         final IDBlockSizer blockSizer = new IDBlockSizer() {
             @Override
