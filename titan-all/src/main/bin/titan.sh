@@ -3,9 +3,11 @@
 case `uname` in
   CYGWIN*)
     CP=$( echo `dirname $0`/../lib/*.jar . | sed 's/ /;/g')
+    CP=$CP:$(find -L `dirname $0`/../ext/ -name "*.jar" | tr '\n' ';')
     ;;
   *)
     CP=$( echo `dirname $0`/../lib/*.jar . | sed 's/ /:/g')
+    CP=$CP:$(find -L `dirname $0`/../ext/ -name "*.jar" | tr '\n' ':')
 esac
 #echo $CP
 
