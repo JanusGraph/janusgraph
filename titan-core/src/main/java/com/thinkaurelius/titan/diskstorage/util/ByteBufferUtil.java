@@ -104,42 +104,54 @@ public class ByteBufferUtil {
         if (a == b) {
             return 0;
         }
-        a.mark();
-        b.mark();
-        int result = -1;
+        int ia = 0;
+        int ib = 0;
+        int result;
         while (true) {
-            if (!a.hasRemaining() && b.hasRemaining()) break;
-            else if (a.hasRemaining() && b.hasRemaining()) {
-                byte ca = a.get(), cb = b.get();
+            boolean aHasRemaining = ia < a.limit();
+            boolean bHasRemaining = ib < b.limit();
+            
+            if (!aHasRemaining && bHasRemaining) {
+                result = -1;
+                break;
+            } else if (aHasRemaining && bHasRemaining) {
+                byte ca = a.get(ia), cb = b.get(ib);
                 if (ca != cb) {
                     if (ca >= 0 && cb >= 0) {
-                        if (ca < cb) break;
-                        else if (ca > cb) {
+                        if (ca < cb) {
+                            result = -1;
+                            break;
+                        } else if (ca > cb) {
                             result = 1;
                             break;
                         }
                     } else if (ca < 0 && cb < 0) {
-                        if (ca < cb) break;
-                        else if (ca > cb) {
+                        if (ca < cb) {
+                            result = -1;
+                            break;
+                        } else if (ca > cb) {
                             result = 1;
                             break;
                         }
-                    } else if (ca >= 0 && cb < 0) break;
-                    else {
+                    } else if (ca >= 0 && cb < 0) {
+                        result = -1;
+                        break;
+                    } else {
                         result = 1;
                         break;
                     }
                 }
-            } else if (a.hasRemaining() && !b.hasRemaining()) {
+            } else if (aHasRemaining && !bHasRemaining) {
                 result = 1;
                 break;
-            } else { //!a.hasRemaining() && !b.hasRemaining()
+            } else { //!aHasRemaining && !bHasRemaining
                 result = 0;
                 break;
             }
+            
+            ia++;
+            ib++;
         }
-        a.reset();
-        b.reset();
         return result;
     }
 

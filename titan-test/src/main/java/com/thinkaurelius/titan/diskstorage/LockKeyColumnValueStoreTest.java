@@ -383,7 +383,7 @@ public abstract class LockKeyColumnValueStoreTest {
     @Test
     public void testMultiIDAcquisition() throws StorageException, InterruptedException {
         final int numPartitions = 4;
-        final int numAcquisitionsPerThreadPartition = 100;
+        final int numAcquisitionsPerThreadPartition = 300;
         final int blockSize = 250;
         final IDBlockSizer blockSizer = new IDBlockSizer() {
             @Override
@@ -416,7 +416,7 @@ public abstract class LockKeyColumnValueStoreTest {
                             }
                         }
                     } catch (StorageException e) {
-                        e.printStackTrace();
+                        log.error("Unexpected exception when testing multi-thread ID acqusition", e);
                         throw new RuntimeException(e);
                     }
                 }
