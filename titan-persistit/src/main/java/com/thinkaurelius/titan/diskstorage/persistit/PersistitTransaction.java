@@ -61,8 +61,6 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     public void assign() {
         synchronized (this) {
             db.setSessionId(sessionId);
-            Transaction tx = db.getTransaction();
-            if (tx != null) assert sessionId == tx.getSessionId();
         }
     }
 
@@ -118,13 +116,15 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     }
 
     public Exchange getExchange(String treeName, Boolean create) throws StorageException {
-        Exchange exchange;
-        try {
-            assign();
-            exchange = db.getExchange(VOLUME_NAME, treeName, create);
-            return exchange;
-        } catch (PersistitException ex) {
-            throw new PermanentStorageException(ex);
+        synchronized (this) {
+            Exchange exchange;
+            try {
+                assign();
+                exchange = db.getExchange(VOLUME_NAME, treeName, create);
+                return exchange;
+            } catch (PersistitException ex) {
+                throw new PermanentStorageException(ex);
+            }
         }
     }
 

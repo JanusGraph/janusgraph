@@ -139,16 +139,16 @@ public class PersistitKeyValueStore implements KeyValueStore {
         @Override
         protected void finalize() {
             if (!isClosed) {
-                //@todo: log if we have to do anything here
                 close();
-                isClosed = true;
             }
         }
     }
 
     @Override
     public RecordIterator<ByteBuffer> getKeys(StoreTransaction tx) throws StorageException {
-        return new KeysIterator((PersistitTransaction)tx, ((PersistitTransaction) tx).getExchange(name));
+        synchronized (tx) {
+            return new KeysIterator((PersistitTransaction)tx, ((PersistitTransaction) tx).getExchange(name));
+        }
     }
 
     static void toKey(Exchange exchange, ByteBuffer key) {
