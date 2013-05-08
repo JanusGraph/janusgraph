@@ -18,6 +18,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
@@ -44,12 +46,15 @@ public abstract class LockKeyColumnValueStoreTest {
     protected static final long EXPIRE_MS = 1000;
 
     private ByteBuffer k, c1, c2, v1, v2;
+    
+    private static final Logger log =
+    		LoggerFactory.getLogger(LockKeyColumnValueStoreTest.class);
 
     @Before
     public void setUp() throws Exception {
         for (int i = 0; i < concurrency; i++)
             openStorageManager(i).clearStorage();
-
+        
         open();
         k = strToByteBuffer("key");
         c1 = strToByteBuffer("col1");
@@ -73,12 +78,14 @@ public abstract class LockKeyColumnValueStoreTest {
         store = new KeyColumnValueStore[concurrency];
         idAuthorities = new IDAuthority[concurrency];
 
-
         for (int i = 0; i < concurrency; i++) {
             manager[i] = openStorageManager(i);
             StoreFeatures storeFeatures = manager[i].getFeatures();
             store[i] = manager[i].openDatabase(dbName);
-            for (int j = 0; j < numTx; j++) tx[i][j] = manager[i].beginTransaction(ConsistencyLevel.DEFAULT);
+            for (int j = 0; j < numTx; j++) {
+            	tx[i][j] = manager[i].beginTransaction(ConsistencyLevel.DEFAULT);
+            	log.debug("Began transaction of class {}", tx[i][j].getClass().getCanonicalName());
+            }
 
             Configuration sc = new BaseConfiguration();
             sc.addProperty(ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, "store" + i);
@@ -126,6 +133,7 @@ public abstract class LockKeyColumnValueStoreTest {
             idAuthorities[i].close();
 
             for (int j = 0; j < numTx; j++) {
+            	log.debug("Committing tx[{}][{}] = {}", new Object[] {i, j, tx[i][j]});
                 if (tx[i][j] != null) tx[i][j].commit();
             }
 
@@ -160,7 +168,6 @@ public abstract class LockKeyColumnValueStoreTest {
     public void expectedValueMismatchCausesMutateFailure() throws StorageException {
         store[0].acquireLock(k, c1, v1, tx[0][0]);
         store[0].mutate(k, Arrays.asList(SimpleEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
-        tx[0][0].commit();
     }
 
     @Test
@@ -180,8 +187,6 @@ public abstract class LockKeyColumnValueStoreTest {
         } catch (StorageException e) {
             Assert.assertTrue(e instanceof LockingException);
         }
-
-        tx[0][0].commit();
     }
 
     @Test
@@ -226,20 +231,34 @@ public abstract class LockKeyColumnValueStoreTest {
 
     @Test
     public void singleTransactionWithMultipleLocks() throws StorageException {
-
         tryWrites(store[0], manager[0], tx[0][0], store[0], tx[0][0]);
+        /*
+         * tryWrites commits transactions. set committed tx references to null
+         * to prevent a second commit attempt in close().
+         */
+        tx[0][0] = null;
     }
 
     @Test
     public void twoLocalTransactionsWithIndependentLocks() throws StorageException {
-
         tryWrites(store[0], manager[0], tx[0][0], store[0], tx[0][1]);
+        /*
+         * tryWrites commits transactions. set committed tx references to null
+         * to prevent a second commit attempt in close().
+         */
+        tx[0][0] = null;
+        tx[0][1] = null;
     }
 
     @Test
     public void twoTransactionsWithIndependentLocks() throws StorageException {
-
         tryWrites(store[0], manager[0], tx[0][0], store[1], tx[1][0]);
+        /*
+         * tryWrites commits transactions. set committed tx references to null
+         * to prevent a second commit attempt in close().
+         */
+        tx[0][0] = null;
+        tx[1][0] = null;
     }
 
     @Test
@@ -253,40 +272,43 @@ public abstract class LockKeyColumnValueStoreTest {
     }
 
     @Test
-    public void relockExtendsLocalExpiration() throws StorageException, InterruptedException {
+    public void repeatLockingDoesNotExtendExpiration() throws StorageException, InterruptedException {
 		/*
-		 * This test is intrinsically racy and can emit false positives. Ther's
-		 * no guarantee that the thread scheduler will put our test thread back
-		 * on a core in a timely fashion after our Thread.sleep() argument
-		 * elapses. In this case, we might wind up sleeping so long that the
-		 * lock really does expire. Letting the lock expire and then acquiring a
-		 * new lock is different from testing the reentering-extends-expiration
-		 * property of a single lock. This test is nominally concerned with the
-		 * latter case, but it can't guarantee which case it actually tests.
-		 * Both cases are worth testing, but it would better if we could
-		 * deterministically separate them into distinct methods or at least
-		 * distinct assertions. As mentioned at the top, this conflation of
-		 * cases is a problem because this test can give a false positive when
-		 * one of these two cases is working and the other is broken.
+		 * This test is intrinsically racy and unreliable. There's no guarantee
+		 * that the thread scheduler will put our test thread back on a core in
+		 * a timely fashion after our Thread.sleep() argument elapses.
+		 * Theoretically, Thread.sleep could also receive spurious wakeups that
+		 * alter the timing of the test.
 		 */
         long start = System.currentTimeMillis();
-        long targetDelta = (EXPIRE_MS + 50L) * 2;
-        long target = start + targetDelta;
+        long gracePeriodMS = 50L;
+        long loopDurationMS = (EXPIRE_MS - gracePeriodMS);
+        long targetMS = start + loopDurationMS;
         int steps = 20;
 
+        // Initial lock acquisition by tx[0][0]
         store[0].acquireLock(k, k, null, tx[0][0]);
+        
+        // Repeat lock acquistion until just before expiration
         for (int i = 0; i <= steps; i++) {
-            if (target <= System.currentTimeMillis()) {
+            if (targetMS <= System.currentTimeMillis()) {
                 break;
             }
             store[0].acquireLock(k, k, null, tx[0][0]);
-            Thread.sleep(targetDelta / steps);
+            Thread.sleep(loopDurationMS / steps);
         }
-
+        
+        // tx[0][0]'s lock is about to expire (or already has)
+        Thread.sleep(gracePeriodMS * 2);
+        // tx[0][0]'s lock has expired (barring spurious wakeup)
+        
         try {
+        	// Lock (k,k) with tx[0][1] now that tx[0][0]'s lock has expired
             store[0].acquireLock(k, k, null, tx[0][1]);
+            // If acquireLock returns without throwing an Exception, we're OK
         } catch (StorageException e) {
-            Assert.assertTrue(e instanceof LockingException);
+            log.debug("Relocking exception follows", e);
+        	Assert.fail("Relocking following expiration failed");
         }
     }
 

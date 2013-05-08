@@ -333,6 +333,8 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
     }
 
     private void unlockAll() {
+    	
+    	long nowNS = TimeUtility.getApproxNSSinceEpoch(false);
 
         for (LockClaim lc : lockClaims) {
 
@@ -343,27 +345,40 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
             ByteBuffer lockColBuf = lc.getLockCol(lc.getTimestamp(), lc.getBacker().getRid());
             assert null != lockColBuf;
             assert lockColBuf.hasRemaining();
+            
+            // Log expired locks
+            if (lc.getTimestamp() + (lc.getBacker().getLockExpireMS() * MILLION) < nowNS) {
+            	log.error("Lock expired: {} (txn={})", lc, this);
+            }
 
             try {
                 // Release lock remotely
                 lc.getBacker().getLockStore().mutate(lockKeyBuf, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(lockColBuf), consistentTx);
 
                 if (log.isTraceEnabled()) {
-                    log.trace("Wrote unlock {}", lc);
+                    log.trace("Released {} in lock store (txn={})", lc, this);
                 }
             } catch (Throwable t) {
-                log.error("Failed to unlock {}", lc, t);
+                log.error("Unexpected exception when releasing {} in lock store (txn={})", lc, this);
+                log.error("Lock store failure exception follows", t);
             }
 
             try {
                 // Release lock locally
-                lc.getBacker().getLocalLockMediator().unlock(lc.getKc(), this);
-
-                if (log.isTraceEnabled()) {
-                    log.trace("Locally unlocked {}", lc);
-                }
+            	// If lc is unlocked normally, then this method returns true
+            	// If there's a problem (e.g. lc has expired), it returns false
+            	boolean locallyUnlocked = lc.getBacker().getLocalLockMediator().unlock(lc.getKc(), this);
+            	
+            	if (locallyUnlocked) {
+            		if (log.isTraceEnabled()) {
+            			log.trace("Released {} locally (txn={})", lc, this);
+            		}
+            	} else {
+            		log.warn("Failed to release {} locally (txn={})", lc, this);
+            	}
             } catch (Throwable t) {
-                log.error("Failed to locally unlock {}", lc, t);
+                log.error("Unexpected exception while locally releasing {} (txn={})", lc, this);
+                log.error("Local release failure exception follows", t);
             }
         }
     }
