@@ -111,7 +111,7 @@ public class ByteBufferUtil {
             if (p1>=b1.limit()) return -1;
             else if (p2>=b2.limit()) return 1;
             else {
-                byte c1 = b1.get(), c2 = b2.get();
+                byte c1 = b1.get(p1), c2 = b2.get(p2);
                 if (c1 != c2) {
                     if (c1 >= 0 && c2 >= 0) {
                         if (c1 < c2) return -1;
