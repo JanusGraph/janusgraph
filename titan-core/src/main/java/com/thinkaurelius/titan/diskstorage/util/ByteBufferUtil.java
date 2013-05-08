@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Comparator;
 
 /**
  * Utility methods for dealing with {@link ByteBuffer}.
@@ -14,6 +13,9 @@ public class ByteBufferUtil {
 
     public static final int longSize = 8;
     public static final int intSize = 4;
+
+    private static final int HASHCODE_SHIFT = 11;
+    private static final int HASHCODE_OFFSET = 1911;
 
     public static final ByteBuffer getIntByteBuffer(int id) {
         ByteBuffer buffer = ByteBuffer.allocate(intSize);
@@ -38,12 +40,12 @@ public class ByteBufferUtil {
     }
 
     public static final ByteBuffer nextBiggerBuffer(ByteBuffer buffer) {
-        assert buffer.position() == 0;
         int len = buffer.remaining();
+        int pos = buffer.position();
         ByteBuffer next = ByteBuffer.allocate(len);
         boolean carry = true;
         for (int i = len - 1; i >= 0; i--) {
-            byte b = buffer.get(i);
+            byte b = buffer.get(i+pos);
             if (carry) {
                 b++;
                 if (b != 0) carry = false;
@@ -96,57 +98,77 @@ public class ByteBufferUtil {
      * Compares two {@link java.nio.ByteBuffer}s according to their byte order (and not the byte value).
      * <p/>
      *
-     * @param a             First ByteBuffer
-     * @param b             Second ByteBuffer
+     * @param b1             First ByteBuffer
+     * @param b2             Second ByteBuffer
      * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater than the second.
      */
-    public static final int compare(ByteBuffer a, ByteBuffer b) {
-        if (a == b) {
+    public static final int compare(ByteBuffer b1, ByteBuffer b2) {
+        if (b1 == b2) {
             return 0;
         }
-        a.mark();
-        b.mark();
-        int result = -1;
-        while (true) {
-            if (!a.hasRemaining() && b.hasRemaining()) break;
-            else if (a.hasRemaining() && b.hasRemaining()) {
-                byte ca = a.get(), cb = b.get();
-                if (ca != cb) {
-                    if (ca >= 0 && cb >= 0) {
-                        if (ca < cb) break;
-                        else if (ca > cb) {
-                            result = 1;
-                            break;
+        int p1=b1.position(), p2 = b2.position();
+        while (p1<b1.limit() || p2<b2.limit()) {
+            if (p1>=b1.limit()) return -1;
+            else if (p2>=b2.limit()) return 1;
+            else {
+                byte c1 = b1.get(), c2 = b2.get();
+                if (c1 != c2) {
+                    if (c1 >= 0 && c2 >= 0) {
+                        if (c1 < c2) return -1;
+                        else if (c1 > c2) {
+                            return 1;
                         }
-                    } else if (ca < 0 && cb < 0) {
-                        if (ca < cb) break;
-                        else if (ca > cb) {
-                            result = 1;
-                            break;
+                    } else if (c1 < 0 && c2 < 0) {
+                        if (c1 < c2) return -1;
+                        else if (c1 > c2) {
+                            return 1;
                         }
-                    } else if (ca >= 0 && cb < 0) break;
-                    else {
-                        result = 1;
-                        break;
-                    }
+                    } else if (c1 >= 0 && c2 < 0) return -1;
+                    else return 1;
                 }
-            } else if (a.hasRemaining() && !b.hasRemaining()) {
-                result = 1;
-                break;
-            } else { //!a.hasRemaining() && !b.hasRemaining()
-                result = 0;
-                break;
             }
+            p1++; p2++;
         }
-        a.reset();
-        b.reset();
-        return result;
+        return 0; //Must be equal
+    }
+
+    /**
+     * Thread-safe hashcode method for ByteBuffer
+     * @param b ByteBuffer
+     * @return hashcode for given ByteBuffer
+     */
+    public static final int hashcode(ByteBuffer b) {
+        int shift = HASHCODE_SHIFT;
+        int hash = HASHCODE_OFFSET;
+        for (int pos=b.position(); pos<b.limit(); pos++) {
+            hash = hash & (b.get(pos)<<shift);
+            shift= (shift+HASHCODE_SHIFT)%28;
+        }
+        return hash;
+    }
+
+    /**
+     * Thread safe equals method for ByteBuffers
+     *
+     * @param b1
+     * @param b2
+     * @return
+     */
+    public static final boolean equals(ByteBuffer b1, ByteBuffer b2) {
+        if (b1.remaining()!=b2.remaining()) return false;
+        int p1 = b1.position(), p2 = b2.position();
+        while (p1<b1.limit() && p2<b2.limit()) {
+            if (b1.get(p1)!=b2.get(p2)) return false;
+            p1++; p2++;
+        }
+        assert p1==b1.limit() && p2==b2.limit();
+        return true;
     }
 
     public static final String toBitString(ByteBuffer b, String byteSeparator) {
         StringBuilder s = new StringBuilder();
-        while (b.hasRemaining()) {
-            byte n = b.get();
+        for (int i=b.position();i<b.limit();i++) {
+            byte n = b.get(i);
             String bn = Integer.toBinaryString(n);
             if (bn.length() > 8) bn = bn.substring(bn.length() - 8);
             else if (bn.length() < 8) {
@@ -154,7 +176,6 @@ public class ByteBufferUtil {
             }
             s.append(bn).append(byteSeparator);
         }
-        b.rewind();
         return s.toString();
     }
 
@@ -181,11 +202,13 @@ public class ByteBufferUtil {
             else
                 return Arrays.copyOfRange(buffer.array(), boff, boff + length);
         } else {
-            // else, DirectByteBuffer.get() is the fastest route
             byte[] bytes = new byte[length];
-            buffer.mark();
-            buffer.get(bytes);
-            buffer.reset();
+            int pos = 0;
+            for (int i=buffer.position();i<buffer.limit();i++) {
+                bytes[pos]=buffer.get(i);
+                pos++;
+            }
+            Preconditions.checkArgument(pos == length);
             return bytes;
         }
     }
