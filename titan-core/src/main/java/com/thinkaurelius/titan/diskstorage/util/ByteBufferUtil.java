@@ -108,14 +108,14 @@ public class ByteBufferUtil {
         int ib = 0;
         int result;
         while (true) {
-            boolean aHasRemaining = ia < a.limit();
-            boolean bHasRemaining = ib < b.limit();
+            boolean aHasRemaining = ia + a.position() < a.limit();
+            boolean bHasRemaining = ib + b.position() < b.limit();
             
             if (!aHasRemaining && bHasRemaining) {
                 result = -1;
                 break;
             } else if (aHasRemaining && bHasRemaining) {
-                byte ca = a.get(ia), cb = b.get(ib);
+                byte ca = a.get(a.position() + ia), cb = b.get(b.position() + ib);
                 if (ca != cb) {
                     if (ca >= 0 && cb >= 0) {
                         if (ca < cb) {
