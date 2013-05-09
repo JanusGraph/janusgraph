@@ -17,7 +17,7 @@ import java.util.*;
 
 public abstract class KeyColumnValueStoreTest {
 
-    private Logger log = LoggerFactory.getLogger(KeyValueStoreTest.class);
+    private Logger log = LoggerFactory.getLogger(KeyColumnValueStoreTest.class);
 
     int numKeys = 500;
     int numColumns = 50;
