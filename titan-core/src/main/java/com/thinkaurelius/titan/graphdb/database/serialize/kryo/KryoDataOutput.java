@@ -3,9 +3,9 @@ package com.thinkaurelius.titan.graphdb.database.serialize.kryo;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-
-import java.nio.ByteBuffer;
 
 public class KryoDataOutput implements DataOutput {
 
@@ -15,7 +15,7 @@ public class KryoDataOutput implements DataOutput {
     private final Kryo kryo;
 
     KryoDataOutput(Output output) {
-        this(output,null);
+        this(output, null);
     }
 
     KryoDataOutput(Output output, KryoSerializer serializer) {
@@ -46,8 +46,21 @@ public class KryoDataOutput implements DataOutput {
         return this;
     }
 
-    public DataOutput putString(String string) {
-        output.writeString(string);
+    @Override
+    public DataOutput putChar(char val) {
+        output.writeChar(val);
+        return this;
+    }
+
+    @Override
+    public DataOutput putFloat(float val) {
+        output.writeFloat(val);
+        return this;
+    }
+
+    @Override
+    public DataOutput putDouble(double val) {
+        output.writeDouble(val);
         return this;
     }
 
@@ -73,8 +86,9 @@ public class KryoDataOutput implements DataOutput {
         return this;
     }
 
-    public ByteBuffer getByteBuffer() {
-        return ByteBuffer.wrap(output.getBuffer(),0,output.position());
+    @Override
+    public StaticBuffer getStaticBuffer() {
+        return new StaticArrayBuffer(output.getBuffer(),0,output.position());
     }
 
 }

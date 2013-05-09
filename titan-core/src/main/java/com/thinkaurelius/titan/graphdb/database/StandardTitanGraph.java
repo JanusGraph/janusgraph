@@ -6,13 +6,14 @@ import com.google.common.collect.ListMultimap;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -36,7 +37,6 @@ import com.tinkerpop.blueprints.Features;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -150,7 +150,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     public RecordIterator<Long> getVertexIDs(final BackendTransaction tx) {
         if (!backend.getStoreFeatures().supportsScan())
             throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
-        final RecordIterator<ByteBuffer> keyiter = tx.edgeStoreKeys();
+        final RecordIterator<StaticBuffer> keyiter = tx.edgeStoreKeys();
         return new RecordIterator<Long>() {
 
             @Override
@@ -289,7 +289,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             Preconditions.checkArgument(vertex.getID()>0,"Vertex has no id: %s",vertex.getID());
             List<InternalRelation> edges = mutatedEdges.get(vertex);
             List<Entry> additions = new ArrayList<Entry>(edges.size());
-            List<ByteBuffer> deletions = new ArrayList<ByteBuffer>(Math.max(10, edges.size() / 10));
+            List<StaticBuffer> deletions = new ArrayList<StaticBuffer>(Math.max(10, edges.size() / 10));
             for (InternalRelation edge : edges) {
                 for (int pos=0;pos<edge.getLen();pos++) {
                     if (edge.getVertex(pos).equals(vertex)) {

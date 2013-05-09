@@ -1,12 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-
-import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * A {@link KeyValueStoreManager} where the stores maintain keys in their natural order.

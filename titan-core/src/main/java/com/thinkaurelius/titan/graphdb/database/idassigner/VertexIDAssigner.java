@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.DefaultPlacementStrategy;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.IDPlacementStrategy;
@@ -22,8 +23,6 @@ import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -101,7 +100,7 @@ public class VertexIDAssigner {
         if (!hasLocalPartitions) {
             placementStrategy.setLocalPartitionBounds(0, maxPartitionID + 1, maxPartitionID + 1);
         } else {
-            ByteBuffer[] local = null;
+            StaticBuffer[] local = null;
             try {
                 local = idAuthority.getLocalIDPartition();
             } catch (Exception e) {
@@ -109,13 +108,10 @@ public class VertexIDAssigner {
                 placementStrategy.setLocalPartitionBounds(0, maxPartitionID + 1, maxPartitionID + 1);
             }
             if (local != null) {
-                Preconditions.checkArgument(local[0].remaining() >= 4 && local[1].remaining() >= 4);
+                Preconditions.checkArgument(local[0].length() >= 4 && local[1].length() >= 4);
                 int[] partition = new int[2];
                 for (int i = 0; i < 2; i++) {
-                    local[i].order(ByteOrder.BIG_ENDIAN);
-                    local[i].mark();
-                    partition[i] = local[i].getInt();
-                    local[i].reset();
+                    partition[i] = local[i].getInt(0);
                 }
                 //Adjust lower end if necessary (needs to be inclusive)
                 if ((partition[0] & 3) > 0) partition[0] = (partition[0] >>> 2) + 1;

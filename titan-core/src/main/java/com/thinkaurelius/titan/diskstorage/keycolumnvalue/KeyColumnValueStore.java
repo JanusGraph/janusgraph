@@ -1,11 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.locking.LockingException;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
@@ -24,7 +24,7 @@ import java.util.List;
 public interface KeyColumnValueStore {
 
     public static final List<Entry> NO_ADDITIONS = ImmutableList.of();
-    public static final List<ByteBuffer> NO_DELETIONS = ImmutableList.of();
+    public static final List<StaticBuffer> NO_DELETIONS = ImmutableList.of();
 
     /**
      * Returns true if the specified key exists in the store, i.e. there is at least one column-value
@@ -34,7 +34,7 @@ public interface KeyColumnValueStore {
      * @param txh Transaction
      * @return TRUE, if key has at least one column-value pair, else FALSE
      */
-    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException;
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException;
 
     /**
      * Retrieves the list of entries (i.e. column-value pairs) for a specified query.
@@ -42,18 +42,17 @@ public interface KeyColumnValueStore {
      * @param query       Query to get results for
      * @param txh         Transaction
      * @return List of entries up to a maximum of "limit" entries
-     * @throws StorageException when columnEnd < columnStart as determined in
-     *                          {@link com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil#isSmallerThan(ByteBuffer, ByteBuffer)}
+     * @throws StorageException when columnEnd < columnStart
      * @see KeySliceQuery
      */
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException;
 
     //TODO: for declarative query optimization
-    //public List<List<Entry>> getSlice(List<ByteBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException;
+    //public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException;
 
     /**
      * Verifies acquisition of locks {@code txh} from previous calls to
-     * {@link #acquireLock(ByteBuffer, ByteBuffer, ByteBuffer, StoreTransaction)}
+     * {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      * , then writes supplied {@code additions} and/or {@code deletions} to
      * {@code key} in the underlying data store. Deletions are applied strictly
      * before additions. In other words, if both an addition and deletion are
@@ -79,10 +78,10 @@ public interface KeyColumnValueStore {
      * @throws LockingException
      *             if locking is supported by the implementation and at least
      *             one lock acquisition attempted by
-     *             {@link #acquireLock(ByteBuffer, ByteBuffer, ByteBuffer, StoreTransaction)}
+     *             {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      *             has failed
      */
-    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException;
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException;
 
     /**
      * Attempts to claim a lock on the value at the specified {@code key} and
@@ -95,7 +94,7 @@ public interface KeyColumnValueStore {
      * to determine whether locking actually succeeded and may return without
      * throwing an exception even when the lock can't be acquired. Lock
      * acquisition is only only guaranteed to be verified by the first call to
-     * {@link #mutate(ByteBuffer, List, List, StoreTransaction)} on any given
+     * {@link #mutate(StaticBuffer, List, List, StoreTransaction)} on any given
      * {@code txh}.
      * 
      * <p/>
@@ -135,7 +134,7 @@ public interface KeyColumnValueStore {
      *             the lock could not be acquired due to contention with other
      *             transactions or a locking-specific storage problem
      */
-    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException;
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException;
 
 
     /**
@@ -145,7 +144,7 @@ public interface KeyColumnValueStore {
      * @return An iterator over all keys in this store.
      * @throws UnsupportedOperationException if the underlying store does not support this operation. Check {@link StoreFeatures#supportsScan()} first.
      */
-    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException;
+    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException;
 
     //TODO: for Fulgora, replace with these two: one for stores that maintain key order and those without according to StoreFeatures.isKeyOrdered()
 //    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException;
@@ -161,7 +160,7 @@ public interface KeyColumnValueStore {
      * @return An array with two entries describing the locally hosted partition of this store.
      * @throws UnsupportedOperationException if the underlying store does not support this operation. Check {@link StoreFeatures#hasLocalKeyPartition()} first.
      */
-    public ByteBuffer[] getLocalKeyPartition() throws StorageException;
+    public StaticBuffer[] getLocalKeyPartition() throws StorageException;
 
     /**
      * Returns the name of this store. Each store has a unique name which is used to open it.

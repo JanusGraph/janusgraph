@@ -1,13 +1,13 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -89,11 +89,11 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
-        for (Map.Entry<String,Map<ByteBuffer, KCVMutation>> storeMut : mutations.entrySet()) {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
+        for (Map.Entry<String,Map<StaticBuffer, KCVMutation>> storeMut : mutations.entrySet()) {
             KeyColumnValueStore store = stores.get(storeMut.getKey());
             Preconditions.checkNotNull(store);
-            for (Map.Entry<ByteBuffer,KCVMutation> keyMut : storeMut.getValue().entrySet()) {
+            for (Map.Entry<StaticBuffer,KCVMutation> keyMut : storeMut.getValue().entrySet()) {
                 store.mutate(keyMut.getKey(),keyMut.getValue().getAdditions(),keyMut.getValue().getDeletions(),txh);
             }
         }

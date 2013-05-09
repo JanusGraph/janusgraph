@@ -2,12 +2,15 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.NoLock;
 
-import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -25,7 +28,7 @@ class ColumnValueStore {
     private Data data;
 
     public ColumnValueStore() {
-        data = new Data(new CacheEntry[0],0);
+        data = new Data(new Entry[0],0);
     }
 
     boolean isEmpty(StoreTransaction txh) {
@@ -63,49 +66,43 @@ class ColumnValueStore {
     }
 
 
-    synchronized void mutate(List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) {
+    synchronized void mutate(List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) {
         //Prepare data
-        CacheEntry[] add;
+        Entry[] add;
         if (!additions.isEmpty()) {
-            add = new CacheEntry[additions.size()];
+            add = new Entry[additions.size()];
             int pos = 0;
             for (Entry e : additions) {
-                add[pos]=convert(e);
+                add[pos]=e;
                 pos++;
             }
             Arrays.sort(add);
-        } else add=new CacheEntry[0];
+        } else add=new Entry[0];
 
         //Filter out deletions that are also added
-        ByteBuffer[] del;
+        StaticBuffer[] del;
         if (!deletions.isEmpty()) {
-            Iterator<ByteBuffer> iter = deletions.iterator();
+            Iterator<StaticBuffer> iter = deletions.iterator();
             while (iter.hasNext()) {
-                if (Arrays.binarySearch(add,new SimpleEntry(iter.next(),null))>=0) {
+                if (Arrays.binarySearch(add,new StaticBufferEntry(iter.next(),null))>=0) {
                     iter.remove();
                 }
             }
-            del = deletions.toArray(new ByteBuffer[deletions.size()]);
-            Arrays.sort(del,new Comparator<ByteBuffer>() {
-
-                @Override
-                public int compare(ByteBuffer byteBuffer, ByteBuffer byteBuffer2) {
-                    return ByteBufferUtil.compare(byteBuffer, byteBuffer2);
-                }
-            });
-        } else del = new ByteBuffer[0];
+            del = deletions.toArray(new StaticBuffer[deletions.size()]);
+            Arrays.sort(del);
+        } else del = new StaticBuffer[0];
 
         Lock lock = getLock(txh);
         lock.lock();
         try {
-            CacheEntry[] olddata = data.array;
+            Entry[] olddata = data.array;
             int oldsize = data.size;
-            CacheEntry[] newdata = new CacheEntry[oldsize+add.length];
+            Entry[] newdata = new Entry[oldsize+add.length];
 
             //Merge sort
             int i=0,iold=0, iadd=0, idel=0;
             while (iold<oldsize) {
-                CacheEntry e = olddata[iold];
+                Entry e = olddata[iold];
                 iold++;
                 //Compare with additions
                 if (iadd<add.length) {
@@ -136,32 +133,14 @@ class ColumnValueStore {
 
             if (i*1.0/newdata.length<SIZE_THRESHOLD) {
                 //shrink array to free space
-                CacheEntry[] tmpdata = newdata;
-                newdata = new CacheEntry[i];
+                Entry[] tmpdata = newdata;
+                newdata = new Entry[i];
                 System.arraycopy(tmpdata,0,newdata,0,i);
             }
             data = new Data(newdata,i);
         } finally {
             lock.unlock();
         }
-    }
-
-    private static final CacheEntry convert(Entry e) {
-        ByteBuffer column = e.getColumn();
-        if (column.remaining()!=column.capacity()) {
-            ByteBuffer newcolumn = ByteBuffer.allocate(column.remaining());
-            newcolumn.put(column);
-            newcolumn.flip();
-            column=newcolumn;
-        }
-        ByteBuffer value = e.getValue();
-        if (value.remaining()!=value.capacity()) {
-            ByteBuffer newvalue = ByteBuffer.allocate(value.remaining());
-            newvalue.put(value);
-            newvalue.flip();
-            value=newvalue;
-        }
-        return new CacheEntry(column,value);
     }
 
     private ReentrantLock lock=null;
@@ -180,10 +159,10 @@ class ColumnValueStore {
 
     private static class Data {
 
-        final CacheEntry[] array;
+        final Entry[] array;
         final int size;
 
-        Data(final CacheEntry[] array, final int size) {
+        Data(final Entry[] array, final int size) {
             Preconditions.checkArgument(size>=0 && size<=array.length);
             assert isSorted();
             this.array =array;
@@ -194,8 +173,8 @@ class ColumnValueStore {
             return size==0;
         }
 
-        int getIndex(ByteBuffer column) {
-            return Arrays.binarySearch(array,0,size,new SimpleEntry(column,null));
+        int getIndex(StaticBuffer column) {
+            return Arrays.binarySearch(array,0,size,new StaticBufferEntry(column,null));
         }
 
         Entry get(int index) {

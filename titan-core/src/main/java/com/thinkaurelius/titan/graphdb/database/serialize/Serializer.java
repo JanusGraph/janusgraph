@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
 import com.thinkaurelius.titan.core.AttributeSerializer;
-
-import java.nio.ByteBuffer;
+import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 
 public interface Serializer {
 
@@ -10,11 +9,11 @@ public interface Serializer {
 
     public <T> void registerClass(Class<T> type, AttributeSerializer<T> serializer, int id);
 
-    public Object readClassAndObject(ByteBuffer buffer);
+    public Object readClassAndObject(ReadBuffer buffer);
 
-    public <T> T readObject(ByteBuffer buffer, Class<T> type);
+    public <T> T readObject(ReadBuffer buffer, Class<T> type);
 
-    public <T> T readObjectNotNull(ByteBuffer buffer, Class<T> type);
+    public <T> T readObjectNotNull(ReadBuffer buffer, Class<T> type);
 
     public DataOutput getDataOutput(int capacity, boolean serializeObjects);
 

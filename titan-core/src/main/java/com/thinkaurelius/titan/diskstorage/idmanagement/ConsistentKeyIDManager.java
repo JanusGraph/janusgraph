@@ -1,19 +1,18 @@
 package com.thinkaurelius.titan.diskstorage.idmanagement;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+import com.thinkaurelius.titan.diskstorage.util.WriteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,8 +34,8 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
 
     private static final Logger log = LoggerFactory.getLogger(ConsistentKeyIDManager.class);
 
-    private static final ByteBuffer LOWER_SLICE = ByteBufferUtil.zeroByteBuffer(16);
-    private static final ByteBuffer UPPER_SLICE = ByteBufferUtil.oneByteBuffer(16);
+    private static final StaticBuffer LOWER_SLICE = ByteBufferUtil.zeroBuffer(16);
+    private static final StaticBuffer UPPER_SLICE = ByteBufferUtil.oneBuffer(16);
 
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
@@ -71,7 +70,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
     }
 
     @Override
-    public ByteBuffer[] getLocalIDPartition() throws StorageException {
+    public StaticBuffer[] getLocalIDPartition() throws StorageException {
         return idStore.getLocalKeyPartition();
     }
 
@@ -80,14 +79,14 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
         idStore.close();
     }
 
-    private long getCurrentID(ByteBuffer partitionKey, StoreTransaction txh) throws StorageException {
+    private long getCurrentID(StaticBuffer partitionKey, StoreTransaction txh) throws StorageException {
         List<Entry> blocks = idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE, 5), txh);
         if (blocks == null) throw new TemporaryStorageException("Could not read from storage");
 
         long latest = BASE_ID;
 
         for (Entry e : blocks) {
-            long counterVal = getBlockValue(e.getColumn());
+            long counterVal = getBlockValue(e.getReadColumn());
             if (latest < counterVal) {
                 latest = counterVal;
             }
@@ -105,28 +104,28 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
             try {
                 txh = manager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT);
                 // Read the latest counter values from the idStore
-                ByteBuffer partitionKey = getPartitionKey(partition);
+                StaticBuffer partitionKey = getPartitionKey(partition);
                 // calculate the start (inclusive) and end (exclusive) of the allocation we're about to attempt
                 long nextStart = getCurrentID(partitionKey, txh);
                 Preconditions.checkArgument(Long.MAX_VALUE - blockSize > nextStart, "ID overflow detected");
                 long nextEnd = nextStart + blockSize;
 
-                ByteBuffer target = getBlockApplication(nextEnd);
+                StaticBuffer target = getBlockApplication(nextEnd);
 
 
                 // attempt to write our claim on the next id block
                 boolean success = false;
                 try {
                     long before = System.currentTimeMillis();
-                    idStore.mutate(partitionKey, Arrays.asList(SimpleEntry.of(target, ByteBuffer.allocate(0))), KeyColumnValueStore.NO_DELETIONS, txh);
+                    idStore.mutate(partitionKey, Arrays.asList(StaticBufferEntry.of(target, ByteBufferUtil.emptyBuffer())), KeyColumnValueStore.NO_DELETIONS, txh);
                     long after = System.currentTimeMillis();
 
                     if (idApplicationWaitMS < after - before) {
                         throw new TemporaryStorageException("Wrote claim for id block [" + nextStart + ", " + nextEnd + ") in " + (after - before) + " ms => too slow, threshold is: " + idApplicationWaitMS);
                     } else {
 
-                        assert 0 != target.remaining();
-                        ByteBuffer[] slice = getBlockSlice(nextEnd);
+                        assert 0 != target.length();
+                        StaticBuffer[] slice = getBlockSlice(nextEnd);
 
                         /* At this point we've written our claim on [nextStart, nextEnd),
                          * but we haven't yet guaranteed the absence of a contending claim on
@@ -193,27 +192,25 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
     }
 
 
-    private final ByteBuffer[] getBlockSlice(long blockValue) {
-        ByteBuffer[] slice = new ByteBuffer[2];
-        slice[0] = ByteBuffer.allocate(16);
-        slice[1] = ByteBuffer.allocate(16);
-        slice[0].putLong(-blockValue).putLong(0).rewind();
-        slice[1].putLong(-blockValue).putLong(-1).rewind();
+    private final StaticBuffer[] getBlockSlice(long blockValue) {
+        StaticBuffer[] slice = new StaticBuffer[2];
+        slice[0] = new WriteByteBuffer(16).putLong(-blockValue).putLong(0).getStaticBuffer();
+        slice[1] = new WriteByteBuffer(16).putLong(-blockValue).putLong(-1).getStaticBuffer();
         return slice;
     }
 
-    private final ByteBuffer getBlockApplication(long blockValue) {
-        ByteBuffer bb = ByteBuffer.allocate(
+    private final StaticBuffer getBlockApplication(long blockValue) {
+        WriteByteBuffer bb = new WriteByteBuffer(
                 8 // counter long
                         + 8 // time in ms
                         + rid.length);
 
-        bb.putLong(-blockValue).putLong(System.currentTimeMillis()).put(rid);
-        bb.rewind();
-        return bb;
+        bb.putLong(-blockValue).putLong(System.currentTimeMillis());
+        WriteBufferUtil.put(bb,rid);
+        return bb.getStaticBuffer();
     }
 
-    private final long getBlockValue(ByteBuffer column) {
+    private final long getBlockValue(ReadBuffer column) {
         return -column.getLong();
     }
 

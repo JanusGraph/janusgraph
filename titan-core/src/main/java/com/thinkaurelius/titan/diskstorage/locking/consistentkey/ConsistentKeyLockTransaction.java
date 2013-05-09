@@ -1,29 +1,19 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVSUtil;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SimpleEntry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
-import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+import java.util.*;
 
 /**
  * A {@link StoreTransaction} that supports locking via
@@ -52,7 +42,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 
     /**
      * This variable holds the last time we successfully wrote a
-     * lock via the {@link #writeBlindLockClaim(ConsistentKeyLockStore, java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer)}
+     * lock via the {@link #writeBlindLockClaim(ConsistentKeyLockStore, StaticBuffer, StaticBuffer, StaticBuffer)}
      * method.
      */
     private final Map<ConsistentKeyLockStore, Long> lastLockApplicationTimesMS =
@@ -62,7 +52,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
      * All locks currently claimed by this transaction.  Note that locks
      * in this set may not necessarily be actually held; membership in the
      * set only signifies that we've attempted to claim the lock via the
-     * {@link #writeBlindLockClaim(ConsistentKeyLockStore, java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer)} method.
+     * {@link #writeBlindLockClaim(ConsistentKeyLockStore, StaticBuffer, StaticBuffer, StaticBuffer)} method.
      */
     private final LinkedHashSet<LockClaim> lockClaims =
             new LinkedHashSet<LockClaim>();
@@ -106,13 +96,13 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 
     /**
      * Tells whether this transaction has been used in a
-     * {@link ConsistentKeyLockStore#mutate(ByteBuffer, List, List, StoreTransaction)}
+     * {@link ConsistentKeyLockStore#mutate(StaticBuffer, List, List, StoreTransaction)}
      * call. When this returns true, the transaction is no longer allowed in
      * calls to
-     * {@link ConsistentKeyLockStore#acquireLock(ByteBuffer, ByteBuffer, ByteBuffer, StoreTransaction)}.
+     * {@link ConsistentKeyLockStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}.
      *  
      * @return False until
-     *         {@link ConsistentKeyLockStore#mutate(ByteBuffer, List, List, StoreTransaction)}
+     *         {@link ConsistentKeyLockStore#mutate(StaticBuffer, List, List, StoreTransaction)}
      *         is called on this transaction instance. Returns true forever
      *         after.
      */
@@ -122,9 +112,9 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 
     /**
      * Signals the transaction that it has been used in a call to
-     * {@link ConsistentKeyLockStore#mutate(ByteBuffer, List, List, StoreTransaction)}
+     * {@link ConsistentKeyLockStore#mutate(StaticBuffer, List, List, StoreTransaction)}
      * . This transaction can't be used in subsequent calls to
-     * {@link ConsistentKeyLockStore#acquireLock(ByteBuffer, ByteBuffer, ByteBuffer, StoreTransaction)}
+     * {@link ConsistentKeyLockStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      * .
      * <p>
      * Calling this method at the appropriate time is handled automatically by
@@ -183,12 +173,12 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
      *            the value which must be present at {@code (key, column)} in
      *            {@code backer}'s {@code dataStore} when
      *            {@code #verifyAllLockClaims()} is called later
-     * @throws LockingException
+     * @throws com.thinkaurelius.titan.diskstorage.locking.LockingException
      * @throws StorageException
      */
     public void writeBlindLockClaim(
-            ConsistentKeyLockStore backer, ByteBuffer key,
-            ByteBuffer column, ByteBuffer expectedValue)
+            ConsistentKeyLockStore backer, StaticBuffer key,
+            StaticBuffer column, StaticBuffer expectedValue)
             throws StorageException {
 
         LockClaim lc = new LockClaim(backer, key, column, expectedValue);
@@ -228,17 +218,16 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 		 * 
 		 * The column we write is a concatenation of our rid and the timestamp.
 		 */
-        ByteBuffer lockKey = lc.getLockKey();
+        StaticBuffer lockKey = lc.getLockKey();
 
-        ByteBuffer valBuf = ByteBuffer.allocate(4);
-        valBuf.putInt(0).rewind();
+        StaticBuffer valBuf = ByteBufferUtil.getIntBuffer(0);
 
         boolean ok = false;
         long tsNS = 0;
         try {
             for (int i = 0; i < backer.getLockRetryCount(); i++) {
                 tsNS = TimeUtility.getApproxNSSinceEpoch(false);
-                Entry addition = SimpleEntry.of(lc.getLockCol(tsNS, backer.getRid()), valBuf);
+                Entry addition = StaticBufferEntry.of(lc.getLockCol(tsNS, backer.getRid()), valBuf);
 
                 long before = System.currentTimeMillis();
                 backer.getLockStore().mutate(lockKey, Arrays.asList(addition), KeyColumnValueStore.NO_DELETIONS, consistentTx);
@@ -288,7 +277,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
      * <ol>
      * <li>that no transaction in another Titan process holds the lock</li>
      * <li>that the claim's expectedValue, as provided in the earlier call to
-     * {@link #writeBlindLockClaim(ConsistentKeyLockStore, ByteBuffer, ByteBuffer, ByteBuffer)
+     * {@link #writeBlindLockClaim(ConsistentKeyLockStore, StaticBuffer, StaticBuffer, StaticBuffer)
      * writeBlindLockClaim()}, matches the actual value in the data store</li>
      * </ol>
      * 
@@ -309,7 +298,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
      * @throws StorageException
      *             if there's an unexpected problem talking to {@code backer}'s
      *             {@code dataStore} or {@code lockStore}
-     * @throws LockingException
+     * @throws com.thinkaurelius.titan.diskstorage.locking.LockingException
      *             if a lock claim has failed
      */
     public void verifyAllLockClaims() throws StorageException {
@@ -338,12 +327,12 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
         // Check lock claim seniority
         for (LockClaim lc : lockClaims) {
 
-            ByteBuffer lockKey = lc.getLockKey();
+            StaticBuffer lockKey = lc.getLockKey();
 
             ConsistentKeyLockStore backer = lc.getBacker();
             int bufferLen = backer.getRid().length+8;
-            ByteBuffer lower = ByteBufferUtil.zeroByteBuffer(bufferLen);
-            ByteBuffer upper = ByteBufferUtil.oneByteBuffer(bufferLen);
+            StaticBuffer lower = ByteBufferUtil.zeroBuffer(bufferLen);
+            StaticBuffer upper = ByteBufferUtil.oneBuffer(bufferLen);
             List<Entry> entries = backer.getLockStore().getSlice(new KeySliceQuery(lockKey, lower, upper), consistentTx);
 
             // Determine the timestamp and rid of the earliest still-valid lock claim
@@ -353,10 +342,10 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
             log.trace("Retrieved {} total lock claim(s) when verifying {}", entries.size(), lc);
 
             for (Entry e : entries) {
-                ByteBuffer bb = e.getColumn();
-                long tsNS = bb.getLong();
-                byte[] curRid = new byte[bb.remaining()];
-                bb.get(curRid);
+                StaticBuffer bb = e.getColumn();
+                long tsNS = bb.getLong(0);
+                byte[] curRid = new byte[bb.length()-8];
+                for (int i=8;i<bb.length();i++) curRid[i-8]=bb.getByte(i);
 
                 // Ignore expired lock claims
                 if (tsNS < now - (backer.getLockExpireMS() * MILLION)) {
@@ -371,8 +360,8 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
                 } else if (earliestNS == tsNS) {
                     // Timestamp tie: break with column
                     // (Column must be unique because it contains Rid)
-                    ByteBuffer earliestRidBuf = ByteBuffer.wrap(earliestRid);
-                    ByteBuffer curRidBuf = ByteBuffer.wrap(curRid);
+                    StaticBuffer earliestRidBuf = new StaticArrayBuffer(earliestRid);
+                    StaticBuffer curRidBuf = new StaticArrayBuffer(curRid);
 
                     int i = curRidBuf.compareTo(earliestRidBuf);
 
@@ -400,7 +389,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 
 
             // Check expectedValue
-            ByteBuffer bb = KCVSUtil.get(backer.getDataStore(),lc.getKey(), lc.getColumn(), baseTx);
+            StaticBuffer bb = KCVSUtil.get(backer.getDataStore(),lc.getKey(), lc.getColumn(), baseTx);
             if ((null == bb && null != lc.getExpectedValue()) ||
                     (null != bb && null == lc.getExpectedValue()) ||
                     (null != bb && null != lc.getExpectedValue() && !lc.getExpectedValue().equals(bb))) {
@@ -416,12 +405,12 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
         for (LockClaim lc : lockClaims) {
 
             assert null != lc;
-            ByteBuffer lockKeyBuf = lc.getLockKey();
+            StaticBuffer lockKeyBuf = lc.getLockKey();
             assert null != lockKeyBuf;
-            assert lockKeyBuf.hasRemaining();
-            ByteBuffer lockColBuf = lc.getLockCol(lc.getTimestamp(), lc.getBacker().getRid());
+//            assert lockKeyBuf.hasRemaining();
+            StaticBuffer lockColBuf = lc.getLockCol(lc.getTimestamp(), lc.getBacker().getRid());
             assert null != lockColBuf;
-            assert lockColBuf.hasRemaining();
+//            assert lockColBuf.hasRemaining();
             
             // Log expired locks
             if (lc.getTimestamp() + (lc.getBacker().getLockExpireMS() * MILLION) < nowNS) {

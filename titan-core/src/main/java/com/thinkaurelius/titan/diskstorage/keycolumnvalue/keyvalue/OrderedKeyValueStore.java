@@ -1,10 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
@@ -28,9 +27,9 @@ public interface OrderedKeyValueStore extends KeyValueStore {
      * @return
      * @throws StorageException
      */
-    public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws StorageException;
+    public List<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws StorageException;
 
     //TODO: Add for Fulgora and support for new KeyColumnValueStore methods
-    //public RecordIterator<KeyValueEntry> getEntries(ByteBuffer keyStart, ByteBuffer keyEnd, StoreTransaction txh) throws StorageException;
+    //public RecordIterator<KeyValueEntry> getEntries(StaticBuffer keyStart, StaticBuffer keyEnd, StoreTransaction txh) throws StorageException;
 
 }

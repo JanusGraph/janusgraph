@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
+import com.thinkaurelius.titan.diskstorage.ScanBuffer;
+import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 
-import java.nio.ByteBuffer;
 
 /**
  * Allows custom serializer definitions for attribute values.
@@ -27,23 +27,23 @@ import java.nio.ByteBuffer;
 public interface AttributeSerializer<V> {
 
     /**
-     * Reads an attribute from the given ByteBuffer.
+     * Reads an attribute from the given ReadBuffer.
      * <p/>
-     * It is expected that this read operation adjusts the position in the ByteBuffer to after the attribute value.
+     * It is expected that this read operation adjusts the position in the ReadBuffer to after the attribute value.
      *
-     * @param buffer ByteBuffer to read attribute from
+     * @param buffer ReadBuffer to read attribute from
      * @return Read attribute
      */
-    public V read(ByteBuffer buffer);
+    public V read(ScanBuffer buffer);
 
     /**
-     * Writes the attribute value to the given ByteBuffer.
+     * Writes the attribute value to the given WriteBuffer.
      * <p/>
-     * It is expected that this write operation adjusts the position in the ByteBuffer to after the attribute value.
+     * It is expected that this write operation adjusts the position in the WriteBuffer to after the attribute value.
      *
-     * @param buffer    ByteBuffer to write attribute to
-     * @param attribute Attribute to write to ByteBuffer
+     * @param buffer    WriteBuffer to write attribute to
+     * @param attribute Attribute to write to WriteBuffer
      */
-    public void writeObjectData(DataOutput buffer, V attribute);
+    public void writeObjectData(WriteBuffer buffer, V attribute);
 
 }

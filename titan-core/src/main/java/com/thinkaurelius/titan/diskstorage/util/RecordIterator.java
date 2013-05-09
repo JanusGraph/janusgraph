@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
+package com.thinkaurelius.titan.diskstorage.util;
 
 import com.thinkaurelius.titan.diskstorage.StorageException;
 

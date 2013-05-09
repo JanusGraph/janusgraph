@@ -5,14 +5,14 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.diskstorage.BackendTransaction;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SimpleEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
+import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
@@ -29,7 +29,6 @@ import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -76,10 +75,10 @@ public class IndexSerializer {
             if (index.equals(Titan.Token.STANDARD_INDEX)) {
                 if (key.isUnique(Direction.IN)) {
                     tx.mutateVertexIndex(getIndexKey(prop.getValue()),
-                            Lists.newArrayList(SimpleEntry.of(getUniqueIndexColumn(key), getIndexValue(prop))), NO_DELETIONS);
+                            Lists.newArrayList(StaticBufferEntry.of(getUniqueIndexColumn(key), getIndexValue(prop))), NO_DELETIONS);
                 } else {
                     tx.mutateVertexIndex(getIndexKey(prop.getValue()),
-                            Lists.newArrayList(SimpleEntry.of(getIndexColumn(key, prop.getID()), getIndexValue(prop))), NO_DELETIONS);
+                            Lists.newArrayList(StaticBufferEntry.of(getIndexColumn(key, prop.getID()), getIndexValue(prop))), NO_DELETIONS);
                 }
             } else {
                 addKeyValue(prop.getVertex(),key,prop.getValue(),index,tx);
@@ -126,7 +125,7 @@ public class IndexSerializer {
                     Object value = relation.getPropertyDirect(key);
                     if (index.equals(Titan.Token.STANDARD_INDEX)) {
                         tx.mutateEdgeIndex(getIndexKey(value),
-                                Lists.newArrayList(SimpleEntry.of(getIndexColumn(key, relation.getID()),
+                                Lists.newArrayList(StaticBufferEntry.of(getIndexColumn(key, relation.getID()),
                                         relationID2ByteBuffer((RelationIdentifier) relation.getId()))), NO_DELETIONS);
                     } else {
                         addKeyValue(relation,key,value,index,tx);
@@ -154,16 +153,15 @@ public class IndexSerializer {
         }
     }
 
-    private static final ByteBuffer relationID2ByteBuffer(RelationIdentifier rid) {
+    private static final StaticBuffer relationID2ByteBuffer(RelationIdentifier rid) {
         long[] longs = rid.getLongRepresentation();
         Preconditions.checkArgument(longs.length==3);
-        ByteBuffer buffer = ByteBuffer.allocate(24);
+        WriteBuffer buffer = new WriteByteBuffer(24);
         for (int i=0;i<3;i++) VariableLong.writePositive(buffer,longs[i]);
-        buffer.flip();
-        return buffer;
+        return buffer.getStaticBuffer();
     }
 
-    private static final RelationIdentifier bytebuffer2RelationId(ByteBuffer b) {
+    private static final RelationIdentifier bytebuffer2RelationId(ReadBuffer b) {
         long[] relationId = new long[3];
         for (int i=0;i<3;i++) relationId[i]=VariableLong.readPositive(b);
         return RelationIdentifier.get(relationId);
@@ -200,7 +198,7 @@ public class IndexSerializer {
             Preconditions.checkArgument(key.hasIndex(index,query.getType().getElementType()),
                     "Cannot retrieve for given property key - it does not have an index [%s]",key.getName());
 
-            ByteBuffer column = getUniqueIndexColumn(key);
+            StaticBuffer column = getUniqueIndexColumn(key);
             KeySliceQuery sq = new KeySliceQuery(getIndexKey(value),column, SliceQuery.pointRange(column),query.getLimit(),((InternalType)key).isStatic(Direction.IN));
             List<Entry> r;
             if (query.getType()== StandardElementQuery.Type.VERTEX) {
@@ -210,7 +208,7 @@ public class IndexSerializer {
             }
             List<Object> results = new ArrayList<Object>(r.size());
             for (Entry entry : r) {
-                ByteBuffer entryValue = entry.getValue();
+                ReadBuffer entryValue = entry.getReadValue();
                 if (query.getType()== StandardElementQuery.Type.VERTEX) {
                     results.add(Long.valueOf(VariableLong.readPositive(entryValue)));
                 } else {
@@ -307,21 +305,21 @@ public class IndexSerializer {
         else throw new IllegalArgumentException("Invalid class: " + element.getClass());
     }
 
-    private final ByteBuffer getIndexKey(Object att) {
+    private final StaticBuffer getIndexKey(Object att) {
         DataOutput out = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
         out.writeObjectNotNull(att);
-        return out.getByteBuffer();
+        return out.getStaticBuffer();
     }
 
-    private static final ByteBuffer getIndexValue(TitanProperty prop) {
+    private static final StaticBuffer getIndexValue(TitanProperty prop) {
         return VariableLong.positiveByteBuffer(prop.getVertex().getID());
     }
 
-    private static final ByteBuffer getUniqueIndexColumn(TitanKey type) {
+    private static final StaticBuffer getUniqueIndexColumn(TitanKey type) {
         return VariableLong.positiveByteBuffer(type.getID());
     }
 
-    private static final ByteBuffer getIndexColumn(TitanKey type, long propertyID) {
+    private static final StaticBuffer getIndexColumn(TitanKey type, long propertyID) {
         return VariableLong.positiveByteBuffer(new long[]{type.getID(), propertyID});
     }
 
