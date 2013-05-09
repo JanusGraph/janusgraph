@@ -173,10 +173,13 @@ public abstract class KeyValueStoreTest {
             clopen();
             RecordIterator<StaticBuffer> iterator1 = store.getKeys(tx);
             RecordIterator<StaticBuffer> iterator2 = store.getKeys(tx);
+            // The idea is to open an iterator without using it
+            // to make sure that closing a transaction will clean it up.
+            // (important for BerkeleyJE where leaving cursors open causes exceptions)
+            @SuppressWarnings("unused")
             RecordIterator<StaticBuffer> iterator3 = store.getKeys(tx);
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator1));
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator2));
-            Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator3));
         }
     }
 
