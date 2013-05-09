@@ -67,7 +67,7 @@
  * 
  * <p>
  * 
- * The transaction has now staked a lock claim in the globally-visible {@code lockStore}.  After {@code getLockWaitMS()} elapses since writing the claim, the transaction may determine whether or not the lock attempt succeeded by reading and examining the columns on the {@lockStore key}.  If the column representing the transaction's lock claim is the first one in bytewise-order on the row, then its lock timestamp is the earliest, and it holds the lock on the target key and column.  The implementation also has a configurable lock expiration time, {@link com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore#getLockExpireMS()}, which is the maximum lifetime of a lock.  Columns in {@code lockStore} with timestamps older than this timeout are considered invalid and ignored.
+ * The transaction has now staked a lock claim in the globally-visible {@code lockStore}.  After {@code getLockWaitMS()} elapses since writing the claim, the transaction may determine whether or not the lock attempt succeeded by reading and examining the columns on the {@lockStore key}.  If the column representing the transaction's lock claim is the first one in bytewise-order on the row, then its lock timestamp is the earliest, and it holds the lock.  The implementation also has a configurable lock expiration time, {@link com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore#getLockExpireMS()}, which is the maximum lifetime of a lock.  Columns in {@code lockStore} with timestamps older than this timeout are considered invalid and ignored.
  * 
  * <p>
  * 
