@@ -77,7 +77,7 @@ public class StoreFeatures {
     }
 
     /**
-     * Whether this store supports locking via {@link KeyColumnValueStore#acquireLock(java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer, StoreTransaction)}
+     * Whether this store supports locking via {@link KeyColumnValueStore#acquireLock(com.thinkaurelius.titan.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, StoreTransaction)}
      *
      * @return
      */

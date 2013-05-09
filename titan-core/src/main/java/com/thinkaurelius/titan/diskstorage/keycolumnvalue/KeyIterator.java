@@ -1,12 +1,13 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
-import java.nio.ByteBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public interface KeyIterator extends RecordIterator<ByteBuffer> {
+public interface KeyIterator extends RecordIterator<StaticBuffer> {
 
     /**
      * Returns an iterator over all entries associated with the current

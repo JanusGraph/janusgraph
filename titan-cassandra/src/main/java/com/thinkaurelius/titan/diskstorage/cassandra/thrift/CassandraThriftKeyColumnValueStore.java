@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnect
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.UncheckedGenericKeyedObjectPool;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.apache.cassandra.dht.*;
 import org.apache.cassandra.thrift.*;
 import org.apache.cassandra.thrift.ConsistencyLevel;

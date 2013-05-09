@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
@@ -24,18 +25,18 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue,
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue,
                             StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException("Cannot lock on a read-only store");
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
+    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
         return store.getKeys(txh);
     }
 
     @Override
-    public ByteBuffer[] getLocalKeyPartition() throws StorageException {
+    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         return store.getLocalKeyPartition();
     }
 
@@ -45,12 +46,12 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException("Cannot mutate a read-only store");
     }
 
     @Override
-    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
         return store.containsKey(key, txh);
     }
 

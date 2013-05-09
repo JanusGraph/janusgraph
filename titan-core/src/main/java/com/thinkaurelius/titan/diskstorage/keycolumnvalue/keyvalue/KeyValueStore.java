@@ -1,10 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-
-import java.nio.ByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 /**
  * Interface for a data store that represents data in the simple key->value data model where each key is uniquely
@@ -22,7 +21,7 @@ public interface KeyValueStore {
      * @param txh
      * @throws com.thinkaurelius.titan.diskstorage.StorageException
      */
-    public void insert(ByteBuffer key, ByteBuffer value, StoreTransaction txh) throws StorageException;
+    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws StorageException;
 
     /**
      * Deletes the given key from the store.
@@ -31,7 +30,7 @@ public interface KeyValueStore {
      * @param txh
      * @throws StorageException
      */
-    public void delete(ByteBuffer key, StoreTransaction txh) throws StorageException;
+    public void delete(StaticBuffer key, StoreTransaction txh) throws StorageException;
 
     /**
      * Returns the value associated with the given key.
@@ -41,7 +40,7 @@ public interface KeyValueStore {
      * @return
      * @throws StorageException
      */
-    public ByteBuffer get(ByteBuffer key, StoreTransaction txh) throws StorageException;
+    public StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws StorageException;
 
     /**
      * Returns true iff the store contains the given key, else false
@@ -51,7 +50,7 @@ public interface KeyValueStore {
      * @return
      * @throws StorageException
      */
-    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException;
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException;
 
     /**
      * Returns an iterator over all keys in this store. The keys may be
@@ -59,7 +58,7 @@ public interface KeyValueStore {
      *
      * @return An iterator over all keys in this store.
      */
-    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException;
+    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException;
 
     /**
      * Acquires a lock for the given key and expected value (null, if not value is expected).
@@ -69,7 +68,7 @@ public interface KeyValueStore {
      * @param txh
      * @throws StorageException
      */
-    public void acquireLock(ByteBuffer key, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException;
+    public void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException;
 
     /**
      * Returns the range of keys that are stored locally.
@@ -79,7 +78,7 @@ public interface KeyValueStore {
      * @return
      * @throws StorageException
      */
-    public ByteBuffer[] getLocalKeyPartition() throws StorageException;
+    public StaticBuffer[] getLocalKeyPartition() throws StorageException;
 
     /**
      * Returns the name of this store

@@ -7,7 +7,6 @@ import com.netflix.astyanax.ExceptionCallback;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.model.*;
 import com.netflix.astyanax.query.AllRowsQuery;
 import com.netflix.astyanax.query.RowQuery;
@@ -16,8 +15,8 @@ import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
@@ -27,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.Partitioner;
-
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
 public class AstyanaxOrderedKeyColumnValueStore implements

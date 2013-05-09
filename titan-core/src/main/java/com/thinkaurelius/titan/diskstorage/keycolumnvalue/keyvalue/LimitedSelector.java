@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
-
-import java.nio.ByteBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 
 /**
  * A {@link KeySelector} that returns keys up to a given limit.
@@ -25,7 +24,7 @@ public class LimitedSelector implements KeySelector {
     }
 
     @Override
-    public boolean include(ByteBuffer key) {
+    public boolean include(StaticBuffer key) {
         count++;
         return true;
     }

@@ -1,11 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
@@ -29,11 +29,11 @@ public class KCVSUtil {
      * @param txh    Transaction
      * @return Value for key and column or NULL if such does not exist
      */
-    public static ByteBuffer get(KeyColumnValueStore store, ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
+    public static StaticBuffer get(KeyColumnValueStore store, StaticBuffer key, StaticBuffer column, StoreTransaction txh) throws StorageException {
         KeySliceQuery query = new KeySliceQuery(key,column, ByteBufferUtil.nextBiggerBuffer(column),2);
         List<Entry> result = store.getSlice(query,txh);
         if (result.size()>1) log.warn("GET query returned more than 1 result: store {} | key {} | column {}",new Object[]{store.getName(),
-                ByteBufferUtil.bytesToHex(key),ByteBufferUtil.bytesToHex(column)});
+                key,column});
         if (result.isEmpty()) return null;
         else return result.get(0).getValue();
     }
@@ -47,7 +47,7 @@ public class KCVSUtil {
      * @param txh    Transaction
      * @return TRUE, if key has at least one column-value pair, else FALSE
      */
-    public static boolean containsKeyColumn(KeyColumnValueStore store, ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
+    public static boolean containsKeyColumn(KeyColumnValueStore store, StaticBuffer key, StaticBuffer column, StoreTransaction txh) throws StorageException {
         return get(store,key,column,txh)!=null;
     }
 

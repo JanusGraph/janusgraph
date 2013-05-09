@@ -6,9 +6,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.CacheEntry;
+import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SimpleEntry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -31,7 +32,6 @@ import com.tinkerpop.blueprints.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 
 /**
@@ -113,19 +113,16 @@ public class EdgeSerializer {
     }
 
     public ImmutableLongObjectMap getProperties(long vertexid, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
-        if (data instanceof CacheEntry) {
-            CacheEntry cdata = (CacheEntry)data;
-            ImmutableLongObjectMap map = cdata.getCache();
-            if (map==null) {
-                synchronized (cdata) {
-                    if (cdata.getCache()==null) {
-                        map = parseProperties(vertexid,cdata,parseHeaderOnly,tx);
-                        if (!parseHeaderOnly) cdata.setCache(map);
-                    } else map = cdata.getCache();
-                }
-            }
-            return map;
-        } else return parseProperties(vertexid,data,parseHeaderOnly,tx);
+        ImmutableLongObjectMap map = data.getCache();
+        if (map==null) {
+//                synchronized (data) {
+//                    if (data.getCache()==null) {
+                        map = parseProperties(vertexid,data,parseHeaderOnly,tx);
+                        if (!parseHeaderOnly) data.setCache(map);
+//                    } else map = data.getCache();
+//                }
+        }
+        return map;
     }
 
 
@@ -133,10 +130,10 @@ public class EdgeSerializer {
         Preconditions.checkArgument(vertexid>0);
         ImmutableLongObjectMap.Builder builder = new ImmutableLongObjectMap.Builder();
 
-        ByteBuffer column = data.getColumn();
-        ByteBuffer value = data.getValue();
+        ReadBuffer column = data.getReadColumn();
+        ReadBuffer value = data.getReadValue();
 
-        int dirID = IDHandler.getDirectionID(column.get(column.position()));
+        int dirID = IDHandler.getDirectionID(column.getByte(0));
         Direction dir=null;
         RelationType rtype=null;
         switch(dirID) {
@@ -159,7 +156,7 @@ public class EdgeSerializer {
             }
         }
 
-        ByteBuffer reader = column;
+        ReadBuffer reader = column;
         if (titanType.isUnique(dir)) {
             reader = value;
         }
@@ -200,7 +197,7 @@ public class EdgeSerializer {
         return builder.build();
     }
 
-    private Object readInline(ByteBuffer read, TitanType type) {
+    private Object readInline(ReadBuffer read, TitanType type) {
         if (type.isPropertyKey()) {
             TitanKey proptype = ((TitanKey) type);
             if (hasGenericDataType(proptype))
@@ -259,7 +256,7 @@ public class EdgeSerializer {
 
         DataOutput writer = colOut;
         if (type.isUnique(dir)) {
-            if (!writeValue) return new SimpleEntry(colOut.getByteBuffer(),null);
+            if (!writeValue) return new StaticBufferEntry(colOut.getStaticBuffer(),null);
             writer = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
         }
 
@@ -281,7 +278,7 @@ public class EdgeSerializer {
         VariableLong.writePositive(writer, relation.getID());
 
         if (!type.isUnique(dir)) {
-            if (!writeValue) return new SimpleEntry(colOut.getByteBuffer(),null);
+            if (!writeValue) return new StaticBufferEntry(colOut.getStaticBuffer(),null);
             writer = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
         }
 
@@ -304,7 +301,7 @@ public class EdgeSerializer {
             }
         }
 
-        return new SimpleEntry(colOut.getByteBuffer(), writer.getByteBuffer());
+        return new StaticBufferEntry(colOut.getStaticBuffer(), writer.getStaticBuffer());
     }
 
     private void writeInline(DataOutput out, TitanType type, Object value, boolean writeEdgeType) {
@@ -360,7 +357,7 @@ public class EdgeSerializer {
         Preconditions.checkArgument(!query.getVertex().isNew() && query.getVertex().hasId());
 
         boolean isFitted=false;
-        ByteBuffer sliceStart=null, sliceEnd=null;
+        StaticBuffer sliceStart=null, sliceEnd=null;
         boolean isStatic=false;
         int limit=query.getLimit();
 
@@ -437,17 +434,17 @@ public class EdgeSerializer {
 
                             if (lower != null) {
                                 start.writeObject(lower,((TitanKey) kt).getDataType());
-                                sliceStart = start.getByteBuffer();
+                                sliceStart = start.getStaticBuffer();
                                 if (!lowerInc)
                                     sliceStart = ByteBufferUtil.nextBiggerBuffer(sliceStart);
                             } else {
-                                sliceStart = start.getByteBuffer();
+                                sliceStart = start.getStaticBuffer();
                             }
 
                             if (upper != null) {
                                 end.writeObject(upper,((TitanKey) kt).getDataType());
                             }
-                            sliceEnd = end.getByteBuffer();
+                            sliceEnd = end.getStaticBuffer();
                             if (upperInc) sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceEnd);
 
                             isFitted = (con+1==constraintMap.keySet().size()) && isProperInterval;
@@ -455,7 +452,7 @@ public class EdgeSerializer {
                         }
                     }
                     if (sliceStart==null) {
-                        sliceStart = start.getByteBuffer();
+                        sliceStart = start.getStaticBuffer();
                         sliceEnd = FittedSliceQuery.pointRange(sliceStart);
                         isFitted = (con==constraintMap.keySet().size());
                     }

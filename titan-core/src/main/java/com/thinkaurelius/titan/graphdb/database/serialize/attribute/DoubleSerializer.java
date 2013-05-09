@@ -2,9 +2,8 @@ package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-
-import java.nio.ByteBuffer;
+import com.thinkaurelius.titan.diskstorage.ScanBuffer;
+import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 
 public class DoubleSerializer implements AttributeSerializer<Double> {
 
@@ -25,13 +24,13 @@ public class DoubleSerializer implements AttributeSerializer<Double> {
 
 
     @Override
-    public Double read(ByteBuffer buffer) {
+    public Double read(ScanBuffer buffer) {
         long convert = ls.read(buffer);
         return Double.valueOf(((double) convert) / MULTIPLIER);
     }
 
     @Override
-    public void writeObjectData(DataOutput out, Double object) {
+    public void writeObjectData(WriteBuffer out, Double object) {
         Preconditions.checkArgument(withinRange(object),"Double value is out of range: %s",object);
         assert object.doubleValue() * MULTIPLIER>=Long.MIN_VALUE && object.doubleValue() * MULTIPLIER<=Long.MAX_VALUE;
         long convert = (long) (object.doubleValue() * MULTIPLIER);

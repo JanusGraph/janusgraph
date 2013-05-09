@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
@@ -38,7 +38,7 @@ public interface KeyColumnValueStoreManager extends StoreManager {
      * @param txh
      * @throws StorageException
      */
-    public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException;
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException;
 
 
 }

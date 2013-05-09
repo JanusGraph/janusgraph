@@ -5,12 +5,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -27,16 +28,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
     private final String name;
-    private final ConcurrentHashMap<ByteBuffer,ColumnValueStore> kcv;
+    private final ConcurrentHashMap<StaticBuffer,ColumnValueStore> kcv;
 
     public InMemoryKeyColumnValueStore(final String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         this.name=name;
-        this.kcv = new ConcurrentHashMap<ByteBuffer, ColumnValueStore>();
+        this.kcv = new ConcurrentHashMap<StaticBuffer, ColumnValueStore>();
     }
 
     @Override
-    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
         ColumnValueStore cvs = kcv.get(key);
         return cvs!=null && !cvs.isEmpty(txh);
     }
@@ -49,7 +50,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         ColumnValueStore cvs = kcv.get(key);
         if (cvs==null) {
             kcv.putIfAbsent(key,new ColumnValueStore());
@@ -59,26 +60,26 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(final StoreTransaction txh) throws StorageException {
+    public RecordIterator<StaticBuffer> getKeys(final StoreTransaction txh) throws StorageException {
         Preconditions.checkArgument(txh.getConsistencyLevel()==ConsistencyLevel.DEFAULT);
-        return new RecordIterator<ByteBuffer>() {
+        return new RecordIterator<StaticBuffer>() {
 
-            private final Iterator<ByteBuffer> iter =
+            private final Iterator<StaticBuffer> iter =
                     Iterators.transform(
-                    Iterators.filter(kcv.entrySet().iterator(), new Predicate<Map.Entry<ByteBuffer, ColumnValueStore>>() {
+                    Iterators.filter(kcv.entrySet().iterator(), new Predicate<Map.Entry<StaticBuffer, ColumnValueStore>>() {
                 @Override
-                public boolean apply(@Nullable Map.Entry<ByteBuffer, ColumnValueStore> entry) {
+                public boolean apply(@Nullable Map.Entry<StaticBuffer, ColumnValueStore> entry) {
                     return !entry.getValue().isEmpty(txh);
                 }
-            }), new Function<Map.Entry<ByteBuffer, ColumnValueStore>, ByteBuffer>() {
+            }), new Function<Map.Entry<StaticBuffer, ColumnValueStore>, StaticBuffer>() {
                         @Nullable
                         @Override
-                        public ByteBuffer apply(@Nullable Map.Entry<ByteBuffer, ColumnValueStore> entry) {
+                        public StaticBuffer apply(@Nullable Map.Entry<StaticBuffer, ColumnValueStore> entry) {
                             return entry.getKey();
                         }
                     });
@@ -89,8 +90,8 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
             }
 
             @Override
-            public ByteBuffer next() throws StorageException {
-                return iter.next().duplicate();
+            public StaticBuffer next() throws StorageException {
+                return iter.next();
             }
 
             @Override
@@ -101,7 +102,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public ByteBuffer[] getLocalKeyPartition() throws StorageException {
+    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         throw new UnsupportedOperationException();
     }
 

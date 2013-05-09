@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -22,6 +23,22 @@ public class ByteBufferUtil {
         buffer.putInt(id);
         buffer.flip();
         return buffer;
+    }
+
+    public static final StaticBuffer getIntBuffer(int id) {
+        ByteBuffer buffer = ByteBuffer.allocate(intSize);
+        buffer.putInt(id);
+        byte[] arr = buffer.array();
+        Preconditions.checkArgument(arr.length == intSize);
+        return new StaticArrayBuffer(arr);
+    }
+
+    public static final StaticBuffer getLongBuffer(long id) {
+        ByteBuffer buffer = ByteBuffer.allocate(longSize);
+        buffer.putLong(id);
+        byte[] arr = buffer.array();
+        Preconditions.checkArgument(arr.length == longSize);
+        return new StaticArrayBuffer(arr);
     }
 
     public static final ByteBuffer getLongByteBuffer(long id) {
@@ -58,6 +75,22 @@ public class ByteBufferUtil {
         return next;
     }
 
+    public static final StaticBuffer nextBiggerBuffer(StaticBuffer buffer) {
+        int len = buffer.length();
+        byte[] next = new byte[len];
+        boolean carry = true;
+        for (int i = len - 1; i >= 0; i--) {
+            byte b = buffer.getByte(i);
+            if (carry) {
+                b++;
+                if (b != 0) carry = false;
+            }
+            next[i]=b;
+        }
+        Preconditions.checkArgument(!carry, "Buffer overflow");
+        return new StaticArrayBuffer(next);
+    }
+
     public static final ByteBuffer zeroByteBuffer(int len) {
         ByteBuffer res = ByteBuffer.allocate(len);
         for (int i = 0; i < len; i++) res.put((byte) 0);
@@ -70,6 +103,24 @@ public class ByteBufferUtil {
         for (int i = 0; i < len; i++) res.put((byte) -1);
         res.flip();
         return res;
+    }
+
+    public static final StaticBuffer fillBuffer(int len, byte value) {
+        byte[] res = new byte[len];
+        for (int i = 0; i < len; i++) res[i]=value;
+        return new StaticArrayBuffer(res);
+    }
+
+    public static final StaticBuffer oneBuffer(int len) {
+        return fillBuffer(len,(byte)-1);
+    }
+
+    public static final StaticBuffer zeroBuffer(int len) {
+        return fillBuffer(len,(byte)0);
+    }
+
+    public static final StaticBuffer emptyBuffer() {
+        return fillBuffer(0,(byte)0);
     }
 
     /**
@@ -111,23 +162,40 @@ public class ByteBufferUtil {
             if (p1>=b1.limit()) return -1;
             else if (p2>=b2.limit()) return 1;
             else {
-                byte c1 = b1.get(p1), c2 = b2.get(p2);
-                if (c1 != c2) {
-                    if (c1 >= 0 && c2 >= 0) {
-                        if (c1 < c2) return -1;
-                        else if (c1 > c2) {
-                            return 1;
-                        }
-                    } else if (c1 < 0 && c2 < 0) {
-                        if (c1 < c2) return -1;
-                        else if (c1 > c2) {
-                            return 1;
-                        }
-                    } else if (c1 >= 0 && c2 < 0) return -1;
-                    else return 1;
-                }
+                int cmp = compare(b1.get(p1), b2.get(p2));
+                if (cmp!=0) return cmp;
             }
             p1++; p2++;
+        }
+        return 0; //Must be equal
+    }
+
+    public static final int compare(byte c1, byte c2) {
+        if (c1 != c2) {
+            if (c1 >= 0 && c2 >= 0) {
+                if (c1 < c2) return -1;
+                else return 1;
+            } else if (c1 < 0 && c2 < 0) {
+                if (c1 < c2) return -1;
+                else return 1;
+            } else if (c1 >= 0 && c2 < 0) return -1;
+            else return 1;
+        } else return 0;
+    }
+
+    public static final int compare(StaticBuffer b1, StaticBuffer b2) {
+        if (b1 == b2) {
+            return 0;
+        }
+        int p = 0;
+        while (p<b1.length() || p<b2.length()) {
+            if (p>=b1.length()) return -1;
+            else if (p>=b2.length()) return 1;
+            else {
+                int cmp = compare(b1.getByte(p), b2.getByte(p));
+                if (cmp!=0) return cmp;
+            }
+            p++;
         }
         return 0; //Must be equal
     }
@@ -142,6 +210,21 @@ public class ByteBufferUtil {
         int hash = HASHCODE_OFFSET;
         for (int pos=b.position(); pos<b.limit(); pos++) {
             hash = hash & (b.get(pos)<<shift);
+            shift= (shift+HASHCODE_SHIFT)%28;
+        }
+        return hash;
+    }
+
+    /**
+     * Thread-safe hashcode method for StaticBuffer
+     * @param b ByteBuffer
+     * @return hashcode for given StaticBuffer
+     */
+    public static final int hashcode(StaticBuffer b) {
+        int shift = HASHCODE_SHIFT;
+        int hash = HASHCODE_OFFSET;
+        for (int pos=0; pos<b.length(); pos++) {
+            hash = hash & (b.getByte(pos)<<shift);
             shift= (shift+HASHCODE_SHIFT)%28;
         }
         return hash;
@@ -164,6 +247,44 @@ public class ByteBufferUtil {
         assert p1==b1.limit() && p2==b2.limit();
         return true;
     }
+
+    /**
+     * Thread safe equals method for StaticBuffers
+     *
+     * @param b1
+     * @param b2
+     * @return
+     */
+    public static final boolean equals(StaticBuffer b1, StaticBuffer b2) {
+        if (b1.length()!=b2.length()) return false;
+        for (int i=0;i<b1.length();i++) {
+            if (b1.getByte(i)!=b2.getByte(i)) return false;
+        }
+        return true;
+    }
+
+    public static final String toString(ByteBuffer b, String separator) {
+        StringBuilder s = new StringBuilder();
+        for (int i=b.position();i<b.limit();i++) {
+            if (i>b.position()) s.append(separator);
+            byte c = b.get(i);
+            if (c>=0) s.append(c);
+            else s.append(256+c);
+        }
+        return s.toString();
+    }
+
+    public static final String toString(StaticBuffer b, String separator) {
+        StringBuilder s = new StringBuilder();
+        for (int i=0;i<b.length();i++) {
+            if (i>0) s.append(separator);
+            byte c = b.getByte(i);
+            if (c>=0) s.append(c);
+            else s.append(256+c);
+        }
+        return s.toString();
+    }
+
 
     public static final String toBitString(ByteBuffer b, String byteSeparator) {
         StringBuilder s = new StringBuilder();
@@ -197,10 +318,7 @@ public class ByteBufferUtil {
 
         if (buffer.hasArray()) {
             int boff = buffer.arrayOffset() + buffer.position();
-            if (boff == 0 && length == buffer.array().length)
-                return buffer.array();
-            else
-                return Arrays.copyOfRange(buffer.array(), boff, boff + length);
+            return Arrays.copyOfRange(buffer.array(), boff, boff + length);
         } else {
             byte[] bytes = new byte[length];
             int pos = 0;

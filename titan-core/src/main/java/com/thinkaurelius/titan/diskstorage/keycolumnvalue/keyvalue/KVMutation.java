@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.thinkaurelius.titan.diskstorage.Mutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
@@ -11,9 +10,9 @@ import java.util.List;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
-public class KVMutation extends Mutation<KeyValueEntry,ByteBuffer> {
+public class KVMutation extends Mutation<KeyValueEntry,StaticBuffer> {
 
-    public KVMutation(List<KeyValueEntry> additions, List<ByteBuffer> deletions) {
+    public KVMutation(List<KeyValueEntry> additions, List<StaticBuffer> deletions) {
         super(additions, deletions);
     }
 

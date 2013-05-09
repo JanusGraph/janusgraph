@@ -1,11 +1,12 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
-import java.nio.ByteBuffer;
+
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 
 /**
  * Determines which keys match a particular retrieval request against a {@link OrderedKeyValueStore}.
  *
- * @see OrderedKeyValueStore#getSlice(java.nio.ByteBuffer, java.nio.ByteBuffer, KeySelector, com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction)
+ * @see OrderedKeyValueStore#getSlice(com.thinkaurelius.titan.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, KeySelector, com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction)
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
@@ -17,7 +18,7 @@ public interface KeySelector {
     public static final KeySelector SelectAll = new KeySelector() {
 
         @Override
-        public boolean include(ByteBuffer key) {
+        public boolean include(StaticBuffer key) {
             return true;
         }
 
@@ -33,7 +34,7 @@ public interface KeySelector {
      * @param key
      * @return
      */
-    public boolean include(ByteBuffer key);
+    public boolean include(StaticBuffer key);
 
     /**
      * Whether the retrieval limit has been reached.

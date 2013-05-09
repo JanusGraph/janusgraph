@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage;
 
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Assert;
@@ -127,7 +128,7 @@ public abstract class KeyColumnValueStoreTest {
     public void checkValueExistence(String[][] values, Set<KeyColumn> removed) throws StorageException {
         for (int i = 0; i < numKeys; i++) {
             for (int j = 0; j < numColumns; j++) {
-                boolean result = KCVSUtil.containsKeyColumn(store,KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(j), tx);
+                boolean result = KCVSUtil.containsKeyColumn(store, KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(j), tx);
                 if (removed.contains(new KeyColumn(i, j))) {
                     Assert.assertFalse(result);
                 } else {
