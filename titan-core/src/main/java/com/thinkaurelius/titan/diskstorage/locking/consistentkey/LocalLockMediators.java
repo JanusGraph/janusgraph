@@ -6,9 +6,10 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A singleton maintaining a globally unique map of locking-namespaces to {@see
- * LocalLockMediator} instances.
- *
+ * A singleton maintaining a globally unique map of {@link LocalLockMediator}
+ * instances.
+ * 
+ * @see LocalLockMediatorProvider
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public enum LocalLockMediators implements LocalLockMediatorProvider {
@@ -17,19 +18,15 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
     private static final Logger log = LoggerFactory
             .getLogger(LocalLockMediators.class);
 
-    /*
-     * locking-namespace -> mediator.
-     *
-     * For Cassandra, "locking-namespace" is a column family name.
+    /**
+     * Maps a namespace to the mediator responsible for the namespace.
+     * <p>
+     * Implementation note: for Cassandra, namespace is usually a column
+     * family name.
      */
     private final ConcurrentHashMap<String, LocalLockMediator> mediators = new ConcurrentHashMap<String, LocalLockMediator>();
 
-    /**
-     * Returns the local lock mediator in charge of the supplied namespace.
-     * <p/>
-     * This method is thread-safe. Exactly one instance of
-     * {@code LocalLockMediator} is returned for any given {@code namespace}.
-     */
+    @Override
     public LocalLockMediator get(String namespace) {
         LocalLockMediator m = mediators.get(namespace);
 
@@ -48,6 +45,10 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
 
     /**
      * Only use this in testing.
+     * <p>
+     * This deletes the global map of namespaces to mediators. Calling this in
+     * production would result in undetected locking failures and data
+     * corruption.
      */
     public void clear() {
         mediators.clear();

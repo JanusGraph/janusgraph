@@ -13,9 +13,11 @@ import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import java.util.List;
 
 /**
- *
- *
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * A wrapper that adds locking support to a {@link KeyColumnValueStore} by
+ * overridding
+ * {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)
+ * acquireLock()} and {@link #mutate(StaticBuffer, List, List, StoreTransaction)
+ * mutate()}.
  */
 public class ConsistentKeyLockStore implements KeyColumnValueStore {
 
@@ -25,12 +27,23 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
     public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local-lock-mediator-prefix";
 
 
+    /**
+     * Titan data store.
+     */
     final KeyColumnValueStore dataStore;
 
+    /**
+     * Store for locks on information in {@link #dataStore}. There's no Titan
+     * data in here aside from locking records.
+     */
     final KeyColumnValueStore lockStore;
     final LocalLockMediator localLockMediator;
     final ConsistentKeyLockConfiguration configuration;
 
+    /**
+     * Create a 
+     * @param dataStore
+     */
     public ConsistentKeyLockStore(KeyColumnValueStore dataStore) {
         this.dataStore = dataStore;
         this.lockStore = null;
@@ -89,6 +102,13 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
         return dataStore.getSlice(query, getTx(txh));
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * <p/>
+     * 
+     * This implementation supports locking when {@code lockStore} is non-null.  
+     */
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         if (lockStore != null) {
@@ -101,6 +121,13 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
         dataStore.mutate(key, additions, deletions, getTx(txh));
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * <p/>
+     * 
+     * This implementation supports locking when {@code lockStore} is non-null.  
+     */
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         if (lockStore != null) {

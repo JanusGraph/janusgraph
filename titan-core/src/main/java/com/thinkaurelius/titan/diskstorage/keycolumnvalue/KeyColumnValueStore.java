@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.locking.LockingException;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 import java.util.List;
@@ -50,31 +51,88 @@ public interface KeyColumnValueStore {
     //public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException;
 
     /**
-     * Applies the specified insertion and deletion mutations to the provided key.
-     * Both, the list of additions or deletions, may be empty or NULL if there is nothing to be added and/or deleted.
-     *
-     * @param key       Key
-     * @param additions List of entries (column + value) to be added (possibly empty but not NULL)
-     * @param deletions List of columns to be removed (possibly empty but not NULL)
-     * @param txh       Transaction under which to execute the operation
+     * Verifies acquisition of locks {@code txh} from previous calls to
+     * {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
+     * , then writes supplied {@code additions} and/or {@code deletions} to
+     * {@code key} in the underlying data store. Deletions are applied strictly
+     * before additions. In other words, if both an addition and deletion are
+     * supplied for the same column, then the column will first be deleted and
+     * then the supplied Entry for the column will be added.
+     * 
+     * <p/>
+     * 
+     * Implementations which don't support locking should skip the initial lock
+     * verification step but otherwise behave as described above.
+     * 
+     * @param key
+     *            the key under which the columns in {@code additions} and
+     *            {@code deletions} will be written
+     * @param additions
+     *            the list of Entry instances representing column-value pairs to
+     *            create under {@code key}, or null to add no column-value pairs
+     * @param deletions
+     *            the list of columns to delete from {@code key}, or null to
+     *            delete no columns
+     * @param txh
+     *            the transaction to use
+     * @throws LockingException
+     *             if locking is supported by the implementation and at least
+     *             one lock acquisition attempted by
+     *             {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
+     *             has failed
      */
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException;
 
     /**
-     * Acquires a lock for the key-column pair which ensures that nobody else can take a lock on that
-     * respective entry for the duration of this lock (but somebody could potentially still overwrite
-     * the key-value entry without taking a lock).
-     * The expectedValue defines the value expected to match the value at the time the lock is acquired (or null if it is expected
-     * that the key-column pair does not exist).
+     * Attempts to claim a lock on the value at the specified {@code key} and
+     * {@code column} pair. These locks are discretionary.
+     * 
      * <p/>
-     * If this method is called multiple times with the same key-column pair in the same transaction, all but the first invocation are ignored.
+     * 
+     * If locking fails, implementations of this method may, but are not
+     * required to, throw {@link LockingException}. This method is not required
+     * to determine whether locking actually succeeded and may return without
+     * throwing an exception even when the lock can't be acquired. Lock
+     * acquisition is only only guaranteed to be verified by the first call to
+     * {@link #mutate(StaticBuffer, List, List, StoreTransaction)} on any given
+     * {@code txh}.
+     * 
      * <p/>
-     * The lock has to be released when the transaction closes (commits or aborts).
-     *
-     * @param key           Key on which to lock
-     * @param column        Column the column on which to lock
-     * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
-     * @param txh           Transaction
+     * 
+     * The {@code expectedValue} must match the actual value present at the
+     * {@code key} and {@code column} pair. If the true value does not match the
+     * {@code expectedValue}, the lock attempt fails and
+     * {@code LockingException} is thrown. This method may check
+     * {@code expectedValue}. The {@code mutate()} mutate is required to check
+     * it.
+     * 
+     * <p/>
+     * 
+     * When this method is called multiple times on the same {@code key},
+     * {@code column}, and {@code txh}, calls after the first have no effect.
+     * 
+     * <p/>
+     * 
+     * Locks acquired by this method must be automatically released on
+     * transaction {@code commit()} or {@code rollback()}.
+     * 
+     * <p/>
+     * 
+     * Implementations which don't support locking should throw
+     * {@link UnsupportedOperationException}.
+     * 
+     * @param key
+     *            the key on which to lock
+     * @param column
+     *            the column on which to lock
+     * @param expectedValue
+     *            the expected value for the specified key-column pair on which
+     *            to lock (null means the pair must have no value)
+     * @param txh
+     *            the transaction to use
+     * @throws LockingException
+     *             the lock could not be acquired due to contention with other
+     *             transactions or a locking-specific storage problem
      */
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException;
 
@@ -100,7 +158,6 @@ public interface KeyColumnValueStore {
      * marks the upper bound (exclusive).
      *
      * @return An array with two entries describing the locally hosted partition of this store.
-     * @throws StorageException
      * @throws UnsupportedOperationException if the underlying store does not support this operation. Check {@link StoreFeatures#hasLocalKeyPartition()} first.
      */
     public StaticBuffer[] getLocalKeyPartition() throws StorageException;
@@ -108,7 +165,7 @@ public interface KeyColumnValueStore {
     /**
      * Returns the name of this store. Each store has a unique name which is used to open it.
      *
-     * @return
+     * @return store name
      * @see KeyColumnValueStoreManager#openDatabase(String)
      */
     public String getName();
