@@ -2,8 +2,6 @@ package com.thinkaurelius.titan.diskstorage;
 
 import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.NO_DELETIONS;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,7 +28,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVSUtil;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SimpleEntry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.LockingException;
@@ -40,7 +38,6 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 
@@ -59,7 +56,7 @@ public abstract class LockKeyColumnValueStoreTest {
     protected final byte[][] rid1 = new byte[][]{{'a'}, {'b'}};
     protected static final long EXPIRE_MS = 1000;
 
-    private ByteBuffer k, c1, c2, v1, v2;
+    private StaticBuffer k, c1, c2, v1, v2;
     
     private static final Logger log =
     		LoggerFactory.getLogger(LockKeyColumnValueStoreTest.class);
@@ -70,18 +67,11 @@ public abstract class LockKeyColumnValueStoreTest {
             openStorageManager(i).clearStorage();
         
         open();
-        k = strToByteBuffer("key");
-        c1 = strToByteBuffer("col1");
-        c2 = strToByteBuffer("col2");
-        v1 = strToByteBuffer("val1");
-        v2 = strToByteBuffer("val2");
-    }
-
-    private ByteBuffer strToByteBuffer(String s) throws UnsupportedEncodingException {
-        byte[] raw = s.getBytes("UTF-8");
-        ByteBuffer b = ByteBuffer.allocate(raw.length);
-        b.put(raw).rewind();
-        return b;
+        k = KeyValueStoreUtil.getBuffer("key");
+        c1 = KeyValueStoreUtil.getBuffer("col1");
+        c2 = KeyValueStoreUtil.getBuffer("col2");
+        v1 = KeyValueStoreUtil.getBuffer("val1");
+        v2 = KeyValueStoreUtil.getBuffer("val2");
     }
 
     public abstract KeyColumnValueStoreManager openStorageManager(int id) throws StorageException;
@@ -159,7 +149,7 @@ public abstract class LockKeyColumnValueStoreTest {
     @Test
     public void singleLockAndUnlock() throws StorageException {
         store[0].acquireLock(k, c1, null, tx[0][0]);
-        store[0].mutate(k, Arrays.asList(SimpleEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
+        store[0].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx[0][0]);
         tx[0][0].commit();
 
         tx[0][0] = newTransaction(manager[0]);
@@ -171,7 +161,7 @@ public abstract class LockKeyColumnValueStoreTest {
         store[0].acquireLock(k, c1, null, tx[0][0]);
         store[0].acquireLock(k, c1, null, tx[0][0]);
         store[0].acquireLock(k, c1, null, tx[0][0]);
-        store[0].mutate(k, Arrays.asList(SimpleEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
+        store[0].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx[0][0]);
         tx[0][0].commit();
 
         tx[0][0] = newTransaction(manager[0]);
@@ -181,7 +171,7 @@ public abstract class LockKeyColumnValueStoreTest {
     @Test(expected = PermanentLockingException.class)
     public void expectedValueMismatchCausesMutateFailure() throws StorageException {
         store[0].acquireLock(k, c1, v1, tx[0][0]);
-        store[0].mutate(k, Arrays.asList(SimpleEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
+        store[0].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx[0][0]);
     }
 
     @Test
@@ -229,14 +219,14 @@ public abstract class LockKeyColumnValueStoreTest {
 
         try {
             // This must fail since "host1" took the lock first
-            store[1].mutate(k, Arrays.asList(SimpleEntry.of(c1, v2)), NO_DELETIONS, tx[1][0]);
+            store[1].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v2)), NO_DELETIONS, tx[1][0]);
             Assert.fail("Expected lock contention between remote transactions did not occur");
         } catch (StorageException e) {
             Assert.assertTrue(e instanceof LockingException);
         }
 
         // This should succeed
-        store[0].mutate(k, Arrays.asList(SimpleEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
+        store[0].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx[0][0]);
 
         tx[0][0].commit();
         tx[0][0] = newTransaction(manager[0]);
@@ -337,7 +327,7 @@ public abstract class LockKeyColumnValueStoreTest {
         
         for (int i = 0; i < concurrency; i++) {
             ls[i] = new LockStressor(manager[i], store[i], stressComplete,
-                    lockOperationsPerThread, ByteBufferUtil.getIntByteBuffer(i));
+                    lockOperationsPerThread, KeyColumnValueStoreUtil.longToByteBuffer(i));
             stressPool.execute(ls[i]);
         }
 
@@ -359,8 +349,8 @@ public abstract class LockKeyColumnValueStoreTest {
         store1.acquireLock(k, c1, null, tx1);
         store2.acquireLock(k, c2, null, tx2);
 
-        store1.mutate(k, Arrays.asList(SimpleEntry.of(c1, v1)), NO_DELETIONS, tx1);
-        store2.mutate(k, Arrays.asList(SimpleEntry.of(c2, v2)), NO_DELETIONS, tx2);
+        store1.mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx1);
+        store2.mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c2, v2)), NO_DELETIONS, tx2);
 
         tx1.commit();
         if (tx2 != tx1)
@@ -396,7 +386,7 @@ public abstract class LockKeyColumnValueStoreTest {
         s2.acquireLock(k, k, null, tx2);
 
         // Mutate to check for remote contention
-        s2.mutate(k, Arrays.asList(SimpleEntry.of(c2, v2)), NO_DELETIONS, tx2);
+        s2.mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c2, v2)), NO_DELETIONS, tx2);
 
     }
 
@@ -486,10 +476,10 @@ public abstract class LockKeyColumnValueStoreTest {
         for (int c = 0; c < concurrency; c++) {
             if (manager[c].getFeatures().hasLocalKeyPartition()) {
                 try {
-                    ByteBuffer[] partition = idAuthorities[c].getLocalIDPartition();
-                    Assert.assertEquals(partition[0].remaining(), partition[1].remaining());
+                    StaticBuffer[] partition = idAuthorities[c].getLocalIDPartition();
+                    Assert.assertEquals(partition[0].length(), partition[1].length());
                     for (int i = 0; i < 2; i++) {
-                        Assert.assertTrue(partition[i].remaining() >= 4);
+                        Assert.assertTrue(partition[i].length() >= 4);
                     }
                 } catch (UnsupportedOperationException e) {
                     Assert.fail();
@@ -513,12 +503,12 @@ public abstract class LockKeyColumnValueStoreTest {
         private final KeyColumnValueStore store;
         private final CountDownLatch doneLatch;
         private final int opCount;
-        private final ByteBuffer toLock;
+        private final StaticBuffer toLock;
         
         private int succeeded = 0;
 
         private LockStressor(KeyColumnValueStoreManager manager,
-                KeyColumnValueStore store, CountDownLatch doneLatch, int opCount, ByteBuffer toLock) {
+                KeyColumnValueStore store, CountDownLatch doneLatch, int opCount, StaticBuffer toLock) {
             this.manager = manager;
             this.store = store;
             this.doneLatch = doneLatch;
@@ -535,8 +525,8 @@ public abstract class LockKeyColumnValueStoreTest {
                 StoreTransaction tx = null;
                 try {
                     tx = newTransaction(manager);
-                    store.acquireLock(toLock.duplicate(), toLock.duplicate(), null, tx);
-                    store.mutate(toLock.duplicate(),  ImmutableList.<Entry>of(), Arrays.asList(toLock.duplicate()), tx);
+                    store.acquireLock(toLock, toLock, null, tx);
+                    store.mutate(toLock, ImmutableList.<Entry>of(), Arrays.asList(toLock), tx);
                     tx.commit();
                     succeeded++;
                 } catch (Throwable t) {
