@@ -15,6 +15,14 @@ public class StaticByteBuffer implements StaticBuffer {
 
     private final ByteBuffer b;
 
+    /**
+     * Create a {@code StaticByteBuffer} backed by an existing
+     * {@code ByteBuffer}. The {@code ByteBuffer} is not copied. If
+     * {@code buffer} is externally modified, then those modifications will also
+     * appear in calls to the constructed {@code StaticByteBuffer}.
+     * 
+     * @param buffer
+     */
     public StaticByteBuffer(final ByteBuffer buffer) {
         Preconditions.checkNotNull(buffer);
         this.b=buffer;
