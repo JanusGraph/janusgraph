@@ -2,9 +2,11 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.StaticIDBlockSizer;
@@ -83,7 +85,7 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public ByteBuffer[] getLocalIDPartition() throws StorageException {
+    public StaticBuffer[] getLocalIDPartition() throws StorageException {
         ByteBuffer lower = ByteBuffer.allocate(4);
         ByteBuffer upper = ByteBuffer.allocate(4);
         lower.putInt(localPartition[0]);
@@ -91,7 +93,7 @@ public class MockIDAuthority implements IDAuthority {
         lower.rewind();
         upper.rewind();
         Preconditions.checkArgument(ByteBufferUtil.isSmallerThan(lower, upper), Arrays.toString(localPartition));
-        return new ByteBuffer[]{lower, upper};
+        return new StaticBuffer[]{new StaticByteBuffer(lower), new StaticByteBuffer(upper)};
     }
 
     @Override
