@@ -13,10 +13,12 @@ import com.netflix.astyanax.query.RowQuery;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
@@ -67,14 +69,14 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     }
 
     @Override
-    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
         try {
             // See getSlice() below for a warning suppression justification
             @SuppressWarnings("rawtypes")
             RowQuery rq = (RowQuery) keyspace.prepareQuery(columnFamily)
                     .withRetryPolicy(retryPolicy.duplicate())
                     .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
-                    .getKey(key);
+                    .getKey(key.asByteBuffer());
             @SuppressWarnings("unchecked")
             OperationResult<ColumnList<ByteBuffer>> r = rq.withColumnRange(EMPTY, EMPTY, false, 1).execute();
             return 0 < r.getResult().size();
@@ -119,7 +121,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
         RowQuery rq = (RowQuery) keyspace.prepareQuery(columnFamily)
                 .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
                 .withRetryPolicy(retryPolicy.duplicate())
-                .getKey(query.getKey());
+                .getKey(query.getKey().asByteBuffer());
 //		RowQuery<ByteBuffer, ByteBuffer> rq = keyspace.prepareQuery(columnFamily).getKey(key);
         int limit = Integer.MAX_VALUE - 1;
         if (query.hasLimit()) limit = query.getLimit();
@@ -145,7 +147,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
                 break;
             }
 
-            result.add(CacheEntry.of(colName, c.getByteBufferValue()));
+            result.add(new ByteBufferEntry(colName, c.getByteBufferValue()));
 
             if (++i == limit) {
                 break;
@@ -156,21 +158,21 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     }
 
     @Override
-    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         mutateMany(ImmutableMap.of(key, new KCVMutation(additions, deletions)), txh);
     }
 
-    public void mutateMany(Map<ByteBuffer, KCVMutation> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws StorageException {
         storeManager.mutateMany(ImmutableMap.of(columnFamilyName, mutations), txh);
     }
 
     @Override
-    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
+    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
         if (storeManager.getPartitioner() != Partitioner.RANDOM)
             throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");;
 
@@ -200,15 +202,15 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
         final Iterator<Row<ByteBuffer, ByteBuffer>> rows = Iterators.filter(result.iterator(), new KeyIterationPredicate());
 
-        return new RecordIterator<ByteBuffer>() {
+        return new RecordIterator<StaticBuffer>() {
             @Override
             public boolean hasNext() throws StorageException {
                 return rows.hasNext();
             }
 
             @Override
-            public ByteBuffer next() throws StorageException {
-                return rows.next().getKey();
+            public StaticBuffer next() throws StorageException {
+                return new StaticByteBuffer(rows.next().getKey());
             }
 
             @Override
@@ -219,7 +221,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     }
 
     @Override
-    public ByteBuffer[] getLocalKeyPartition() throws StorageException {
+    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         throw new UnsupportedOperationException();
     }
 
