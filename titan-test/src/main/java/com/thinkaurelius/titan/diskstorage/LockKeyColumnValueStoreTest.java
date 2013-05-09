@@ -1,17 +1,18 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
-import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.locking.LockingException;
-import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockConfiguration;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
-import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
+import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.NO_DELETIONS;
+
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.junit.After;
@@ -21,14 +22,27 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.NO_DELETIONS;
+import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
+import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVSUtil;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SimpleEntry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.LockingException;
+import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockConfiguration;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
+import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 
 public abstract class LockKeyColumnValueStoreTest {
 
@@ -311,6 +325,30 @@ public abstract class LockKeyColumnValueStoreTest {
         	Assert.fail("Relocking following expiration failed");
         }
     }
+    
+    @Test
+    public void parallelNoncontendedLockStressTest() throws StorageException, InterruptedException {
+        final Executor stressPool = Executors.newFixedThreadPool(concurrency);
+        final CountDownLatch stressComplete = new CountDownLatch(concurrency);
+        final long maxWalltimeAllowedMS = 90 * 1000L;
+        final int lockOperationsPerThread = 100;
+        final LockStressor[] ls = new LockStressor[concurrency];
+        
+        
+        for (int i = 0; i < concurrency; i++) {
+            ls[i] = new LockStressor(manager[i], store[i], stressComplete,
+                    lockOperationsPerThread, ByteBufferUtil.getIntByteBuffer(i));
+            stressPool.execute(ls[i]);
+        }
+
+        Assert.assertTrue("Timeout exceeded",
+                stressComplete.await(maxWalltimeAllowedMS, TimeUnit.MILLISECONDS));
+        // All runnables submitted to the executor are done
+        
+        for (int i = 0; i < concurrency; i++) {
+            Assert.assertEquals(lockOperationsPerThread, ls[i].succeeded);
+        }
+    }
 
     private void tryWrites(KeyColumnValueStore store1, KeyColumnValueStoreManager checkmgr,
                            StoreTransaction tx1, KeyColumnValueStore store2,
@@ -457,6 +495,61 @@ public abstract class LockKeyColumnValueStoreTest {
                     Assert.fail();
                 }
             }
+        }
+    }
+    
+    /**
+     * 
+     * Run lots of acquireLock() and commit() ops on a provided store and txn.
+     * 
+     * Used by {@link LockKeyColumnValueStoreTest#parallelLockStressTest()}.
+     * 
+     * @author "Dan LaRocque <dalaro@hopcount.org>"
+     *
+     */
+    private class LockStressor implements Runnable {
+        
+        private final KeyColumnValueStoreManager manager;
+        private final KeyColumnValueStore store;
+        private final CountDownLatch doneLatch;
+        private final int opCount;
+        private final ByteBuffer toLock;
+        
+        private int succeeded = 0;
+
+        private LockStressor(KeyColumnValueStoreManager manager,
+                KeyColumnValueStore store, CountDownLatch doneLatch, int opCount, ByteBuffer toLock) {
+            this.manager = manager;
+            this.store = store;
+            this.doneLatch = doneLatch;
+            this.opCount = opCount;
+            this.toLock = toLock;
+        }
+
+        @Override
+        public void run() {
+            
+            // Catch & log exceptions, then pass to the starter thread
+            for (int opIndex = 0; opIndex < opCount; opIndex++) {
+
+                StoreTransaction tx = null;
+                try {
+                    tx = newTransaction(manager);
+                    store.acquireLock(toLock.duplicate(), toLock.duplicate(), null, tx);
+                    store.mutate(toLock.duplicate(),  ImmutableList.<Entry>of(), Arrays.asList(toLock.duplicate()), tx);
+                    tx.commit();
+                    succeeded++;
+                } catch (Throwable t) {
+                    log.error("Unexpected locking-related exception", t);
+                }
+            }
+
+            /*
+             * This latch is the only thing guaranteeing that succeeded's true
+             * value is observable by other threads once we're done with run()
+             * and the latch's await() method returns.
+             */
+            doneLatch.countDown();
         }
     }
 
