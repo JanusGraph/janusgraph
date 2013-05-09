@@ -144,6 +144,28 @@ public class ByteBufferUtil {
     public static final boolean isSmallerOrEqualThan(ByteBuffer a, ByteBuffer b) {
         return compare(a,b)<=0;
     }
+    
+    /**
+     * Compares two {@link StaticBuffer}s and checks whether the first {@code StaticBuffer} is smaller than the second.
+     *
+     * @param a First StaticBuffer
+     * @param b Second StaticBuffer
+     * @return true if the first StaticBuffer is smaller than the second
+     */
+    public static final boolean isSmallerThan(StaticBuffer a, StaticBuffer b) {
+        return compare(a, b)<0;
+    }
+
+    /**
+     * Compares two {@link StaticBuffer}s and checks whether the first {@code StaticBuffer} is smaller than or equal to the second.
+     *
+     * @param a First StaticBuffer
+     * @param b Second StaticBuffer
+     * @return true if the first StaticBuffer is smaller than or equal to the second
+     */
+    public static final boolean isSmallerOrEqualThan(StaticBuffer a, StaticBuffer b) {
+        return compare(a,b)<=0;
+    }
 
     /**
      * Compares two {@link java.nio.ByteBuffer}s according to their byte order (and not the byte value).
