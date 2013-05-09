@@ -4,11 +4,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.*;
@@ -17,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -66,8 +66,8 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
-        byte[] keyBytes = ByteBufferUtil.getArray(key);
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
+        byte[] keyBytes = key.as(StaticBuffer.ARRAY_FACTORY);
 
         Get g = new Get(keyBytes).addFamily(columnFamilyBytes);
 
@@ -91,8 +91,8 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     public static Filter getFilter(SliceQuery query) {
-        byte[] colStartBytes = query.getSliceEnd().hasRemaining() ? ByteBufferUtil.getArray(query.getSliceStart()) : null;
-        byte[] colEndBytes = query.getSliceEnd().hasRemaining() ? ByteBufferUtil.getArray(query.getSliceEnd()) : null;
+        byte[] colStartBytes = query.getSliceEnd().length()>0 ? query.getSliceStart().as(StaticBuffer.ARRAY_FACTORY) : null;
+        byte[] colEndBytes = query.getSliceEnd().length()>0 ? query.getSliceEnd().as(StaticBuffer.ARRAY_FACTORY) : null;
 
         Filter filter = new ColumnRangeFilter(colStartBytes, true, colEndBytes, false);
 
@@ -105,8 +105,8 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         return filter;
     }
 
-    private List<Entry> getHelper(ByteBuffer key, Filter getFilter) throws StorageException {
-        byte[] keyBytes = ByteBufferUtil.getArray(key);
+    private List<Entry> getHelper(StaticBuffer key, Filter getFilter) throws StorageException {
+        byte[] keyBytes = key.as(StaticBuffer.ARRAY_FACTORY);
 
         Get g = new Get(keyBytes).addFamily(columnFamilyBytes).setFilter(getFilter);
 
@@ -132,7 +132,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
             if (null != fmap) {
                 for (Map.Entry<byte[], byte[]> ent : fmap.entrySet()) {
-                    ret.add(CacheEntry.of(ByteBuffer.wrap(ent.getKey()), ByteBuffer.wrap(ent.getValue())));
+                    ret.add(StaticBufferEntry.of(new StaticArrayBuffer(ent.getKey()), new StaticArrayBuffer(ent.getValue())));
                 }
             }
 
@@ -143,12 +143,12 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void mutate(ByteBuffer key,
+    public void mutate(StaticBuffer key,
                        List<Entry> additions,
-                       List<ByteBuffer> deletions,
+                       List<StaticBuffer> deletions,
                        StoreTransaction txh) throws StorageException {
         // TODO: use RowMutations (requires 0.94.x-ish HBase), error handling through the legacy batch() method sucks
-        List<Row> batch = makeBatch(columnFamilyBytes, ByteBufferUtil.getArray(key), additions, deletions);
+        List<Row> batch = makeBatch(columnFamilyBytes, key.as(StaticBuffer.ARRAY_FACTORY), additions, deletions);
 
         if (batch.isEmpty())
             return; // nothing to apply
@@ -171,15 +171,23 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void acquireLock(ByteBuffer key,
-                            ByteBuffer column,
-                            ByteBuffer expectedValue,
+    public void acquireLock(StaticBuffer key,
+                            StaticBuffer column,
+                            StaticBuffer expectedValue,
                             StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     *
+     * IMPORTANT: Makes the assumption that all keys are 8 byte longs
+     *
+     * @param txh
+     * @return
+     * @throws StorageException
+     */
     @Override
-    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
+    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
         Scan s = new Scan().addFamily(columnFamilyBytes);
         FilterList fl = new FilterList();
         // returns first instance of a row, then skip to next row
@@ -196,7 +204,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             throw new PermanentStorageException(e);
         }
 
-        return new RecordIterator<ByteBuffer>() {
+        return new RecordIterator<StaticBuffer>() {
             /* we need to check if key is long serializable because HBase returns weird rows sometimes */
             private final Iterator<Result> results = Iterators.filter(scanner.iterator(), new Predicate<Result>() {
                 @Override
@@ -205,8 +213,8 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                         return false;
 
                     try {
-                        ByteBuffer id = ByteBuffer.wrap(result.getRow());
-                        id.getLong();
+                        StaticBuffer id = new StaticArrayBuffer(result.getRow());
+                        id.getLong(0);
                     } catch (NumberFormatException e) {
                         return false;
                     }
@@ -221,8 +229,8 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             }
 
             @Override
-            public ByteBuffer next() throws StorageException {
-                return ByteBuffer.wrap(results.next().getRow());
+            public StaticBuffer next() throws StorageException {
+                return new StaticArrayBuffer(results.next().getRow());
             }
 
             @Override
@@ -233,7 +241,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public ByteBuffer[] getLocalKeyPartition() throws StorageException {
+    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         throw new UnsupportedOperationException();
     }
 
@@ -251,12 +259,12 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
      *
      * @return Delete command or null if deletions were null or empty.
      */
-    private final static Delete makeDeletionCommand(byte[] cfName, byte[] key, List<ByteBuffer> deletions) {
+    private final static Delete makeDeletionCommand(byte[] cfName, byte[] key, List<StaticBuffer> deletions) {
         Preconditions.checkArgument(!deletions.isEmpty());
 
         Delete deleteCommand = new Delete(key);
-        for (ByteBuffer del : deletions) {
-            deleteCommand.deleteColumn(cfName, ByteBufferUtil.getArray(del));
+        for (StaticBuffer del : deletions) {
+            deleteCommand.deleteColumn(cfName, del.as(StaticBuffer.ARRAY_FACTORY));
         }
         return deleteCommand;
     }
@@ -275,12 +283,12 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
         Put putCommand = new Put(key);
         for (Entry e : modifications) {
-            putCommand.add(cfName, ByteBufferUtil.getArray(e.getColumn()), ByteBufferUtil.getArray(e.getValue()));
+            putCommand.add(cfName, e.getArrayColumn(), e.getArrayValue());
         }
         return putCommand;
     }
 
-    public final static List<Row> makeBatch(byte[] cfName, byte[] key, List<Entry> additions, List<ByteBuffer> deletions) {
+    public final static List<Row> makeBatch(byte[] cfName, byte[] key, List<Entry> additions, List<StaticBuffer> deletions) {
         if (additions.isEmpty() && deletions.isEmpty()) return Collections.emptyList();
 
         List<Row> batch = new ArrayList<Row>(2);
