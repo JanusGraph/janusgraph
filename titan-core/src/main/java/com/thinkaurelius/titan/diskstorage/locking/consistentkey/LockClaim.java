@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
  * some underlying store. A reference to the store is also indirectly maintained
  * through a {@see LockConfig} instance passed to the constructor.
  *
+ * @see ConsistentKeyLockTransaction
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class LockClaim {

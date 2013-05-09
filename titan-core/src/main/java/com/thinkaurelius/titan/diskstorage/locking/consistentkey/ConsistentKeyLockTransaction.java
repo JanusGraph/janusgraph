@@ -1,26 +1,39 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
-import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
-import java.util.*;
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVSUtil;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SimpleEntry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 
 /**
- * This class implements locking according to the Titan key-column-expectedvalue
- * protocol.
- * <p/>
- * This class is not safe for concurrent use by multiple threads.
- *
- * @author Dan LaRocque <dalaro@hopcount.org>
+ * A {@link StoreTransaction} that supports locking via
+ * {@link LocalLockMediator} and writing and reading lock records in a
+ * {@link ConsistentKeyLockStore}.
+ * 
+ * <p>
+ * <b>This class is not safe for concurrent use by multiple threads.
+ * Multithreaded access must be prevented or externally synchronized.</b>
+ * 
  */
 public class ConsistentKeyLockTransaction implements StoreTransaction {
 
@@ -91,32 +104,87 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
         return baseTx.getConsistencyLevel();
     }
 
+    /**
+     * Tells whether this transaction has been used in a
+     * {@link ConsistentKeyLockStore#mutate(ByteBuffer, List, List, StoreTransaction)}
+     * call. When this returns true, the transaction is no longer allowed in
+     * calls to
+     * {@link ConsistentKeyLockStore#acquireLock(ByteBuffer, ByteBuffer, ByteBuffer, StoreTransaction)}.
+     *  
+     * @return False until
+     *         {@link ConsistentKeyLockStore#mutate(ByteBuffer, List, List, StoreTransaction)}
+     *         is called on this transaction instance. Returns true forever
+     *         after.
+     */
     public boolean isMutationStarted() {
         return isMutationStarted;
     }
 
+    /**
+     * Signals the transaction that it has been used in a call to
+     * {@link ConsistentKeyLockStore#mutate(ByteBuffer, List, List, StoreTransaction)}
+     * . This transaction can't be used in subsequent calls to
+     * {@link ConsistentKeyLockStore#acquireLock(ByteBuffer, ByteBuffer, ByteBuffer, StoreTransaction)}
+     * .
+     * <p>
+     * Calling this method at the appropriate time is handled automatically by
+     * {@link ConsistentKeyLockStore}. Titan users don't need to call this
+     * method by hand.
+     */
     public void mutationStarted() {
         isMutationStarted = true;
     }
 
-    /*
-     * This method first checks the local lock mediator to see whether
-     * another transaction in this process holds the lock described
-     * by this method's arguments.  If the local lock mediator determines
-     * that no other transaction holds the lock and assigns it to us,
-     * then we write a claim to the backing key-value store.  We do not
-     * yet check to see whether our locking claim is the most senior
-     * one present in the backing key-value store.  We also don't check
-     * whether the expectedValue matches the actual value stored at the
-     * key-column coordinates supplied.  These checks happen in
-     * #verifyAllLockClaims().
+    /**
+     * Attempts to lock the supplied {@code (key, column, expectedValue)}.
+     * 
      * <p>
-     * Once a lock is acquired in the local lock mediator and a claim
-     * written to the backing key-value store, this method appends a
-     * LockClaim object to the lockClaims field and then returns.
+     * 
+     * Conflicts with locks held by other transactions within the process are
+     * detected using {@link LocalLockMediator} before this method returns. Such
+     * conflicts generate LockingExceptions.
+     * 
      * <p>
-     * If we can't get the lock from the local lock mediator, then we
-     * throw a StorageException with a string message to that effect.
+     * 
+     * Conflicts with locks held by transactions in other processes will not be
+     * detected before this method returns. We optimistically write a lock claim
+     * to {@code backer}'s {@code lockStore}, but whether the claim takes
+     * precedence and the lock succeeded won't be checked until
+     * {@link #verifyAllLockClaims()}.
+     * 
+     * <p>
+     * 
+     * Unless there's an StorageException-worthy problem communicating with
+     * {@code backer}'s {@code lockStore}, such as failure to connect or
+     * exceptionally high write latency, this method concludes by appending a
+     * {@link LockClaim} to its {@code #lockClaims} hash set and then returns.
+     * The {@code LockClaim} lets {@code #verifyAllLockClaims()} find and check
+     * this lock attempt when called.
+     * 
+     * <p>
+     * 
+     * Therefore, if this method returns instead of throwing an exception, we
+     * know the following:
+     * 
+     * <ul>
+     * <li>The attempted lock conflicts with no other transactions in the
+     * process</li>
+     * <li>Whether the attempted lock conflicts with transactions in remote
+     * processes is uncertain until {@code #verifyAllLockClaims()} returns</li>
+     * </ul>
+     * 
+     * @param backer
+     *            the store containing lock data and configuration parameters
+     * @param key
+     *            the key to lock
+     * @param column
+     *            the column to lock
+     * @param expectedValue
+     *            the value which must be present at {@code (key, column)} in
+     *            {@code backer}'s {@code dataStore} when
+     *            {@code #verifyAllLockClaims()} is called later
+     * @throws LockingException
+     * @throws StorageException
      */
     public void writeBlindLockClaim(
             ConsistentKeyLockStore backer, ByteBuffer key,
@@ -213,26 +281,36 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
         }
     }
 
-    /*
-     * For each object in the lockClaims list, this method checks (1)
-     * that the current transaction indeed holds the lock globally (that
-     * is, that the lock claim we wrote to the backing key-value store is
-     * indeed the most senior or earliest such claim) and (2) that the
-     * expectedValue originally supplied in the locking request matches
-     * the current value stored at the key-column coordinate of the lock.
+    /**
+     * For each object in the {@link #lockClaims} set, this method verifies both
+     * of the following conditions:
+     * 
+     * <ol>
+     * <li>that no transaction in another Titan process holds the lock</li>
+     * <li>that the claim's expectedValue, as provided in the earlier call to
+     * {@link #writeBlindLockClaim(ConsistentKeyLockStore, ByteBuffer, ByteBuffer, ByteBuffer)
+     * writeBlindLockClaim()}, matches the actual value in the data store</li>
+     * </ol>
+     * 
      * <p>
-     * If we are not most senior on any object in the lockClaims list,
-     * then we throw StorageException to that effect.
+     * If this method reads {@code lockStore} and finds that a transaction in a
+     * different Titan process holds one of our claimed locks, then this method
+     * throws a {@code LockingException} and the transaction's lock attempts
+     * should be considered failed.
      * <p>
-     * If there is an expectedValue mismatch between any locking request
-     * and actual key-column value, then we throw StorageException
-     * to that effect.
+     * If this method finds a mismatch between a claim's expected value and
+     * actual value, then it will also throw a {@code LockingException}.
      * <p>
-     * In other words, if this method returns without throwing an
-     * exception, then the transaction holds all locks it has previously
-     * requested and the expectedValue associated with each transaction
-     * matches reality.
-     *
+     * If this method returns without throwing an exception, then the
+     * transaction holds all locks it previously requested via
+     * {@code writeBlindLockClaim()} and the expectedValue associated with each
+     * transaction matches the actual values seen in the {@code dataStore}.
+     * 
+     * @throws StorageException
+     *             if there's an unexpected problem talking to {@code backer}'s
+     *             {@code dataStore} or {@code lockStore}
+     * @throws LockingException
+     *             if a lock claim has failed
      */
     public void verifyAllLockClaims() throws StorageException {
 
@@ -261,7 +339,6 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
         for (LockClaim lc : lockClaims) {
 
             ByteBuffer lockKey = lc.getLockKey();
-            ByteBuffer empty = ByteBuffer.allocate(0);
 
             ConsistentKeyLockStore backer = lc.getBacker();
             int bufferLen = backer.getRid().length+8;

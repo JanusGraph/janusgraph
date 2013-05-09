@@ -25,11 +25,19 @@ public class LocalLockMediator {
     private static final Logger log = LoggerFactory
             .getLogger(LocalLockMediator.class);
 
-    // Locking namespace
+    /**
+     * Namespace for which this mediator is responsible
+     * 
+     * @see LocalLockMediatorProvider
+     */
     private final String name;
 
-    // TODO maybe tune the initial size or load factor arguments to
-    // ConcurrentHashMap's constructor
+    /**
+     * Maps a ({@code key}, {@code column}) pair to the local transaction
+     * holding a lock on that pair. Values in this map may have already expired
+     * according to {@link AuditRecord#expires}, in which case the lock should
+     * be considered invalid.
+     */
     private final ConcurrentHashMap<KeyColumn, AuditRecord> locks = new ConcurrentHashMap<KeyColumn, AuditRecord>();
 
     public LocalLockMediator(String name) {
@@ -172,19 +180,36 @@ public class LocalLockMediator {
                 + " current locks]";
     }
 
+    /**
+     * A record containing the local transaction that holds a lock and the
+     * lock's expiration time.
+     */
     private static class AuditRecord {
+        
+        /**
+         * The local transaction that holds/held the lock.
+         */
         private final ConsistentKeyLockTransaction holder;
+        /**
+         * The expiration time of a the lock. Conventionally, this is in
+         * nanoseconds from the epoch as returned by
+         * {@link TimeUtility#getApproxNSSinceEpoch(boolean)}.
+         */
         private final long expires;
+        /**
+         * Cached hashCode.
+         */
         private int hashCode;
 
         private AuditRecord(ConsistentKeyLockTransaction holder, long expires) {
             this.holder = holder;
             this.expires = expires;
         }
-
-        // Equals and hashCode depend only on holder (and not the expiration
-        // time)
-
+        
+        /**
+         * This implementation depends only on the lock holder and not on the
+         * lock expiration time.
+         */
         @Override
         public int hashCode() {
             if (0 == hashCode)
@@ -192,7 +217,11 @@ public class LocalLockMediator {
 
             return hashCode;
         }
-
+        
+        /**
+         * This implementation depends only on the lock holder and not on the
+         * lock expiration time.
+         */
         @Override
         public boolean equals(Object obj) {
             if (this == obj)
