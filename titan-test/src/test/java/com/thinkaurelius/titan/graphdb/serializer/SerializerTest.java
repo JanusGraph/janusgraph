@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.graphdb.serializer;
 
 
+import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.DoubleSerializer;
@@ -9,7 +11,6 @@ import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.StandardKeyDefinition;
 import com.thinkaurelius.titan.graphdb.types.StandardLabelDefinition;
-import com.thinkaurelius.titan.graphdb.types.StandardTypeGroup;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
 import com.tinkerpop.blueprints.Vertex;
@@ -19,7 +20,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.Calendar;
 
 import static com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization.RESERVED_ID_OFFSET;
@@ -56,7 +56,7 @@ public class SerializerTest {
         out.putInt(i);
         out.writeObject(c,TestClass.class);
         out.writeClassAndObject(n);
-        ByteBuffer b = out.getByteBuffer();
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
         String str2 = serialize.readObjectNotNull(b, String.class);
         assertEquals(str, str2);
@@ -76,7 +76,7 @@ public class SerializerTest {
         out.writeObjectNotNull(Boolean.class);
         out.writeObjectNotNull(Byte.class);
         out.writeObjectNotNull(Double.class);
-        ByteBuffer b = out.getByteBuffer();
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         assertEquals(Boolean.class,serialize.readObjectNotNull(b,Class.class));
         assertEquals(Byte.class,serialize.readObjectNotNull(b,Class.class));
         assertEquals(Double.class,serialize.readObjectNotNull(b,Class.class));
@@ -89,7 +89,7 @@ public class SerializerTest {
         out.writeClassAndObject(Long.valueOf(8));
         TestClass c = new TestClass(5, 8, new short[]{1, 2, 3, 4, 5}, TestEnum.Two);
         out.writeObject(c,TestClass.class);
-        final ByteBuffer b = out.getByteBuffer();
+        final StaticBuffer b = out.getStaticBuffer();
 
         int numThreads = 100;
         Thread[] threads = new Thread[numThreads];
@@ -98,7 +98,7 @@ public class SerializerTest {
                 @Override
                 public void run() {
                     for (int j=0;j<100000;j++) {
-                        ByteBuffer c = b.duplicate();
+                        ReadBuffer c = b.asReadBuffer();
                         assertEquals(8,c.getLong());
                         Long l = (Long)serialize.readClassAndObject(c);
                         assertEquals(8,l.longValue());
@@ -140,7 +140,7 @@ public class SerializerTest {
         out.writeObjectNotNull(DoubleSerializer.MAX_VALUE);
         out.writeObjectNotNull(new Double(0.0));
 
-        ByteBuffer b = out.getByteBuffer();
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         assertEquals(Boolean.FALSE,serialize.readObjectNotNull(b,Boolean.class));
         assertEquals(Boolean.TRUE,serialize.readObjectNotNull(b,Boolean.class));
         assertEquals(Byte.MIN_VALUE,serialize.readObjectNotNull(b,Byte.class).longValue());
@@ -203,7 +203,7 @@ public class SerializerTest {
             String str = base + (i + 1);
             out.writeObjectNotNull(str);
         }
-        ByteBuffer b = out.getByteBuffer();
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
         for (int i = 0; i < no; i++) {
             String str = base + (i + 1);
@@ -220,7 +220,7 @@ public class SerializerTest {
         for (int i = 0; i < 100; i++) str += base;
         DataOutput out = serialize.getDataOutput(128, true);
         out.writeObjectNotNull(str);
-        ByteBuffer b = out.getByteBuffer();
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
         assertEquals(str, serialize.readObjectNotNull(b, String.class));
         assertFalse(b.hasRemaining());
@@ -230,7 +230,7 @@ public class SerializerTest {
     public void enumSerializeTest() {
         DataOutput out = serialize.getDataOutput(128, true);
         out.writeObjectNotNull(TestEnum.Two);
-        ByteBuffer b = out.getByteBuffer();
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
         assertEquals(TestEnum.Two, serialize.readObjectNotNull(b, TestEnum.class));
         assertFalse(b.hasRemaining());
@@ -249,7 +249,7 @@ public class SerializerTest {
         DataOutput out = serialize.getDataOutput(128, true);
         out.writeObjectNotNull(relType);
         out.writeObjectNotNull(propType);
-        ByteBuffer b = out.getByteBuffer();
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
         assertEquals("testName", serialize.readObjectNotNull(b, StandardLabelDefinition.class).getName());
         assertEquals(String.class, serialize.readObjectNotNull(b, StandardKeyDefinition.class).getDataType());
@@ -280,8 +280,8 @@ public class SerializerTest {
         log.debug("SHORT: Avg micro time: " + (p.getMicroTime() / runs));
     }
 
-    public static String bufferStats(ByteBuffer b) {
-        return "ByteBuffer size: " + b.limit() + " position: " + b.position();
+    public static String bufferStats(ReadBuffer b) {
+        return "ReadBuffer length: " + b.length();
     }
 
     @Test(expected = IllegalArgumentException.class)
