@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
 
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
@@ -11,7 +12,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -112,14 +112,14 @@ public class IDManagementTest {
             assertEquals(id, eid.addGroupID(nogroup, groupID));
 
             int dir = RandomGenerator.randomInt(0, 4);
-            ByteBuffer b = IDHandler.getEdgeType(id, dir, eid);
-            assertEquals(dir, IDHandler.getDirectionID(b.get(0)));
-            assertEquals(id, IDHandler.readEdgeType(b, eid));
+            StaticBuffer b = IDHandler.getEdgeType(id, dir, eid);
+            assertEquals(dir, IDHandler.getDirectionID(b.getByte(0)));
+            assertEquals(id, IDHandler.readEdgeType(b.asReadBuffer(), eid));
 
-            ByteBuffer g = IDHandler.getEdgeTypeGroup(groupID, dir, eid);
-            assertEquals(dir, IDHandler.getDirectionID(g.get(0)));
-            assertEquals(1, g.limit());
-            int group = g.get(0);
+            StaticBuffer g = IDHandler.getEdgeTypeGroup(groupID, dir, eid);
+            assertEquals(dir, IDHandler.getDirectionID(g.getByte(0)));
+            assertEquals(1, g.length());
+            int group = g.getByte(0);
             if (group < 0) group += 256;
             assertEquals(groupID, group % 64);
 
@@ -130,10 +130,10 @@ public class IDManagementTest {
         for (int dir = 0; dir < 4; dir++) {
             for (int t = 0; t < 1000; t++) {
                 long etid = RandomGenerator.randomLong(1, eid.getMaxTitanTypeID());
-                ByteBuffer b = IDHandler.getEdgeType(etid, dir, eid);
+                StaticBuffer b = IDHandler.getEdgeType(etid, dir, eid);
                 DataOutput out = serializer.getDataOutput(100, true);
                 IDHandler.writeEdgeType(out, etid, dir, eid);
-                assertEquals(b, out.getByteBuffer());
+                assertEquals(b, out.getStaticBuffer());
 
             }
         }
