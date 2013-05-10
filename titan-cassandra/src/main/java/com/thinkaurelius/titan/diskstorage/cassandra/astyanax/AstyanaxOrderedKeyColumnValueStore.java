@@ -102,9 +102,6 @@ public class AstyanaxOrderedKeyColumnValueStore implements
          * endColumn, compares it to its identical twin with that type
          * hard-coded, and dies.
          * 
-         * Here's the compiler error I received when attempting to compile this
-         * code without the following casts. I used Oracle JDK 6 Linux x86_64.
-         * 
          */
         RowQuery rq = keyspace.prepareQuery(columnFamily)
                 .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
