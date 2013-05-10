@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -122,11 +123,16 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 			 * rows.size(), depending on startInclusive and endInclusive
 			 */
             List<Entry> result = new ArrayList<Entry>(rows.size());
+            
+            ByteBuffer sliceEndBB = query.getSliceEnd().asByteBuffer();
+            
             for (ColumnOrSuperColumn r : rows) {
                 Column c = r.getColumn();
 
                 // Skip column if it is equal to columnEnd because columnEnd is exclusive
-                if (query.getSliceEnd().equals(c.bufferForName())) continue;
+                if (sliceEndBB.equals(c.bufferForName())) {
+                    continue;
+                }
 
                 result.add(new ByteBufferEntry(c.bufferForName(), c.bufferForValue()));
             }
