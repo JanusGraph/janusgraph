@@ -88,44 +88,31 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
 
-		/*
-		 * The following hideous cast dance avoids a type-erasure error in the
-		 * RowQuery<K, V> type that emerges when K=V=ByteBuffer. Specifically,
-		 * these two methods erase to the same signature after generic reduction
-		 * during compilation:
-		 * 
-		 * RowQuery<K, C> withColumnRange(C startColumn, C endColumn, boolean
-		 * reversed, int count) RowQuery<K, C> withColumnRange(ByteBuffer
-		 * startColumn, ByteBuffer endColumn, boolean reversed, int count)
-		 * 
-		 * 
-		 * The compiler substitutes ByteBuffer=C for both startColumn and
-		 * endColumn, compares it to its identical twin with that type
-		 * hard-coded, and dies.
-		 * 
-		 * Here's the compiler error I received when attempting to compile this
-		 * code without the following casts. I used Oracle JDK 6 Linux x86_64.
-		 * 
-		 * AstyanaxOrderedKeyColumnValueStore.java:[108,4] reference to
-		 * withColumnRange is ambiguous, both method
-		 * withColumnRange(C,C,boolean,int) in
-		 * com.netflix.astyanax.query.RowQuery<java.nio.ByteBuffer,java.nio.ByteBuffer>
-		 * and method
-		 * withColumnRange(java.nio.ByteBuffer,java.nio.ByteBuffer,boolean,int)
-		 * in
-		 * com.netflix.astyanax.query.RowQuery<java.nio.ByteBuffer,java.nio.ByteBuffer>
-		 * match
-		 * 
-		 */
-        @SuppressWarnings("rawtypes")
-        RowQuery rq = (RowQuery) keyspace.prepareQuery(columnFamily)
+        /*
+         * RowQuery<K,C> should be parameterized as
+         * RowQuery<ByteBuffer,ByteBuffer>. However, this causes the following
+         * compilation error when attempting to call withColumnRange on a
+         * RowQuery<ByteBuffer,ByteBuffer> instance:
+         * 
+         * java.lang.Error: Unresolved compilation problem: The method
+         * withColumnRange(ByteBuffer, ByteBuffer, boolean, int) is ambiguous
+         * for the type RowQuery<ByteBuffer,ByteBuffer>
+         * 
+         * The compiler substitutes ByteBuffer=C for both startColumn and
+         * endColumn, compares it to its identical twin with that type
+         * hard-coded, and dies.
+         * 
+         * Here's the compiler error I received when attempting to compile this
+         * code without the following casts. I used Oracle JDK 6 Linux x86_64.
+         * 
+         */
+        RowQuery rq = keyspace.prepareQuery(columnFamily)
                 .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
                 .withRetryPolicy(retryPolicy.duplicate())
                 .getKey(query.getKey().asByteBuffer());
-//		RowQuery<ByteBuffer, ByteBuffer> rq = keyspace.prepareQuery(columnFamily).getKey(key);
         int limit = Integer.MAX_VALUE - 1;
         if (query.hasLimit()) limit = query.getLimit();
-        rq.withColumnRange(query.getSliceStart(), query.getSliceEnd(), false, limit + 1);
+        rq.withColumnRange(query.getSliceStart().asByteBuffer(), query.getSliceEnd().asByteBuffer(), false, limit + 1);
 
         OperationResult<ColumnList<ByteBuffer>> r;
         try {
