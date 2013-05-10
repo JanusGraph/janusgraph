@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization;
 
 import java.lang.reflect.Constructor;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +31,8 @@ public class KryoSerializer implements Serializer {
     private static final StaticBuffer.Factory<Input> INPUT_FACTORY = new StaticBuffer.Factory<Input>() {
         @Override
         public Input get(byte[] array, int offset, int limit) {
-            return new Input(array,offset,limit);
+            //Needs to copy array - otherwise we see BufferUnderflow exceptions from concurrent access
+            return new Input(Arrays.copyOfRange(array,offset,limit));
         }
     };
 
