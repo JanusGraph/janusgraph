@@ -124,10 +124,16 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
         int i = 0;
 
+        ByteBuffer sliceEndBB = query.getSliceEnd().asByteBuffer();
+        
         for (Column<ByteBuffer> c : r.getResult()) {
             ByteBuffer colName = c.getName();
 
-            if (colName.equals(query.getSliceEnd())) {
+            // Cassandra treats the end of a slice column range inclusively, but
+            // this method's contract promises to treat it exclusively. Check
+            // for the final column in the Cassandra results and skip it if
+            // found.
+            if (colName.equals(sliceEndBB)) {
                 break;
             }
 
