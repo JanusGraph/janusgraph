@@ -109,15 +109,15 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             String columnFamily = keyMutation.getKey();
             for (Map.Entry<StaticBuffer, KCVMutation> mutEntry : keyMutation.getValue().entrySet()) {
                 StaticBuffer key = mutEntry.getKey();
+                ByteBuffer keyBB = key.asByteBuffer();
 
                 // Get or create the single Cassandra Mutation object responsible for this key 
-                Map<String, List<org.apache.cassandra.thrift.Mutation>> cfmutation = batch.get(key);
+                Map<String, List<org.apache.cassandra.thrift.Mutation>> cfmutation = batch.get(keyBB);
                 if (cfmutation == null) {
                     cfmutation = new HashMap<String, List<org.apache.cassandra.thrift.Mutation>>(3); // TODO where did the magic number 3 come from?
-                    batch.put(key.asByteBuffer(), cfmutation);
+                    batch.put(keyBB, cfmutation);
                 }
 
-                // 
                 KCVMutation mutation = mutEntry.getValue();
                 List<org.apache.cassandra.thrift.Mutation> thriftMutation =
                         new ArrayList<org.apache.cassandra.thrift.Mutation>(mutations.size());
