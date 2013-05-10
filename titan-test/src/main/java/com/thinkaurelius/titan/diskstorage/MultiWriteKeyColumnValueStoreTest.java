@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
@@ -121,6 +123,43 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
             tx.flush();
             Assert.assertEquals(b1, KCVSUtil.get(store1,b1, b1, tx));
         }
+    }
+    
+    @Test
+    public void mutateManyWritesSameKeyOnMultipleCFs() throws StorageException {
+        
+        final long arbitraryLong = 42;
+        assert 0 < arbitraryLong;
+        
+        final StaticBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(arbitraryLong * arbitraryLong);
+        final StaticBuffer val = KeyColumnValueStoreUtil.longToByteBuffer(arbitraryLong * arbitraryLong * arbitraryLong);
+        final StaticBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(arbitraryLong);
+        final StaticBuffer nextCol = KeyColumnValueStoreUtil.longToByteBuffer(arbitraryLong + 1);
+        
+        final StoreTransaction directTx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        
+        KCVMutation km = new KCVMutation(
+                ImmutableList.<Entry>of(new StaticBufferEntry(col, val)),
+                ImmutableList.<StaticBuffer>of());
+        
+        Map<StaticBuffer, KCVMutation> keyColumnAndValue = ImmutableMap.of(key, km);
+
+        Map<String, Map<StaticBuffer, KCVMutation>> mutations =
+                ImmutableMap.of(
+                        storeName1, keyColumnAndValue,
+                        storeName2, keyColumnAndValue);
+        
+        manager.mutateMany(mutations, directTx);
+
+        directTx.commit();
+
+        KeySliceQuery query = new KeySliceQuery(key, col, nextCol);
+        List<Entry> expected =
+                ImmutableList.<Entry>of(new StaticBufferEntry(col, val));
+        
+        Assert.assertEquals(expected, store1.getSlice(query, tx));
+        Assert.assertEquals(expected, store2.getSlice(query, tx));
+        
     }
 
     @Test
