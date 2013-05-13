@@ -386,7 +386,23 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
                                 earliestNS});
                 throw new PermanentLockingException("Lock could not be acquired because it is held by a remote transaction [" + lc + "]");
             }
-
+            
+            if (earliestNS != lc.getTimestamp()) {
+                log.warn("Timestamp mismatch: expected={}, actual={}", lc.getTimestamp(), earliestNS);
+                /*
+                 * This is probably evidence of a prior attempt to write a lock
+                 * that the client perceived as a failure but which in fact
+                 * succeeded.
+                 * 
+                 * Since the Rid is ours, we could theoretically delete the lock
+                 * and even attempt to obtain it all over again, but that
+                 * implies significant refactoring.
+                 * 
+                 * Eventually, the earlier stale lock claim will expire and
+                 * progress will resume.
+                 */
+                throw new PermanentLockingException("Lock could not be acquired due to timestamp mismatch [" + lc + "]");
+            }
 
             // Check expectedValue
             StaticBuffer bb = KCVSUtil.get(backer.getDataStore(),lc.getKey(), lc.getColumn(), baseTx);
