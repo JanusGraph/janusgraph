@@ -411,4 +411,36 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                                            GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT,
                                            thriftFrameSize).makeRawConnection();
     }
+    
+    @Override
+    public Map<String, String> getCompressionOptions(String cf) throws StorageException {
+        CTConnection conn = null;
+        
+        try {
+            conn = getCassandraConnection();
+            Cassandra.Client client = conn.getClient();
+
+            try {
+                client.set_keyspace(keySpaceName);
+                KsDef ksDef = client.describe_keyspace(keySpaceName);
+                
+                for (CfDef cfDef : ksDef.getCf_defs()) {
+                    if (null != cfDef && cfDef.getName().equals(cf)) {
+                        return cfDef.getCompression_options();
+                    }
+                }
+                
+                return ksDef.getStrategy_options();
+                
+            } catch (InvalidRequestException e) {
+                log.debug("Keyspace {} does not exist", keySpaceName);
+
+                return null;
+            }
+        } catch (Exception e) {
+            throw new TemporaryStorageException(e);
+        } finally {
+            IOUtils.closeQuietly(conn);
+        }
+    }
 }

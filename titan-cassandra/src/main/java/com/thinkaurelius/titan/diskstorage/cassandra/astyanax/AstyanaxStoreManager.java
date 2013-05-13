@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.netflix.astyanax.*;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
 import com.netflix.astyanax.connectionpool.OperationResult;
@@ -293,13 +294,13 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         cl.makeColumnFamilyDefinition()
                                 .setName(name)
                                 .setKeyspace(keySpaceName)
-                                .setComparatorType(comparator);
-//                                .setCompressionOptions(
-//                                		new ImmutableMap.Builder<String, String>()
-//                                			.put("sstable_compression", "SnappyCompressor")
-//                                			.put("chunk_length_kb", "64")
-//                                			.build()
-//                                );
+                                .setComparatorType(comparator)
+                                .setCompressionOptions(
+                                		new ImmutableMap.Builder<String, String>()
+                                			.put("sstable_compression", "SnappyCompressor")
+                                			.put("chunk_length_kb", "64")
+                                			.build()
+                                );
                 cl.addColumnFamily(cfDef);
             }
         } catch (ConnectionException e) {
@@ -477,6 +478,29 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                                     .execute();
 
             result.getResult();
+        } catch (ConnectionException e) {
+            throw new PermanentStorageException(e);
+        }
+    }
+    
+    @Override
+    public Map<String, String> getCompressionOptions(String cf) throws StorageException {
+        try {
+            Keyspace k = keyspaceContext.getClient();
+        
+            KeyspaceDefinition kdef = k.describeKeyspace();
+        
+            if (null == kdef) {
+                throw new PermanentStorageException("Keyspace " + kdef + " is undefined");
+            }
+        
+            ColumnFamilyDefinition cfdef = kdef.getColumnFamily(cf);
+        
+            if (null == cfdef) {
+                throw new PermanentStorageException("Column family " + cf + " is undefined");
+            }
+        
+            return cfdef.getCompressionOptions();
         } catch (ConnectionException e) {
             throw new PermanentStorageException(e);
         }
