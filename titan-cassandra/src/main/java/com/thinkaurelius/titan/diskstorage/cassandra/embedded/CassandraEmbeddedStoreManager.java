@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -321,8 +322,13 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
         
         // Enable snappy compression
-        CompressionParameters cp = new CompressionParameters(new SnappyCompressor());
-        cfm.compressionParameters(cp);
+        try {
+            CompressionParameters cp = new CompressionParameters(new SnappyCompressor(), 64 * 1024, ImmutableMap.<String, String>of());
+            cfm.compressionParameters(cp);
+            log.warn("Set CompressionParameters {}", cp);
+        } catch (ConfigurationException e) {
+            throw new PermanentStorageException("Failed to create compression parameters for " + keyspaceName + ":" + columnfamilyName, e);
+        }
 
         try {
             cfm.addDefaultIndexNames();
@@ -366,5 +372,16 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         property.add(new QueryPath(new ColumnPath(SYSTEM_PROPERTIES_CF).setColumn(key)), val, System.currentTimeMillis());
 
         mutate(Arrays.asList(property), ConsistencyLevel.QUORUM);
+    }
+    
+    @Override
+    public Map<String, String> getCompressionOptions(String cf) throws StorageException {
+        
+        CFMetaData cfm = Schema.instance.getCFMetaData(keySpaceName, cf);
+        
+        if (cfm == null)
+            return null;
+        
+        return ImmutableMap.copyOf(cfm.compressionParameters().asThriftOptions());
     }
 }

@@ -1,19 +1,20 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import static org.junit.Assert.assertTrue;
+
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
+import com.thinkaurelius.titan.CassandraStorageSetup;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraKeyColumnValueStoreTest;
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 
-public class InternalCassandraEmbeddedKeyColumnValueTest extends KeyColumnValueStoreTest {
+public class InternalCassandraEmbeddedKeyColumnValueTest extends AbstractCassandraKeyColumnValueStoreTest {
 
     @Override
-    public KeyColumnValueStoreManager openStorageManager() throws StorageException {
+    public AbstractCassandraStoreManager openStorageManager() throws StorageException {
         return new CassandraEmbeddedStoreManager(getConfiguration());
     }
 

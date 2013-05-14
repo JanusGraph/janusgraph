@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
+import java.util.Map;
+
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
@@ -8,6 +10,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreMan
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.thrift.CfDef;
 import org.apache.commons.configuration.Configuration;
 
 /**
@@ -162,5 +165,19 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         return features;
     }
 
-
+    /**
+     * Returns a map of compression options for the column family {@code cf}.
+     * The contents of the returned map must be identical to the contents of the
+     * map returned by
+     * {@link org.apache.cassandra.thrift.CfDef#getCompression_options()}, even
+     * for implementations of this method that don't use Thrift.
+     * 
+     * @param cf
+     *            the name of the column family for which to return compression
+     *            options
+     * @return map of compression option names to compression option values
+     * @throws StorageException
+     *             if reading from Cassandra fails
+     */
+    public abstract Map<String, String> getCompressionOptions(String cf) throws StorageException;
 }
