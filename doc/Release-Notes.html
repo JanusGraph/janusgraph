@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.1</a></h3>
   <h1>Release Notes</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -67,10 +67,43 @@ Mousetrap.bind(['e'], function( e ) {
 <div class="wrap">
   <div id="wiki-body" class="gollum-textile-content">
     <div id="template">
-      <p>Titan: Distributed Graph Database<br /><a href="http://thinkaurelius.github.com/titan/">http://thinkaurelius.github.com/titan/</a></p>
+      <p>Titan: Distributed Graph Database<br /><a href="http://titan.thinkaurelius.com">http://titan.thinkaurelius.com</a></p>
 <p><img src="https://raw.github.com/thinkaurelius/titan/master/doc/images/titan-globe.png" width="100px" /></p>
 <h2>Titan 0.y.z<a class="anchor" id="Titan-0.y.z" href="#Titan-0.y.z"></a></h2>
-<h3>Version 0.3.0 (March 29, 2013)<a class="anchor" id="Version-0.3.0-(March-29,-2013)" href="#Version-0.3.0-(March-29,-2013)"></a></h3>
+<h3>Version 0.3.1 (May 14, 2013)<a class="anchor" id="Version-0.3.1-(May-14,-2013)" href="#Version-0.3.1-(May-14,-2013)"></a></h3>
+<div class="highlight"><pre><span class="nt">&lt;dependency&gt;</span>
+   <span class="nt">&lt;groupId&gt;</span>com.thinkaurelius.titan<span class="nt">&lt;/groupId&gt;</span>
+   <span class="nt">&lt;artifactId&gt;</span>titan-core<span class="nt">&lt;/artifactId&gt;</span>
+   <span class="nt">&lt;version&gt;</span>0.3.1<span class="nt">&lt;/version&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</pre></div><br /><strong>Tested Compatibility:</strong>
+<ul><li>Cassandra 1.2.2</li>
+	<li>HBase 0.94.1</li>
+	<li>BerkeleyJE 5.0.73</li>
+	<li>Elasticsearch 0.90.0</li>
+	<li>Lucene 4.1.0</li>
+	<li>Java 1.6+</li>
+</ul><p><strong>Features:</strong></p>
+<ul><li>Improved in-transaction index handling for equality matches</li>
+	<li>Support for Lucene 4 throughout</li>
+	<li>Storage backend compression enabled by default where applicable</li>
+	<li>Removed RexsterTitanClient since all the functionality has been rolled into RexsterClient</li>
+	<li>Automatic type-casting of most primitive types and Geoshape where possible</li>
+	<li>Refactored to using immutable data structures for storage backend communication</li>
+	<li>Re-implemented InMemory storage backend for better performance</li>
+</ul><p><strong>Bugfixes:</strong></p>
+<ul><li>Launching multiple Titan servers in one cluster with RF&gt;1</li>
+	<li>Updated and improved the Astyanax adapter for Cassandra</li>
+	<li>Improved robustness of ID allocation</li>
+	<li>Vertex iteration in embedded Cassandra with BoP</li>
+	<li>Updated Titan server scripts and configuration files</li>
+	<li>Fixed issues around automatic transaction migration of vertices and edges</li>
+	<li>Fixed BerkeleyJE concurrency clean-up issue</li>
+	<li>Cleaned up and trimmed storage backend interfaces</li>
+	<li>Fixed ghost vertex issue when iterating over vertices</li>
+	<li>Fixed datatype conversion issues</li>
+</ul><p>Check the issue tracker for a full list of fixed issues.</p>
+<hr /><h3>Version 0.3.0 (March 29, 2013)<a class="anchor" id="Version-0.3.0-(March-29,-2013)" href="#Version-0.3.0-(March-29,-2013)"></a></h3>
 <div class="highlight"><pre><span class="nt">&lt;dependency&gt;</span>
    <span class="nt">&lt;groupId&gt;</span>com.thinkaurelius.titan<span class="nt">&lt;/groupId&gt;</span>
    <span class="nt">&lt;artifactId&gt;</span>titan-core<span class="nt">&lt;/artifactId&gt;</span>
@@ -89,7 +122,7 @@ Mousetrap.bind(['e'], function( e ) {
 	<li>InMemoryGraph implementation</li>
 	<li>IdGraph support</li>
 	<li>Relaxed transactional scope requirement for vertices</li>
-	<li>Edge now longer extends Vertex</li>
+	<li>Edge no longer extends Vertex</li>
 	<li>Updated to Kryo 2</li>
 </ul><p><strong>Bugfixes:</strong></p>
 <ul><li>Cassandra Thrift Max-Message-Size issue</li>
@@ -97,7 +130,7 @@ Mousetrap.bind(['e'], function( e ) {
 	<li>Out-unique edges</li>
 	<li>Modified state in global graph operations</li>
 	<li>see issue tracker for a full list</li>
-</ul><h3>Version 0.2.1 (March 22, 2013)<a class="anchor" id="Version-0.2.1-(March-22,-2013)" href="#Version-0.2.1-(March-22,-2013)"></a></h3>
+</ul><hr /><h3>Version 0.2.1 (March 22, 2013)<a class="anchor" id="Version-0.2.1-(March-22,-2013)" href="#Version-0.2.1-(March-22,-2013)"></a></h3>
 <div class="highlight"><pre><span class="nt">&lt;dependency&gt;</span>
    <span class="nt">&lt;groupId&gt;</span>com.thinkaurelius.titan<span class="nt">&lt;/groupId&gt;</span>
    <span class="nt">&lt;artifactId&gt;</span>titan-core<span class="nt">&lt;/artifactId&gt;</span>
@@ -184,7 +217,7 @@ Mousetrap.bind(['e'], function( e ) {
 
 </div>
 <div id="footer">
-  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 06:50:19</p>
+  <p id="last-edit">Last edited by <b>Matthias Broecheler</b>, 2013-05-14 02:43:26</p>
   <p>
     
   </p>

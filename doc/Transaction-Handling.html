@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.1</a></h3>
   <h1>Transaction Handling</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -103,8 +103,25 @@ Mousetrap.bind(['e'], function( e ) {
 <p>If the transaction fails, a <code>TitanException</code> is thrown. There are a variety of reasons why a transaction may fail. Titan differentiates between <em>potentially temporary</em> and <em>permanent</em> failures.</p>
 <p>Potentially temporary failures are those related to resource unavailability and IO hickups (e.g. network timeouts). Titan automatically tries to recover from temporary failures by retrying to persist the transactional state after some delay. The number of retry attempts and the retry delay can be configured through the <a class="internal present" href="Graph-Configuration.html">Titan graph configuration</a>.</p>
 <p>Permanent failures can be caused by complete connection loss, hardware failure or lock contention. To understand the cause of lock contention, consider the signup example above and suppose a user tries to signup with username “juno”. That username may still be available at the beginning of the transaction but by the time the transaction is committed, another user might have concurrently registered with “juno” as well and that transaction holds the lock on the username therefore causing the other transaction to fail. It some cases one can recover from a lock contention failure by re-running the entire transaction.</p>
-<h2>Gotcha<a class="anchor" id="Gotcha" href="#Gotcha"></a></h2>
-<p>Transactions are started automatically with the first operation executed against the graph. One does <span class="caps">NOT</span> have to start a transaction manually. The method <code>newTransaction</code> is used to start <a class="internal present" href="Multi-Threaded-Transactions.html">multi threaded transactions</a> only.</p>
+<h2>Gotchas<a class="anchor" id="Gotchas" href="#Gotchas"></a></h2>
+<ul><li>Transactions are started automatically with the first operation executed against the graph. One does <span class="caps">NOT</span> have to start a transaction manually. The method <code>newTransaction</code> is used to start <a class="internal present" href="Multi-Threaded-Transactions.html">multi threaded transactions</a> only.</li>
+</ul><ul><li>Transactions are automatically started under the Blueprints semantics but <strong>not</strong> automatically terminated. Transactions have to be terminated manually with <code>g.commit()</code> if successful or <code>g.rollback()</code> if not. Manual termination of transactions is necessary because only the user knows the transactional boundary. <br />
+A transaction will attempt to maintain its state from the beginning of the transaction. This might lead to unexpected behavior in multi-threaded applications as illustrated in the following artificial example:</li>
+</ul><div class="highlight"><pre><span class="n">v</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">v</span><span class="o">(</span><span class="mi">4</span><span class="o">)</span> <span class="c1">//Retrieve vertex, first action automatically starts transaction</span>
+<span class="n">v</span><span class="o">.</span><span class="na">bothE</span>
+<span class="o">&gt;&gt;</span> <span class="n">returns</span> <span class="n">nothing</span><span class="o">,</span> <span class="n">v</span> <span class="n">has</span> <span class="n">no</span> <span class="n">edges</span>
+<span class="c1">//thread is idle for a few seconds, another thread adds edges to v</span>
+<span class="n">v</span><span class="o">.</span><span class="na">bothE</span>
+<span class="o">&gt;&gt;</span> <span class="n">still</span> <span class="n">returns</span> <span class="n">nothing</span> <span class="n">because</span> <span class="n">the</span> <span class="n">transactional</span> <span class="n">state</span> <span class="n">from</span> <span class="n">the</span> <span class="n">beginning</span> <span class="n">is</span> <span class="n">maintained</span>
+</pre></div><br />
+Such unexpected behavior is likely to occur in client-server applications where the server maintains multiple threads to answer client requests. It is therefore important to terminate the transaction after a unit of work (e.g. code snippet, query, etc). For instance, <a class="internal present" href="Rexster-Graph-Server.html">Rexster Graph Server</a> manages the transactional boundary for each gremlin query. So, the example above should be:<br /><div class="highlight"><pre><span class="n">v</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">v</span><span class="o">(</span><span class="mi">4</span><span class="o">)</span> <span class="c1">//Retrieve vertex, first action automatically starts transaction</span>
+<span class="n">v</span><span class="o">.</span><span class="na">bothE</span>
+<span class="n">g</span><span class="o">.</span><span class="na">commit</span><span class="o">()</span>
+<span class="c1">//thread is idle for a few seconds, another thread adds edges to v</span>
+<span class="n">v</span><span class="o">.</span><span class="na">bothE</span>
+<span class="o">&gt;&gt;</span> <span class="n">returns</span> <span class="n">the</span> <span class="n">newly</span> <span class="n">added</span> <span class="n">edge</span>
+<span class="n">g</span><span class="o">.</span><span class="na">commit</span><span class="o">()</span>
+</pre></div>
 <h2>Next Steps<a class="anchor" id="Next-Steps" href="#Next-Steps"></a></h2>
 <ul><li>Read more about <a href="https://github.com/tinkerpop/blueprints/wiki/Graph-Transactions">Blueprints Transactions</a></li>
 	<li>Learn how to speed up transactions with <a class="internal present" href="Multi-Threaded-Transactions.html">multiple threads</a></li>
@@ -115,7 +132,7 @@ Mousetrap.bind(['e'], function( e ) {
 
 </div>
 <div id="footer">
-  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 04:43:21</p>
+  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-04-19 16:58:30</p>
   <p>
     
   </p>

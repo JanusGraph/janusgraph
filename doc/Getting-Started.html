@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.1</a></h3>
   <h1>Getting Started</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -120,6 +120,12 @@ The <code>GraphOfTheGodsFactory.create()</code> method does the following to the
 	<li>Adds all the vertices to the graph along with their properties.</li>
 	<li>Adds all the edges to the graph along with their properties.</li>
 </ol><p>Please see the class source code:<br /><a href="https://github.com/thinkaurelius/titan/blob/master/titan-core/src/main/java/com/thinkaurelius/titan/example/GraphOfTheGodsFactory.java">https://github.com/thinkaurelius/titan/blob/master/titan-core/src/main/java/com/thinkaurelius/titan/example/GraphOfTheGodsFactory.java</a></p>
+<p>For those using Titan/Cassandra (or Titan/HBase), be sure to make use of <code>bin/cassandra-es.local</code> (or <code>bin/hbase-es.local</code>) and <code>GraphOfTheGodsFactory.load()</code>.</p>
+<div class="highlight"><pre>gremlin&gt; g = TitanFactory.open('bin/cassandra-es.local')
+==&gt;titangraph[cassandrathrift:127.0.0.1]
+gremlin&gt; GraphOfTheGodsFactory.load(g)
+==&gt;null
+</pre></div>
 <h2>Global Graph Indices<a class="anchor" id="Global-Graph-Indices" href="#Global-Graph-Indices"></a></h2>
 <p>The typical pattern for accessing data in a graph database is to first locate the entry point into the graph using a graph index. That entry point is an element (or set of elements) — i.e. a vertex or edge. From the entry elements, a Gremlin path description describes how to traverse to other elements in the graph via the explicit graph structure.</p>
 <p>Given that there is a unique index on <code>name</code> property, the Saturn vertex can be retrieved. The property map (i.e. the key/value pairs of Saturn) can then be examined. As demonstrated, the Saturn vertex has a <code>name</code> of “saturn,” an <code>age</code> of 10000, and a <code>type</code> of “titan.” The grandchild of Saturn can be retrieved with a traversal that expresses: “Who is Saturn’s grandchild?” (the inverse of “father” is “child”). The result is Hercules.</p>
@@ -133,10 +139,10 @@ gremlin&gt; saturn.in('father').in('father').name
 ==&gt;hercules
 </pre></div>
 <p>The property <code>place</code> is also in a graph index. The property <code>place</code> is an edge property. Therefore, Titan can index edges in a graph index. It is possible to query <em>The Graph of the Gods</em> for all events that have happened within 50 kilometers of <a href="http://en.wikipedia.org/wiki/Athens">Athens</a> (latitude:37.97 and long:23.72). Then, given that information, which vertices were involved in those events.</p>
-<div class="highlight"><pre>gremlin&gt; g.query().has('place',Geo.WITHIN,Geoshape.circle(37.97,23.72,50)).edges()
+<div class="highlight"><pre>gremlin&gt; g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges()
 ==&gt;e[2T-o-2F0LaTPQBM][24-battled-&gt;40]
 ==&gt;e[2R-o-2F0LaTPQBM][24-battled-&gt;36]
-gremlin&gt; g.query().has('place',Geo.WITHIN,Geoshape.circle(37.97,23.72,50)).edges().collect {
+gremlin&gt; g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges().collect {
    it.bothV.name.next(2) 
 }
 ==&gt;[hercules, hydra]
@@ -204,7 +210,7 @@ gremlin&gt; pluto.out('lives').in('lives').except([pluto]).name
 gremlin&gt; pluto.as('x').out('lives').in('lives').except('x').name
 ==&gt;cerberus
 </pre></div>
-<h3>Pluto’s Brothers<a class="anchor" id="Plutoâs-Brothers" href="#Plutoâs-Brothers"></a></h3>
+<h3>Pluto’s Brothers<a class="anchor" id="Pluto’s-Brothers" href="#Pluto’s-Brothers"></a></h3>
 <div class="highlight"><pre>gremlin&gt; // where do pluto's brothers live?
 gremlin&gt; pluto.out('brother').out('lives').name
 ==&gt;sky
@@ -221,10 +227,10 @@ gremlin&gt; pluto.out('brother').as('god').out('lives').as('place').select{it.na
 <p>Finally, Pluto lives in Tartarus because he shows no concern for death. His brothers, on the other hand, chose their locations based upon their love for certain qualities of those locations.</p>
 <div class="highlight"><pre>gremlin&gt; pluto.outE('lives').reason
 ==&gt;no fear of death
-gremlin&gt; g.query().has('reason',Text.CONTAINS,'loves').edges()
+gremlin&gt; g.query().has('reason',CONTAINS,'loves').edges()
 ==&gt;e[2B-g-2F0LaTPQBU][16-lives-&gt;8]
 ==&gt;e[2H-k-2F0LaTPQBU][20-lives-&gt;12]
-gremlin&gt; g.query().has('reason',Text.CONTAINS,'loves').edges().collect{
+gremlin&gt; g.query().has('reason',CONTAINS,'loves').edges().collect{
   [it.outV.name.next(),it.reason,it.inV.name.next()] 
 }
 ==&gt;[jupiter, loves fresh breezes, sky]
@@ -243,7 +249,7 @@ gremlin&gt; g.query().has('reason',Text.CONTAINS,'loves').edges().collect{
 
 </div>
 <div id="footer">
-  <p id="last-edit">Last edited by <b>okram</b>, 2013-03-29 04:17:12</p>
+  <p id="last-edit">Last edited by <b>okram</b>, 2013-03-29 13:39:35</p>
   <p>
     
   </p>
