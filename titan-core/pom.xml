@@ -33,8 +33,7 @@
         <dependency>
             <groupId>com.tinkerpop</groupId>
             <artifactId>frames</artifactId>
-            <version>2.3.1</version>
-            <!-- TODO: Change to ${tinkerpop.version} when appropriate -->
+            <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
             <groupId>com.tinkerpop.rexster</groupId>
