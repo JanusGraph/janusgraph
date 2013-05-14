@@ -5,7 +5,7 @@ Titan: Distributed Graph Database
 
 h2. Titan 0.y.z
 
-h3. Version 0.3.1 (May 13, 2013)
+h3. Version 0.3.1 (May 14, 2013)
 
 ```xml
 <dependency>
@@ -21,6 +21,7 @@ h3. Version 0.3.1 (May 13, 2013)
 * BerkeleyJE 5.0.73
 * Elasticsearch 0.90.0
 * Lucene 4.1.0
+* Java 1.6+
 
 *Features:*
 
