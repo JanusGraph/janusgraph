@@ -10,7 +10,13 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import java.io.File;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * Implementation of storage backend properties using a local configuration file.
+ *
+ * Each storage backend provides the functionality to get and set properties for that particular backend.
+ * This class implementation this feature using a local configuration file. Hence, it is only suitable for
+ * local storage backends.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class FileStorageConfiguration {

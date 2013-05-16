@@ -10,7 +10,9 @@
     <artifactId>titan-cassandra</artifactId>
     <name>Titan-Cassandra: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
-
+    <properties>
+        <astyanax.version>1.56.37</astyanax.version>
+    </properties>
     <!-- Libraries -->
     <dependencies>
         <dependency>
@@ -50,17 +52,7 @@
             and runtime NoClassDefFoundErrors looking for the class
             com/google/common/util/concurrent/RateLimiter.
         -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>13.0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>1.3.9</version>
-        </dependency>
-        <dependency>
+         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
             <version>1.2.2</version>
@@ -77,8 +69,18 @@
         </dependency>
         <dependency>
             <groupId>com.netflix.astyanax</groupId>
-            <artifactId>astyanax</artifactId>
-            <version>1.0.6</version>
+            <artifactId>astyanax-core</artifactId>
+            <version>${astyanax.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.netflix.astyanax</groupId>
+            <artifactId>astyanax-thrift</artifactId>
+            <version>${astyanax.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.netflix.astyanax</groupId>
+            <artifactId>astyanax-cassandra</artifactId>
+            <version>${astyanax.version}</version>
         </dependency>
         <!-- The latest Snappy-java because 1.4.0.1 is broken on Mac OS X with JDK 7 -->
         <dependency>

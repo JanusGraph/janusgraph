@@ -1,18 +1,17 @@
 package com.thinkaurelius.titan.graphdb.database;
 
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 
-import java.nio.ByteBuffer;
-
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class FittedSliceQuery extends SliceQuery {
 
     private final boolean isFitted;
 
-    public FittedSliceQuery(boolean isFitted, ByteBuffer sliceStart, ByteBuffer sliceEnd, int limit, boolean isStatic) {
+    public FittedSliceQuery(boolean isFitted, StaticBuffer sliceStart, StaticBuffer sliceEnd, int limit, boolean isStatic) {
         super(sliceStart, sliceEnd, limit, isStatic);
         this.isFitted=isFitted;
     }

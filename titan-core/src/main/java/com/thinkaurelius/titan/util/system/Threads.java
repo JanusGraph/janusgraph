@@ -1,5 +1,8 @@
 package com.thinkaurelius.titan.util.system;
 
+/**
+ * Utility class for dealing with {@link Thread}
+ */
 public class Threads {
 
     public static final boolean oneAlife(Thread[] threads) {

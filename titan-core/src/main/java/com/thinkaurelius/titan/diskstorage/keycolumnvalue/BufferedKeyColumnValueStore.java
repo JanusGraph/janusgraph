@@ -1,13 +1,17 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * Wraps a {@link KeyColumnValueStore} and buffers all mutations in a corresponding {@link BufferTransaction}.
+ * The buffered mutations are flushed in batches to increase write performance.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class BufferedKeyColumnValueStore implements KeyColumnValueStore {
@@ -27,7 +31,7 @@ public class BufferedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
         return store.containsKey(key, getTx(txh));
     }
 
@@ -37,17 +41,7 @@ public class BufferedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return store.get(key, column, getTx(txh));
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return store.containsKeyColumn(key, column, getTx(txh));
-    }
-
-    @Override
-    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         if (bufferEnabled) {
             assert txh instanceof BufferTransaction;
             ((BufferTransaction) txh).mutate(store.getName(), key, additions, deletions);
@@ -57,17 +51,17 @@ public class BufferedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         store.acquireLock(key, column, expectedValue, getTx(txh));
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
+    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
         return store.getKeys(getTx(txh));
     }
 
     @Override
-    public ByteBuffer[] getLocalKeyPartition() throws StorageException {
+    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         return store.getLocalKeyPartition();
     }
 

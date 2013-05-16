@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
@@ -88,7 +89,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
         long deletionTimestamp = TimeUtility.getApproxNSSinceEpoch(false);
@@ -99,30 +100,33 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         // Generate Thrift-compatible batch_mutate() datastructure
         // key -> cf -> cassmutation
         int size = 0;
-        for (Map<ByteBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
+        for (Map<StaticBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
         Map<ByteBuffer, Map<String, List<org.apache.cassandra.thrift.Mutation>>> batch =
                 new HashMap<ByteBuffer, Map<String, List<org.apache.cassandra.thrift.Mutation>>>(size);
 
 
-        for (Map.Entry<String, Map<ByteBuffer, KCVMutation>> keyMutation : mutations.entrySet()) {
+        for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> keyMutation : mutations.entrySet()) {
             String columnFamily = keyMutation.getKey();
-            for (Map.Entry<ByteBuffer, KCVMutation> mutEntry : keyMutation.getValue().entrySet()) {
-                ByteBuffer key = mutEntry.getKey();
+            for (Map.Entry<StaticBuffer, KCVMutation> mutEntry : keyMutation.getValue().entrySet()) {
+                StaticBuffer key = mutEntry.getKey();
+                ByteBuffer keyBB = key.asByteBuffer();
 
-                Map<String, List<org.apache.cassandra.thrift.Mutation>> cfmutation = batch.get(key);
+                // Get or create the single Cassandra Mutation object responsible for this key 
+                Map<String, List<org.apache.cassandra.thrift.Mutation>> cfmutation = batch.get(keyBB);
                 if (cfmutation == null) {
-                    cfmutation = new HashMap<String, List<org.apache.cassandra.thrift.Mutation>>(3);
-                    batch.put(key, cfmutation);
+                    cfmutation = new HashMap<String, List<org.apache.cassandra.thrift.Mutation>>(3); // TODO where did the magic number 3 come from?
+                    batch.put(keyBB, cfmutation);
                 }
 
                 KCVMutation mutation = mutEntry.getValue();
-                List<org.apache.cassandra.thrift.Mutation> thriftMutation = new ArrayList<org.apache.cassandra.thrift.Mutation>(mutations.size());
+                List<org.apache.cassandra.thrift.Mutation> thriftMutation =
+                        new ArrayList<org.apache.cassandra.thrift.Mutation>(mutations.size());
 
                 if (mutation.hasDeletions()) {
-                    for (ByteBuffer buf : mutation.getDeletions()) {
+                    for (StaticBuffer buf : mutation.getDeletions()) {
                         Deletion d = new Deletion();
                         SlicePredicate sp = new SlicePredicate();
-                        sp.addToColumn_names(buf);
+                        sp.addToColumn_names(buf.asByteBuffer());
                         d.setPredicate(sp);
                         d.setTimestamp(deletionTimestamp);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
@@ -134,8 +138,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 if (mutation.hasAdditions()) {
                     for (Entry ent : mutation.getAdditions()) {
                         ColumnOrSuperColumn cosc = new ColumnOrSuperColumn();
-                        Column column = new Column(ent.getColumn());
-                        column.setValue(ent.getValue());
+                        Column column = new Column(ent.getColumn().asByteBuffer());
+                        column.setValue(ent.getValue().asByteBuffer());
                         column.setTimestamp(additionTimestamp);
                         cosc.setColumn(column);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
@@ -406,5 +410,37 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                                            port,
                                            GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT,
                                            thriftFrameSize).makeRawConnection();
+    }
+    
+    @Override
+    public Map<String, String> getCompressionOptions(String cf) throws StorageException {
+        CTConnection conn = null;
+        
+        try {
+            conn = getCassandraConnection();
+            Cassandra.Client client = conn.getClient();
+
+            try {
+                client.set_keyspace(keySpaceName);
+                KsDef ksDef = client.describe_keyspace(keySpaceName);
+                
+                for (CfDef cfDef : ksDef.getCf_defs()) {
+                    if (null != cfDef && cfDef.getName().equals(cf)) {
+                        return cfDef.getCompression_options();
+                    }
+                }
+                
+                return ksDef.getStrategy_options();
+                
+            } catch (InvalidRequestException e) {
+                log.debug("Keyspace {} does not exist", keySpaceName);
+
+                return null;
+            }
+        } catch (Exception e) {
+            throw new TemporaryStorageException(e);
+        } finally {
+            IOUtils.closeQuietly(conn);
+        }
     }
 }

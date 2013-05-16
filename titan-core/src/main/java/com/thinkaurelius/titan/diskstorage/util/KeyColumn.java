@@ -1,19 +1,22 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
-import java.nio.ByteBuffer;
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 
 /**
- * This is just a (key, column) pair.
+ * Class representing a (key, column) pair.
  *
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class KeyColumn {
 
-    private final ByteBuffer key;
-    private final ByteBuffer col;
+    private final StaticBuffer key;
+    private final StaticBuffer col;
     private int cachedHashCode;
 
-    public KeyColumn(ByteBuffer key, ByteBuffer col) {
+    public KeyColumn(StaticBuffer key, StaticBuffer col) {
+        Preconditions.checkNotNull(key);
+        Preconditions.checkNotNull(col);
         this.key = key;
         this.col = col;
 
@@ -21,11 +24,11 @@ public class KeyColumn {
         assert null != this.col;
     }
 
-    public ByteBuffer getKey() {
+    public StaticBuffer getKey() {
         return key;
     }
 
-    public ByteBuffer getColumn() {
+    public StaticBuffer getColumn() {
         return col;
     }
 
@@ -60,7 +63,7 @@ public class KeyColumn {
 
     @Override
     public String toString() {
-        return "KeyColumn [k=0x" + ByteBufferUtil.bytesToHex(key) +
-                ", c=0x" + ByteBufferUtil.bytesToHex(col) + "]";
+        return "KeyColumn [k=0x" + key.toString() +
+                ", c=0x" + col.toString() + "]";
     }
 }

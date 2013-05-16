@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class LuceneIndex implements IndexProvider {
@@ -303,7 +303,7 @@ public class LuceneIndex implements IndexProvider {
                 }
             } else if (value instanceof String) {
                 if (relation == Text.CONTAINS) {
-                    return new TermsFilter(new Term(key,(String)value));
+                    return new TermsFilter(new Term(key,((String)value).toLowerCase()));
 //                } else if (relation == Txt.PREFIX) {
 //                    return new PrefixFilter(new Term(key+STR_SUFFIX,(String)value));
 //                } else if (relation == Cmp.EQUAL) {

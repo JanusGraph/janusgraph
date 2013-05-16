@@ -2,16 +2,18 @@ package com.thinkaurelius.titan.diskstorage.idmanagement;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import org.apache.commons.configuration.Configuration;
 
-import java.nio.ByteBuffer;
-
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * Base Class for {@link IDAuthority} implementations.
+ * Handles common aspects such as maintaining the {@link IDBlockSizer} and shared configuration options
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class AbstractIDManager implements IDAuthority {
@@ -54,10 +56,20 @@ public abstract class AbstractIDManager implements IDAuthority {
         this.blockSizer = sizer;
     }
 
-    protected ByteBuffer getPartitionKey(int partition) {
-        return ByteBufferUtil.getIntByteBuffer(partition);
+    /**
+     * Returns a byte buffer representation for the given partition id
+     * @param partition
+     * @return
+     */
+    protected StaticBuffer getPartitionKey(int partition) {
+        return ByteBufferUtil.getIntBuffer(partition);
     }
 
+    /**
+     * Returns the block size of the specified partition as determined by the configured {@link IDBlockSizer}.
+     * @param partition
+     * @return
+     */
     protected long getBlockSize(int partition) {
         Preconditions.checkArgument(blockSizer != null, "Blocksizer has not yet been initialized");
         isActive = true;

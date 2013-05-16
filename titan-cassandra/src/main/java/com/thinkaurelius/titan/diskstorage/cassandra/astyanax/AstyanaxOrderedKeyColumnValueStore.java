@@ -7,16 +7,18 @@ import com.netflix.astyanax.ExceptionCallback;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.model.*;
 import com.netflix.astyanax.query.AllRowsQuery;
 import com.netflix.astyanax.query.RowQuery;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
@@ -25,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.Partitioner;
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
 public class AstyanaxOrderedKeyColumnValueStore implements
@@ -40,8 +43,10 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     private final AstyanaxStoreManager storeManager;
 
 
-    AstyanaxOrderedKeyColumnValueStore(String columnFamilyName, Keyspace keyspace,
-                                       AstyanaxStoreManager storeManager, RetryPolicy retryPolicy) {
+    AstyanaxOrderedKeyColumnValueStore(String columnFamilyName,
+                                       Keyspace keyspace,
+                                       AstyanaxStoreManager storeManager,
+                                       RetryPolicy retryPolicy) {
         this.keyspace = keyspace;
         this.columnFamilyName = columnFamilyName;
         this.retryPolicy = retryPolicy;
@@ -64,37 +69,14 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     }
 
     @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column,
-                          StoreTransaction txh) throws StorageException {
-        try {
-            OperationResult<Column<ByteBuffer>> result =
-                    keyspace.prepareQuery(columnFamily)
-                            .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
-                            .withRetryPolicy(retryPolicy.duplicate())
-                            .getKey(key).getColumn(column).execute();
-            return result.getResult().getByteBufferValue();
-        } catch (NotFoundException e) {
-            return null;
-        } catch (ConnectionException e) {
-            throw new TemporaryStorageException(e);
-        }
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-                                     StoreTransaction txh) throws StorageException {
-        return null != get(key, column, txh);
-    }
-
-    @Override
-    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
         try {
             // See getSlice() below for a warning suppression justification
             @SuppressWarnings("rawtypes")
             RowQuery rq = (RowQuery) keyspace.prepareQuery(columnFamily)
                     .withRetryPolicy(retryPolicy.duplicate())
                     .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
-                    .getKey(key);
+                    .getKey(key.asByteBuffer());
             @SuppressWarnings("unchecked")
             OperationResult<ColumnList<ByteBuffer>> r = rq.withColumnRange(EMPTY, EMPTY, false, 1).execute();
             return 0 < r.getResult().size();
@@ -106,44 +88,28 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
 
-		/*
-		 * The following hideous cast dance avoids a type-erasure error in the
-		 * RowQuery<K, V> type that emerges when K=V=ByteBuffer. Specifically,
-		 * these two methods erase to the same signature after generic reduction
-		 * during compilation:
-		 * 
-		 * RowQuery<K, C> withColumnRange(C startColumn, C endColumn, boolean
-		 * reversed, int count) RowQuery<K, C> withColumnRange(ByteBuffer
-		 * startColumn, ByteBuffer endColumn, boolean reversed, int count)
-		 * 
-		 * 
-		 * The compiler substitutes ByteBuffer=C for both startColumn and
-		 * endColumn, compares it to its identical twin with that type
-		 * hard-coded, and dies.
-		 * 
-		 * Here's the compiler error I received when attempting to compile this
-		 * code without the following casts. I used Oracle JDK 6 Linux x86_64.
-		 * 
-		 * AstyanaxOrderedKeyColumnValueStore.java:[108,4] reference to
-		 * withColumnRange is ambiguous, both method
-		 * withColumnRange(C,C,boolean,int) in
-		 * com.netflix.astyanax.query.RowQuery<java.nio.ByteBuffer,java.nio.ByteBuffer>
-		 * and method
-		 * withColumnRange(java.nio.ByteBuffer,java.nio.ByteBuffer,boolean,int)
-		 * in
-		 * com.netflix.astyanax.query.RowQuery<java.nio.ByteBuffer,java.nio.ByteBuffer>
-		 * match
-		 * 
-		 */
-        @SuppressWarnings("rawtypes")
-        RowQuery rq = (RowQuery) keyspace.prepareQuery(columnFamily)
+        /*
+         * RowQuery<K,C> should be parameterized as
+         * RowQuery<ByteBuffer,ByteBuffer>. However, this causes the following
+         * compilation error when attempting to call withColumnRange on a
+         * RowQuery<ByteBuffer,ByteBuffer> instance:
+         * 
+         * java.lang.Error: Unresolved compilation problem: The method
+         * withColumnRange(ByteBuffer, ByteBuffer, boolean, int) is ambiguous
+         * for the type RowQuery<ByteBuffer,ByteBuffer>
+         * 
+         * The compiler substitutes ByteBuffer=C for both startColumn and
+         * endColumn, compares it to its identical twin with that type
+         * hard-coded, and dies.
+         * 
+         */
+        RowQuery rq = keyspace.prepareQuery(columnFamily)
                 .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
                 .withRetryPolicy(retryPolicy.duplicate())
-                .getKey(query.getKey());
-//		RowQuery<ByteBuffer, ByteBuffer> rq = keyspace.prepareQuery(columnFamily).getKey(key);
+                .getKey(query.getKey().asByteBuffer());
         int limit = Integer.MAX_VALUE - 1;
         if (query.hasLimit()) limit = query.getLimit();
-        rq.withColumnRange(query.getSliceStart(), query.getSliceEnd(), false, limit + 1);
+        rq.withColumnRange(query.getSliceStart().asByteBuffer(), query.getSliceEnd().asByteBuffer(), false, limit + 1);
 
         OperationResult<ColumnList<ByteBuffer>> r;
         try {
@@ -158,14 +124,20 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
         int i = 0;
 
+        ByteBuffer sliceEndBB = query.getSliceEnd().asByteBuffer();
+        
         for (Column<ByteBuffer> c : r.getResult()) {
             ByteBuffer colName = c.getName();
 
-            if (colName.equals(query.getSliceEnd())) {
+            // Cassandra treats the end of a slice column range inclusively, but
+            // this method's contract promises to treat it exclusively. Check
+            // for the final column in the Cassandra results and skip it if
+            // found.
+            if (colName.equals(sliceEndBB)) {
                 break;
             }
 
-            result.add(new Entry(colName, c.getByteBufferValue()));
+            result.add(new ByteBufferEntry(colName, c.getByteBufferValue()));
 
             if (++i == limit) {
                 break;
@@ -176,31 +148,30 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     }
 
     @Override
-    public void mutate(ByteBuffer key, List<Entry> additions,
-                       List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
-        Map<ByteBuffer, KCVMutation> mutations = ImmutableMap.of(key, new
-                KCVMutation(additions, deletions));
-        mutateMany(mutations, txh);
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+        mutateMany(ImmutableMap.of(key, new KCVMutation(additions, deletions)), txh);
     }
 
-    public void mutateMany(Map<ByteBuffer, KCVMutation> mutations,
-                           StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws StorageException {
         storeManager.mutateMany(ImmutableMap.of(columnFamilyName, mutations), txh);
     }
 
     @Override
-    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
+    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
+        if (storeManager.getPartitioner() != Partitioner.RANDOM)
+            throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");;
+
         AllRowsQuery<ByteBuffer, ByteBuffer> allRowsQuery = keyspace.prepareQuery(columnFamily).getAllRows();
 
         Rows<ByteBuffer, ByteBuffer> result;
         try {
             /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
-            result = allRowsQuery.setRowLimit(PAGE_SIZE) // pre-fetch that many rows at a time
+            result = allRowsQuery.setRowLimit(storeManager.getPageSize()) // pre-fetch that many rows at a time
                                .setConcurrencyLevel(1) // one execution thread for fetching portion of rows
                                .setExceptionCallback(new ExceptionCallback() {
                                    private int retries = 0;
@@ -221,15 +192,15 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
         final Iterator<Row<ByteBuffer, ByteBuffer>> rows = Iterators.filter(result.iterator(), new KeyIterationPredicate());
 
-        return new RecordIterator<ByteBuffer>() {
+        return new RecordIterator<StaticBuffer>() {
             @Override
             public boolean hasNext() throws StorageException {
                 return rows.hasNext();
             }
 
             @Override
-            public ByteBuffer next() throws StorageException {
-                return rows.next().getKey();
+            public StaticBuffer next() throws StorageException {
+                return new StaticByteBuffer(rows.next().getKey());
             }
 
             @Override
@@ -240,7 +211,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     }
 
     @Override
-    public ByteBuffer[] getLocalKeyPartition() throws StorageException {
+    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         throw new UnsupportedOperationException();
     }
 

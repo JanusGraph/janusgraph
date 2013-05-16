@@ -1,19 +1,15 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
-import static org.junit.Assert.assertFalse;
+import com.thinkaurelius.titan.CassandraStorageSetup;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraKeyColumnValueStoreTest;
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 
 
-public class InternalCassandraThriftKeyColumnValueTest extends KeyColumnValueStoreTest {
+public class InternalCassandraThriftKeyColumnValueTest extends AbstractCassandraKeyColumnValueStoreTest {
 
     @BeforeClass
     public static void startCassandra() {
@@ -21,19 +17,9 @@ public class InternalCassandraThriftKeyColumnValueTest extends KeyColumnValueSto
     }
 
     @Override
-    public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        return new CassandraThriftStoreManager(getConfiguration());
+    public AbstractCassandraStoreManager openStorageManager() throws StorageException {
+        return new CassandraThriftStoreManager(CassandraStorageSetup.getCassandraThriftGraphConfiguration());
     }
-
-    private Configuration getConfiguration() {
-        Configuration config = CassandraStorageSetup.getCassandraStorageConfiguration();
-        return config;
-    }
-
-    @Test
-    public void testConfiguration() {
-        StoreFeatures features = manager.getFeatures();
-        assertFalse(features.isKeyOrdered());
-        assertFalse(features.hasLocalKeyPartition());
-    }
+    
+    
 }

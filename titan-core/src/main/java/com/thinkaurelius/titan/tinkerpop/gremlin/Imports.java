@@ -21,6 +21,7 @@ public class Imports {
         // titan
         imports.add("com.thinkaurelius.titan.core.*");
         imports.add("com.thinkaurelius.titan.core.attribute.*");
+        imports.add("com.thinkaurelius.titan.core.util.*");
         imports.add("com.thinkaurelius.titan.example.*");
         imports.add("org.apache.commons.configuration.*");
         imports.add("static " + Geo.class.getName() + ".*");

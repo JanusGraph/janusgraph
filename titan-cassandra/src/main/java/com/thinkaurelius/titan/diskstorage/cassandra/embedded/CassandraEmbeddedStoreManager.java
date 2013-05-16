@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
@@ -10,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.CFMetaData.Caching;
@@ -135,7 +138,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
     }
 
-    ByteBuffer[] getLocalKeyPartition() throws StorageException {
+    StaticBuffer[] getLocalKeyPartition() throws StorageException {
         // getLocalPrimaryRange() returns a raw type
         @SuppressWarnings("rawtypes")
         Range<Token> range = StorageService.instance.getLocalPrimaryRange();
@@ -169,12 +172,12 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                 }
             }
 
-            ByteBuffer lb = ByteBuffer.wrap(plusOne[0]);
-            ByteBuffer rb = ByteBuffer.wrap(plusOne[1]);
-            Preconditions.checkArgument(lb.remaining() == tokenLength, lb.remaining());
-            Preconditions.checkArgument(rb.remaining() == tokenLength, rb.remaining());
+            StaticBuffer lb = new StaticArrayBuffer(plusOne[0]);
+            StaticBuffer rb = new StaticArrayBuffer(plusOne[1]);
+            Preconditions.checkArgument(lb.length() == tokenLength, lb.length());
+            Preconditions.checkArgument(rb.length() == tokenLength, rb.length());
 
-            return new ByteBuffer[]{lb, rb};
+            return new StaticBuffer[]{lb, rb};
         } else {
             throw new UnsupportedOperationException();
         }
@@ -187,38 +190,39 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
       * provided most of the following method after transaction handling.
       */
     @Override
-    public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
         long deletionTimestamp = TimeUtility.getApproxNSSinceEpoch(false);
         long additionTimestamp = TimeUtility.getApproxNSSinceEpoch(true);
 
         int size = 0;
-        for (Map<ByteBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
-        Map<ByteBuffer, RowMutation> rowMutations = new HashMap<ByteBuffer, RowMutation>(size);
+        for (Map<StaticBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
+        Map<StaticBuffer, RowMutation> rowMutations = new HashMap<StaticBuffer, RowMutation>(size);
 
-        for (Map.Entry<String, Map<ByteBuffer, KCVMutation>> mutEntry : mutations.entrySet()) {
+        for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> mutEntry : mutations.entrySet()) {
             String columnFamily = mutEntry.getKey();
-            for (Map.Entry<ByteBuffer, KCVMutation> titanMutation : mutEntry.getValue().entrySet()) {
-                ByteBuffer key = titanMutation.getKey().duplicate();
+            for (Map.Entry<StaticBuffer, KCVMutation> titanMutation : mutEntry.getValue().entrySet()) {
+                StaticBuffer key = titanMutation.getKey();
                 KCVMutation mut = titanMutation.getValue();
 
                 RowMutation rm = rowMutations.get(key);
                 if (rm == null) {
-                    rm = new RowMutation(keySpaceName, key);
+                    rm = new RowMutation(keySpaceName, key.asByteBuffer());
                     rowMutations.put(key, rm);
                 }
 
                 if (mut.hasAdditions()) {
                     for (Entry e : mut.getAdditions()) {
-                        QueryPath path = new QueryPath(columnFamily, null, e.getColumn().duplicate());
-                        rm.add(path, e.getValue().duplicate(), additionTimestamp);
+                        // TODO are these asByteBuffer() calls too expensive?
+                        QueryPath path = new QueryPath(columnFamily, null, e.getColumn().asByteBuffer());
+                        rm.add(path, e.getValue().asByteBuffer(), additionTimestamp);
                     }
                 }
 
                 if (mut.hasDeletions()) {
-                    for (ByteBuffer col : mut.getDeletions()) {
-                        QueryPath path = new QueryPath(columnFamily, null, col.duplicate());
+                    for (StaticBuffer col : mut.getDeletions()) {
+                        QueryPath path = new QueryPath(columnFamily, null, col.asByteBuffer());
                         rm.delete(path, deletionTimestamp);
                     }
                 }
@@ -318,8 +322,13 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
         
         // Enable snappy compression
-        CompressionParameters cp = new CompressionParameters(new SnappyCompressor());
-        cfm.compressionParameters(cp);
+        try {
+            CompressionParameters cp = new CompressionParameters(new SnappyCompressor(), 64 * 1024, ImmutableMap.<String, String>of());
+            cfm.compressionParameters(cp);
+            log.warn("Set CompressionParameters {}", cp);
+        } catch (ConfigurationException e) {
+            throw new PermanentStorageException("Failed to create compression parameters for " + keyspaceName + ":" + columnfamilyName, e);
+        }
 
         try {
             cfm.addDefaultIndexNames();
@@ -363,5 +372,16 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         property.add(new QueryPath(new ColumnPath(SYSTEM_PROPERTIES_CF).setColumn(key)), val, System.currentTimeMillis());
 
         mutate(Arrays.asList(property), ConsistencyLevel.QUORUM);
+    }
+    
+    @Override
+    public Map<String, String> getCompressionOptions(String cf) throws StorageException {
+        
+        CFMetaData cfm = Schema.instance.getCFMetaData(keySpaceName, cf);
+        
+        if (cfm == null)
+            return null;
+        
+        return ImmutableMap.copyOf(cfm.compressionParameters().asThriftOptions());
     }
 }

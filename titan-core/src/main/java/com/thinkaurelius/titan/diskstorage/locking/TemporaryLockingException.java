@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
  * in the Titan storage backend.
  * <p/>
  * <p/>
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class TemporaryLockingException extends TemporaryStorageException implements LockingException {

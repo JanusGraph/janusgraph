@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.util.datastructures;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * Interface to decorate elements that can be removed
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public interface Removable {
 
     public void remove();

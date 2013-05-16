@@ -7,7 +7,7 @@ import com.tinkerpop.blueprints.QueryTestSuite;
 import com.tinkerpop.blueprints.impls.GraphTest;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class QueryTitanTestSuite extends QueryTestSuite {

@@ -58,9 +58,9 @@
     </scm>
     <properties>
         <titan.version>0.4.0-SNAPSHOT</titan.version>
-        <titan.compatible.versions>0.3.0</titan.compatible.versions>
+        <titan.compatible.versions>0.3.0,0.3.1</titan.compatible.versions>
         <tinkerpop.version>2.3.0</tinkerpop.version>
-        <junit.version>4.5</junit.version>
+        <junit.version>4.8.1</junit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <cassandra.dir>${project.build.directory}/cassandra-tmp/workdir</cassandra.dir>
@@ -74,9 +74,9 @@
         <module>titan-test</module>
         <module>titan-berkeleyje</module>
         <module>titan-cassandra</module>
-        <module>titan-hbase</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
+        <module>titan-hbase</module>
         <module>titan-all</module>
     </modules>
     <build>

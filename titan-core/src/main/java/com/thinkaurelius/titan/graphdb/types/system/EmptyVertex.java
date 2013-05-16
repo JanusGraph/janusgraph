@@ -54,24 +54,15 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public Object getProperty(TitanKey key) {
+    public <O> O getProperty(TitanKey key) {
         return null;
     }
 
     @Override
-    public <O> O getProperty(TitanKey key, Class<O> clazz) {
+    public <O> O getProperty(String key) {
         return null;
     }
 
-    @Override
-    public Object getProperty(String key) {
-        return null;
-    }
-
-    @Override
-    public <O> O getProperty(String key, Class<O> clazz) {
-        return null;
-    }
 
     @Override
     public Iterable<TitanProperty> getProperties() {
@@ -179,12 +170,12 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public Object removeProperty(String key) {
+    public <O> O removeProperty(String key) {
         throw new UnsupportedOperationException(errorName + " do not support incident properties");
     }
 
     @Override
-    public Object removeProperty(TitanType type) {
+    public <O> O removeProperty(TitanType type) {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }
 

@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.query.keycondition;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public interface KeyCondition<K> {

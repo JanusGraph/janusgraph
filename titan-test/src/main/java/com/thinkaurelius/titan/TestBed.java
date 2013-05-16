@@ -8,22 +8,65 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 
+import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
 public class TestBed {
+
+
+    static class A {
+
+        private int c = 0;
+        private final Object o;
+
+        A(final Object o) {
+            this.o=o;
+        }
+
+        public void inc() {
+            c++;
+        }
+
+    }
 
     /**
      * @param args
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
+        int ii=10;
+        System.out.print("i " + (ii++) );
+        System.exit(0);
+
+        Object o = Long.valueOf(5);
+        ByteBuffer bb = ByteBuffer.allocate(16);
+        bb.putLong(1).putLong(2).flip();
+        long time = System.currentTimeMillis();
+        for (long i=0;i<1000000000l;i++) {
+//            A a = new A(o);
+//            a.inc();
+            ByteBuffer c = bb.duplicate();
+            c.get();
+        }
+
+        System.out.println("Time: " + (System.currentTimeMillis()-time));
+
+        System.exit(0);
+
+
+        double[] d = {0.5, 0.2};
+        Double[] dd = {new Double(0.6),new Double(0.3)};
+
+        System.out.println(Array.getLength(d));
+        System.out.println(((Number)Array.get(d,1)).doubleValue());
+        System.out.println(((Number)Array.get(dd,1)).doubleValue());
+
         for (String s : new String[]{"36028797018963978", "5629499534213184", "21392098230009920"}) {
             BigInteger i2 = new BigInteger(s, 10);
             System.out.println(i2.toString(2));
         }
 
-        System.exit(0);
 
         int[] localPartition = {0, 200};
         ByteBuffer lower = ByteBuffer.allocate(4);
@@ -51,7 +94,7 @@ public class TestBed {
         for (int i = 1; i <= size; i++) {
             map.put(size, "O" + i);
         }
-        long time = System.currentTimeMillis();
+        time = System.currentTimeMillis();
         map.forEachPair(new LongObjectProcedure() {
             @Override
             public boolean apply(long l, Object o) {

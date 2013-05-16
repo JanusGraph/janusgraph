@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Standalone Titan database with fronting Rexster server.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class RexsterTitanServer {

@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.vertices;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.vertices.querycache.ConcurrentQueryCache;
 import com.thinkaurelius.titan.graphdb.vertices.querycache.QueryCache;
@@ -14,7 +15,7 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class CacheVertex extends StandardVertex {
@@ -45,7 +46,7 @@ public class CacheVertex extends StandardVertex {
                 }
             }
             if (queryCache.isCovered(query)) {
-                SortedSet<Entry> results = relationCache.subSet(new Entry(query.getSliceStart(),null),new Entry(query.getSliceEnd(),null));
+                SortedSet<Entry> results = relationCache.subSet(StaticBufferEntry.of(query.getSliceStart(), null),StaticBufferEntry.of(query.getSliceEnd(),null));
                 return results;
             } else {
                 List<Entry> results = lookup.get(query);

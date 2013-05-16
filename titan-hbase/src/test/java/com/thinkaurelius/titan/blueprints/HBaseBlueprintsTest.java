@@ -9,7 +9,7 @@ import com.tinkerpop.blueprints.Graph;
 
 import java.io.IOException;
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class HBaseBlueprintsTest extends TitanBlueprintsTest {

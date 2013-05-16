@@ -1,17 +1,19 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.thinkaurelius.titan.diskstorage.Mutation;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * {@link Mutation} type for {@link KeyColumnValueStore}.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class KCVMutation extends Mutation<Entry,ByteBuffer> {
+public class KCVMutation extends Mutation<Entry,StaticBuffer> {
 
-    public KCVMutation(List<Entry> additions, List<ByteBuffer> deletions) {
+    public KCVMutation(List<Entry> additions, List<StaticBuffer> deletions) {
         super(additions, deletions);
     }
 }

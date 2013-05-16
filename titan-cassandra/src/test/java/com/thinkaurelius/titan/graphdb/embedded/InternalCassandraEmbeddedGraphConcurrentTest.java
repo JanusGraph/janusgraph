@@ -4,7 +4,7 @@ import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.graphdb.TitanGraphConcurrentTest;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class InternalCassandraEmbeddedGraphConcurrentTest extends TitanGraphConcurrentTest {

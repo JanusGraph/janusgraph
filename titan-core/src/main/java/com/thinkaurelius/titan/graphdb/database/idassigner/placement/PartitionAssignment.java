@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public interface PartitionAssignment {

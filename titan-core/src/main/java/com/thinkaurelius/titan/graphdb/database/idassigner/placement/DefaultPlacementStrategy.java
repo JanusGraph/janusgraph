@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import java.util.Map;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class DefaultPlacementStrategy implements IDPlacementStrategy {

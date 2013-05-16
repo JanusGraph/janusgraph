@@ -5,11 +5,20 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * A class that holds configuration specific to interprocess locking.
+ * 
+ * @see ConsistentKeyLockTransaction
+ * @see ConsistentKeyLockStore
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class ConsistentKeyLockConfiguration {
 
+    /**
+     * "Requestor ID": each process within a Titan installation must have a
+     * unique rid. The value itself does not matter so long as each process has
+     * a unique one.
+     */
     final byte[] rid;
     final int lockRetryCount;
     final long lockExpireMS;

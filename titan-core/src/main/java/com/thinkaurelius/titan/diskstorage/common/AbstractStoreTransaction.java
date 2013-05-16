@@ -6,7 +6,9 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * Abstract implementation of {@link StoreTransaction} to be used as the basis for more specific implementations.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class AbstractStoreTransaction implements StoreTransaction {

@@ -16,7 +16,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class TitanIndexTest extends TitanGraphTestCommon  {
@@ -36,6 +36,24 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon  {
 
     @Test
     public void testOpenClose() {
+    }
+
+    @Test
+    public void testSimpleUpdate() {
+        TitanKey text = tx.makeType().name("name").unique(Direction.OUT)
+                .indexed(INDEX,Vertex.class).indexed(INDEX, Edge.class).dataType(String.class).makePropertyKey();
+        Vertex v = tx.addVertex();
+        v.setProperty("name","Marko Rodriguez");
+        clopen();
+        Iterable<Vertex> vs = tx.query().has("name",Text.CONTAINS,"marko").vertices();
+        assertEquals(1,Iterables.size(vs));
+        v = vs.iterator().next();
+        v.setProperty("name","Marko");
+        clopen();
+        vs = tx.query().has("name",Text.CONTAINS,"marko").vertices();
+        assertEquals(1,Iterables.size(vs));
+        v = vs.iterator().next();
+
     }
 
     @Test

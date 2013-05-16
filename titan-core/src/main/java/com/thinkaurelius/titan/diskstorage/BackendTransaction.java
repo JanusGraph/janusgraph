@@ -4,12 +4,16 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -19,7 +23,7 @@ import java.util.concurrent.Callable;
  * methods for convenience.
  * Also increases robustness of read call by attempting read calls multiple times on failure.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class BackendTransaction implements TransactionHandle {
@@ -91,7 +95,7 @@ public class BackendTransaction implements TransactionHandle {
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-    public void mutateEdges(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException {
+    public void mutateEdges(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions) throws StorageException {
         edgeStore.mutate(key, additions, deletions, storeTx);
     }
 
@@ -103,11 +107,11 @@ public class BackendTransaction implements TransactionHandle {
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-    public void mutateVertexIndex(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException {
+    public void mutateVertexIndex(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions) throws StorageException {
         vertexIndexStore.mutate(key, additions, deletions, storeTx);
     }
 
-    public void mutateEdgeIndex(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions) throws StorageException {
+    public void mutateEdgeIndex(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions) throws StorageException {
         edgeIndexStore.mutate(key, additions, deletions, storeTx);
     }
 
@@ -126,7 +130,7 @@ public class BackendTransaction implements TransactionHandle {
      * @param column        Column the column on which to lock
      * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
      */
-    public void acquireEdgeLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) throws StorageException {
+    public void acquireEdgeLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue) throws StorageException {
         edgeStore.acquireLock(key, column, expectedValue, storeTx);
     }
 
@@ -145,7 +149,7 @@ public class BackendTransaction implements TransactionHandle {
      * @param column        Column the column on which to lock
      * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
      */
-    public void acquireVertexIndexLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue) throws StorageException {
+    public void acquireVertexIndexLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue) throws StorageException {
         vertexIndexStore.acquireLock(key, column, expectedValue, storeTx);
     }
 
@@ -159,24 +163,30 @@ public class BackendTransaction implements TransactionHandle {
             public List<Entry> call() throws Exception {
                 return edgeStore.getSlice(query,storeTx);
             }
+            @Override
+            public String toString() { return "EdgeStoreQuery"; }
         });
     }
 
-    public boolean edgeStoreContainsKey(final ByteBuffer key)  {
+    public boolean edgeStoreContainsKey(final StaticBuffer key)  {
         return executeRead(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
                 return edgeStore.containsKey(key,storeTx);
             }
+            @Override
+            public String toString() { return "EdgeStoreContainsKey"; }
         });
     }
 
-    public RecordIterator<ByteBuffer> edgeStoreKeys() {
-        return executeRead(new Callable<RecordIterator<ByteBuffer>>() {
+    public RecordIterator<StaticBuffer> edgeStoreKeys() {
+        return executeRead(new Callable<RecordIterator<StaticBuffer>>() {
             @Override
-            public RecordIterator<ByteBuffer> call() throws Exception {
+            public RecordIterator<StaticBuffer> call() throws Exception {
                 return edgeStore.getKeys(storeTx);
             }
+            @Override
+            public String toString() { return "EdgeStoreKeys"; }
         });
     }
 
@@ -186,6 +196,8 @@ public class BackendTransaction implements TransactionHandle {
             public List<Entry> call() throws Exception {
                 return vertexIndexStore.getSlice(query,storeTx);
             }
+            @Override
+            public String toString() { return "VertexIndexQuery"; }
         });
 
     }
@@ -196,6 +208,8 @@ public class BackendTransaction implements TransactionHandle {
             public List<Entry> call() throws Exception {
                 return edgeIndexStore.getSlice(query,storeTx);
             }
+            @Override
+            public String toString() { return "EdgeIndexQuery"; }
         });
     }
 
@@ -206,44 +220,16 @@ public class BackendTransaction implements TransactionHandle {
             public List<String> call() throws Exception {
                 return indexTx.query(query);
             }
+            @Override
+            public String toString() { return "IndexQuery"; }
         });
     }
 
 
     private final<V> V executeRead(Callable<V> exe) throws TitanException {
-        for (int readAttempt = 0; readAttempt < maxReadRetryAttempts; readAttempt++) {
-            try {
-                return exe.call();
-            } catch (StorageException e) {
-                if (e instanceof TemporaryStorageException) {
-                    if (readAttempt < maxReadRetryAttempts - 1) temporaryStorageException(e,retryStorageWaitTime);
-                    else throw readException(e, maxReadRetryAttempts);
-                } else throw readException(e,0);
-            } catch (Exception e) {
-                throw readException(e,0);
-            }
-        }
-        throw new AssertionError("Invalid state");
+        return BackendOperation.execute(exe,maxReadRetryAttempts,retryStorageWaitTime);
     }
 
-    private final static TitanException readException(Exception e, int attempts) {
-        if (attempts == 0)
-            return new TitanException("Could not read from storage", e);
-        else
-            return new TitanException("Could not read from storage after " + attempts + " attempts", e);
-    }
 
-    public final static void temporaryStorageException(Throwable e, int retryStorageWaitTime) {
-        Preconditions.checkArgument(e instanceof TemporaryStorageException);
-        log.info("Temporary exception in storage backend. Attempting retry in {} ms. {}", retryStorageWaitTime, e);
-        //Wait before retry
-        if (retryStorageWaitTime > 0) {
-            try {
-                Thread.sleep(retryStorageWaitTime);
-            } catch (InterruptedException r) {
-                throw new TitanException("Interrupted while waiting to retry failed storage operation", e);
-            }
-        }
-    }
 
 }

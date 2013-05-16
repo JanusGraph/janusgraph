@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.1</a></h3>
   <h1>Upgrade Instructions</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -69,12 +69,29 @@ Mousetrap.bind(['e'], function( e ) {
     <div id="template">
       <p>Please follow these instructions when upgrading from an older Titan release.</p>
 <h2>Titan 0.y.z<a class="anchor" id="Titan-0.y.z" href="#Titan-0.y.z"></a></h2>
+<h3>Version 0.3.1 (May 14, 2013)<a class="anchor" id="Version-0.3.1-(May-14,-2013)" href="#Version-0.3.1-(May-14,-2013)"></a></h3>
+<p><strong>From 0.3.0</strong></p>
+<p>Titan 0.3.1 is compatible with 0.3.0 and no special upgrade is necessary unless Elasticsearch is used as a storage backend. Titan 0.3.1 uses Elasticsearch 0.90.0 whereas Titan 0.3.0 uses Elasticsearch 0.20.6.</p>
+<p>If you are using Elasticsearch, please follow the <a href="http://www.elasticsearch.org/download/">upgrade instructions for Elasticsearch</a> which are summarized as follows:</p>
+<ul><li>Elasticsearch 0.90.0 is the first stable release based on Lucene 4. We recommend testing the upgrade before doing it in production.</li>
+	<li>Upgrading from 0.20.x requires a full cluster restart.</li>
+	<li>In order to be able to downgrade, stop indexing new data, issue a flush request, do the upgrade and only enable indexing of new data once you are certain that you no longer need to downgrade.  Once new data has been indexed, downgrading is no longer possible. To be extra safe, back up your data before upgrading.</li>
+</ul><p>Note, that these instructions apply to the Elasticsearch cluster only and not the Titan cluster or the Titan storage cluster.</p>
+<p><strong>From prior versions</strong></p>
+<p>Titan 0.3.1 is incompatible with earlier versions of Titan. Read below for more information.</p>
 <h3>Version 0.3.0 (March 29, 2013)<a class="anchor" id="Version-0.3.0-(March-29,-2013)" href="#Version-0.3.0-(March-29,-2013)"></a></h3>
 <p><strong>From prior versions</strong></p>
 <p>Titan 0.3.0 is incompatible with prior version of Titan. The upgrade process is in development and not yet available.</p>
-<h3>Version 0.2.1 (March 22, 2013)<a class="anchor" id="Version-0.2.1-(March-22,-2013)" href="#Version-0.2.1-(March-22,-2013)"></a></h3>
+<p>When upgrading to Titan 0.3.0, please note the following interface changes:</p>
+<ul><li>In <code>TypeMaker</code>, <code>functional()</code> has been replaced by <code>unique(Direction.OUT)</code>. Likewise, <code>functional(boolean)</code> has been replaced by <code>unique(Direction.OUT, UniquenessConsistency)</code>, where the argument <code>true</code> corresponds to <code>UniquenessConsistency.LOCK</code> and <code>false</code> corresponds to <code>UniquenessConsistency.NO_LOCK</code>.</li>
+	<li>In <code>TypeMaker</code>, <code>unique()</code> for property keys has been replaced by <code>unique(Direction.IN)</code>.</li>
+	<li>In <code>TypeMaker</code>, <code>indexed()</code> takes additional arguments because Titan now supports vertex <em>and</em> edge indexing. Use <code>indexed(Class&lt;? extends Element&gt;)</code> to create a standard index for the key. Use <code>indexed(String,Class&lt;? extends Element&gt;)</code> to create an external index for the key.</li>
+	<li>In <code>TypeMaker</code>, <code>simple()</code> is no longer available. Simply remove it.</li>
+	<li>In <code>TitanFactory</code>, <code>openInMemoryGraph()</code> is no longer available. Instead, use <code>open(Configuration)</code> where the configuration sets <code>storage.backend=inmemory</code>.</li>
+	<li>In <code>AttributeSerializer</code>, <code>writeObjectData()</code> now uses <code>DataOutput</code> to write elements instead of <code>ByteBuffer</code>. A simple replace in any particular implementation of <code>AttributeSerializer</code> should do the trick.</li>
+</ul><h3>Version 0.2.1 (March 22, 2013)<a class="anchor" id="Version-0.2.1-(March-22,-2013)" href="#Version-0.2.1-(March-22,-2013)"></a></h3>
 <p><strong>From Version 0.2.0</strong></p>
-<p>No special upgrade necessary.</p>
+<p>No special upgrade necessary. Since 0.2.1 has upgraded to Blueprints 2.3.0, there are some incompatible interface changes. In particular, <code>Graph.startTransaction()</code> has been renamed to <code>Graph.newTransaction()</code>. Please refer to the <a href="https://github.com/tinkerpop/blueprints/wiki">Blueprints documentation</a> for more information.</p>
 <p><strong>From prior versions</strong></p>
 <p>Upgrade to 0.2.0 first as described below.</p>
 <h3>Version 0.2.0 (December 27, 2012)<a class="anchor" id="Version-0.2.0-(December-27,-2012)" href="#Version-0.2.0-(December-27,-2012)"></a></h3>
@@ -94,7 +111,7 @@ Mousetrap.bind(['e'], function( e ) {
 
 </div>
 <div id="footer">
-  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 04:47:52</p>
+  <p id="last-edit">Last edited by <b>Matthias Broecheler</b>, 2013-05-14 02:43:21</p>
   <p>
     
   </p>

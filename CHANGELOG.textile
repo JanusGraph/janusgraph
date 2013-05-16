@@ -5,6 +5,54 @@ Titan: Distributed Graph Database
 
 h2. Titan 0.y.z
 
+h3. Version 0.3.1 (May 14, 2013)
+
+```xml
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.3.1</version>
+</dependency>
+```
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.1
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.0
+* Lucene 4.1.0
+* Java 1.6+
+
+*Features:*
+
+* Improved in-transaction index handling for equality matches
+* Support for Lucene 4 throughout
+* Storage backend compression enabled by default where applicable
+* Removed RexsterTitanClient since all the functionality has been rolled into RexsterClient
+* Automatic type-casting of most primitive types and Geoshape where possible
+* Refactored to using immutable data structures for storage backend communication
+* Re-implemented InMemory storage backend for better performance
+
+*Bugfixes:*
+
+* Launching multiple Titan servers in one cluster with RF>1
+* Updated and improved the Astyanax adapter for Cassandra
+* Improved robustness of ID allocation
+* Vertex iteration in embedded Cassandra with BoP
+* Updated Titan server scripts and configuration files
+* Fixed issues around automatic transaction migration of vertices and edges
+* Fixed BerkeleyJE concurrency clean-up issue
+* Cleaned up and trimmed storage backend interfaces
+* Fixed ghost vertex issue when iterating over vertices
+* Fixed datatype conversion issues
+
+Check the issue tracker for a full list of fixed issues.
+
+
+
+==<hr/>==
+
+
 h3. Version 0.3.0 (March 29, 2013)
 
 ```xml
@@ -40,6 +88,8 @@ h3. Version 0.3.0 (March 29, 2013)
 * Out-unique edges
 * Modified state in global graph operations
 * see issue tracker for a full list
+
+==<hr/>==
 
 h3. Version 0.2.1 (March 22, 2013)
 

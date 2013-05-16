@@ -1,46 +1,52 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVSUtil;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
+
 public class KeyColumnValueStoreUtil {
 
     public static void delete(KeyColumnValueStore store, StoreTransaction txn, long key, String col) throws StorageException {
-        ByteBuffer k = longToByteBuffer(key);
-        ByteBuffer c = stringToByteBuffer(col);
-        store.mutate(k, null, Arrays.asList(c), txn);
+        StaticBuffer k = longToByteBuffer(key);
+        StaticBuffer c = stringToByteBuffer(col);
+        store.mutate(k, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(c), txn);
     }
 
     public static String get(KeyColumnValueStore store, StoreTransaction txn, long key, String col) throws StorageException {
-        ByteBuffer k = longToByteBuffer(key);
-        ByteBuffer c = stringToByteBuffer(col);
-        ByteBuffer valBytes = store.get(k, c, txn);
+        StaticBuffer k = longToByteBuffer(key);
+        StaticBuffer c = stringToByteBuffer(col);
+        StaticBuffer valBytes = KCVSUtil.get(store,k, c, txn);
         if (null == valBytes)
             return null;
         return byteBufferToString(valBytes);
     }
 
     public static void insert(KeyColumnValueStore store, StoreTransaction txn, long key, String col, String val) throws StorageException {
-        ByteBuffer k = longToByteBuffer(key);
-        ByteBuffer c = stringToByteBuffer(col);
-        ByteBuffer v = stringToByteBuffer(val);
-        store.mutate(k, Arrays.asList(new Entry(c, v)), null, txn);
+        StaticBuffer k = longToByteBuffer(key);
+        StaticBuffer c = stringToByteBuffer(col);
+        StaticBuffer v = stringToByteBuffer(val);
+        store.mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c, v)), KeyColumnValueStore.NO_DELETIONS, txn);
     }
 
-    public static String byteBufferToString(ByteBuffer b) {
+    // TODO rename as "bufferToString" after syntax errors are resolved
+    public static String byteBufferToString(StaticBuffer b) {
         try {
-            return new String(b.array(), b.position() + b.arrayOffset(), b.remaining(), "UTF-8");
+            ByteBuffer bb = b.asByteBuffer();
+            return new String(bb.array(), bb.position() + bb.arrayOffset(), bb.remaining(), "UTF-8");
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static ByteBuffer stringToByteBuffer(String s) {
+    // TODO rename as "stringToBuffer" after syntax errors are resolved
+    public static StaticBuffer stringToByteBuffer(String s) {
         byte[] b;
         try {
             b = s.getBytes("UTF-8");
@@ -50,12 +56,17 @@ public class KeyColumnValueStoreUtil {
         ByteBuffer bb = ByteBuffer.allocate(b.length);
         bb.put(b);
         bb.flip();
-        return bb;
+        return new StaticByteBuffer(bb);
     }
 
-    public static ByteBuffer longToByteBuffer(long l) {
+    // TODO rename as "longToBuffer" after syntax errors are resolved
+    public static StaticBuffer longToByteBuffer(long l) {
         ByteBuffer b = ByteBuffer.allocate(8).putLong(l);
         b.flip();
-        return b;
+        return new StaticByteBuffer(b);
+    }
+    
+    public static long bufferToLong(StaticBuffer b) {
+        return b.getLong(0);
     }
 }

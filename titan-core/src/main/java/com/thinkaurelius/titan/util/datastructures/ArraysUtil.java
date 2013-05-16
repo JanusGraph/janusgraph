@@ -4,7 +4,11 @@ import cern.colt.Arrays;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Longs;
 
-
+/**
+ * Utility class for sorting and retrieving from primitive arrays
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class ArraysUtil {
 
     public static final boolean isSortedInc(long[] arr) {

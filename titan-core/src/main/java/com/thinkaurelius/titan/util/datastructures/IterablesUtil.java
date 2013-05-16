@@ -6,6 +6,11 @@ import com.google.common.collect.Iterators;
 import java.util.Collection;
 import java.util.Iterator;
 
+/**
+ * Utility class for interacting with {@link Iterable}.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class IterablesUtil {
 
     public static final <O> Iterable<O> emptyIterable() {

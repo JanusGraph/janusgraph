@@ -4,6 +4,9 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import org.slf4j.Logger;
 
+/**
+ * Utility methods for measuring fine time intervals
+ */
 public class TimeUtility {
 
     // Initialize the t0 variables

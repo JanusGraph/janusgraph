@@ -2,6 +2,10 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import java.lang.reflect.Constructor;
 
+/**
+ * Utility methods for hexadecimal representation of bytes
+ *
+ */
 public class Hex {
     private static final Constructor<String> stringConstructor = getProtectedConstructor(String.class, int.class, int.class, char[].class);
     private final static byte[] charToByte = new byte[256];

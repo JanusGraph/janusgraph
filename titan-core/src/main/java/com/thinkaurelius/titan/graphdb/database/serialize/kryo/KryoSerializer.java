@@ -9,12 +9,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization;
 
 import java.lang.reflect.Constructor;
-import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +27,14 @@ public class KryoSerializer implements Serializer {
     private final boolean registerRequired;
     private final ThreadLocal<Kryo> kryos;
     private final Map<Integer,TypeRegistration> registrations;
+
+    private static final StaticBuffer.Factory<Input> INPUT_FACTORY = new StaticBuffer.Factory<Input>() {
+        @Override
+        public Input get(byte[] array, int offset, int limit) {
+            //Needs to copy array - otherwise we see BufferUnderflow exceptions from concurrent access
+            return new Input(Arrays.copyOfRange(array,offset,limit));
+        }
+    };
 
     private boolean initialized=false;
 
@@ -76,42 +86,29 @@ public class KryoSerializer implements Serializer {
     }
 
     @Override
-    public Object readClassAndObject(ByteBuffer buffer) {
-        Input i = getInput(buffer);
+    public Object readClassAndObject(ReadBuffer buffer) {
+        Input i = buffer.asRelative(INPUT_FACTORY);
+        int startPos = i.position();
         Object value = getKryo().readClassAndObject(i);
-        updateBBPosition(i,buffer);
+        buffer.movePosition(i.position()-startPos);
         return value;
     }
 
     @Override
-    public <T> T readObject(ByteBuffer buffer, Class<T> type) {
-        Input i = getInput(buffer);
+    public <T> T readObject(ReadBuffer buffer, Class<T> type) {
+        Input i = buffer.asRelative(INPUT_FACTORY);
+        int startPos = i.position();
         T value = getKryo().readObjectOrNull(i, type);
-        updateBBPosition(i,buffer);
+        buffer.movePosition(i.position()-startPos);
         return value;
     }
 
-    public <T> T readObjectNotNull(ByteBuffer buffer, Class<T> type) {
-        Input i = getInput(buffer);
+    public <T> T readObjectNotNull(ReadBuffer buffer, Class<T> type) {
+        Input i = buffer.asRelative(INPUT_FACTORY);
+        int startPos = i.position();
         T value = getKryo().readObject(i, type);
-        updateBBPosition(i,buffer);
+        buffer.movePosition(i.position()-startPos);
         return value;
-    }
-
-    static final Input getInput(ByteBuffer b) {
-        return new Input(b.array(),b.position()+b.arrayOffset(),b.limit()+b.arrayOffset());
-    }
-
-    static final void updateBBPosition(Input in, ByteBuffer b) {
-        b.position(in.position()-b.arrayOffset());
-    }
-
-    static final void updateInputPosition(Input in, ByteBuffer b) {
-        in.setPosition(b.position()+b.arrayOffset());
-    }
-
-    static final ByteBuffer getByteBuffer(Input in) {
-        return ByteBuffer.wrap(in.getBuffer(), in.position(), in.limit()-in.position());
     }
 
     @Override

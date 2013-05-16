@@ -1,5 +1,10 @@
 package com.thinkaurelius.titan.util.datastructures;
 
+/**
+ * Utility class for setting and reading individual bits in a byte.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class BitMap {
 
     public final static byte createMapb(int pos) {

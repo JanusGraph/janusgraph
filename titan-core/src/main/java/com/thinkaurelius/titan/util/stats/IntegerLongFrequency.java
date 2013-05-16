@@ -6,6 +6,11 @@ import cern.colt.map.OpenIntObjectHashMap;
 
 import java.io.Serializable;
 
+/**
+ * Count absolute integer frequencies
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class IntegerLongFrequency implements Serializable {
 
     private static final long serialVersionUID = -3465555195625674108L;

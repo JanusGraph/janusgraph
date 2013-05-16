@@ -13,6 +13,7 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.lang.StringUtils;
 
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 import static com.tinkerpop.blueprints.Direction.IN;
@@ -124,6 +125,9 @@ public class StandardTypeMaker implements TypeMaker {
         checkGeneralArguments();
         isUnidirectional=false;
         Preconditions.checkArgument(dataType!=null,"Need to specify a datatype");
+        Preconditions.checkArgument(!dataType.isPrimitive(),"Primitive types are not supported. Use the corresponding object type, e.g. Integer.class instead of int.class [%s]",dataType);
+        Preconditions.checkArgument(!dataType.isInterface(),"Datatype must be a class and not an interface: %s",dataType);
+        Preconditions.checkArgument(dataType.isArray() || !Modifier.isAbstract(dataType.getModifiers()),"Datatype cannot be an abstract class: %s",dataType);
         Preconditions.checkArgument(!isUnique[EdgeDirection.position(IN)] ||
                 indexes.contains(IndexType.of(Vertex.class)), "A unique key requires the existence of a standard vertex index");
         return tx.makePropertyKey(new StandardKeyDefinition(name, group, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,

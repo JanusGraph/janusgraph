@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.tinkerpop.rexster;
 import com.thinkaurelius.titan.CassandraStorageSetup;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class RexsterServerClientCassandraEmbeddedTest extends RexsterServerClientTest {

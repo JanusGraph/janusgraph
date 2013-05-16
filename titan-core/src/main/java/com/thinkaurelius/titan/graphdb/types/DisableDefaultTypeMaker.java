@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TypeMaker;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class DisableDefaultTypeMaker implements DefaultTypeMaker {

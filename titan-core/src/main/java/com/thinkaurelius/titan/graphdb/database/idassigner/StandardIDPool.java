@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class StandardIDPool implements IDPool {
@@ -21,11 +21,15 @@ public class StandardIDPool implements IDPool {
 
     private static final int RENEW_ID_COUNT = 100;
 
-    private static final int MAX_WAIT_TIME = 2000;
+    private static final long RENEW_WAIT_INTERVAL = 1000;
+
 
     private final IDAuthority idAuthority;
     private final long maxID; //inclusive
     private final int partitionID;
+
+    private final long renewTimeoutMS;
+    private final double renewBufferPercentage;
 
     private long nextID;
     private long currentMaxID;
@@ -37,11 +41,15 @@ public class StandardIDPool implements IDPool {
 
     private boolean initialized;
 
-    public StandardIDPool(IDAuthority idAuthority, long partitionID, long maximumID) {
+    public StandardIDPool(IDAuthority idAuthority, long partitionID, long maximumID, long renewTimeoutMS, double renewBufferPercentage) {
         Preconditions.checkArgument(maximumID > 0);
         this.idAuthority = idAuthority;
         this.partitionID = (int) partitionID;
         this.maxID = maximumID;
+        Preconditions.checkArgument(renewTimeoutMS>0,"Renew-timeout must be positive");
+        this.renewTimeoutMS = renewTimeoutMS;
+        Preconditions.checkArgument(renewBufferPercentage>0.0 && renewBufferPercentage<=1.0,"Renew-buffer percentage must be in (0.0,1.0]");
+        this.renewBufferPercentage = renewBufferPercentage;
 
         nextID = 0;
         currentMaxID = 0;
@@ -54,17 +62,25 @@ public class StandardIDPool implements IDPool {
         initialized = false;
     }
 
+    private void waitForIDRenewer() throws InterruptedException {
+        long timeStart = System.currentTimeMillis(); long timeDelta=0;
+        while (idBlockRenewer!= null && idBlockRenewer.isAlive() && ((timeDelta=System.currentTimeMillis()-timeStart)<renewTimeoutMS)) {
+            //Updating thread has not yet completed, so wait for it
+            if (timeDelta<RENEW_WAIT_INTERVAL) {
+                log.debug("Waiting for id renewal thread on partition {} [{} ms]",partitionID,timeDelta);
+            } else {
+                log.warn("Waiting for id renewal thread on partition {} [{} ms]",partitionID,timeDelta);
+            }
+            idBlockRenewer.join(RENEW_WAIT_INTERVAL);
+        }
+        if (idBlockRenewer!=null && idBlockRenewer.isAlive())
+            throw new TitanException("ID renewal thread on partition ["+partitionID+"] did not complete in time. ["+(System.currentTimeMillis()-timeStart)+" ms]");
+    }
+
     private synchronized void nextBlock() throws InterruptedException {
         assert nextID == currentMaxID;
 
-        long time = System.currentTimeMillis();
-        if (idBlockRenewer != null && idBlockRenewer.isAlive()) {
-            //Updating thread has not yet completed, so wait for it
-            log.debug("Waiting for id renewal thread");
-            idBlockRenewer.join(MAX_WAIT_TIME);
-            if (idBlockRenewer.isAlive())
-                throw new IllegalStateException("ID renewal thread did not complete in time.");
-        }
+        waitForIDRenewer();
         if (bufferMaxID == BUFFER_POOL_EXHAUSTION || bufferNextID == BUFFER_POOL_EXHAUSTION)
             throw new IDPoolExhaustedException("Exhausted ID Pool for partition: " + partitionID);
 
@@ -81,7 +97,7 @@ public class StandardIDPool implements IDPool {
         bufferNextID = BUFFER_EMPTY;
         bufferMaxID = BUFFER_EMPTY;
 
-        renewBufferID = currentMaxID - Math.max(RENEW_ID_COUNT, (currentMaxID - nextID) / 5);
+        renewBufferID = currentMaxID - Math.max(RENEW_ID_COUNT, Math.round((currentMaxID - nextID)*renewBufferPercentage));
         if (renewBufferID >= currentMaxID) renewBufferID = currentMaxID - 1;
         if (renewBufferID < nextID) renewBufferID = nextID;
         assert renewBufferID >= nextID && renewBufferID < currentMaxID;
@@ -108,7 +124,7 @@ public class StandardIDPool implements IDPool {
     public synchronized long nextID() {
         assert nextID <= currentMaxID;
         if (!initialized) {
-            renewBuffer();
+            startNextIDAcquisition();
             initialized = true;
         }
 
@@ -121,11 +137,7 @@ public class StandardIDPool implements IDPool {
         }
 
         if (nextID == renewBufferID) {
-            Preconditions.checkArgument(idBlockRenewer == null || !idBlockRenewer.isAlive(), idBlockRenewer);
-            //Renew buffer
-            log.debug("Starting id block renewal thread upon {}", nextID);
-            idBlockRenewer = new IDBlockThread();
-            idBlockRenewer.start();
+            startNextIDAcquisition();
         }
         long returnId = nextID;
         nextID++;
@@ -136,19 +148,20 @@ public class StandardIDPool implements IDPool {
 
     @Override
     public synchronized void close() {
-        if (idBlockRenewer != null && idBlockRenewer.isAlive()) {
-            log.debug("ID renewal thread still alive on close");
-
-            //Wait for renewer to finish
-            try {
-                idBlockRenewer.join(5000);
-            } catch (InterruptedException e) {
-                throw new TitanException("Interrupted while waiting for id renewer thread to finish", e);
-            }
-            if (idBlockRenewer.isAlive()) {
-                throw new TitanException("ID renewer thread did not finish");
-            }
+        //Wait for renewer to finish
+        try {
+            waitForIDRenewer();
+        } catch (InterruptedException e) {
+            throw new TitanException("Interrupted while waiting for id renewer thread to finish", e);
         }
+    }
+
+    private void startNextIDAcquisition() {
+        Preconditions.checkArgument(idBlockRenewer == null || !idBlockRenewer.isAlive(), idBlockRenewer);
+        //Renew buffer
+        log.debug("Starting id block renewal thread upon {}", nextID);
+        idBlockRenewer = new IDBlockThread();
+        idBlockRenewer.start();
     }
 
     private class IDBlockThread extends Thread {

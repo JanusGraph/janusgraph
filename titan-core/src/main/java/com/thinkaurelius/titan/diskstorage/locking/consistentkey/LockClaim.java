@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-
-import java.nio.ByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.WriteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 
 /**
  * An attempted lock.
@@ -12,19 +13,20 @@ import java.nio.ByteBuffer;
  * some underlying store. A reference to the store is also indirectly maintained
  * through a {@see LockConfig} instance passed to the constructor.
  *
+ * @see ConsistentKeyLockTransaction
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class LockClaim {
 
-    private ByteBuffer cachedLockKey, lockCol;
+    private StaticBuffer cachedLockKey, lockCol;
     private long timestamp;
 
     private final ConsistentKeyLockStore backer;
-    private final ByteBuffer expectedValue;
+    private final StaticBuffer expectedValue;
     private final KeyColumn kc;
 
-    public LockClaim(ConsistentKeyLockStore backer, ByteBuffer key,
-                     ByteBuffer column, ByteBuffer expectedValue) {
+    public LockClaim(ConsistentKeyLockStore backer, StaticBuffer key,
+                     StaticBuffer column, StaticBuffer expectedValue) {
 
         assert null != backer;
         assert null != key;
@@ -40,15 +42,15 @@ public class LockClaim {
         return backer;
     }
 
-    public ByteBuffer getKey() {
+    public StaticBuffer getKey() {
         return kc.getKey();
     }
 
-    public ByteBuffer getColumn() {
+    public StaticBuffer getColumn() {
         return kc.getColumn();
     }
 
-    public ByteBuffer getExpectedValue() {
+    public StaticBuffer getExpectedValue() {
         return expectedValue;
     }
 
@@ -64,25 +66,27 @@ public class LockClaim {
         this.timestamp = timestamp;
     }
 
-    public ByteBuffer getLockKey() {
-        if (null != cachedLockKey) {
-            return cachedLockKey;
-        }
+    public StaticBuffer getLockKey() {
+        if (null != cachedLockKey) return cachedLockKey;
 
-        ByteBuffer key = kc.getKey();
-        ByteBuffer column = kc.getColumn();
+        StaticBuffer key = kc.getKey();
+        StaticBuffer column = kc.getColumn();
 
-        cachedLockKey = ByteBuffer.allocate(key.remaining() + column.remaining() + 4);
-        cachedLockKey.putInt(key.remaining()).put(key.duplicate()).put(column.duplicate()).rewind();
-
+        WriteBuffer b = new WriteByteBuffer(key.length() + column.length() + 4);
+        b.putInt(key.length());
+        WriteBufferUtil.put(b,key);
+        WriteBufferUtil.put(b,column);
+        cachedLockKey = b.getStaticBuffer();
         return cachedLockKey;
     }
 
-    public ByteBuffer getLockCol(long ts, byte[] rid) {
+    public StaticBuffer getLockCol(long ts, byte[] rid) {
+        if (null != lockCol) return lockCol;
 
-        lockCol = ByteBuffer.allocate(rid.length + 8);
-        lockCol.putLong(ts).put(rid).rewind();
-
+        WriteBuffer b = new WriteByteBuffer(rid.length + 8);
+        b.putLong(ts);
+        WriteBufferUtil.put(b,rid);
+        lockCol = b.getStaticBuffer();
         return lockCol;
     }
 
@@ -116,8 +120,8 @@ public class LockClaim {
     @Override
     public String toString() {
         return "LockClaim [backer=" + backer
-                + ", key=0x" + ByteBufferUtil.bytesToHex(kc.getKey())
-                + ", col=0x" + ByteBufferUtil.bytesToHex(kc.getColumn())
-                + ", expectedValue=" + (null == expectedValue ? "null" : "0x" + ByteBufferUtil.bytesToHex(expectedValue)) + "]";
+                + ", key=0x" + kc.getKey()
+                + ", col=0x" + kc.getColumn()
+                + ", expectedValue=" + (null == expectedValue ? "null" : "0x" + expectedValue) + "]";
     }
 }

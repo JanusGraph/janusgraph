@@ -8,9 +8,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * Immutable map from long key ids to objects.
+ * Implemented for memory and time efficiency.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class ImmutableLongObjectMap implements Iterable<ImmutableLongObjectMap.Entry> {
 
     private final long[] keys;
@@ -36,10 +38,10 @@ public class ImmutableLongObjectMap implements Iterable<ImmutableLongObjectMap.E
     }
 
 
-    public Object get(long key) {
+    public <O> O get(long key) {
         int pos = Arrays.binarySearch(keys,key);
         if (pos<0) return null;
-        else return values[pos];
+        else return (O)values[pos];
     }
 
     public long getKey(int index) {

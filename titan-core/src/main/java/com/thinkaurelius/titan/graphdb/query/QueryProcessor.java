@@ -20,7 +20,7 @@ import java.util.*;
  * it checks if the underlying iterators have been exhausted. If not, then it doubles the limit, discards the first count
  * elements and returns the remaining ones. Tricky bit: how to keep track of which iterators have been exhausted?
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class QueryProcessor<Q extends Query<Q>,R> implements Iterable<R> {

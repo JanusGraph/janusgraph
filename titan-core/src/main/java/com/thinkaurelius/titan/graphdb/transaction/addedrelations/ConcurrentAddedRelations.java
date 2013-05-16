@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import java.util.List;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class ConcurrentAddedRelations extends SimpleAddedRelations {

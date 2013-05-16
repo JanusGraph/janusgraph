@@ -14,7 +14,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  *
  * Note, polygons are not yet supported.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class Geoshape {

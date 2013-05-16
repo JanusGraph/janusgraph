@@ -7,7 +7,9 @@ import com.thinkaurelius.titan.core.TypeMaker;
 import com.tinkerpop.blueprints.Direction;
 
 /**
+ * {@link DefaultTypeMaker} implementation for Blueprints graphs
  *
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class BlueprintsDefaultTypeMaker implements DefaultTypeMaker {
 

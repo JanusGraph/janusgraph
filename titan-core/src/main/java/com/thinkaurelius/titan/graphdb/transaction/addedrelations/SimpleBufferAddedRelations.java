@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import java.util.*;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class SimpleBufferAddedRelations implements AddedRelationsContainer {

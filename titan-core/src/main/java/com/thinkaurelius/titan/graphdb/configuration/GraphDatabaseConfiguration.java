@@ -65,9 +65,6 @@ public class GraphDatabaseConfiguration {
     public static final String STORAGE_BACKEND_KEY = "backend";
     public static final String STORAGE_BACKEND_DEFAULT = "local";
 
-//    public static final String STORAGE_IS_ORDERED_KEY = "key-ordered";
-//    public static final boolean STORAGE_IS_ORDERED_DEFAULT = false;
-
     /**
      * Specifies whether write operations are supported
      */
@@ -189,12 +186,33 @@ public class GraphDatabaseConfiguration {
     public static final String CONNECTION_TIMEOUT_KEY = "connection-timeout";
 
     /**
+     * Time in milliseconds for backend manager to wait for the storage backends to
+     * become available when Titan is run in server mode. Should the backend manager
+     * experience exceptions when attempting to access the storage backend it will retry
+     * until this timeout is exceeded.
+     * <p/>
+     * A wait time of 0 disables waiting.
+     *
+     * Value = {@value}
+     */
+    public static final int SETUP_WAITTIME_DEFAULT = 60000;
+    public static final String SETUP_WAITTIME_KEY = "setup-wait";
+
+    /**
      * Default number of connections to pool when connecting to a remote database.
      * <p/>
      * Value = {@value}
      */
     public static final int CONNECTION_POOL_SIZE_DEFAULT = 32;
     public static final String CONNECTION_POOL_SIZE_KEY = "connection-pool-size";
+
+    /**
+     * Default number of results to pull over the wire when iterating over a distributed
+     * storage backend.
+     * This is batch size of results to pull when iterating a result set.
+     */
+    public static final int PAGE_SIZE_DEFAULT = 100;
+    public static final String PAGE_SIZE_KEY = "page-size";
 
     // ################ IDS ###########################
     // ################################################
@@ -218,11 +236,27 @@ public class GraphDatabaseConfiguration {
     public static final boolean IDS_PARTITION_DEFAULT = false;
 
     /**
-     * If flush idAuthorities is enabled, vertices and edges are assigned idAuthorities immediately upon creation. If not, then idAuthorities are only
+     * If flush ids is enabled, vertices and edges are assigned ids immediately upon creation. If not, then ids are only
      * assigned when the transaction is committed.
      */
     public static final String IDS_FLUSH_KEY = "flush";
     public static final boolean IDS_FLUSH_DEFAULT = true;
+
+    /**
+     * The number of milliseconds that the Titan id pool manager will wait before giving up on allocating a new block
+     * of ids. Note, that failure to allocate a new id block will cause the entire database to fail, hence this value
+     * should be set conservatively. Choose a high value if there is a lot of contention around id allocation.
+     */
+    public static final String IDS_RENEW_TIMEOUT_KEY = "renew-timeout";
+    public static final long IDS_RENEW_TIMEOUT_DEFAULT = 60 * 1000; // 1 minute
+
+    /**
+     * Configures when the id pool manager will attempt to allocate a new id block. When all but the configured percentage
+     * of the current block is consumed, a new block will be allocated. Larger values should be used if a lot of ids
+     * are allocated in a short amount of time. Value must be in (0,1].
+     */
+    public static final String IDS_RENEW_BUFFER_PERCENTAGE_KEY = "renew-percentage";
+    public static final double IDS_RENEW_BUFFER_PERCENTAGE_DEFAULT = 0.3; // 30 %
 
     // ############## Attributes ######################
     // ################################################

@@ -7,8 +7,6 @@ import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 
-import java.nio.ByteBuffer;
-
 public class KryoAttributeSerializerAdapter<T> extends Serializer<T> {
 
     private final AttributeSerializer<T> serializer;
@@ -20,10 +18,7 @@ public class KryoAttributeSerializerAdapter<T> extends Serializer<T> {
 
     @Override
     public T read(Kryo kryo, Input in, Class<T> type) {
-        ByteBuffer b = KryoSerializer.getByteBuffer(in);
-        T value = serializer.read(b);
-        KryoSerializer.updateInputPosition(in,b);
-        return value;
+        return serializer.read(new InputScanBuffer(in));
     }
 
     @Override

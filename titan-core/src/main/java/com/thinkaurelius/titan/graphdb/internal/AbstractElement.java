@@ -7,9 +7,11 @@ import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanVertex;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * AbstractElement is the base class for all elements in Titan.
+ * It is defined and uniquely identified by its id.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public abstract class AbstractElement implements InternalElement {
 
     private long id;

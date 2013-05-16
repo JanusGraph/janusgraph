@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Graph;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class EmbeddedCassandraBlueprintsTest extends TitanBlueprintsTest {

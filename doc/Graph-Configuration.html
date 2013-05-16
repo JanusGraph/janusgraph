@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.1</a></h3>
   <h1>Graph Configuration</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -140,6 +140,16 @@ Alternatively, we could have written the configuration into a properties file an
 		<td> <em>true</em> or <em>false</em> </td>
 		<td> <em>true</em> </td>
 		<td> yes </td>
+	</tr><tr><td> ids.renew-timeout </td>
+		<td> Number of milliseconds Titan’s id pool manager will wait while attempting to acquire a new id block before failing. </td>
+		<td> Time in ms </td>
+		<td> 60000 </td>
+		<td> yes </td>
+	</tr><tr><td> ids.renew-percentage </td>
+		<td> Threshold percentage of ids left in the pool before Titan’s id pool manager starts acquiring a new id block. A smaller percentage reduces potential id waste but can lead to delays when the current id block is exhausted. </td>
+		<td> Percentage </td>
+		<td> 0.3 </td>
+		<td> yes </td>
 	</tr></table><h2>Distributed Locking and ID Management Configuration<a class="anchor" id="Distributed-Locking-and-ID-Management-Configuration" href="#Distributed-Locking-and-ID-Management-Configuration"></a></h2>
 <p>When Titan is used in distributed mode over multiple machines, locking may be required to ensure consistency of certain operations. In particular, locking is required when allocating id blocks for id assignment to individual <code>TitanGraph</code> instances. Locking is also required for certain key type configuration as described in <a href="Type-configuration">Type Configuration</a>. These options control how locks are acquired.</p>
 <table><tr><th>Option </th>
@@ -183,8 +193,25 @@ Alternatively, we could have written the configuration into a properties file an
 		<td> 20 </td>
 		<td> Yes </td>
 	</tr></table><p>If the <em>modifiable</em> column has a <em>No*</em> this means that the option cannot be adjusted while Titan instances are running. To change the option, all Titan instances must be shutdown and the value must be changed across the entire cluster be starting instances again. Also note, that while all configuration options mentioned on this page must be identical for all Titan instances running in the same cluster, the <em>storage.machine-id</em> and <em>storage.machine-id-appendix</em> must be configured uniquely for each Titan instance individually unless the default values are chosen.</p>
-<h2>Index Configuration<a class="anchor" id="Index-Configuration" href="#Index-Configuration"></a></h2>
-<p>Titan can interface with multiple index system to provide support for geo, numeric range, and full-text search.</p>
+<h2>Distributed Storage Backend Configuration<a class="anchor" id="Distributed-Storage-Backend-Configuration" href="#Distributed-Storage-Backend-Configuration"></a></h2>
+<p>These configuration options apply when Titan is used with a distributed storage backend, i.e. the data is stored across multiple machines. They control how Titan communicates with the storage backend cluster.</p>
+<table><tr><th>Option </th>
+		<th>Description </th>
+		<th>Value </th>
+		<th>Default </th>
+		<th>Modifiable </th>
+	</tr><tr><td> storage.setup-wait </td>
+		<td> When Titan is started, it will attempt to communicate with the storage backend. If the backend cluster is in the process of starting up or otherwise not yet fully available, Titan will repeatedly re-attempt communication and wait for this long before failing. </td>
+		<td> Time in ms </td>
+		<td> 60000 </td>
+		<td> Yes </td>
+	</tr><tr><td> storage.page-size </td>
+		<td> Some Titan operations, like retrieving all vertices, require a lot of data to be retrieved from the storage cluster. Such operations are broken down into smaller batches and this option configures their size. The larger this value, the fewer requests need to be made but the longer each request takes. </td>
+		<td> Integer </td>
+		<td> 100 </td>
+		<td> Yes </td>
+	</tr></table><h2>Index Configuration<a class="anchor" id="Index-Configuration" href="#Index-Configuration"></a></h2>
+<p>Titan can interface with multiple external index systems to provide support for geo, numeric range, and full-text search. This configuration option tells Titan which indexing backend to use for a particular index identified by name.</p>
 <table><tr><th>Option </th>
 		<th>Description </th>
 		<th>Value </th>
@@ -195,7 +222,8 @@ Alternatively, we could have written the configuration into a properties file an
 		<td> <em>elasticsearch</em> or <em>lucene</em> </td>
 		<td> none </td>
 		<td> No </td>
-	</tr></table><h2>General Configuration<a class="anchor" id="General-Configuration" href="#General-Configuration"></a></h2>
+	</tr></table><p>For more information on external indexes and how to configure a particular index system, please refer to <a class="internal present" href="Indexing-Backend-Overview.html">Indexing Backend Overview</a>.</p>
+<h2>General Configuration<a class="anchor" id="General-Configuration" href="#General-Configuration"></a></h2>
 <p>This section contains general configuration options to customize Titan’s behavior.</p>
 <table><tr><th>Option </th>
 		<th>Description </th>
@@ -224,7 +252,7 @@ Alternatively, we could have written the configuration into a properties file an
 
 </div>
 <div id="footer">
-  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 05:46:20</p>
+  <p id="last-edit">Last edited by <b>Matthias Broecheler</b>, 2013-05-12 17:29:32</p>
   <p>
     
   </p>

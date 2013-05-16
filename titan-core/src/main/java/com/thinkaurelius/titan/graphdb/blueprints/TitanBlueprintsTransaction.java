@@ -19,9 +19,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * Blueprints specific implementation of {@link TitanTransaction}.
+ * Provides utility methods that wrap Titan calls with Blueprints terminology.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     private static final Logger log =

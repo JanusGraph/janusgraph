@@ -4,7 +4,7 @@ import java.util.Comparator;
 
 /**
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public interface Query<Q extends Query> {

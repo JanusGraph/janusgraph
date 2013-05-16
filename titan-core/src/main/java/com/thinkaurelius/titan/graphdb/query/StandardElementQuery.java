@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.query;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.query.keycondition.*;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -10,9 +11,10 @@ import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Comparator;
+import java.util.Iterator;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class StandardElementQuery implements Query<StandardElementQuery> {
@@ -126,14 +128,29 @@ public class StandardElementQuery implements Query<StandardElementQuery> {
         return matchesCondition(element,condition);
     }
 
+    private static final<T extends TitanType> boolean satisfiesCondition(KeyAtom<T> atom, Object value) {
+        return atom.getRelation().satisfiesCondition(value,atom.getCondition());
+    }
+
     public static final<T extends TitanType> boolean matchesCondition(TitanElement element, KeyCondition<T> condition) {
         if (condition instanceof KeyAtom) {
             KeyAtom<T> atom = (KeyAtom<T>) condition;
-            Object value = null;
             T type = atom.getKey();
-            if (type.isPropertyKey()) value = element.getProperty((TitanKey)type);
-            else value = ((TitanRelation)element).getProperty((TitanLabel)type);
-            return atom.getRelation().satisfiesCondition(value,atom.getCondition());
+            if (type.isPropertyKey()) {
+                if (type.isUnique(Direction.OUT)) return satisfiesCondition(atom,element.getProperty((TitanKey)type));
+                else {
+                    Iterator<TitanProperty> iter = ((VertexCentricQueryBuilder)((TitanVertex)element).query()).type(type).includeHidden().properties().iterator();
+                    if (iter.hasNext()) {
+                        while (iter.hasNext()) {
+                            if (satisfiesCondition(atom,iter.next().getValue())) return true;
+                        }
+                        return false;
+                    } else return satisfiesCondition(atom,null);
+                }
+            } else {
+                Preconditions.checkArgument(type.isUnique(Direction.OUT));
+                return satisfiesCondition(atom,((TitanRelation) element).getProperty((TitanLabel) type));
+            }
         } else if (condition instanceof KeyNot) {
             return !matchesCondition(element, ((KeyNot) condition).getChild());
         } else if (condition instanceof KeyAnd) {

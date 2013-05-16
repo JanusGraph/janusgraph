@@ -1,13 +1,16 @@
 package com.thinkaurelius.titan.graphdb.serializer;
 
 
+import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.attribute.DoubleSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.attribute.FloatSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.StandardKeyDefinition;
 import com.thinkaurelius.titan.graphdb.types.StandardLabelDefinition;
-import com.thinkaurelius.titan.graphdb.types.StandardTypeGroup;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
 import com.tinkerpop.blueprints.Vertex;
@@ -17,7 +20,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.Calendar;
 
 import static com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization.RESERVED_ID_OFFSET;
@@ -37,11 +39,6 @@ public class SerializerTest {
         serialize.registerClass(TestEnum.class,RESERVED_ID_OFFSET+1);
         serialize.registerClass(TestClass.class,RESERVED_ID_OFFSET+2);
         serialize.registerClass(short[].class,RESERVED_ID_OFFSET+3);
-        serialize.registerClass(boolean[].class,RESERVED_ID_OFFSET+4);
-        serialize.registerClass(IndexType.class,RESERVED_ID_OFFSET+5);
-        serialize.registerClass(StandardLabelDefinition.class,RESERVED_ID_OFFSET+6);
-        serialize.registerClass(StandardTypeGroup.class,RESERVED_ID_OFFSET+7);
-        serialize.registerClass(StandardKeyDefinition.class,RESERVED_ID_OFFSET+8);
 
         printStats = true;
     }
@@ -59,7 +56,7 @@ public class SerializerTest {
         out.putInt(i);
         out.writeObject(c,TestClass.class);
         out.writeClassAndObject(n);
-        ByteBuffer b = out.getByteBuffer();
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
         String str2 = serialize.readObjectNotNull(b, String.class);
         assertEquals(str, str2);
@@ -72,6 +69,104 @@ public class SerializerTest {
         if (printStats) log.debug(bufferStats(b));
         assertFalse(b.hasRemaining());
     }
+
+    @Test
+    public void classSerialization() {
+        DataOutput out = serialize.getDataOutput(128, true);
+        out.writeObjectNotNull(Boolean.class);
+        out.writeObjectNotNull(Byte.class);
+        out.writeObjectNotNull(Double.class);
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
+        assertEquals(Boolean.class,serialize.readObjectNotNull(b,Class.class));
+        assertEquals(Byte.class,serialize.readObjectNotNull(b,Class.class));
+        assertEquals(Double.class,serialize.readObjectNotNull(b,Class.class));
+    }
+
+    @Test
+    public void parallelDeserialization() throws InterruptedException {
+        DataOutput out = serialize.getDataOutput(128, true);
+        out.putLong(8);
+        out.writeClassAndObject(Long.valueOf(8));
+        TestClass c = new TestClass(5, 8, new short[]{1, 2, 3, 4, 5}, TestEnum.Two);
+        out.writeObject(c,TestClass.class);
+        final StaticBuffer b = out.getStaticBuffer();
+
+        int numThreads = 100;
+        Thread[] threads = new Thread[numThreads];
+        for (int i=0;i<numThreads;i++) {
+            threads[i]=new Thread(new Runnable(){
+                @Override
+                public void run() {
+                    for (int j=0;j<100000;j++) {
+                        ReadBuffer c = b.asReadBuffer();
+                        assertEquals(8,c.getLong());
+                        Long l = (Long)serialize.readClassAndObject(c);
+                        assertEquals(8,l.longValue());
+                        TestClass c2 = serialize.readObjectNotNull(c,TestClass.class);
+                    }
+                }
+            });
+            threads[i].start();
+        }
+        for (int i=0;i<numThreads;i++) {
+            threads[i].join();
+        }
+    }
+
+    @Test
+    public void primitiveSerialization() {
+        DataOutput out = serialize.getDataOutput(128, true);
+        out.writeObjectNotNull(Boolean.FALSE);
+        out.writeObjectNotNull(Boolean.TRUE);
+        out.writeObjectNotNull(Byte.MIN_VALUE);
+        out.writeObjectNotNull(Byte.MAX_VALUE);
+        out.writeObjectNotNull(new Byte((byte)0));
+        out.writeObjectNotNull(Short.MIN_VALUE);
+        out.writeObjectNotNull(Short.MAX_VALUE);
+        out.writeObjectNotNull(new Short((short)0));
+        out.writeObjectNotNull(Character.MIN_VALUE);
+        out.writeObjectNotNull(Character.MAX_VALUE);
+        out.writeObjectNotNull(new Character('a'));
+        out.writeObjectNotNull(Integer.MIN_VALUE);
+        out.writeObjectNotNull(Integer.MAX_VALUE);
+        out.writeObjectNotNull(new Integer(0));
+        out.writeObjectNotNull(Long.MIN_VALUE);
+        out.writeObjectNotNull(Long.MAX_VALUE);
+        out.writeObjectNotNull(new Long(0));
+        out.writeObjectNotNull(FloatSerializer.MIN_VALUE);
+        out.writeObjectNotNull(FloatSerializer.MAX_VALUE);
+        out.writeObjectNotNull(new Float((float)0.0));
+        out.writeObjectNotNull(DoubleSerializer.MIN_VALUE);
+        out.writeObjectNotNull(DoubleSerializer.MAX_VALUE);
+        out.writeObjectNotNull(new Double(0.0));
+
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
+        assertEquals(Boolean.FALSE,serialize.readObjectNotNull(b,Boolean.class));
+        assertEquals(Boolean.TRUE,serialize.readObjectNotNull(b,Boolean.class));
+        assertEquals(Byte.MIN_VALUE,serialize.readObjectNotNull(b,Byte.class).longValue());
+        assertEquals(Byte.MAX_VALUE,serialize.readObjectNotNull(b,Byte.class).longValue());
+        assertEquals(0,serialize.readObjectNotNull(b,Byte.class).longValue());
+        assertEquals(Short.MIN_VALUE,serialize.readObjectNotNull(b,Short.class).longValue());
+        assertEquals(Short.MAX_VALUE,serialize.readObjectNotNull(b,Short.class).longValue());
+        assertEquals(0,serialize.readObjectNotNull(b,Short.class).longValue());
+        assertEquals(Character.MIN_VALUE,serialize.readObjectNotNull(b,Character.class).charValue());
+        assertEquals(Character.MAX_VALUE,serialize.readObjectNotNull(b,Character.class).charValue());
+        assertEquals(new Character('a'),serialize.readObjectNotNull(b,Character.class));
+        assertEquals(Integer.MIN_VALUE,serialize.readObjectNotNull(b,Integer.class).longValue());
+        assertEquals(Integer.MAX_VALUE,serialize.readObjectNotNull(b,Integer.class).longValue());
+        assertEquals(0,serialize.readObjectNotNull(b,Integer.class).longValue());
+        assertEquals(Long.MIN_VALUE,serialize.readObjectNotNull(b,Long.class).longValue());
+        assertEquals(Long.MAX_VALUE,serialize.readObjectNotNull(b,Long.class).longValue());
+        assertEquals(0,serialize.readObjectNotNull(b,Long.class).longValue());
+        assertEquals(FloatSerializer.MIN_VALUE,serialize.readObjectNotNull(b,Float.class).floatValue(),1e-20);
+        assertEquals(FloatSerializer.MAX_VALUE,serialize.readObjectNotNull(b,Float.class).floatValue(),1e-20);
+        assertEquals(0.0,serialize.readObjectNotNull(b,Float.class).floatValue(),1e-20);
+        assertEquals(DoubleSerializer.MIN_VALUE,serialize.readObjectNotNull(b,Double.class).doubleValue(),1e-40);
+        assertEquals(DoubleSerializer.MAX_VALUE,serialize.readObjectNotNull(b,Double.class).doubleValue(),1e-40);
+        assertEquals(0.0,serialize.readObjectNotNull(b,Double.class).doubleValue(),1e-20);
+
+    }
+
 
     @Test
     public void testObjectVerification() {
@@ -108,7 +203,7 @@ public class SerializerTest {
             String str = base + (i + 1);
             out.writeObjectNotNull(str);
         }
-        ByteBuffer b = out.getByteBuffer();
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
         for (int i = 0; i < no; i++) {
             String str = base + (i + 1);
@@ -125,7 +220,7 @@ public class SerializerTest {
         for (int i = 0; i < 100; i++) str += base;
         DataOutput out = serialize.getDataOutput(128, true);
         out.writeObjectNotNull(str);
-        ByteBuffer b = out.getByteBuffer();
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
         assertEquals(str, serialize.readObjectNotNull(b, String.class));
         assertFalse(b.hasRemaining());
@@ -135,7 +230,7 @@ public class SerializerTest {
     public void enumSerializeTest() {
         DataOutput out = serialize.getDataOutput(128, true);
         out.writeObjectNotNull(TestEnum.Two);
-        ByteBuffer b = out.getByteBuffer();
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
         assertEquals(TestEnum.Two, serialize.readObjectNotNull(b, TestEnum.class));
         assertFalse(b.hasRemaining());
@@ -154,7 +249,7 @@ public class SerializerTest {
         DataOutput out = serialize.getDataOutput(128, true);
         out.writeObjectNotNull(relType);
         out.writeObjectNotNull(propType);
-        ByteBuffer b = out.getByteBuffer();
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
         assertEquals("testName", serialize.readObjectNotNull(b, StandardLabelDefinition.class).getName());
         assertEquals(String.class, serialize.readObjectNotNull(b, StandardKeyDefinition.class).getDataType());
@@ -185,8 +280,8 @@ public class SerializerTest {
         log.debug("SHORT: Avg micro time: " + (p.getMicroTime() / runs));
     }
 
-    public static String bufferStats(ByteBuffer b) {
-        return "ByteBuffer size: " + b.limit() + " position: " + b.position();
+    public static String bufferStats(ReadBuffer b) {
+        return "ReadBuffer length: " + b.length();
     }
 
     @Test(expected = IllegalArgumentException.class)

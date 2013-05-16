@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
@@ -10,7 +10,6 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class KeyValueStoreUtil {
@@ -45,24 +44,28 @@ public class KeyValueStoreUtil {
         for (int i = 0; i < data.length; i++) print(data[i]);
     }
 
-    public static ByteBuffer getBuffer(int no) {
-        return ByteBufferUtil.getLongByteBuffer(no + idOffset);
+    public static StaticBuffer getBuffer(int no) {
+        return ByteBufferUtil.getLongBuffer(no + idOffset);
     }
 
-    public static int getID(ByteBuffer b) {
-        long res = b.getLong() - idOffset;
+    public static int getID(StaticBuffer b) {
+        long res = b.getLong(0) - idOffset;
         Assert.assertTrue(res >= 0 && res < Integer.MAX_VALUE);
         return (int) res;
     }
 
-    public static ByteBuffer getBuffer(String s) {
+    public static StaticBuffer getBuffer(String s) {
         DataOutput out = serial.getDataOutput(50, true);
         out.writeObjectNotNull(s);
-        return out.getByteBuffer();
+        return out.getStaticBuffer();
     }
 
-    public static String getString(ByteBuffer b) {
+    public static String getString(ReadBuffer b) {
         return serial.readObjectNotNull(b, String.class);
+    }
+    
+    public static String getString(StaticBuffer b) {
+        return serial.readObjectNotNull(b.asReadBuffer(), String.class);
     }
 
     public static int count(RecordIterator<?> iterator) throws StorageException {

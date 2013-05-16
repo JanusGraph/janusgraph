@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.1</a></h3>
   <h1>Using Cassandra</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -88,7 +88,7 @@ Mousetrap.bind(['e'], function( e ) {
 <h3>Remote Server Mode<a class="anchor" id="Remote-Server-Mode" href="#Remote-Server-Mode"></a></h3>
 <p><img src="images/titan-modes-distributed.png" alt="" /></p>
 <p>When the graph needs to scale beyond the confines of a single machine, then Cassandra and Titan are logically separated into different machines. In this model, the Cassandra cluster maintains the graph representation and any number of Titan instances maintain socket-based read/write access to the Cassandra cluster. The end-user application can directly interact with Titan within the same <span class="caps">JVM</span> as Titan.</p>
-<p>For example, suppose we have a running Cassandra cluster where one of the machines has the IP address 77.77.77.77, then connecting Titan with the cluster is accomplished as follows:</p>
+<p>For example, suppose we have a running Cassandra cluster where one of the machines has the IP address 77.77.77.77, then connecting Titan with the cluster is accomplished as follows (comma separate IP addresses to reference more than one machine):</p>
 <div class="highlight"><pre><span class="n">Configuration</span> <span class="n">conf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BaseConfiguration</span><span class="o">();</span>
 <span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.backend"</span><span class="o">,</span><span class="s">"cassandra"</span><span class="o">);</span>
 <span class="n">conf</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"storage.hostname"</span><span class="o">,</span><span class="s">"77.77.77.77"</span><span class="o">);</span>
@@ -227,14 +227,18 @@ You may add additional configuration options found on this page or under <a href
 ==&gt;titangraph[cassandra:[IP-address-of-one-Cassandra-EC2-instance]]
 </pre></div><br />
 You have successfully connected this Titan instance to the Cassandra cluster and can start to operate on the graph.</li>
-</ul>
+</ul><h3>Connect to Cassandra cluster in EC2 from outside EC2<a class="anchor" id="Connect-to-Cassandra-cluster-in-EC2-from-outside-EC2" href="#Connect-to-Cassandra-cluster-in-EC2-from-outside-EC2"></a></h3>
+<p>Opening the usual Cassandra ports (9160, 7000, 7199) in the security group is not enough, because the Cassandra nodes by default broadcast their ec2-internal IPs, and not their public-facing IPs.</p>
+<p>The resulting behavior is that you can open a Titan graph on the cluster by connecting to port 9160 on any Cassandra node, but all requests to that graph time out.  This is because Cassandra is telling the client to connect to an unreachable IP.</p>
+<p>To fix this, set the “broadcast-address” property for each instance in /etc/cassandra/cassandra.yaml to its public-facing IP, and restart the instance.  Do this for all nodes in the cluster.  Once the cluster comes back, nodetool reports the correct public-facing IPs to which connections from the local machine are allowed.</p>
+<p>Changing the “broadcast-address” property allows you to connect to the cluster from outside ec2, but it might also mean that traffic originating within ec2 will have to round-trip to the internet and back before it gets to the cluster.  So, this approach is only useful for development and testing.</p>
     </div>
   </div>
   </div>
 
 </div>
 <div id="footer">
-  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 05:01:04</p>
+  <p id="last-edit">Last edited by <b>Matthias Broecheler</b>, 2013-05-12 20:43:13</p>
   <p>
     
   </p>

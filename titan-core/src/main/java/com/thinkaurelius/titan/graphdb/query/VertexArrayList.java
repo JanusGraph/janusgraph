@@ -54,9 +54,9 @@ public class VertexArrayList implements VertexListInternal {
     }
 
     @Override
-    public void addAll(VertexList nodelist) {
-        Preconditions.checkArgument(nodelist instanceof VertexArrayList, "Only supporting union of identical lists.");
-        VertexArrayList other = (VertexArrayList) nodelist;
+    public void addAll(VertexList vertexlist) {
+        Preconditions.checkArgument(vertexlist instanceof VertexArrayList, "Only supporting union of identical lists.");
+        VertexArrayList other = (VertexArrayList) vertexlist;
         sorted = false;
         vertices.addAll(other.vertices);
     }

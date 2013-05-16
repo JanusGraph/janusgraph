@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.idmanagement;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
@@ -11,17 +12,23 @@ import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
+
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * {@link com.thinkaurelius.titan.diskstorage.IDAuthority} implementation assuming that the backing store
+ * supports consistent transactions.
+ *
+ * With transactional isolation guarantees, unique id block assignments are just a matter of reading the current
+ * counter, incrementing it and committing the transaction. If the transaction fails, another process applied for the same
+ * id and the process is retried.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class TransactionalIDManager extends AbstractIDManager {
 
     private static final Logger log = LoggerFactory.getLogger(TransactionalIDManager.class);
 
-    private static final ByteBuffer DEFAULT_COLUMN = ByteBuffer.allocate(1);
+    private static final StaticBuffer DEFAULT_COLUMN = ByteBufferUtil.zeroBuffer(1);
 
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
@@ -35,7 +42,7 @@ public class TransactionalIDManager extends AbstractIDManager {
     @Override
     public long[] getIDBlock(int partition) throws StorageException {
         long blockSize = getBlockSize(partition);
-        ByteBuffer partitionKey = getPartitionKey(partition);
+        StaticBuffer partitionKey = getPartitionKey(partition);
 
         for (int retry = 0; retry < idApplicationRetryCount; retry++) {
             StoreTransaction txh = null;
@@ -44,7 +51,7 @@ public class TransactionalIDManager extends AbstractIDManager {
                 long current = getCurrentID(partitionKey, txh);
                 Preconditions.checkArgument(Long.MAX_VALUE - blockSize > current, "ID overflow detected");
                 long next = current + blockSize;
-                idStore.mutate(partitionKey, ImmutableList.of(new Entry(DEFAULT_COLUMN, ByteBufferUtil.getLongByteBuffer(next))), null, txh);
+                idStore.mutate(partitionKey, ImmutableList.of(StaticBufferEntry.of(DEFAULT_COLUMN, ByteBufferUtil.getLongBuffer(next))), KeyColumnValueStore.NO_DELETIONS, txh);
                 txh.commit();
                 return new long[]{current, next};
             } catch (StorageException e) {
@@ -58,7 +65,7 @@ public class TransactionalIDManager extends AbstractIDManager {
     }
 
     @Override
-    public ByteBuffer[] getLocalIDPartition() throws StorageException {
+    public StaticBuffer[] getLocalIDPartition() throws StorageException {
         return idStore.getLocalKeyPartition();
     }
 
@@ -67,11 +74,11 @@ public class TransactionalIDManager extends AbstractIDManager {
         idStore.close();
     }
 
-    private long getCurrentID(ByteBuffer partitionKey, StoreTransaction txh) throws StorageException {
-        if (!idStore.containsKeyColumn(partitionKey, DEFAULT_COLUMN, txh)) {
+    private long getCurrentID(StaticBuffer partitionKey, StoreTransaction txh) throws StorageException {
+        if (!KCVSUtil.containsKeyColumn(idStore,partitionKey, DEFAULT_COLUMN, txh)) {
             return BASE_ID;
         } else {
-            long current = idStore.get(partitionKey, DEFAULT_COLUMN, txh).getLong();
+            long current = KCVSUtil.get(idStore,partitionKey, DEFAULT_COLUMN, txh).getLong(0);
             return current;
         }
     }

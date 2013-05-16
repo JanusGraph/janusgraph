@@ -3,11 +3,17 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
 
+/**
+ * Handles the allocation of ids based on the type of element
+ * Responsible for the bit-wise pattern of Titan's internal id scheme.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class IDManager implements IDInspector {
 
     //public static final long MaxEntityID = Long.MAX_VALUE>>2;
     public enum IDType {
-        Edge {
+        Relation {
             @Override
             public final long offset() {
                 return 1l;
@@ -18,7 +24,7 @@ public class IDManager implements IDInspector {
                 return 1l;
             } // 1b
         },
-        EdgeType {
+        TitanType {
             @Override
             public final long offset() {
                 return 2l;
@@ -29,7 +35,7 @@ public class IDManager implements IDInspector {
                 return 2l;
             } // 10b
         },
-        PropertyType {
+        PropertyKey {
             @Override
             public final long offset() {
                 return 3l;
@@ -40,7 +46,7 @@ public class IDManager implements IDInspector {
                 return 2l;
             }    // 010b
         },
-        RelationshipType {
+        EdgeLabel {
             @Override
             public final long offset() {
                 return 3l;
@@ -51,7 +57,7 @@ public class IDManager implements IDInspector {
                 return 6l;
             } // 110b
         },
-        Node {
+        Vertex {
             @Override
             public final long offset() {
                 return 2l;
@@ -78,8 +84,8 @@ public class IDManager implements IDInspector {
     }
 
     public static final long totalNoBits = 63;
-    public static final long edgeTypeDirectionBits = 2;
-    public static final long edgeTypePaddingBits = 3;
+    public static final long relationTypeDirectionBits = 2;
+    public static final long relationTypePaddingBits = 3;
     public static final long minimumCountBits = 4;
 
     public static final long maxGroupBits = 31;
@@ -88,14 +94,14 @@ public class IDManager implements IDInspector {
     public static final long defaultPartitionBits = 0;
     public static final long defaultGroupBits = 6;
 
-    private static final long edgeTypeDirectionOffset = totalNoBits - edgeTypeDirectionBits;
-    private static final long edgeTypeDirectionMask = ((1l << edgeTypeDirectionBits) - 1) << (edgeTypeDirectionOffset);
+    private static final long titanTypeDirectionOffset = totalNoBits - relationTypeDirectionBits;
+    private static final long titanTypeDirectionMask = ((1l << relationTypeDirectionBits) - 1) << (titanTypeDirectionOffset);
 
-    private static final long maxDirectionID = (1l << edgeTypeDirectionBits) - 2; //Need extra number for bounding
+    private static final long maxDirectionID = (1l << relationTypeDirectionBits) - 2; //Need extra number for bounding
 
-    public static final long edgeTypePaddingMask = (1l << edgeTypePaddingBits) - 1;
-    public static final long edgeTypePaddingFrontOffset = edgeTypeDirectionOffset - edgeTypePaddingBits;
-    public static final long edgeTypePaddingFrontMask = edgeTypePaddingMask << edgeTypePaddingFrontOffset;
+    public static final long titanTypePaddingMask = (1l << relationTypePaddingBits) - 1;
+    public static final long titanTypePaddingFrontOffset = titanTypeDirectionOffset - relationTypePaddingBits;
+    public static final long titanTypePaddingFrontMask = titanTypePaddingMask << titanTypePaddingFrontOffset;
 
     @SuppressWarnings("unused")
     private final long partitionBits;
@@ -110,13 +116,13 @@ public class IDManager implements IDInspector {
     private final long groupIDMaskTMP;
     private final long groupIDFrontMask;
     private final long groupIDDeltaOffset;
-    private final long edgeTypeIDBackLength;
-    private final long edgeTypeCountPartMask;
+    private final long titanTypeIDBackLength;
+    private final long titanTypeCountPartMask;
 
     private final long maxGroupID;
-    private final long maxEdgeID;
-    private final long maxEdgeTypeID;
-    private final long maxNodeID;
+    private final long maxRelationID;
+    private final long maxTitanTypeID;
+    private final long maxVertexID;
 
     private final long maxPartitionID;
 
@@ -137,23 +143,23 @@ public class IDManager implements IDInspector {
         maxPartitionID = (1l << (partitionBits)) - 1;
         maxGroupID = (1l << groupBits) - 2; //Need extra number for bounding
 
-        maxEdgeID = (1l << (totalNoBits - partitionBits - IDType.Edge.offset())) - 1;
-        maxEdgeTypeID = (1l << (totalNoBits - partitionBits - IDType.RelationshipType.offset()
-                - groupBits - edgeTypeDirectionBits)) - 1;
-        maxNodeID = (1l << (totalNoBits - partitionBits - IDType.Node.offset())) - 1;
+        maxRelationID = (1l << (totalNoBits - partitionBits - IDType.Relation.offset())) - 1;
+        maxTitanTypeID = (1l << (totalNoBits - partitionBits - IDType.EdgeLabel.offset()
+                - groupBits - relationTypeDirectionBits)) - 1;
+        maxVertexID = (1l << (totalNoBits - partitionBits - IDType.Vertex.offset())) - 1;
 
         partitionOffset = totalNoBits - partitionBits;
-        groupOffset = partitionOffset - groupBits - edgeTypeDirectionBits;
+        groupOffset = partitionOffset - groupBits - relationTypeDirectionBits;
 
         groupIDMask = (1l << (groupOffset + groupBits)) - (1l << groupOffset);
         inverseGroupIDMask = ~groupIDMask;
 
-        edgeTypeIDBackLength = edgeTypePaddingBits + groupBits + edgeTypeDirectionBits;
-        groupIDMaskTMP = ((1l << groupBits) - 1) << edgeTypePaddingBits;
-        groupIDDeltaOffset = edgeTypePaddingFrontOffset - groupBits - edgeTypePaddingBits;
+        titanTypeIDBackLength = relationTypePaddingBits + groupBits + relationTypeDirectionBits;
+        groupIDMaskTMP = ((1l << groupBits) - 1) << relationTypePaddingBits;
+        groupIDDeltaOffset = titanTypePaddingFrontOffset - groupBits - relationTypePaddingBits;
         groupIDFrontMask = groupIDMaskTMP << groupIDDeltaOffset;
 
-        edgeTypeCountPartMask = (1l << (totalNoBits - edgeTypeIDBackLength)) - 1;
+        titanTypeCountPartMask = (1l << (totalNoBits - titanTypeIDBackLength)) - 1;
 
     }
 
@@ -185,7 +191,7 @@ public class IDManager implements IDInspector {
     }
 
     @Override
-    public boolean isValidEdgeTypGroupID(long groupID) {
+    public boolean isValidTypGroupID(long groupID) {
         return groupID > 0 && groupID <= maxGroupID;
     }
 
@@ -194,17 +200,17 @@ public class IDManager implements IDInspector {
      */
 
 
-    public long getEdgeID(long count, long partition) {
-        if (count < 0 || count > maxEdgeID)
-            throw new IllegalArgumentException("Invalid count for bound:" + maxEdgeID);
-        return addPartition(IDType.Edge.addPadding(count), partition);
+    public long getRelationID(long count, long partition) {
+        if (count < 0 || count > maxRelationID)
+            throw new IllegalArgumentException("Invalid count for bound:" + maxRelationID);
+        return addPartition(IDType.Relation.addPadding(count), partition);
     }
 
 
-    public long getNodeID(long count, long partition) {
-        if (count < 0 || count > maxNodeID)
-            throw new IllegalArgumentException("Invalid count for bound:" + maxNodeID);
-        return addPartition(IDType.Node.addPadding(count), partition);
+    public long getVertexID(long count, long partition) {
+        if (count < 0 || count > maxVertexID)
+            throw new IllegalArgumentException("Invalid count for bound:" + maxVertexID);
+        return addPartition(IDType.Vertex.addPadding(count), partition);
     }
 
 
@@ -212,16 +218,16 @@ public class IDManager implements IDInspector {
       *  [ 0 | partitionID | directionBits (=0) | groupID | count | ID padding ]
      */
 
-    public long getRelationshipTypeID(long count, long groupid, long partition) {
-        if (count < 0 || count > maxEdgeTypeID)
-            throw new IllegalArgumentException("Invalid count for bound:" + maxEdgeTypeID);
-        return addPartition(addGroup(IDType.RelationshipType.addPadding(count), groupid), partition);
+    public long getEdgeLabelID(long count, long groupid, long partition) {
+        if (count < 0 || count > maxTitanTypeID)
+            throw new IllegalArgumentException("Invalid count for bound:" + maxTitanTypeID);
+        return addPartition(addGroup(IDType.EdgeLabel.addPadding(count), groupid), partition);
     }
 
-    public long getPropertyTypeID(long count, long groupid, long partition) {
-        if (count < 0 || count > maxEdgeTypeID)
-            throw new IllegalArgumentException("Invalid count for bound:" + maxEdgeTypeID);
-        return addPartition(addGroup(IDType.PropertyType.addPadding(count), groupid), partition);
+    public long getPropertyKeyID(long count, long groupid, long partition) {
+        if (count < 0 || count > maxTitanTypeID)
+            throw new IllegalArgumentException("Invalid count for bound:" + maxTitanTypeID);
+        return addPartition(addGroup(IDType.PropertyKey.addPadding(count), groupid), partition);
     }
 
     @Override
@@ -247,16 +253,16 @@ public class IDManager implements IDInspector {
         return maxGroupID;
     }
 
-    public long getMaxEdgeID() {
-        return maxEdgeID;
+    public long getMaxRelationID() {
+        return maxRelationID;
     }
 
-    public long getMaxEdgeTypeID() {
-        return maxEdgeTypeID;
+    public long getMaxTitanTypeID() {
+        return maxTitanTypeID;
     }
 
-    public long getMaxNodeID() {
-        return maxNodeID;
+    public long getMaxVertexID() {
+        return maxVertexID;
     }
 
     public long getMaxPartitionID() {
@@ -274,39 +280,39 @@ public class IDManager implements IDInspector {
     }
 
     @Override
-    public boolean isNodeID(long id) {
-        return IDType.Node.is(id);
+    public boolean isVertexID(long id) {
+        return IDType.Vertex.is(id);
     }
 
     @Override
-    public boolean isEdgeTypeID(long id) {
-        return IDType.EdgeType.is(id);
+    public boolean isTypeID(long id) {
+        return IDType.TitanType.is(id);
     }
 
     @Override
-    public boolean isPropertyTypeID(long id) {
-        return IDType.PropertyType.is(id);
+    public boolean isPropertyKeyID(long id) {
+        return IDType.PropertyKey.is(id);
     }
 
     @Override
-    public boolean isRelationshipTypeID(long id) {
-        return IDType.RelationshipType.is(id);
+    public boolean isEdgeLabelID(long id) {
+        return IDType.EdgeLabel.is(id);
     }
 
     @Override
-    public boolean isEdgeID(long id) {
-        return IDType.Edge.is(id);
+    public boolean isRelationID(long id) {
+        return IDType.Relation.is(id);
     }
 
 
     public final static long getSystemEdgeLabelID(long id) {
         //assumes groupid=0 and partitionid=0
-        return IDManager.IDType.RelationshipType.addPadding(id);
+        return IDManager.IDType.EdgeLabel.addPadding(id);
     }
 
     public final static long getSystemPropertyKeyID(long id) {
         //assumes groupid=0 and partitionid=0
-        return IDManager.IDType.PropertyType.addPadding(id);
+        return IDManager.IDType.PropertyKey.addPadding(id);
     }
 
 }

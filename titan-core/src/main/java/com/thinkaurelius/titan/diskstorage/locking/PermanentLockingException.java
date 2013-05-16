@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
  * This exception signifies a permanent exception while attempting to acquire a lock
  * in the titan storage backend, such as another lock taking presedence.
  * <p/>
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class PermanentLockingException extends PermanentStorageException implements LockingException {

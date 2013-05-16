@@ -1,41 +1,39 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.query.Query;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-
-import java.nio.ByteBuffer;
 
 /**
  * Extends {@link SliceQuery} by a key that identifies the location of the slice in the key-ring.
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class KeySliceQuery extends SliceQuery {
 
-    private final ByteBuffer key;
+    private final StaticBuffer key;
 
-    public KeySliceQuery(ByteBuffer key, ByteBuffer sliceStart, ByteBuffer sliceEnd, int limit, boolean isStatic) {
+    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd, int limit, boolean isStatic) {
         super(sliceStart, sliceEnd, limit, isStatic);
         Preconditions.checkNotNull(key);
         this.key=key;
     }
 
-    public KeySliceQuery(ByteBuffer key, SliceQuery query) {
+    public KeySliceQuery(StaticBuffer key, SliceQuery query) {
         super(query);
         Preconditions.checkNotNull(key);
         this.key=key;
     }
 
-    public KeySliceQuery(ByteBuffer key, ByteBuffer sliceStart, ByteBuffer sliceEnd) {
+    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd) {
         this(key,sliceStart,sliceEnd, Query.NO_LIMIT,DEFAULT_STATIC);
     }
 
-    public KeySliceQuery(ByteBuffer key, ByteBuffer sliceStart, ByteBuffer sliceEnd, int limit) {
+    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd, int limit) {
         this(key,sliceStart,sliceEnd,limit,DEFAULT_STATIC);
     }
 
-    public KeySliceQuery(ByteBuffer key, ByteBuffer sliceStart, ByteBuffer sliceEnd, boolean isStatic) {
+    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd, boolean isStatic) {
         this(key,sliceStart,sliceEnd,Query.NO_LIMIT,isStatic);
     }
 
@@ -43,7 +41,7 @@ public class KeySliceQuery extends SliceQuery {
      *
      * @return the key of this query
      */
-    public ByteBuffer getKey() {
+    public StaticBuffer getKey() {
         return key;
     }
 
@@ -51,7 +49,7 @@ public class KeySliceQuery extends SliceQuery {
     @Override
     public int hashCode() {
         if (hashcode==0) {
-            hashcode = new HashCodeBuilder().append(key).appendSuper(super.hashCode()).toHashCode();
+            hashcode = key.hashCode()*102329 + super.hashCode();
             if (hashcode==0) hashcode=1;
         }
         return hashcode;

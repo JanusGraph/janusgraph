@@ -7,7 +7,7 @@ import java.lang.reflect.Field;
 /**
  * Specifies the features that a given store supports
  * <p/>
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class StoreFeatures {
@@ -77,7 +77,7 @@ public class StoreFeatures {
     }
 
     /**
-     * Whether this store supports locking via {@link KeyColumnValueStore#acquireLock(java.nio.ByteBuffer, java.nio.ByteBuffer, java.nio.ByteBuffer, StoreTransaction)}
+     * Whether this store supports locking via {@link KeyColumnValueStore#acquireLock(com.thinkaurelius.titan.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, StoreTransaction)}
      *
      * @return
      */
@@ -86,6 +86,10 @@ public class StoreFeatures {
         return supportsLocking;
     }
 
+    /**
+     * Whether this storage backend supports batch mutations via {@link KeyColumnValueStoreManager#mutateMany(java.util.Map, StoreTransaction)}.
+     * @return
+     */
     public boolean supportsBatchMutation() {
         verify();
         return supportsBatchMutation;

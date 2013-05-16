@@ -4,6 +4,8 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.TitanGraphTestCommon;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.rexster.client.RexsterClient;
+import com.tinkerpop.rexster.client.RexsterClientFactory;
 import com.tinkerpop.rexster.server.RexsterSettings;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.XMLConfiguration;
@@ -18,14 +20,14 @@ import java.util.Map;
 import static junit.framework.Assert.*;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class RexsterServerClientTest extends TitanGraphTestCommon {
 
     public final XMLConfiguration rexsterConfig;
     public RexsterTitanServer server;
-    public RexsterTitanClient client;
+    public RexsterClient client;
 
     public RexsterServerClientTest(Configuration config) {
         super(config);
@@ -46,7 +48,7 @@ public abstract class RexsterServerClientTest extends TitanGraphTestCommon {
         close();
         server = new RexsterTitanServer(rexsterConfig, config);
         server.start();
-        client = new RexsterTitanClient("127.0.0.1", RexsterSettings.DEFAULT_REXPRO_PORT);
+        client = RexsterClientFactory.open("127.0.0.1", RexsterTitanServer.DEFAULT_GRAPH_NAME);
     }
 
     @After
@@ -61,7 +63,7 @@ public abstract class RexsterServerClientTest extends TitanGraphTestCommon {
         List<Map<String, Object>> result;
 //      result = client.query("g.V");
 //      assertEquals(3,result.size());
-        result = client.query("g.V('name','v1').out('knows').map");
+        result = client.execute("g.V('name','v1').out('knows').map");
         assertEquals(2, result.size());
         for (Map<String, Object> map : result) {
             assertTrue(map.containsKey("name"));
@@ -69,19 +71,19 @@ public abstract class RexsterServerClientTest extends TitanGraphTestCommon {
         }
         Map<String, Object> paras = new HashMap<String, Object>();
         paras.put("name", "v1");
-        result = client.query("g.V('name',name).out('knows').map", paras);
+        result = client.execute("g.V('name',name).out('knows').map", paras);
         assertEquals(2, result.size());
         for (Map<String, Object> map : result) {
             assertTrue(map.containsKey("name"));
         }
-        result = client.query("g.V('name','v1').out.map");
+        result = client.execute("g.V('name','v1').out.map");
         assertEquals(2, result.size());
-        result = client.query("g.V('name','v1').outE.map");
+        result = client.execute("g.V('name','v1').outE.map");
         assertEquals(2, result.size());
         try {
-            result = client.query("1/0");
+            result = client.execute("1/0");
             fail();
-        } catch (TitanException e) {
+        } catch (Exception e) {
 
         }
     }

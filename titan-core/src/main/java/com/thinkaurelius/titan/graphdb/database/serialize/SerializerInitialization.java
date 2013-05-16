@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.attribute.FullDouble;
+import com.thinkaurelius.titan.core.attribute.FullFloat;
+import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
 import com.thinkaurelius.titan.graphdb.types.*;
 
@@ -34,7 +37,19 @@ public class SerializerInitialization {
         serializer.registerClass(Long.class, new LongSerializer(),KRYO_OFFSET+19);
         serializer.registerClass(IndexType.class,KRYO_OFFSET+20);
         serializer.registerClass(IndexType[].class,KRYO_OFFSET+21);
-        Preconditions.checkArgument(KRYO_OFFSET+21<RESERVED_ID_OFFSET,"ID allocation overflow!");
+        serializer.registerClass(Geoshape.class,KRYO_OFFSET+22);
+        serializer.registerClass(Byte.class, new ByteSerializer(),KRYO_OFFSET+23);
+        serializer.registerClass(Short.class, new ShortSerializer(),KRYO_OFFSET+24);
+        serializer.registerClass(Character.class, new CharacterSerializer(),KRYO_OFFSET+25);
+        serializer.registerClass(Boolean.class, new BooleanSerializer(),KRYO_OFFSET+26);
+        serializer.registerClass(Object.class, KRYO_OFFSET+27);
+        serializer.registerClass(FullFloat.class, KRYO_OFFSET+28);
+        serializer.registerClass(FullDouble.class, KRYO_OFFSET+29);
+        serializer.registerClass(char[].class, KRYO_OFFSET+30);
+        serializer.registerClass(short[].class, KRYO_OFFSET+31);
+        serializer.registerClass(float[].class, KRYO_OFFSET+32);
+
+        Preconditions.checkArgument(KRYO_OFFSET+29<RESERVED_ID_OFFSET,"ID allocation overflow!");
     }
 
 }

@@ -4,7 +4,7 @@ package com.thinkaurelius.titan.core;
  * Exception thrown due to invalid configuration options or when errors
  * occur during the configuration and initialization of Titan.
  * <p/>
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class TitanConfigurationException extends TitanException {

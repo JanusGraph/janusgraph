@@ -53,7 +53,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class ElasticSearchIndex implements IndexProvider {
@@ -151,14 +151,14 @@ public class ElasticSearchIndex implements IndexProvider {
 
         //Create index if it does not already exist
         IndicesExistsResponse response = client.admin().indices().exists(new IndicesExistsRequest(indexName)).actionGet();
-        if (!response.exists()) {
+        if (!response.isExists()) {
             CreateIndexResponse create = client.admin().indices().prepareCreate(indexName).execute().actionGet();
             try {
                 Thread.sleep(200);
             } catch (InterruptedException e) {
                 throw new TitanException("Interrupted while waiting for index to settle in",e);
             }
-            if (!create.acknowledged()) throw new IllegalArgumentException("Could not create index: " + indexName);
+            if (!create.isAcknowledged()) throw new IllegalArgumentException("Could not create index: " + indexName);
         }
     }
 
@@ -248,6 +248,7 @@ public class ElasticSearchIndex implements IndexProvider {
     @Override
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, TransactionHandle tx) throws StorageException {
         BulkRequestBuilder brb = client.prepareBulk();
+        int bulkrequests = 0;
         try {
             for (Map.Entry<String,Map<String, IndexMutation>> stores : mutations.entrySet()) {
                 String storename = stores.getKey();
@@ -263,6 +264,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (mutation.isDeleted()) {
                             log.trace("Deleting entire document {}",docid);
                             brb.add(new DeleteRequest(indexName,storename,docid));
+                            bulkrequests++;
                         } else {
                             Set<String> deletions = Sets.newHashSet(mutation.getDeletions());
                             if (mutation.hasAdditions()) {
@@ -271,6 +273,7 @@ public class ElasticSearchIndex implements IndexProvider {
                                 }
                             }
                             if (!deletions.isEmpty()) {
+                                //TODO make part of batch mutation if/when possible
                                 StringBuilder script = new StringBuilder();
                                 for (String key : deletions) {
                                     script.append("ctx._source.remove(\""+key+"\"); ");
@@ -285,11 +288,12 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (mutation.isNew()) { //Index
                             log.trace("Adding entire document {}",docid);
                             brb.add(new IndexRequest(indexName,storename,docid).source(getContent(mutation.getAdditions())));
-                        } else { //Update
+                            bulkrequests++;
+                        } else { //Update: TODO make part of batch mutation if/when possible
                             boolean needUpsert = !mutation.hasDeletions();
                             XContentBuilder builder = getContent(mutation.getAdditions());
                             UpdateRequestBuilder update = client.prepareUpdate(indexName,storename,docid).setDoc(builder);
-                            if (needUpsert) update.setUpsert(builder);
+                            if (needUpsert) update.setUpsertRequest(builder);
                             log.trace("Updating document {} with upsert {}",docid,needUpsert);
                             update.execute().actionGet();
                         }
@@ -297,7 +301,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
                 }
             }
-            brb.execute().actionGet();
+            if (bulkrequests>0) brb.execute().actionGet();
         }  catch (Exception e) {  throw convert(e);  }
     }
 
@@ -329,7 +333,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 }
             } else if (value instanceof String) {
                 if (relation == Text.CONTAINS) {
-                    return FilterBuilders.termFilter(key,(String)value);
+                    return FilterBuilders.termFilter(key,((String)value).toLowerCase());
 //                } else if (relation == Txt.PREFIX) {
 //                    return new PrefixFilter(new Term(key+STR_SUFFIX,(String)value));
 //                } else if (relation == Cmp.EQUAL) {
@@ -380,7 +384,7 @@ public class ElasticSearchIndex implements IndexProvider {
         //srb.setExplain(true);
 
         SearchResponse response = srb.execute().actionGet();
-        log.debug("Executed query [{}] in {} ms",query.getCondition(),response.tookInMillis());
+        log.debug("Executed query [{}] in {} ms",query.getCondition(),response.getTookInMillis());
         SearchHits hits = response.getHits();
         if (!query.hasLimit() && hits.totalHits()>=MAX_RESULT_SET_SIZE)
             log.warn("Query result set truncated to first [{}] elements for query: {}",MAX_RESULT_SET_SIZE,query);

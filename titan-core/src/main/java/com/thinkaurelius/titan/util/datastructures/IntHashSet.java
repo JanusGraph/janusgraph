@@ -3,6 +3,11 @@ package com.thinkaurelius.titan.util.datastructures;
 import cern.colt.list.IntArrayList;
 import cern.colt.map.OpenIntIntHashMap;
 
+/**
+ * Implementation of {@link IntSet} against {@link OpenIntIntHashMap}.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class IntHashSet extends OpenIntIntHashMap implements IntSet {
 
     private static final long serialVersionUID = -7297353805905443841L;

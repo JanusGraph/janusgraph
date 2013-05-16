@@ -4,26 +4,26 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Weigher;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Caches KeySliceQuery results which are marked <i>static</i> and hence do not change.
+ * Wraps a {@link KeyColumnValueStore} and caches KeySliceQuery results which are marked <i>static</i> and hence do not change.
  *
  * @see SliceQuery
  *
- * TODO: generalize cache to check for subsumption instead of equality of KeySliceQuery
- * and allow having a limit
+ * TODO: generalize cache to check for subsumption instead of equality of KeySliceQuery and allow having a limit
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class CachedKeyColumnValueStore implements KeyColumnValueStore {
@@ -60,7 +60,7 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
         return store.containsKey(key,txh);
     }
 
@@ -93,32 +93,22 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return store.get(key,column,txh);
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return store.containsKeyColumn(key,column,txh);
-    }
-
-    @Override
-    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         store.mutate(key,additions,deletions,txh);
     }
 
     @Override
-    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         store.acquireLock(key,column,expectedValue,txh);
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
+    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
         return store.getKeys(txh);
     }
 
     @Override
-    public ByteBuffer[] getLocalKeyPartition() throws StorageException {
+    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         return store.getLocalKeyPartition();
     }
 

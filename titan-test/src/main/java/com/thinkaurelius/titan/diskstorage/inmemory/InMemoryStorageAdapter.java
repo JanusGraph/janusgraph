@@ -2,17 +2,18 @@ package com.thinkaurelius.titan.diskstorage.inmemory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.apache.commons.configuration.Configuration;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
@@ -25,7 +26,7 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
     public KeyColumnValueStore openDatabase(final String name) throws StorageException {
         return new KeyColumnValueStore() {
             @Override
-            public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
+            public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
                 return false;
             }
 
@@ -35,35 +36,25 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
             }
 
             @Override
-            public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-                return null;
-            }
-
-            @Override
-            public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-                return false;
-            }
-
-            @Override
-            public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
+            public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
                 //Do nothing
             }
 
             @Override
-            public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
+            public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
                 //Do nothing
             }
 
             @Override
-            public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
-                return new RecordIterator<ByteBuffer>() {
+            public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
+                return new RecordIterator<StaticBuffer>() {
                     @Override
                     public boolean hasNext() throws StorageException {
                         return false;
                     }
 
                     @Override
-                    public ByteBuffer next() throws StorageException {
+                    public StaticBuffer next() throws StorageException {
                         throw new NoSuchElementException();
                     }
 
@@ -75,7 +66,7 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
             }
 
             @Override
-            public ByteBuffer[] getLocalKeyPartition() throws StorageException {
+            public StaticBuffer[] getLocalKeyPartition() throws StorageException {
                 throw new UnsupportedOperationException();
             }
 
@@ -92,7 +83,7 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         //Do nothing
     }
 

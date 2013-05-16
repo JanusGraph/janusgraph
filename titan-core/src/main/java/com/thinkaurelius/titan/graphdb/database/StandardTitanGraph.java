@@ -4,12 +4,16 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.BackendTransaction;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -27,15 +31,16 @@ import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Features;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 public class StandardTitanGraph extends TitanBlueprintsGraph {
 
@@ -109,6 +114,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     public StandardTitanTx newTransaction(TransactionConfig configuration) {
+        if (!isOpen) ExceptionFactory.graphShutdown();
         try {
             return new StandardTitanTx(this, configuration, backend.beginTransaction());
         } catch (StorageException e) {
@@ -137,14 +143,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     // ################### READ #########################
 
     public boolean containsVertexID(long id, BackendTransaction tx) {
-        log.trace("Checking node existence for {}", id);
+        log.trace("Checking vertex existence for {}", id);
         return tx.edgeStoreContainsKey(IDHandler.getKey(id));
     }
 
     public RecordIterator<Long> getVertexIDs(final BackendTransaction tx) {
         if (!backend.getStoreFeatures().supportsScan())
             throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
-        final RecordIterator<ByteBuffer> keyiter = tx.edgeStoreKeys();
+        final RecordIterator<StaticBuffer> keyiter = tx.edgeStoreKeys();
         return new RecordIterator<Long>() {
 
             @Override
@@ -183,7 +189,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     public void save(final Collection<InternalRelation> addedRelations,
-                     final Collection<InternalRelation> deletedRelations, final StandardTitanTx tx) throws StorageException {
+                     final Collection<InternalRelation> deletedRelations, final StandardTitanTx tx) {
         //Setup
         log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
 
@@ -194,9 +200,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (!tx.getConfiguration().hasAssignIDsImmediately())
             idAssigner.assignIDs(addedRelations);
 
-        for (int saveAttempt = 0; saveAttempt < maxWriteRetryAttempts; saveAttempt++) {
-//        while (true) { //Indefinite loop, broken if no exception occurs, otherwise retried or failed immediately
-            try {
+        Callable<Boolean> persist = new Callable<Boolean>(){
+            @Override
+            public Boolean call() throws Exception {
                 //2. Collect deleted edges
                 ListMultimap<InternalVertex, InternalRelation> mutations = ArrayListMultimap.create();
                 if (deletedRelations != null && !deletedRelations.isEmpty()) {
@@ -234,13 +240,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         otherEdgeTypes.put(itype, relation);
                     } else { //STANDARD TitanRelation
                         for (int pos = 0; pos < relation.getLen(); pos++) {
-                            InternalVertex node = relation.getVertex(pos);
-                            mutations.put(node, relation);
+                            InternalVertex vertex = relation.getVertex(pos);
+                            if (pos==0 || !relation.isLoop()) mutations.put(vertex, relation);
                             Direction dir = EdgeDirection.fromPosition(pos);
-                            if (acquireLocks && relation.getType().isUnique(dir) && !node.isNew()
+                            if (acquireLocks && relation.getType().isUnique(dir) && !vertex.isNew()
                                     && ((InternalType) relation.getType()).uniqueLock(dir)) {
                                 Entry entry = edgeSerializer.writeRelation(relation, pos, false, tx);
-                                mutator.acquireEdgeLock(IDHandler.getKey(node.getID()), entry.getColumn(), null);
+                                mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry.getColumn(), null);
                             }
                         }
                     }
@@ -262,22 +268,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 }
 
                 if (!mutations.isEmpty()) persist(mutations, tx);
-
-
-                //Successfully completed - return to break out of loop
-                break;
-            } catch (Throwable e) {
-                if (e instanceof TemporaryStorageException) {
-                    if (saveAttempt < maxWriteRetryAttempts - 1) BackendTransaction.temporaryStorageException(e,retryStorageWaitTime);
-                    else
-                        throw new PermanentStorageException("Tried committing " + maxWriteRetryAttempts + " times on temporary exception without success", e);
-                } else if (e instanceof StorageException) {
-                    throw (StorageException) e;
-                } else {
-                    throw new PermanentStorageException("Unidentified exception occurred during persistence", e);
-                }
+                return true;
             }
-        }
+
+            @Override
+            public String toString() { return "PersistingTransaction"; }
+        };
+        BackendOperation.execute(persist, maxWriteRetryAttempts, retryStorageWaitTime);
     }
 
 
@@ -286,17 +283,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         assert mutatedEdges != null && !mutatedEdges.isEmpty();
 
         Collection<V> vertices = mutatedEdges.keySet();
-//		if (sortNodes) {
-//			List<V> sortedvertices = new ArrayList<V>(vertices);
-//			Collections.sort(sortedvertices);
-//			vertices=sortedvertices;
-//		}
+
         BackendTransaction mutator = tx.getTxHandle();
         for (V vertex : vertices) {
             Preconditions.checkArgument(vertex.getID()>0,"Vertex has no id: %s",vertex.getID());
             List<InternalRelation> edges = mutatedEdges.get(vertex);
             List<Entry> additions = new ArrayList<Entry>(edges.size());
-            List<ByteBuffer> deletions = new ArrayList<ByteBuffer>(Math.max(10, edges.size() / 10));
+            List<StaticBuffer> deletions = new ArrayList<StaticBuffer>(Math.max(10, edges.size() / 10));
             for (InternalRelation edge : edges) {
                 for (int pos=0;pos<edge.getLen();pos++) {
                     if (edge.getVertex(pos).equals(vertex)) {

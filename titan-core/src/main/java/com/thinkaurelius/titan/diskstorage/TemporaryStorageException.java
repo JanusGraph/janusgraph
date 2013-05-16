@@ -8,7 +8,7 @@ package com.thinkaurelius.titan.diskstorage;
  * If this exception is thrown it indicates that retrying the same operation might potentially
  * lead to success (but not necessarily)
  * <p/>
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class TemporaryStorageException extends StorageException {

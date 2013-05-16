@@ -1,78 +1,90 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
-import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.util.datastructures.ImmutableLongObjectMap;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.nio.ByteBuffer;
 
 /**
- * An entry is the primitive persistence unit used in the graph database middleware.
+ * An entry is the primitive persistence unit used in the graph database storage backend.
  * <p/>
  * An entry consists of a column and value both of which are general {@link java.nio.ByteBuffer}s.
+ * The value may be null but the column may not.
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
-public class Entry implements Comparable<Entry> {
-
-    private final ByteBuffer column;
-    private final ByteBuffer value;
-
-    private volatile transient ImmutableLongObjectMap cache;
-
-    public Entry(ByteBuffer column, ByteBuffer value) {
-        Preconditions.checkNotNull(column);
-        this.column = column;
-        this.value = value;
-        this.cache = null;
-    }
+public interface Entry extends Comparable<Entry> {
 
     /**
-     * Returns the column ByteBuffer of this entry.
+     * Returns the column of this entry as a StaticBuffer.
      *
-     * @return Column ByteBuffer
+     * @return Column
      */
-    public ByteBuffer getColumn() {
-        return column;
-    }
+    public StaticBuffer getColumn();
+
+    /**
+     * Returns the value of this entry as a StaticBuffer.
+     *
+     * @return Value
+     */
+    public StaticBuffer getValue();
+
+    /**
+     * Returns the column of this entry as a ReadBuffer.
+     *
+     * @return Column
+     */
+    public ReadBuffer getReadColumn();
+
+    /**
+     * Returns the value of this entry as a ReadBuffer.
+     *
+     * @return Value
+     */
+    public ReadBuffer getReadValue();
+
+    /**
+     * Returns the column of this entry as an array.
+     *
+     * @return Column
+     */
+    public byte[] getArrayColumn();
+
+    /**
+     * Returns the value of this entry as an array.
+     *
+     * @return Value
+     */
+    public byte[] getArrayValue();
+
+    /**
+     * Returns the column of this entry as a ByteBuffer.
+     *
+     * @return Column
+     */
+    public ByteBuffer getByteBufferColumn();
 
 
     /**
-     * Returns the value ByteBuffer of this entry.
+     * Returns the value of this entry as a ByteBuffer.
      *
-     * @return Value ByteBuffer
+     * @return Value
      */
-    public ByteBuffer getValue() {
-        return value;
-    }
+    public ByteBuffer getByteBufferValue();
 
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder().append(column.duplicate()).toHashCode();
-    }
+    /**
+     * Returns the cached parsed representation of this Entry if it exists, else NULL
+     * @return
+     */
+    public ImmutableLongObjectMap getCache();
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null) return false;
-        if (!getClass().isInstance(obj)) return false;
-        Entry other = (Entry) obj;
-        return column.duplicate().equals(other.column.duplicate());
-    }
-
-    @Override
-    public int compareTo(Entry entry) {
-        return ByteBufferUtil.compare(column.duplicate(),entry.column.duplicate());
-    }
-
-    public ImmutableLongObjectMap getCache() {
-        return cache;
-    }
-
-    public void setCache(ImmutableLongObjectMap cache) {
-        Preconditions.checkNotNull(cache);
-        this.cache=cache;
-    }
+    /**
+     * Sets the cached parsed representation of this Entry. This method does not synchronize,
+     * so a previously set representation would simply be overwritten.
+     *
+     * @param cache
+     */
+    public void setCache(ImmutableLongObjectMap cache);
 
 }

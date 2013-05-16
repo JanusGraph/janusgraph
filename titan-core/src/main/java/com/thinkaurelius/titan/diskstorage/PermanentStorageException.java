@@ -5,7 +5,7 @@ package com.thinkaurelius.titan.diskstorage;
  * that is, an exception that is due to a permanent failure while persisting
  * data.
  * <p/>
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class PermanentStorageException extends StorageException {

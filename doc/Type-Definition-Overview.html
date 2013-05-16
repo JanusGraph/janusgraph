@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Titan 0.3.1</a></h3>
   <h1>Type Definition Overview</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -68,7 +68,7 @@ Mousetrap.bind(['e'], function( e ) {
   <div id="wiki-body" class="gollum-textile-content">
     <div id="template">
       <p><span class="float-left"><span><img src="images/titan-configuration.png" width="200px" /></span></span></p>
-<p>In Titan, edge lables and property keys are <strong>types</strong> which can be individually configured to provide data verification, better storage efficiency, and higher performance. Types are uniquely identified by their name and are themselves vertices in the graph. Type vertices can be retrieved by their name.</p>
+<p>In Titan, edge labels and property keys are <strong>types</strong> which can be individually configured to provide data verification, better storage efficiency, and higher performance. Types are uniquely identified by their name and are themselves vertices in the graph. Type vertices can be retrieved by their name.</p>
 <div class="highlight"><pre><span class="n">TitanGraph</span> <span class="n">graph</span> <span class="o">=</span> <span class="o">...</span>
 <span class="n">TitanType</span> <span class="n">name</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="na">getType</span><span class="o">(</span><span class="s">"name"</span><span class="o">);</span>
 </pre></div>
@@ -157,14 +157,14 @@ is stored with the attribute value. See <a href="Graph-Configuration">Graph Conf
 <h3>Unique Types<a class="anchor" id="Unique-Types" href="#Unique-Types"></a></h3>
 <p>A type is unique, if there is at most one edge or property of this type per vertex in the given direction. Specifically, this means:</p>
 <ul><li>A property key is out-unique, if a vertex has at most one value associated with the key. <em>name</em> is an example of an out-unique property key since each god has one name.</li>
-	<li>An edge lable is out-unique, if a vertex has at most one outgoing edge for that label. <em>father</em> is an exmaple of an out-unique edge label, since each god has at most one father.</li>
+	<li>An edge label is out-unique, if a vertex has at most one outgoing edge for that label. <em>father</em> is an example of an out-unique edge label, since each god has at most one father.</li>
 	<li>A property key is in-unique, if there is at most one vertex which has any given attribute as its property value. <em>ssn</em> is an example of a in-unique property key since each social security number is uniquely associated with one person.</li>
 </ul><p>Since edges and properties of unique labels and keys must be unique per vertex, inconsistencies could arise when two <code>TitanGraph</code> instances try to update the same unique edge or property concurrently, since one may overwrite the change of the other. To avoid such inconsistencies, Titan will acquire locks on unique edges and properties by default. Acquiring locks, however, can be very expensive depending on the storage backend. In cases where concurrent modifications can be excluded or blind overwrites are acceptable, a unique <code>TitanType</code> can be configured to <em>not</em> acquire locks by passing in <code>UniquenessConsistency.NO_LOCK</code> as a second argument to <code>TypeMaker.unique()</code>. This configuration option should be used with care and only if the extra performance gain is needed.</p>
 <h3>Type Groups<a class="anchor" id="Type-Groups" href="#Type-Groups"></a></h3>
 <p>Titan allows types to be grouped and to retrieve all edges or properties for a type group. For example, in the graph of gods we have <em>father</em>, <em>mother</em>, and <em>brother</em> labels. If we want to retrieve all family members of a vertex, we could do</p>
 <div class="highlight"><pre><span class="n">v</span><span class="o">.</span><span class="na">getVertices</span><span class="o">(</span><span class="n">OUT</span><span class="o">,</span><span class="s">"father"</span><span class="o">,</span><span class="s">"mother"</span><span class="o">,</span><span class="s">"brother"</span><span class="o">)</span>
 </pre></div>
-<p>However, this becomes cumbersome as more family labels like <em>sister</em>, <em>uncle</em>, etc are added. Moreover, each edge label requires and independent index retrieval. In the example above, the database index is accessed three times. Instead, a family type group can group all these labels together.</p>
+<p>However, this becomes cumbersome as more family labels like <em>sister</em>, <em>uncle</em>, etc are added. Moreover, each edge label requires an independent index retrieval. In the example above, the database index is accessed three times. Instead, a family type group can group all these labels together.</p>
 <div class="highlight"><pre><span class="n">TypeGroup</span> <span class="n">family</span> <span class="o">=</span> <span class="n">TypeGroup</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span><span class="s">"family"</span><span class="o">);</span>
 <span class="n">TitanLabel</span> <span class="n">father</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">makeType</span><span class="o">().</span><span class="na">name</span><span class="o">(</span><span class="s">"father"</span><span class="o">).</span><span class="na">group</span><span class="o">(</span><span class="n">family</span><span class="o">).</span><span class="na">makeEdgeLabel</span><span class="o">();</span>
 <span class="n">TitanLabel</span> <span class="n">mother</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="na">makeType</span><span class="o">().</span><span class="na">name</span><span class="o">(</span><span class="s">"mother"</span><span class="o">).</span><span class="na">group</span><span class="o">(</span><span class="n">family</span><span class="o">).</span><span class="na">makeEdgeLabel</span><span class="o">();</span>
@@ -189,7 +189,7 @@ Once the type group is defined, we assign the <em>father</em>, <em>mother</em>, 
 </pre></div>
 <p>This example is almost identical to the primary key example above with the only difference that <em>time</em> is configured to be part of the signature.</p>
 <p>If a type is used in the primary key, it cannot be part of the signature.<br />
-As before, <code>TitanTypes</code> used in the signature must be either out-unique property keys or out-unique, unidirected edge lables.</p>
+As before, <code>TitanTypes</code> used in the signature must be either out-unique property keys or out-unique, unidirected edge labels.</p>
 <h2>Default Type Creation<a class="anchor" id="Default-Type-Creation" href="#Default-Type-Creation"></a></h2>
 <p>Titan will create edge labels and property keys the first time they are referenced by name using a default configuration unless they have been previously configured using <code>TypeMaker</code> as discussed above.</p>
 <p>By default, property keys are configured to be out-unique but non-locking with <code>Object.class</code> as the data type. Note, that it is more efficient to define an appropriate data type via <code>TypeMaker</code>. Hence, property keys don’t have an index by default. To create an indexed key with this default configuration, invoke <code>Graph.createKeyIndex("name",Vertex.class)</code> before the property key is being used.</p>
@@ -201,7 +201,7 @@ As before, <code>TitanTypes</code> used in the signature must be either out-uniq
 
 </div>
 <div id="footer">
-  <p id="last-edit">Last edited by <b>mbroecheler</b>, 2013-03-29 05:26:15</p>
+  <p id="last-edit">Last edited by <b>spmallette</b>, 2013-04-09 10:13:19</p>
   <p>
     
   </p>

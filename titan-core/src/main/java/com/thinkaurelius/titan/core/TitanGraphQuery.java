@@ -13,7 +13,7 @@ import com.tinkerpop.blueprints.Vertex;
  * Finding matching elements using this query mechanism requires that appropriate index structures have
  * been defined for the keys. See {@link TypeMaker#indexed(Class)} and {@link TypeMaker#indexed(String, Class)}.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  * @since 0.3.0
  */
 

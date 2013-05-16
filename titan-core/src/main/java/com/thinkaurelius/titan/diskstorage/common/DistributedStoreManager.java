@@ -14,11 +14,15 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.Random;
 
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * Abstract class that handles configuration options shared by all distributed storage backends
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class DistributedStoreManager {
+public abstract class DistributedStoreManager extends AbstractStoreManager {
 
     private static final Logger log = LoggerFactory.getLogger(DistributedStoreManager.class);
     private static final Random random = new Random();
@@ -29,24 +33,34 @@ public class DistributedStoreManager {
     protected final int port;
     protected final int connectionTimeout;
     protected final int connectionPoolSize;
-//    protected final boolean isKeyOrdered;
+    protected final int pageSize;
 
     public DistributedStoreManager(Configuration storageConfig, int portDefault) {
-        if (storageConfig.containsKey(GraphDatabaseConfiguration.HOSTNAME_KEY)) {
-            this.hostnames = storageConfig.getStringArray(GraphDatabaseConfiguration.HOSTNAME_KEY);
+        super(storageConfig);
+        if (storageConfig.containsKey(HOSTNAME_KEY)) {
+            this.hostnames = storageConfig.getStringArray(HOSTNAME_KEY);
         } else {
-            this.hostnames = new String[]{GraphDatabaseConfiguration.HOSTNAME_DEFAULT};
+            this.hostnames = new String[]{HOSTNAME_DEFAULT};
         }
         Preconditions.checkArgument(hostnames.length>0,"No hostname configured");
         this.port = storageConfig.getInt(GraphDatabaseConfiguration.PORT_KEY, portDefault);
         this.rid = getRid(storageConfig);
-        this.connectionTimeout = storageConfig.getInt(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
-        this.connectionPoolSize = storageConfig.getInt(GraphDatabaseConfiguration.CONNECTION_POOL_SIZE_KEY, GraphDatabaseConfiguration.CONNECTION_POOL_SIZE_DEFAULT);
-        //this.isKeyOrdered = storageConfig.getBoolean(GraphDatabaseConfiguration.STORAGE_IS_ORDERED_KEY,GraphDatabaseConfiguration.STORAGE_IS_ORDERED_DEFAULT);
+        this.connectionTimeout = storageConfig.getInt(CONNECTION_TIMEOUT_KEY, CONNECTION_TIMEOUT_DEFAULT);
+        this.connectionPoolSize = storageConfig.getInt(CONNECTION_POOL_SIZE_KEY, CONNECTION_POOL_SIZE_DEFAULT);
+        this.pageSize = storageConfig.getInt(PAGE_SIZE_KEY,PAGE_SIZE_DEFAULT);
     }
 
+    /**
+     * Returns a randomly chosen host name. This is used to pick one host when multiple are configured
+     *
+     * @return
+     */
     protected String getSingleHostname() {
         return hostnames[random.nextInt(hostnames.length)];
+    }
+
+    public int getPageSize() {
+        return pageSize;
     }
 
     @Override

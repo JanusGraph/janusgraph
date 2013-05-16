@@ -9,7 +9,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.StringFactory;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public abstract class AbstractEdge extends AbstractTypedRelation implements TitanEdge {

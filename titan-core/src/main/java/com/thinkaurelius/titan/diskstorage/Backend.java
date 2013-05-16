@@ -12,13 +12,13 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManagerAdapter;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockConfiguration;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -42,7 +43,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  * Orchestrates and configures all backend systems:
  * The primary backend storage ({@link KeyColumnValueStore}) and all external indexing providers ({@link IndexProvider}).
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class Backend {
@@ -74,8 +75,7 @@ public class Backend {
         put(ID_STORE_NAME, 4);
     }};
 
-    private final StoreManager storeManager;
-    private final boolean isKeyColumnValueStore;
+    private final KeyColumnValueStoreManager storeManager;
     private final StoreFeatures storeFeatures;
 
     private KeyColumnValueStore edgeStore;
@@ -96,7 +96,6 @@ public class Backend {
     public Backend(Configuration storageConfig) {
         storeManager = getStorageManager(storageConfig);
         indexes = getIndexes(storageConfig);
-        isKeyColumnValueStore = storeManager instanceof KeyColumnValueStoreManager;
         storeFeatures = storeManager.getFeatures();
 
         int bufferSizeTmp = storageConfig.getInt(BUFFER_SIZE_KEY, BUFFER_SIZE_DEFAULT);
@@ -150,19 +149,9 @@ public class Backend {
     private KeyColumnValueStore getBufferStore(String name) throws StorageException {
         Preconditions.checkArgument(bufferSize <= 1 || storeManager.getFeatures().supportsBatchMutation());
         KeyColumnValueStore store = null;
-        if (isKeyColumnValueStore) {
-            assert storeManager instanceof KeyColumnValueStoreManager;
-            store = ((KeyColumnValueStoreManager) storeManager).openDatabase(name);
-            if (bufferSize > 1) {
-                store = new BufferedKeyColumnValueStore(store, true);
-            }
-        } else {
-            assert storeManager instanceof KeyValueStoreManager;
-            KeyValueStore kvstore = ((KeyValueStoreManager) storeManager).openDatabase(name);
-            if (bufferSize > 1) {
-                //TODO: support buffer mutations for KeyValueStores
-            }
-            store = KeyValueStoreManagerAdapter.wrapKeyValueStore(kvstore, STATIC_KEY_LENGTHS);
+        store = storeManager.openDatabase(name);
+        if (bufferSize > 1) {
+            store = new BufferedKeyColumnValueStore(store, true);
         }
         //Enable cache
         store = new CachedKeyColumnValueStore(store);
@@ -170,15 +159,14 @@ public class Backend {
     }
 
     private KeyColumnValueStore getStore(String name) throws StorageException {
-        if (isKeyColumnValueStore) {
-            return ((KeyColumnValueStoreManager) storeManager).openDatabase(name);
-        } else {
-            return KeyValueStoreManagerAdapter.wrapKeyValueStore(
-                    ((KeyValueStoreManager) storeManager).openDatabase(name), STATIC_KEY_LENGTHS);
-        }
+        return storeManager.openDatabase(name);
     }
 
-
+    /**
+     * Initializes this backend with the given configuration. Must be called before this Backend can be used
+     *
+     * @param config
+     */
     public void initialize(Configuration config) {
         try {
             //EdgeStore & VertexIndexStore
@@ -201,20 +189,33 @@ public class Backend {
                 edgeIndexStore = new HashPrefixKeyColumnValueStore(edgeIndexStore, 4);
             }
 
-            String version = storeManager.getConfigurationProperty(TITAN_BACKEND_VERSION);
-            if (!TitanConstants.VERSION.equals(version)) {
-                if (version == null ||
-                        (TitanConstants.COMPATIBLE_VERSIONS.contains(version))) {
-                    storeManager.setConfigurationProperty(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
-                } else {
-                    throw new TitanException("StorageBackend is incompatible with Titan version: " + TitanConstants.VERSION + " vs. " + version);
+            String version = BackendOperation.execute(new Callable<String>() {
+                @Override
+                public String call() throws Exception {
+                    String version = storeManager.getConfigurationProperty(TITAN_BACKEND_VERSION);
+                    if (!TitanConstants.VERSION.equals(version) && (version == null ||
+                            (TitanConstants.COMPATIBLE_VERSIONS.contains(version)))) {
+                        storeManager.setConfigurationProperty(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
+                        version = TitanConstants.VERSION;
+                    }
+                    return version;
                 }
+                @Override
+                public String toString() { return "ConfigurationRead"; }
+            }, config.getLong(SETUP_WAITTIME_KEY, SETUP_WAITTIME_DEFAULT));
+            if (!TitanConstants.VERSION.equals(version)) {
+                throw new TitanException("StorageBackend is incompatible with Titan version: " + TitanConstants.VERSION + " vs. " + version);
             }
         } catch (StorageException e) {
             throw new TitanException("Could not initialize backend", e);
         }
     }
 
+    /**
+     * Get information about all registered {@link IndexProvider}s.
+     *
+     * @return
+     */
     public Map<String,IndexInformation> getIndexInformation() {
         ImmutableMap.Builder<String,IndexInformation> copy = ImmutableMap.builder();
         copy.putAll(indexes);
@@ -222,10 +223,15 @@ public class Backend {
         return copy.build();
     }
 
-    private final static StoreManager getStorageManager(Configuration storageConfig) {
-        return getImplementationClass(storageConfig,GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,
+    private final static KeyColumnValueStoreManager getStorageManager(Configuration storageConfig) {
+        StoreManager manager = getImplementationClass(storageConfig,GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,
                                     GraphDatabaseConfiguration.STORAGE_BACKEND_DEFAULT,
                                     REGISTERED_STORAGE_MANAGERS);
+        if (manager instanceof OrderedKeyValueStoreManager) {
+            manager = new OrderedKeyValueStoreManagerAdapter((OrderedKeyValueStoreManager) manager,STATIC_KEY_LENGTHS);
+        }
+        Preconditions.checkArgument(manager instanceof KeyColumnValueStoreManager);
+        return (KeyColumnValueStoreManager)manager;
     }
 
     private final static Map<String,IndexProvider> getIndexes(Configuration storageConfig) {
@@ -283,30 +289,37 @@ public class Backend {
 //        return vertexIndexStore;
 //    }
 
+    /**
+     * Returns the configured {@link IDAuthority}.
+     * @return
+     */
     public IDAuthority getIDAuthority() {
         Preconditions.checkNotNull(idAuthority, "Backend has not yet been initialized");
         return idAuthority;
     }
 
+    /**
+     * Returns the {@link StoreFeatures} of the configured backend storage engine.
+     *
+     * @return
+     */
     public StoreFeatures getStoreFeatures() {
         return storeManager.getFeatures();
     }
 
-    //2. Entity Index
-
     //3. Messaging queues
 
+    /**
+     * Opens a new transaction against all registered backend system wrapped in one {@link BackendTransaction}.
+     *
+     * @return
+     * @throws StorageException
+     */
     public BackendTransaction beginTransaction() throws StorageException {
         StoreTransaction tx = storeManager.beginTransaction(ConsistencyLevel.DEFAULT);
         if (bufferSize > 1) {
             assert storeManager.getFeatures().supportsBatchMutation();
-            if (isKeyColumnValueStore) {
-                assert storeManager instanceof KeyColumnValueStoreManager;
-                tx = new BufferTransaction(tx, (KeyColumnValueStoreManager) storeManager, bufferSize, writeAttempts, persistAttemptWaittime);
-            } else {
-                assert storeManager instanceof KeyValueStoreManager;
-                //TODO: support buffer mutations
-            }
+            tx = new BufferTransaction(tx, storeManager, bufferSize, writeAttempts, persistAttemptWaittime);
         }
         if (!storeFeatures.supportsLocking()) {
             if (storeFeatures.supportsTransactions()) {
@@ -335,6 +348,13 @@ public class Backend {
         for (IndexProvider index : indexes.values()) index.close();
     }
 
+    /**
+     * Clears the storage of all registered backend data providers. This includes backend storage engines and index providers.
+     *
+     * IMPORTANT: Clearing storage means that ALL data will be lost and cannot be recovered.
+     *
+     * @throws StorageException
+     */
     public void clearStorage() throws StorageException {
         edgeStore.close();
         vertexIndexStore.close();

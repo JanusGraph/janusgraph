@@ -32,7 +32,7 @@ public class VertexLongList implements VertexListInternal {
     @Override
     public void add(TitanVertex n) {
         if (sorted)
-            Preconditions.checkArgument(n.getID() >= vertices.get(vertices.size() - 1), "Nodes must be inserted in sorted order");
+            Preconditions.checkArgument(n.getID() >= vertices.get(vertices.size() - 1), "Vertices must be inserted in sorted order");
         vertices.add(n.getID());
     }
 
@@ -64,16 +64,16 @@ public class VertexLongList implements VertexListInternal {
     }
 
     @Override
-    public void addAll(VertexList nodelist) {
+    public void addAll(VertexList vertexlist) {
         AbstractLongList othervertexids = null;
-        if (nodelist instanceof VertexLongList) {
-            othervertexids = ((VertexLongList) nodelist).vertices;
-        } else if (nodelist instanceof VertexArrayList) {
-            VertexArrayList other = (VertexArrayList) nodelist;
+        if (vertexlist instanceof VertexLongList) {
+            othervertexids = ((VertexLongList) vertexlist).vertices;
+        } else if (vertexlist instanceof VertexArrayList) {
+            VertexArrayList other = (VertexArrayList) vertexlist;
             othervertexids = new LongArrayList(other.size());
             for (int i = 0; i < other.size(); i++) othervertexids.add(other.getID(i));
         } else {
-            throw new IllegalArgumentException("Unsupported nodelist: " + nodelist.getClass());
+            throw new IllegalArgumentException("Unsupported vertex-list: " + vertexlist.getClass());
         }
         sorted = false;
         vertices.addAllOfFromTo(othervertexids, 0, othervertexids.size() - 1);
@@ -98,7 +98,7 @@ public class VertexLongList implements VertexListInternal {
 
             @Override
             public void remove() {
-                throw new UnsupportedOperationException("Nodes cannot be removed from neighborhood list");
+                throw new UnsupportedOperationException("Vertices cannot be removed from neighborhood list");
             }
 
         };

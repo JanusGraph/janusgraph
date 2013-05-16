@@ -1,12 +1,10 @@
 package com.thinkaurelius.titan.diskstorage;
 
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -14,11 +12,13 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVUtil;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 public abstract class KeyValueStoreTest {
 
@@ -28,9 +28,9 @@ public abstract class KeyValueStoreTest {
     private String storeName = "testStore1";
 
 
-    protected KeyValueStoreManager manager;
+    protected OrderedKeyValueStoreManager manager;
     protected StoreTransaction tx;
-    protected KeyValueStore store;
+    protected OrderedKeyValueStore store;
 
     @Before
     public void setUp() throws Exception {
@@ -44,7 +44,7 @@ public abstract class KeyValueStoreTest {
         store = manager.openDatabase(storeName);
     }
 
-    public abstract KeyValueStoreManager openStorageManager() throws StorageException;
+    public abstract OrderedKeyValueStoreManager openStorageManager() throws StorageException;
 
     @After
     public void tearDown() throws Exception {
@@ -73,7 +73,6 @@ public abstract class KeyValueStoreTest {
     }
 
     public void loadValues(String[] values) throws StorageException {
-        List<KeyValueEntry> entries = new ArrayList<KeyValueEntry>();
         for (int i = 0; i < numKeys; i++) {
             store.insert(KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(values[i]), tx);
         }
@@ -81,7 +80,6 @@ public abstract class KeyValueStoreTest {
 
     public Set<Integer> deleteValues(int start, int every) throws StorageException {
         Set<Integer> removed = new HashSet<Integer>();
-        List<ByteBuffer> keys = new ArrayList<ByteBuffer>();
         for (int i = start; i < numKeys; i = i + every) {
             removed.add(i);
             store.delete(KeyValueStoreUtil.getBuffer(i), tx);
@@ -110,7 +108,7 @@ public abstract class KeyValueStoreTest {
 
     public void checkValues(String[] values, Set<Integer> removed) throws StorageException {
         for (int i = 0; i < numKeys; i++) {
-            ByteBuffer result = store.get(KeyValueStoreUtil.getBuffer(i), tx);
+            StaticBuffer result = store.get(KeyValueStoreUtil.getBuffer(i), tx);
             if (removed.contains(i)) {
                 Assert.assertNull(result);
             } else {
@@ -170,12 +168,16 @@ public abstract class KeyValueStoreTest {
         if (manager.getFeatures().supportsScan()) {
             String[] values = generateValues();
             loadValues(values);
-            RecordIterator<ByteBuffer> iterator0 = store.getKeys(tx);
+            RecordIterator<StaticBuffer> iterator0 = store.getKeys(tx);
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator0));
             clopen();
-            RecordIterator<ByteBuffer> iterator1 = store.getKeys(tx);
-            RecordIterator<ByteBuffer> iterator2 = store.getKeys(tx);
-            RecordIterator<ByteBuffer> iterator3 = store.getKeys(tx);
+            RecordIterator<StaticBuffer> iterator1 = store.getKeys(tx);
+            RecordIterator<StaticBuffer> iterator2 = store.getKeys(tx);
+            // The idea is to open an iterator without using it
+            // to make sure that closing a transaction will clean it up.
+            // (important for BerkeleyJE where leaving cursors open causes exceptions)
+            @SuppressWarnings("unused")
+            RecordIterator<StaticBuffer> iterator3 = store.getKeys(tx);
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator1));
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator2));
         }
@@ -184,9 +186,9 @@ public abstract class KeyValueStoreTest {
     public void checkSlice(String[] values, Set<Integer> removed, int start, int end, int limit) throws StorageException {
         List<KeyValueEntry> entries;
         if (limit <= 0)
-            entries = store.getSlice(KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), tx);
+            entries = KVUtil.getSlice(store,KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), tx);
         else
-            entries = store.getSlice(KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), limit, tx);
+            entries = KVUtil.getSlice(store,KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), limit, tx);
 
         int pos = 0;
         for (int i = start; i < end; i++) {

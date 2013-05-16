@@ -1,6 +1,10 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import org.apache.commons.lang.time.StopWatch;
 import org.junit.Test;
@@ -10,7 +14,7 @@ import java.nio.ByteBuffer;
 import static junit.framework.Assert.assertEquals;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class VariableLongTest {
@@ -18,20 +22,20 @@ public class VariableLongTest {
     public void positiveWrite(long maxValue, long jump) {
         long allocate = maxValue / jump * 8;
         Preconditions.checkArgument(allocate < (1 << 28));
-        ByteBuffer b = ByteBuffer.allocate((int) allocate);
+        WriteBuffer wb = new WriteByteBuffer((int) allocate);
         int num = 0;
         StopWatch w = new StopWatch();
         w.start();
         for (long i = 0; i < maxValue; i += jump) {
-            VariableLong.writePositive(b, i);
+            VariableLong.writePositive(wb, i);
             num++;
         }
-        b.flip();
         //for (int i=0;i<b.remaining();i++) System.out.print(b.get(i)+"|");
         w.stop();
-        System.out.println("Writing " + num + " longs in " + b.limit() + " bytes. in time: " + w.getTime());
+        ReadBuffer rb = wb.getStaticBuffer().asReadBuffer();
+        System.out.println("Writing " + num + " longs in " + rb.length() + " bytes. in time: " + w.getTime());
         for (long i = 0; i < maxValue; i += jump) {
-            long value = VariableLong.readPositive(b);
+            long value = VariableLong.readPositive(rb);
             assertEquals(i, value);
         }
     }
@@ -39,13 +43,13 @@ public class VariableLongTest {
     public void negativeWrite(long maxValue, long jump) {
         long allocate = maxValue / jump * 8 * 2;
         Preconditions.checkArgument(allocate < (1 << 28));
-        ByteBuffer b = ByteBuffer.allocate((int) allocate);
+        WriteBuffer wb = new WriteByteBuffer((int) allocate);
         for (long i = -maxValue; i < maxValue; i += jump) {
-            VariableLong.write(b, i);
+            VariableLong.write(wb, i);
         }
-        b.flip();
+        ReadBuffer rb = wb.getStaticBuffer().asReadBuffer();
         for (long i = -maxValue; i < maxValue; i += jump) {
-            long value = VariableLong.read(b);
+            long value = VariableLong.read(rb);
             assertEquals(i, value);
         }
     }
@@ -72,14 +76,14 @@ public class VariableLongTest {
 
     @Test
     public void testBoundary() {
-        ByteBuffer b = ByteBuffer.allocate(512);
-        VariableLong.write(b, 0);
-        VariableLong.write(b, Long.MAX_VALUE);
-        VariableLong.write(b, -Long.MAX_VALUE);
-        b.flip();
-        assertEquals(0, VariableLong.read(b));
-        assertEquals(Long.MAX_VALUE, VariableLong.read(b));
-        assertEquals(-Long.MAX_VALUE, VariableLong.read(b));
+        WriteBuffer wb = new WriteByteBuffer(512);
+        VariableLong.write(wb, 0);
+        VariableLong.write(wb, Long.MAX_VALUE);
+        VariableLong.write(wb, -Long.MAX_VALUE);
+        ReadBuffer rb = wb.getStaticBuffer().asReadBuffer();
+        assertEquals(0, VariableLong.read(rb));
+        assertEquals(Long.MAX_VALUE, VariableLong.read(rb));
+        assertEquals(-Long.MAX_VALUE, VariableLong.read(rb));
     }
 
 }

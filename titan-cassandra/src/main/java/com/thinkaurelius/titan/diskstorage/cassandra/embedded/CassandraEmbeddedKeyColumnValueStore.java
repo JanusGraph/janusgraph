@@ -1,13 +1,16 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
+
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.filter.IDiskAtomFilter;
@@ -55,12 +58,6 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
     @Override
     public void close() throws StorageException {
-    }
-
-    @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        Preconditions.checkNotNull(txh);
-        return getInternal(keyspace, columnFamily, key, column, getTx(txh).getReadConsistencyLevel().getDBConsistency());
     }
 
     static ByteBuffer getInternal(String keyspace,
@@ -111,32 +108,34 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column,
-                                     StoreTransaction txh) throws StorageException {
-        return null != get(key, column, txh);
-    }
-
-    @Override
-    public void acquireLock(ByteBuffer key, ByteBuffer column,
-                            ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer column,
+                            StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
+    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
         final IPartitioner<?> partitioner = StorageService.getPartitioner();
 
-        if (!(partitioner instanceof RandomPartitioner) && !(partitioner instanceof Murmur3Partitioner))
+        final Token minimumToken, maximumToken;
+        if (partitioner instanceof RandomPartitioner) {
+            minimumToken = ((RandomPartitioner) partitioner).getMinimumToken();
+            maximumToken = new BigIntegerToken(RandomPartitioner.MAXIMUM);
+        } else if (partitioner instanceof Murmur3Partitioner) {
+            minimumToken = ((Murmur3Partitioner) partitioner).getMinimumToken();
+            maximumToken = new LongToken(Murmur3Partitioner.MAXIMUM);
+        } else if (partitioner instanceof ByteOrderedPartitioner) {
+            //TODO: This makes the assumption that its an EdgeStore (i.e. 8 byte keys)
+            minimumToken = new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.zeroByteBuffer(8));
+            maximumToken = new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.oneByteBuffer(8));
+        } else {
             throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
+        }
 
-        final Token maximumToken = (partitioner instanceof RandomPartitioner)
-                                    ? new BigIntegerToken(RandomPartitioner.MAXIMUM)
-                                    : new LongToken(Murmur3Partitioner.MAXIMUM);
-
-        return new RecordIterator<ByteBuffer>() {
-            private Iterator<Row> keys = getKeySlice(partitioner.getMinimumToken(),
+        return new RecordIterator<StaticBuffer>() {
+            private Iterator<Row> keys = getKeySlice(minimumToken,
                                                      maximumToken,
-                                                     PAGE_SIZE);
+                                                     storeManager.getPageSize());
 
             private ByteBuffer lastSeenKey = null;
 
@@ -145,7 +144,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                 boolean hasNext = keys.hasNext();
 
                 if (!hasNext && lastSeenKey != null) {
-                    keys = getKeySlice(partitioner.getToken(lastSeenKey), maximumToken, PAGE_SIZE);
+                    keys = getKeySlice(partitioner.getToken(lastSeenKey), maximumToken, storeManager.getPageSize());
                     hasNext = keys.hasNext();
                 }
 
@@ -153,14 +152,14 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             }
 
             @Override
-            public ByteBuffer next() throws StorageException {
+            public StaticBuffer next() throws StorageException {
                 if (!hasNext())
                     throw new NoSuchElementException();
 
                 Row row = keys.next();
 
                 try {
-                    return row.key.key.duplicate();
+                    return new StaticByteBuffer(row.key.key);
                 } finally {
                     lastSeenKey = row.key.key;
                 }
@@ -210,7 +209,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     @Override
-    public ByteBuffer[] getLocalKeyPartition() throws StorageException {
+    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         return storeManager.getLocalKeyPartition();
     }
 
@@ -221,12 +220,13 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     @Override
-    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
-
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
+        
         QueryPath slicePath = new QueryPath(columnFamily);
+        // TODO key.asByteBuffer() may entail an unnecessary buffer copy
         ReadCommand sliceCmd = new SliceFromReadCommand(
                 keyspace,          // Keyspace name
-                key.duplicate(),   // Row key
+                key.asByteBuffer(),// Row key
                 slicePath,         // ColumnFamily
                 ByteBufferUtil.EMPTY_BYTE_BUFFER, // Start column name (empty means begin at first result)
                 ByteBufferUtil.EMPTY_BYTE_BUFFER, // End column name (empty means max out the count)
@@ -266,13 +266,13 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         QueryPath slicePath = new QueryPath(columnFamily);
         ReadCommand sliceCmd = new SliceFromReadCommand(
-                keyspace,        // Keyspace name
-                query.getKey().duplicate(), // Row key
-                slicePath,       // ColumnFamily
-                query.getSliceStart().duplicate(),     // Start column name (empty means begin at first result)
-                query.getSliceEnd().duplicate(),       // End column name (empty means max out the count)
-                false,           // Reverse results? (false=no)
-                query.getLimit());          // Max count of Columns to return
+                keyspace,                      // Keyspace name
+                query.getKey().asByteBuffer(), // Row key
+                slicePath,                     // ColumnFamily
+                query.getSliceStart().asByteBuffer(),  // Start column name (empty means begin at first result)
+                query.getSliceEnd().asByteBuffer(),   // End column name (empty means max out the count)
+                false,                         // Reverse results? (false=no)
+                query.getLimit());             // Max count of Columns to return
 
         List<Row> slice = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDBConsistency());
 
@@ -300,19 +300,19 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         if (cf.isMarkedForDelete())
             return new ArrayList<Entry>(0);
 
-        return cfToEntries(cf, query.getSliceStart(), query.getSliceEnd());
+        return cfToEntries(cf, query.getSliceEnd());
     }
 
     @Override
-    public void mutate(ByteBuffer key, List<Entry> additions,
-                       List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
-        Map<ByteBuffer, KCVMutation> mutations = ImmutableMap.of(key, new
+    public void mutate(StaticBuffer key, List<Entry> additions,
+                       List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+        Map<StaticBuffer, KCVMutation> mutations = ImmutableMap.of(key, new
                 KCVMutation(additions, deletions));
         mutateMany(mutations, txh);
     }
 
 
-    public void mutateMany(Map<ByteBuffer, KCVMutation> mutations,
+    public void mutateMany(Map<StaticBuffer, KCVMutation> mutations,
                            StoreTransaction txh) throws StorageException {
         storeManager.mutateMany(ImmutableMap.of(columnFamily, mutations), txh);
     }
@@ -338,8 +338,8 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
 
-    private List<Entry> cfToEntries(ColumnFamily cf, ByteBuffer columnStart,
-                                    ByteBuffer columnEnd) throws StorageException {
+    private List<Entry> cfToEntries(ColumnFamily cf,
+                                    StaticBuffer columnEnd) throws StorageException {
 
         assert !cf.isMarkedForDelete();
 
@@ -359,6 +359,16 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         // Instantiate return collection
         List<Entry> result = new ArrayList<Entry>(resultSize);
 
+        /*
+         * We want to call columnEnd.equals() on column name ByteBuffers in the
+         * loop below. But columnEnd is a StaticBuffer, and it doesn't have an
+         * equals() method that accepts ByteBuffer. We create a ByteBuffer copy
+         * of columnEnd just for equals() comparisons in the for loop below.
+         * 
+         * TODO remove this if StaticBuffer's equals() accepts ByteBuffer
+         */
+        ByteBuffer columnEndBB = columnEnd.asByteBuffer();
+
         // Populate Entries into return collection
         for (ByteBuffer col : cf.getColumnNames()) {
 
@@ -372,10 +382,10 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             ByteBuffer name = org.apache.cassandra.utils.ByteBufferUtil.clone(icol.name());
             ByteBuffer value = org.apache.cassandra.utils.ByteBufferUtil.clone(icol.value());
 
-            if (columnEnd.equals(name))
+            if (columnEndBB.equals(name))
                 continue;
 
-            result.add(new Entry(name, value));
+            result.add(new ByteBufferEntry(name, value));
         }
 
         return result;

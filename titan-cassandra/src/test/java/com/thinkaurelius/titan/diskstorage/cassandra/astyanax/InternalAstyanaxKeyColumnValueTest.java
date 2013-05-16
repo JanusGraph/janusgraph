@@ -1,17 +1,14 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
-import static org.junit.Assert.assertFalse;
+import com.thinkaurelius.titan.CassandraStorageSetup;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraKeyColumnValueStoreTest;
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
+import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 
-public class InternalAstyanaxKeyColumnValueTest extends KeyColumnValueStoreTest {
+public class InternalAstyanaxKeyColumnValueTest extends AbstractCassandraKeyColumnValueStoreTest {
 
     @BeforeClass
     public static void startCassandra() {
@@ -19,16 +16,7 @@ public class InternalAstyanaxKeyColumnValueTest extends KeyColumnValueStoreTest 
     }
 
     @Override
-    public KeyColumnValueStoreManager openStorageManager() throws StorageException {
+    public AbstractCassandraStoreManager openStorageManager() throws StorageException {
         return new AstyanaxStoreManager(CassandraStorageSetup.getAstyanaxGraphConfiguration());
     }
-
-
-    @Test
-    public void testConfiguration() {
-        StoreFeatures features = manager.getFeatures();
-        assertFalse(features.isKeyOrdered());
-        assertFalse(features.hasLocalKeyPartition());
-    }
-
 }

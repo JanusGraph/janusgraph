@@ -1,28 +1,49 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
-
+/**
+ * A wrapper that adds locking support to a {@link KeyColumnValueStore} by
+ * overridding
+ * {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)
+ * acquireLock()} and {@link #mutate(StaticBuffer, List, List, StoreTransaction)
+ * mutate()}.
+ */
 public class ConsistentKeyLockStore implements KeyColumnValueStore {
 
     /**
-     * Configuration setting key for the lock lock mediator prefix
+     * Configuration setting key for the local lock mediator prefix
      */
     public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local-lock-mediator-prefix";
 
 
+    /**
+     * Titan data store.
+     */
     final KeyColumnValueStore dataStore;
 
+    /**
+     * Store for locks on information in {@link #dataStore}. There's no Titan
+     * data in here aside from locking records.
+     */
     final KeyColumnValueStore lockStore;
     final LocalLockMediator localLockMediator;
     final ConsistentKeyLockConfiguration configuration;
 
+    /**
+     * Create a 
+     * @param dataStore
+     */
     public ConsistentKeyLockStore(KeyColumnValueStore dataStore) {
         this.dataStore = dataStore;
         this.lockStore = null;
@@ -72,7 +93,7 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
     }
 
     @Override
-    public boolean containsKey(ByteBuffer key, StoreTransaction txh) throws StorageException {
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
         return dataStore.containsKey(key, getTx(txh));
     }
 
@@ -81,18 +102,15 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
         return dataStore.getSlice(query, getTx(txh));
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * <p/>
+     * 
+     * This implementation supports locking when {@code lockStore} is non-null.  
+     */
     @Override
-    public ByteBuffer get(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return dataStore.get(key, column, getTx(txh));
-    }
-
-    @Override
-    public boolean containsKeyColumn(ByteBuffer key, ByteBuffer column, StoreTransaction txh) throws StorageException {
-        return dataStore.containsKeyColumn(key, column, getTx(txh));
-    }
-
-    @Override
-    public void mutate(ByteBuffer key, List<Entry> additions, List<ByteBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         if (lockStore != null) {
             ConsistentKeyLockTransaction tx = (ConsistentKeyLockTransaction) txh;
             if (!tx.isMutationStarted()) {
@@ -103,8 +121,15 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
         dataStore.mutate(key, additions, deletions, getTx(txh));
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * <p/>
+     * 
+     * This implementation supports locking when {@code lockStore} is non-null.  
+     */
     @Override
-    public void acquireLock(ByteBuffer key, ByteBuffer column, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         if (lockStore != null) {
             ConsistentKeyLockTransaction tx = (ConsistentKeyLockTransaction) txh;
             if (tx.isMutationStarted())
@@ -116,12 +141,12 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(StoreTransaction txh) throws StorageException {
+    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
         return dataStore.getKeys(getTx(txh));
     }
 
     @Override
-    public ByteBuffer[] getLocalKeyPartition() throws StorageException {
+    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         return dataStore.getLocalKeyPartition();
     }
 

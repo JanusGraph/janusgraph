@@ -4,6 +4,7 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
@@ -15,6 +16,7 @@ import java.lang.management.ManagementFactory;
 import java.util.concurrent.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 
@@ -82,6 +84,44 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
         }
         super.tearDown();
     }
+
+    @Test
+    public void concurrentTxRead() throws Exception {
+        final int numTypes = 20;
+        final int numThreads = 100;
+        for (int i=0;i<numTypes/2;i++) {
+            TypeMaker tm = tx.makeType().name("test"+i).dataType(String.class);
+            if (i%4==0) tm.unique(Direction.BOTH).indexed(Vertex.class);
+            else tm.unique(Direction.OUT);
+            tm.makePropertyKey();
+        }
+        for (int i=numTypes/2;i<numTypes;i++) {
+            TypeMaker tm = tx.makeType().name("test"+i);
+            if (i%4==1) tm.unidirected();
+            tm.makeEdgeLabel();
+        }
+        clopen();
+        Thread[] threads = new Thread[numThreads];
+        for (int t=0;t<numThreads;t++) {
+            threads[t]=new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    TitanTransaction tx= graph.newTransaction();
+                    for (int i=0;i<numTypes;i++) {
+                        TitanType type = tx.getType("test"+i);
+                        if (i<numTypes/2) assertTrue(type.isPropertyKey());
+                        else assertTrue(type.isEdgeLabel());
+                    }
+                    tx.commit();
+                }
+            });
+            threads[t].start();
+        }
+        for (int t=0;t<numThreads;t++) {
+            threads[t].join();
+        }
+    }
+
 
     /**
      * Insert an extremely simple graph and start

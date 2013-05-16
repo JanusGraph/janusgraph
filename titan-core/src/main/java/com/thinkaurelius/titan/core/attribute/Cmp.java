@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Basic comparison relations for comparable (i.e. linearly ordered) objects.
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public enum Cmp implements Relation {

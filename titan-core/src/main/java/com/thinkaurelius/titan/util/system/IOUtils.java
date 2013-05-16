@@ -6,6 +6,10 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 
+/**
+ * IO Utility class
+ *
+ */
 public class IOUtils {
     private static final Logger logger = LoggerFactory.getLogger(IOUtils.class);
 

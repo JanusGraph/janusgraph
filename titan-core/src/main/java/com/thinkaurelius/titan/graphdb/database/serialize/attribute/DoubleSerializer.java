@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-
-import java.nio.ByteBuffer;
+import com.thinkaurelius.titan.diskstorage.ScanBuffer;
+import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 
 public class DoubleSerializer implements AttributeSerializer<Double> {
 
@@ -17,17 +17,28 @@ public class DoubleSerializer implements AttributeSerializer<Double> {
         for (int i = 0; i < DECIMALS; i++) MULTIPLIER *= 10;
     }
 
+    public static final double MIN_VALUE = Long.MIN_VALUE*1.0 / (MULTIPLIER+1);
+    public static final double MAX_VALUE = Long.MAX_VALUE*1.0 / (MULTIPLIER+1);
+
+    private final LongSerializer ls = new LongSerializer();
+
+
     @Override
-    public Double read(ByteBuffer buffer) {
-        long convert = buffer.getLong();
-        convert = convert + Long.MIN_VALUE;
+    public Double read(ScanBuffer buffer) {
+        long convert = ls.read(buffer);
         return Double.valueOf(((double) convert) / MULTIPLIER);
     }
 
     @Override
-    public void writeObjectData(DataOutput out, Double object) {
-        long convert = (long) (object.doubleValue() * MULTIPLIER) - Long.MIN_VALUE;
-        out.putLong(convert);
+    public void writeObjectData(WriteBuffer out, Double object) {
+        Preconditions.checkArgument(withinRange(object),"Double value is out of range: %s",object);
+        assert object.doubleValue() * MULTIPLIER>=Long.MIN_VALUE && object.doubleValue() * MULTIPLIER<=Long.MAX_VALUE;
+        long convert = (long) (object.doubleValue() * MULTIPLIER);
+        ls.writeObjectData(out,convert);
+    }
+
+    public static final boolean withinRange(Double object) {
+        return object.doubleValue()>=MIN_VALUE && object.doubleValue()<=MAX_VALUE;
     }
 
 }

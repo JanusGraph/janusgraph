@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.transaction;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
@@ -11,7 +11,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class VertexIterable implements Iterable<InternalVertex> {

@@ -1,12 +1,13 @@
 package com.thinkaurelius.titan.graphdb.database.idhandling;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-
-import java.nio.ByteBuffer;
+import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class VariableLong {
@@ -14,11 +15,11 @@ public class VariableLong {
     private static final byte mask = 127;
     private static final byte stopMask = -128;
 
-    private static long readUnsigned(ByteBuffer in) {
+    private static long readUnsigned(ReadBuffer in) {
         long value = 0;
         byte b;
         do {
-            b = in.get();
+            b = in.getByte();
             value = value << 7;
             value = value | (b & mask);
         } while (b >= 0);
@@ -26,7 +27,7 @@ public class VariableLong {
     }
 
 
-    private static void writeUnsigned(ByteBuffer out, final long value) {
+    private static void writeUnsigned(WriteBuffer out, final long value) {
         int offset = unsignedBitLength(value);
         while (offset > 0) {
             offset -= 7;
@@ -34,7 +35,7 @@ public class VariableLong {
             if (offset == 0) {
                 b = (byte) (b | stopMask);
             }
-            out.put(b);
+            out.putByte(b);
         }
     }
 
@@ -53,32 +54,30 @@ public class VariableLong {
     }
 
 
-    public static long readPositive(ByteBuffer in) {
+    public static long readPositive(ReadBuffer in) {
         long value = readUnsigned(in);
         assert value >= 0;
         return value;
     }
 
-    public static void writePositive(ByteBuffer out, final long value) {
+    public static void writePositive(WriteBuffer out, final long value) {
         Preconditions.checkArgument(value >= 0, "Positive value expected: " + value);
         writeUnsigned(out, value);
     }
 
-    public static ByteBuffer positiveByteBuffer(final long value) {
-        ByteBuffer buffer = ByteBuffer.allocate(positiveLength(value));
+    public static StaticBuffer positiveByteBuffer(final long value) {
+        WriteBuffer buffer = new WriteByteBuffer(positiveLength(value));
         writePositive(buffer, value);
-        buffer.flip();
-        return buffer;
+        return buffer.getStaticBuffer();
     }
 
 
-    public static ByteBuffer positiveByteBuffer(long[] value) {
+    public static StaticBuffer positiveByteBuffer(long[] value) {
         int len = 0;
         for (int i = 0; i < value.length; i++) len += positiveLength(value[i]);
-        ByteBuffer buffer = ByteBuffer.allocate(len);
+        WriteBuffer buffer = new WriteByteBuffer(len);
         for (int i = 0; i < value.length; i++) writePositive(buffer, value[i]);
-        buffer.flip();
-        return buffer;
+        return buffer.getStaticBuffer();
     }
 
     public static int positiveLength(long value) {
@@ -95,53 +94,14 @@ public class VariableLong {
         return unsignedLength(convert2Unsigned(value));
     }
 
-    public static void write(ByteBuffer out, final long value) {
+    public static void write(WriteBuffer out, final long value) {
         writeUnsigned(out, convert2Unsigned(value));
     }
 
-    public static long read(ByteBuffer in) {
+    public static long read(ReadBuffer in) {
         long value = readUnsigned(in);
         if ((value & 1) == 1) return -(value >>> 1);
         else return value >>> 1;
     }
 
-    public static ByteBuffer byteBuffer(final long value) {
-        ByteBuffer buffer = ByteBuffer.allocate(length(value));
-        write(buffer, value);
-        buffer.flip();
-        return buffer;
-    }
-
-    public static ByteBuffer byteBuffer(long[] value) {
-        int len = 0;
-        for (int i = 0; i < value.length; i++) len += length(value[i]);
-        ByteBuffer buffer = ByteBuffer.allocate(len);
-        for (int i = 0; i < value.length; i++) write(buffer, value[i]);
-        buffer.flip();
-        return buffer;
-    }
-
-    // =============== THIS IS A COPY&PASTE OF THE ABOVE =================
-    // Using DataOutput instead of ByteBuffer
-
-    public static void writeUnsigned(DataOutput out, final long value) {
-        int offset = unsignedBitLength(value);
-        while (offset > 0) {
-            offset -= 7;
-            byte b = (byte) ((value >>> offset) & mask);
-            if (offset == 0) {
-                b = (byte) (b | stopMask);
-            }
-            out.putByte(b);
-        }
-    }
-
-    public static void writePositive(DataOutput out, long value) {
-        Preconditions.checkArgument(value >= 0, "Positive value expected: " + value);
-        writeUnsigned(out, value);
-    }
-
-    public static void write(DataOutput out, final long value) {
-        writeUnsigned(out, convert2Unsigned(value));
-    }
 }

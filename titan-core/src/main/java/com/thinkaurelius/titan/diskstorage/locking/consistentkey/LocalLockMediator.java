@@ -25,11 +25,19 @@ public class LocalLockMediator {
     private static final Logger log = LoggerFactory
             .getLogger(LocalLockMediator.class);
 
-    // Locking namespace
+    /**
+     * Namespace for which this mediator is responsible
+     * 
+     * @see LocalLockMediatorProvider
+     */
     private final String name;
 
-    // TODO maybe tune the initial size or load factor arguments to
-    // ConcurrentHashMap's constructor
+    /**
+     * Maps a ({@code key}, {@code column}) pair to the local transaction
+     * holding a lock on that pair. Values in this map may have already expired
+     * according to {@link AuditRecord#expires}, in which case the lock should
+     * be considered invalid.
+     */
     private final ConcurrentHashMap<KeyColumn, AuditRecord> locks = new ConcurrentHashMap<KeyColumn, AuditRecord>();
 
     public LocalLockMediator(String name) {
@@ -132,20 +140,39 @@ public class LocalLockMediator {
      * @param kc        lock identifier
      * @param requestor the object which previously locked {@code kc}
      */
-    public void unlock(KeyColumn kc, ConsistentKeyLockTransaction requestor) {
+    public boolean unlock(KeyColumn kc, ConsistentKeyLockTransaction requestor) {
 
-        assert locks.containsKey(kc);
-
-        AuditRecord audit = new AuditRecord(requestor, 0);
-
-        assert locks.get(kc).equals(audit);
-
-        locks.remove(kc, audit);
-
-        if (log.isTraceEnabled()) {
-            log.trace("Local unlock succeeded: {} namespace={} txn={}",
-                    new Object[]{kc, name, requestor});
+        if (!locks.containsKey(kc)) {
+            log.error("Local unlock failed: no locks found for {}", kc);
+            return false;
         }
+
+        AuditRecord unlocker = new AuditRecord(requestor, 0);
+
+        AuditRecord holder = locks.get(kc);
+
+        if (!holder.equals(unlocker)) {
+            log.error("Local unlock of {} by {} failed: it is held by {}",
+                    new Object[] { kc, unlocker, holder });
+            return false;
+        }
+
+        boolean removed = locks.remove(kc, unlocker);
+
+        if (removed) {
+            if (log.isTraceEnabled()) {
+                log.trace("Local unlock succeeded: {} namespace={} txn={}",
+                        new Object[] { kc, name, requestor });
+            }
+        } else {
+            log.warn("Local unlock warning: lock record for {} disappeared "
+                    + "during removal; this suggests the lock either expired "
+                    + "while we were removing it, or that it was erroneously "
+                    + "unlocked multiple times.", kc);
+        }
+
+        // Even if !removed, we're finished unlocking, so return true
+        return true;
     }
 
     public String toString() {
@@ -153,19 +180,36 @@ public class LocalLockMediator {
                 + " current locks]";
     }
 
+    /**
+     * A record containing the local transaction that holds a lock and the
+     * lock's expiration time.
+     */
     private static class AuditRecord {
+        
+        /**
+         * The local transaction that holds/held the lock.
+         */
         private final ConsistentKeyLockTransaction holder;
+        /**
+         * The expiration time of a the lock. Conventionally, this is in
+         * nanoseconds from the epoch as returned by
+         * {@link TimeUtility#getApproxNSSinceEpoch(boolean)}.
+         */
         private final long expires;
+        /**
+         * Cached hashCode.
+         */
         private int hashCode;
 
         private AuditRecord(ConsistentKeyLockTransaction holder, long expires) {
             this.holder = holder;
             this.expires = expires;
         }
-
-        // Equals and hashCode depend only on holder (and not the expiration
-        // time)
-
+        
+        /**
+         * This implementation depends only on the lock holder and not on the
+         * lock expiration time.
+         */
         @Override
         public int hashCode() {
             if (0 == hashCode)
@@ -173,7 +217,11 @@ public class LocalLockMediator {
 
             return hashCode;
         }
-
+        
+        /**
+         * This implementation depends only on the lock holder and not on the
+         * lock expiration time.
+         */
         @Override
         public boolean equals(Object obj) {
             if (this == obj)

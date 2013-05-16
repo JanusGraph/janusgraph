@@ -2,13 +2,14 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import com.thinkaurelius.titan.graphdb.vertices.AbstractVertex;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.tinkerpop.blueprints.Direction;
 
 import java.util.Arrays;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public final class RelationIdentifier {
@@ -39,6 +40,11 @@ public final class RelationIdentifier {
                     property.getPropertyKey().getID(),
                     property.getID());
         } else return null;
+    }
+
+    static final RelationIdentifier get(TitanVertex startVertex, TitanType type, long relationId) {
+        if (AbstractVertex.isTemporaryId(relationId)) return null;
+        else return new RelationIdentifier(startVertex.getID(),type.getID(),relationId);
     }
 
     static final RelationIdentifier get(TitanEdge edge) {

@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.netflix.astyanax.*;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
 import com.netflix.astyanax.connectionpool.OperationResult;
@@ -20,6 +21,7 @@ import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
@@ -161,7 +163,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
         this.clusterContext = createCluster(getContextBuilder(config, maxClusterConnsPerHost, "Cluster"));
 
-        ensureKeyspaceExists(clusterContext.getEntity());
+        ensureKeyspaceExists(clusterContext.getClient());
 
         this.keyspaceContext = getContextBuilder(config, maxConnsPerHost, "Keyspace").buildKeyspace(ThriftFamilyFactory.getInstance());
         this.keyspaceContext.start();
@@ -171,7 +173,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     public Partitioner getPartitioner() throws StorageException {
-        Cluster cl = clusterContext.getEntity();
+        Cluster cl = clusterContext.getClient();
         try {
             return Partitioner.getPartitioner(cl.describePartitioner());
         } catch (ConnectionException e) {
@@ -197,48 +199,48 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         if (openStores.containsKey(name)) return openStores.get(name);
         else {
             ensureColumnFamilyExists(name);
-            AstyanaxOrderedKeyColumnValueStore store = new AstyanaxOrderedKeyColumnValueStore(name, keyspaceContext.getEntity(), this, retryPolicy);
+            AstyanaxOrderedKeyColumnValueStore store = new AstyanaxOrderedKeyColumnValueStore(name, keyspaceContext.getClient(), this, retryPolicy);
             openStores.put(name, store);
             return store;
         }
     }
 
     @Override
-    public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> batch, StoreTransaction txh) throws StorageException {
-        MutationBatch m = keyspaceContext.getEntity().prepareMutationBatch()
-                .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanaxConsistency())
-                .withRetryPolicy(retryPolicy.duplicate());
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> batch, StoreTransaction txh) throws StorageException {
+        MutationBatch m = keyspaceContext.getClient().prepareMutationBatch()
+                                                     .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanaxConsistency())
+                                                     .withRetryPolicy(retryPolicy.duplicate());
 
         final long delTS = TimeUtility.getApproxNSSinceEpoch(false);
         final long addTS = TimeUtility.getApproxNSSinceEpoch(true);
 
-        for (Map.Entry<String, Map<ByteBuffer, KCVMutation>> batchentry : batch.entrySet()) {
+        for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> batchentry : batch.entrySet()) {
             String storeName = batchentry.getKey();
             Preconditions.checkArgument(openStores.containsKey(storeName), "Store cannot be found: " + storeName);
+
             ColumnFamily<ByteBuffer, ByteBuffer> columnFamily = openStores.get(storeName).getColumnFamily();
 
-            Map<ByteBuffer, KCVMutation> mutations = batchentry.getValue();
-            for (Map.Entry<ByteBuffer, KCVMutation> ent : mutations.entrySet()) {
+            Map<StaticBuffer, KCVMutation> mutations = batchentry.getValue();
+            for (Map.Entry<StaticBuffer, KCVMutation> ent : mutations.entrySet()) {
                 // The CLMs for additions and deletions are separated because
                 // Astyanax's operation timestamp cannot be set on a per-delete
                 // or per-addition basis.
-                ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, ent.getKey());
-                dels.setTimestamp(delTS);
-                ColumnListMutation<ByteBuffer> adds = m.withRow(columnFamily, ent.getKey());
-                adds.setTimestamp(addTS);
-
                 KCVMutation titanMutation = ent.getValue();
 
                 if (titanMutation.hasDeletions()) {
-                    for (ByteBuffer b : titanMutation.getDeletions()) {
-                        dels.deleteColumn(b);
-                    }
+                    ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, ent.getKey().asByteBuffer());
+                    dels.setTimestamp(delTS);
+
+                    for (StaticBuffer b : titanMutation.getDeletions())
+                        dels.deleteColumn(b.asByteBuffer());
                 }
 
                 if (titanMutation.hasAdditions()) {
-                    for (Entry e : titanMutation.getAdditions()) {
-                        adds.putColumn(e.getColumn(), e.getValue(), null);
-                    }
+                    ColumnListMutation<ByteBuffer> upds = m.withRow(columnFamily, ent.getKey().asByteBuffer());
+                    upds.setTimestamp(addTS);
+
+                    for (Entry e : titanMutation.getAdditions())
+                        upds.putColumn(e.getColumn().asByteBuffer(), e.getValue().asByteBuffer());
                 }
             }
         }
@@ -253,7 +255,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     @Override
     public void clearStorage() throws StorageException {
         try {
-            Cluster cluster = clusterContext.getEntity();
+            Cluster cluster = clusterContext.getClient();
 
             Keyspace ks = cluster.getKeyspace(keySpaceName);
 
@@ -278,7 +280,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     private void ensureColumnFamilyExists(String name, String comparator) throws StorageException {
-        Cluster cl = clusterContext.getEntity();
+        Cluster cl = clusterContext.getClient();
         try {
             KeyspaceDefinition ksDef = cl.describeKeyspace(keySpaceName);
             boolean found = false;
@@ -292,13 +294,13 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         cl.makeColumnFamilyDefinition()
                                 .setName(name)
                                 .setKeyspace(keySpaceName)
-                                .setComparatorType(comparator);
-//                                .setCompressionOptions(
-//                                		new ImmutableMap.Builder<String, String>()
-//                                			.put("sstable_compression", "SnappyCompressor")
-//                                			.put("chunk_length_kb", "64")
-//                                			.build()
-//                                );
+                                .setComparatorType(comparator)
+                                .setCompressionOptions(
+                                		new ImmutableMap.Builder<String, String>()
+                                			.put("sstable_compression", "SnappyCompressor")
+                                			.put("chunk_length_kb", "64")
+                                			.build()
+                                );
                 cl.addColumnFamily(cfDef);
             }
         } catch (ConnectionException e) {
@@ -357,7 +359,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                         .setConnectionPoolType(poolType)
                                         .setDiscoveryType(discType))
                         .withConnectionPoolConfiguration(cpool)
-                        .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
+                        .withConnectionPoolMonitor(new CountingConnectionPoolMonitor())
+                        .withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setTargetCassandraVersion("1.2"));
 
         return builder;
     }
@@ -448,7 +451,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             ensureColumnFamilyExists(SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
 
             OperationResult<Column<String>> result =
-                    keyspaceContext.getEntity().prepareQuery(PROPERTIES_CF)
+                    keyspaceContext.getClient().prepareQuery(PROPERTIES_CF)
                                                .setConsistencyLevel(ConsistencyLevel.CL_QUORUM)
                                                .withRetryPolicy(retryPolicy.duplicate())
                                                .getKey(SYSTEM_PROPERTIES_KEY).getColumn(key)
@@ -467,7 +470,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         try {
             ensureColumnFamilyExists(SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
 
-            Keyspace ks = keyspaceContext.getEntity();
+            Keyspace ks = keyspaceContext.getClient();
 
             OperationResult<Void> result = ks.prepareColumnMutation(PROPERTIES_CF, SYSTEM_PROPERTIES_KEY, key)
                                                     .setConsistencyLevel(ConsistencyLevel.CL_QUORUM)
@@ -475,6 +478,29 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                                     .execute();
 
             result.getResult();
+        } catch (ConnectionException e) {
+            throw new PermanentStorageException(e);
+        }
+    }
+    
+    @Override
+    public Map<String, String> getCompressionOptions(String cf) throws StorageException {
+        try {
+            Keyspace k = keyspaceContext.getClient();
+        
+            KeyspaceDefinition kdef = k.describeKeyspace();
+        
+            if (null == kdef) {
+                throw new PermanentStorageException("Keyspace " + kdef + " is undefined");
+            }
+        
+            ColumnFamilyDefinition cfdef = kdef.getColumnFamily(cf);
+        
+            if (null == cfdef) {
+                throw new PermanentStorageException("Column family " + cf + " is undefined");
+            }
+        
+            return cfdef.getCompressionOptions();
         } catch (ConnectionException e) {
             throw new PermanentStorageException(e);
         }

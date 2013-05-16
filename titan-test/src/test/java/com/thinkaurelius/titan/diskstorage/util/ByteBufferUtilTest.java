@@ -9,7 +9,7 @@ import java.util.Random;
 import static junit.framework.Assert.assertEquals;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class ByteBufferUtilTest {

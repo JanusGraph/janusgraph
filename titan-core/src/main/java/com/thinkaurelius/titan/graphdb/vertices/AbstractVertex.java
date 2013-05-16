@@ -78,7 +78,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         //Finally remove internal/hidden relations
         for (TitanRelation r : QueryUtil.queryAll(it())) {
             if (r.getType().equals(SystemKey.VertexState)) r.remove();
-            else throw new IllegalStateException("Cannot remove node since it is still connected");
+            else throw new IllegalStateException("Cannot remove vertex since it is still connected");
         }
     }
 
@@ -102,36 +102,24 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public Object getProperty(TitanKey key) {
+    public <O> O getProperty(TitanKey key) {
         Iterator<TitanProperty> iter = query().type(key).includeHidden().properties().iterator();
         if (key.isUnique(Direction.OUT)) {
-            if (iter.hasNext()) return iter.next().getValue();
+            if (iter.hasNext()) return (O)iter.next().getValue();
             else return null;
         } else {
             List<Object> result = new ArrayList<Object>();
             while (iter.hasNext()) {
                 result.add(iter.next().getValue());
             }
-            return result;
+            return (O)result;
         }
     }
 
     @Override
-    public Object getProperty(String key) {
+    public <O> O getProperty(String key) {
         if (!tx().containsType(key)) return null;
         else return getProperty(tx().getPropertyKey(key));
-    }
-
-    @Override
-    public <O> O getProperty(TitanKey key, Class<O> clazz) {
-        Object result = getProperty(key);
-        return clazz.cast(result);
-    }
-
-    @Override
-    public <O> O getProperty(String key, Class<O> clazz) {
-        if (!tx().containsType(key)) return null;
-        else return getProperty(tx().getPropertyKey(key), clazz);
     }
 
     @Override
@@ -243,7 +231,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public Object removeProperty(TitanType key) {
+    public <O> O removeProperty(TitanType key) {
         Preconditions.checkArgument(key.isPropertyKey());
         Preconditions.checkArgument(key.isUnique(Direction.OUT));
 
@@ -255,11 +243,11 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
             result = p.getValue();
             p.remove();
         }
-        return result;
+        return (O)result;
     }
 
     @Override
-    public Object removeProperty(String key) {
+    public <O> O removeProperty(String key) {
         if (!tx().containsType(key)) return null;
         else return removeProperty(tx().getPropertyKey(key));
     }

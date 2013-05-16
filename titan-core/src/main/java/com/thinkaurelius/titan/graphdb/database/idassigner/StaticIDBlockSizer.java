@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.database.idassigner;
 import com.google.common.base.Preconditions;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class StaticIDBlockSizer implements IDBlockSizer {

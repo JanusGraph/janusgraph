@@ -4,11 +4,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -22,15 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Experimental storage manager for HBase.
- * <p/>
- * This is not ready for production.
+ * Storage Manager for HBase
  *
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
@@ -125,11 +122,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public void mutateMany(Map<String, Map<ByteBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         final long delTS = System.currentTimeMillis();
         final long putTS = delTS + 1;
 
-        Map<ByteBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, putTS, delTS);
+        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, putTS, delTS);
         List<Row> batch = new ArrayList<Row>(commandsPerKey.size()); // actual batch operation
 
         // convert sorted commands into representation required for 'batch' operation
@@ -342,16 +339,16 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      *
      * @return Commands sorted by key converted from Titan internal representation.
      */
-    private static Map<ByteBuffer, Pair<Put, Delete>> convertToCommands(Map<String, Map<ByteBuffer, KCVMutation>> mutations,
+    private static Map<StaticBuffer, Pair<Put, Delete>> convertToCommands(Map<String, Map<StaticBuffer, KCVMutation>> mutations,
                                                                         final long putTimestamp,
                                                                         final long delTimestamp) {
-        Map<ByteBuffer, Pair<Put, Delete>> commandsPerKey = new HashMap<ByteBuffer, Pair<Put, Delete>>();
+        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = new HashMap<StaticBuffer, Pair<Put, Delete>>();
 
-        for (Map.Entry<String, Map<ByteBuffer, KCVMutation>> entry : mutations.entrySet()) {
+        for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> entry : mutations.entrySet()) {
             byte[] cfName = entry.getKey().getBytes();
 
-            for (Map.Entry<ByteBuffer, KCVMutation> m : entry.getValue().entrySet()) {
-                ByteBuffer key = m.getKey();
+            for (Map.Entry<StaticBuffer, KCVMutation> m : entry.getValue().entrySet()) {
+                StaticBuffer key = m.getKey();
                 KCVMutation mutation = m.getValue();
 
                 Pair<Put, Delete> commands = commandsPerKey.get(key);
@@ -363,22 +360,22 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
                 if (mutation.hasDeletions()) {
                     if (commands.getSecond() == null)
-                        commands.setSecond(new Delete(ByteBufferUtil.getArray(key), delTimestamp, null));
+                        commands.setSecond(new Delete(key.as(StaticBuffer.ARRAY_FACTORY), delTimestamp, null));
 
-                    for (ByteBuffer b : mutation.getDeletions()) {
-                        commands.getSecond().deleteColumns(cfName, ByteBufferUtil.getArray(b), delTimestamp);
+                    for (StaticBuffer b : mutation.getDeletions()) {
+                        commands.getSecond().deleteColumns(cfName, b.as(StaticBuffer.ARRAY_FACTORY), delTimestamp);
                     }
                 }
 
                 if (mutation.hasAdditions()) {
                     if (commands.getFirst() == null)
-                        commands.setFirst(new Put(ByteBufferUtil.getArray(key), putTimestamp));
+                        commands.setFirst(new Put(key.as(StaticBuffer.ARRAY_FACTORY), putTimestamp));
 
                     for (Entry e : mutation.getAdditions()) {
                         commands.getFirst().add(cfName,
-                                ByteBufferUtil.getArray(e.getColumn()),
+                                e.getArrayColumn(),
                                 putTimestamp,
-                                ByteBufferUtil.getArray(e.getValue()));
+                                e.getArrayValue());
                     }
                 }
             }

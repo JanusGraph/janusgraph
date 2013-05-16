@@ -6,7 +6,7 @@ import org.apache.commons.lang.StringUtils;
 /**
  * An index entry is a key-value pair (or field-value pair).
  *
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class IndexEntry {
