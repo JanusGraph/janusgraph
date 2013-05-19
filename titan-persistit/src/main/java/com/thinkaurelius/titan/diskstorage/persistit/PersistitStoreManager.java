@@ -32,7 +32,9 @@ public class PersistitStoreManager implements KeyValueStoreManager {
     private final Map<String, PersistitKeyValueStore> stores;
     private static final StoreFeatures features = new StoreFeatures();
     final static String VOLUME_NAME = "titan";
-    
+    final static String BUFFER_COUNT_KEY = "buffercount";
+    final static Integer BUFFER_COUNT_DEFAULT = 5000;
+
     static {
         features.supportsTransactions = true;
         features.isDistributed = false;
@@ -60,6 +62,7 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         // read config and setup
         properties = new Properties();
         String datapath = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
+        Integer bufferCount = config.getInt(BUFFER_COUNT_KEY, BUFFER_COUNT_DEFAULT);
         Preconditions.checkArgument(datapath != null, "Need to specify storage directory");
         directory = getOrCreateDataDirectory(datapath);
         properties.put("datapath", datapath);
@@ -70,7 +73,7 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         properties.put("logfile", directory + File.separator + VOLUME_NAME + ".log");
 
         // @todo: make these tunable
-        properties.put("buffer.count.16384", "5000");
+        properties.put("buffer.count.16384", bufferCount.toString());
         properties.put("volume.1", directory + File.separator + VOLUME_NAME
                 + ",create,pageSize:16384,initialPages:1000,extensionPages:1000,maximumPages:1000000");
 
