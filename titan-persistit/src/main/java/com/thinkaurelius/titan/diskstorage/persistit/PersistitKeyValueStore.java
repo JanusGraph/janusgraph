@@ -3,12 +3,14 @@ package com.thinkaurelius.titan.diskstorage.persistit;
 import com.persistit.*;
 import com.persistit.exception.PersistitException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeySelector;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -32,14 +34,14 @@ import static com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManage
  *
  *  @todo: implement exchange pool
  */
-public class PersistitKeyValueStore implements KeyValueStore {
+public class PersistitKeyValueStore implements OrderedKeyValueStore {
 
-    private static ByteBuffer getByteBuffer(byte[] bytes) {
-        ByteBuffer b = ByteBuffer.wrap(bytes, 0, bytes.length);
-        return b;
+    private static StaticBuffer getBuffer(byte[] bytes) {
+        return new StaticArrayBuffer(bytes, 0, bytes.length);
     }
 
-    private static byte[] getByteArray(ByteBuffer buffer) {
+    private static byte[] getArray(StaticBuffer staticBuffer) {
+        ByteBuffer buffer = staticBuffer.asByteBuffer();
         int offset = buffer.arrayOffset();
         byte[] bytes = new byte[buffer.remaining() - offset];
         System.arraycopy(buffer.array(), offset, bytes, offset, bytes.length);
@@ -78,7 +80,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
         }
     }
 
-    private static class KeysIterator implements RecordIterator<ByteBuffer> {
+    private static class KeysIterator implements RecordIterator<StaticBuffer> {
 
         final PersistitTransaction transaction;
         final Exchange exchange;
@@ -121,9 +123,9 @@ public class PersistitKeyValueStore implements KeyValueStore {
         }
 
         @Override
-        public ByteBuffer next() throws StorageException {
+        public StaticBuffer next() throws StorageException {
             if (nextKey == null) throw new NoSuchElementException();
-            ByteBuffer returnKey = (ByteBuffer) nextKey;
+            StaticBuffer returnKey = (StaticBuffer) nextKey;
             getNextKey();
             return returnKey;
         }
@@ -145,36 +147,36 @@ public class PersistitKeyValueStore implements KeyValueStore {
     }
 
     @Override
-    public RecordIterator<ByteBuffer> getKeys(StoreTransaction tx) throws StorageException {
+    public RecordIterator<StaticBuffer> getKeys(StoreTransaction tx) throws StorageException {
         synchronized (tx) {
             return new KeysIterator((PersistitTransaction)tx, ((PersistitTransaction) tx).getExchange(name));
         }
     }
 
-    static void toKey(Exchange exchange, ByteBuffer key) {
-        byte[] k = getByteArray(key);
+    static void toKey(Exchange exchange, StaticBuffer key) {
+        byte[] k = getArray(key);
         Key ek = exchange.getKey();
         ek.to(k);
     }
 
-    static ByteBuffer getKey(Exchange exchange) {
-        return getByteBuffer(exchange.getKey().decodeByteArray());
+    static StaticBuffer getKey(Exchange exchange) {
+        return getBuffer(exchange.getKey().decodeByteArray());
     }
 
-    static void setValue(Exchange exchange, ByteBuffer val) throws PersistitException{
-        byte[] v = getByteArray(val);
+    static void setValue(Exchange exchange, StaticBuffer val) throws PersistitException{
+        byte[] v = getArray(val);
         exchange.getValue().put(v);
         
         exchange.store();
     }
 
-    static ByteBuffer getValue(Exchange exchange) {
+    static StaticBuffer getValue(Exchange exchange) {
         byte[] dst = exchange.getValue().getByteArray();
-        return ByteBuffer.wrap(dst);
+        return new StaticArrayBuffer(dst, 0, dst.length);
     }
 
     @Override
-    public ByteBuffer get(final ByteBuffer key, StoreTransaction txh) throws StorageException {
+    public StaticBuffer get(final StaticBuffer key, StoreTransaction txh) throws StorageException {
         final PersistitTransaction tx = (PersistitTransaction) txh;
         synchronized (tx) {
             tx.assign();
@@ -197,7 +199,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
     }
 
     @Override
-    public boolean containsKey(final ByteBuffer key, StoreTransaction txh) throws StorageException {
+    public boolean containsKey(final StaticBuffer key, StoreTransaction txh) throws StorageException {
         final PersistitTransaction tx = (PersistitTransaction) txh;
         synchronized (tx) {
             tx.assign();
@@ -247,7 +249,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
      * @return
      * @throws StorageException
      */
-    private List<KeyValueEntry> getSlice(final ByteBuffer keyStart, final ByteBuffer keyEnd, final KeySelector selector, final Integer limit, StoreTransaction txh) throws StorageException {
+    private List<KeyValueEntry> getSlice(final StaticBuffer keyStart, final StaticBuffer keyEnd, final KeySelector selector, final Integer limit, StoreTransaction txh) throws StorageException {
         final PersistitTransaction tx = (PersistitTransaction) txh;
         synchronized (tx) {
             tx.assign();
@@ -256,8 +258,8 @@ public class PersistitKeyValueStore implements KeyValueStore {
             try {
                 ArrayList<KeyValueEntry> results = new ArrayList<KeyValueEntry>();
 
-                byte[] start = getByteArray(keyStart);
-                byte[] end = getByteArray(keyEnd);
+                byte[] start = getArray(keyStart);
+                byte[] end = getArray(keyEnd);
 
                 //bail out if the start key comes after the end
                 if (compare(start, end) > 0) {
@@ -269,11 +271,11 @@ public class PersistitKeyValueStore implements KeyValueStore {
 
                 int i = 0;
                 while (exchange.next(keyFilter)) {
-                    ByteBuffer k = getKey(exchange);
+                    StaticBuffer k = getKey(exchange);
                     //check the key against the selector, and that is has a corresponding value
                     if (exchange.getValue().isDefined() && (selector == null || selector.include(k))){
 
-                        ByteBuffer v = getValue(exchange);
+                        StaticBuffer v = getValue(exchange);
                         KeyValueEntry kv = new KeyValueEntry(k, v);
                         results.add(kv);
                         i++;
@@ -291,23 +293,23 @@ public class PersistitKeyValueStore implements KeyValueStore {
         }
     }
 
-    @Override
-    public List<KeyValueEntry> getSlice(final ByteBuffer keyStart, final ByteBuffer keyEnd, StoreTransaction txh) throws StorageException {
-        return getSlice(keyStart, keyEnd, null, null, txh);
-    }
+//    @Override
+//    public List<KeyValueEntry> getSlice(final StaticBuffer keyStart, final StaticBuffer keyEnd, StoreTransaction txh) throws StorageException {
+//        return getSlice(keyStart, keyEnd, null, null, txh);
+//    }
 
     @Override
-    public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws StorageException {
+    public List<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws StorageException {
         return getSlice(keyStart, keyEnd, selector, null, txh);
     }
 
-    @Override
-    public List<KeyValueEntry> getSlice(ByteBuffer keyStart, ByteBuffer keyEnd, int limit, StoreTransaction txh) throws StorageException {
-        return getSlice(keyStart, keyEnd, null, limit, txh);
-    }
+//    @Override
+//    public List<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, int limit, StoreTransaction txh) throws StorageException {
+//        return getSlice(keyStart, keyEnd, null, limit, txh);
+//    }
 
     @Override
-    public void insert(final ByteBuffer key, final ByteBuffer value, final StoreTransaction txh) throws StorageException {
+    public void insert(final StaticBuffer key, final StaticBuffer value, final StoreTransaction txh) throws StorageException {
         final PersistitTransaction tx = (PersistitTransaction) txh;
         synchronized (tx) {
             tx.assign();
@@ -324,7 +326,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
     }
 
     @Override
-    public void delete(final ByteBuffer key, StoreTransaction txh) throws StorageException {
+    public void delete(final StaticBuffer key, StoreTransaction txh) throws StorageException {
         final PersistitTransaction tx = (PersistitTransaction) txh;
         synchronized (tx) {
             tx.assign();
@@ -341,7 +343,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
     }
 
     @Override
-    public void acquireLock(ByteBuffer key, ByteBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         //@todo: what is this supposed to do? BerkelyDB doesn't really implement this
     }
 
@@ -351,7 +353,7 @@ public class PersistitKeyValueStore implements KeyValueStore {
     }
 
     @Override
-    public ByteBuffer[] getLocalKeyPartition() throws StorageException {
+    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         throw new UnsupportedOperationException();
     }
 }

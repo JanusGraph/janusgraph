@@ -11,8 +11,6 @@ import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -71,7 +69,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     }
 
     @Override
-    public void abort() throws StorageException {
+    public void rollback() throws StorageException {
         synchronized (this) {
             assign();
             Transaction tx = db.getTransaction();

@@ -2,6 +2,9 @@ package com.thinkaurelius.titan.diskstorage.persistit;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -14,7 +17,6 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
 
 
 import java.io.File;
@@ -27,7 +29,7 @@ import java.util.Properties;
  * @todo: confirm that the initial sessions created on store startup are not hanging around forever
  *
  */
-public class PersistitStoreManager implements KeyValueStoreManager {
+public class PersistitStoreManager implements OrderedKeyValueStoreManager {
 
     private final Map<String, PersistitKeyValueStore> stores;
     private static final StoreFeatures features = new StoreFeatures();
@@ -85,7 +87,7 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         }
 
         //do some additional config setup
-        config.addProperty(Backend.TITAN_BACKEND_VERSION, "0.2.2-SNAPSHOT");
+        config.addProperty(Backend.TITAN_BACKEND_VERSION, "0.3.1");
     }
 
     Volume getVolume() {
@@ -103,6 +105,11 @@ public class PersistitStoreManager implements KeyValueStoreManager {
         tx.commit();
         stores.put(name, store);
         return store;
+    }
+
+    @Override
+    public void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws StorageException {
+        throw new UnsupportedOperationException();
     }
 
     public void removeDatabase(PersistitKeyValueStore db) {
