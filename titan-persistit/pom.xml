@@ -38,31 +38,6 @@
         </dependency>
     </dependencies>
 
-    <profiles>
-        <profile>
-            <id>comprehensive</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.12.1</version>
-                        <configuration>
-                            <argLine>-Xms256m -Xmx1024m</argLine>
-                            <includes>
-                                <include>**/*Test.java</include>
-                            </includes>
-                            <excludes>
-                                <exclude>**/Internal*.java</exclude>
-                                <exclude>**/*Suite.java</exclude>
-                            </excludes>
-                            <forkMode>never</forkMode>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
     <build>
         <directory>${basedir}/target</directory>
         <finalName>${project.artifactId}-${project.version}</finalName>
@@ -77,6 +52,22 @@
                 <directory>${basedir}/src/test/resources</directory>
             </testResource>
         </testResources>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.12.1</version>
+                <configuration>
+                    <argLine>-Xms256m -Xmx1024m</argLine>
+                    <excludes>
+                        <exclude>**/External*.java</exclude>
+                        <!-- Excluded because these take too long to run and require a lot of memory - see comprehensive profile -->
+                        <exclude>**/*PerformanceTest.java</exclude>
+                        <exclude>**/*ConcurrentTest.java</exclude>
+                    </excludes>
+                    <forkMode>never</forkMode>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>
 
