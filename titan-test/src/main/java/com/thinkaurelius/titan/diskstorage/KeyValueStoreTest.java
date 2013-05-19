@@ -40,8 +40,8 @@ public abstract class KeyValueStoreTest {
 
     public void open() throws StorageException {
         manager = openStorageManager();
-        tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
         store = manager.openDatabase(storeName);
+        tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
     }
 
     public abstract OrderedKeyValueStoreManager openStorageManager() throws StorageException;

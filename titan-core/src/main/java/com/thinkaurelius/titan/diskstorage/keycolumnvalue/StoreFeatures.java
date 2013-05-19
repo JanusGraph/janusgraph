@@ -9,7 +9,6 @@ import java.lang.reflect.Field;
  * <p/>
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class StoreFeatures {
 
     public Boolean supportsScan;
