@@ -33,12 +33,17 @@ public abstract class AbstractElement implements InternalElement {
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null) return false;
-        if (((this instanceof TitanVertex) && (other instanceof TitanVertex)) ||
-                ((this instanceof TitanEdge) && (other instanceof TitanEdge)))
-            return getID()==((AbstractElement)other).getID();
-        else return false;
+        if (this==other) {
+            return true;
+        } else if (other==null) {
+            return false;
+        } else if (this instanceof TitanVertex && other instanceof TitanVertex) {
+            return getID() == ((TitanVertex)other).getID();
+        } else if (this instanceof TitanEdge && other instanceof TitanEdge) {
+            return getID() == ((TitanEdge)other).getID();
+        } else {
+            return false;
+        }
     }
 
 
