@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.1</a></h3>
   <h1>Vertex Query Graph Filters</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -67,7 +67,7 @@ Mousetrap.bind(['e'], function( e ) {
 <div class="wrap">
   <div id="wiki-body" class="gollum-textile-content">
     <div id="template">
-      <p><span class="float-left"><span><img src="images/vertex-query-filter.png" width="365px" /></span></span></p>
+      <p><span class="float-left"><span><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/vertex-query-filter.png" width="365px" /></span></span></p>
 <p><a href="http://blueprints.tinkerpop.com">Blueprints</a> maintains the notion of a <code>VertexQuery</code> (see <a href="https://github.com/tinkerpop/blueprints/wiki/Vertex-Query">details</a>). In Blueprints, and the graph databases that provide a native implementation (e.g. <a href="http://titan.thinkaurelius.com">Titan</a>), a vertex’s edges can be filtered at the database level prior to being pulled into memory. If data is organized on disk in a manner that respects edge indices/sorts, then this technique can drastically reduce traversal times by intelligently limiting the search space of a traverser (e.g. <a href="http://gremlin.tinkerpop.com">Gremlin</a>).</p>
 <p><span class="float-right"><span><img src="https://github.com/tinkerpop/blueprints/raw/master/doc/images/blueprints-character-3.png" width="100px" /></span></span></p>
 <p>In Faunus, the same <code>VertexQuery</code> construct exists. However, in the context of Faunus, it is used to filter the input graph to a subset of the full graph prior to pulling the data into Hadoop. For those graph sources that support <em>push down predicates</em>, this allows the graph source to only return the edges of the vertices that satisfy the contraints of the query. The <a class="internal present" href="Faunus-Graph-Configuration.html">Faunus graph configuration</a> that specifies the vertex query constraint is <code>faunus.graph.input.vertex-query-filter</code>. A few examples are itemized below.</p>
@@ -105,7 +105,7 @@ gremlin&gt;
 
 </div>
 <div id="footer">
-  <p id="last-edit">Last edited by <b>okram</b>, 2013-04-20 12:06:28</p>
+  <p id="last-edit">Last edited by <b>okram</b>, 20.3.14-20 12:06:28</p>
   <p>
     
   </p>

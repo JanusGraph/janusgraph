@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.1</a></h3>
   <h1>Running Faunus on Amazon EC2</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -94,7 +94,7 @@ Starting 3 node<span class="o">(</span>s<span class="o">)</span> with roles <spa
 Starting 1 node<span class="o">(</span>s<span class="o">)</span> with roles <span class="o">[</span>hadoop-namenode, hadoop-jobtracker<span class="o">]</span>
 ...
 </pre></div>
-<p><img src="images/ec2-screenshot.png" alt="" /></p>
+<p><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/ec2-screenshot.png" alt="" /></p>
 <p>When logging into the <a href="http://console.aws.amazon.com/ec2/">Amazon EC2 Console</a>, the cluster machines are visible. After running the Hadoop proxy shell script (in another window), the Hadoop cluster is ready for job submissions.</p>
 <div class="highlight"><pre>faunus<span class="nv">$.</span> ~/.whirr/faunuscluster/hadoop-proxy.sh
 Running proxy to Hadoop cluster at ec2-23-20-32-211.compute-1.amazonaws.com. Use Ctrl-c to quit. 
@@ -136,7 +136,7 @@ c1.xlarge
 <div class="highlight"><pre><span class="na">whirr.java.install-function</span><span class="o">=</span><span class="s">install_oab_java</span>
 </pre></div>
 <h2>Running a Faunus Script<a class="anchor" id="Running-a-Faunus-Script" href="#Running-a-Faunus-Script"></a></h2>
-<p><img src="images/faunus-elephants.png" alt="" /></p>
+<p><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/faunus-elephants.png" alt="" /></p>
 <p>Faunus can deploy jobs to the Amazon EC2 cluster. The first thing to do is to put a graph on <span class="caps">HDFS</span>. For this example, use the toy <code>data/graph-of-the-gods.json</code> file. Once the file is in <span class="caps">HDFS</span>, a <code>faunus.sh</code> derivation can be executed.</p>
 <div class="highlight"><pre>faunus$ bin/gremlin.sh
 
@@ -176,7 +176,7 @@ gremlin&gt; hdfs.ls('output/*')
 ==&gt;rw-r--r-- ubuntu supergroup 435 graph-m-00000.bz2
 ==&gt;rw-r--r-- ubuntu supergroup 75 sideeffect-m-00000.bz2
 </pre></div>
-<p><img src="images/dead-elephants.png" alt="" /></p>
+<p><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/dead-elephants.png" alt="" /></p>
 <p>When the cluster is no longer needed, Whirr can be used to shutdown the cluster.</p>
 <div class="highlight"><pre>faunus$ whirr destroy-cluster --config bin/whirr.properties 
 Starting to run scripts on cluster for phase destroyinstances: us-east-1/i-16376a6e, us-east-1/i-0c376a74, us-east-1/i-0a376a72
@@ -204,7 +204,7 @@ faunus$
 
 </div>
 <div id="footer">
-  <p id="last-edit">Last edited by <b>okram</b>, 2013-03-21 12:45:50</p>
+  <p id="last-edit">Last edited by <b>okram</b>, 20.3.13-21 12:45:50</p>
   <p>
     
   </p>

@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.1</a></h3>
   <h1>Representational Limits</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -67,7 +67,7 @@ Mousetrap.bind(['e'], function( e ) {
 <div class="wrap">
   <div id="wiki-body" class="gollum-textile-content">
     <div id="template">
-      <p><span class="float-left"><span><img src="images/faunus-character.png" width="90px" /></span></span> Faunus elements, vertices, and edges all implement Hadoop’s <code>Writable</code> interface. Certain assumptions are made in order to ensure an efficient representation while at the same time supporting what is expected to be the most realistic use cases. This section outlines the representational assumptions/limits currently in Faunus.</p>
+      <p><span class="float-left"><span><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/faunus-character.png" width="90px" /></span></span> Faunus elements, vertices, and edges all implement Hadoop’s <code>Writable</code> interface. Certain assumptions are made in order to ensure an efficient representation while at the same time supporting what is expected to be the most realistic use cases. This section outlines the representational assumptions/limits currently in Faunus.</p>
 <p>Note that these limits are theoretical and that physical limits may be reached well before theoretical limits are hit. For instance, one important physical limitation to be wary of is the fact that a single vertex is represented in memory. A vertex is its id, properties, incident edges, and path information. Any MapReduce job making use of <code>FaunusVertex</code> must be able to hold the entire vertex in memory.</p>
 <p><br /></p>
 <h2>Faunus Vertex<a class="anchor" id="Faunus-Vertex" href="#Faunus-Vertex"></a></h2>

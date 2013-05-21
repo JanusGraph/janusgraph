@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.1</a></h3>
   <h1>Performance Tuning</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -71,7 +71,7 @@ Mousetrap.bind(['e'], function( e ) {
   — Courtesy of Ricky Ho’s <a href="http://horicky.blogspot.com/">Pragmatic Programmer</a> blog.</p>
 <p><a href="http://hadoop.apache.org/">Hadoop</a> is a complex piece of software with a variegation of components including a distributed file system, a  distributed computing framework with job trackers, data nodes, and numerous simultaneously running <span class="caps">JVM</span> instances. With any complex software environment, there are tunings that can be employed to ensure both efficient use of <strong>space</strong> (network bandwidth, hard drive, memory, etc.) and <strong>time</strong> (object creation, combiners, in-memory combiners, etc.). This section presents various tricks to Hadoop/Faunus that can be used to tune Faunus job sequences and developed Faunus MapReduce extensions.</p>
 <h2>Faunus Specific Tunings<a class="anchor" id="Faunus-Specific-Tunings" href="#Faunus-Specific-Tunings"></a></h2>
-<p><img src="images/faunus-head-logo.png" alt="" /></p>
+<p><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/faunus-head-logo.png" alt="" /></p>
 <ul><li><strong>Use SequenceFiles for repeated analyses</strong>: The Hadoop <a class="internal present" href="SequenceFile-Format.html">SequenceFile</a> is the most optimal file format for Faunus. If repeated analysis is going to be done on a graph, then it is beneficial to first generate a SequenceFile representation of that graph in <span class="caps">HDFS</span>. This file can then serve as the input for repeated analyses. Generating a SequenceFile is as simple as running the identity step <code>g._</code> with the following Faunus properties.</li>
 </ul><div class="highlight"><pre><span class="na">faunus.graph.output.format</span><span class="o">=</span><span class="s">org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat</span>
 </pre></div>
@@ -86,7 +86,7 @@ Mousetrap.bind(['e'], function( e ) {
 </ul><div class="highlight"><pre><span class="na">faunus.graph.output.format</span><span class="o">=</span><span class="s">com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat</span>
 </pre></div>
 <h2>Hadoop Specific Tunings<a class="anchor" id="Hadoop-Specific-Tunings" href="#Hadoop-Specific-Tunings"></a></h2>
-<p><img src="images/hadoop-logo.jpg" alt="" /></p>
+<p><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/hadoop-logo.jpg" alt="" /></p>
 <p>There are numerous Hadoop specific tunings. Below is a collection of blog posts that discuss tips and tricks for Hadoop.</p>
 <ul><li><a href="http://wiki.apache.org/hadoop/HowManyMapsAndReduces">http://wiki.apache.org/hadoop/HowManyMapsAndReduces</a></li>
 	<li><a href="http://allthingshadoop.com/2010/04/28/map-reduce-tips-tricks-your-first-real-cluster/">http://allthingshadoop.com/2010/04/28/map-reduce-tips-tricks-your-first-real-cluster/</a></li>
@@ -100,7 +100,7 @@ Mousetrap.bind(['e'], function( e ) {
 
 </div>
 <div id="footer">
-  <p id="last-edit">Last edited by <b>okram</b>, 2013-01-13 12:18:19</p>
+  <p id="last-edit">Last edited by <b>okram</b>, 20.3.11-13 12:18:19</p>
   <p>
     
   </p>

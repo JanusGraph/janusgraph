@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.1</a></h3>
   <h1>Getting Started</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -67,9 +67,9 @@ Mousetrap.bind(['e'], function( e ) {
 <div class="wrap">
   <div id="wiki-body" class="gollum-textile-content">
     <div id="template">
-      <p><span class="float-left"><span><img src="images/gremlin-elephant.png" width="120px" /></span></span> Faunus requires that the user have access to a <a href="http://hadoop.apache.org/">Hadoop</a> cluster. If a Hadoop cluster is readily available to the user, then Faunus is easy to get up and running. If not, then the provided <a href="http://whirr.apache.org/">Whirr</a> recipe can be leveraged to spawn a Hadoop cluster on <a href="http://aws.amazon.com/ec2/">Amazon EC2</a> (see the following <a href="https://github.com/thinkaurelius/faunus/wiki/Running-Faunus-on-Amazon-EC2">tutorial</a>) or a local instance of Hadoop can be run in pseudo-cluster mode (see the following <a href="http://hadoop.apache.org/common/docs/stable/single_node_setup.html">tutorial</a>). This section will discuss the pseudo-cluster approach for those users just getting started with Hadoop (and Faunus). For more experienced Hadoop users, the examples below can be easily adapted to work with a non-local Hadoop cluster (e.g. simply change the Hadoop configuration to point to the accessible cluster (<code>$HADOOP_CONF_DIR</code>).</p>
+      <p><span class="float-left"><span><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/gremlin-elephant.png" width="120px" /></span></span> Faunus requires that the user have access to a <a href="http://hadoop.apache.org/">Hadoop</a> cluster. If a Hadoop cluster is readily available to the user, then Faunus is easy to get up and running. If not, then the provided <a href="http://whirr.apache.org/">Whirr</a> recipe can be leveraged to spawn a Hadoop cluster on <a href="http://aws.amazon.com/ec2/">Amazon EC2</a> (see the following <a href="https://github.com/thinkaurelius/faunus/wiki/Running-Faunus-on-Amazon-EC2">tutorial</a>) or a local instance of Hadoop can be run in pseudo-cluster mode (see the following <a href="http://hadoop.apache.org/common/docs/stable/single_node_setup.html">tutorial</a>). This section will discuss the pseudo-cluster approach for those users just getting started with Hadoop (and Faunus). For more experienced Hadoop users, the examples below can be easily adapted to work with a non-local Hadoop cluster (e.g. simply change the Hadoop configuration to point to the accessible cluster (<code>$HADOOP_CONF_DIR</code>).</p>
 <h2>Starting Hadoop<a class="anchor" id="Starting-Hadoop" href="#Starting-Hadoop"></a></h2>
-<p><img src="images/hadoop-logo.jpg" alt="" /></p>
+<p><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/hadoop-logo.jpg" alt="" /></p>
 <p>For using Faunus locally on a single machine, a Hadoop pseudo-cluster can be used. Instructions to set up a <a href="http://hadoop.apache.org/common/docs/stable/single_node_setup.html">pseudo-cluster</a> are provided in the Hadoop documentation. Once the pseudo-cluster has been set up, it can be started by running the start script <code>$HADOOP_PREFIX/bin/start-all.sh</code>. Once running, Hadoop can be issued jobs (e.g. Faunus jobs).</p>
 <div class="highlight"><pre>~<span class="nv">$ </span>start-all.sh
 starting namenode, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-namenode-markolaptop.local.out
@@ -78,7 +78,7 @@ localhost: starting secondarynamenode, logging to /Applications/hadoop/hadoop-1.
 starting jobtracker, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-jobtracker-markolaptop.local.out
 localhost: starting tasktracker, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-tasktracker-markolaptop.local.out
 </pre></div>
-<p><img src="images/hdfs-logo.jpg" alt="" /></p>
+<p><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/hdfs-logo.jpg" alt="" /></p>
 <p>To ensure that the installation is running properly, do an <code>ls</code> on Hadoop’s distributed file system, <a href="http://hadoop.apache.org/hdfs/"><span class="caps">HDFS</span></a>. This should <strong>not</strong> return a view of the local filesystem, but instead a view of <span class="caps">HDFS</span>.</p>
 <div class="highlight"><pre>faunus<span class="nv">$ </span>hadoop fs -ls /
 Found 2 items
@@ -86,7 +86,7 @@ drwxr-xr-x   - marko supergroup          0 2012-07-26 11:55 /tmp
 drwxr-xr-x   - marko supergroup          0 2012-07-26 11:55 /user
 </pre></div>
 <h2>Using Faunus via Gremlin<a class="anchor" id="Using-Faunus-via-Gremlin" href="#Using-Faunus-via-Gremlin"></a></h2>
-<p><span class="float-left"><span><img src="images/faunus-head.png" /></span></span></p>
+<p><span class="float-left"><span><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/faunus-head.png" /></span></span></p>
 <p>Faunus can be downloaded from the <a href="https://github.com/thinkaurelius/faunus/wiki/Downloads">downloads section</a> of this project. Faunus provides a <a href="http://gremlin.tinkerpop.com">Gremlin</a> implementation that can be used for convenient interactions with <span class="caps">HDFS</span>, interactions with the supported graph sources (e.g. <a href="http://thinkaurelius.github.com/titan/">Titan</a>), and for constructing Faunus jobs (a chain of 1 or more MapReduce jobs). The Gremlin <a href="http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop"><span class="caps">REPL</span></a> is started with <code>bin/gremlin.sh</code> (or <code>gremlin.bat</code> for Windows users). Be sure to have set the <code>FAUNUS_HOME</code> environmental variable to the root location of the Faunus distribution.</p>
 <div class="highlight"><pre>faunus$ bin/gremlin.sh 
 
@@ -96,7 +96,7 @@ drwxr-xr-x   - marko supergroup          0 2012-07-26 11:55 /user
 gremlin&gt;
 </pre></div>
 <h2>Graph of the Gods Examples<a class="anchor" id="Graph-of-the-Gods-Examples" href="#Graph-of-the-Gods-Examples"></a></h2>
-<p><img src="images/graph-of-the-gods.png" alt="" /></p>
+<p><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/graph-of-the-gods.png" alt="" /></p>
 <p>Faunus distributes with a toy graph called <em>The Graph of the Gods</em> (represented in Faunus’ <a class="internal present" href="GraphSON-Format.html">GraphSON format</a>). This graph has 12 vertices/17 edges and denotes people, places, monsters and their various types of relationships to one another. A diagrammatic representation is provided above and the raw GraphJSON representation is provided below.</p>
 <div class="highlight"><pre><span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"saturn"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"titan"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"father"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">12</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">1</span><span class="p">}]}</span>
 <span class="p">{</span><span class="nt">"name"</span><span class="p">:</span><span class="s2">"jupiter"</span><span class="p">,</span><span class="nt">"type"</span><span class="p">:</span><span class="s2">"god"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">"_outE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"lives"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">13</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">4</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">16</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">3</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">14</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">2</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"father"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">12</span><span class="p">,</span><span class="nt">"_inV"</span><span class="p">:</span><span class="mi">0</span><span class="p">}],</span><span class="nt">"_inE"</span><span class="p">:[{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">17</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">3</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"brother"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">2</span><span class="p">},{</span><span class="nt">"_label"</span><span class="p">:</span><span class="s2">"father"</span><span class="p">,</span><span class="nt">"_id"</span><span class="p">:</span><span class="mi">24</span><span class="p">,</span><span class="nt">"_outV"</span><span class="p">:</span><span class="mi">7</span><span class="p">}]}</span>
@@ -132,7 +132,7 @@ Found 1 item
 </pre></div>
 <p>The next sections present some simple examples to demonstrate how Faunus, Gremlin, and Hadoop all interact with one another.</p>
 <h3>Vertex Property Value Distribution (Statistic)<a class="anchor" id="Vertex-Property-Value-Distribution-(Statistic)" href="#Vertex-Property-Value-Distribution-(Statistic)"></a></h3>
-<p><img src="images/mapreduce-logo.jpg" alt="" /></p>
+<p><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/mapreduce-logo.jpg" alt="" /></p>
 <p>A <a href="http://en.wikipedia.org/wiki/Frequency_distribution">frequency distribution</a> is simply a count of the number of times a particular item appears in a set. If the set is defined as all the <em>type</em> property values of the vertices in <em>The Graph of the Gods</em>, then a distribution of those values is the number of times that monster, human, demigod, god, etc. appears. This can be computed with the following Gremlin traversal.</p>
 <div class="highlight"><pre>gremlin&gt; g.V.type.groupCount
 12/09/16 14:04:16 INFO mapreduce.FaunusCompiler: Compiled to 1 MapReduce job(s)
@@ -242,7 +242,7 @@ gremlin&gt; h = g.getNextGraph()
 
 </div>
 <div id="footer">
-  <p id="last-edit">Last edited by <b>okram</b>, 2013-04-16 18:51:37</p>
+  <p id="last-edit">Last edited by <b>okram</b>, 20.3.14-16 18:51:37</p>
   <p>
     
   </p>

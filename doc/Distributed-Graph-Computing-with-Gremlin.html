@@ -33,7 +33,7 @@ Mousetrap.bind(['e'], function( e ) {
 });
 </script>
 <div id="wiki-wrapper" class="page">
-<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.0</a></h3>
+<div id="head"><h3><a href="Home.html">Aurelius Faunus 0.3.1</a></h3>
   <h1>Distributed Graph Computing with Gremlin</h1>
   <ul class="actions">
     <li class="minibutton">
@@ -67,7 +67,7 @@ Mousetrap.bind(['e'], function( e ) {
 <div class="wrap">
   <div id="wiki-body" class="gollum-textile-content">
     <div id="template">
-      <p><img src="images/faunus-distributed-gremlin.png" width="450px" /></p>
+      <p><img src="https://github.com/thinkaurelius/faunus/raw/master/doc/images/faunus-distributed-gremlin.png" width="450px" /></p>
 <p>The <code>script</code>-step in Faunus’ Gremlin allows for the arbitrary execution of a Gremlin script against all vertices in the Faunus graph. This simple idea has interesting ramifications for Gremlin-based distributed graph computing. For instance, it is possible evaluate a Gremlin script on every vertex in the source graph (e.g. Titan) in parallel while maintaining data/process locality. This section will discuss the following two use cases.</p>
 <ul><li><strong>Global graph mutations</strong>: parallel update vertices/edges in a Titan cluster given some arbitrary computation.</li>
 	<li><strong>Global graph algorithms</strong>: propagate information to arbitrary depths in a Titan cluster in order to compute some algorithm in a parallel fashion.</li>
@@ -166,7 +166,7 @@ gremlin&gt; g.V.has('type','demigod','god').script('FathersName.groovy','cassand
 
 </div>
 <div id="footer">
-  <p id="last-edit">Last edited by <b>okram</b>, 2013-03-11 20:00:59</p>
+  <p id="last-edit">Last edited by <b>okram</b>, 20.3.13-11 20:00:59</p>
   <p>
     
   </p>
