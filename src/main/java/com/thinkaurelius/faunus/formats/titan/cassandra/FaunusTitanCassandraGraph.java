@@ -4,6 +4,8 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.titan.FaunusTitanGraph;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
+import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import org.apache.cassandra.db.IColumn;
 import org.apache.commons.configuration.Configuration;
 
@@ -62,7 +64,7 @@ public class FaunusTitanCassandraGraph extends FaunusTitanGraph {
         @Override
         public Entry next() {
             final Map.Entry<ByteBuffer, IColumn> entry = iterator.next();
-            return new Entry(entry.getKey(), entry.getValue().value());
+            return new StaticBufferEntry(new StaticByteBuffer(entry.getKey()), new StaticByteBuffer(entry.getValue().value()));
         }
 
         @Override

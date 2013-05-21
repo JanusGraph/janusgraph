@@ -6,15 +6,11 @@ import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.hbase.HBaseKeyColumnValueStore;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.filter.ColumnPaginationFilter;
-import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
 import org.apache.hadoop.hbase.filter.Filter;
-import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
@@ -82,23 +78,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
     }
 
     private Filter getColumnFilter(VertexQueryFilter inputFilter) {
-        return getFilter(TitanInputFormat.inputSlice(inputFilter, graph));
-    }
-
-    //TODO: replace by HBaseKeyColumnValueStore.getFilter(SliceQuery) when Titan 0.3.1 is released!
-    public static Filter getFilter(SliceQuery query) {
-        byte[] colStartBytes = query.getSliceEnd().hasRemaining() ? ByteBufferUtil.getArray(query.getSliceStart()) : null;
-        byte[] colEndBytes = query.getSliceEnd().hasRemaining() ? ByteBufferUtil.getArray(query.getSliceEnd()) : null;
-
-        Filter filter = new ColumnRangeFilter(colStartBytes, true, colEndBytes, false);
-
-        if (query.hasLimit()) {
-            filter = new FilterList(FilterList.Operator.MUST_PASS_ALL,
-                    filter,
-                    new ColumnPaginationFilter(query.getLimit(), 0));
-        }
-
-        return filter;
+        return HBaseKeyColumnValueStore.getFilter(TitanInputFormat.inputSlice(inputFilter, graph));
     }
 
     @Override

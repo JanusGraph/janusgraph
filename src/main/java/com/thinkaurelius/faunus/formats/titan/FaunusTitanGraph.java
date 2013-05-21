@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.formats.titan;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -31,7 +32,7 @@ public class FaunusTitanGraph extends StandardTitanGraph {
     }
 
     protected FaunusVertex readFaunusVertex(final ByteBuffer key, Iterable<Entry> entries) {
-        final FaunusVertexLoader loader = new FaunusVertexLoader(key);
+        final FaunusVertexLoader loader = new FaunusVertexLoader(new StaticByteBuffer(key));
         for (final Entry data : entries) {
             try {
                 final FaunusVertexLoader.RelationFactory factory = loader.getFactory();
