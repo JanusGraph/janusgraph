@@ -1,6 +1,9 @@
 package com.thinkaurelius.faunus;
 
-import com.thinkaurelius.titan.core.attribute.Geoshape;
+import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.ReadByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.util.ElementHelper;
@@ -11,7 +14,6 @@ import org.apache.hadoop.io.WritableUtils;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,11 +31,6 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     }
 
     protected static final KryoSerializer serialize = new KryoSerializer(true);
-
-    // TODO: Remove when Titan 0.3.1 is released
-    static {
-        serialize.registerClass(Geoshape.class, 40 + 22);
-    }
 
     protected static final Map<String, String> TYPE_MAP = new HashMap<String, String>() {
         @Override
@@ -246,8 +243,9 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                     o.writeObject(entry.getKey(), String.class);
                     o.writeClassAndObject(entry.getValue());
                 }
-                WritableUtils.writeVInt(out, o.getByteBuffer().array().length);
-                out.write(o.getByteBuffer().array());
+                final StaticBuffer buffer = o.getStaticBuffer();
+                WritableUtils.writeVInt(out, buffer.length());
+                out.write(ByteBufferUtil.getArray(buffer.asByteBuffer()));
             }
         }
 
@@ -259,7 +257,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
                 final Map<String, Object> properties = new HashMap<String, Object>();
                 byte[] bytes = new byte[WritableUtils.readVInt(in)];
                 in.readFully(bytes);
-                final ByteBuffer buffer = ByteBuffer.wrap(bytes);
+                final ReadBuffer buffer = new ReadByteBuffer(bytes);
                 for (int i = 0; i < numberOfProperties; i++) {
                     final String key = serialize.readObject(buffer, String.class);
                     final Object valueObject = serialize.readClassAndObject(buffer);

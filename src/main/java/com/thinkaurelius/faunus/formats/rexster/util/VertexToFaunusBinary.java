@@ -1,6 +1,8 @@
 package com.thinkaurelius.faunus.formats.rexster.util;
 
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -75,8 +77,9 @@ public class VertexToFaunusBinary {
                 o.writeObject(key, String.class);
                 o.writeClassAndObject(element.getProperty(key));
             }
-            WritableUtils.writeVInt(out, o.getByteBuffer().array().length);
-            out.write(o.getByteBuffer().array());
+            final StaticBuffer buffer = o.getStaticBuffer();
+            WritableUtils.writeVInt(out, buffer.length());
+            out.write(ByteBufferUtil.getArray(buffer.asByteBuffer()));
         }
     }
 }

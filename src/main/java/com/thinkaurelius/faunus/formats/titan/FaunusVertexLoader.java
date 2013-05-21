@@ -4,13 +4,13 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,14 +23,13 @@ import java.util.Map;
 
 public class FaunusVertexLoader {
 
-    private final boolean filterSystemTypes = true;
+    // private final boolean filterSystemTypes = true;
     private final FaunusVertex vertex;
 
     private boolean isSystemType = false;
 
-    public FaunusVertexLoader(final ByteBuffer key) {
+    public FaunusVertexLoader(final StaticBuffer key) {
         this(IDHandler.getKeyID(key));
-
     }
 
     public FaunusVertexLoader(final long id) {
@@ -39,8 +38,7 @@ public class FaunusVertexLoader {
     }
 
     public FaunusVertex getVertex() {
-        if (this.filterSystemTypes && this.isSystemType) return null;
-        else return this.vertex;
+        return this.isSystemType ? null : this.vertex;
     }
 
     public RelationFactory getFactory() {
@@ -95,7 +93,7 @@ public class FaunusVertexLoader {
         }
 
         public void build() {
-            if (filterSystemTypes && this.type instanceof SystemType) return;
+            if (this.type instanceof SystemType) return;
 
             if (this.type.isPropertyKey()) {
                 Preconditions.checkNotNull(value);
