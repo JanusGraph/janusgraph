@@ -14,6 +14,7 @@ import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.VertexQuery;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -200,6 +201,12 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
         return addConstraint(type,Cmp.EQUAL,value);
     }
 
+
+    @Override
+    public <T extends Comparable<T>> VertexCentricQueryBuilder has(String key, Compare compare, T value) {
+        return addConstraint(key,Cmp.convert(compare),value);
+    }
+
     @Override
     public <T extends Comparable<T>> VertexCentricQueryBuilder interval(TitanKey key, T start, T end) {
         return interval(key.getName(),start,end);
@@ -274,7 +281,5 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
         this.limit = (int)limit;
         return this;
     }
-
-
 
 }
