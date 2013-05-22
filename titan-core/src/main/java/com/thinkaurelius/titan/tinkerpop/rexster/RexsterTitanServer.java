@@ -6,6 +6,8 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.rexster.Tokens;
 import com.tinkerpop.rexster.protocol.EngineController;
 import com.tinkerpop.rexster.server.*;
+import com.tinkerpop.rexster.server.metrics.ReporterConfig;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -38,7 +40,7 @@ public class RexsterTitanServer {
     public static final int SHUTDOWN_PORT_VALUE = RexsterSettings.DEFAULT_SHUTDOWN_PORT;
 
     private final Configuration titanConfig;
-    private final Configuration rexsterConfig;
+    private final XMLConfiguration rexsterConfig;
 
     private RexProRexsterServer rexProServer = null;
     private HttpRexsterServer httpServer = null;
@@ -48,19 +50,6 @@ public class RexsterTitanServer {
         Preconditions.checkNotNull(rexsterConfig);
         Preconditions.checkNotNull(titanConfig);
 
-        final boolean isRexProConfigured = rexsterConfig.subset("rexpro").getKeys().hasNext();
-        final boolean isHttpConfigured = rexsterConfig.subset("http").getKeys().hasNext();
-
-        if (isRexProConfigured || !isHttpConfigured) {
-            rexProServer = new RexProRexsterServer(rexsterConfig);
-        }
-
-        if (isHttpConfigured || !isRexProConfigured) {
-            // turn off dog house...always
-            rexsterConfig.setProperty("http.enable-doghouse", false);
-            httpServer = new HttpRexsterServer(rexsterConfig);
-        }
-
         this.rexsterConfig = rexsterConfig;
         this.titanConfig = titanConfig;
     }
@@ -68,12 +57,31 @@ public class RexsterTitanServer {
     public void start() {
         EngineController.configure(-1, this.rexsterConfig.getString("script-engine-init", null));
         graph = TitanFactory.open(titanConfig);
-
+        
         final List<HierarchicalConfiguration> extensionConfigurations = ((XMLConfiguration) rexsterConfig).configurationsAt(Tokens.REXSTER_GRAPH_EXTENSIONS_PATH);
-        log.info(extensionConfigurations.toString());
+        log.info("Extension Config: "+extensionConfigurations.toString());
         final RexsterApplication ra = new TitanRexsterApplication(DEFAULT_GRAPH_NAME, graph, extensionConfigurations);
-        startRexProServer(ra);
-        startHttpServer(ra);
+
+        final ReporterConfig reporterConfig = ReporterConfig.load(rexsterConfig.configurationsAt(Tokens.REXSTER_REPORTER_PATH), ra.getMetricRegistry());
+        this.rexsterConfig.addProperty("http-reporter-enabled", reporterConfig.isHttpReporterEnabled());
+        this.rexsterConfig.addProperty("http-reporter-duration", reporterConfig.getDurationTimeUnitConversion());
+        this.rexsterConfig.addProperty("http-reporter-convert", reporterConfig.getRateTimeUnitConversion());
+        reporterConfig.enable();
+
+        final boolean isRexProConfigured = rexsterConfig.subset("rexpro").getKeys().hasNext();
+        final boolean isHttpConfigured = rexsterConfig.subset("http").getKeys().hasNext();
+        
+        if (isRexProConfigured || !isHttpConfigured) {
+            rexProServer = new RexProRexsterServer(rexsterConfig);
+            startRexProServer(ra);
+        }
+
+        if (isHttpConfigured || !isRexProConfigured) {
+            // turn off dog house...always
+            this.rexsterConfig.setProperty("http.enable-doghouse", false);
+            httpServer = new HttpRexsterServer(rexsterConfig);
+            startHttpServer(ra);
+        }
     }
 
     public void startDaemon() {
