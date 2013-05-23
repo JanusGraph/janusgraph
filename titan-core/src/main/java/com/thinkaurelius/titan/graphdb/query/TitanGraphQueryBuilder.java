@@ -83,11 +83,6 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
     }
 
     @Override
-    public TitanGraphQuery has(String s, Object o) {
-        return has(s, Cmp.EQUAL,o);
-    }
-
-    @Override
     public <T extends Comparable<T>> TitanGraphQuery has(String s, T t, Compare compare) {
         return has(s,Cmp.convert(compare),t);
     }
@@ -151,5 +146,23 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
         log.debug("Best index for query [{}]: {}",query,bestIndex);
         if (bestIndex!=null) return ImmutableList.of(new StandardElementQuery(query,bestIndex));
         else return ImmutableList.of(query);
+    }
+
+    @Override
+    public GraphQuery has(String key, Object... values) {
+        log.warn("has(key, values) is unimplemented and has no effect"); // TODO implement
+        return this;
+    }
+
+    @Override
+    public GraphQuery hasNot(String key, Object... values) {
+        log.warn("hasNot(key, values) is unimplemented and has no effect"); // TODO implement
+        return this;
+    }
+
+    @Override
+    public GraphQuery limit(long arg0, long arg1) {
+        log.warn("limit(skip, take) is unimplemented and has no effect"); // TODO implement
+        return this;
     }
 }

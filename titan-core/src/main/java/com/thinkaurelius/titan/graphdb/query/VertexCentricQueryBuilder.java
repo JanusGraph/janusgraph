@@ -17,10 +17,16 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.VertexQuery;
 
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 
 public class VertexCentricQueryBuilder implements TitanVertexQuery {
 
+    private static final Logger log = LoggerFactory.getLogger(VertexCentricQueryBuilder.class);
+    
     private final InternalVertex vertex;
 
     private Direction dir;
@@ -282,4 +288,21 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
         return this;
     }
 
+    @Override
+    public VertexQuery has(String key, Object... values) {
+        log.warn("has(key, values...) is unimplemented and has no effect"); // TODO implement
+        return this;
+    }
+
+    @Override
+    public VertexQuery hasNot(String key, Object... values) {
+        log.warn("hasNot(key, values...) is unimplemented and has no effect"); // TODO implement
+        return this;
+    }
+
+    @Override
+    public VertexQuery limit(long skip, long take) {
+        log.warn("limit(skip, take) is unimplemented and has no effect"); // TODO implement
+        return this;
+    }
 }
