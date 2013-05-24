@@ -117,7 +117,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * <p/>
      * Value = {@value}
      */
-    public static final String RETRY_POLICY_DEFAULT = "com.netflix.astyanax.retry.BoundedExponentialBackoff,25,1000,30";
+    public static final String RETRY_POLICY_DEFAULT = "com.netflix.astyanax.retry.BoundedExponentialBackoff,100,25000,8";
     public static final String RETRY_POLICY_KEY = "retry-policy";
 
     private static final ColumnFamily<String, String> PROPERTIES_CF;
