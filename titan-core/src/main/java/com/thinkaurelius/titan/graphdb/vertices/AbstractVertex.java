@@ -233,8 +233,6 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     @Override
     public <O> O removeProperty(TitanType key) {
         Preconditions.checkArgument(key.isPropertyKey());
-        Preconditions.checkArgument(key.isUnique(Direction.OUT));
-
 
         Object result = null;
         Iterator<TitanProperty> iter = query().type(key).properties().iterator();
