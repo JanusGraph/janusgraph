@@ -1,5 +1,38 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
 
+import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.cassandra.db.marshal.UTF8Type;
+import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.thrift.Cassandra;
+import org.apache.cassandra.thrift.CfDef;
+import org.apache.cassandra.thrift.Column;
+import org.apache.cassandra.thrift.ColumnOrSuperColumn;
+import org.apache.cassandra.thrift.ColumnParent;
+import org.apache.cassandra.thrift.ColumnPath;
+import org.apache.cassandra.thrift.ConsistencyLevel;
+import org.apache.cassandra.thrift.Deletion;
+import org.apache.cassandra.thrift.InvalidRequestException;
+import org.apache.cassandra.thrift.KsDef;
+import org.apache.cassandra.thrift.NotFoundException;
+import org.apache.cassandra.thrift.SchemaDisagreementException;
+import org.apache.cassandra.thrift.SlicePredicate;
+import org.apache.commons.configuration.Configuration;
+import org.apache.thrift.TException;
+import org.apache.thrift.transport.TTransportException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.codahale.metrics.JmxReporter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.Backend;
@@ -17,20 +50,9 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.thinkaurelius.titan.util.system.IOUtils;
-import org.apache.cassandra.db.marshal.UTF8Type;
-import org.apache.cassandra.dht.IPartitioner;
-import org.apache.cassandra.thrift.*;
-import org.apache.commons.configuration.Configuration;
-import org.apache.thrift.TException;
-import org.apache.thrift.transport.TTransportException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.nio.ByteBuffer;
-import java.util.*;
-
-import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
+import com.tinkerpop.rexster.server.AbstractMapRexsterApplication;
 
 /**
  * This class creates {@see CassandraThriftKeyColumnValueStore}s and
@@ -47,6 +69,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     private final UncheckedGenericKeyedObjectPool <String, CTConnection> pool;
 
     private final String hostname;
+    
+    private final Timer mutateManyTimer;
 
     public CassandraThriftStoreManager(Configuration config) throws StorageException {
         super(config);
@@ -58,6 +82,10 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                                              thriftFrameSize);
 
         this.openStores = new HashMap<String, CassandraThriftKeyColumnValueStore>();
+        
+        MetricRegistry metrics = MetricManager.INSTANCE.getRegistry();
+        Class<?> myClass = CassandraThriftStoreManager.class;
+        this.mutateManyTimer = metrics.timer(MetricRegistry.name(myClass, "mutateMany", "time"));
     }
 
     @Override
@@ -153,6 +181,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
 
         CTConnection conn = null;
+        Timer.Context timerContext = mutateManyTimer.time();
         try {
             conn = pool.genericBorrowObject(keySpaceName);
             Cassandra.Client client = conn.getClient();
@@ -163,6 +192,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         } finally {
             if (null != conn)
                 pool.genericReturnObject(keySpaceName, conn);
+            timerContext.stop();
         }
 
     }

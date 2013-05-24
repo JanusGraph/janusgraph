@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.tinkerpop.rexster;
 
+import com.codahale.metrics.MetricRegistry;
+import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.rexster.RexsterApplicationGraph;
 import com.tinkerpop.rexster.server.AbstractMapRexsterApplication;
@@ -35,6 +37,11 @@ public class TitanRexsterApplication extends AbstractMapRexsterApplication {
 
         this.graphs.put(graphName, rag);
         logger.info(String.format("Graph [%s] loaded", rag.getGraph()));
+    }
+    
+    @Override
+    public MetricRegistry getMetricRegistry() {
+        return MetricManager.INSTANCE.getRegistry();
     }
 
     private static void configureExtensions(final List<HierarchicalConfiguration> extensionConfigurations, final RexsterApplicationGraph rag) {
