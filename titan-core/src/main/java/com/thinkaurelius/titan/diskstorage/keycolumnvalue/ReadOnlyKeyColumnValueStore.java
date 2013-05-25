@@ -60,4 +60,8 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
         return store.getSlice(query, txh);
     }
 
+    @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        return store.getSlice(keys, query, txh);
+    }
 }

@@ -3,15 +3,13 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -67,6 +65,17 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         KeySliceQuery prefixQuery = new KeySliceQuery(prefixKey(query.getKey()),query);
         return store.getSlice(prefixQuery, txh);
+    }
+
+    @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        List<StaticBuffer> prefixedKeys = new ArrayList<StaticBuffer>(keys.size());
+
+        for (StaticBuffer key : keys) {
+            prefixedKeys.add(prefixKey(key));
+        }
+
+        return store.getSlice(prefixedKeys, query, txh);
     }
 
     @Override

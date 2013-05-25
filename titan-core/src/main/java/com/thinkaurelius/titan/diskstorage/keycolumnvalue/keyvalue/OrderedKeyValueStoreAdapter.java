@@ -55,8 +55,14 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
-        return convert(store.getSlice(concatenatePrefix(query.getKey(), query.getSliceStart()), concatenatePrefix(query.getKey(), query.getSliceEnd()),
-                new KeyColumnSliceSelector(query.getKey(), query.getLimit()), txh));
+        return convert(store.getSlice(concatenatePrefix(query.getKey(), query.getSliceStart()),
+                                      concatenatePrefix(query.getKey(), query.getSliceEnd()),
+                                      new KeyColumnSliceSelector(query.getKey(), query.getLimit()), txh));
+    }
+
+    @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -493,5 +493,38 @@ public abstract class KeyColumnValueStoreTest {
         Assert.assertTrue(KCVSUtil.containsKeyColumn(store,key1, c, txn));
         txn.commit();
     }
+
+    @Test
+    public void testGetSlices() throws Exception {
+        Random random = new Random();
+
+        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        for (int i = 1; i <= 100; i++) {
+            KeyColumnValueStoreUtil.insert(store, txn, i, "a", "v" + random.nextLong());
+            KeyColumnValueStoreUtil.insert(store, txn, i, "b", "v" + random.nextLong());
+            KeyColumnValueStoreUtil.insert(store, txn, i, "c", "v" + random.nextLong());
+        }
+        txn.commit();
+
+        txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        List<StaticBuffer> keys = new ArrayList<StaticBuffer>(100);
+
+        for (int i = 1; i <= 100; i++) {
+            keys.add(KeyColumnValueStoreUtil.longToByteBuffer(i));
+        }
+
+        StaticBuffer start = KeyColumnValueStoreUtil.stringToByteBuffer("a");
+        StaticBuffer end   = KeyColumnValueStoreUtil.stringToByteBuffer("d");
+
+        List<List<Entry>> results = store.getSlice(keys, new SliceQuery(start, end), txn);
+
+        Assert.assertEquals(100, results.size());
+
+        for (List<Entry> entries : results) {
+            Assert.assertEquals(3, entries.size());
+        }
+
+        txn.commit();
+    }
 }
  

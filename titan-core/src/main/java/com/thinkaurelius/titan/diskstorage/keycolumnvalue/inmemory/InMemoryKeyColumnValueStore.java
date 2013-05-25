@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,17 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         ColumnValueStore cvs = kcv.get(query.getKey());
         if (cvs==null) return Lists.newArrayList();
         else return cvs.getSlice(query,txh);
+    }
+
+    @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        List<List<Entry>> results = new ArrayList<List<Entry>>();
+
+        for (StaticBuffer key : keys) {
+            results.add(getSlice(new KeySliceQuery(key, query), txh));
+        }
+
+        return results;
     }
 
     @Override

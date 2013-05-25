@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -90,6 +91,17 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
         } else {
             return store.getSlice(query,txh);
         }
+    }
+
+    @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        List<List<Entry>> results = new ArrayList<List<Entry>>();
+
+        for (StaticBuffer key : keys) {
+            results.add(getSlice(new KeySliceQuery(key, query), txh));
+        }
+
+        return results;
     }
 
     @Override

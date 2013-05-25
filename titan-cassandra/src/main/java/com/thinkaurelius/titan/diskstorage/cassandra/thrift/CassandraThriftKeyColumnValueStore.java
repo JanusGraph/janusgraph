@@ -2,9 +2,9 @@ package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -81,10 +81,25 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
      */
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
-        Preconditions.checkArgument(query.getLimit() >= 0);
-        if (0 == query.getLimit()) return ImmutableList.<Entry>of();
+        ByteBuffer key = query.getKey().asByteBuffer();
+        List<Entry> slice = getNamesSlice(Arrays.asList(query.getKey()), query, txh).get(key.duplicate());
+        return (slice == null) ? Collections.<Entry>emptyList() : slice;
+    }
 
-        ColumnParent parent = new ColumnParent(columnFamily);        /*
+    @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        return Lists.newArrayList(getNamesSlice(keys, query, txh).values());
+    }
+
+    public Map<ByteBuffer, List<Entry>> getNamesSlice(List<StaticBuffer> keys,
+                                                     SliceQuery query,
+                                                     StoreTransaction txh) throws StorageException {
+        Preconditions.checkArgument(query.getLimit() >= 0);
+        if (0 == query.getLimit())
+            return Collections.emptyMap();
+
+        ColumnParent parent = new ColumnParent(columnFamily);
+        /*
 		 * Cassandra cannot handle columnStart = columnEnd.
 		 * Cassandra's Thrift getSlice() throws InvalidRequestException
 		 * if columnStart = columnEnd.
@@ -98,7 +113,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             }
             if (0 != query.getSliceStart().length() && 0 != query.getSliceEnd().length()) {
                 logger.debug("Return empty list due to columnEnd==columnStart and neither empty");
-                return ImmutableList.<Entry>of();
+                return Collections.emptyMap();
             }
         }
 
@@ -116,27 +131,46 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         try {
             conn = pool.genericBorrowObject(keyspace);
             Cassandra.Client client = conn.getClient();
-            List<ColumnOrSuperColumn> rows = client.get_slice(query.getKey().asByteBuffer(), parent, predicate, consistency);
+
+            List<ByteBuffer> requestKeys = new ArrayList<ByteBuffer>(keys.size());
+            {
+                for (StaticBuffer key : keys) {
+                    requestKeys.add(key.asByteBuffer());
+                }
+            }
+
+            Map<ByteBuffer, List<ColumnOrSuperColumn>> rows = client.multiget_slice(requestKeys,
+                                                                                    parent,
+                                                                                    predicate,
+                                                                                    consistency);
+
 			/*
 			 * The final size of the "result" List may be at most rows.size().
 			 * However, "result" could also be up to two elements smaller than
 			 * rows.size(), depending on startInclusive and endInclusive
 			 */
-            List<Entry> result = new ArrayList<Entry>(rows.size());
-            
-            ByteBuffer sliceEndBB = query.getSliceEnd().asByteBuffer();
-            
-            for (ColumnOrSuperColumn r : rows) {
-                Column c = r.getColumn();
+            Map<ByteBuffer, List<Entry>> results = new HashMap<ByteBuffer, List<Entry>>();
 
-                // Skip column if it is equal to columnEnd because columnEnd is exclusive
-                if (sliceEndBB.equals(c.bufferForName())) {
-                    continue;
+            ByteBuffer sliceEndBB = query.getSliceEnd().asByteBuffer();
+
+            for (ByteBuffer key : rows.keySet()) {
+                List<Entry> entries = new ArrayList<Entry>();
+
+                for (ColumnOrSuperColumn r : rows.get(key)) {
+                    Column c = r.getColumn();
+
+                    // Skip column if it is equal to columnEnd because columnEnd is exclusive
+                    if (sliceEndBB.equals(c.bufferForName())) {
+                        continue;
+                    }
+
+                    entries.add(new ByteBufferEntry(c.bufferForName(), c.bufferForValue()));
                 }
 
-                result.add(new ByteBufferEntry(c.bufferForName(), c.bufferForValue()));
+                results.put(key.duplicate(), entries);
             }
-            return result;
+
+            return results;
         } catch (Exception e) {
             throw convertException(e);
         } finally {
@@ -265,7 +299,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         storeManager.mutateMany(ImmutableMap.of(columnFamily, mutations), txh);
     }
 
-    static final StorageException convertException(Throwable e) {
+    static StorageException convertException(Throwable e) {
         if (e instanceof TException) {
             return new PermanentStorageException(e);
         } else if (e instanceof TimedOutException) {
@@ -313,7 +347,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     private static class KeyIterationPredicate implements Predicate<KeySlice> {
         @Override
         public boolean apply(@Nullable KeySlice row) {
-            return (row == null) ? false : row.getColumns().size() > 0;
+            return (row != null) && row.getColumns().size() > 0;
         }
     }
 }

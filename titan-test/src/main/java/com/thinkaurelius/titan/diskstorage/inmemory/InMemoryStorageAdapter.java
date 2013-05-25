@@ -35,6 +35,10 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
                 return ImmutableList.of();
             }
 
+            public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+                return ImmutableList.of();
+            }
+
             @Override
             public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
                 //Do nothing
