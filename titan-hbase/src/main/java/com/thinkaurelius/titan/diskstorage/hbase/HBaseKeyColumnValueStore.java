@@ -87,7 +87,13 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
-        return getHelper(query.getKey(), getFilter(query));
+        List<List<Entry>> result = getHelper(Arrays.asList(query.getKey()), getFilter(query));
+        return (result.isEmpty()) ? Collections.<Entry>emptyList() : result.get(0);
+    }
+
+    @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        return getHelper(keys, getFilter(query));
     }
 
     public static Filter getFilter(SliceQuery query) {
@@ -105,20 +111,23 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         return filter;
     }
 
-    private List<Entry> getHelper(StaticBuffer key, Filter getFilter) throws StorageException {
-        byte[] keyBytes = key.as(StaticBuffer.ARRAY_FACTORY);
+    private List<List<Entry>> getHelper(List<StaticBuffer> keys, Filter getFilter) throws StorageException {
+        List<Get> requests = new ArrayList<Get>(keys.size());
+        {
+            for (StaticBuffer key : keys) {
+                requests.add(new Get(key.as(StaticBuffer.ARRAY_FACTORY)).addFamily(columnFamilyBytes).setFilter(getFilter));
+            }
+        }
 
-        Get g = new Get(keyBytes).addFamily(columnFamilyBytes).setFilter(getFilter);
-
-        List<Entry> ret;
+        List<List<Entry>> results = new ArrayList<List<Entry>>();
 
         try {
             HTableInterface table = null;
-            Result r = null;
+            Result[] r = null;
 
             try {
                 table = pool.getTable(tableName);
-                r = table.get(g);
+                r = table.get(requests);
             } finally {
                 IOUtils.closeQuietly(table);
             }
@@ -126,17 +135,20 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             if (r == null)
                 return Collections.emptyList();
 
-            ret = new ArrayList<Entry>(r.size());
+            for (Result result : r) {
+                List<Entry> entries = new ArrayList<Entry>(result.size());
+                Map<byte[], byte[]> fmap = result.getFamilyMap(columnFamilyBytes);
 
-            Map<byte[], byte[]> fmap = r.getFamilyMap(columnFamilyBytes);
-
-            if (null != fmap) {
-                for (Map.Entry<byte[], byte[]> ent : fmap.entrySet()) {
-                    ret.add(StaticBufferEntry.of(new StaticArrayBuffer(ent.getKey()), new StaticArrayBuffer(ent.getValue())));
+                if (null != fmap) {
+                    for (Map.Entry<byte[], byte[]> ent : fmap.entrySet()) {
+                        entries.add(StaticBufferEntry.of(new StaticArrayBuffer(ent.getKey()), new StaticArrayBuffer(ent.getValue())));
+                    }
                 }
+
+                results.add(entries);
             }
 
-            return ret;
+            return results;
         } catch (IOException e) {
             throw new TemporaryStorageException(e);
         }
