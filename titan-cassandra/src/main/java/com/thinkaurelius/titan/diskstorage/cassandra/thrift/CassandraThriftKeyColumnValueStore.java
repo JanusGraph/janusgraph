@@ -95,7 +95,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         MetricRegistry metrics = MetricManager.INSTANCE.getRegistry();
         Class<?> myClass = CassandraThriftKeyColumnValueStore.class;
         this.containsKeyTimer =
-                metrics.timer(MetricRegistry.name(myClass, "containsKeyTimer", "time"));
+                metrics.timer(MetricRegistry.name(myClass, "containsKey", "time"));
         this.getSliceTimer =
                 metrics.timer(MetricRegistry.name(myClass, "getSlice", "time"));
         this.getKeySliceTimer =
@@ -252,7 +252,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         if (!(partitioner instanceof RandomPartitioner) && !(partitioner instanceof Murmur3Partitioner))
             throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
 
-        final Token maximumToken = (partitioner instanceof RandomPartitioner)
+        final Token<?> maximumToken = (partitioner instanceof RandomPartitioner)
                                     ? new BigIntegerToken(RandomPartitioner.MAXIMUM)
                                     : new LongToken(Murmur3Partitioner.MAXIMUM);
         
@@ -353,7 +353,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         return getKeySlice(client, new KeyRange().setStart_key(startKey).setEnd_key(endKey).setCount(pageSize));
     }
 
-    private Iterator<KeySlice> getKeySlice(Cassandra.Client client, Token startToken, Token endToken, int pageSize) throws StorageException {
+    private Iterator<KeySlice> getKeySlice(Cassandra.Client client, Token<?> startToken, Token<?> endToken, int pageSize) throws StorageException {
         return getKeySlice(client, new KeyRange().setStart_token(startToken.token.toString()).setEnd_token(endToken.token.toString()).setCount(pageSize));
     }
 

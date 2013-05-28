@@ -30,7 +30,6 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
@@ -52,7 +51,6 @@ import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.thinkaurelius.titan.util.system.IOUtils;
-import com.tinkerpop.rexster.server.AbstractMapRexsterApplication;
 
 /**
  * This class creates {@see CassandraThriftKeyColumnValueStore}s and
@@ -273,9 +271,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 KsDef ksdef = new KsDef().setName(keyspaceName)
                         .setCf_defs(new LinkedList<CfDef>()) // cannot be null but can be empty
                         .setStrategy_class("org.apache.cassandra.locator.SimpleStrategy")
-                        .setStrategy_options(new HashMap<String, String>() {{
-                            put("replication_factor", String.valueOf(replicationFactor));
-                        }});
+                        .setStrategy_options(ImmutableMap.of("replication_factor", String.valueOf(replicationFactor)));
 
                 String schemaVer = client.system_add_keyspace(ksdef);
 
@@ -327,10 +323,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         } finally {
             IOUtils.closeQuietly(conn);
         }
-    }
-
-    private static void createColumnFamily(Cassandra.Client client, String ksName, String cfName) throws StorageException {
-        createColumnFamily(client, ksName, cfName, "org.apache.cassandra.db.marshal.BytesType");
     }
 
     private static void createColumnFamily(Cassandra.Client client,
