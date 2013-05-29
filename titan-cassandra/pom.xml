@@ -65,7 +65,7 @@
         <dependency>
             <groupId>commons-pool</groupId>
             <artifactId>commons-pool</artifactId>
-            <version>1.5.5</version>
+            <version>1.6</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.netty</groupId>

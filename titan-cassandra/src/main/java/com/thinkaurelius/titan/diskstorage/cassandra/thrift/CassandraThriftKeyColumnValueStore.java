@@ -47,7 +47,7 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
-import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.UncheckedGenericKeyedObjectPool;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ByteBufferEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
@@ -75,7 +75,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     private final CassandraThriftStoreManager storeManager;
     private final String keyspace;
     private final String columnFamily;
-    private final UncheckedGenericKeyedObjectPool<String, CTConnection> pool;
+    private final CTConnectionPool pool;
     
     // Timer setup
     private final Timer containsKeyTimer;
@@ -85,7 +85,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     private final Counter getKeySliceCounter;
 
     public CassandraThriftKeyColumnValueStore(String keyspace, String columnFamily, CassandraThriftStoreManager storeManager,
-                                              UncheckedGenericKeyedObjectPool<String, CTConnection> pool) {
+                                              CTConnectionPool pool) {
         this.storeManager = storeManager;
         this.keyspace = keyspace;
         this.columnFamily = columnFamily;
@@ -165,7 +165,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         Timer.Context timerContext = getSliceTimer.time();
         CTConnection conn = null;
         try {
-            conn = pool.genericBorrowObject(keyspace);
+            conn = pool.borrowObject(keyspace);
             Cassandra.Client client = conn.getClient();
             List<ColumnOrSuperColumn> rows = client.get_slice(query.getKey().asByteBuffer(), parent, predicate, consistency);
 			/*
@@ -196,9 +196,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         } catch (Exception e) {
             throw convertException(e);
         } finally {
-            if (null != conn)
-                pool.genericReturnObject(keyspace, conn);
-            
+            pool.returnObjectUnsafe(keyspace, conn);
             timerContext.stop();
         }
     }
@@ -223,16 +221,14 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         Timer.Context timerContext = containsKeyTimer.time();
         CTConnection conn = null;
         try {
-            conn = pool.genericBorrowObject(keyspace);
+            conn = pool.borrowObject(keyspace);
             Cassandra.Client client = conn.getClient();
             List<?> result = client.get_slice(key.asByteBuffer(), parent, predicate, consistency);
             return 0 < result.size();
         } catch (Exception e) {
             throw convertException(e);
         } finally {
-            if (null != conn)
-                pool.genericReturnObject(keyspace, conn);
-            
+            pool.returnObjectUnsafe(keyspace, conn);            
             timerContext.stop();
         }
     }
@@ -257,7 +253,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                                     : new LongToken(Murmur3Partitioner.MAXIMUM);
         
         try {
-            conn = pool.genericBorrowObject(keyspace);
+            conn = pool.borrowObject(keyspace);
             final Cassandra.Client client = conn.getClient();
 
             return new RecordIterator<StaticBuffer>() {
@@ -302,8 +298,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         } catch (Exception e) {
             throw convertException(e);
         } finally {
-            if (conn != null)
-                pool.genericReturnObject(keyspace, conn);
+            pool.returnObjectUnsafe(keyspace, conn);
         }
     }
 
