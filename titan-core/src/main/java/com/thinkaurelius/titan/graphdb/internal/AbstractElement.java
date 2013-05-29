@@ -38,9 +38,9 @@ public abstract class AbstractElement implements InternalElement {
         } else if (other==null) {
             return false;
         } else if (this instanceof TitanVertex && other instanceof TitanVertex) {
-            return getId().equals(((TitanVertex)other).getId());
+            return getID() == ((TitanVertex)other).getID();
         } else if (this instanceof TitanEdge && other instanceof TitanEdge) {
-            return getId().equals(((TitanEdge)other).getId());
+            return getID() == ((TitanEdge)other).getID();
         } else {
             return false;
         }
