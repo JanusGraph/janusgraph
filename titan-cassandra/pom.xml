@@ -26,11 +26,6 @@
             <version>${titan.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-es</artifactId>
-            <version>${titan.version}</version>
-        </dependency>
         <!--
             JNA is not required to run Cassandra, but it improves
             efficiency of certain of Cassandra's filesystem and memory
