@@ -309,19 +309,21 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
 
         @Override
         public RecordIterator<Entry> getEntries() {
-            if (isClosed)
-                throw new IllegalStateException();
+            ensureOpen();
 
             return new RecordIterator<Entry>() {
                 private final Iterator<Column<ByteBuffer>> columns = currentRow.getColumns().iterator();
 
                 @Override
                 public boolean hasNext() throws StorageException {
+                    ensureOpen();
                     return columns.hasNext();
                 }
 
                 @Override
                 public Entry next() throws StorageException {
+                    ensureOpen();
+
                     Column<ByteBuffer> column = columns.next();
                     return new ByteBufferEntry(column.getName(), column.getByteBufferValue());
                 }
@@ -335,16 +337,13 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
 
         @Override
         public boolean hasNext() throws StorageException {
-            if (isClosed)
-                throw new IllegalStateException();
-
+            ensureOpen();
             return rows.hasNext();
         }
 
         @Override
         public StaticBuffer next() throws StorageException {
-            if (isClosed)
-                throw new IllegalStateException();
+            ensureOpen();
 
             currentRow = rows.next();
             return new StaticByteBuffer(currentRow.getKey());
@@ -353,6 +352,11 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
         @Override
         public void close() throws StorageException {
             isClosed = true;
+        }
+
+        private void ensureOpen() {
+            if (isClosed)
+                throw new IllegalStateException("Iterator has been closed.");
         }
     }
 }

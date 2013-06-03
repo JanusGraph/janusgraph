@@ -216,7 +216,29 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
+    public RecordIterator<StaticBuffer> getKeys(final StoreTransaction txh) throws StorageException {
+        return new RecordIterator<StaticBuffer>() {
+            final KeyIterator rows = getKeys(null, txh);
+
+            @Override
+            public boolean hasNext() throws StorageException {
+                return rows.hasNext();
+            }
+
+            @Override
+            public StaticBuffer next() throws StorageException {
+                return rows.next();
+            }
+
+            @Override
+            public void close() throws StorageException {
+                rows.close();
+            }
+        };
+    }
+
+    @Override
+    public KeyIterator getKeys(@Nullable SliceQuery sliceQuery, StoreTransaction txh) throws StorageException {
         CTConnection conn = null;
 
         final IPartitioner<?> partitioner = storeManager.getCassandraPartitioner();
@@ -224,52 +246,40 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         if (!(partitioner instanceof RandomPartitioner) && !(partitioner instanceof Murmur3Partitioner))
             throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
 
-        final Token maximumToken = (partitioner instanceof RandomPartitioner)
-                                    ? new BigIntegerToken(RandomPartitioner.MAXIMUM)
-                                    : new LongToken(Murmur3Partitioner.MAXIMUM);
         try {
             conn = pool.genericBorrowObject(keyspace);
-            final Cassandra.Client client = conn.getClient();
+            return new RowIterator(conn.getClient(),
+                                   partitioner,
+                                   ByteBuffer.wrap(ArrayUtils.EMPTY_BYTE_ARRAY),
+                                   ByteBuffer.wrap(ArrayUtils.EMPTY_BYTE_ARRAY),
+                                   sliceQuery,
+                                   storeManager.getPageSize());
+        } catch (Exception e) {
+            throw convertException(e);
+        } finally {
+            if (conn != null)
+                pool.genericReturnObject(keyspace, conn);
+        }
+    }
 
-            return new RecordIterator<StaticBuffer>() {
-                Iterator<KeySlice> keys = getKeySlice(client,
-                                                      ArrayUtils.EMPTY_BYTE_ARRAY,
-                                                      ArrayUtils.EMPTY_BYTE_ARRAY,
-                        storeManager.getPageSize());
+    @Override
+    public KeyIterator getKeys(KeyRangeQuery keyRangeQuery, StoreTransaction txh) throws StorageException {
+        CTConnection conn = null;
 
-                private ByteBuffer lastSeenKey = null;
+        final IPartitioner<?> partitioner = storeManager.getCassandraPartitioner();
 
-                @Override
-                public boolean hasNext() throws StorageException {
-                    boolean hasNext = keys.hasNext();
+        // see rant about the reason of this limitation in Astyanax implementation of this method.
+        if (!(partitioner instanceof OrderPreservingPartitioner))
+            throw new PermanentStorageException("This operation is only allowed when byte-ordered partitioner is used.");
 
-                    if (!hasNext && lastSeenKey != null) {
-                        keys = getKeySlice(client, partitioner.getToken(lastSeenKey), maximumToken, storeManager.getPageSize());
-                        hasNext = keys.hasNext();
-                    }
-
-                    return hasNext;
-                }
-
-                @Override
-                public StaticBuffer next() throws StorageException {
-                    if (!hasNext())
-                        throw new NoSuchElementException();
-
-                    KeySlice slice = keys.next();
-
-                    try {
-                        return new StaticByteBuffer(slice.bufferForKey());
-                    } finally {
-                        lastSeenKey = slice.bufferForKey();
-                    }
-                }
-
-                @Override
-                public void close() throws StorageException {
-                    // nothing to clean-up here
-                }
-            };
+        try {
+            conn = pool.genericBorrowObject(keyspace);
+            return new RowIterator(conn.getClient(),
+                                   partitioner,
+                                   keyRangeQuery.getKeyStart().asByteBuffer(),
+                                   keyRangeQuery.getKeyEnd().asByteBuffer(),
+                                   keyRangeQuery,
+                                   storeManager.getPageSize());
         } catch (Exception e) {
             throw convertException(e);
         } finally {
@@ -320,23 +330,41 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     }
 
 
-    private Iterator<KeySlice> getKeySlice(Cassandra.Client client, byte[] startKey, byte[] endKey, int pageSize) throws StorageException {
-        return getKeySlice(client, new KeyRange().setStart_key(startKey).setEnd_key(endKey).setCount(pageSize));
+    private Iterator<KeySlice> getKeySlice(Cassandra.Client client,
+                                           ByteBuffer startKey,
+                                           ByteBuffer endKey,
+                                           SliceQuery sliceQuery,
+                                           int pageSize) throws StorageException {
+        return getKeySlice(client, new KeyRange().setStart_key(startKey).setEnd_key(endKey).setCount(pageSize), sliceQuery);
     }
 
-    private Iterator<KeySlice> getKeySlice(Cassandra.Client client, Token startToken, Token endToken, int pageSize) throws StorageException {
-        return getKeySlice(client, new KeyRange().setStart_token(startToken.token.toString()).setEnd_token(endToken.token.toString()).setCount(pageSize));
+    private Iterator<KeySlice> getKeySlice(Cassandra.Client client, Token startToken, Token endToken, SliceQuery sliceQuery, int pageSize) throws StorageException {
+        return getKeySlice(client,
+                           new KeyRange().setStart_token(startToken.token.toString())
+                                         .setEnd_token(endToken.token.toString())
+                                         .setCount(pageSize),
+                           sliceQuery);
     }
 
-    private Iterator<KeySlice> getKeySlice(Cassandra.Client client, KeyRange keyRange) throws StorageException {
+    private Iterator<KeySlice> getKeySlice(Cassandra.Client client,
+                                           KeyRange keyRange,
+                                           @Nullable SliceQuery sliceQuery) throws StorageException {
         try {
+            SliceRange sliceRange = new SliceRange();
+
+            if (sliceQuery == null) {
+                sliceRange.setStart(ArrayUtils.EMPTY_BYTE_ARRAY)
+                          .setFinish(ArrayUtils.EMPTY_BYTE_ARRAY)
+                          .setCount(5);
+            } else {
+                sliceRange.setStart(sliceQuery.getSliceStart().asByteBuffer())
+                          .setFinish(sliceQuery.getSliceEnd().asByteBuffer())
+                          .setCount((sliceQuery.hasLimit()) ? sliceQuery.getLimit() : Integer.MAX_VALUE);
+            }
+
             /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
             return Iterators.filter(client.get_range_slices(new ColumnParent(columnFamily),
-                                                            new SlicePredicate()
-                                                                    .setSlice_range(new SliceRange()
-                                                                                         .setStart(ArrayUtils.EMPTY_BYTE_ARRAY)
-                                                                                         .setFinish(ArrayUtils.EMPTY_BYTE_ARRAY)
-                                                                                         .setCount(5)),
+                                                            new SlicePredicate().setSlice_range(sliceRange),
                                                             keyRange,
                                                             ConsistencyLevel.QUORUM).iterator(), new KeyIterationPredicate());
         } catch (Exception e) {
@@ -348,6 +376,110 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         @Override
         public boolean apply(@Nullable KeySlice row) {
             return (row != null) && row.getColumns().size() > 0;
+        }
+    }
+
+    private class RowIterator implements KeyIterator {
+        private final Cassandra.Client client;
+        private final IPartitioner<?> partitioner;
+        private final Token maximumToken;
+        private final SliceQuery sliceQuery;
+
+        private Iterator<KeySlice> keys;
+        private ByteBuffer lastSeenKey = null;
+        private KeySlice currentRow;
+        private int pageSize;
+
+        private boolean isClosed;
+
+        public RowIterator(Cassandra.Client client,
+                           IPartitioner<?> partitioner,
+                           ByteBuffer startKey,
+                           ByteBuffer endKey,
+                           SliceQuery sliceQuery,
+                           int pageSize) throws StorageException {
+            this.client = client;
+            this.partitioner = partitioner;
+            this.keys = getKeySlice(client, startKey, endKey, sliceQuery, pageSize);
+            this.pageSize = pageSize;
+            this.sliceQuery = sliceQuery;
+
+            if (endKey.remaining() == 0) {
+                this.maximumToken = (partitioner instanceof RandomPartitioner)
+                                     ? new BigIntegerToken(RandomPartitioner.MAXIMUM)
+                                     : new LongToken(Murmur3Partitioner.MAXIMUM);
+            } else {
+                this.maximumToken = partitioner.getToken(endKey.duplicate());
+            }
+        }
+
+        @Override
+        public boolean hasNext() throws StorageException {
+            ensureOpen();
+
+            boolean hasNext = keys.hasNext();
+
+            if (!hasNext && lastSeenKey != null) {
+                keys = getKeySlice(client, partitioner.getToken(lastSeenKey), maximumToken, sliceQuery, pageSize);
+                hasNext = keys.hasNext();
+            }
+
+            return hasNext;
+        }
+
+        @Override
+        public StaticBuffer next() throws StorageException {
+            ensureOpen();
+
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            currentRow = keys.next();
+
+            try {
+                return new StaticByteBuffer(currentRow.bufferForKey());
+            } finally {
+                lastSeenKey = currentRow.bufferForKey();
+            }
+        }
+
+        @Override
+        public void close() throws StorageException {
+            isClosed = true;
+        }
+
+        @Override
+        public RecordIterator<Entry> getEntries() {
+            ensureOpen();
+
+            return new RecordIterator<Entry>() {
+                final Iterator<ColumnOrSuperColumn> columns = currentRow.getColumnsIterator();
+
+                @Override
+                public boolean hasNext() throws StorageException {
+                    ensureOpen();
+
+                    return columns.hasNext();
+                }
+
+                @Override
+                public Entry next() throws StorageException {
+                    ensureOpen();
+
+                    Column column = columns.next().getColumn();
+                    return new ByteBufferEntry(column.bufferForName(), column.bufferForValue());
+                }
+
+                @Override
+                public void close() throws StorageException {
+                    isClosed = true;
+                }
+            };
+        }
+
+        private void ensureOpen() {
+            if (isClosed)
+                throw new IllegalStateException("Iterator has been closed.");
         }
     }
 }
