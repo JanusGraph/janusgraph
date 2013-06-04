@@ -89,74 +89,73 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     private static final Logger log =
             LoggerFactory.getLogger(MetricInstrumentedStore.class);
 
-    public MetricInstrumentedStore(KeyColumnValueStore backend) {
+    public MetricInstrumentedStore(KeyColumnValueStore backend, String p) {
         this.backend = backend;
 
         MetricRegistry metrics = MetricManager.INSTANCE.getRegistry();
-        Class<?> c = backend.getClass();
         
         containsKeyTimer =
-                  metrics.timer(MetricRegistry.name(c, "containsKey", "time"));
+                  metrics.timer(MetricRegistry.name(p, "containsKey", "time"));
         containsKeyInvocationCounter =
-                metrics.counter(MetricRegistry.name(c, "containsKey", "calls"));
+                metrics.counter(MetricRegistry.name(p, "containsKey", "calls"));
         containsKeyFailureCounter =
-                metrics.counter(MetricRegistry.name(c, "containsKey", "exceptions"));
+                metrics.counter(MetricRegistry.name(p, "containsKey", "exceptions"));
         
         getSliceTimer =
-                  metrics.timer(MetricRegistry.name(c, "getSlice", "time"));
+                  metrics.timer(MetricRegistry.name(p, "getSlice", "time"));
         getSliceInvocationCounter =
-                metrics.counter(MetricRegistry.name(c, "getSlice", "calls"));
+                metrics.counter(MetricRegistry.name(p, "getSlice", "calls"));
         getSliceFailureCounter =
-                metrics.counter(MetricRegistry.name(c, "getSlice", "exceptions"));
+                metrics.counter(MetricRegistry.name(p, "getSlice", "exceptions"));
         getSliceColumnCounter =
-                metrics.counter(MetricRegistry.name(c, "getSlice", "entries-returned"));
+                metrics.counter(MetricRegistry.name(p, "getSlice", "entries-returned"));
         getSliceColumnHisto =
-              metrics.histogram(MetricRegistry.name(c, "getSlice", "entries-histogram"));
+              metrics.histogram(MetricRegistry.name(p, "getSlice", "entries-histogram"));
         
         mutateTimer =
-                  metrics.timer(MetricRegistry.name(c, "mutate", "time"));
+                  metrics.timer(MetricRegistry.name(p, "mutate", "time"));
         mutateInvocationCounter =
-                metrics.counter(MetricRegistry.name(c, "mutate", "calls"));
+                metrics.counter(MetricRegistry.name(p, "mutate", "calls"));
         mutateFailureCounter =
-                metrics.counter(MetricRegistry.name(c, "mutate", "exceptions"));
+                metrics.counter(MetricRegistry.name(p, "mutate", "exceptions"));
         
         acquireLockTimer =
-                  metrics.timer(MetricRegistry.name(c, "acquireLock", "time"));
+                  metrics.timer(MetricRegistry.name(p, "acquireLock", "time"));
         acquireLockInvocationCounter =
-                metrics.counter(MetricRegistry.name(c, "acquireLock", "calls"));
+                metrics.counter(MetricRegistry.name(p, "acquireLock", "calls"));
         acquireLockFailureCounter =
-                metrics.counter(MetricRegistry.name(c, "acquireLock", "exceptions"));
+                metrics.counter(MetricRegistry.name(p, "acquireLock", "exceptions"));
         
         getKeysTimer =
-                  metrics.timer(MetricRegistry.name(c, "getKeys", "time"));
+                  metrics.timer(MetricRegistry.name(p, "getKeys", "time"));
         getKeysInvocationCounter =
-                metrics.counter(MetricRegistry.name(c, "getKeys", "calls"));
+                metrics.counter(MetricRegistry.name(p, "getKeys", "calls"));
         getKeysFailureCounter =
-                metrics.counter(MetricRegistry.name(c, "getKeys", "exceptions"));
-        getKeysIteratorMetricPrefix = c.getName() + "." + "result-iterator";
+                metrics.counter(MetricRegistry.name(p, "getKeys", "exceptions"));
+        getKeysIteratorMetricPrefix = p + "." + "getKeys.iterator";
         
         getLocalKeyPartitionTimer =
-                  metrics.timer(MetricRegistry.name(c, "getLocalKeyPartition", "time"));
+                  metrics.timer(MetricRegistry.name(p, "getLocalKeyPartition", "time"));
         getLocalKeyPartitionInvocationCounter =
-                metrics.counter(MetricRegistry.name(c, "getLocalKeyPartition", "calls"));
+                metrics.counter(MetricRegistry.name(p, "getLocalKeyPartition", "calls"));
         getLocalKeyPartitionFailureCounter =
-                metrics.counter(MetricRegistry.name(c, "getLocalKeyPartition", "exceptions"));
+                metrics.counter(MetricRegistry.name(p, "getLocalKeyPartition", "exceptions"));
         
         getNameTimer =
-                  metrics.timer(MetricRegistry.name(c, "getName", "time"));
+                  metrics.timer(MetricRegistry.name(p, "getName", "time"));
         getNameInvocationCounter =
-                metrics.counter(MetricRegistry.name(c, "getName", "calls"));
+                metrics.counter(MetricRegistry.name(p, "getName", "calls"));
         getNameFailureCounter =
-                metrics.counter(MetricRegistry.name(c, "getName", "exceptions"));
+                metrics.counter(MetricRegistry.name(p, "getName", "exceptions"));
         
         closeTimer =
-                  metrics.timer(MetricRegistry.name(c, "close", "time"));
+                  metrics.timer(MetricRegistry.name(p, "close", "time"));
         closeInvocationCounter =
-                metrics.counter(MetricRegistry.name(c, "close", "calls"));
+                metrics.counter(MetricRegistry.name(p, "close", "calls"));
         closeFailureCounter =
-                metrics.counter(MetricRegistry.name(c, "close", "exceptions"));
+                metrics.counter(MetricRegistry.name(p, "close", "exceptions"));
         
-        log.debug("Wrapped Metrics around store {} (class {})", backend, c);
+        log.debug("Wrapped Metrics around store {} (metric prefix {})", backend, p);
     }
 
     @Override

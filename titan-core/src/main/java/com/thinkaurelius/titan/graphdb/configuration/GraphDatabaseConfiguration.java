@@ -168,8 +168,22 @@ public class GraphDatabaseConfiguration {
      * Whether to enable basic timing and operation count monitoring on backend
      * methods using the {@code com.codahale.metrics} package.
      */
-    public static final String BASIC_METRICS = "basic-metrics";
+    public static final String BASIC_METRICS = "enable-basic-metrics";
     public static final boolean BASIC_METRICS_DEFAULT = true; 
+    
+    /**
+     * Whether to share a single set of Metrics objects across all stores. If
+     * true, then calls to KeyColumnValueStore methods any store instance in the
+     * database will share a common set of Metrics Counters, Timers, Histograms,
+     * etc. The prefix for these common metrics will be
+     * {@link Backend#METRICS_PREFIX} + {@link Backend#MERGED_METRICS}. If
+     * false, then each store has its own set of distinct metrics with a unique
+     * name prefix.
+     * <p>
+     * This option has no effect when {@link #BASIC_METRICS} is false.
+     */
+    public static final String MERGE_BASIC_METRICS = "merge-basic-metrics";
+    public static final boolean MERGE_BASIC_METRICS_DEFAULT = true; 
 
     /**
      * Configuration key for the hostname or list of hostname of remote storage backend servers to connect to.

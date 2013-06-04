@@ -66,8 +66,8 @@ public class Backend {
     public static final String ID_STORE_NAME = "titan_ids";
 
     public static final String TITAN_BACKEND_VERSION = "titan-version";
-
-
+    public static final String METRICS_PREFIX = "com.thinkaurelius.titan.";
+    public static final String MERGED_METRICS = "stores";
     public static final String LOCK_STORE_SUFFIX = "_lock_";
 
     public static final Map<String, Integer> STATIC_KEY_LENGTHS = new HashMap<String, Integer>() {{
@@ -90,6 +90,7 @@ public class Backend {
     private final int bufferSize;
     private final boolean hashPrefixIndex;
     private final boolean basicMetrics;
+    private final boolean mergeBasicMetrics;
 
     private final int writeAttempts;
     private final int readAttempts;
@@ -101,6 +102,7 @@ public class Backend {
         storeFeatures = storeManager.getFeatures();
         
         basicMetrics = storageConfig.getBoolean(BASIC_METRICS, BASIC_METRICS_DEFAULT);
+        mergeBasicMetrics = storageConfig.getBoolean(MERGE_BASIC_METRICS, MERGE_BASIC_METRICS_DEFAULT);
         
         int bufferSizeTmp = storageConfig.getInt(BUFFER_SIZE_KEY, BUFFER_SIZE_DEFAULT);
         Preconditions.checkArgument(bufferSizeTmp >= 0, "Buffer size must be non-negative (use 0 to disable)");
@@ -177,7 +179,7 @@ public class Backend {
             //EdgeStore & VertexIndexStore
             KeyColumnValueStore idStore = getStore(ID_STORE_NAME);
             if (basicMetrics) {
-                idStore = new MetricInstrumentedStore(idStore);
+                idStore = new MetricInstrumentedStore(idStore, getMetricsPrefix("idStore"));
             }
             idAuthority = null;
             if (storeFeatures.supportsTransactions()) {
@@ -199,9 +201,9 @@ public class Backend {
             }
             
             if (basicMetrics) {
-                edgeStore = new MetricInstrumentedStore(edgeStore);
-                vertexIndexStore = new MetricInstrumentedStore(vertexIndexStore);
-                edgeIndexStore = new MetricInstrumentedStore(edgeIndexStore);
+                edgeStore = new MetricInstrumentedStore(edgeStore, getMetricsPrefix("edgeStore"));
+                vertexIndexStore = new MetricInstrumentedStore(vertexIndexStore, getMetricsPrefix("vertexIndexStore"));
+                edgeIndexStore = new MetricInstrumentedStore(edgeIndexStore, getMetricsPrefix("edgeIndexStore"));
             }
 
             String version = BackendOperation.execute(new Callable<String>() {
@@ -236,6 +238,10 @@ public class Backend {
         copy.putAll(indexes);
         copy.put(Titan.Token.STANDARD_INDEX,StandardIndexInformation.INSTANCE);
         return copy.build();
+    }
+    
+    private String getMetricsPrefix(String storeName) {
+        return METRICS_PREFIX + (mergeBasicMetrics ? MERGED_METRICS : storeName);
     }
 
     private final static KeyColumnValueStoreManager getStorageManager(Configuration storageConfig) {
