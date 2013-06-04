@@ -1,7 +1,11 @@
 package com.thinkaurelius.titan.util.stats;
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +14,7 @@ import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.CsvReporter;
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.base.Preconditions;
+import com.codahale.metrics.Slf4jReporter;
 
 public enum MetricManager {
     INSTANCE;
@@ -22,6 +26,7 @@ public enum MetricManager {
     private ConsoleReporter consoleReporter = null;
     private CsvReporter csvReporter         = null;
     private JmxReporter jmxReporter         = null;
+    private Slf4jReporter slf4jReporter     = null;
 
 //    private static final long DEFAULT_CONSOLE_REPORTER_INTERVAL_S = 1L;
 //    
@@ -34,11 +39,14 @@ public enum MetricManager {
         return registry;
     }
     
-    public synchronized void addConsoleReporter(long reportIntervalInSeconds) {
-        Preconditions.checkArgument(null == consoleReporter);
+    public synchronized void addConsoleReporter(long reportIntervalInMS) {
+        if (null != consoleReporter) {
+            log.debug("Metrics ConsoleReporter already active; not creating another");
+            return;
+        }
         
         consoleReporter = ConsoleReporter.forRegistry(getRegistry()).build();
-        consoleReporter.start(reportIntervalInSeconds, TimeUnit.SECONDS);
+        consoleReporter.start(reportIntervalInMS, TimeUnit.MILLISECONDS);
     }
 
     public synchronized void removeConsoleReporter() {
@@ -48,9 +56,15 @@ public enum MetricManager {
         consoleReporter = null;
     }
     
-    public synchronized void addCsvReporter(long reportIntervalInSeconds,
-            File outputDir) {
-        Preconditions.checkArgument(null == csvReporter);
+    public synchronized void addCsvReporter(long reportIntervalInMS,
+            String output) {
+        
+        File outputDir = new File(output);
+        
+        if (null != csvReporter) {
+            log.debug("Metrics CsvReporter already active; not creating another");
+            return;
+        }
         
         if (!outputDir.exists()) {
             if (!outputDir.mkdirs()) {
@@ -59,7 +73,7 @@ public enum MetricManager {
         }
         
         csvReporter = CsvReporter.forRegistry(getRegistry()).build(outputDir);
-        csvReporter.start(reportIntervalInSeconds, TimeUnit.SECONDS);
+        csvReporter.start(reportIntervalInMS, TimeUnit.MILLISECONDS);
     }
     
     public synchronized void removeCsvReporter() {
@@ -69,23 +83,70 @@ public enum MetricManager {
         csvReporter = null;
     }
     
-    public synchronized void addJmxReporter() {
-        Preconditions.checkArgument(null == jmxReporter);
+    public synchronized void addJmxReporter(String domain, String agentId) {
+        if (null != jmxReporter) {
+            log.debug("Metrics JmxReporter already active; not creating another");
+            return;
+        }
         
-        jmxReporter = JmxReporter.forRegistry(getRegistry()).build();
+        JmxReporter.Builder b = JmxReporter.forRegistry(getRegistry());
+        
+        if (null != domain) {
+            b.inDomain(domain);
+        }
+        
+        if (null != agentId) {
+            List<MBeanServer> servs = MBeanServerFactory.findMBeanServer(agentId);
+            if (null != servs && 1 == servs.size()) {
+                b.registerWith(servs.get(0));
+            } else {
+                log.error("Metrics Slf4jReporter agentId {} does not resolve to a single MBeanServer", agentId);
+            }
+        }
+        
+        jmxReporter = b.build();
         jmxReporter.start();
     }
     
     public synchronized void removeJmxReporter() {
-        if(null != jmxReporter)
+        if (null != jmxReporter)
             jmxReporter.stop();
         
         jmxReporter = null;
+    }
+    
+    public synchronized void addSlf4jReporter(long reportIntervalInMS, String loggerName) {
+        if (null != slf4jReporter) {
+            log.debug("Metrics Slf4jReporter already active; not creating another");
+            return;
+        }
+        
+        Slf4jReporter.Builder b = Slf4jReporter.forRegistry(getRegistry());
+        
+        if (null != loggerName) {
+            Logger l = LoggerFactory.getLogger(loggerName);
+            if (null != l) {
+                b.outputTo(l);
+            } else {
+                log.error("Logger with name {} could not be obtained", loggerName);
+            }
+        }
+        
+        slf4jReporter = b.build();
+        slf4jReporter.start(reportIntervalInMS, TimeUnit.MILLISECONDS);
+    }
+    
+    public synchronized void removeSlf4jReporter() {
+        if (null != slf4jReporter)
+            slf4jReporter.stop();
+        
+        slf4jReporter = null;
     }
     
     public void removeAllReporters() {
         removeConsoleReporter();
         removeCsvReporter();
         removeJmxReporter();
+        removeSlf4jReporter();
     }
 }

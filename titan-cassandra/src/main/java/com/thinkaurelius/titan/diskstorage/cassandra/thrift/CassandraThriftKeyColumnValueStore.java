@@ -77,11 +77,8 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     private final String columnFamily;
     private final CTConnectionPool pool;
     
-    // Timer setup
-    private final Timer containsKeyTimer;
-    private final Timer getSliceTimer;
-    private final Timer getKeySliceTimer;
-    private final Counter getSliceColumnCounter;
+    // Metrics setup
+    private final Timer   getKeySliceTimer;
     private final Counter getKeySliceCounter;
 
     public CassandraThriftKeyColumnValueStore(String keyspace, String columnFamily, CassandraThriftStoreManager storeManager,
@@ -94,16 +91,10 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         // Metrics setup
         MetricRegistry metrics = MetricManager.INSTANCE.getRegistry();
         Class<?> myClass = CassandraThriftKeyColumnValueStore.class;
-        this.containsKeyTimer =
-                metrics.timer(MetricRegistry.name(myClass, "containsKey", "time"));
-        this.getSliceTimer =
-                metrics.timer(MetricRegistry.name(myClass, "getSlice", "time"));
-        this.getKeySliceTimer =
+        getKeySliceTimer =
                 metrics.timer(MetricRegistry.name(myClass, "getKeySlice", "time"));
-        this.getSliceColumnCounter =
-                metrics.counter(MetricRegistry.name(myClass, "getSlice", "columns"));
-        this.getKeySliceCounter =
-                metrics.counter(MetricRegistry.name(myClass, "getKeySlice", "keys"));
+        getKeySliceCounter =
+                metrics.counter(MetricRegistry.name(myClass, "getKeySlice", "keyslices"));
         
     }
 
@@ -162,7 +153,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         range.setFinish(query.getSliceEnd().asByteBuffer());
         predicate.setSlice_range(range);
         
-        Timer.Context timerContext = getSliceTimer.time();
         CTConnection conn = null;
         try {
             conn = pool.borrowObject(keyspace);
@@ -177,7 +167,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             
             ByteBuffer sliceEndBB = query.getSliceEnd().asByteBuffer();
             
-            int colCount = 0;
             for (ColumnOrSuperColumn r : rows) {
                 Column c = r.getColumn();
 
@@ -187,17 +176,13 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                 }
 
                 result.add(new ByteBufferEntry(c.bufferForName(), c.bufferForValue()));
-                colCount++;
             }
-            
-            getSliceColumnCounter.inc(colCount);
             
             return result;
         } catch (Exception e) {
             throw convertException(e);
         } finally {
             pool.returnObjectUnsafe(keyspace, conn);
-            timerContext.stop();
         }
     }
 
@@ -218,7 +203,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         range.setFinish(empty);
         predicate.setSlice_range(range);
         
-        Timer.Context timerContext = containsKeyTimer.time();
         CTConnection conn = null;
         try {
             conn = pool.borrowObject(keyspace);
@@ -228,8 +212,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         } catch (Exception e) {
             throw convertException(e);
         } finally {
-            pool.returnObjectUnsafe(keyspace, conn);            
-            timerContext.stop();
+            pool.returnObjectUnsafe(keyspace, conn);
         }
     }
 
