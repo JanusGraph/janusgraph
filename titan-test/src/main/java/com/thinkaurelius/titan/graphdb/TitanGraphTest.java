@@ -386,13 +386,11 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         // Check that the properties were actually deleted from v
         assertFalse(v.getProperties(key).iterator().hasNext());
         
-        long id = v.getID(); // So we can find v again after clopen()
-        
         // Reopen database
         clopen();
         
         // Retrieve and check our test vertex
-        v = tx.getVertex(id);
+        v = tx.getVertex(v.getID());
         key = tx.getPropertyKey(pname);
         Iterable<TitanProperty> iter = v.getProperties(key);
         assertFalse("Failed to durably remove multivalued property",
