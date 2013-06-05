@@ -115,71 +115,60 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
     @Override
     public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        final IPartitioner<?> partitioner = StorageService.getPartitioner();
-
-        final Token minimumToken, maximumToken;
-        if (partitioner instanceof RandomPartitioner) {
-            minimumToken = ((RandomPartitioner) partitioner).getMinimumToken();
-            maximumToken = new BigIntegerToken(RandomPartitioner.MAXIMUM);
-        } else if (partitioner instanceof Murmur3Partitioner) {
-            minimumToken = ((Murmur3Partitioner) partitioner).getMinimumToken();
-            maximumToken = new LongToken(Murmur3Partitioner.MAXIMUM);
-        } else if (partitioner instanceof ByteOrderedPartitioner) {
-            //TODO: This makes the assumption that its an EdgeStore (i.e. 8 byte keys)
-            minimumToken = new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.zeroByteBuffer(8));
-            maximumToken = new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.oneByteBuffer(8));
-        } else {
-            throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
-        }
-
         return new RecordIterator<StaticBuffer>() {
-            private Iterator<Row> keys = getKeySlice(minimumToken,
-                                                     maximumToken,
-                                                     storeManager.getPageSize());
-
-            private ByteBuffer lastSeenKey = null;
+            private final KeyIterator rows = new RowIterator(getMinimumToken(), getMaximumToken(), null, storeManager.getPageSize());
 
             @Override
             public boolean hasNext() throws StorageException {
-                boolean hasNext = keys.hasNext();
-
-                if (!hasNext && lastSeenKey != null) {
-                    keys = getKeySlice(partitioner.getToken(lastSeenKey), maximumToken, storeManager.getPageSize());
-                    hasNext = keys.hasNext();
-                }
-
-                return hasNext;
+                return rows.hasNext();
             }
 
             @Override
             public StaticBuffer next() throws StorageException {
-                if (!hasNext())
-                    throw new NoSuchElementException();
-
-                Row row = keys.next();
-
-                try {
-                    return new StaticByteBuffer(row.key.key);
-                } finally {
-                    lastSeenKey = row.key.key;
-                }
+                return rows.next();
             }
 
             @Override
             public void close() throws StorageException {
-                // nothing to clean-up here
+                rows.close();
             }
         };
     }
 
-    private Iterator<Row> getKeySlice(Token start, Token end, int pageSize) throws StorageException {
+    @Override
+    public KeyIterator getKeys(KeyRangeQuery keyRangeQuery, StoreTransaction txh) throws StorageException {
+        IPartitioner partitioner = StorageService.getPartitioner();
+
+        // see rant about this in Astyanax implementation
+        if (partitioner instanceof RandomPartitioner || partitioner instanceof Murmur3Partitioner)
+            throw new PermanentStorageException("This operation is only supported when byte-ordered partitioner is used.");
+
+        return new RowIterator(keyRangeQuery, storeManager.getPageSize());
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
+        return new RowIterator(getMinimumToken(), getMaximumToken(), query, storeManager.getPageSize());
+    }
+
+    private Iterator<Row> getKeySlice(Token start,
+                                      Token end,
+                                      @Nullable SliceQuery sliceQuery,
+                                      int pageSize) throws StorageException {
         IPartitioner<?> partitioner = StorageService.getPartitioner();
 
+        SliceRange columnSlice = new SliceRange();
+        if (sliceQuery == null) {
+            columnSlice.setStart(ArrayUtils.EMPTY_BYTE_ARRAY)
+                       .setFinish(ArrayUtils.EMPTY_BYTE_ARRAY)
+                       .setCount(5);
+        } else {
+            columnSlice.setStart(sliceQuery.getSliceStart().asByteBuffer())
+                       .setFinish(sliceQuery.getSliceEnd().asByteBuffer())
+                       .setCount(sliceQuery.hasLimit() ? sliceQuery.getLimit() : Integer.MAX_VALUE);
+        }
         /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
-        SlicePredicate predicate = new SlicePredicate().setSlice_range(new SliceRange()
-                                                                        .setStart(ArrayUtils.EMPTY_BYTE_ARRAY)
-                                                                        .setFinish(ArrayUtils.EMPTY_BYTE_ARRAY)
-                                                                        .setCount(5));
+        SlicePredicate predicate = new SlicePredicate().setSlice_range(columnSlice);
 
         Range<RowPosition> range = new Range<RowPosition>(start.maxKeyBound(partitioner),
                                                           end.maxKeyBound(partitioner),
@@ -408,5 +397,129 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         return result;
     }
 
+    private class RowIterator implements KeyIterator {
+        private final Token maximumToken;
+        private final SliceQuery sliceQuery;
 
+        private Iterator<Row> keys;
+        private ByteBuffer lastSeenKey = null;
+        private Row currentRow;
+        private int pageSize;
+
+        private boolean isClosed;
+
+        public RowIterator(KeyRangeQuery keyRangeQuery, int pageSize) throws StorageException {
+            this(StorageService.getPartitioner().getToken(keyRangeQuery.getKeyStart().asByteBuffer()),
+                 StorageService.getPartitioner().getToken(keyRangeQuery.getKeyEnd().asByteBuffer()),
+                 keyRangeQuery,
+                 pageSize);
+        }
+
+        public RowIterator(Token minimum, Token maximum, SliceQuery sliceQuery, int pageSize) throws StorageException {
+            this.keys = getKeySlice(minimum, maximum, sliceQuery, pageSize);
+            this.pageSize = pageSize;
+            this.sliceQuery = sliceQuery;
+            this.maximumToken = maximum;
+        }
+
+        @Override
+        public boolean hasNext() throws StorageException {
+            ensureOpen();
+
+            boolean hasNext = keys.hasNext();
+
+            if (!hasNext && lastSeenKey != null) {
+                keys = getKeySlice(StorageService.getPartitioner().getToken(lastSeenKey), maximumToken, sliceQuery, pageSize);
+                hasNext = keys.hasNext();
+            }
+
+            return hasNext;
+        }
+
+        @Override
+        public StaticBuffer next() throws StorageException {
+            ensureOpen();
+
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            currentRow = keys.next();
+            ByteBuffer currentKey = currentRow.key.key.duplicate();
+
+            try {
+                return new StaticByteBuffer(currentKey);
+            } finally {
+                lastSeenKey = currentKey;
+            }
+        }
+
+        @Override
+        public void close() throws StorageException {
+            isClosed = true;
+        }
+
+        @Override
+        public RecordIterator<Entry> getEntries() {
+            ensureOpen();
+
+            return new RecordIterator<Entry>() {
+                final Iterator<IColumn> columns = currentRow.cf.getSortedColumns().iterator();
+
+                @Override
+                public boolean hasNext() throws StorageException {
+                    ensureOpen();
+
+                    return columns.hasNext();
+                }
+
+                @Override
+                public Entry next() throws StorageException {
+                    ensureOpen();
+
+                    IColumn column = columns.next();
+                    return new ByteBufferEntry(column.name().duplicate(), column.value().duplicate());
+                }
+
+                @Override
+                public void close() throws StorageException {
+                    isClosed = true;
+                }
+            };
+        }
+
+        private void ensureOpen() {
+            if (isClosed)
+                throw new IllegalStateException("Iterator has been closed.");
+        }
+    }
+
+    private static Token getMinimumToken() throws PermanentStorageException {
+        IPartitioner partitioner = StorageService.getPartitioner();
+
+        if (partitioner instanceof RandomPartitioner) {
+            return ((RandomPartitioner) partitioner).getMinimumToken();
+        } else if (partitioner instanceof Murmur3Partitioner) {
+            return ((Murmur3Partitioner) partitioner).getMinimumToken();
+        } else if (partitioner instanceof ByteOrderedPartitioner) {
+            //TODO: This makes the assumption that its an EdgeStore (i.e. 8 byte keys)
+            return new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.zeroByteBuffer(8));
+        } else {
+            throw new PermanentStorageException("Unsupported partitioner: " + partitioner);
+        }
+    }
+
+    private static Token getMaximumToken() throws PermanentStorageException {
+        IPartitioner partitioner = StorageService.getPartitioner();
+
+        if (partitioner instanceof RandomPartitioner) {
+            return new BigIntegerToken(RandomPartitioner.MAXIMUM);
+        } else if (partitioner instanceof Murmur3Partitioner) {
+            return new LongToken(Murmur3Partitioner.MAXIMUM);
+        } else if (partitioner instanceof ByteOrderedPartitioner) {
+            //TODO: This makes the assumption that its an EdgeStore (i.e. 8 byte keys)
+            return new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.oneByteBuffer(8));
+        } else {
+            throw new PermanentStorageException("Unsupported partitioner: " + partitioner);
+        }
+    }
 }
