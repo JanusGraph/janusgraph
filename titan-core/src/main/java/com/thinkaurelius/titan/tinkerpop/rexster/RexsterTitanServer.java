@@ -58,23 +58,16 @@ public class RexsterTitanServer {
     }
 
     public void start() {
-        
-        // get available engines, using the Rexster default if none are given
-        final String enginesRaw = rexsterConfig.getString("script-engines");
-        if (null != enginesRaw) {
-            final Set<String> engines = new HashSet<String>(Arrays.asList(enginesRaw.trim().split(",")));
-            EngineController.configure(-1, rexsterConfig.getString("script-engine-init", null), engines);
-        } else {
-            EngineController.configure(-1, rexsterConfig.getString("script-engine-init", null));
-        }
-        
         graph = TitanFactory.open(titanConfig);
         
         final List<HierarchicalConfiguration> extensionConfigurations = ((XMLConfiguration) rexsterConfig).configurationsAt(Tokens.REXSTER_GRAPH_EXTENSIONS_PATH);
-        log.info("Extension Config: "+extensionConfigurations.toString());
+        log.info("Extension Config: " + extensionConfigurations.toString());
         final RexsterApplication ra = new TitanRexsterApplication(DEFAULT_GRAPH_NAME, graph, extensionConfigurations);
 
-        final ReporterConfig reporterConfig = ReporterConfig.load(rexsterConfig.configurationsAt(Tokens.REXSTER_REPORTER_PATH), ra.getMetricRegistry());
+        final RexsterProperties properties = new RexsterProperties(rexsterConfig);
+        configureScriptEngine(properties);
+
+        final ReporterConfig reporterConfig = new ReporterConfig(properties, ra.getMetricRegistry());
         this.rexsterConfig.addProperty("http-reporter-enabled", reporterConfig.isHttpReporterEnabled());
         this.rexsterConfig.addProperty("http-reporter-duration", reporterConfig.getDurationTimeUnitConversion());
         this.rexsterConfig.addProperty("http-reporter-convert", reporterConfig.getRateTimeUnitConversion());
@@ -94,6 +87,27 @@ public class RexsterTitanServer {
             httpServer = new HttpRexsterServer(rexsterConfig);
             startHttpServer(ra);
         }
+    }
+
+    private void configureScriptEngine(final RexsterProperties properties) {
+        // the EngineController needs to be configured statically before requests start serving so that it can
+        // properly construct ScriptEngine objects with the correct reset policy.
+        final int scriptEngineThreshold = properties.getScriptEngineResetThreshold();
+        final String scriptEngineInitFile = properties.getScriptEngineInitFile();
+
+        // allow scriptengines to be configured so that folks can drop in different gremlin flavors.
+        final List configuredScriptEngineNames = properties.getConfiguredScriptEngines();
+        if (configuredScriptEngineNames == null) {
+            // configure to default with gremlin-groovy
+            log.info("No configuration for <script-engines>.  Using gremlin-groovy by default.");
+            EngineController.configure(scriptEngineThreshold, scriptEngineInitFile);
+        } else {
+            EngineController.configure(scriptEngineThreshold, scriptEngineInitFile, new HashSet<String>(configuredScriptEngineNames));
+        }
+
+        log.info(String.format(
+                "Gremlin ScriptEngine configured to reset every [%s] requests. Set to -1 to never reset.",
+                scriptEngineThreshold));
     }
 
     public void startDaemon() {
