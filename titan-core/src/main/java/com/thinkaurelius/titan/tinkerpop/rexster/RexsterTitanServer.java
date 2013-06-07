@@ -15,8 +15,11 @@ import org.apache.commons.configuration.XMLConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Standalone Titan database with fronting Rexster server.
@@ -55,7 +58,16 @@ public class RexsterTitanServer {
     }
 
     public void start() {
-        EngineController.configure(-1, this.rexsterConfig.getString("script-engine-init", null));
+        
+        // get available engines, using the Rexster default if none are given
+        final String enginesRaw = rexsterConfig.getString("script-engines");
+        if (null != enginesRaw) {
+            final Set<String> engines = new HashSet<String>(Arrays.asList(enginesRaw.trim().split(",")));
+            EngineController.configure(-1, rexsterConfig.getString("script-engine-init", null), engines);
+        } else {
+            EngineController.configure(-1, rexsterConfig.getString("script-engine-init", null));
+        }
+        
         graph = TitanFactory.open(titanConfig);
         
         final List<HierarchicalConfiguration> extensionConfigurations = ((XMLConfiguration) rexsterConfig).configurationsAt(Tokens.REXSTER_GRAPH_EXTENSIONS_PATH);
