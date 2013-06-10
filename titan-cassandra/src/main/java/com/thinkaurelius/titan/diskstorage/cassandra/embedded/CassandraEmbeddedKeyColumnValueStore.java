@@ -115,24 +115,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
     @Override
     public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        return new RecordIterator<StaticBuffer>() {
-            private final KeyIterator rows = new RowIterator(getMinimumToken(), getMaximumToken(), null, storeManager.getPageSize());
-
-            @Override
-            public boolean hasNext() throws StorageException {
-                return rows.hasNext();
-            }
-
-            @Override
-            public StaticBuffer next() throws StorageException {
-                return rows.next();
-            }
-
-            @Override
-            public void close() throws StorageException {
-                rows.close();
-            }
-        };
+        return new RowIterator(getMinimumToken(), getMaximumToken(), null, storeManager.getPageSize());
     }
 
     @Override

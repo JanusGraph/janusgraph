@@ -217,24 +217,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public RecordIterator<StaticBuffer> getKeys(final StoreTransaction txh) throws StorageException {
-        return new RecordIterator<StaticBuffer>() {
-            final KeyIterator rows = getKeys(null, txh);
-
-            @Override
-            public boolean hasNext() throws StorageException {
-                return rows.hasNext();
-            }
-
-            @Override
-            public StaticBuffer next() throws StorageException {
-                return rows.next();
-            }
-
-            @Override
-            public void close() throws StorageException {
-                rows.close();
-            }
-        };
+        return getKeys(null, txh);
     }
 
     @Override

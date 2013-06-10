@@ -200,56 +200,57 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
      */
     @Override
     public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        Scan s = new Scan().addFamily(columnFamilyBytes);
-        FilterList fl = new FilterList();
+        FilterList filters = new FilterList(FilterList.Operator.MUST_PASS_ALL);
         // returns first instance of a row, then skip to next row
-        fl.addFilter(new FirstKeyOnlyFilter());
+        filters.addFilter(new FirstKeyOnlyFilter());
         // only return the Key, don't return the value
-        fl.addFilter(new KeyOnlyFilter());
-        s.setFilter(fl);
+        filters.addFilter(new KeyOnlyFilter());
 
-        final ResultScanner scanner;
+        return executeKeySliceQuery(filters, null);
+    }
+
+    @Override
+    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
+        return executeKeySliceQuery(query.getKeyStart().as(StaticBuffer.ARRAY_FACTORY),
+                                    query.getKeyEnd().as(StaticBuffer.ARRAY_FACTORY),
+                                    new FilterList(FilterList.Operator.MUST_PASS_ALL),
+                                    query);
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
+        return executeKeySliceQuery(new FilterList(FilterList.Operator.MUST_PASS_ALL), query);
+    }
+
+    public KeyIterator executeKeySliceQuery(FilterList filters, @Nullable SliceQuery columnSlice) throws StorageException {
+        return executeKeySliceQuery(null, null, filters, columnSlice);
+    }
+
+    public KeyIterator executeKeySliceQuery(@Nullable byte[] startKey,
+                                            @Nullable byte[] endKey,
+                                            FilterList filters,
+                                            @Nullable SliceQuery columnSlice) throws StorageException {
+        Scan scan = new Scan().addFamily(columnFamilyBytes);
+
+        if (startKey != null)
+            scan.setStartRow(startKey);
+
+        if (endKey != null)
+            scan.setStopRow(endKey);
+
+        if (columnSlice != null) {
+            filters.addFilter(new ColumnPaginationFilter(columnSlice.hasLimit() ? columnSlice.getLimit() : Integer.MAX_VALUE, 0));
+            filters.addFilter(new ColumnRangeFilter(columnSlice.getSliceStart().as(StaticBuffer.ARRAY_FACTORY),
+                                                    true,
+                                                    columnSlice.getSliceEnd().as(StaticBuffer.ARRAY_FACTORY),
+                                                    false));
+        }
 
         try {
-            scanner = pool.getTable(tableName).getScanner(s);
+            return new RowIterator(pool.getTable(tableName).getScanner(scan));
         } catch (IOException e) {
             throw new PermanentStorageException(e);
         }
-
-        return new RecordIterator<StaticBuffer>() {
-            /* we need to check if key is long serializable because HBase returns weird rows sometimes */
-            private final Iterator<Result> results = Iterators.filter(scanner.iterator(), new Predicate<Result>() {
-                @Override
-                public boolean apply(@Nullable Result result) {
-                    if (result == null)
-                        return false;
-
-                    try {
-                        StaticBuffer id = new StaticArrayBuffer(result.getRow());
-                        id.getLong(0);
-                    } catch (NumberFormatException e) {
-                        return false;
-                    }
-
-                    return true;
-                }
-            });
-
-            @Override
-            public boolean hasNext() throws StorageException {
-                return results.hasNext();
-            }
-
-            @Override
-            public StaticBuffer next() throws StorageException {
-                return new StaticArrayBuffer(results.next().getRow());
-            }
-
-            @Override
-            public void close() throws StorageException {
-                scanner.close();
-            }
-        };
     }
 
     @Override
@@ -271,7 +272,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
      *
      * @return Delete command or null if deletions were null or empty.
      */
-    private final static Delete makeDeletionCommand(byte[] cfName, byte[] key, List<StaticBuffer> deletions) {
+    private static Delete makeDeletionCommand(byte[] cfName, byte[] key, List<StaticBuffer> deletions) {
         Preconditions.checkArgument(!deletions.isEmpty());
 
         Delete deleteCommand = new Delete(key);
@@ -290,7 +291,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
      *
      * @return Put command or null if additions were null or empty.
      */
-    private final static Put makePutCommand(byte[] cfName, byte[] key, List<Entry> modifications) {
+    private static Put makePutCommand(byte[] cfName, byte[] key, List<Entry> modifications) {
         Preconditions.checkArgument(!modifications.isEmpty());
 
         Put putCommand = new Put(key);
@@ -300,7 +301,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         return putCommand;
     }
 
-    public final static List<Row> makeBatch(byte[] cfName, byte[] key, List<Entry> additions, List<StaticBuffer> deletions) {
+    public static List<Row> makeBatch(byte[] cfName, byte[] key, List<Entry> additions, List<StaticBuffer> deletions) {
         if (additions.isEmpty() && deletions.isEmpty()) return Collections.emptyList();
 
         List<Row> batch = new ArrayList<Row>(2);
@@ -315,5 +316,83 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             batch.add(deleteCommand);
         }
         return batch;
+    }
+
+    private class RowIterator implements KeyIterator {
+        private final Iterator<Result> rows;
+
+        private Result currentRow;
+        private boolean isClosed;
+
+        public RowIterator(ResultScanner rows) {
+            this.rows = Iterators.filter(rows.iterator(), new Predicate<Result>() {
+                @Override
+                public boolean apply(@Nullable Result result) {
+                    if (result == null)
+                        return false;
+
+                    try {
+                        StaticBuffer id = new StaticArrayBuffer(result.getRow());
+                        id.getLong(0);
+                    } catch (NumberFormatException e) {
+                        return false;
+                    }
+
+                    return true;
+                }
+            });
+        }
+
+        @Override
+        public RecordIterator<Entry> getEntries() {
+            ensureOpen();
+
+            return new RecordIterator<Entry>() {
+                private final Iterator<Map.Entry<byte[], byte[]>> kv = currentRow.getFamilyMap(columnFamilyBytes).entrySet().iterator();
+
+                @Override
+                public boolean hasNext() throws StorageException {
+                    ensureOpen();
+                    return kv.hasNext();
+                }
+
+                @Override
+                public Entry next() throws StorageException {
+                    ensureOpen();
+
+                    Map.Entry<byte[], byte[]> column = kv.next();
+                    return StaticBufferEntry.of(new StaticArrayBuffer(column.getKey()), new StaticArrayBuffer(column.getValue()));
+                }
+
+                @Override
+                public void close() throws StorageException {
+                    isClosed = true;
+                }
+            };
+        }
+
+        @Override
+        public boolean hasNext() throws StorageException {
+            ensureOpen();
+            return rows.hasNext();
+        }
+
+        @Override
+        public StaticBuffer next() throws StorageException {
+            ensureOpen();
+
+            currentRow = rows.next();
+            return new StaticArrayBuffer(currentRow.getRow());
+        }
+
+        @Override
+        public void close() throws StorageException {
+            isClosed = true;
+        }
+
+        private void ensureOpen() {
+            if (isClosed)
+                throw new IllegalStateException("Iterator has been closed.");
+        }
     }
 }

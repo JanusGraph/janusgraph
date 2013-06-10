@@ -189,24 +189,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        final KeyIterator rows = getKeys(null, txh);
-
-        return new RecordIterator<StaticBuffer>() {
-            @Override
-            public boolean hasNext() throws StorageException {
-                return rows.hasNext();
-            }
-
-            @Override
-            public StaticBuffer next() throws StorageException {
-                return new StaticByteBuffer(rows.next().asByteBuffer());
-            }
-
-            @Override
-            public void close() throws StorageException {
-                // nothing to clean-up here
-            }
-        };
+        return getKeys(null, txh);
     }
 
     @Override
