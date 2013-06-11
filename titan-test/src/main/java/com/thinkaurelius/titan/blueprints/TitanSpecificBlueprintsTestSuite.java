@@ -18,7 +18,7 @@ public class TitanSpecificBlueprintsTestSuite extends TestSuite {
         TransactionalGraph graph = (TransactionalGraph) graphTest.generateGraph();
         Vertex a = graph.addVertex(null);
         Vertex b = graph.addVertex(null);
-        Edge e = graph.addEdge(null, a, b, convertId(graph, "friend"));
+        Edge e = graph.addEdge(null, a, b, "friend");
         graph.commit();
 
         a = graph.getVertex(a);

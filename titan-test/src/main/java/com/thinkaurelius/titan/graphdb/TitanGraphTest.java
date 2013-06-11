@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -354,6 +355,59 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         }
     }
 
+    @Test
+    public void testMultivaluedVertexPropertyRemoval() {
+
+        /*
+         * Constant test data
+         * 
+         * The values list below must have at least two elements. The string
+         * literals were chosen arbitrarily and have no special significance.
+         */
+        final String pname = "foo";
+        final List<String> values = 
+                ImmutableList.of("four", "score", "and", "seven");
+        assertTrue("Values list must have multiple elements for this test to make sense",
+                2 <= values.size());
+
+        // Create property with name pname and a vertex
+        TitanKey key = makeNonUniqueStringPropertyKey(pname);
+        TitanVertex v = tx.addVertex();
+        
+        // Insert prop values
+        for (String s : values) {
+            v.addProperty(key, s);
+        }
+        
+        // Check that removeProperty(TitanKey) returns a valid value
+        String lastValueRemoved = v.removeProperty(key);
+        assertNotNull(lastValueRemoved);
+        assertTrue(values.contains(lastValueRemoved));
+        // Check that the properties were actually deleted from v
+        assertFalse(v.getProperties(key).iterator().hasNext());
+        
+        // Reopen database
+        clopen();
+        
+        // Retrieve and check our test vertex
+        v = tx.getVertex(v.getID());
+        key = tx.getPropertyKey(pname);
+        Iterable<TitanProperty> iter = v.getProperties(key);
+        assertFalse("Failed to durably remove multivalued property",
+                iter.iterator().hasNext());
+        
+        // Reinsert prop values
+        for (String s : values) {
+            v.addProperty(pname, s);
+        }
+        
+        // Test removeProperty(String) method on the vertex
+        lastValueRemoved = v.removeProperty(pname);
+        assertNotNull(lastValueRemoved);
+        assertTrue(values.contains(lastValueRemoved));
+        assertFalse(v.getProperties(pname).iterator().hasNext());
+    }
+    
     @Test
     public void testDate() throws ParseException {
         tx.makeType().name("birthday").unique(Direction.OUT).dataType(GregorianCalendar.class).makePropertyKey();

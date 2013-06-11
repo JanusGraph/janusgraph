@@ -59,8 +59,9 @@
     <properties>
         <titan.version>0.4.0-SNAPSHOT</titan.version>
         <titan.compatible.versions>0.3.0,0.3.1</titan.compatible.versions>
-        <tinkerpop.version>2.3.0</tinkerpop.version>
+        <tinkerpop.version>2.4.0-SNAPSHOT</tinkerpop.version>
         <junit.version>4.8.1</junit.version>
+        <metrics.version>3.0.0-BETA3</metrics.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <cassandra.dir>${project.build.directory}/cassandra-tmp/workdir</cassandra.dir>

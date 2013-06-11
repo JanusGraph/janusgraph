@@ -166,17 +166,6 @@ public class CassandraProcessStarter {
                 throw new TemporaryStorageException(msg);
             }
             log.debug("Cassandra process logged successful Thrift-port bind.");
-			
-			/*
-			 * Destroy any pooled Thrift connections to this
-			 * Cassandra INSTANCE.  This isn't necessary in
-			 * normal operation, but in testing, where maven may
-			 * destroy and recreate a Cassandra cluster many
-			 * times without restarting the JVM, failure to
-			 * destroy stale connections can cause odd failures.
-			 */
-            log.debug("Clearing pooled Thrift connections for {}:{}", address, port);
-            CTConnectionPool.clearPool(address, port, GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
         } catch (Exception e) {
             e.printStackTrace();
             throw new TitanException(e);
@@ -209,10 +198,9 @@ public class CassandraProcessStarter {
     }
 
     public void waitForClusterSize(int minSize) throws InterruptedException, StorageException {
-        CTConnectionFactory f = CTConnectionPool.getFactory(address,
-                                                            port,
-                                                            GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT,
-                                                            AbstractCassandraStoreManager.THRIFT_DEFAULT_FRAME_SIZE);
+        CTConnectionFactory f = new CTConnectionFactory(address, port,
+                GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT,
+                AbstractCassandraStoreManager.THRIFT_DEFAULT_FRAME_SIZE);
         CTConnection conn = null;
         try {
             conn = f.makeRawConnection();

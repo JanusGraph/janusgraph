@@ -121,5 +121,12 @@ public abstract class TitanGraphTestCommon {
                 dataType(Double.class).
                 makePropertyKey();
     }
+    
+    public TitanKey makeNonUniqueStringPropertyKey(String name) {
+        return tx.makeType().name(name).
+                indexed(Vertex.class).
+                dataType(String.class).
+                makePropertyKey();
+    }
 
 }
