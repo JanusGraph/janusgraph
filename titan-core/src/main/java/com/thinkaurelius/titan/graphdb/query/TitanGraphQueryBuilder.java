@@ -150,19 +150,16 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
 
     @Override
     public GraphQuery has(String key, Object... values) {
-        log.warn("has(key, values) is unimplemented and has no effect"); // TODO implement
-        return this;
+        throw new UnsupportedOperationException("has(key, values) not yet implemented");
     }
 
     @Override
     public GraphQuery hasNot(String key, Object... values) {
-        log.warn("hasNot(key, values) is unimplemented and has no effect"); // TODO implement
-        return this;
+        throw new UnsupportedOperationException("hasNot(key, values) not yet implemented");
     }
 
     @Override
-    public GraphQuery limit(long arg0, long arg1) {
-        log.warn("limit(skip, take) is unimplemented and has no effect"); // TODO implement
-        return this;
+    public GraphQuery limit(long skip, long take) {
+        throw new UnsupportedOperationException("limit(skip, take) not yet implemented");
     }
 }
