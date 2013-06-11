@@ -98,6 +98,9 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, String label) {
+        if (null == label) {
+            throw new IllegalArgumentException("Edge label must be non-null");
+        }
         return addEdge(outVertex, inVertex, getEdgeLabel(label));
     }
 
