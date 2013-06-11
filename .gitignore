@@ -11,6 +11,10 @@ target/
 /titan-*/.project
 /titan-*/.settings/
 # End of Eclipse junk
+# HBase testing stuff
 titan-hbase/logs
 titan-hbase/src/test/titan-hbase-test-data/*
 titan-hbase/src/test/titan-zookeeper-test/*
+# Backup files created by `mvn versions:update-child-modules`
+# http://mojo.codehaus.org/versions-maven-plugin/update-child-modules-mojo.html
+titan-*/pom.xml.versionsBackup
