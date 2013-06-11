@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A factory compatible with Apache commons-pool for Cassandra Thrift API
@@ -31,36 +30,43 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
-public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, CTConnection> {
-    
+public class CTConnectionFactory implements KeyedPoolableObjectFactory {
     private static final Logger log = LoggerFactory.getLogger(CTConnectionFactory.class);
-    private static final long SCHEMA_WAIT_MAX = 5000L;
-    private static final long SCHEMA_WAIT_INCREMENT = 25L;
-    private AtomicReference<Config> cfgRef;
-    
-    public CTConnectionFactory(String hostname, int port, int timeoutMS, int frameSize) {
-        this.cfgRef = new AtomicReference<Config>(new Config(hostname, port,
-                timeoutMS, frameSize));
+
+    private final String hostname;
+    private final int port;
+    private final int timeoutMS;
+    private final int frameSize;
+
+    CTConnectionFactory(String hostname, int port, int timeoutMS, int frameSize) {
+        this.hostname = hostname;
+        this.port = port;
+        this.timeoutMS = timeoutMS;
+        this.frameSize = frameSize;
     }
 
     @Override
-    public void activateObject(String key, CTConnection c) throws Exception {
+    public void activateObject(Object key, Object o) throws Exception {
         // Do nothing, as in passivateObject
     }
 
     @Override
-    public void destroyObject(String key, CTConnection c) throws Exception {
-        TTransport t = c.getTransport();
+    public void destroyObject(Object key, Object o) throws Exception {
+        CTConnection conn = (CTConnection) o;
+
+        TTransport t = conn.getTransport();
 
         if (t.isOpen())
             t.close();
     }
 
     @Override
-    public CTConnection makeObject(String key) throws Exception {
+    public Object makeObject(Object key) throws Exception {
+        String keyspace = (String) key;
+
         CTConnection conn = makeRawConnection();
         Cassandra.Client client = conn.getClient();
-        client.set_keyspace(key);
+        client.set_keyspace(keyspace);
 
         return conn;
     }
@@ -73,48 +79,51 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
      * @throws TTransportException on any Thrift transport failure
      */
     public CTConnection makeRawConnection() throws TTransportException {
-        Config cfg = cfgRef.get();
-        
-        log.debug("Creating TSocket({}, {}, {})", new Object[]{cfg.hostname, cfg.port, cfg.timeoutMS});
+        log.debug("Creating TSocket({}, {}, {})", new Object[]{hostname, port, timeoutMS});
 
-        TTransport transport = new TFramedTransport(new TSocket(cfg.hostname, cfg.port, cfg.timeoutMS), cfg.frameSize);
-        TBinaryProtocol protocol = new TBinaryProtocol(transport);
-        Cassandra.Client client = new Cassandra.Client(protocol);
+        TTransport transport = new TFramedTransport(new TSocket(hostname, port, timeoutMS), frameSize);
+
+        Cassandra.Client client = new Cassandra.Client(new TBinaryProtocol(transport));
+
         transport.open();
 
-        return new CTConnection(transport, client, cfg);
+        return new CTConnection(transport, client);
     }
 
     @Override
-    public void passivateObject(String key, CTConnection o) throws Exception {
+    public void passivateObject(Object key, Object o) throws Exception {
         // Do nothing, as in activateObject
     }
 
     @Override
-    public boolean validateObject(String key, CTConnection c) {
-        Config curCfg = cfgRef.get();
-        
-        boolean result = c.getConfig().equals(curCfg);
-        if (log.isDebugEnabled()) {
-            if (result) {
-                log.debug("Validated Thrift connection {}", c);
-            } else {
-                log.debug(
-                        "Rejected Thrift connection {}; current config is {}; connection config is {}",
-                        new Object[] { c, curCfg, c.getConfig() });
+    public boolean validateObject(Object key, Object o) {
+        CTConnection conn = (CTConnection) o;
+        String keyspace = (String) key;
+
+        // TODO maybe actually check the keyspace?
+
+        if (conn.getTransport().isOpen()) {
+            try {
+                conn.getClient().set_keyspace(keyspace);
+                return true;
+            } catch (Exception e) {
+                log.debug("Invalidating pooled thrift connection {}", conn);
             }
         }
-        
-        return result;
-    }
-    
-    public Config getConfig() {
-        return cfgRef.get();
-    }
+        return false;
 
-    public void setConfig(Config newCfg) {
-        cfgRef.set(newCfg);
-        log.debug("Updated Thrift connection factory config to {}", newCfg);
+        // Too expensive?
+//		try {
+//			Cassandra.Client client = conn.getClient();
+//			client.describe_keyspace("system");
+//			return true;
+//		} catch (NotFoundException e) {
+//			return false;
+//		} catch (InvalidRequestException e) {
+//			return false;
+//		} catch (TException e) {
+//			return false;
+//		}
     }
 
     /* This method was adapted from cassandra 0.7.5 cli/CliClient.java */
@@ -127,8 +136,8 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
 
         final long start = System.currentTimeMillis();
         long lastTry = 0;
-        final long limit = start + SCHEMA_WAIT_MAX;
-        final long minSleep = SCHEMA_WAIT_INCREMENT;
+        final long limit = start + CTConnectionPool.SCHEMA_WAIT_MAX;
+        final long minSleep = CTConnectionPool.SCHEMA_WAIT_INCREMENT;
         boolean inAgreement = false;
         outer:
         while (limit - System.currentTimeMillis() >= 0 && !inAgreement) {
@@ -170,8 +179,12 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
                 }
                 continue outer;
             }
-            
-            log.debug("Found {} unreachable or out-of-date Cassandra nodes", nodeCount);
+            // I think there's a genuine bug in Cassandra that can cause the
+            // result of describe_cluster_versions to converge before all migrations
+            // have actually been applied
+            // i'd like to debug that, but for now, just wait a sec
+//            if (1 < nodeCount) 
+//            	Thread.sleep(1000L);
 
             inAgreement = true;
         }
@@ -186,7 +199,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
 
         if (!inAgreement) {
             throw new TemporaryStorageException("The schema has not settled in " +
-                    SCHEMA_WAIT_MAX + " ms. Wanted version " +
+                    CTConnectionPool.SCHEMA_WAIT_MAX + " ms. Wanted version " +
                     currentVersionId + "; Versions are " + FBUtilities.toString(versions));
         } else {
             log.debug("Cassandra schema version {} propagated in about {} ms; Versions are {}",
@@ -243,43 +256,9 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         }
         throw new PermanentStorageException("Could not verify Cassandra cluster size");
     }
-    
-    public static class Config {
-        private final String hostname;
-        private final int port;
-        private final int timeoutMS;
-        private final int frameSize;
 
-        public Config(String hostname, int port, int timeoutMS, int frameSize) {
-            this.hostname = hostname;
-            this.port = port;
-            this.timeoutMS = timeoutMS;
-            this.frameSize = frameSize;
-        }
-
-        public String getHostname() {
-            return hostname;
-        }
-
-        public int getPort() {
-            return port;
-        }
-
-        public int getTimeoutMS() {
-            return timeoutMS;
-        }
-
-        public int getFrameSize() {
-            return frameSize;
-        }
-        
-        @Override
-        public String toString() {
-            return "Config[hostname=" + hostname + ", port=" + port
-                    + ", timeoutMS=" + timeoutMS + ", frameSize=" + frameSize
-                    + "]";
-        }
+    int getTimeoutMS() {
+        return timeoutMS;
     }
-
 }
 

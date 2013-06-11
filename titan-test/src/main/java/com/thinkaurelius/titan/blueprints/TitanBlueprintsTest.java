@@ -44,16 +44,10 @@ public abstract class TitanBlueprintsTest extends GraphTest {
         printTestPerformance("GraphTestSuite", this.stopWatch());
     }
 
-    public void testGraphQueryTestSuite() throws Exception {
+    public void testQueryTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new TitanGraphQueryTestSuite(this));
-        printTestPerformance("GraphQueryTestSuite", this.stopWatch());
-    }
-    
-    public void testVertexQueryTestSuite() throws Exception {
-        this.stopWatch();
-        doTestSuite(new VertexQueryTestSuite(this));
-        printTestPerformance("VertexQueryTestSuite", this.stopWatch());
+        doTestSuite(new QueryTitanTestSuite(this));
+        printTestPerformance("QueryTestSuite", this.stopWatch());
     }
 
     public void testKeyIndexableGraphTestSuite() throws Exception {

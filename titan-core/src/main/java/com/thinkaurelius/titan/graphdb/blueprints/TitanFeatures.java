@@ -29,6 +29,7 @@ public class TitanFeatures {
         features.supportsStringProperty = true;
         features.ignoresSuppliedIds = true;
         features.isPersistent = true;
+        features.isRDFModel = false;
         features.isWrapper = false;
         features.supportsIndices = false;
         features.supportsVertexIndex = false;

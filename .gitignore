@@ -3,14 +3,9 @@ target/
 .idea/
 *.iml
 # Eclipse junk; leading slash makes patterns non-recursive
-# Note that * also can't match slashes
 /.settings/
 /.project
 /.classpath
-/titan-*/.classpath
-/titan-*/.project
-/titan-*/.settings/
-# End of Eclipse junk
 titan-hbase/logs
 titan-hbase/src/test/titan-hbase-test-data/*
 titan-hbase/src/test/titan-zookeeper-test/*

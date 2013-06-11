@@ -1,26 +1,17 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanGraphQuery;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.core.TypeMaker;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Parameter;
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.StringFactory;
+
+import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * Blueprints specific implementation for {@link TitanGraph}.
@@ -30,9 +21,6 @@ import com.tinkerpop.blueprints.util.StringFactory;
  */
 public abstract class TitanBlueprintsGraph implements TitanGraph {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(TitanBlueprintsGraph.class);
-    
     // ########## TRANSACTION HANDLING ###########################
 
     private ThreadLocal<TitanTransaction> txs = new ThreadLocal<TitanTransaction>() {
@@ -43,18 +31,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     };
 
-    /**
-     * ThreadLocal transactions used behind the scenes in
-     * {@link TransactionalGraph} methods. Transactions started through
-     * {@code ThreadedTransactionalGraph#newTransaction()} aren't included in
-     * this map. Contrary to the javadoc comment above
-     * {@code ThreadedTransactionalGraph#newTransaction()}, the caller is
-     * responsible for holding references to and committing or rolling back any
-     * transactions started through
-     * {@code ThreadedTransactionalGraph#newTransaction()}.
-     */
-    private final Map<TitanTransaction, Boolean> openTx =
-            new ConcurrentHashMap<TitanTransaction, Boolean>();
+    private final WeakHashMap<TitanTransaction, Boolean> openTx = new WeakHashMap<TitanTransaction, Boolean>(4);
 
     @Override
     public void commit() {
@@ -65,7 +42,6 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
             } finally {
                 txs.remove();
                 openTx.remove(tx);
-                log.debug("Committed thread-bound transaction {}", tx);
             }
         }
     }
@@ -79,7 +55,6 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
             } finally {
                 txs.remove();
                 openTx.remove(tx);
-                log.debug("Rolled back thread-bound transaction {}", tx);
             }
         }
     }
@@ -107,7 +82,6 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
             tx = newThreadBoundTransaction();
             txs.set(tx);
             openTx.put(tx, Boolean.TRUE);
-            log.debug("Created new thread-bound transaction {}", tx);
         }
         return tx;
     }

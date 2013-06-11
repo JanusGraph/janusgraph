@@ -7,24 +7,19 @@ import org.apache.thrift.transport.TTransport;
 import java.io.Closeable;
 
 /**
- * Wraps a {@code Cassandra.Client} instance, its underlying {@code TTransport}
- * instance, and the {@link CTConnectionFactory.Config} instance used to setup
- * the connection.
- * 
- * @see CTConnectionFactory
- * @see CTConnectionPool
+ * Wraps a Cassandra.Client object along with its Thrift protocol and transport
+ * objects.
+ *
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class CTConnection implements Closeable {
-    
     private final TTransport transport;
     private final Cassandra.Client client;
-    private final CTConnectionFactory.Config cfg;
 
-    public CTConnection(TTransport transport, Client client, CTConnectionFactory.Config cfg) {
+    public CTConnection(TTransport transport, Client client) {
+        super();
         this.transport = transport;
         this.client = client;
-        this.cfg = cfg;
     }
 
     public TTransport getTransport() {
@@ -33,10 +28,6 @@ public class CTConnection implements Closeable {
 
     public Cassandra.Client getClient() {
         return client;
-    }
-    
-    public CTConnectionFactory.Config getConfig() {
-     return cfg;
     }
 
     @Override
@@ -47,6 +38,7 @@ public class CTConnection implements Closeable {
 
     @Override
     public String toString() {
-        return "CTConnection [transport=" + transport + ", client=" + client + ", cfg=" + cfg + "]";
+        return "CTConnection [transport=" + transport + ", client=" + client + "]";
     }
+
 }

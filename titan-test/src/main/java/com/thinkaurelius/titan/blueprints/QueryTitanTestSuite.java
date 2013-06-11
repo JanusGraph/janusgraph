@@ -3,17 +3,17 @@ package com.thinkaurelius.titan.blueprints;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.GraphQueryTestSuite;
+import com.tinkerpop.blueprints.QueryTestSuite;
 import com.tinkerpop.blueprints.impls.GraphTest;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class TitanGraphQueryTestSuite extends GraphQueryTestSuite {
+public class QueryTitanTestSuite extends QueryTestSuite {
 
 
-    public TitanGraphQueryTestSuite(final GraphTest graphTest) {
+    public QueryTitanTestSuite(final GraphTest graphTest) {
         super(graphTest);
     }
 

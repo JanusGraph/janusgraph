@@ -18,7 +18,6 @@ import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.stats.ObjectAccumulator;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,14 +81,15 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
         return this;
     }
 
+
     @Override
-    public <T extends Comparable<T>> TitanGraphQuery has(String s, T t, Compare compare) {
-        return has(s,Cmp.convert(compare),t);
+    public TitanGraphQuery has(String s, Object o) {
+        return has(s, Cmp.EQUAL,o);
     }
 
     @Override
-    public <T extends Comparable<T>> TitanGraphQuery has(String key, Compare compare, T value) {
-        return has(key, compare, (Object)value);
+    public <T extends Comparable<T>> TitanGraphQuery has(String s, T t, Compare compare) {
+        return has(s,Cmp.convert(compare),t);
     }
 
     @Override
@@ -146,23 +146,5 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
         log.debug("Best index for query [{}]: {}",query,bestIndex);
         if (bestIndex!=null) return ImmutableList.of(new StandardElementQuery(query,bestIndex));
         else return ImmutableList.of(query);
-    }
-
-    @Override
-    public GraphQuery has(String key, Object... values) {
-        log.warn("has(key, values) is unimplemented and has no effect"); // TODO implement
-        return this;
-    }
-
-    @Override
-    public GraphQuery hasNot(String key, Object... values) {
-        log.warn("hasNot(key, values) is unimplemented and has no effect"); // TODO implement
-        return this;
-    }
-
-    @Override
-    public GraphQuery limit(long arg0, long arg1) {
-        log.warn("limit(skip, take) is unimplemented and has no effect"); // TODO implement
-        return this;
     }
 }
