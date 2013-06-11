@@ -97,7 +97,7 @@ public class RexsterTitanServer {
 
         // allow scriptengines to be configured so that folks can drop in different gremlin flavors.
         final List configuredScriptEngineNames = properties.getConfiguredScriptEngines();
-        if (configuredScriptEngineNames == null) {
+        if (configuredScriptEngineNames == null || configuredScriptEngineNames.isEmpty()) {
             // configure to default with gremlin-groovy
             log.info("No configuration for <script-engines>.  Using gremlin-groovy by default.");
             EngineController.configure(scriptEngineThreshold, scriptEngineInitFile);
