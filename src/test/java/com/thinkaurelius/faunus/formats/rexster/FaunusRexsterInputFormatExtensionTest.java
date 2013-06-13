@@ -12,11 +12,11 @@ import javax.ws.rs.core.Response;
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-public class FaunusRexsterExtensionTest {
+public class FaunusRexsterInputFormatExtensionTest {
 
     @Test
     public void getVertexCountValid() {
-        final FaunusRexsterExtension ext = new FaunusRexsterExtension();
+        final FaunusRexsterInputFormatExtension ext = new FaunusRexsterInputFormatExtension();
         final Graph g = TinkerGraphFactory.createTinkerGraph();
 
         final ExtensionResponse response = ext.getVertexCount(g);

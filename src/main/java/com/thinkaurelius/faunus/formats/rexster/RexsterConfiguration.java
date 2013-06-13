@@ -82,18 +82,18 @@ public class RexsterConfiguration {
     public String getRestEndpoint() {
         return String.format("%s://%s:%s/graphs/%s/%s/%s",
                 this.getHttpProtocol(), this.getRestAddress(),
-                this.getRestPort(), this.getGraph(), FaunusRexsterExtension.EXTENSION_NAMESPACE,
-                FaunusRexsterExtension.EXTENSION_NAME);
+                this.getRestPort(), this.getGraph(), FaunusRexsterInputFormatExtension.EXTENSION_NAMESPACE,
+                FaunusRexsterInputFormatExtension.EXTENSION_NAME);
     }
 
     public String getRestStreamEndpoint() {
         return String.format("%s/%s",
-                this.getRestEndpoint(), FaunusRexsterExtension.EXTENSION_METHOD_STREAM);
+                this.getRestEndpoint(), FaunusRexsterInputFormatExtension.EXTENSION_METHOD_STREAM);
     }
 
     public String getRestCountEndpoint() {
         return String.format("%s/%s",
-                this.getRestEndpoint(), FaunusRexsterExtension.EXTENSION_METHOD_COUNT);
+                this.getRestEndpoint(), FaunusRexsterInputFormatExtension.EXTENSION_METHOD_COUNT);
     }
 
     private long getTrueVertexCount() {
@@ -102,7 +102,7 @@ public class RexsterConfiguration {
                     this.getRestCountEndpoint(), this.getAuthenticationHeaderValue());
             final JSONObject json = new JSONObject(convertStreamToString(connection.getInputStream()));
 
-            return json.optLong(FaunusRexsterExtension.EXTENSION_METHOD_COUNT);
+            return json.optLong(FaunusRexsterInputFormatExtension.EXTENSION_METHOD_COUNT);
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }

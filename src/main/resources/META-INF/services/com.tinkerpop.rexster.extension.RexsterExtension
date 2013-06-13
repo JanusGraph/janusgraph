@@ -1,1 +1,2 @@
-com.thinkaurelius.faunus.formats.rexster.FaunusRexsterExtension
+com.thinkaurelius.faunus.formats.rexster.FaunusRexsterInputFormatExtension
+com.thinkaurelius.faunus.tinkerpop.rexster.FaunusRexsterExecutorExtension

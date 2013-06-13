@@ -37,9 +37,9 @@ import java.util.UUID;
  *
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-@ExtensionNaming(namespace = FaunusRexsterExtension.EXTENSION_NAMESPACE, name = FaunusRexsterExtension.EXTENSION_NAME)
-public class FaunusRexsterExtension extends AbstractRexsterExtension {
-    private static final Logger logger = Logger.getLogger(FaunusRexsterExtension.class);
+@ExtensionNaming(namespace = FaunusRexsterInputFormatExtension.EXTENSION_NAMESPACE, name = FaunusRexsterInputFormatExtension.EXTENSION_NAME)
+public class FaunusRexsterInputFormatExtension extends AbstractRexsterExtension {
+    private static final Logger logger = Logger.getLogger(FaunusRexsterInputFormatExtension.class);
     private static final ElementIdHandler DEFAULT_ID_HANDLER = new DefaultElementIdHandler();
 
     private static final long WRITE_STATUS_EVERY = 10000;
