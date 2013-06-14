@@ -86,10 +86,10 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
     public <T extends Comparable<T>> TitanGraphQuery has(String s, T t, Compare compare) {
         return has(s,Cmp.convert(compare),t);
     }
-
+    
     @Override
-    public <T extends Comparable<T>> TitanGraphQuery has(String key, Compare compare, T value) {
-        return has(key, compare, (Object)value);
+    public GraphQuery has(String key, Object value) {
+        return has(key,Cmp.EQUAL,value);
     }
 
     @Override
@@ -146,20 +146,5 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
         log.debug("Best index for query [{}]: {}",query,bestIndex);
         if (bestIndex!=null) return ImmutableList.of(new StandardElementQuery(query,bestIndex));
         else return ImmutableList.of(query);
-    }
-
-    @Override
-    public GraphQuery has(String key, Object... values) {
-        throw new UnsupportedOperationException("has(key, values) not yet implemented");
-    }
-
-    @Override
-    public GraphQuery hasNot(String key, Object... values) {
-        throw new UnsupportedOperationException("hasNot(key, values) not yet implemented");
-    }
-
-    @Override
-    public GraphQuery limit(long skip, long take) {
-        throw new UnsupportedOperationException("limit(skip, take) not yet implemented");
     }
 }

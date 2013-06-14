@@ -6,8 +6,6 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.rexster.Tokens;
 import com.tinkerpop.rexster.protocol.EngineController;
 import com.tinkerpop.rexster.server.*;
-import com.tinkerpop.rexster.server.metrics.ReporterConfig;
-
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -15,11 +13,8 @@ import org.apache.commons.configuration.XMLConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Standalone Titan database with fronting Rexster server.
@@ -43,7 +38,7 @@ public class RexsterTitanServer {
     public static final int SHUTDOWN_PORT_VALUE = RexsterSettings.DEFAULT_SHUTDOWN_PORT;
 
     private final Configuration titanConfig;
-    private final XMLConfiguration rexsterConfig;
+    private final Configuration rexsterConfig;
 
     private RexProRexsterServer rexProServer = null;
     private HttpRexsterServer httpServer = null;
@@ -53,61 +48,32 @@ public class RexsterTitanServer {
         Preconditions.checkNotNull(rexsterConfig);
         Preconditions.checkNotNull(titanConfig);
 
+        final boolean isRexProConfigured = rexsterConfig.subset("rexpro").getKeys().hasNext();
+        final boolean isHttpConfigured = rexsterConfig.subset("http").getKeys().hasNext();
+
+        if (isRexProConfigured || !isHttpConfigured) {
+            rexProServer = new RexProRexsterServer(rexsterConfig);
+        }
+
+        if (isHttpConfigured || !isRexProConfigured) {
+            // turn off dog house...always
+            rexsterConfig.setProperty("http.enable-doghouse", false);
+            httpServer = new HttpRexsterServer(rexsterConfig);
+        }
+
         this.rexsterConfig = rexsterConfig;
         this.titanConfig = titanConfig;
     }
 
     public void start() {
+        EngineController.configure(-1, this.rexsterConfig.getString("script-engine-init", null));
         graph = TitanFactory.open(titanConfig);
-        
+
         final List<HierarchicalConfiguration> extensionConfigurations = ((XMLConfiguration) rexsterConfig).configurationsAt(Tokens.REXSTER_GRAPH_EXTENSIONS_PATH);
-        log.info("Extension Config: " + extensionConfigurations.toString());
+        log.info(extensionConfigurations.toString());
         final RexsterApplication ra = new TitanRexsterApplication(DEFAULT_GRAPH_NAME, graph, extensionConfigurations);
-
-        final RexsterProperties properties = new RexsterProperties(rexsterConfig);
-        configureScriptEngine(properties);
-
-        final ReporterConfig reporterConfig = new ReporterConfig(properties, ra.getMetricRegistry());
-        this.rexsterConfig.addProperty("http-reporter-enabled", reporterConfig.isHttpReporterEnabled());
-        this.rexsterConfig.addProperty("http-reporter-duration", reporterConfig.getDurationTimeUnitConversion());
-        this.rexsterConfig.addProperty("http-reporter-convert", reporterConfig.getRateTimeUnitConversion());
-        reporterConfig.enable();
-
-        final boolean isRexProConfigured = rexsterConfig.subset("rexpro").getKeys().hasNext();
-        final boolean isHttpConfigured = rexsterConfig.subset("http").getKeys().hasNext();
-        
-        if (isRexProConfigured || !isHttpConfigured) {
-            rexProServer = new RexProRexsterServer(rexsterConfig);
-            startRexProServer(ra);
-        }
-
-        if (isHttpConfigured || !isRexProConfigured) {
-            // turn off dog house...always
-            this.rexsterConfig.setProperty("http.enable-doghouse", false);
-            httpServer = new HttpRexsterServer(rexsterConfig);
-            startHttpServer(ra);
-        }
-    }
-
-    private void configureScriptEngine(final RexsterProperties properties) {
-        // the EngineController needs to be configured statically before requests start serving so that it can
-        // properly construct ScriptEngine objects with the correct reset policy.
-        final int scriptEngineThreshold = properties.getScriptEngineResetThreshold();
-        final String scriptEngineInitFile = properties.getScriptEngineInitFile();
-
-        // allow scriptengines to be configured so that folks can drop in different gremlin flavors.
-        final List configuredScriptEngineNames = properties.getConfiguredScriptEngines();
-        if (configuredScriptEngineNames == null || configuredScriptEngineNames.isEmpty()) {
-            // configure to default with gremlin-groovy
-            log.info("No configuration for <script-engines>.  Using gremlin-groovy by default.");
-            EngineController.configure(scriptEngineThreshold, scriptEngineInitFile);
-        } else {
-            EngineController.configure(scriptEngineThreshold, scriptEngineInitFile, new HashSet<String>(configuredScriptEngineNames));
-        }
-
-        log.info(String.format(
-                "Gremlin ScriptEngine configured to reset every [%s] requests. Set to -1 to never reset.",
-                scriptEngineThreshold));
+        startRexProServer(ra);
+        startHttpServer(ra);
     }
 
     public void startDaemon() {

@@ -207,12 +207,6 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
         return addConstraint(type,Cmp.EQUAL,value);
     }
 
-
-    @Override
-    public <T extends Comparable<T>> VertexCentricQueryBuilder has(String key, Compare compare, T value) {
-        return addConstraint(key,Cmp.convert(compare),value);
-    }
-
     @Override
     public <T extends Comparable<T>> VertexCentricQueryBuilder interval(TitanKey key, T start, T end) {
         return interval(key.getName(),start,end);
@@ -286,20 +280,5 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
         Preconditions.checkArgument(limit<Integer.MAX_VALUE,"Limit is too large [%s]",limit);
         this.limit = (int)limit;
         return this;
-    }
-
-    @Override
-    public VertexQuery has(String key, Object... values) {
-        throw new UnsupportedOperationException("has(key, values) not yet implemented");
-    }
-
-    @Override
-    public VertexQuery hasNot(String key, Object... values) {
-        throw new UnsupportedOperationException("hasNot(key, values) not yet implemented");
-    }
-
-    @Override
-    public VertexQuery limit(long skip, long take) {
-        throw new UnsupportedOperationException("limit(skip, take) not yet implemented");
     }
 }
