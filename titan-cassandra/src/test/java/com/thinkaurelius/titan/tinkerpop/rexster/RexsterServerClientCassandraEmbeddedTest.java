@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.CassandraStorageSetup;
 
 public class RexsterServerClientCassandraEmbeddedTest extends RexsterServerClientTest {
     public RexsterServerClientCassandraEmbeddedTest() {
-        super(CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration());
+        super(CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration(RexsterServerClientCassandraEmbeddedTest.class.getSimpleName()));
     }
 
 }

@@ -8,7 +8,7 @@ import org.junit.BeforeClass;
 public class InternalCassandraGraphConcurrentTest extends TitanGraphConcurrentTest {
 
     public InternalCassandraGraphConcurrentTest() {
-        super(CassandraStorageSetup.getCassandraThriftGraphConfiguration());
+        super(CassandraStorageSetup.getCassandraThriftGraphConfiguration(InternalCassandraGraphConcurrentTest.class.getSimpleName()));
     }
 
     @BeforeClass

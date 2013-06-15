@@ -139,17 +139,125 @@
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.12.1</version>
+                <version>2.15</version>
+                <executions>
+                	<execution>
+                		<id>default-test</id>
+                		<phase>none</phase>
+                	</execution>
+                	<!--
+                	<execution>
+                		<id>bop-test</id>
+                		<goals>
+                			<goal>test</goal>
+                		</goals>
+                		<phase>test</phase>
+                        <configuration>
+                            <argLine>-Xms256m -Xmx756m -javaagent:${basedir}/target/jamm-${jamm.version}.jar</argLine>
+                            <includes>
+                            	<include>**/InternalCassandraEmbeddedKeyColumnValueTest.java</include>
+                            </includes>
+                            <parallel>classes</parallel>
+                            <threadCount>2</threadCount>
+                            <perCoreThreadCount>true</perCoreThreadCount>
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                            <forkMode>once</forkMode>
+                        </configuration>
+                	</execution>
+                	<execution>
+                		<id>rp-test</id>
+                		<goals>
+                			<goal>test</goal>
+                		</goals>
+                		<phase>test</phase>
+                        <configuration>
+                            <argLine>-Xms256m -Xmx756m -javaagent:${basedir}/target/jamm-${jamm.version}.jar</argLine>
+                            <includes>
+                            	<include>**/InternalCassandraThriftKeyColumnValueTest.java</include>
+                            </includes>
+                            <parallel>classes</parallel>
+                            <threadCount>2</threadCount>
+                            <perCoreThreadCount>true</perCoreThreadCount>
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                            <forkMode>once</forkMode>
+                        </configuration>
+                	</execution>
+                	-->
+                	<execution>
+                		<id>bop-test</id>
+                		<goals>
+                			<goal>test</goal>
+                		</goals>
+                		<phase>test</phase>
+                        <configuration>
+                            <argLine>-Xms256m -Xmx756m -javaagent:${basedir}/target/jamm-${jamm.version}.jar</argLine>
+                            <includes>
+                            	<include>**/InternalCassandraEmbeddedKeyColumnValueTest.java</include>
+                            	<include>**/InternalCassandraEmbeddedLockKeyColumnValueStoreTest.java</include>
+                            	<include>**/InternalCassandraEmbeddedMultiWriteKeyColumnValueStoreTest.java</include>
+                            	<include>**/InternalCassandraEmbeddedGraphConcurrentTest.java</include>
+                            	<include>**/InternalCassandraEmbeddedGraphPerformanceTest.java</include>
+                            	<include>**/InternalCassandraEmbeddedGraphTest.java</include>
+                            	<include>**/RexsterServerClientCassandraEmbeddedTest.java</include>
+                            </includes>
+                            <excludes>
+                            	<exclude>**/External*.java</exclude>
+                                <exclude>**/*PerformanceTest.java</exclude>
+                                <exclude>**/*ConcurrentTest.java</exclude>
+                            </excludes>
+                            <parallel>classes</parallel>
+                            <threadCount>2</threadCount>
+                            <perCoreThreadCount>true</perCoreThreadCount>
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                            <forkMode>once</forkMode>
+                        </configuration>
+                	</execution>
+                	<execution>
+                		<id>rp-test</id>
+                		<goals>
+                			<goal>test</goal>
+                		</goals>
+                		<phase>test</phase>
+                        <configuration>
+                            <argLine>-Xms256m -Xmx756m -javaagent:${basedir}/target/jamm-${jamm.version}.jar</argLine>
+                            <excludes>
+                            	<exclude>**/InternalCassandraEmbeddedKeyColumnValueTest.java</exclude>
+                            	<exclude>**/InternalCassandraEmbeddedLockKeyColumnValueStoreTest.java</exclude>
+                            	<exclude>**/InternalCassandraEmbeddedMultiWriteKeyColumnValueStoreTest.java</exclude>
+                            	<exclude>**/InternalCassandraEmbeddedGraphConcurrentTest.java</exclude>
+                            	<exclude>**/InternalCassandraEmbeddedGraphPerformanceTest.java</exclude>
+                            	<exclude>**/InternalCassandraEmbeddedGraphTest.java</exclude>
+                            	<exclude>**/RexsterServerClientCassandraEmbeddedTest.java</exclude>
+                            	<exclude>**/External*.java</exclude>
+                                <exclude>**/*PerformanceTest.java</exclude>
+                                <exclude>**/*ConcurrentTest.java</exclude>
+                            </excludes>
+                            <parallel>classes</parallel>
+                            <threadCount>2</threadCount>
+                            <perCoreThreadCount>true</perCoreThreadCount>
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                            <forkMode>once</forkMode>
+                        </configuration>
+                	</execution>
+                </executions>
+                <!--
                 <configuration>
                     <argLine>-Xms256m -Xmx756m -javaagent:${basedir}/target/jamm-${jamm.version}.jar</argLine>
                     <excludes>
                         <exclude>**/External*.java</exclude>
-                        <!-- Excluded because these take too long to run and require a lot of memory - see comprehensive profile -->
+                        --><!-- Excluded because these take too long to run and require a lot of memory - see comprehensive profile --><!-- 
                         <exclude>**/*PerformanceTest.java</exclude>
                         <exclude>**/*ConcurrentTest.java</exclude>
                     </excludes>
-                    <forkMode>always</forkMode>
+                    <parallel>classes</parallel>
+                    <threadCount>4</threadCount>
+                    <perCoreThreadCount>false</perCoreThreadCount>
                 </configuration>
+                -->
             </plugin>
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>

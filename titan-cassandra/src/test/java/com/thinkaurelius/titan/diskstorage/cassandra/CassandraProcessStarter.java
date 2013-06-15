@@ -27,7 +27,7 @@ public class CassandraProcessStarter {
     private CassandraOutputReader outputReader;
     private Thread cassandraKiller;
     private boolean delete = true;
-
+    
     private final ExecutorService cassandraOutputLogger =
             Executors.newSingleThreadExecutor();
     private boolean logCassandraOutput = true;
@@ -36,6 +36,8 @@ public class CassandraProcessStarter {
     private final String cassandraDataDir;
     private final String cassandraInclude;
 
+    private static boolean isEmbeddedRunning = false;
+    
     private static final String cassandraCommand = "cassandra";
     private static final int port =
             AbstractCassandraStoreManager.PORT_DEFAULT;
@@ -214,7 +216,12 @@ public class CassandraProcessStarter {
         }
     }
 
-    public static void startCleanEmbedded(String cassandraYamlPath) {
+    public static synchronized void startCleanEmbedded(String cassandraYamlPath) {
+        if (isEmbeddedRunning) {
+            log.debug("Already started embedded cassandra; subsequent attempts to start do nothing");
+            return;
+        }
+        
         try {
             FileUtils.deleteDirectory(new File(CassandraStorageSetup.CASSANDRA_TEMP_PATH + File.separator + "workdir"));
         } catch (IOException e) {
@@ -222,6 +229,8 @@ public class CassandraProcessStarter {
         }
 
         CassandraDaemonWrapper.start(cassandraYamlPath);
+        
+        isEmbeddedRunning = true;
     }
 }
 

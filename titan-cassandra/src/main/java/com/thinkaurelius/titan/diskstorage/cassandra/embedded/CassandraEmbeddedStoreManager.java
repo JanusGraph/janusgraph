@@ -298,6 +298,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
         try {
             MigrationManager.announceNewKeyspace(ksm);
+            log.debug("Created keyspace {}", keyspaceName);
         } catch (ConfigurationException e) {
             throw new PermanentStorageException("Failed to create keyspace " + keyspaceName, e);
         }
