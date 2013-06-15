@@ -12,6 +12,8 @@
     <url>http://thinkaurelius.github.com/titan/</url>
     <properties>
         <astyanax.version>1.56.37</astyanax.version>
+        <jamm.version>0.2.5</jamm.version>
+        <jamm.group>com.github.stephenc</jamm.group>
     </properties>
     <!-- Libraries -->
     <dependencies>
@@ -139,7 +141,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.12.1</version>
                 <configuration>
-                    <argLine>-Xms256m -Xmx756m</argLine>
+                    <argLine>-Xms256m -Xmx756m -javaagent:${basedir}/target/jamm-${jamm.version}.jar</argLine>
                     <excludes>
                         <exclude>**/External*.java</exclude>
                         <!-- Excluded because these take too long to run and require a lot of memory - see comprehensive profile -->
@@ -202,6 +204,29 @@
                         <defaultDirectoryMode>493</defaultDirectoryMode>
                     </archiverConfig>
                 </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.8</version>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${jamm.group}</groupId>
+                                    <artifactId>jamm</artifactId>
+                                    <version>${jamm.version}</version>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
