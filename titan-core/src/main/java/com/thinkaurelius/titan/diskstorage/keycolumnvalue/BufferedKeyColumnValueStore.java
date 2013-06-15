@@ -66,6 +66,16 @@ public class BufferedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
+    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
+        return store.getKeys(keyQuery, txh);
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
+        return store.getKeys(columnQuery, txh);
+    }
+
+    @Override
     public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         return store.getLocalKeyPartition();
     }

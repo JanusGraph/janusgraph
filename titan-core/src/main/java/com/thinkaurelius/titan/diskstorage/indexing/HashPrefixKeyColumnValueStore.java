@@ -52,7 +52,7 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-    private final StaticBuffer truncateKey(StaticBuffer key) {
+    private StaticBuffer truncateKey(StaticBuffer key) {
         return key.subrange(numPrefixBytes,key.length()-numPrefixBytes);
     }
 
@@ -111,6 +111,16 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
+    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
+        return new PrefixedRowIterator(store.getKeys(keyQuery, txh));
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
+        return new PrefixedRowIterator(store.getKeys(columnQuery, txh));
+    }
+
+    @Override
     public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         throw new UnsupportedOperationException();
     }
@@ -123,5 +133,33 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public void close() throws StorageException {
         store.close();
+    }
+
+    private class PrefixedRowIterator implements KeyIterator {
+        private final KeyIterator rows;
+
+        public PrefixedRowIterator(KeyIterator rows) {
+            this.rows = rows;
+        }
+
+        @Override
+        public RecordIterator<Entry> getEntries() {
+            return rows.getEntries();
+        }
+
+        @Override
+        public boolean hasNext() throws StorageException {
+            return rows.hasNext();
+        }
+
+        @Override
+        public StaticBuffer next() throws StorageException {
+            return truncateKey(rows.next());
+        }
+
+        @Override
+        public void close() throws StorageException {
+            rows.close();
+        }
     }
 }

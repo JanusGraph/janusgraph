@@ -148,6 +148,16 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
     }
 
     @Override
+    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
+        return dataStore.getKeys(keyQuery, txh);
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
+        return dataStore.getKeys(columnQuery, txh);
+    }
+
+    @Override
     public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         return dataStore.getLocalKeyPartition();
     }

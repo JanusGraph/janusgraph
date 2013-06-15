@@ -88,6 +88,16 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
     }
 
     @Override
+    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         return store.getLocalKeyPartition();
     }
