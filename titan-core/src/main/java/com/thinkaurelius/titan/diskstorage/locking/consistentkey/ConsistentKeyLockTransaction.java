@@ -337,7 +337,9 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 
             // Determine the timestamp and rid of the earliest still-valid lock claim
             Long earliestNS = null;
+            Long latestNS = null;
             byte[] earliestRid = null;
+            Set<StaticBuffer> ridsSeen = new HashSet<StaticBuffer>();
 
             log.trace("Retrieved {} total lock claim(s) when verifying {}", entries.size(), lc);
 
@@ -347,12 +349,19 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
                 byte[] curRid = new byte[bb.length()-8];
                 for (int i=8;i<bb.length();i++) curRid[i-8]=bb.getByte(i);
 
+                StaticBuffer curRidBuf = new StaticArrayBuffer(curRid);
+                ridsSeen.add(curRidBuf);
+                
                 // Ignore expired lock claims
                 if (tsNS < now - (backer.getLockExpireMS() * MILLION)) {
                     log.warn("Discarded expired lock with timestamp {}", tsNS);
                     continue;
                 }
-
+                
+                if (null == latestNS || tsNS > latestNS) {
+                    latestNS = tsNS;
+                }
+                
                 if (null == earliestNS || tsNS < earliestNS) {
                     // Appoint new winner
                     earliestNS = tsNS;
@@ -361,7 +370,6 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
                     // Timestamp tie: break with column
                     // (Column must be unique because it contains Rid)
                     StaticBuffer earliestRidBuf = new StaticArrayBuffer(earliestRid);
-                    StaticBuffer curRidBuf = new StaticArrayBuffer(curRid);
 
                     int i = curRidBuf.compareTo(earliestRidBuf);
 
@@ -378,6 +386,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 
             // Check: did our Rid win?
             byte rid[] = backer.getRid();
+            StaticBuffer myRidBuf = new StaticArrayBuffer(rid);
             if (!Arrays.equals(earliestRid, rid)) {
                 log.trace("My rid={} lost to earlier rid={},ts={}",
                         new Object[]{
@@ -387,21 +396,27 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
                 throw new PermanentLockingException("Lock could not be acquired because it is held by a remote transaction [" + lc + "]");
             }
             
+            // Check timestamp
             if (earliestNS != lc.getTimestamp()) {
-                log.warn("Timestamp mismatch: expected={}, actual={}", lc.getTimestamp(), earliestNS);
-                /*
-                 * This is probably evidence of a prior attempt to write a lock
-                 * that the client perceived as a failure but which in fact
-                 * succeeded.
-                 * 
-                 * Since the Rid is ours, we could theoretically delete the lock
-                 * and even attempt to obtain it all over again, but that
-                 * implies significant refactoring.
-                 * 
-                 * Eventually, the earlier stale lock claim will expire and
-                 * progress will resume.
-                 */
-                throw new PermanentLockingException("Lock could not be acquired due to timestamp mismatch [" + lc + "]");
+                if (1 == ridsSeen.size() && lc.getTimestamp() == latestNS && ridsSeen.iterator().next().equals(myRidBuf)) {
+                    log.debug("Ignoring prior unexpired lock claim from own rid ({}) with timestamp {} (expected {})",
+                            new Object[] { Hex.encodeHexString(earliestRid), earliestNS, latestNS } );
+                } else {
+                    log.warn("Timestamp mismatch: expected={}, actual={}", lc.getTimestamp(), earliestNS);
+                    /*
+                     * This is probably evidence of a prior attempt to write a lock
+                     * that the client perceived as a failure but which in fact
+                     * succeeded.
+                     * 
+                     * Since the Rid is ours, we could theoretically delete the lock
+                     * and even attempt to obtain it all over again, but that
+                     * implies significant refactoring.
+                     * 
+                     * Eventually, the earlier stale lock claim will expire and
+                     * progress will resume.
+                     */
+                    throw new PermanentLockingException("Lock could not be acquired due to timestamp mismatch [" + lc + "]");
+                }
             }
 
             // Check expectedValue
