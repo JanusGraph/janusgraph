@@ -81,7 +81,25 @@ public class LockClaim {
     }
 
     public StaticBuffer getLockCol(long ts, byte[] rid) {
-        if (null != lockCol) return lockCol;
+        /*
+         * ConsistentKeyLockTransaction#writeBlindLockClaim(...) calls this
+         * method with a current timestamp and writes the result to storage. If
+         * said write takes longer than the configured lock wait time, then
+         * writeBlindLockClaim(...) deletes the column, generates another
+         * current timestamp, calls this method again with the updated
+         * timestamp, and writes the resulting column. If this method returns a
+         * stale cached column containing the old timestamp, then lock
+         * verification will later fail with a "timestamp mismatch" exception
+         * 
+         * Either writeBlindLockClaim(...) must be modified to use the same
+         * timestamp for all attempts to write any given lock (even if some
+         * writes take too long and have to be retried), or this method must not
+         * cache the return value irrespective of the ts argument.
+         * 
+         * I'm taking the latter approach here for the stable branch because
+         * it's a one-liner change.
+         */
+        //if (null != lockCol) return lockCol;
 
         WriteBuffer b = new WriteByteBuffer(rid.length + 8);
         b.putLong(ts);
