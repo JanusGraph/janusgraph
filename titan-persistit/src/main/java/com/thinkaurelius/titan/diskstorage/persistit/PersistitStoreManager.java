@@ -1,37 +1,38 @@
 package com.thinkaurelius.titan.diskstorage.persistit;
 
-import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.util.system.IOUtils;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
-
-import com.persistit.*;
-import com.persistit.exception.PersistitException;
-
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
+
+import com.persistit.Exchange;
+import com.persistit.Persistit;
+import com.persistit.Volume;
+import com.persistit.exception.PersistitException;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.util.system.IOUtils;
+
 /**
  * @todo: confirm that the initial sessions created on store startup are not hanging around forever
  *
  */
-public class PersistitStoreManager implements OrderedKeyValueStoreManager {
+public class PersistitStoreManager extends LocalStoreManager implements OrderedKeyValueStoreManager {
 
     private final Map<String, PersistitKeyValueStore> stores;
+    private final FileStorageConfiguration storageConfig;
     private static final StoreFeatures features = new StoreFeatures();
     final static String VOLUME_NAME = "titan";
     final static String BUFFER_COUNT_KEY = "buffercount";
@@ -51,22 +52,18 @@ public class PersistitStoreManager implements OrderedKeyValueStoreManager {
     }
 
     private Persistit db;
-    private Exchange exchange;
-
-    private Configuration config;
     private Properties properties;
-    private  File directory;
 
     public PersistitStoreManager(Configuration configuration) throws StorageException {
+        super(configuration);
+        
         stores = new HashMap<String, PersistitKeyValueStore>();
 
-        config = cloneConfig(configuration);
         // read config and setup
+        String datapath = configuration.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
+        Integer bufferCount = configuration.getInt(BUFFER_COUNT_KEY, BUFFER_COUNT_DEFAULT);
+        
         properties = new Properties();
-        String datapath = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
-        Integer bufferCount = config.getInt(BUFFER_COUNT_KEY, BUFFER_COUNT_DEFAULT);
-        Preconditions.checkArgument(datapath != null, "Need to specify storage directory");
-        directory = getOrCreateDataDirectory(datapath);
         properties.put("datapath", datapath);
 
         // On pathSeparator is ":" on 'Nix systems - File.separator is what is intended.
@@ -85,9 +82,8 @@ public class PersistitStoreManager implements OrderedKeyValueStoreManager {
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex.toString());
         }
-
-        //do some additional config setup
-        config.addProperty(Backend.TITAN_BACKEND_VERSION, "0.3.1");
+        
+        storageConfig = new FileStorageConfiguration(directory);
     }
 
     Volume getVolume() {
@@ -117,28 +113,6 @@ public class PersistitStoreManager implements OrderedKeyValueStoreManager {
             throw new IllegalArgumentException("Tried to remove an unkown database from the storage manager");
         }
         stores.remove(db.getName());
-    }
-
-    private static File getOrCreateDataDirectory(String location) throws StorageException {
-        File storageDir = new File(location);
-
-        if (storageDir.exists() && storageDir.isFile())
-            throw new PermanentStorageException(String.format("%s exists but is a file.", location));
-
-        if (!storageDir.exists() && !storageDir.mkdirs())
-            throw new PermanentStorageException(String.format("Failed to create directory %s for BerkleyDB storage.", location));
-
-        return storageDir;
-    }
-
-    private static Configuration cloneConfig(Configuration src) {
-        BaseConfiguration dst = new BaseConfiguration();
-        Iterator<String> keys = src.getKeys();
-        while (keys.hasNext()) {
-            String k = keys.next();
-            dst.addProperty(k, src.getProperty(k));
-        }
-        return dst;
     }
 
     @Override
@@ -203,12 +177,11 @@ public class PersistitStoreManager implements OrderedKeyValueStoreManager {
 
     @Override
     public String getConfigurationProperty(final String key) throws StorageException {
-        return config.getString(key);
+        return storageConfig.getConfigurationProperty(key);
     }
 
     @Override
     public void setConfigurationProperty(final String key, final String value) throws StorageException {
-        //@todo: this
-        throw new PermanentStorageException("write this part");
+        storageConfig.setConfigurationProperty(key,value);
     }
 }
