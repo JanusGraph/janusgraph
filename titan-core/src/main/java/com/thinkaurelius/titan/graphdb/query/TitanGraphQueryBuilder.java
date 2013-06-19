@@ -18,6 +18,7 @@ import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.stats.ObjectAccumulator;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,15 +82,14 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
         return this;
     }
 
-
-    @Override
-    public TitanGraphQuery has(String s, Object o) {
-        return has(s, Cmp.EQUAL,o);
-    }
-
     @Override
     public <T extends Comparable<T>> TitanGraphQuery has(String s, T t, Compare compare) {
         return has(s,Cmp.convert(compare),t);
+    }
+    
+    @Override
+    public GraphQuery has(String key, Object value) {
+        return has(key,Cmp.EQUAL,value);
     }
 
     @Override

@@ -10,7 +10,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreMan
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import org.apache.cassandra.dht.IPartitioner;
-import org.apache.cassandra.thrift.CfDef;
 import org.apache.commons.configuration.Configuration;
 
 /**

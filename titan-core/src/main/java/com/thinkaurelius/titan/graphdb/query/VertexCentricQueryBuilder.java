@@ -14,12 +14,19 @@ import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.VertexQuery;
 
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 
 public class VertexCentricQueryBuilder implements TitanVertexQuery {
 
+    private static final Logger log = LoggerFactory.getLogger(VertexCentricQueryBuilder.class);
+    
     private final InternalVertex vertex;
 
     private Direction dir;
@@ -274,7 +281,4 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
         this.limit = (int)limit;
         return this;
     }
-
-
-
 }

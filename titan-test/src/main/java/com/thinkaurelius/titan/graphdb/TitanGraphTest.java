@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.graphdb;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
@@ -354,6 +356,59 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         }
     }
 
+    @Test
+    public void testMultivaluedVertexPropertyRemoval() {
+
+        /*
+         * Constant test data
+         * 
+         * The values list below must have at least two elements. The string
+         * literals were chosen arbitrarily and have no special significance.
+         */
+        final String pname = "foo";
+        final List<String> values = 
+                ImmutableList.of("four", "score", "and", "seven");
+        assertTrue("Values list must have multiple elements for this test to make sense",
+                2 <= values.size());
+
+        // Create property with name pname and a vertex
+        TitanKey key = makeNonUniqueStringPropertyKey(pname);
+        TitanVertex v = tx.addVertex();
+        
+        // Insert prop values
+        for (String s : values) {
+            v.addProperty(key, s);
+        }
+        
+        // Check that removeProperty(TitanKey) returns a valid value
+        String lastValueRemoved = v.removeProperty(key);
+        assertNotNull(lastValueRemoved);
+        assertTrue(values.contains(lastValueRemoved));
+        // Check that the properties were actually deleted from v
+        assertFalse(v.getProperties(key).iterator().hasNext());
+        
+        // Reopen database
+        clopen();
+        
+        // Retrieve and check our test vertex
+        v = tx.getVertex(v.getID());
+        key = tx.getPropertyKey(pname);
+        Iterable<TitanProperty> iter = v.getProperties(key);
+        assertFalse("Failed to durably remove multivalued property",
+                iter.iterator().hasNext());
+        
+        // Reinsert prop values
+        for (String s : values) {
+            v.addProperty(pname, s);
+        }
+        
+        // Test removeProperty(String) method on the vertex
+        lastValueRemoved = v.removeProperty(pname);
+        assertNotNull(lastValueRemoved);
+        assertTrue(values.contains(lastValueRemoved));
+        assertFalse(v.getProperties(pname).iterator().hasNext());
+    }
+    
     @Test
     public void testDate() throws ParseException {
         tx.makeType().name("birthday").unique(Direction.OUT).dataType(GregorianCalendar.class).makePropertyKey();
@@ -1139,6 +1194,56 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             }
             assertTrue(edgeIds.equals(nodeEdgeIds[i]));
         }
+    }
+    
+    @Test
+    public void testLimitWithMixedIndexCoverage() {
+        final String vt    = "vt";
+        final String fn    = "firstname";
+        final String user  = "user";
+        final String alice = "alice";
+        final String bob   = "bob";
+        
+        TitanKey vtk = makeStringPropertyKey(vt);
+        TitanKey fnk = makeUnindexedStringPropertyKey(fn);
+        
+        tx.commit();
+        tx = graph.newTransaction();
+        
+        vtk = tx.getPropertyKey(vt);
+        fnk = tx.getPropertyKey(fn);
+        
+        TitanVertex a = tx.addVertex();
+        a.setProperty(vtk, user);
+        a.setProperty(fnk, "alice");
+
+        TitanVertex b = tx.addVertex();
+        b.setProperty(vtk, user);
+        b.setProperty(fnk, "bob");
+        
+        Iterable<Vertex> i;
+        i = tx.query().has(vt, user).has(fn, bob).limit(1).vertices();
+        assertEquals(bob,  Iterators.getOnlyElement(i.iterator()).getProperty(fn));
+        assertEquals(user, Iterators.getOnlyElement(i.iterator()).getProperty(vt));
+        assertEquals(1,    Iterators.size(i.iterator()));
+        
+        i = tx.query().has(vt, user).has(fn, alice).limit(1).vertices();
+        assertEquals(alice, Iterators.getOnlyElement(i.iterator()).getProperty(fn));
+        assertEquals(user,  Iterators.getOnlyElement(i.iterator()).getProperty(vt));
+        assertEquals(1,     Iterators.size(i.iterator()));
+        
+        tx.commit();
+        tx = graph.newTransaction();
+        
+        i = tx.query().has(vt, user).has(fn, bob).limit(1).vertices();
+        assertEquals(bob,  Iterators.getOnlyElement(i.iterator()).getProperty(fn));
+        assertEquals(user, Iterators.getOnlyElement(i.iterator()).getProperty(vt));
+        assertEquals(1,    Iterators.size(i.iterator()));
+        
+        i = tx.query().has(vt, user).has(fn, alice).limit(1).vertices();
+        assertEquals(alice, Iterators.getOnlyElement(i.iterator()).getProperty(fn));
+        assertEquals(user,  Iterators.getOnlyElement(i.iterator()).getProperty(vt));
+        assertEquals(1,     Iterators.size(i.iterator()));
     }
 
 }

@@ -46,10 +46,10 @@ public abstract class TitanBlueprintsTest extends GraphTest {
 
     public void testQueryTestSuite() throws Exception {
         this.stopWatch();
-        doTestSuite(new QueryTitanTestSuite(this));
-        printTestPerformance("QueryTestSuite", this.stopWatch());
+        doTestSuite(new TitanGraphQueryTestSuite(this));
+        printTestPerformance("GraphQueryTestSuite", this.stopWatch());
     }
-
+    
     public void testKeyIndexableGraphTestSuite() throws Exception {
         this.stopWatch();                                   //Excluded test cases because Titan does not yet support dropping or modifying key indexes
         doTestSuite(new KeyIndexableGraphTestSuite(this), ImmutableSet.of("testAutoIndexKeyDroppingWithPersistence", "testReIndexingOfElements"));

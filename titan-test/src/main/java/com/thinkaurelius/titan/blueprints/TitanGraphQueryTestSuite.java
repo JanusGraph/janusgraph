@@ -10,10 +10,10 @@ import com.tinkerpop.blueprints.impls.GraphTest;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class QueryTitanTestSuite extends QueryTestSuite {
+public class TitanGraphQueryTestSuite extends QueryTestSuite {
 
 
-    public QueryTitanTestSuite(final GraphTest graphTest) {
+    public TitanGraphQueryTestSuite(final GraphTest graphTest) {
         super(graphTest);
     }
 
