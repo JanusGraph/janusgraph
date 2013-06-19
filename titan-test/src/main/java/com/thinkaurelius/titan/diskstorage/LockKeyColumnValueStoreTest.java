@@ -58,13 +58,22 @@ public abstract class LockKeyColumnValueStoreTest {
 
     private StaticBuffer k, c1, c2, v1, v2;
     
+    private final String concreteClassName; 
+    
     private static final Logger log =
     		LoggerFactory.getLogger(LockKeyColumnValueStoreTest.class);
+    
+    public LockKeyColumnValueStoreTest() {
+       concreteClassName = getClass().getSimpleName();
+    }
 
     @Before
     public void setUp() throws Exception {
-        for (int i = 0; i < concurrency; i++)
-            openStorageManager(i).clearStorage();
+        openStorageManager(0).clearStorage();
+        
+        for (int i = 0; i < concurrency; i++) {
+            LocalLockMediators.INSTANCE.clear(concreteClassName + i);
+        }
         
         open();
         k = KeyValueStoreUtil.getBuffer("key");
@@ -92,8 +101,9 @@ public abstract class LockKeyColumnValueStoreTest {
             }
 
             Configuration sc = new BaseConfiguration();
-            sc.addProperty(ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, "store" + i);
+            sc.addProperty(ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, concreteClassName + i);
             sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, (short) i);
+            sc.addProperty(GraphDatabaseConfiguration.LOCK_RETRY_COUNT, 10);
             sc.addProperty(GraphDatabaseConfiguration.LOCK_EXPIRE_MS, EXPIRE_MS);
             sc.addProperty(GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_KEY,50);
             sc.addProperty(GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS_KEY,100);
@@ -102,7 +112,7 @@ public abstract class LockKeyColumnValueStoreTest {
                 if (storeFeatures.supportsTransactions()) {
                     store[i] = new TransactionalLockStore(store[i]);
                 } else if (storeFeatures.supportsConsistentKeyOperations()) {
-                    ConsistentKeyLockConfiguration lockConfiguration = new ConsistentKeyLockConfiguration(sc, "store" + i);
+                    ConsistentKeyLockConfiguration lockConfiguration = new ConsistentKeyLockConfiguration(sc, concreteClassName + i);
                     store[i] = new ConsistentKeyLockStore(store[i], manager[i].openDatabase(dbName + "_lock_"), lockConfiguration);
                     for (int j = 0; j < numTx; j++)
                         tx[i][j] = new ConsistentKeyLockTransaction(tx[i][j], manager[i].beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
@@ -324,7 +334,6 @@ public abstract class LockKeyColumnValueStoreTest {
         final int lockOperationsPerThread = 100;
         final LockStressor[] ls = new LockStressor[concurrency];
         
-        
         for (int i = 0; i < concurrency; i++) {
             ls[i] = new LockStressor(manager[i], store[i], stressComplete,
                     lockOperationsPerThread, KeyColumnValueStoreUtil.longToByteBuffer(i));
@@ -519,7 +528,7 @@ public abstract class LockKeyColumnValueStoreTest {
         @Override
         public void run() {
             
-            // Catch & log exceptions, then pass to the starter thread
+            // Catch & log exceptions
             for (int opIndex = 0; opIndex < opCount; opIndex++) {
 
                 StoreTransaction tx = null;
@@ -530,7 +539,7 @@ public abstract class LockKeyColumnValueStoreTest {
                     tx.commit();
                     succeeded++;
                 } catch (Throwable t) {
-                    log.error("Unexpected locking-related exception", t);
+                    log.error("Unexpected locking-related exception on iteration " + (opIndex + 1) + "/" + opCount, t);
                 }
             }
 
