@@ -11,7 +11,7 @@ public class InternalCassandraEmbeddedLockKeyColumnValueStoreTest extends LockKe
 
     @Override
     public KeyColumnValueStoreManager openStorageManager(int idx) throws StorageException {
-        Configuration sc = CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(this.getClass().getSimpleName(), true);
+        Configuration sc = CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(getClass().getSimpleName(), true);
         return new CassandraEmbeddedStoreManager(sc);
     }
 }
