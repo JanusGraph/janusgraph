@@ -752,8 +752,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                 final StandardElementQuery indexQuery;
                 if (needsFilter) {
                     Preconditions.checkArgument(!newConds.isEmpty(),"Query has been assigned an index [%s] in error: %s",query.getIndex(),query);
-                    indexQuery = new StandardElementQuery(query.getType(),KeyAnd.of(newConds.toArray(new KeyAtom[newConds.size()])),query.getLimit(),index);
+                    log.debug("Removing backend limit on filtered query [{}]", query);
+                    indexQuery = new StandardElementQuery(query.getType(),KeyAnd.of(newConds.toArray(new KeyAtom[newConds.size()])),Query.NO_LIMIT,index);
                 } else {
+                    log.debug("Applying backend limit of {} index hits on unfiltered query [{}]", query.getLimit(), query);
                     indexQuery = query;
                 }
                 try {
@@ -776,12 +778,12 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                     throw new TitanException("Could not call index",e);
                 }
                 if (needsFilter) {
-                    iter = Iterators.filter(iter,new Predicate<TitanElement>() {
+                    iter = Iterators.limit(Iterators.filter(iter,new Predicate<TitanElement>() {
                         @Override
                         public boolean apply(@Nullable TitanElement element) {
                             return element!=null && !element.isRemoved() && !isDeleted(query,element) && query.matches(element);
                         }
-                    });
+                    }), query.getLimit());
                 } else {
                     iter = Iterators.filter(iter,new Predicate<TitanElement>() {
                         @Override
