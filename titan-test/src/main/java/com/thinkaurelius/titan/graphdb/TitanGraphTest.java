@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
@@ -1193,6 +1194,56 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             }
             assertTrue(edgeIds.equals(nodeEdgeIds[i]));
         }
+    }
+    
+    @Test
+    public void testLimitWithMixedIndexCoverage() {
+        final String vt    = "vt";
+        final String fn    = "firstname";
+        final String user  = "user";
+        final String alice = "alice";
+        final String bob   = "bob";
+        
+        TitanKey vtk = makeStringPropertyKey(vt);
+        TitanKey fnk = makeUnindexedStringPropertyKey(fn);
+        
+        tx.commit();
+        tx = graph.newTransaction();
+        
+        vtk = tx.getPropertyKey(vt);
+        fnk = tx.getPropertyKey(fn);
+        
+        TitanVertex a = tx.addVertex();
+        a.setProperty(vtk, user);
+        a.setProperty(fnk, "alice");
+
+        TitanVertex b = tx.addVertex();
+        b.setProperty(vtk, user);
+        b.setProperty(fnk, "bob");
+        
+        Iterable<Vertex> i;
+        i = tx.query().has(vt, user).has(fn, bob).limit(1).vertices();
+        assertEquals(bob,  Iterators.getOnlyElement(i.iterator()).getProperty(fn));
+        assertEquals(user, Iterators.getOnlyElement(i.iterator()).getProperty(vt));
+        assertEquals(1,    Iterators.size(i.iterator()));
+        
+        i = tx.query().has(vt, user).has(fn, alice).limit(1).vertices();
+        assertEquals(alice, Iterators.getOnlyElement(i.iterator()).getProperty(fn));
+        assertEquals(user,  Iterators.getOnlyElement(i.iterator()).getProperty(vt));
+        assertEquals(1,     Iterators.size(i.iterator()));
+        
+        tx.commit();
+        tx = graph.newTransaction();
+        
+        i = tx.query().has(vt, user).has(fn, bob).limit(1).vertices();
+        assertEquals(bob,  Iterators.getOnlyElement(i.iterator()).getProperty(fn));
+        assertEquals(user, Iterators.getOnlyElement(i.iterator()).getProperty(vt));
+        assertEquals(1,    Iterators.size(i.iterator()));
+        
+        i = tx.query().has(vt, user).has(fn, alice).limit(1).vertices();
+        assertEquals(alice, Iterators.getOnlyElement(i.iterator()).getProperty(fn));
+        assertEquals(user,  Iterators.getOnlyElement(i.iterator()).getProperty(vt));
+        assertEquals(1,     Iterators.size(i.iterator()));
     }
 
 }

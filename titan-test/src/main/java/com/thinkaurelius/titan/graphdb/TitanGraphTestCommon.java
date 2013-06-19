@@ -102,6 +102,11 @@ public abstract class TitanGraphTestCommon {
                 makePropertyKey();
     }
 
+    public TitanKey makeUnindexedStringPropertyKey(String name) {
+        return tx.makeType().name(name).unique(Direction.OUT).
+                dataType(String.class).
+                makePropertyKey();
+    }
 
     public TitanKey makeIntegerUIDPropertyKey(String name) {
         return makeIntegerUIDPropertyKey(name, TypeGroup.DEFAULT_GROUP);
