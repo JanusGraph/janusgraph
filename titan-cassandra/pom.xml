@@ -145,46 +145,6 @@
                 		<id>default-test</id>
                 		<phase>none</phase>
                 	</execution>
-                	<!--
-                	<execution>
-                		<id>bop-test</id>
-                		<goals>
-                			<goal>test</goal>
-                		</goals>
-                		<phase>test</phase>
-                        <configuration>
-                            <argLine>-Xms256m -Xmx756m -javaagent:${basedir}/target/jamm-${jamm.version}.jar</argLine>
-                            <includes>
-                            	<include>**/InternalCassandraEmbeddedKeyColumnValueTest.java</include>
-                            </includes>
-                            <parallel>classes</parallel>
-                            <threadCount>2</threadCount>
-                            <perCoreThreadCount>true</perCoreThreadCount>
-                            <forkCount>1</forkCount>
-                            <reuseForks>false</reuseForks>
-                            <forkMode>once</forkMode>
-                        </configuration>
-                	</execution>
-                	<execution>
-                		<id>rp-test</id>
-                		<goals>
-                			<goal>test</goal>
-                		</goals>
-                		<phase>test</phase>
-                        <configuration>
-                            <argLine>-Xms256m -Xmx756m -javaagent:${basedir}/target/jamm-${jamm.version}.jar</argLine>
-                            <includes>
-                            	<include>**/InternalCassandraThriftKeyColumnValueTest.java</include>
-                            </includes>
-                            <parallel>classes</parallel>
-                            <threadCount>2</threadCount>
-                            <perCoreThreadCount>true</perCoreThreadCount>
-                            <forkCount>1</forkCount>
-                            <reuseForks>false</reuseForks>
-                            <forkMode>once</forkMode>
-                        </configuration>
-                	</execution>
-                	-->
                 	<execution>
                 		<id>bop-test</id>
                 		<goals>
@@ -210,9 +170,6 @@
                             <parallel>classes</parallel>
                             <threadCount>2</threadCount>
                             <perCoreThreadCount>true</perCoreThreadCount>
-                            <forkCount>1</forkCount>
-                            <reuseForks>false</reuseForks>
-                            <forkMode>once</forkMode>
                         </configuration>
                 	</execution>
                 	<execution>
@@ -238,9 +195,6 @@
                             <parallel>classes</parallel>
                             <threadCount>2</threadCount>
                             <perCoreThreadCount>true</perCoreThreadCount>
-                            <forkCount>1</forkCount>
-                            <reuseForks>false</reuseForks>
-                            <forkMode>once</forkMode>
                         </configuration>
                 	</execution>
                 </executions>
