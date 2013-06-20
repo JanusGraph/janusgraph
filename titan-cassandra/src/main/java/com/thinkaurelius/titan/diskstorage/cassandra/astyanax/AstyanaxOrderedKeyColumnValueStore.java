@@ -189,7 +189,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        return getKeys(null, txh);
+        return getKeys((SliceQuery) null, txh);
     }
 
     @Override
