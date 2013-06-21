@@ -181,20 +181,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             ByteBuffer sliceEndBB = query.getSliceEnd().asByteBuffer();
 
             for (ByteBuffer key : rows.keySet()) {
-                List<Entry> entries = new ArrayList<Entry>();
-
-                for (ColumnOrSuperColumn r : rows.get(key)) {
-                    Column c = r.getColumn();
-
-                    // Skip column if it is equal to columnEnd because columnEnd is exclusive
-                    if (sliceEndBB.equals(c.bufferForName())) {
-                        continue;
-                    }
-
-                    entries.add(new ByteBufferEntry(c.bufferForName(), c.bufferForValue()));
-                }
-
-                results.put(key.duplicate(), entries);
+                results.put(key.duplicate(), excludeLastColumn(rows.get(key), sliceEndBB));
             }
 
             return results;
@@ -203,6 +190,22 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         } finally {
             pool.returnObjectUnsafe(keyspace, conn);
         }
+    }
+
+    private static List<Entry> excludeLastColumn(List<ColumnOrSuperColumn> row, ByteBuffer lastColumn) {
+        List<Entry> entries = new ArrayList<Entry>();
+
+        for (ColumnOrSuperColumn r : row) {
+            Column c = r.getColumn();
+
+            // Skip column if it is equal to columnEnd because columnEnd is exclusive
+            if (lastColumn.equals(c.bufferForName()))
+                break;
+
+            entries.add(new ByteBufferEntry(c.bufferForName(), c.bufferForValue()));
+        }
+
+        return entries;
     }
 
     @Override
@@ -365,10 +368,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             List<KeySlice> slices =
                     client.get_range_slices(new ColumnParent(columnFamily),
                             new SlicePredicate()
-                                    .setSlice_range(new SliceRange()
-                                            .setStart(ArrayUtils.EMPTY_BYTE_ARRAY)
-                                            .setFinish(ArrayUtils.EMPTY_BYTE_ARRAY)
-                                            .setCount(5)),
+                                    .setSlice_range(sliceRange),
                             keyRange,
                             ConsistencyLevel.QUORUM);
 
@@ -466,21 +466,19 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             ensureOpen();
 
             return new RecordIterator<Entry>() {
-                final Iterator<ColumnOrSuperColumn> columns = currentRow.getColumnsIterator();
+                final Iterator<Entry> columns = excludeLastColumn(currentRow.getColumns(),
+                                                                  sliceQuery.getSliceEnd().asByteBuffer()).iterator();
 
                 @Override
                 public boolean hasNext() throws StorageException {
                     ensureOpen();
-
                     return columns.hasNext();
                 }
 
                 @Override
                 public Entry next() throws StorageException {
                     ensureOpen();
-
-                    Column column = columns.next().getColumn();
-                    return new ByteBufferEntry(column.bufferForName(), column.bufferForValue());
+                    return columns.next();
                 }
 
                 @Override

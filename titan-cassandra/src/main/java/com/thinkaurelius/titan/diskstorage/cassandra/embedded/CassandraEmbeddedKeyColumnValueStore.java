@@ -445,29 +445,33 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         public RecordIterator<Entry> getEntries() {
             ensureOpen();
 
-            return new RecordIterator<Entry>() {
-                final Iterator<IColumn> columns = currentRow.cf.getSortedColumns().iterator();
+            if (sliceQuery == null)
+                throw new IllegalStateException("getEntries() requires SliceQuery to be set.");
 
-                @Override
-                public boolean hasNext() throws StorageException {
-                    ensureOpen();
+            try {
+                return new RecordIterator<Entry>() {
+                    final Iterator<Entry> columns = cfToEntries(currentRow.cf, sliceQuery.getSliceEnd()).iterator();
 
-                    return columns.hasNext();
-                }
+                    @Override
+                    public boolean hasNext() throws StorageException {
+                        ensureOpen();
+                        return columns.hasNext();
+                    }
 
-                @Override
-                public Entry next() throws StorageException {
-                    ensureOpen();
+                    @Override
+                    public Entry next() throws StorageException {
+                        ensureOpen();
+                        return columns.next();
+                    }
 
-                    IColumn column = columns.next();
-                    return new ByteBufferEntry(column.name().duplicate(), column.value().duplicate());
-                }
-
-                @Override
-                public void close() throws StorageException {
-                    isClosed = true;
-                }
-            };
+                    @Override
+                    public void close() throws StorageException {
+                        isClosed = true;
+                    }
+                };
+            } catch (StorageException e) {
+                throw new IllegalStateException(e);
+            }
         }
 
         private void ensureOpen() {

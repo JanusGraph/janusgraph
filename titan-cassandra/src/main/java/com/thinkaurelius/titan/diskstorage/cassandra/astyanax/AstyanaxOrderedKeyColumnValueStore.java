@@ -145,32 +145,35 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
 
         for (Row<ByteBuffer, ByteBuffer> row : rows) {
             assert result.get(row.getKey()) == null;
-
-            int i = 0;
-            List<Entry> entries = new ArrayList<Entry>();
-
-            for (Column<ByteBuffer> c : row.getColumns()) {
-                ByteBuffer colName = c.getName();
-
-                // Cassandra treats the end of a slice column range inclusively, but
-                // this method's contract promises to treat it exclusively. Check
-                // for the final column in the Cassandra results and skip it if
-                // found.
-                if (colName.equals(lastColumn)) {
-                    break;
-                }
-
-                entries.add(new ByteBufferEntry(colName, c.getByteBufferValue()));
-
-                if (++i == limit) {
-                    break;
-                }
-            }
-
-            result.put(row.getKey().duplicate(), entries);
+            result.put(row.getKey().duplicate(), excludeLastColumn(row, lastColumn, limit));
         }
 
         return result;
+    }
+
+    private static List<Entry> excludeLastColumn(Row<ByteBuffer, ByteBuffer> row, ByteBuffer lastColumn, int limit) {
+        int i = 0;
+        List<Entry> entries = new ArrayList<Entry>();
+
+        for (Column<ByteBuffer> c : row.getColumns()) {
+            ByteBuffer colName = c.getName();
+
+            // Cassandra treats the end of a slice column range inclusively, but
+            // this method's contract promises to treat it exclusively. Check
+            // for the final column in the Cassandra results and skip it if
+            // found.
+            if (colName.equals(lastColumn)) {
+                break;
+            }
+
+            entries.add(new ByteBufferEntry(colName, c.getByteBufferValue()));
+
+            if (++i == limit) {
+                break;
+            }
+        }
+
+        return entries;
     }
 
     @Override
@@ -230,7 +233,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
             throw new PermanentStorageException(e);
         }
 
-        return new RowIterator(result);
+        return new RowIterator(result, sliceQuery);
     }
 
     @Override
@@ -258,7 +261,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
                                  limit);
 
         try {
-            return new RowIterator(((OperationResult<Rows<ByteBuffer, ByteBuffer>>) rowSlice.execute()).getResult());
+            return new RowIterator(((OperationResult<Rows<ByteBuffer, ByteBuffer>>) rowSlice.execute()).getResult(), query);
         } catch (ConnectionException e) {
             throw new TemporaryStorageException(e);
         }
@@ -284,18 +287,28 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
     private static class RowIterator implements KeyIterator {
         private final Iterator<Row<ByteBuffer, ByteBuffer>> rows;
         private Row<ByteBuffer, ByteBuffer> currentRow;
+        private final SliceQuery sliceQuery;
         private boolean isClosed;
 
-        public RowIterator(Rows<ByteBuffer, ByteBuffer> rows) {
+        public RowIterator(Rows<ByteBuffer, ByteBuffer> rows, SliceQuery sliceQuery) {
             this.rows = Iterators.filter(rows.iterator(), new KeyIterationPredicate());
+            this.sliceQuery = sliceQuery;
         }
 
         @Override
         public RecordIterator<Entry> getEntries() {
             ensureOpen();
 
+            if (sliceQuery == null)
+                throw new IllegalStateException("getEntries() requires SliceQuery to be set.");
+
             return new RecordIterator<Entry>() {
-                private final Iterator<Column<ByteBuffer>> columns = currentRow.getColumns().iterator();
+                private final Iterator<Entry> columns = excludeLastColumn(currentRow,
+                                                                          sliceQuery.getSliceEnd().asByteBuffer(),
+                                                                          sliceQuery.hasLimit()
+                                                                                  ? sliceQuery.getLimit()
+                                                                                  : Integer.MAX_VALUE)
+                                                                          .iterator();
 
                 @Override
                 public boolean hasNext() throws StorageException {
@@ -306,9 +319,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
                 @Override
                 public Entry next() throws StorageException {
                     ensureOpen();
-
-                    Column<ByteBuffer> column = columns.next();
-                    return new ByteBufferEntry(column.getName(), column.getByteBufferValue());
+                    return columns.next();
                 }
 
                 @Override

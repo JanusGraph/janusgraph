@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import javax.annotation.Nullable;
 
 /**
  * Wraps a {@link OrderedKeyValueStore} and exposes it as a {@link KeyColumnValueStore}.
@@ -62,7 +63,13 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
     @Override
     public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        throw new UnsupportedOperationException();
+        List<List<Entry>> results = new ArrayList<List<Entry>>();
+
+        for (StaticBuffer key : keys) {
+            results.add(getSlice(new KeySliceQuery(key, query), txh));
+        }
+
+        return results;
     }
 
     @Override
@@ -94,7 +101,7 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
     @Override
     public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
-        throw new UnsupportedOperationException();
+        return new KeysIterator(store.getKeys(txh), columnQuery, txh);
     }
 
     @Override
@@ -290,19 +297,32 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
     }
 
-    private class KeysIterator implements RecordIterator<StaticBuffer> {
-
+    private class KeysIterator implements KeyIterator {
         final RecordIterator<StaticBuffer> iterator;
-        StaticBuffer nextKey;
+        final SliceQuery sliceQuery;
+        final StoreTransaction txn;
+
+        StaticBuffer nextKey, currentKey;
 
         private KeysIterator(RecordIterator<StaticBuffer> iterator) throws StorageException {
+            this(iterator, null, null);
+        }
+
+        private KeysIterator(RecordIterator<StaticBuffer> iterator,
+                             @Nullable SliceQuery sliceQuery,
+                             @Nullable StoreTransaction txn) throws StorageException {
             this.iterator = iterator;
             this.nextKey = null;
+            this.sliceQuery = sliceQuery;
+            this.txn = txn;
+
             getNextKey();
+            currentKey = nextKey;
         }
 
         private void getNextKey() throws StorageException {
             boolean foundNextKey = false;
+
             while (!foundNextKey && iterator.hasNext()) {
                 StaticBuffer keycolumn = iterator.next();
                 if (nextKey == null || !equalKey(keycolumn, nextKey)) {
@@ -310,7 +330,9 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
                     nextKey = getKey(keycolumn);
                 }
             }
-            if (!foundNextKey) nextKey = null;
+
+            if (!foundNextKey)
+                nextKey = null;
         }
 
         @Override
@@ -320,10 +342,45 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
         @Override
         public StaticBuffer next() throws StorageException {
-            if (nextKey == null) throw new NoSuchElementException();
-            StaticBuffer returnKey = nextKey;
+            if (nextKey == null)
+                throw new NoSuchElementException();
+
+            currentKey = nextKey;
             getNextKey();
-            return returnKey;
+
+            return currentKey;
+        }
+
+        @Override
+        public RecordIterator<Entry> getEntries() {
+            if (currentKey == null)
+                throw new NoSuchElementException();
+
+            if (sliceQuery == null || txn == null)
+                throw new IllegalStateException("getEntries() could only be used when columnSlice and transaction are set.");
+
+            try {
+                return new RecordIterator<Entry>() {
+                    final Iterator<Entry> entries = getSlice(new KeySliceQuery(currentKey, sliceQuery), txn).iterator();
+
+                    @Override
+                    public boolean hasNext() throws StorageException {
+                        return entries.hasNext();
+                    }
+
+                    @Override
+                    public Entry next() throws StorageException {
+                        return entries.next();
+                    }
+
+                    @Override
+                    public void close() throws StorageException {
+                        iterator.close();
+                    }
+                };
+            } catch (StorageException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
