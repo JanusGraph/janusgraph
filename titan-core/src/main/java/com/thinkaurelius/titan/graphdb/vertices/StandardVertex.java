@@ -22,7 +22,7 @@ import java.util.List;
 public class StandardVertex extends AbstractVertex {
 
     private byte lifecycle;
-    private AddedRelationsContainer addedRelations=AddedRelationsContainer.EMPTY;
+    private volatile AddedRelationsContainer addedRelations=AddedRelationsContainer.EMPTY;
 
     public StandardVertex(final StandardTitanTx tx, final long id, byte lifecycle) {
         super(tx, id);
