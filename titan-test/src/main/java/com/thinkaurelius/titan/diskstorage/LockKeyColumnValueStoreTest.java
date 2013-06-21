@@ -433,7 +433,8 @@ public abstract class LockKeyColumnValueStoreTest {
         for (int i = 0; i < numPartitions; i++) {
             ids.add(Collections.synchronizedList(new ArrayList<Long>(numAcquisitionsPerThreadPartition * concurrency)));
         }
-
+        
+        final int maxIterations = numAcquisitionsPerThreadPartition * numPartitions * 3;
         Thread[] threads = new Thread[concurrency];
         for (int i = 0; i < concurrency; i++) {
             final IDAuthority idAuthority = idAuthorities[i];
@@ -441,20 +442,35 @@ public abstract class LockKeyColumnValueStoreTest {
 
                 @Override
                 public void run() {
-                    try {
-                        for (int j = 0; j < numAcquisitionsPerThreadPartition; j++) {
-                            for (int p = 0; p < numPartitions; p++) {
-                                long nextId = idAuthority.peekNextID(p);
-                                long[] block = idAuthority.getIDBlock(p);
-                                Assert.assertTrue(nextId <= block[0]);
-                                Assert.assertEquals(block[0] + blockSize, block[1]);
-                                Assert.assertFalse(ids.get(p).contains(block[0]));
-                                ids.get(p).add(block[0]);
+                    int iterations = 0;
+                    for (int j = 0; j < numAcquisitionsPerThreadPartition; j++) {
+                        for (int p = 0; p < numPartitions; p++) {
+                            while (true) {
+                                if (iterations++ >= maxIterations) { 
+                                    log.error("Too many failures: exceeded attempt count ({})", maxIterations);
+                                    return;
+                                }
+                                
+                                final long nextId;
+                                try {
+                                    nextId = idAuthority.peekNextID(p);
+                                } catch (StorageException e) {
+                                    log.error("Unexpected exception while peeking at next ID", e);
+                                    continue;
+                                }
+                                
+                                try {
+                                    long[] block = idAuthority.getIDBlock(p);
+                                    Assert.assertTrue(nextId <= block[0]);
+                                    Assert.assertEquals(block[0] + blockSize, block[1]);
+                                    Assert.assertFalse(ids.get(p).contains(block[0]));
+                                    ids.get(p).add(block[0]);
+                                    break;
+                                } catch (StorageException e) {
+                                    log.error("Unexpected exception while getting ID block", e);
+                                }
                             }
                         }
-                    } catch (StorageException e) {
-                        log.error("Unexpected exception when testing multi-thread ID acqusition", e);
-                        throw new RuntimeException(e);
                     }
                 }
             });
@@ -469,11 +485,25 @@ public abstract class LockKeyColumnValueStoreTest {
             List<Long> list = ids.get(i);
             Assert.assertEquals(numAcquisitionsPerThreadPartition * concurrency, list.size());
             Collections.sort(list);
+
             int pos = 0;
-            int id = 1;
+            long id = 1;
             while (pos < list.size()) {
-                Assert.assertEquals(id, list.get(pos).longValue());
-                id += blockSize;
+                long block = list.get(pos).longValue();
+                /*
+                 * If the ID allocator never timed out while servicing a
+                 * request, then id = block on every iteration. However, if the
+                 * ID allocator timed out while trying to claim some blocks,
+                 * then block = id + (blockSize * n) where n > 1. Intuitively,
+                 * this allows "dead" blocks lost to timeout exceptions to be
+                 * skipped without failing the test.
+                 */
+                Assert.assertTrue(0  <  block);
+                Assert.assertTrue(id <= block);
+                Assert.assertTrue(0 == (block - id) % blockSize);
+                final long skipped = (block - id) / blockSize;
+                Assert.assertTrue(0 <= skipped);
+                id = block + blockSize;
                 pos++;
             }
         }
