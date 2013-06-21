@@ -51,8 +51,8 @@ public abstract class KeyColumnValueStoreTest {
 
     public void open() throws StorageException {
         manager = openStorageManager();
-        tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
         store = manager.openDatabase(storeName);
+        tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
     }
 
     public void clopen() throws StorageException {
@@ -411,6 +411,15 @@ public abstract class KeyColumnValueStoreTest {
         List<Entry> result =
                 store.getSlice(new KeySliceQuery(key, columnStart, columnEnd, cols), txn);
         Assert.assertEquals(cols, result.size());
+
+        for (int i=0; i<result.size(); i++) {
+            Entry src = entries.get(i);
+            Entry dst = result.get(i);
+            if (!src.equals(dst)) {
+                int x = 1;
+            }
+        }
+
         Assert.assertEquals(entries, result);
         result =
                 store.getSlice(new KeySliceQuery(key, columnStart, columnEnd, cols + 10), txn);

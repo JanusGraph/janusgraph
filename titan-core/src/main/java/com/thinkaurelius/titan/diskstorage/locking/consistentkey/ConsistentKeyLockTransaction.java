@@ -414,7 +414,6 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
                             new Object[] { Hex.encodeHexString(earliestRid), earliestNS, latestNS } );
                 } else {
                     log.warn("Timestamp mismatch: expected={}, actual={}", lc.getTimestamp(), earliestNS);
-                    
                     /*
                      * This is probably evidence of a prior attempt to write a lock
                      * that the client perceived as a failure but which in fact
