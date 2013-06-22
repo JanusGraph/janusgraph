@@ -40,4 +40,9 @@ public class InternalCassandraEmbeddedKeyColumnValueTest extends AbstractCassand
     public void scanTest() {
         // nothing to do here as current test uses ordered partitioner
     }
+
+    @Test
+    public void testGetKeysWithKeyRange() throws Exception {
+        super.testGetKeysWithKeyRange();
+    }
 }

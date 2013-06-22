@@ -12,9 +12,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 
 
-public abstract class AbstractCassandraKeyColumnValueStoreTest extends
-        KeyColumnValueStoreTest {
-    
+public abstract class AbstractCassandraKeyColumnValueStoreTest extends KeyColumnValueStoreTest {
     private static final String TEST_CF_NAME = "testcf";
 
     @Override

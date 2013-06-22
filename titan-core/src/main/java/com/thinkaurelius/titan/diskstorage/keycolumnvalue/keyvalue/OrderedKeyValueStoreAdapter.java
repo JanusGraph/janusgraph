@@ -96,7 +96,7 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
     @Override
     public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
-        throw new UnsupportedOperationException();
+        return new KeysIterator(store.getKeys(txh), keyQuery, txh);
     }
 
     @Override
@@ -297,22 +297,39 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
     }
 
-    private class KeysIterator implements KeyIterator {
+    protected class KeysIterator implements KeyIterator {
         final RecordIterator<StaticBuffer> iterator;
+        final StaticBuffer startKey, endKey;
         final SliceQuery sliceQuery;
         final StoreTransaction txn;
 
         StaticBuffer nextKey, currentKey;
 
-        private KeysIterator(RecordIterator<StaticBuffer> iterator) throws StorageException {
-            this(iterator, null, null);
+        public KeysIterator(RecordIterator<StaticBuffer> iterator) throws StorageException {
+            this(iterator, null, null, null, null);
         }
 
-        private KeysIterator(RecordIterator<StaticBuffer> iterator,
-                             @Nullable SliceQuery sliceQuery,
-                             @Nullable StoreTransaction txn) throws StorageException {
+        public KeysIterator(RecordIterator<StaticBuffer> iterator,
+                             KeyRangeQuery keyRangeQuery,
+                             StoreTransaction txn) throws StorageException {
+            this(iterator, keyRangeQuery.getKeyStart(), keyRangeQuery.getKeyEnd(), keyRangeQuery, txn);
+        }
+
+        public KeysIterator(RecordIterator<StaticBuffer> iterator,
+                             SliceQuery sliceQuery,
+                             StoreTransaction txn) throws StorageException {
+            this(iterator, null, null, sliceQuery, txn);
+        }
+
+        public KeysIterator(RecordIterator<StaticBuffer> iterator,
+                            @Nullable StaticBuffer startKey,
+                            @Nullable StaticBuffer endKey,
+                            @Nullable SliceQuery sliceQuery,
+                            @Nullable StoreTransaction txn) throws StorageException {
             this.iterator = iterator;
             this.nextKey = null;
+            this.startKey = startKey;
+            this.endKey = endKey;
             this.sliceQuery = sliceQuery;
             this.txn = txn;
 
@@ -325,6 +342,10 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
             while (!foundNextKey && iterator.hasNext()) {
                 StaticBuffer keycolumn = iterator.next();
+
+                if (startKey != null && endKey != null && (keycolumn.compareTo(startKey) < 0 || keycolumn.compareTo(endKey) >= 0))
+                    continue;
+
                 if (nextKey == null || !equalKey(keycolumn, nextKey)) {
                     foundNextKey = true;
                     nextKey = getKey(keycolumn);

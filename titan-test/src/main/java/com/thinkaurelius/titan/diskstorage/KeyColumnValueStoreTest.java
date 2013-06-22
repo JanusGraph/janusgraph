@@ -10,10 +10,7 @@ import java.util.Random;
 import java.util.Set;
 
 import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -503,17 +500,9 @@ public abstract class KeyColumnValueStoreTest {
 
     @Test
     public void testGetSlices() throws Exception {
-        Random random = new Random();
+        populateDBWith100Keys();
 
         StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
-        for (int i = 1; i <= 100; i++) {
-            KeyColumnValueStoreUtil.insert(store, txn, i, "a", "v" + random.nextLong());
-            KeyColumnValueStoreUtil.insert(store, txn, i, "b", "v" + random.nextLong());
-            KeyColumnValueStoreUtil.insert(store, txn, i, "c", "v" + random.nextLong());
-        }
-        txn.commit();
-
-        txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
         try {
             List<StaticBuffer> keys = new ArrayList<StaticBuffer>(100);
 
@@ -538,6 +527,43 @@ public abstract class KeyColumnValueStoreTest {
 
     @Test
     public void testGetKeysWithSliceQuery() throws Exception {
+        populateDBWith100Keys();
+
+        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+
+        KeyIterator keyIterator = store.getKeys(new SliceQuery(new ReadArrayBuffer("b".getBytes()),
+                                                               new ReadArrayBuffer("c".getBytes())),
+                                                txn);
+
+        try {
+            examineGetKeysResults(keyIterator, 0, 100, 1);
+        } finally {
+            txn.commit();
+        }
+    }
+
+    /**
+     * This test is not marked with @Test becuase some of the implementations use random partitioning (passes for BerkeleyDB and HBase)
+     */
+    protected void testGetKeysWithKeyRange() throws Exception {
+        populateDBWith100Keys();
+
+        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+
+        KeyIterator keyIterator = store.getKeys(new KeyRangeQuery(KeyColumnValueStoreUtil.longToByteBuffer(10), // key start
+                                                                  KeyColumnValueStoreUtil.longToByteBuffer(40), // key end
+                                                                  new ReadArrayBuffer("b".getBytes()), // column start
+                                                                  new ReadArrayBuffer("c".getBytes())),
+                                                txn);
+
+        try {
+            examineGetKeysResults(keyIterator, 10, 40, 1);
+        } finally {
+            txn.commit();
+        }
+    }
+
+    protected void populateDBWith100Keys() throws Exception {
         Random random = new Random();
 
         StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
@@ -547,48 +573,44 @@ public abstract class KeyColumnValueStoreTest {
             KeyColumnValueStoreUtil.insert(store, txn, i, "c", "v" + random.nextLong());
         }
         txn.commit();
+    }
 
-        txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
-
-        KeyIterator keyIterator = store.getKeys(new SliceQuery(new ReadArrayBuffer("b".getBytes()),
-                                                               new ReadArrayBuffer("c".getBytes())),
-                                                txn);
-
+    protected void examineGetKeysResults(KeyIterator keyIterator,
+                                       long startKey,
+                                       long endKey,
+                                       int expectedColumns) throws StorageException {
         Assert.assertNotNull(keyIterator);
 
         int count = 0;
-        List<StaticBuffer> existingKeys = new ArrayList<StaticBuffer>(100);
+        int expectedNumKeys = (int) (endKey - startKey);
+        List<StaticBuffer> existingKeys = new ArrayList<StaticBuffer>(expectedNumKeys);
 
-        for (int i = 1; i <= 100; i++) {
+        for (int i = (int) (startKey == 0 ? 1 : startKey); i <= endKey; i++) {
             existingKeys.add(KeyColumnValueStoreUtil.longToByteBuffer(i));
         }
 
-        try {
-            while (keyIterator.hasNext()) {
-                StaticBuffer key = keyIterator.next();
+        while (keyIterator.hasNext()) {
+            StaticBuffer key = keyIterator.next();
 
-                Assert.assertNotNull(key);
-                Assert.assertTrue(existingKeys.contains(key));
+            Assert.assertNotNull(key);
+            Assert.assertTrue(existingKeys.contains(key));
 
-                RecordIterator<Entry> entries = keyIterator.getEntries();
+            RecordIterator<Entry> entries = keyIterator.getEntries();
 
-                Assert.assertNotNull(entries);
+            Assert.assertNotNull(entries);
 
-                int entryCount = 0;
-                while (entries.hasNext()) {
-                    Assert.assertNotNull(entries.next());
-                    entryCount++;
-                }
-
-                Assert.assertEquals(1, entryCount);
-
-                count++;
+            int entryCount = 0;
+            while (entries.hasNext()) {
+                Assert.assertNotNull(entries.next());
+                entryCount++;
             }
 
-            Assert.assertEquals(100, count);
-        } finally {
-            txn.commit();
+            Assert.assertEquals(expectedColumns, entryCount);
+
+            count++;
         }
+
+        Assert.assertEquals(expectedNumKeys, count);
     }
 }
  

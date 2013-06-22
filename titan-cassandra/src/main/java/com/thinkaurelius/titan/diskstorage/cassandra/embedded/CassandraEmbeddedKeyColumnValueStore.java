@@ -134,10 +134,10 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         return new RowIterator(getMinimumToken(), getMaximumToken(), query, storeManager.getPageSize());
     }
 
-    private Iterator<Row> getKeySlice(Token start,
-                                      Token end,
-                                      @Nullable SliceQuery sliceQuery,
-                                      int pageSize) throws StorageException {
+    private List<Row> getKeySlice(Token start,
+                                  Token end,
+                                  @Nullable SliceQuery sliceQuery,
+                                  int pageSize) throws StorageException {
         IPartitioner<?> partitioner = StorageService.getPartitioner();
 
         SliceRange columnSlice = new SliceRange();
@@ -153,9 +153,8 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
         SlicePredicate predicate = new SlicePredicate().setSlice_range(columnSlice);
 
-        Range<RowPosition> range = new Range<RowPosition>(start.maxKeyBound(partitioner),
-                                                          end.maxKeyBound(partitioner),
-                                                          partitioner);
+        RowPosition startPosition = start.minKeyBound(partitioner);
+        RowPosition endPosition = end.minKeyBound(partitioner);
 
         List<Row> rows;
 
@@ -165,19 +164,14 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             rows = StorageProxy.getRangeSlice(new RangeSliceCommand(keyspace,
                                                                     new ColumnParent(columnFamily),
                                                                     filter,
-                                                                    range,
+                                                                    new Bounds<RowPosition>(startPosition, endPosition),
                                                                     null,
                                                                     pageSize), ConsistencyLevel.QUORUM);
         } catch (Exception e) {
             throw new PermanentStorageException(e);
         }
 
-        return Iterators.filter(rows.iterator(), new Predicate<Row>() {
-            @Override
-            public boolean apply(@Nullable Row row) {
-                return !(row == null || row.cf == null || row.cf.isMarkedForDelete() || row.cf.hasOnlyTombstones());
-            }
-        });
+        return rows;
     }
 
     @Override
@@ -399,7 +393,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         }
 
         public RowIterator(Token minimum, Token maximum, SliceQuery sliceQuery, int pageSize) throws StorageException {
-            this.keys = getKeySlice(minimum, maximum, sliceQuery, pageSize);
+            this.keys = getRowsIterator(getKeySlice(minimum, maximum, sliceQuery, pageSize));
             this.pageSize = pageSize;
             this.sliceQuery = sliceQuery;
             this.maximumToken = maximum;
@@ -409,10 +403,27 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         public boolean hasNext() throws StorageException {
             ensureOpen();
 
+            if (keys == null)
+                return false;
+
             boolean hasNext = keys.hasNext();
 
             if (!hasNext && lastSeenKey != null) {
-                keys = getKeySlice(StorageService.getPartitioner().getToken(lastSeenKey), maximumToken, sliceQuery, pageSize);
+                Token lastSeenToken = StorageService.getPartitioner().getToken(lastSeenKey.duplicate());
+
+                // let's check if we reached key upper bound already so we can skip one useless call to Cassandra
+                if (maximumToken != getMinimumToken() && lastSeenToken.equals(maximumToken)) {
+                    return false;
+                }
+
+                List<Row> newKeys = getKeySlice(StorageService.getPartitioner().getToken(lastSeenKey), maximumToken, sliceQuery, pageSize);
+
+                // this is needed because we need to know when to stop if key upper bound wasn't set
+                if (newKeys.size() == 1 && newKeys.get(0).key.key.equals(lastSeenKey)) {
+                    return false;
+                }
+
+                keys = getRowsIterator(newKeys);
                 hasNext = keys.hasNext();
             }
 
@@ -477,6 +488,18 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         private void ensureOpen() {
             if (isClosed)
                 throw new IllegalStateException("Iterator has been closed.");
+        }
+
+        private Iterator<Row> getRowsIterator(List<Row> rows) {
+            if (rows == null)
+                return null;
+
+            return Iterators.filter(rows.iterator(), new Predicate<Row>() {
+                @Override
+                public boolean apply(@Nullable Row row) {
+                    return !(row == null || row.cf == null || row.cf.isMarkedForDelete() || row.cf.hasOnlyTombstones());
+                }
+            });
         }
     }
 

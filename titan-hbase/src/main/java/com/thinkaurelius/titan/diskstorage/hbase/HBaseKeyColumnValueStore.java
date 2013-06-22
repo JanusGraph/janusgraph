@@ -239,15 +239,11 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             scan.setStopRow(endKey);
 
         if (columnSlice != null) {
-            filters.addFilter(new ColumnPaginationFilter(columnSlice.hasLimit() ? columnSlice.getLimit() : Integer.MAX_VALUE, 0));
-            filters.addFilter(new ColumnRangeFilter(columnSlice.getSliceStart().as(StaticBuffer.ARRAY_FACTORY),
-                                                    true,
-                                                    columnSlice.getSliceEnd().as(StaticBuffer.ARRAY_FACTORY),
-                                                    false));
+            filters.addFilter(getFilter(columnSlice));
         }
 
         try {
-            return new RowIterator(pool.getTable(tableName).getScanner(scan));
+            return new RowIterator(pool.getTable(tableName).getScanner(scan.setFilter(filters)));
         } catch (IOException e) {
             throw new PermanentStorageException(e);
         }

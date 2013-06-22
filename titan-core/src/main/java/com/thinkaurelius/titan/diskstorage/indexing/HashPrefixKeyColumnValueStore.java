@@ -112,7 +112,7 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
-        return new PrefixedRowIterator(store.getKeys(keyQuery, txh));
+        throw new UnsupportedOperationException("getKeys(KeyRangeQuery) is not supported in hash prefixed mode.");
     }
 
     @Override

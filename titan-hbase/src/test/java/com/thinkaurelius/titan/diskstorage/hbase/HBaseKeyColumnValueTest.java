@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.IOException;
 
@@ -24,5 +25,10 @@ public class HBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
         c.setProperty("hbase-config.hbase.zookeeper.quorum", "localhost");
         c.setProperty("hbase-config.hbase.zookeeper.property.clientPort", "2181");
         return c;
+    }
+
+    @Test
+    public void testGetKeysWithKeyRange() throws Exception {
+        super.testGetKeysWithKeyRange();
     }
 }
