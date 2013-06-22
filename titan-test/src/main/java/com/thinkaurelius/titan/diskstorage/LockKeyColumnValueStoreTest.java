@@ -4,11 +4,15 @@ import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueS
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.BaseConfiguration;
@@ -418,7 +422,7 @@ public abstract class LockKeyColumnValueStoreTest {
     }
 
     @Test
-    public void testMultiIDAcquisition() throws StorageException, InterruptedException {
+    public void testMultiIDAcquisition() throws Throwable {
         final int numPartitions = 4;
         final int numAcquisitionsPerThreadPartition = 300;
         final int blockSize = 250;
@@ -434,51 +438,24 @@ public abstract class LockKeyColumnValueStoreTest {
             ids.add(Collections.synchronizedList(new ArrayList<Long>(numAcquisitionsPerThreadPartition * concurrency)));
         }
         
-        final int maxIterations = numAcquisitionsPerThreadPartition * numPartitions * 3;
-        Thread[] threads = new Thread[concurrency];
+        final int maxIterations = numAcquisitionsPerThreadPartition * numPartitions * 2;
+        final Collection<Future<?>> futures = new ArrayList<Future<?>>(concurrency);
+        ExecutorService es = Executors.newFixedThreadPool(concurrency);
+        
         for (int i = 0; i < concurrency; i++) {
             final IDAuthority idAuthority = idAuthorities[i];
-            threads[i] = new Thread(new Runnable() {
-
-                @Override
-                public void run() {
-                    int iterations = 0;
-                    for (int j = 0; j < numAcquisitionsPerThreadPartition; j++) {
-                        for (int p = 0; p < numPartitions; p++) {
-                            while (true) {
-                                if (iterations++ >= maxIterations) { 
-                                    log.error("Too many failures: exceeded attempt count ({})", maxIterations);
-                                    return;
-                                }
-                                
-                                final long nextId;
-                                try {
-                                    nextId = idAuthority.peekNextID(p);
-                                } catch (StorageException e) {
-                                    log.error("Unexpected exception while peeking at next ID", e);
-                                    continue;
-                                }
-                                
-                                try {
-                                    long[] block = idAuthority.getIDBlock(p);
-                                    Assert.assertTrue(nextId <= block[0]);
-                                    Assert.assertEquals(block[0] + blockSize, block[1]);
-                                    Assert.assertFalse(ids.get(p).contains(block[0]));
-                                    ids.get(p).add(block[0]);
-                                    break;
-                                } catch (StorageException e) {
-                                    log.error("Unexpected exception while getting ID block", e);
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            threads[i].start();
+            final IDStressor stressRunnable = new IDStressor(
+                    numAcquisitionsPerThreadPartition, numPartitions,
+                    maxIterations, blockSize, idAuthority, ids);
+            futures.add(es.submit(stressRunnable));
         }
 
-        for (int i = 0; i < concurrency; i++) {
-            threads[i].join();
+        for (Future<?> f : futures) {
+            try {
+                f.get();
+            } catch (ExecutionException e) {
+                throw e.getCause();
+            }
         }
 
         for (int i = 0; i < numPartitions; i++) {
@@ -579,6 +556,88 @@ public abstract class LockKeyColumnValueStoreTest {
              * and the latch's await() method returns.
              */
             doneLatch.countDown();
+        }
+    }
+    
+    private class IDStressor implements Runnable {
+
+        private final int numRounds;
+        private final int numPartitions;
+        private final int maxIterations;
+        private final int blockSize;
+        private final IDAuthority authority;
+        private final List<List<Long>> allocatedBlocks;
+
+        private static final long sleepMS = 250L;
+
+        private IDStressor(int numRounds, int numPartitions, int maxIterations,
+                int blockSize, IDAuthority authority, List<List<Long>> ids) {
+            this.numRounds = numRounds;
+            this.numPartitions = numPartitions;
+            this.maxIterations = maxIterations;
+            this.blockSize = blockSize;
+            this.authority = authority;
+            this.allocatedBlocks = ids;
+        }
+
+        @Override
+        public void run() {
+            try {
+                runInterruptible();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private void runInterruptible() throws InterruptedException {
+            int iterations = 0;
+            
+            for (int j = 0; j < numRounds; j++) {
+                for (int p = 0; p < numPartitions; p++) {
+                    for (boolean ok = false; !ok; ) {
+                        if (maxIterations < ++iterations) {
+                            throwIterationsExceededException();
+                        }
+                        if (!(ok = allocate(p))) {
+                            Thread.sleep(sleepMS);
+                        }
+                    }
+                }
+            }
+        }
+
+        private boolean allocate(int partitionIndex) {
+
+            final long nextId;
+            try {
+                nextId = authority.peekNextID(partitionIndex);
+            } catch (StorageException e) {
+                log.error("Unexpected exception while peeking at next ID", e);
+                return false;
+            }
+
+            final long[] block;
+            try {
+                block = authority.getIDBlock(partitionIndex);
+            } catch (StorageException e) {
+                log.error("Unexpected exception while getting ID block", e);
+                return false;
+            }
+
+            Assert.assertTrue(nextId <= block[0]);
+            Assert.assertEquals(block[0] + blockSize, block[1]);
+            Assert.assertFalse(allocatedBlocks.get(partitionIndex).contains(
+                    block[0]));
+            allocatedBlocks.get(partitionIndex).add(block[0]);
+            log.trace("Obtained ID block {},{}", block[0], block[1]);
+
+            return true;
+        }
+
+        private boolean throwIterationsExceededException() {
+            throw new RuntimeException(
+                    "Exceeded maximum ID allocation iteration count ("
+                            + maxIterations + "); too many timeouts?");
         }
     }
 
