@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce;
 
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
@@ -26,9 +27,7 @@ public class IdentityMap {
     }
 
     public static Configuration createConfiguration() {
-        Configuration configuration = new Configuration();
-        configuration.clear();
-        return configuration;
+        return new EmptyConfiguration();
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {

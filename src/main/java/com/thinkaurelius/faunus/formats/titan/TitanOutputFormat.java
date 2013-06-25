@@ -6,7 +6,7 @@ import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
 import com.thinkaurelius.faunus.formats.MapReduceFormat;
 import com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
-import org.apache.hadoop.conf.Configuration;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 
@@ -28,7 +28,7 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
                     FaunusVertex.class,
                     NullWritable.class,
                     FaunusVertex.class,
-                    new Configuration());
+                    new EmptyConfiguration());
         }
         compiler.addMapReduce(BlueprintsGraphOutputMapReduce.Map.class,
                 null,
