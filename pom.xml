@@ -10,7 +10,7 @@
     <groupId>com.thinkaurelius.faunus</groupId>
     <artifactId>faunus</artifactId>
     <!-- DON'T FORGET TO UPDATE Tokens.java -->
-    <version>0.3.1</version>
+    <version>0.3.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <url>http://thinkaurelius.github.com/faunus/</url>
     <name>Faunus: Graph Analytics Engine</name>
