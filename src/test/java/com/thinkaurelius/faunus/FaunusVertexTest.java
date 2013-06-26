@@ -383,4 +383,20 @@ public class FaunusVertexTest extends BaseTest {
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS_2);
         reader.close();
     }
+
+    public void testLargeProperty() throws Exception {
+        String value = "a24$%~bU*!";
+        for (int i = 0; i < 19; i++) {
+            value = value + value;
+        }
+        // a 5 million length string == ~10 books worth of data
+        assertTrue(value.length() > 5000000);
+
+        FaunusVertex vertex1 = new FaunusVertex(1l);
+        vertex1.setProperty("name", value);
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        vertex1.write(new DataOutputStream(bytes));
+        FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        assertEquals(vertex2.getProperty("name"), value);
+    }
 }
