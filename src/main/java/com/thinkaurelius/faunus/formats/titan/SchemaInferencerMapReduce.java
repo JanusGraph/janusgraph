@@ -2,11 +2,13 @@ package com.thinkaurelius.faunus.formats.titan;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -26,6 +28,10 @@ public class SchemaInferencerMapReduce {
 
     private static final long funnyLong = -123456789l;
     private static final LongWritable funnyKey = new LongWritable(funnyLong);
+
+    public static Configuration createConfiguration() {
+        return new EmptyConfiguration();
+    }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, FaunusVertex> {
 

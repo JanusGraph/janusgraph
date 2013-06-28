@@ -5,7 +5,6 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.MapReduceFormat;
 import com.thinkaurelius.faunus.formats.edgelist.EdgeListInputMapReduce;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
-import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -51,6 +50,6 @@ public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement>
                 FaunusVertex.class,
                 NullWritable.class,
                 FaunusVertex.class,
-                new EmptyConfiguration());
+                EdgeListInputMapReduce.createConfiguration());
     }
 }
