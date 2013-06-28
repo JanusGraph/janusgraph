@@ -3,6 +3,8 @@ package com.thinkaurelius.faunus.formats.edgelist;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.WritableUtils;
@@ -27,6 +29,10 @@ public class EdgeListInputMapReduce {
         OUT_EDGES_CREATED,
         VERTICES_CREATED,
         VERTEX_PROPERTIES_CREATED
+    }
+
+    public static Configuration createConfiguration() {
+        return new EmptyConfiguration();
     }
 
     public static class Map extends Mapper<NullWritable, FaunusElement, LongWritable, FaunusVertex> {
