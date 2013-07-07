@@ -211,8 +211,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                                      .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanaxConsistency())
                                                      .withRetryPolicy(retryPolicy.duplicate());
 
-        final long delTS = TimeUtility.getApproxNSSinceEpoch(false);
-        final long addTS = TimeUtility.getApproxNSSinceEpoch(true);
+        final long delTS = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
+        final long addTS = TimeUtility.INSTANCE.getApproxNSSinceEpoch(true);
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> batchentry : batch.entrySet()) {
             String storeName = batchentry.getKey();

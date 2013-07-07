@@ -9,11 +9,13 @@ import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A {@link StoreTransaction} that supports locking via
@@ -201,13 +203,13 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 		 * We'll also update the timestamp in the LocalLockMediator after we're done
 		 * talking to the backend store.
 		 * 
-		 * We use TimeUtility.getApproxNSSinceEpoch()/1000 instead of the
+		 * We use TimeUtility.INSTANCE.getApproxNSSinceEpoch()/1000 instead of the
 		 * superficially equivalent System.currentTimeMillis() to get consistent timestamp
 		 * rollovers.
 		 */
-        long tempts = TimeUtility.getApproxNSSinceEpoch(false) +
+        long tempts = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false) +
                 backer.getLockExpireMS() * MILLION;
-        if (!backer.getLocalLockMediator().lock(lc.getKc(), this, tempts)) {
+        if (!backer.getLocalLockMediator().lock(lc.getKc(), this, tempts, TimeUnit.NANOSECONDS)) {
             throw new PermanentLockingException("Lock could not be acquired because it is held by a local transaction [" + lc + "]");
         }
 		
@@ -226,7 +228,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
         long tsNS = 0;
         try {
             for (int i = 0; i < backer.getLockRetryCount(); i++) {
-                tsNS = TimeUtility.getApproxNSSinceEpoch(false);
+                tsNS = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
                 Entry addition = StaticBufferEntry.of(lc.getLockCol(tsNS, backer.getRid()), valBuf);
 
                 long before = System.currentTimeMillis();
@@ -253,7 +255,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
                 // Update the timeout
                 assert 0 != tsNS;
                 boolean expireTimeUpdated = backer.getLocalLockMediator().lock(
-                        lc.getKc(), this, tsNS + MILLION * backer.getLockExpireMS());
+                        lc.getKc(), this, tsNS + MILLION * backer.getLockExpireMS(), TimeUnit.NANOSECONDS);
 
                 if (!expireTimeUpdated)
                     log.warn("Failed to update expiration time of local lock {}; is titan.storage.lock-expiry-time too low?");
@@ -307,7 +309,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
         if (0 == lastLockApplicationTimesMS.size())
             return; // no locks
 
-        long now = TimeUtility.getApproxNSSinceEpoch(false);
+        long now = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
 
         // Iterate over all backends and sleep, if necessary, until
         // the backend-specific grace period since our last lock application
@@ -321,7 +323,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
                 continue;
             }
 
-            TimeUtility.sleepUntil(appTimeMS + i.getLockWaitMS(), log);
+            TimeUtility.INSTANCE.sleepUntil(appTimeMS + i.getLockWaitMS(), log);
         }
 
         // Check lock claim seniority
@@ -431,7 +433,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 
     private void unlockAll() {
     	
-    	long nowNS = TimeUtility.getApproxNSSinceEpoch(false);
+    	long nowNS = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
 
         for (LockClaim lc : lockClaims) {
 

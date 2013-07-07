@@ -31,8 +31,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreMan
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.LockingException;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockConfiguration;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
@@ -182,14 +182,14 @@ public abstract class LockKeyColumnValueStoreTest {
             store[0].acquireLock(k, c1, null, tx[0][1]);
             Assert.fail("Lock contention exception not thrown");
         } catch (StorageException e) {
-            Assert.assertTrue(e instanceof LockingException);
+            Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
         }
 
         try {
             store[0].acquireLock(k, c1, null, tx[0][1]);
             Assert.fail("Lock contention exception not thrown (2nd try)");
         } catch (StorageException e) {
-            Assert.assertTrue(e instanceof LockingException);
+            Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
         }
     }
 
@@ -222,7 +222,7 @@ public abstract class LockKeyColumnValueStoreTest {
             store[1].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v2)), NO_DELETIONS, tx[1][0]);
             Assert.fail("Expected lock contention between remote transactions did not occur");
         } catch (StorageException e) {
-            Assert.assertTrue(e instanceof LockingException);
+            Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
         }
 
         // This should succeed
@@ -375,7 +375,7 @@ public abstract class LockKeyColumnValueStoreTest {
                 s2.acquireLock(k, k, null, tx2);
                 Assert.fail("Expected lock contention between transactions did not occur");
             } catch (StorageException e) {
-                Assert.assertTrue(e instanceof LockingException);
+                Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
             }
         }
 

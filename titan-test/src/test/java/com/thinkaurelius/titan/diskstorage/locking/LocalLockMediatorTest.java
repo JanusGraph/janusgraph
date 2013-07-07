@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -29,12 +30,12 @@ public class LocalLockMediatorTest {
     public void testLockExpiration() throws InterruptedException {
         LocalLockMediator llm = new LocalLockMediator(LOCK_NAMESPACE);
 
-        assertTrue(llm.lock(kc, mockTx1, 0));
-        assertTrue(llm.lock(kc, mockTx2, Long.MAX_VALUE));
+        assertTrue(llm.lock(kc, mockTx1, 0, TimeUnit.NANOSECONDS));
+        assertTrue(llm.lock(kc, mockTx2, Long.MAX_VALUE, TimeUnit.NANOSECONDS));
 
         llm = new LocalLockMediator(LOCK_NAMESPACE);
 
-        assertTrue(llm.lock(kc, mockTx1, Long.MAX_VALUE));
-        assertFalse(llm.lock(kc, mockTx2, Long.MAX_VALUE));
+        assertTrue(llm.lock(kc, mockTx1, Long.MAX_VALUE, TimeUnit.NANOSECONDS));
+        assertFalse(llm.lock(kc, mockTx2, Long.MAX_VALUE, TimeUnit.NANOSECONDS));
     }
 }

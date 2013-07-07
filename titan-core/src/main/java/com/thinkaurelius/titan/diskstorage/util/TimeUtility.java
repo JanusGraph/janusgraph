@@ -7,10 +7,11 @@ import org.slf4j.Logger;
 /**
  * Utility methods for measuring fine time intervals
  */
-public class TimeUtility {
+public enum TimeUtility implements TimestampProvider {
+    INSTANCE;
 
     // Initialize the t0 variables
-    static {
+    {
 
 		/*
 		 * This is a crude attempt to establish a correspondence
@@ -37,12 +38,12 @@ public class TimeUtility {
     }
 
     // This is the value of System.nanoTime() at startup
-    private static final long t0NanoTime;
+    private final long t0NanoTime;
 
     /* This is the value of System.currentTimeMillis() at
      * startup times a million (i.e. CTM in ns)
      */
-    private static final long t0NanosSinceEpoch;
+    private final long t0NanosSinceEpoch;
 
     /**
      * This returns the approximate number of nanoseconds
@@ -58,13 +59,13 @@ public class TimeUtility {
      *               returned value be one?
      * @return a timestamp as described above
      */
-    public static long getApproxNSSinceEpoch(final boolean setLSB) {
+    public long getApproxNSSinceEpoch(final boolean setLSB) {
         final long nanosSinceEpoch = System.nanoTime() - t0NanoTime + t0NanosSinceEpoch;
         final long ts = ((nanosSinceEpoch) & 0xFFFFFFFFFFFFFFFEL) + (setLSB ? 1L : 0L);
         return ts;
     }
 
-    public static final void sleepUntil(long untilTimeMillis, Logger log) throws StorageException {
+    public final void sleepUntil(long untilTimeMillis, Logger log) throws StorageException {
         long now;
 
         while (true) {

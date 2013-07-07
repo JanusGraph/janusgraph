@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class PermanentLockingException extends PermanentStorageException implements LockingException {
+public class PermanentLockingException extends PermanentStorageException {
 
     private static final long serialVersionUID = 482890657293484420L;
 
