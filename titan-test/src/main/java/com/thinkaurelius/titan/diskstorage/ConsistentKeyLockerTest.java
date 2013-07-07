@@ -1,11 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import static org.easymock.EasyMock.createMock;
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.expectLastCall;
-import static org.easymock.EasyMock.replay;
-import static org.easymock.EasyMock.verify;
+import static org.easymock.EasyMock.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -14,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.easymock.EasyMock;
+import org.easymock.IMocksControl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,6 +26,7 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediat
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
 
@@ -50,15 +47,32 @@ public class ConsistentKeyLockerTest {
     private final long defaultWaitNS =        100 * 1000 * 1000;
     private final long defaultExpireNS = 10 * 100 * 1000 * 1000;
     
+    private IMocksControl ctrl;
+    private long currentTimeNS;
+    private TimestampProvider times;
+    private KeyColumnValueStore store;
+    private LocalLockMediator<StoreTransaction> mediator;
+    private ConsistentKeyLocker locker;
+    
+    @SuppressWarnings("unchecked")
     @Before
     public void setupDefaultTx() {
-        defaultTx = createMock(StoreTransaction.class);
-        replay(defaultTx); // No method calls allowed on txh
+        currentTimeNS = 0;
+        ctrl = createStrictControl();
+        defaultTx = ctrl.createMock(StoreTransaction.class);
+        times = ctrl.createMock(TimestampProvider.class);
+        store = ctrl.createMock(KeyColumnValueStore.class);
+        mediator = ctrl.createMock(LocalLockMediator.class);
+        ConsistentKeyLockerConfiguration conf = new ConsistentKeyLockerConfiguration.Builder(
+                store).times(times).mediator(mediator)
+                .lockExpireNS(defaultExpireNS, TimeUnit.NANOSECONDS)
+                .rid(defaultLockRid).build();
+        locker = new ConsistentKeyLocker(conf);
     }
     
     @After
     public void tearDownDefaultTx() {
-        verify(defaultTx);
+        ctrl.verify();
     }
     
     /**
@@ -70,36 +84,11 @@ public class ConsistentKeyLockerTest {
     @Test
     public void testWriteLockWithoutErrors() throws StorageException {
 
-        // Stub timestamp calls
-        TimestampProvider times = createMock(TimestampProvider.class);
-        expect(times.getApproxNSSinceEpoch(false))
-            .andReturn(defaultLockTimestamp-1)
-            .andReturn(defaultLockTimestamp)
-            .andReturn(defaultLockTimestamp+1);
-        replay(times);
-
-        // Stub store calls
-        List<Entry> expectedAdditions = Arrays.<Entry>asList(new StaticBufferEntry(defaultLockCol, defaultLockVal));
-        KeyColumnValueStore store = createMock(KeyColumnValueStore.class);
-        store.mutate(eq(defaultLockKey), eq(expectedAdditions), EasyMock.<List<StaticBuffer>>isNull(), eq(defaultTx));
-        replay(store);
-        
-        // Stub local lock mediator calls
-        @SuppressWarnings("unchecked")
-        LocalLockMediator<StoreTransaction> mediator  = createMock(LocalLockMediator.class);
-        expect(mediator.lock(defaultLockID, defaultTx, defaultLockTimestamp - 1 + defaultExpireNS, TimeUnit.NANOSECONDS)).andReturn(true);
-        replay(mediator);
-        
-        // Done with stubbing; create locker instance around stubs
-        ConsistentKeyLockerConfiguration conf = new ConsistentKeyLockerConfiguration.Builder(store).times(times).mediator(mediator).lockExpireNS(defaultExpireNS, TimeUnit.NANOSECONDS).rid(defaultLockRid).build();
-        ConsistentKeyLocker locker = new ConsistentKeyLocker(conf); 
+        recordSuccessfulLocalLock();
+        recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, null);
+        ctrl.replay();
         
         locker.writeLock(defaultLockID, defaultTx); // SUT
-        
-        // Check for unscripted method calls
-        verify(store);
-        verify(times);
-        verify(mediator);
     }
     
     /**
@@ -112,43 +101,12 @@ public class ConsistentKeyLockerTest {
      */
     @Test
     public void testWriteLockRetriesAfterOneStoreTimeout() throws StorageException {
-        // Stubbing and setup
-        List<Entry> firstAddition = Arrays.<Entry> asList(new StaticBufferEntry(
-                        defaultLockCol,
-                        defaultLockVal));
-        List<Entry> secondAddition = Arrays.<Entry> asList(new StaticBufferEntry(
-                        codec.toLockCol(defaultLockTimestamp + 2000000000, defaultLockRid),
-                        defaultLockVal));
-        
-        TimestampProvider times = createMock(TimestampProvider.class);
-        expect(times.getApproxNSSinceEpoch(false))
-            .andReturn(defaultLockTimestamp-1)           // passed to LocalLockMediator
-            .andReturn(defaultLockTimestamp)             // before first attempt on remote lock
-            .andReturn(defaultLockTimestamp+1999000000)  // after first attempt
-            .andReturn(defaultLockTimestamp+2000000000)  // before second attempt
-            .andReturn(defaultLockTimestamp+2001000000); // after second attempt
-        replay(times);
-
-        // Store that times out on first mutate, returns immediately on second mutate
-        KeyColumnValueStore store = createMock(KeyColumnValueStore.class);
-        // Expect initial lock write (this will timeout)
-        store.mutate(eq(defaultLockKey), eq(firstAddition), EasyMock.<List<StaticBuffer>>isNull(), eq(defaultTx));
-//        expectLastCall().andAnswer(new Sleeper<Void>(null, defaultWaitNS, TimeUnit.NANOSECONDS)); // inject timeout
-        // Expect lock write with previous_ts+1 and try to delete old claim too (returns immediately)
-        store.mutate(eq(defaultLockKey), eq(secondAddition), eq(Arrays.asList(defaultLockCol)), eq(defaultTx));
-        expect(store.getName()).andReturn("blah").times(0, 1);
-        replay(store);
-        
-        // Done with stubbing; create locker instance around stubs
-        ConsistentKeyLockerConfiguration conf = new ConsistentKeyLockerConfiguration.Builder(store).times(times).lockWaitNS(defaultWaitNS, TimeUnit.NANOSECONDS).rid(defaultLockRid).build();
-        ConsistentKeyLocker locker = new ConsistentKeyLocker(conf); 
+        recordSuccessfulLocalLock();
+        StaticBuffer firstCol = recordSuccessfulLockWrite(5, TimeUnit.SECONDS, null); // too slow
+        recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, firstCol); // plenty fast
+        ctrl.replay();
         
         locker.writeLock(defaultLockID, defaultTx); // SUT
-        
-        // check for unscripted method calls
-        verify(store);
-        verify(times);
-        
     }
 
     /**
@@ -161,56 +119,14 @@ public class ConsistentKeyLockerTest {
      */
     @Test
     public void testWriteLockThrowsExceptionAfterMaxStoreTimeouts() throws StorageException {
-        // Stubbing and setup
-        List<Entry> firstAddition = Arrays.<Entry> asList(new StaticBufferEntry(
-                defaultLockCol,
-                defaultLockVal));
-        StaticBuffer secondLockCol = codec.toLockCol(defaultLockTimestamp + 2000000000L, defaultLockRid);
-        List<Entry> secondAddition = Arrays.<Entry> asList(new StaticBufferEntry(
-                secondLockCol,
-                defaultLockVal));
-        StaticBuffer thirdLockCol = codec.toLockCol(defaultLockTimestamp + 4000000000L, defaultLockRid);
-        List<Entry> thirdAddition = Arrays.<Entry> asList(new StaticBufferEntry(
-                thirdLockCol,
-                defaultLockVal));
-        
-        // Stub timestamp calls
-        TimestampProvider times = createMock(TimestampProvider.class);
-        expect(times.getApproxNSSinceEpoch(false))
-            .andReturn(defaultLockTimestamp-1)            // passed to LocalLockMediator
-            .andReturn(defaultLockTimestamp)              // before first attempt on remote lock
-            .andReturn(defaultLockTimestamp+1999000000L)  // after first attempt
-            .andReturn(defaultLockTimestamp+2000000000L)  // before second attempt
-            .andReturn(defaultLockTimestamp+3999000000L)  // after second attempt
-            .andReturn(defaultLockTimestamp+4000000000L)  // before third attempt
-            .andReturn(defaultLockTimestamp+5999000000L)  // after third attempt
-            .andReturn(defaultLockTimestamp+6000000000L)  // before final post-failure cleanup deletion
-            .andReturn(defaultLockTimestamp+6001000000L); // after final deletion
-        replay(times);
+        recordSuccessfulLocalLock();
+        StaticBuffer firstCol =  recordSuccessfulLockWrite(5, TimeUnit.SECONDS, null);
+        StaticBuffer secondCol = recordSuccessfulLockWrite(5, TimeUnit.SECONDS, firstCol);
+        StaticBuffer thirdCol =  recordSuccessfulLockWrite(5, TimeUnit.SECONDS, secondCol);
+        recordSuccessfulLockDelete(1, TimeUnit.NANOSECONDS, thirdCol);
+        recordSuccessfulLocalUnlock();        
+        ctrl.replay();
 
-        // Stub store calls
-        KeyColumnValueStore store = createMock(KeyColumnValueStore.class);
-        // First attempt
-        store.mutate(eq(defaultLockKey), eq(firstAddition), EasyMock.<List<StaticBuffer>>isNull(), eq(defaultTx));
-        // Second attempt
-        store.mutate(eq(defaultLockKey), eq(secondAddition), eq(Arrays.asList(defaultLockCol)), eq(defaultTx));
-        // Third attempt
-        store.mutate(eq(defaultLockKey), eq(thirdAddition), eq(Arrays.asList(secondLockCol)), eq(defaultTx));
-        // Final deletion
-        store.mutate(eq(defaultLockKey), EasyMock.<List<Entry>>isNull(), eq(Arrays.asList(thirdLockCol)), eq(defaultTx));
-        replay(store);
-        
-        // Stub local lock mediator calls
-        @SuppressWarnings("unchecked")
-        LocalLockMediator<StoreTransaction> mediator  = createMock(LocalLockMediator.class);
-        expect(mediator.lock(defaultLockID, defaultTx, defaultLockTimestamp - 1 + defaultExpireNS, TimeUnit.NANOSECONDS)).andReturn(true);
-        expect(mediator.unlock(defaultLockID, defaultTx)).andReturn(true);
-        replay(mediator);
-        
-        // Done with stubbing; create locker instance around stubs
-        ConsistentKeyLockerConfiguration conf = new ConsistentKeyLockerConfiguration.Builder(store).times(times).mediator(mediator).lockExpireNS(defaultExpireNS, TimeUnit.NANOSECONDS).rid(defaultLockRid).build();
-        ConsistentKeyLocker locker = new ConsistentKeyLocker(conf); 
-        
         StorageException expected = null;
         try {
             locker.writeLock(defaultLockID, defaultTx); // SUT
@@ -218,15 +134,10 @@ public class ConsistentKeyLockerTest {
             expected = e;
         }
         assertNotNull(expected);
-        
-        // Check for unscripted method calls
-        verify(store);
-        verify(times);
-        verify(mediator);
     }
     
     /**
-     * Test that the first {@link @PermanentStorageException} thrown by the
+     * Test that the first {@link PermanentStorageException} thrown by the
      * locker's store causes it to attempt to delete outstanding lock writes and
      * then emit the exception without retrying.
      * 
@@ -234,41 +145,12 @@ public class ConsistentKeyLockerTest {
      */
     @Test
     public void testWriteLockDiesOnPermanentStorageException() throws StorageException {
-        // Stubbing and setup
-        List<Entry> firstAddition = Arrays.<Entry> asList(new StaticBufferEntry(
-                defaultLockCol,
-                defaultLockVal));
-        
-        // Stub timestamp calls
-        TimestampProvider times = createMock(TimestampProvider.class);
-        expect(times.getApproxNSSinceEpoch(false))
-            .andReturn(defaultLockTimestamp-1)   // passed to LocalLockMediator
-            .andReturn(defaultLockTimestamp)     // before first attempt on remote lock
-            .andReturn(defaultLockTimestamp+1L)  // after first (PermanentStorageException-throwing) attempt
-            .andReturn(defaultLockTimestamp+2L)  // before cleanup delete attempt
-            .andReturn(defaultLockTimestamp+3L); // after cleanup delete attempt
-        replay(times);
-
-        // Stub store calls
-        KeyColumnValueStore store = createMock(KeyColumnValueStore.class);
-        // First attempt (throws PSE)
-        store.mutate(eq(defaultLockKey), eq(firstAddition), EasyMock.<List<StaticBuffer>>isNull(), eq(defaultTx));
-        PermanentStorageException pse = new PermanentStorageException("Storage cluster is on fire");
-        expectLastCall().andThrow(pse);
-        // Final deletion
-        store.mutate(eq(defaultLockKey), EasyMock.<List<Entry>>isNull(), eq(Arrays.asList(defaultLockCol)), eq(defaultTx));
-        replay(store);
-        
-        // Stub local lock mediator calls
-        @SuppressWarnings("unchecked")
-        LocalLockMediator<StoreTransaction> mediator  = createMock(LocalLockMediator.class);
-        expect(mediator.lock(defaultLockID, defaultTx, defaultLockTimestamp - 1 + defaultExpireNS, TimeUnit.NANOSECONDS)).andReturn(true);
-        expect(mediator.unlock(defaultLockID, defaultTx)).andReturn(true);
-        replay(mediator);
-        
-        // Done with stubbing; create locker instance around stubs
-        ConsistentKeyLockerConfiguration conf = new ConsistentKeyLockerConfiguration.Builder(store).times(times).mediator(mediator).lockExpireNS(defaultExpireNS, TimeUnit.NANOSECONDS).rid(defaultLockRid).build();
-        ConsistentKeyLocker locker = new ConsistentKeyLocker(conf); 
+        PermanentStorageException errOnFire = new PermanentStorageException("Storage cluster is on fire");
+        recordSuccessfulLocalLock();
+        StaticBuffer lockCol = recordExceptionLockWrite(1, TimeUnit.NANOSECONDS, null, errOnFire);
+        recordSuccessfulLockDelete(1, TimeUnit.NANOSECONDS, lockCol);
+        recordSuccessfulLocalUnlock();
+        ctrl.replay();
         
         StorageException expected = null;
         try {
@@ -277,65 +159,93 @@ public class ConsistentKeyLockerTest {
             expected = e;
         }
         assertNotNull(expected);
-        assertEquals(pse, expected.getCause());
-        
-        // Check for unscripted method calls
-        verify(store);
-        verify(times);
-        verify(mediator);
+        assertEquals(errOnFire, expected.getCause());
     }
     
+    /**
+     * Test the locker retries a lock write after the initial store mutation
+     * fails with a {@link TemporaryStorageException}. The retry should both
+     * attempt to write the and delete the failed mutation column.
+     * 
+     * @throws StorageException shouldn't happen
+     */
     @Test
     public void testWriteLockRetriesOnTemporaryStorageException() throws StorageException {
-        // Stubbing and setup
-        List<Entry> firstAddition = Arrays.<Entry> asList(new StaticBufferEntry(
-                defaultLockCol,
-                defaultLockVal));
-        StaticBuffer secondLockCol = codec.toLockCol(defaultLockTimestamp + 2L, defaultLockRid);
-        List<Entry> secondAddition = Arrays.<Entry> asList(new StaticBufferEntry(
-                secondLockCol,
-                defaultLockVal));
-        
-        // Stub timestamp calls
-        TimestampProvider times = createMock(TimestampProvider.class);
-        expect(times.getApproxNSSinceEpoch(false))
-            .andReturn(defaultLockTimestamp-1)   // passed to LocalLockMediator
-            .andReturn(defaultLockTimestamp)     // before first attempt on remote lock
-            .andReturn(defaultLockTimestamp+1L)  // after first attempt (which threw a TemporaryStorageException)
-            .andReturn(defaultLockTimestamp+2L)  // before the second attempt
-            .andReturn(defaultLockTimestamp+3L); // after the second attempt (which succeeded)
-        replay(times);
-
-        // Stub store calls
-        KeyColumnValueStore store = createMock(KeyColumnValueStore.class);
-        // First attempt (throws TSE)
-        store.mutate(eq(defaultLockKey), eq(firstAddition), EasyMock.<List<StaticBuffer>>isNull(), eq(defaultTx));
         TemporaryStorageException tse = new TemporaryStorageException("Storage cluster is super lazy");
-        expectLastCall().andThrow(tse);
-        // Second attempt
-        store.mutate(eq(defaultLockKey), eq(secondAddition), eq(Arrays.asList(defaultLockCol)), eq(defaultTx));
-        replay(store);
-        
-        // Stub local lock mediator calls
-        @SuppressWarnings("unchecked")
-        LocalLockMediator<StoreTransaction> mediator  = createMock(LocalLockMediator.class);
-        expect(mediator.lock(defaultLockID, defaultTx, defaultLockTimestamp - 1 + defaultExpireNS, TimeUnit.NANOSECONDS)).andReturn(true);
-        replay(mediator);
-        
-        // Done with stubbing; create locker instance around stubs
-        ConsistentKeyLockerConfiguration conf = new ConsistentKeyLockerConfiguration.Builder(store).times(times).mediator(mediator).lockExpireNS(defaultExpireNS, TimeUnit.NANOSECONDS).rid(defaultLockRid).build();
-        ConsistentKeyLocker locker = new ConsistentKeyLocker(conf); 
+        recordSuccessfulLocalLock();
+        StaticBuffer firstCol  = recordExceptionLockWrite(1, TimeUnit.NANOSECONDS, null, tse);
+        recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, firstCol);
+        ctrl.replay();
         
         locker.writeLock(defaultLockID, defaultTx); // SUT
-        
-        // Check for unscripted method calls
-        verify(store);
-        verify(times);
-        verify(mediator);
     }
     
+    private StaticBuffer recordSuccessfulLockWrite(long duration, TimeUnit tu, StaticBuffer del) throws StorageException {
+        expect(times.getApproxNSSinceEpoch(false)).andReturn(++currentTimeNS);
+        
+        StaticBuffer lockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
+        Entry add = new StaticBufferEntry(lockCol, defaultLockVal);
+
+        StaticBuffer k = eq(defaultLockKey);
+        assert null != add;
+        final List<Entry> adds = eq(Arrays.<Entry>asList(add));
+        assert null != adds;
+        final List<StaticBuffer> dels;
+        if (null != del) {
+            dels = eq(Arrays.<StaticBuffer>asList(del));
+        } else {
+            dels = EasyMock.<List<StaticBuffer>>isNull();
+        }
+        store.mutate(k, adds, dels, eq(defaultTx));
+
+        currentTimeNS += TimeUnit.NANOSECONDS.convert(duration, tu);
+        expect(times.getApproxNSSinceEpoch(false)).andReturn(currentTimeNS);
+        
+        return lockCol;
+    }
     
+    private StaticBuffer recordExceptionLockWrite(long duration, TimeUnit tu, StaticBuffer del, Throwable t) throws StorageException {
+        expect(times.getApproxNSSinceEpoch(false)).andReturn(++currentTimeNS);
+        
+        StaticBuffer lockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
+        Entry add = new StaticBufferEntry(lockCol, defaultLockVal);
+
+        StaticBuffer k = eq(defaultLockKey);
+        assert null != add;
+        final List<Entry> adds = eq(Arrays.<Entry>asList(add));
+        assert null != adds;
+        final List<StaticBuffer> dels;
+        if (null != del) {
+            dels = eq(Arrays.<StaticBuffer>asList(del));
+        } else {
+            dels = EasyMock.<List<StaticBuffer>>isNull();
+        }
+        store.mutate(k, adds, dels, eq(defaultTx));
+        expectLastCall().andThrow(t);
+        
+        currentTimeNS += TimeUnit.NANOSECONDS.convert(duration, tu);
+        expect(times.getApproxNSSinceEpoch(false)).andReturn(currentTimeNS);
+        
+        return lockCol;
+    }
     
+    private void recordSuccessfulLockDelete(long duration, TimeUnit tu, StaticBuffer del) throws StorageException {
+        expect(times.getApproxNSSinceEpoch(false)).andReturn(++currentTimeNS);
+        store.mutate(eq(defaultLockKey), EasyMock.<List<Entry>>isNull(), eq(Arrays.asList(del)), eq(defaultTx));
+
+        currentTimeNS += TimeUnit.NANOSECONDS.convert(duration, tu);
+        expect(times.getApproxNSSinceEpoch(false)).andReturn(currentTimeNS);
+    }
+    
+    private void recordSuccessfulLocalLock() {
+        expect(times.getApproxNSSinceEpoch(false)).andReturn(++currentTimeNS);
+        expect(mediator.lock(defaultLockID, defaultTx, currentTimeNS + defaultExpireNS, TimeUnit.NANOSECONDS)).andReturn(true);
+    }
+    
+    private void recordSuccessfulLocalUnlock() {
+        expect(mediator.unlock(defaultLockID, defaultTx)).andReturn(true);
+    }
+ 
 //    private static class Sleeper<T> implements IAnswer<T> {
 //
 //        private final T ret;

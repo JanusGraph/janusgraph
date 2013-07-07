@@ -79,6 +79,7 @@ public class ConsistentKeyLocker implements Locker {
         
         if (lockLocally(lockID, txh)) {
             boolean ok = false;
+            boolean skipUnlock = false;
             try {
                 tryLockRemotely(lockID, txh);
                 uncheckedLocks.add(lockID); // TODO thread unsafe and doesnt record txn
@@ -86,11 +87,12 @@ public class ConsistentKeyLocker implements Locker {
             } catch (TemporaryStorageException tse) {
                 throw new TemporaryLockingException(tse);
             } catch (AssertionError ae) {
+                skipUnlock = true;
                 throw ae; // Concession to ease testing
             } catch (Throwable t) {
                 throw new PermanentLockingException(t);
             } finally {
-                if (!ok)
+                if (!ok && !skipUnlock)
                     unlockLocally(lockID, txh);
             }
         } else {
