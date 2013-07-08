@@ -183,93 +183,93 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
             StaticBuffer column, StaticBuffer expectedValue)
             throws StorageException {
 
-        LockClaim lc = new LockClaim(backer, key, column, expectedValue);
-
-        // Check to see whether we already hold this lock
-        if (lockClaims.contains(lc)) {
-            log.trace("Skipping lock {}: already held", lc);
-            return;
-        }
-
-		/* Check the local lock mediator.
-		 * 
-		 * The timestamp calculated here is only approximate.  If it turns out that we
-		 * spend longer than the expiration period attempting to finish the rest of
-		 * this method, then there's a window of time in which the LocalLockMediator
-		 * may tell other threads that our key-column target is unlocked.  Lock conflict
-		 * is still detected in such cases during verifyAllLockClaims() below (it's
-		 * just slower than when LocalLockMediator gives the correct answer).
-		 * 
-		 * We'll also update the timestamp in the LocalLockMediator after we're done
-		 * talking to the backend store.
-		 * 
-		 * We use TimeUtility.INSTANCE.getApproxNSSinceEpoch()/1000 instead of the
-		 * superficially equivalent System.currentTimeMillis() to get consistent timestamp
-		 * rollovers.
-		 */
-        long tempts = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false) +
-                backer.getLockExpireMS() * MILLION;
-        if (!backer.getLocalLockMediator().lock(lc.getKc(), this, tempts, TimeUnit.NANOSECONDS)) {
-            throw new PermanentLockingException("Lock could not be acquired because it is held by a local transaction [" + lc + "]");
-        }
-		
-		/* Write lock to the backing store
-		 *
-		 * The key we write is a concatenation of the arguments key and column,
-		 * prefixed by an int (4 bytes) representing the length of the argument key.
-		 * 
-		 * The column we write is a concatenation of our rid and the timestamp.
-		 */
-        StaticBuffer lockKey = lc.getLockKey();
-
-        StaticBuffer valBuf = ByteBufferUtil.getIntBuffer(0);
-
-        boolean ok = false;
-        long tsNS = 0;
-        try {
-            for (int i = 0; i < backer.getLockRetryCount(); i++) {
-                tsNS = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
-                Entry addition = StaticBufferEntry.of(lc.getLockCol(tsNS, backer.getRid()), valBuf);
-
-                long before = System.currentTimeMillis();
-                backer.getLockStore().mutate(lockKey, Arrays.asList(addition), KeyColumnValueStore.NO_DELETIONS, consistentTx);
-                long after = System.currentTimeMillis();
-
-                if (backer.getLockWaitMS() < after - before) {
-                    // Too slow
-                    // Delete lock claim and loop again
-                    backer.getLockStore().mutate(lockKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(lc.getLockCol(tsNS, backer.getRid())), consistentTx);
-                } else {
-                    ok = true;
-                    lastLockApplicationTimesMS.put(backer, before);
-                    lc.setTimestamp(tsNS);
-                    log.trace("Wrote lock: {}", lc);
-                    lockClaims.add(lc);
-                    return;
-                }
-            }
-
-            throw new TemporaryLockingException("Lock failed: exceeded max timeouts [" + lc + "]");
-        } finally {
-            if (ok) {
-                // Update the timeout
-                assert 0 != tsNS;
-                boolean expireTimeUpdated = backer.getLocalLockMediator().lock(
-                        lc.getKc(), this, tsNS + MILLION * backer.getLockExpireMS(), TimeUnit.NANOSECONDS);
-
-                if (!expireTimeUpdated)
-                    log.warn("Failed to update expiration time of local lock {}; is titan.storage.lock-expiry-time too low?");
-				
-				/*
-				 * No action is immediately necessary even if we failed to re-lock locally.
-				 * 
-				 * Any failure to re-lock locally will be detected later in verifyAllLockClaims().
-				 */
-
-            } else {
-                backer.getLocalLockMediator().unlock(lc.getKc(), this);
-            }
-        }
+//        LockClaim lc = new LockClaim(backer, key, column, expectedValue);
+//
+//        // Check to see whether we already hold this lock
+//        if (lockClaims.contains(lc)) {
+//            log.trace("Skipping lock {}: already held", lc);
+//            return;
+//        }
+//
+//		/* Check the local lock mediator.
+//		 * 
+//		 * The timestamp calculated here is only approximate.  If it turns out that we
+//		 * spend longer than the expiration period attempting to finish the rest of
+//		 * this method, then there's a window of time in which the LocalLockMediator
+//		 * may tell other threads that our key-column target is unlocked.  Lock conflict
+//		 * is still detected in such cases during verifyAllLockClaims() below (it's
+//		 * just slower than when LocalLockMediator gives the correct answer).
+//		 * 
+//		 * We'll also update the timestamp in the LocalLockMediator after we're done
+//		 * talking to the backend store.
+//		 * 
+//		 * We use TimeUtility.INSTANCE.getApproxNSSinceEpoch()/1000 instead of the
+//		 * superficially equivalent System.currentTimeMillis() to get consistent timestamp
+//		 * rollovers.
+//		 */
+//        long tempts = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false) +
+//                backer.getLockExpireMS() * MILLION;
+//        if (!backer.getLocalLockMediator().lock(lc.getKc(), this, tempts, TimeUnit.NANOSECONDS)) {
+//            throw new PermanentLockingException("Lock could not be acquired because it is held by a local transaction [" + lc + "]");
+//        }
+//		
+//		/* Write lock to the backing store
+//		 *
+//		 * The key we write is a concatenation of the arguments key and column,
+//		 * prefixed by an int (4 bytes) representing the length of the argument key.
+//		 * 
+//		 * The column we write is a concatenation of our rid and the timestamp.
+//		 */
+//        StaticBuffer lockKey = lc.getLockKey();
+//
+//        StaticBuffer valBuf = ByteBufferUtil.getIntBuffer(0);
+//
+//        boolean ok = false;
+//        long tsNS = 0;
+//        try {
+//            for (int i = 0; i < backer.getLockRetryCount(); i++) {
+//                tsNS = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
+//                Entry addition = StaticBufferEntry.of(lc.getLockCol(tsNS, backer.getRid()), valBuf);
+//
+//                long before = System.currentTimeMillis();
+//                backer.getLockStore().mutate(lockKey, Arrays.asList(addition), KeyColumnValueStore.NO_DELETIONS, consistentTx);
+//                long after = System.currentTimeMillis();
+//
+//                if (backer.getLockWaitMS() < after - before) {
+//                    // Too slow
+//                    // Delete lock claim and loop again
+//                    backer.getLockStore().mutate(lockKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(lc.getLockCol(tsNS, backer.getRid())), consistentTx);
+//                } else {
+//                    ok = true;
+//                    lastLockApplicationTimesMS.put(backer, before);
+//                    lc.setTimestamp(tsNS);
+//                    log.trace("Wrote lock: {}", lc);
+//                    lockClaims.add(lc);
+//                    return;
+//                }
+//            }
+//
+//            throw new TemporaryLockingException("Lock failed: exceeded max timeouts [" + lc + "]");
+//        } finally {
+//            if (ok) {
+//                // Update the timeout
+//                assert 0 != tsNS;
+//                boolean expireTimeUpdated = backer.getLocalLockMediator().lock(
+//                        lc.getKc(), this, tsNS + MILLION * backer.getLockExpireMS(), TimeUnit.NANOSECONDS);
+//
+//                if (!expireTimeUpdated)
+//                    log.warn("Failed to update expiration time of local lock {}; is titan.storage.lock-expiry-time too low?");
+//				
+//				/*
+//				 * No action is immediately necessary even if we failed to re-lock locally.
+//				 * 
+//				 * Any failure to re-lock locally will be detected later in verifyAllLockClaims().
+//				 */
+//
+//            } else {
+//                backer.getLocalLockMediator().unlock(lc.getKc(), this);
+//            }
+//        }
     }
 
     /**
@@ -305,181 +305,181 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
      */
     public void verifyAllLockClaims() throws StorageException {
 
-        // wait one full idApplicationWaitMS since the last claim attempt, if needed
-        if (0 == lastLockApplicationTimesMS.size())
-            return; // no locks
-
-        long now = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
-
-        // Iterate over all backends and sleep, if necessary, until
-        // the backend-specific grace period since our last lock application
-        // has passed.
-        for (ConsistentKeyLockStore i : lastLockApplicationTimesMS.keySet()) {
-            long appTimeMS = lastLockApplicationTimesMS.get(i);
-
-            long mustSleepUntil = appTimeMS + i.getLockWaitMS();
-
-            if (mustSleepUntil < now / MILLION) {
-                continue;
-            }
-
-            TimeUtility.INSTANCE.sleepUntil(appTimeMS + i.getLockWaitMS(), log);
-        }
-
-        // Check lock claim seniority
-        for (LockClaim lc : lockClaims) {
-
-            StaticBuffer lockKey = lc.getLockKey();
-
-            ConsistentKeyLockStore backer = lc.getBacker();
-            int bufferLen = backer.getRid().length+8;
-            StaticBuffer lower = ByteBufferUtil.zeroBuffer(bufferLen);
-            StaticBuffer upper = ByteBufferUtil.oneBuffer(bufferLen);
-            List<Entry> entries = backer.getLockStore().getSlice(new KeySliceQuery(lockKey, lower, upper), consistentTx);
-
-            // Determine the timestamp and rid of the earliest still-valid lock claim
-            Long earliestNS = null;
-            Long latestNS = null;
-            byte[] earliestRid = null;
-            Set<StaticBuffer> ridsSeen = new HashSet<StaticBuffer>();
-
-            log.trace("Retrieved {} total lock claim(s) when verifying {}", entries.size(), lc);
-
-            for (Entry e : entries) {
-                StaticBuffer bb = e.getColumn();
-                long tsNS = bb.getLong(0);
-                byte[] curRid = new byte[bb.length()-8];
-                for (int i=8;i<bb.length();i++) curRid[i-8]=bb.getByte(i);
-
-                StaticBuffer curRidBuf = new StaticArrayBuffer(curRid);
-                ridsSeen.add(curRidBuf);
-                
-                // Ignore expired lock claims
-                if (tsNS < now - (backer.getLockExpireMS() * MILLION)) {
-                    log.warn("Discarded expired lock with timestamp {}", tsNS);
-                    continue;
-                }
-                
-                if (null == latestNS || tsNS > latestNS) {
-                    latestNS = tsNS;
-                }
-                
-                if (null == earliestNS || tsNS < earliestNS) {
-                    // Appoint new winner
-                    earliestNS = tsNS;
-                    earliestRid = curRid;
-                } else if (earliestNS == tsNS) {
-                    // Timestamp tie: break with column
-                    // (Column must be unique because it contains Rid)
-                    StaticBuffer earliestRidBuf = new StaticArrayBuffer(earliestRid);
-
-                    int i = curRidBuf.compareTo(earliestRidBuf);
-
-                    if (-1 == i) {
-                        earliestRid = curRid;
-                    } else if (1 == i) {
-                        // curRid comes after earliestRid -> don't change earliestRid
-                    } else {
-                        // This should never happen
-                        log.warn("Retrieved duplicate column from Cassandra during lock check!? lc={}", lc);
-                    }
-                }
-            }
-
-            // Check: did our Rid win?
-            byte rid[] = backer.getRid();
-            StaticBuffer myRidBuf = new StaticArrayBuffer(rid);
-            if (!Arrays.equals(earliestRid, rid)) {
-                log.trace("My rid={} lost to earlier rid={},ts={}",
-                        new Object[]{
-                                Hex.encodeHex(rid),          // TODO: I MADE THIS encodeHex from encodeHexString ?!
-                                null != earliestRid ? Hex.encodeHex(earliestRid) : "null",
-                                earliestNS});
-                throw new PermanentLockingException("Lock could not be acquired because it is held by a remote transaction [" + lc + "]");
-            }
-            
-            // Check timestamp
-            if (earliestNS != lc.getTimestamp()) {
-                if (1 == ridsSeen.size() && lc.getTimestamp() == latestNS && ridsSeen.iterator().next().equals(myRidBuf)) {
-                    log.debug("Ignoring prior unexpired lock claim from own rid ({}) with timestamp {} (expected {})",
-                            new Object[] { Hex.encodeHexString(earliestRid), earliestNS, latestNS } );
-                } else {
-                    log.warn("Timestamp mismatch: expected={}, actual={}", lc.getTimestamp(), earliestNS);
-                    /*
-                     * This is probably evidence of a prior attempt to write a lock
-                     * that the client perceived as a failure but which in fact
-                     * succeeded.
-                     * 
-                     * Since the Rid is ours, we could theoretically delete the lock
-                     * and even attempt to obtain it all over again, but that
-                     * implies significant refactoring.
-                     * 
-                     * Eventually, the earlier stale lock claim will expire and
-                     * progress will resume.
-                     */
-                    throw new PermanentLockingException("Lock could not be acquired due to timestamp mismatch [" + lc + "]");
-                }
-            }
-
-            // Check expectedValue
-            StaticBuffer bb = KCVSUtil.get(backer.getDataStore(),lc.getKey(), lc.getColumn(), baseTx);
-            if ((null == bb && null != lc.getExpectedValue()) ||
-                    (null != bb && null == lc.getExpectedValue()) ||
-                    (null != bb && null != lc.getExpectedValue() && !lc.getExpectedValue().equals(bb))) {
-                throw new PermanentLockingException("Updated state: lock acquired but value has changed since read [" + lc + "]");
-            }
-        }
+//        // wait one full idApplicationWaitMS since the last claim attempt, if needed
+//        if (0 == lastLockApplicationTimesMS.size())
+//            return; // no locks
+//
+//        long now = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
+//
+//        // Iterate over all backends and sleep, if necessary, until
+//        // the backend-specific grace period since our last lock application
+//        // has passed.
+//        for (ConsistentKeyLockStore i : lastLockApplicationTimesMS.keySet()) {
+//            long appTimeMS = lastLockApplicationTimesMS.get(i);
+//
+//            long mustSleepUntil = appTimeMS + i.getLockWaitMS();
+//
+//            if (mustSleepUntil < now / MILLION) {
+//                continue;
+//            }
+//
+//            TimeUtility.INSTANCE.sleepUntil(appTimeMS + i.getLockWaitMS(), log);
+//        }
+//
+//        // Check lock claim seniority
+//        for (LockClaim lc : lockClaims) {
+//
+//            StaticBuffer lockKey = lc.getLockKey();
+//
+//            ConsistentKeyLockStore backer = lc.getBacker();
+//            int bufferLen = backer.getRid().length+8;
+//            StaticBuffer lower = ByteBufferUtil.zeroBuffer(bufferLen);
+//            StaticBuffer upper = ByteBufferUtil.oneBuffer(bufferLen);
+//            List<Entry> entries = backer.getLockStore().getSlice(new KeySliceQuery(lockKey, lower, upper), consistentTx);
+//
+//            // Determine the timestamp and rid of the earliest still-valid lock claim
+//            Long earliestNS = null;
+//            Long latestNS = null;
+//            byte[] earliestRid = null;
+//            Set<StaticBuffer> ridsSeen = new HashSet<StaticBuffer>();
+//
+//            log.trace("Retrieved {} total lock claim(s) when verifying {}", entries.size(), lc);
+//
+//            for (Entry e : entries) {
+//                StaticBuffer bb = e.getColumn();
+//                long tsNS = bb.getLong(0);
+//                byte[] curRid = new byte[bb.length()-8];
+//                for (int i=8;i<bb.length();i++) curRid[i-8]=bb.getByte(i);
+//
+//                StaticBuffer curRidBuf = new StaticArrayBuffer(curRid);
+//                ridsSeen.add(curRidBuf);
+//                
+//                // Ignore expired lock claims
+//                if (tsNS < now - (backer.getLockExpireMS() * MILLION)) {
+//                    log.warn("Discarded expired lock with timestamp {}", tsNS);
+//                    continue;
+//                }
+//                
+//                if (null == latestNS || tsNS > latestNS) {
+//                    latestNS = tsNS;
+//                }
+//                
+//                if (null == earliestNS || tsNS < earliestNS) {
+//                    // Appoint new winner
+//                    earliestNS = tsNS;
+//                    earliestRid = curRid;
+//                } else if (earliestNS == tsNS) {
+//                    // Timestamp tie: break with column
+//                    // (Column must be unique because it contains Rid)
+//                    StaticBuffer earliestRidBuf = new StaticArrayBuffer(earliestRid);
+//
+//                    int i = curRidBuf.compareTo(earliestRidBuf);
+//
+//                    if (-1 == i) {
+//                        earliestRid = curRid;
+//                    } else if (1 == i) {
+//                        // curRid comes after earliestRid -> don't change earliestRid
+//                    } else {
+//                        // This should never happen
+//                        log.warn("Retrieved duplicate column from Cassandra during lock check!? lc={}", lc);
+//                    }
+//                }
+//            }
+//
+//            // Check: did our Rid win?
+//            byte rid[] = backer.getRid();
+//            StaticBuffer myRidBuf = new StaticArrayBuffer(rid);
+//            if (!Arrays.equals(earliestRid, rid)) {
+//                log.trace("My rid={} lost to earlier rid={},ts={}",
+//                        new Object[]{
+//                                Hex.encodeHex(rid),          // TODO: I MADE THIS encodeHex from encodeHexString ?!
+//                                null != earliestRid ? Hex.encodeHex(earliestRid) : "null",
+//                                earliestNS});
+//                throw new PermanentLockingException("Lock could not be acquired because it is held by a remote transaction [" + lc + "]");
+//            }
+//            
+//            // Check timestamp
+//            if (earliestNS != lc.getTimestamp()) {
+//                if (1 == ridsSeen.size() && lc.getTimestamp() == latestNS && ridsSeen.iterator().next().equals(myRidBuf)) {
+//                    log.debug("Ignoring prior unexpired lock claim from own rid ({}) with timestamp {} (expected {})",
+//                            new Object[] { Hex.encodeHexString(earliestRid), earliestNS, latestNS } );
+//                } else {
+//                    log.warn("Timestamp mismatch: expected={}, actual={}", lc.getTimestamp(), earliestNS);
+//                    /*
+//                     * This is probably evidence of a prior attempt to write a lock
+//                     * that the client perceived as a failure but which in fact
+//                     * succeeded.
+//                     * 
+//                     * Since the Rid is ours, we could theoretically delete the lock
+//                     * and even attempt to obtain it all over again, but that
+//                     * implies significant refactoring.
+//                     * 
+//                     * Eventually, the earlier stale lock claim will expire and
+//                     * progress will resume.
+//                     */
+//                    throw new PermanentLockingException("Lock could not be acquired due to timestamp mismatch [" + lc + "]");
+//                }
+//            }
+//
+//            // Check expectedValue
+//            StaticBuffer bb = KCVSUtil.get(backer.getDataStore(),lc.getKey(), lc.getColumn(), baseTx);
+//            if ((null == bb && null != lc.getExpectedValue()) ||
+//                    (null != bb && null == lc.getExpectedValue()) ||
+//                    (null != bb && null != lc.getExpectedValue() && !lc.getExpectedValue().equals(bb))) {
+//                throw new PermanentLockingException("Updated state: lock acquired but value has changed since read [" + lc + "]");
+//            }
+//        }
     }
 
     private void unlockAll() {
     	
-    	long nowNS = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
-
-        for (LockClaim lc : lockClaims) {
-
-            assert null != lc;
-            StaticBuffer lockKeyBuf = lc.getLockKey();
-            assert null != lockKeyBuf;
-//            assert lockKeyBuf.hasRemaining();
-            StaticBuffer lockColBuf = lc.getLockCol(lc.getTimestamp(), lc.getBacker().getRid());
-            assert null != lockColBuf;
-//            assert lockColBuf.hasRemaining();
-            
-            // Log expired locks
-            if (lc.getTimestamp() + (lc.getBacker().getLockExpireMS() * MILLION) < nowNS) {
-            	log.error("Lock expired: {} (txn={})", lc, this);
-            }
-
-            try {
-                // Release lock remotely
-                lc.getBacker().getLockStore().mutate(lockKeyBuf, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(lockColBuf), consistentTx);
-
-                if (log.isTraceEnabled()) {
-                    log.trace("Released {} in lock store (txn={})", lc, this);
-                }
-            } catch (Throwable t) {
-                log.error("Unexpected exception when releasing {} in lock store (txn={})", lc, this);
-                log.error("Lock store failure exception follows", t);
-            }
-
-            try {
-                // Release lock locally
-            	// If lc is unlocked normally, then this method returns true
-            	// If there's a problem (e.g. lc has expired), it returns false
-            	boolean locallyUnlocked = lc.getBacker().getLocalLockMediator().unlock(lc.getKc(), this);
-            	
-            	if (locallyUnlocked) {
-            		if (log.isTraceEnabled()) {
-            			log.trace("Released {} locally (txn={})", lc, this);
-            		}
-            	} else {
-            		log.warn("Failed to release {} locally (txn={})", lc, this);
-            	}
-            } catch (Throwable t) {
-                log.error("Unexpected exception while locally releasing {} (txn={})", lc, this);
-                log.error("Local release failure exception follows", t);
-            }
-        }
+//    	long nowNS = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
+//
+//        for (LockClaim lc : lockClaims) {
+//
+//            assert null != lc;
+//            StaticBuffer lockKeyBuf = lc.getLockKey();
+//            assert null != lockKeyBuf;
+////            assert lockKeyBuf.hasRemaining();
+//            StaticBuffer lockColBuf = lc.getLockCol(lc.getTimestamp(), lc.getBacker().getRid());
+//            assert null != lockColBuf;
+////            assert lockColBuf.hasRemaining();
+//            
+//            // Log expired locks
+//            if (lc.getTimestamp() + (lc.getBacker().getLockExpireMS() * MILLION) < nowNS) {
+//            	log.error("Lock expired: {} (txn={})", lc, this);
+//            }
+//
+//            try {
+//                // Release lock remotely
+//                lc.getBacker().getLockStore().mutate(lockKeyBuf, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(lockColBuf), consistentTx);
+//
+//                if (log.isTraceEnabled()) {
+//                    log.trace("Released {} in lock store (txn={})", lc, this);
+//                }
+//            } catch (Throwable t) {
+//                log.error("Unexpected exception when releasing {} in lock store (txn={})", lc, this);
+//                log.error("Lock store failure exception follows", t);
+//            }
+//
+//            try {
+//                // Release lock locally
+//            	// If lc is unlocked normally, then this method returns true
+//            	// If there's a problem (e.g. lc has expired), it returns false
+//            	boolean locallyUnlocked = lc.getBacker().getLocalLockMediator().unlock(lc.getKc(), this);
+//            	
+//            	if (locallyUnlocked) {
+//            		if (log.isTraceEnabled()) {
+//            			log.trace("Released {} locally (txn={})", lc, this);
+//            		}
+//            	} else {
+//            		log.warn("Failed to release {} locally (txn={})", lc, this);
+//            	}
+//            } catch (Throwable t) {
+//                log.error("Unexpected exception while locally releasing {} (txn={})", lc, this);
+//                log.error("Local release failure exception follows", t);
+//            }
+//        }
     }
 
 }

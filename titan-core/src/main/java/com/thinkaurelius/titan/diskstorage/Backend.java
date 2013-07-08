@@ -142,11 +142,12 @@ public class Backend {
             if (storeFeatures.supportsTransactions()) {
                 store = new TransactionalLockStore(store);
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
-                if (lockEnabled) {
-                    store = new ConsistentKeyLockStore(store, getStore(store.getName() + LOCK_STORE_SUFFIX), lockConfiguration);
-                } else {
-                    store = new ConsistentKeyLockStore(store);
-                }
+                // TODO
+//                if (lockEnabled) {
+//                    store = new ConsistentKeyLockStore(store, getStore(store.getName() + LOCK_STORE_SUFFIX), lockConfiguration);
+//                } else {
+//                    store = new ConsistentKeyLockStore(store);
+//                }
             } else throw new IllegalArgumentException("Store needs to support some form of locking");
         }
         return store;

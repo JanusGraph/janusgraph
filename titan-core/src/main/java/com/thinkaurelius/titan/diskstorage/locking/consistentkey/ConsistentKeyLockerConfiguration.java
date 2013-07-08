@@ -32,7 +32,7 @@ public class ConsistentKeyLockerConfiguration {
     
     private final TimestampProvider times;
     
-    private final ConsistentKeyLockCodec serializer;
+    private final ConsistentKeyLockerSerializer serializer;
     
     private final LocalLockMediator<StoreTransaction> llm;
 
@@ -50,7 +50,7 @@ public class ConsistentKeyLockerConfiguration {
         // Optional (has default)
         private StaticBuffer rid;
         private TimestampProvider times;
-        private ConsistentKeyLockCodec serializer;
+        private ConsistentKeyLockerSerializer serializer;
         private LocalLockMediator<StoreTransaction> llm;
         private long lockWaitNS;
         private int lockRetryCount;
@@ -60,7 +60,7 @@ public class ConsistentKeyLockerConfiguration {
             this.store = store;
             this.rid = new StaticByteBuffer(DistributedStoreManager.getRid(new BaseConfiguration()));
             this.times = TimeUtility.INSTANCE;
-            this.serializer = new ConsistentKeyLockCodec();
+            this.serializer = new ConsistentKeyLockerSerializer();
             this.llm = null; // redundant, but it preserves this constructor's overall pattern
             this.lockWaitNS = NANOSECONDS.convert(GraphDatabaseConfiguration.LOCK_WAIT_MS_DEFAULT, MILLISECONDS);
             this.lockRetryCount = GraphDatabaseConfiguration.LOCK_RETRY_COUNT_DEFAULT;
@@ -75,7 +75,7 @@ public class ConsistentKeyLockerConfiguration {
             this.times = times; return this;
         }
 
-        public Builder serializer(ConsistentKeyLockCodec serializer) {
+        public Builder serializer(ConsistentKeyLockerSerializer serializer) {
             this.serializer = serializer; return this;
         }
         
@@ -107,7 +107,7 @@ public class ConsistentKeyLockerConfiguration {
 
     private ConsistentKeyLockerConfiguration(KeyColumnValueStore store,
             StaticBuffer rid, TimestampProvider times,
-            ConsistentKeyLockCodec serializer, LocalLockMediator<StoreTransaction> llm,
+            ConsistentKeyLockerSerializer serializer, LocalLockMediator<StoreTransaction> llm,
             long lockWaitNS, int lockRetryCount, long lockExpireNS) {
         this.store = store;
         this.rid = rid;
@@ -131,7 +131,7 @@ public class ConsistentKeyLockerConfiguration {
         return times;
     }
 
-    public ConsistentKeyLockCodec getSerializer() {
+    public ConsistentKeyLockerSerializer getSerializer() {
         return serializer;
     }
     
@@ -153,5 +153,9 @@ public class ConsistentKeyLockerConfiguration {
 
     public long getLockExpireNS() {
         return lockExpireNS;
+    }
+    
+    public long getLockExpire(TimeUnit tu) {
+        return tu.convert(lockExpireNS, NANOSECONDS);
     }
 }

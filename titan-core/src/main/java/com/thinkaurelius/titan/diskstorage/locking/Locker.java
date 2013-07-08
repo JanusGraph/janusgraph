@@ -27,7 +27,7 @@ public interface Locker {
      *            lock which can be acquired and released separate from the
      *            rest.
      */
-    public void writeLock(KeyColumn lockID, StoreTransaction txh) throws StorageException;
+    public void writeLock(KeyColumn lockID, StoreTransaction tx) throws StorageException;
     
     /**
      * Attempt to acquire every lock previously specified by calls to
@@ -48,7 +48,7 @@ public interface Locker {
      * @throws PermanentLockingException
      * @throws TemporaryLockingException
      */
-    public void checkLocks() throws StorageException;
+    public void checkLocks(StoreTransaction tx) throws StorageException;
     
     /**
      * Attempt to release every lock currently held by this instance.
@@ -64,5 +64,5 @@ public interface Locker {
      * @throws PermanentLockingException
      * @throws TemporaryLockingException
      */
-    public void deleteLocks() throws StorageException;
+    public void deleteLocks(StoreTransaction tx) throws StorageException;
 }

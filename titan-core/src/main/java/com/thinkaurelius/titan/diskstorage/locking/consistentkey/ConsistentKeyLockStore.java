@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 import java.util.List;
@@ -31,60 +32,20 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
      * Titan data store.
      */
     final KeyColumnValueStore dataStore;
-
-    /**
-     * Store for locks on information in {@link #dataStore}. There's no Titan
-     * data in here aside from locking records.
-     */
-    final KeyColumnValueStore lockStore;
-    final LocalLockMediator localLockMediator;
-    final ConsistentKeyLockConfiguration configuration;
-
+    
+    final ConsistentKeyLocker locker;
+    
     /**
      * Create a 
      * @param dataStore
      */
-    public ConsistentKeyLockStore(KeyColumnValueStore dataStore) {
+    public ConsistentKeyLockStore(KeyColumnValueStore dataStore, ConsistentKeyLocker locker) {
         this.dataStore = dataStore;
-        this.lockStore = null;
-        this.localLockMediator = null;
-        this.configuration = null;
-    }
-
-    public ConsistentKeyLockStore(KeyColumnValueStore dataStore, KeyColumnValueStore lockStore, ConsistentKeyLockConfiguration config) throws StorageException {
-        Preconditions.checkNotNull(config);
-        this.dataStore = dataStore;
-        this.configuration = config;
-        this.localLockMediator = LocalLockMediators.INSTANCE.get(config.localLockMediatorPrefix + ":" + dataStore.getName());
-        this.lockStore = lockStore;
+        this.locker = locker;
     }
 
     public KeyColumnValueStore getDataStore() {
         return dataStore;
-    }
-
-    public KeyColumnValueStore getLockStore() {
-        return lockStore;
-    }
-
-    public LocalLockMediator getLocalLockMediator() {
-        return localLockMediator;
-    }
-
-    public byte[] getRid() {
-        return configuration.rid;
-    }
-
-    public int getLockRetryCount() {
-        return configuration.lockRetryCount;
-    }
-
-    public long getLockExpireMS() {
-        return configuration.lockExpireMS;
-    }
-
-    public long getLockWaitMS() {
-        return configuration.lockWaitMS;
     }
 
     private StoreTransaction getTx(StoreTransaction txh) {
@@ -111,11 +72,13 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
      */
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
-        if (lockStore != null) {
+        if (locker != null) {
             ConsistentKeyLockTransaction tx = (ConsistentKeyLockTransaction) txh;
             if (!tx.isMutationStarted()) {
                 tx.mutationStarted();
-                tx.verifyAllLockClaims();
+                locker.checkLocks(txh);
+                // TODO check expected values
+                throw new UnsupportedOperationException("expected value checking unimplemented");
             }
         }
         dataStore.mutate(key, additions, deletions, getTx(txh));
@@ -130,11 +93,14 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
      */
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
-        if (lockStore != null) {
+        if (locker != null) {
             ConsistentKeyLockTransaction tx = (ConsistentKeyLockTransaction) txh;
             if (tx.isMutationStarted())
                 throw new PermanentLockingException("Attempted to obtain a lock after mutations had been persisted");
-            tx.writeBlindLockClaim(this, key, column, expectedValue);
+            KeyColumn lockID = new KeyColumn(key, column);
+            locker.writeLock(lockID, tx);
+            // TODO store expected value
+            throw new UnsupportedOperationException("storing expected values unimplemented");
         } else {
             dataStore.acquireLock(key, column, expectedValue, getTx(txh));
         }
@@ -159,6 +125,6 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
     @Override
     public void close() throws StorageException {
         dataStore.close();
-        if (lockStore != null) lockStore.close();
+        // TODO close locker?
     }
 }

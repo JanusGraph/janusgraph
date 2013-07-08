@@ -59,10 +59,36 @@ public enum TimeUtility implements TimestampProvider {
      *               returned value be one?
      * @return a timestamp as described above
      */
+    @Override
     public long getApproxNSSinceEpoch(final boolean setLSB) {
         final long nanosSinceEpoch = System.nanoTime() - t0NanoTime + t0NanosSinceEpoch;
         final long ts = ((nanosSinceEpoch) & 0xFFFFFFFFFFFFFFFEL) + (setLSB ? 1L : 0L);
         return ts;
+    }
+    
+    /**
+     * Sleep until {@link #getApproxNSSinceEpoch(false)} returns a number
+     * greater than or equal to the argument. This method loops internally to
+     * handle spurious wakeup.
+     * 
+     * @param untilNS
+     *            the timestamp to meet or exceed before returning (unless
+     *            interrupted first)
+     */
+    @Override
+    public long sleepUntil(final long untilNS) throws InterruptedException {
+        long nowNS;
+        
+        for (nowNS = getApproxNSSinceEpoch(false);
+             nowNS < untilNS;
+             nowNS = getApproxNSSinceEpoch(false)) {
+
+            final long delta = untilNS - nowNS;
+            assert 0 < delta;
+            Thread.sleep(delta);
+        }
+        
+        return nowNS;
     }
 
     public final void sleepUntil(long untilTimeMillis, Logger log) throws StorageException {

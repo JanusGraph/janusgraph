@@ -12,7 +12,7 @@ import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
  * values, timestamps, and rids) into keys, columns, and values compatible with
  * {@link ConsistentKeyLocker} and vice-versa.
  */
-public class ConsistentKeyLockCodec {
+public class ConsistentKeyLockerSerializer {
      
     public StaticBuffer toLockKey(StaticBuffer key, StaticBuffer column) {
         WriteBuffer b = new WriteByteBuffer(key.length() + column.length() + 4);
@@ -31,8 +31,10 @@ public class ConsistentKeyLockCodec {
     
     public TimestampRid fromLockColumn(StaticBuffer lockKey) {
         ReadBuffer r = lockKey.asReadBuffer();
+        int len = r.length();
         long tsNS = r.getLong();
-        byte[] curRid = new byte[r.length()];
+        len -= 8;
+        byte[] curRid = new byte[len];
         for (int i = 0; r.hasRemaining(); i++) {
             curRid[i] = r.getByte();
         }
