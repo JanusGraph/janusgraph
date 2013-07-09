@@ -171,6 +171,7 @@ public abstract class BaseTest extends TestCase {
 
     public static Map<Long, FaunusVertex> runWithGraph(final Map<Long, FaunusVertex> graph, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
+        driver.resetExpectedCounters();
         driver.getConfiguration().setBoolean(FaunusCompiler.TESTING, true);
         for (final FaunusVertex vertex : graph.values()) {
             driver.withInput(NullWritable.get(), vertex);
@@ -185,6 +186,7 @@ public abstract class BaseTest extends TestCase {
 
     public static List runWithGraphNoIndex(final Map<Long, FaunusVertex> graph, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
+        driver.resetExpectedCounters();
         driver.getConfiguration().setBoolean(FaunusCompiler.TESTING, true);
         for (final Vertex vertex : graph.values()) {
             driver.withInput(NullWritable.get(), vertex);

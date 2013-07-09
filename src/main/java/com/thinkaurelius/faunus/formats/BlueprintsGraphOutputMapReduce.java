@@ -22,6 +22,7 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -40,6 +41,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 public class BlueprintsGraphOutputMapReduce {
 
     public enum Counters {
+        VERTICES_RETRIEVED,
         VERTICES_WRITTEN,
         VERTEX_PROPERTIES_WRITTEN,
         EDGES_WRITTEN,
@@ -49,6 +51,10 @@ public class BlueprintsGraphOutputMapReduce {
         SUCCESSFUL_TRANSACTIONS,
         FAILED_TRANSACTIONS
     }
+
+    public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_UNIQUE_KEY = "faunus.graph.output.blueprints.unique-key";
+    public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_LOADING_FROM_SCRATCH = "faunus.graph.output.blueprints.loading-from-scratch";
+
 
     private static final Logger LOGGER = Logger.getLogger(BlueprintsGraphOutputMapReduce.class);
     // some random property that will 'never' be used by anyone
@@ -78,6 +84,8 @@ public class BlueprintsGraphOutputMapReduce {
     // WRITE ALL THE VERTICES AND THEIR PROPERTIES
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
         Graph graph;
+        boolean loadingFromScratch;
+        String uniqueKey;
 
         private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
@@ -86,20 +94,22 @@ public class BlueprintsGraphOutputMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
+            this.loadingFromScratch = context.getConfiguration().getBoolean(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_LOADING_FROM_SCRATCH, true);
+            if (!this.loadingFromScratch) {
+                this.uniqueKey = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_UNIQUE_KEY,null);
+                if (null == this.uniqueKey) {
+                    throw new InterruptedException("If no loading from scratch, then a unique key must be provided to lookup vertices");
+                }
+            }
             LOGGER.setLevel(Level.INFO);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
             try {
-                // Write FaunusVertex (and respective properties) to Blueprints Graph
+                // Read (and/or Write) FaunusVertex (and respective properties) to Blueprints Graph
                 // Attempt to use the ID provided by Faunus
-                final Vertex blueprintsVertex = this.graph.addVertex(value.getIdAsLong());
-                context.getCounter(Counters.VERTICES_WRITTEN).increment(1l);
-                for (final String property : value.getPropertyKeys()) {
-                    blueprintsVertex.setProperty(property, value.getProperty(property));
-                    context.getCounter(Counters.VERTEX_PROPERTIES_WRITTEN).increment(1l);
-                }
+                final Vertex blueprintsVertex = this.getOrCreateVertex(value, context);
 
                 // Propagate shell vertices with Blueprints ids
                 this.shellVertex.reuse(value.getIdAsLong());
@@ -138,6 +148,36 @@ public class BlueprintsGraphOutputMapReduce {
                 }
             }
             this.graph.shutdown();
+        }
+
+        private Vertex getOrCreateVertex(final FaunusVertex faunusVertex, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws InterruptedException {
+            final Vertex blueprintsVertex;
+            if (this.loadingFromScratch) {
+                blueprintsVertex = this.graph.addVertex(faunusVertex.getIdAsLong());
+                context.getCounter(Counters.VERTICES_WRITTEN).increment(1l);
+            } else {
+                final Object uniqueValue = faunusVertex.getProperty(this.uniqueKey);
+                if (null == uniqueValue) {
+                    throw new InterruptedException("The provided Faunus vertex does not have a property for the unique " + this.uniqueKey + " key: " + faunusVertex);
+                } else {
+                    final Iterator<Vertex> itty = this.graph.query().has(this.uniqueKey, uniqueValue).vertices().iterator();
+                    if (itty.hasNext()) {
+                        blueprintsVertex = itty.next();
+                        context.getCounter(Counters.VERTICES_RETRIEVED).increment(1l);
+                        if (itty.hasNext()) {
+                            LOGGER.error("The unique " + this.uniqueKey + " key is not unique as more than one vertex with the value: " + uniqueValue);
+                        }
+                    } else {
+                        blueprintsVertex = this.graph.addVertex(faunusVertex.getIdAsLong());
+                        context.getCounter(Counters.VERTICES_WRITTEN).increment(1l);
+                    }
+                }
+            }
+            for (final String property : faunusVertex.getPropertyKeys()) {
+                blueprintsVertex.setProperty(property, faunusVertex.getProperty(property));
+                context.getCounter(Counters.VERTEX_PROPERTIES_WRITTEN).increment(1l);
+            }
+            return blueprintsVertex;
         }
     }
 
