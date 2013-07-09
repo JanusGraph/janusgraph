@@ -1,14 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -16,10 +11,11 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.base.Function;
+import com.google.common.collect.MapMaker;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -41,14 +37,10 @@ import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
  */
 public class ConsistentKeyLocker implements Locker {
 
-    
-    /**
-     * Locks taken in the LocalLockMediator and written to the store (but not
-     * necessarily checked)
-     */
-    private final ConcurrentMap<StoreTransaction, Map<KeyColumn, LockStatus>> locks;
      
     private final ConsistentKeyLockerConfiguration conf;
+    
+    private final LockState lockState;
     
     private static final StaticBuffer zeroBuf = ByteBufferUtil.getIntBuffer(0); // TODO this does not belong here
     
@@ -61,7 +53,7 @@ public class ConsistentKeyLocker implements Locker {
      */
     public ConsistentKeyLocker(ConsistentKeyLockerConfiguration conf) {
         this.conf = conf;
-        this.locks = new ConcurrentHashMap<StoreTransaction, Map<KeyColumn, LockStatus>>();
+        this.lockState = new LockState();
     }
     
     /**
@@ -74,9 +66,9 @@ public class ConsistentKeyLocker implements Locker {
      * @param locks
      *            this locker's internal state map
      */
-    public ConsistentKeyLocker(ConsistentKeyLockerConfiguration conf, ConcurrentMap<StoreTransaction, Map<KeyColumn, LockStatus>> locks) {
+    public ConsistentKeyLocker(ConsistentKeyLockerConfiguration conf, LockState locks) {
         this.conf = conf;
-        this.locks = locks;
+        this.lockState = locks;
     }
     
     /**
@@ -101,13 +93,7 @@ public class ConsistentKeyLocker implements Locker {
     @Override
     public void writeLock(KeyColumn lockID, StoreTransaction txh) throws StorageException {
         
-        Map<KeyColumn, LockStatus> locksForTx = locks.get(txh);
-        if (null == locksForTx) {
-            locksForTx = new HashMap<KeyColumn, LockStatus>();
-            locks.put(txh, locksForTx);
-        }
-        
-        if (locksForTx.containsKey(lockID)) {
+        if (lockState.has(txh, lockID)) {
             log.warn("Transaction {} already wrote lock on {}", txh, lockID);
             return;
         }
@@ -117,7 +103,7 @@ public class ConsistentKeyLocker implements Locker {
             try {
                 long tsNS = tryLockRemotely(lockID, txh);
                 lockLocally(lockID, tsNS, txh); // update local lock expiration time
-                locksForTx.put(lockID, new LockStatus(tsNS, TimeUnit.NANOSECONDS));
+                lockState.take(txh, lockID, new LockStatus(tsNS, TimeUnit.NANOSECONDS));
                 ok = true;
             } catch (TemporaryStorageException tse) {
                 throw new TemporaryLockingException(tse);
@@ -129,7 +115,7 @@ public class ConsistentKeyLocker implements Locker {
                 throw new PermanentLockingException(t);
             } finally {
                 if (!ok) {
-                    locksForTx.remove(lockID);
+                    // lockState.release(txh, lockID); // has no effect
                     unlockLocally(lockID, txh);
                 }
             }
@@ -270,9 +256,9 @@ public class ConsistentKeyLocker implements Locker {
 
     @Override
     public void checkLocks(StoreTransaction tx) throws StorageException {
-        Map<KeyColumn, LockStatus> m = locks.get(tx);
+        Map<KeyColumn, LockStatus> m = lockState.getLocksForTx(tx);
         
-        if (null == m) {
+        if (m.isEmpty()) {
             return; // no locks for this tx
         }
 
@@ -300,7 +286,7 @@ public class ConsistentKeyLocker implements Locker {
 
         // Slice the store
         KeySliceQuery ksq = new KeySliceQuery(conf.getSerializer().toLockKey(kc.getKey(), kc.getColumn()), ByteBufferUtil.zeroBuffer(9), ByteBufferUtil.oneBuffer(9));
-        List<Entry> claimEntries = conf.getStore().getSlice(ksq, tx);
+        List<Entry> claimEntries = tryCheckGetSlice(ksq, tx);
         
         // Extract timestamp and rid from the column in each returned Entry...
         Iterable<TimestampRid> iter = Iterables.transform(claimEntries, new Function<Entry, TimestampRid>() {
@@ -323,6 +309,23 @@ public class ConsistentKeyLocker implements Locker {
         
        checkSeniority(kc, ls, iter);
        ls.setChecked();
+    }
+    
+    private List<Entry> tryCheckGetSlice(KeySliceQuery ksq, StoreTransaction tx) throws StorageException {
+        
+        for (int i = 0; i < conf.getLockRetryCount(); i++) {
+            // TODO either make this like writeLock so that it handles all Throwable types (and pull that logic out into a shared method) or make writeLock like this in that it only handles Temporary/PermanentSE
+            try {
+                return conf.getStore().getSlice(ksq, tx);
+            } catch (PermanentStorageException e) {
+                log.error("Failed to check locks", e);
+                throw new PermanentLockingException(e);
+            } catch (TemporaryStorageException e) {
+                log.warn("Temporary storage failure while checking locks", e);
+            }
+        }
+        
+        throw new TemporaryStorageException("Maximum retries (" + conf.getLockRetryCount() + ") exceeded while checking locks");
     }
 
     private void checkSeniority(KeyColumn target, LockStatus ls, Iterable<TimestampRid> claimTRs) throws StorageException {
@@ -381,8 +384,32 @@ public class ConsistentKeyLocker implements Locker {
     }
 
     @Override
-    public void deleteLocks(StoreTransaction txh) throws StorageException {
-        // TODO Auto-generated method stub
+    public void deleteLocks(StoreTransaction tx) throws StorageException {
+        Map<KeyColumn, LockStatus> m = lockState.getLocksForTx(tx);
+        
+        for (KeyColumn kc : m.keySet()) {
+            LockStatus ls = m.get(kc);
+            tryDeleteSingleLock(kc, ls, tx);
+            // Regardless of whether we successfully deleted the lock from storage, take it out of the local mediator
+            conf.getLocalLockMediator().unlock(kc, tx);
+            lockState.release(tx, kc);
+        }
+    }
+    
+    private void tryDeleteSingleLock(KeyColumn kc, LockStatus ls, StoreTransaction tx) throws StorageException {
+        List<StaticBuffer> dels = ImmutableList.of(conf.getSerializer().toLockCol(ls.getWrittenTimestamp(TimeUnit.NANOSECONDS), conf.getRid()));
+        for (int i = 0; i < conf.getLockRetryCount(); i++) {
+            try {
+                conf.getStore().mutate(conf.getSerializer().toLockKey(kc.getKey(), kc.getColumn()), null, dels, tx);
+                return;
+            } catch (TemporaryStorageException e) {
+                log.warn("Temporary storage exception while deleting lock", e);
+                // don't return -- iterate and retry
+            } catch (PermanentStorageException e) {
+                log.error("Permanent storage exception while deleting lock", e);
+                return; // give up on this lock, but try the next one
+            }
+        } 
     }
     
     private static class WriteResult {
@@ -447,6 +474,77 @@ public class ConsistentKeyLocker implements Locker {
 
         public void setChecked() {
             this.checked = true;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + (checked ? 1231 : 1237);
+            result = prime * result + (int) (writtenNS ^ (writtenNS >>> 32));
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            LockStatus other = (LockStatus) obj;
+            if (checked != other.checked)
+                return false;
+            if (writtenNS != other.writtenNS)
+                return false;
+            return true;
+        }
+    }
+    
+    public static class LockState {
+
+        
+        /**
+         * Locks taken in the LocalLockMediator and written to the store (but not
+         * necessarily checked)
+         */
+        private final ConcurrentMap<StoreTransaction, Map<KeyColumn, LockStatus>> locks;
+        
+        public LockState() {
+            // TODO this wild guess at the concurrency level should not be hardcoded
+            this(new MapMaker().concurrencyLevel(8).weakKeys()
+                    .<StoreTransaction, Map<KeyColumn, LockStatus>>makeMap());
+        }
+        
+        public LockState(ConcurrentMap<StoreTransaction, Map<KeyColumn, LockStatus>> locks) {
+            this.locks = locks;
+        }
+        
+        public boolean has(StoreTransaction tx, KeyColumn kc) {
+            return getLocksForTx(tx).containsKey(kc);
+        }
+        
+        public void take(StoreTransaction tx, KeyColumn kc, LockStatus ls) {
+            getLocksForTx(tx).put(kc, ls);
+        }
+        
+        public void release(StoreTransaction tx, KeyColumn kc) {
+            getLocksForTx(tx).remove(kc);
+        }
+        
+        public Map<KeyColumn, LockStatus> getLocksForTx(StoreTransaction tx) {
+            Map<KeyColumn, LockStatus> m = locks.get(tx);
+            
+            if (null == m) {
+                m = new HashMap<KeyColumn, LockStatus>();
+                final Map<KeyColumn, LockStatus> x = locks.putIfAbsent(tx, m);
+                if (null != x && x != m) {
+                    m = x;
+                }
+            }
+            
+            return m;
         }
     }
 
