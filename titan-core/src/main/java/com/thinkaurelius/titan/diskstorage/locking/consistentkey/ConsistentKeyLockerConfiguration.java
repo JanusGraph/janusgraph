@@ -6,11 +6,13 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
 
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
@@ -41,7 +43,6 @@ public class ConsistentKeyLockerConfiguration {
     private final int lockRetryCount;
     
     private final long lockExpireNS;
-    
     
     public static class Builder {
         // Required (no default)
@@ -93,6 +94,27 @@ public class ConsistentKeyLockerConfiguration {
         
         public Builder lockExpireNS(long exp, TimeUnit unit) {
             this.lockExpireNS = NANOSECONDS.convert(exp, unit); return this;
+        }
+        
+        public Builder fromCommonsConfig(Configuration config) {
+            rid(new StaticArrayBuffer(DistributedStoreManager.getRid(config)));
+            
+            mediator(LocalLockMediators.INSTANCE.get(config.getString(
+                    ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
+                    null)));
+
+            lockRetryCount(config.getInt(
+                    GraphDatabaseConfiguration.LOCK_RETRY_COUNT,
+                    GraphDatabaseConfiguration.LOCK_RETRY_COUNT_DEFAULT));
+
+            lockWaitNS(config.getLong(
+                    GraphDatabaseConfiguration.LOCK_WAIT_MS,
+                    GraphDatabaseConfiguration.LOCK_WAIT_MS_DEFAULT), TimeUnit.MILLISECONDS);
+
+            lockExpireNS(config.getLong(
+                    GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
+                    GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT), TimeUnit.MILLISECONDS);
+            return this;
         }
         
         public ConsistentKeyLockerConfiguration build() {

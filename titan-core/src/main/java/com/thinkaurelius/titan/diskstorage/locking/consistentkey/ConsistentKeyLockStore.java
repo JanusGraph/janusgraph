@@ -49,7 +49,8 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
     }
 
     private StoreTransaction getTx(StoreTransaction txh) {
-        Preconditions.checkArgument(txh != null && txh instanceof ConsistentKeyLockTransaction);
+        Preconditions.checkArgument(txh != null);
+        Preconditions.checkArgument(txh instanceof ConsistentKeyLockTransaction);
         return ((ConsistentKeyLockTransaction) txh).getWrappedTransaction();
     }
 
@@ -76,14 +77,13 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
             ConsistentKeyLockTransaction tx = (ConsistentKeyLockTransaction) txh;
             if (!tx.isMutationStarted()) {
                 tx.mutationStarted();
-                locker.checkLocks(txh);
-                // TODO check expected values
-                throw new UnsupportedOperationException("expected value checking unimplemented");
+                locker.checkLocks(tx.getConsistentTransaction());
+                tx.checkExpectedValues();
             }
         }
         dataStore.mutate(key, additions, deletions, getTx(txh));
     }
-
+    
     /**
      * {@inheritDoc}
      * 
@@ -98,9 +98,9 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
             if (tx.isMutationStarted())
                 throw new PermanentLockingException("Attempted to obtain a lock after mutations had been persisted");
             KeyColumn lockID = new KeyColumn(key, column);
-            locker.writeLock(lockID, tx);
-            // TODO store expected value
-            throw new UnsupportedOperationException("storing expected values unimplemented");
+            locker.writeLock(lockID, tx.getConsistentTransaction());
+            tx.lockedOn(this);
+            tx.storeExpectedValue(this, lockID, expectedValue);
         } else {
             dataStore.acquireLock(key, column, expectedValue, getTx(txh));
         }
@@ -116,7 +116,6 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
         return dataStore.getLocalKeyPartition();
     }
 
-
     @Override
     public String getName() {
         return dataStore.getName();
@@ -126,5 +125,9 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
     public void close() throws StorageException {
         dataStore.close();
         // TODO close locker?
+    }
+    
+    void deleteLocks(ConsistentKeyLockTransaction tx) throws StorageException {
+        locker.deleteLocks(tx.getConsistentTransaction());
     }
 }

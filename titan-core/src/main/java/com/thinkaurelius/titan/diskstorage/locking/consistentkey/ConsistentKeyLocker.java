@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -233,7 +234,7 @@ public class ConsistentKeyLocker implements Locker {
         StaticBuffer newLockCol = conf.getSerializer().toLockCol(before, conf.getRid());
         Entry newLockEntry = new StaticBufferEntry(newLockCol, zeroBuf);
         try {
-            conf.getStore().mutate(key, Arrays.asList(newLockEntry), null == del ? null : Arrays.asList(del), txh);
+            conf.getStore().mutate(key, Arrays.asList(newLockEntry), null == del ? ImmutableList.<StaticBuffer>of() : Arrays.asList(del), txh);
         } catch (StorageException e) {
             t = e;
         }
@@ -246,7 +247,7 @@ public class ConsistentKeyLocker implements Locker {
         Throwable t = null;
         final long before = conf.getTimes().getApproxNSSinceEpoch(false);
         try {
-            conf.getStore().mutate(key, null, Arrays.asList(col), txh);
+            conf.getStore().mutate(key, ImmutableList.<Entry>of(), Arrays.asList(col), txh);
         } catch (StorageException e) {
             t = e;
         }
@@ -387,12 +388,14 @@ public class ConsistentKeyLocker implements Locker {
     public void deleteLocks(StoreTransaction tx) throws StorageException {
         Map<KeyColumn, LockStatus> m = lockState.getLocksForTx(tx);
         
-        for (KeyColumn kc : m.keySet()) {
+        Iterator<KeyColumn> iter = m.keySet().iterator();
+        while (iter.hasNext()) {
+            KeyColumn kc = iter.next();
             LockStatus ls = m.get(kc);
             tryDeleteSingleLock(kc, ls, tx);
             // Regardless of whether we successfully deleted the lock from storage, take it out of the local mediator
             conf.getLocalLockMediator().unlock(kc, tx);
-            lockState.release(tx, kc);
+            iter.remove();
         }
     }
     
@@ -400,7 +403,7 @@ public class ConsistentKeyLocker implements Locker {
         List<StaticBuffer> dels = ImmutableList.of(conf.getSerializer().toLockCol(ls.getWrittenTimestamp(TimeUnit.NANOSECONDS), conf.getRid()));
         for (int i = 0; i < conf.getLockRetryCount(); i++) {
             try {
-                conf.getStore().mutate(conf.getSerializer().toLockKey(kc.getKey(), kc.getColumn()), null, dels, tx);
+                conf.getStore().mutate(conf.getSerializer().toLockKey(kc.getKey(), kc.getColumn()), ImmutableList.<Entry>of(), dels, tx);
                 return;
             } catch (TemporaryStorageException e) {
                 log.warn("Temporary storage exception while deleting lock", e);
@@ -539,7 +542,7 @@ public class ConsistentKeyLocker implements Locker {
             if (null == m) {
                 m = new HashMap<KeyColumn, LockStatus>();
                 final Map<KeyColumn, LockStatus> x = locks.putIfAbsent(tx, m);
-                if (null != x && x != m) {
+                if (null != x) {
                     m = x;
                 }
             }

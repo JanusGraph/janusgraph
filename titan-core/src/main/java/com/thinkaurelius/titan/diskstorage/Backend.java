@@ -14,15 +14,19 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
+import com.thinkaurelius.titan.diskstorage.locking.Locker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockConfiguration;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerConfiguration;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -37,6 +41,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -86,7 +91,6 @@ public class Backend {
 
     private final Map<String,IndexProvider> indexes;
 
-    private final ConsistentKeyLockConfiguration lockConfiguration;
     private final int bufferSize;
     private final boolean hashPrefixIndex;
     private final boolean basicMetrics;
@@ -95,8 +99,12 @@ public class Backend {
     private final int writeAttempts;
     private final int readAttempts;
     private final int persistAttemptWaittime;
+    
+    private final Configuration storageConfig;
 
     public Backend(Configuration storageConfig) {
+        this.storageConfig = storageConfig;
+        
         storeManager = getStorageManager(storageConfig);
         indexes = getIndexes(storageConfig);
         storeFeatures = storeManager.getFeatures();
@@ -111,11 +119,11 @@ public class Backend {
             log.debug("Buffering disabled because backend does not support batch mutations");
         } else bufferSize = bufferSizeTmp;
 
-        if (!storeFeatures.supportsLocking() && storeFeatures.supportsConsistentKeyOperations()) {
-            lockConfiguration = new ConsistentKeyLockConfiguration(storageConfig, storeManager.toString());
-        } else {
-            lockConfiguration = null;
-        }
+//        if (!storeFeatures.supportsLocking() && storeFeatures.supportsConsistentKeyOperations()) {
+//            lockerConfig = TODO;
+//        } else {
+//            lockerConfig = null;
+//        }
 
         writeAttempts = storageConfig.getInt(WRITE_ATTEMPTS_KEY, WRITE_ATTEMPTS_DEFAULT);
         Preconditions.checkArgument(writeAttempts > 0, "Write attempts must be positive");
@@ -142,15 +150,33 @@ public class Backend {
             if (storeFeatures.supportsTransactions()) {
                 store = new TransactionalLockStore(store);
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
-                // TODO
-//                if (lockEnabled) {
-//                    store = new ConsistentKeyLockStore(store, getStore(store.getName() + LOCK_STORE_SUFFIX), lockConfiguration);
-//                } else {
-//                    store = new ConsistentKeyLockStore(store);
-//                }
+                if (lockEnabled) {
+                    store = new ConsistentKeyLockStore(store, getLocker(store, store.getName() + LOCK_STORE_SUFFIX));
+                } else {
+                    store = new ConsistentKeyLockStore(store, null);
+                }
             } else throw new IllegalArgumentException("Store needs to support some form of locking");
         }
         return store;
+    }
+    
+    private final ConcurrentHashMap<String, ConsistentKeyLocker> lockers = new ConcurrentHashMap<String, ConsistentKeyLocker>();
+    
+    private ConsistentKeyLocker getLocker(KeyColumnValueStore store, String name) {
+        ConsistentKeyLocker l = lockers.get(name);
+        
+        ConsistentKeyLockerConfiguration lockerConf =
+                new ConsistentKeyLockerConfiguration.Builder(store).fromCommonsConfig(storageConfig).build();
+        
+        if (null == l) {
+            l = new ConsistentKeyLocker(lockerConf);
+            final ConsistentKeyLocker x = lockers.putIfAbsent(name, l);
+            if (null != x) {
+                l = x;
+            }
+        }
+        
+        return l;
     }
 
     private KeyColumnValueStore getBufferStore(String name) throws StorageException {

@@ -1,14 +1,21 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
+import java.util.concurrent.TimeUnit;
+
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility methods for measuring fine time intervals
  */
 public enum TimeUtility implements TimestampProvider {
     INSTANCE;
+    
+    private static final Logger log =
+            LoggerFactory.getLogger(TimeUtility.class);
 
     // Initialize the t0 variables
     {
@@ -83,9 +90,11 @@ public enum TimeUtility implements TimestampProvider {
              nowNS < untilNS;
              nowNS = getApproxNSSinceEpoch(false)) {
 
-            final long delta = untilNS - nowNS;
-            assert 0 < delta;
-            Thread.sleep(delta);
+            final long deltaMS = TimeUnit.MILLISECONDS.convert(untilNS - nowNS, TimeUnit.NANOSECONDS);
+            assert 0 < deltaMS;
+            
+            log.debug("About to sleep for {} ms", deltaMS);
+            Thread.sleep(deltaMS);
         }
         
         return nowNS;

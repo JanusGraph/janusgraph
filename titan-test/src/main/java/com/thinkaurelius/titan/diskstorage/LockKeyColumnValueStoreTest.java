@@ -36,6 +36,8 @@ import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockConfiguration;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerConfiguration;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -102,9 +104,9 @@ public abstract class LockKeyColumnValueStoreTest {
                 if (storeFeatures.supportsTransactions()) {
                     store[i] = new TransactionalLockStore(store[i]);
                 } else if (storeFeatures.supportsConsistentKeyOperations()) {
-                    ConsistentKeyLockConfiguration lockConfiguration = new ConsistentKeyLockConfiguration(sc, "store" + i);
-                    // TODO fix stores
-//                    store[i] = new ConsistentKeyLockStore(store[i], manager[i].openDatabase(dbName + "_lock_"), lockConfiguration);
+                    KeyColumnValueStore lockerStore = manager[i].openDatabase(dbName + "_lock_");
+                    ConsistentKeyLockerConfiguration c = new ConsistentKeyLockerConfiguration.Builder(lockerStore).fromCommonsConfig(sc).build();
+                    store[i] = new ConsistentKeyLockStore(store[i], new ConsistentKeyLocker(c));
                     for (int j = 0; j < numTx; j++)
                         tx[i][j] = new ConsistentKeyLockTransaction(tx[i][j], manager[i].beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
                 } else throw new IllegalArgumentException("Store needs to support some form of locking");
