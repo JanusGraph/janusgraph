@@ -22,6 +22,7 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -40,6 +41,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 public class BlueprintsGraphOutputMapReduce {
 
     public enum Counters {
+        VERTICES_RETRIEVED,
         VERTICES_WRITTEN,
         VERTEX_PROPERTIES_WRITTEN,
         EDGES_WRITTEN,
@@ -50,8 +52,11 @@ public class BlueprintsGraphOutputMapReduce {
         FAILED_TRANSACTIONS
     }
 
+    public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_UNIQUE_KEY = "faunus.graph.output.blueprints.unique-key";
+    public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_LOADING_FROM_SCRATCH = "faunus.graph.output.blueprints.loading-from-scratch";
+
+
     private static final Logger LOGGER = Logger.getLogger(BlueprintsGraphOutputMapReduce.class);
-    public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_TX_COMMIT = "faunus.graph.output.blueprints.tx-commit";
     // some random property that will 'never' be used by anyone
     public static final String BLUEPRINTS_ID = "_bId0192834";
 
@@ -69,6 +74,8 @@ public class BlueprintsGraphOutputMapReduce {
         final Configuration configuration = new EmptyConfiguration();
         configuration.setBoolean("mapred.map.tasks.speculative.execution", false);
         configuration.setBoolean("mapred.reduce.tasks.speculative.execution", false);
+        // 5mb transaction size for vertex writing
+        configuration.setLong("mapred.max.split.size", 5242880);
         return configuration;
     }
 
@@ -76,10 +83,9 @@ public class BlueprintsGraphOutputMapReduce {
 
     // WRITE ALL THE VERTICES AND THEIR PROPERTIES
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
-
         Graph graph;
-        private long mutations = 0;
-        private long commitTx = 5000;
+        boolean loadingFromScratch;
+        String uniqueKey;
 
         private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
@@ -88,61 +94,90 @@ public class BlueprintsGraphOutputMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
-            this.commitTx = context.getConfiguration().getLong(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_TX_COMMIT, 5000);
+            this.loadingFromScratch = context.getConfiguration().getBoolean(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_LOADING_FROM_SCRATCH, true);
+            if (!this.loadingFromScratch) {
+                this.uniqueKey = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_UNIQUE_KEY,null);
+                if (null == this.uniqueKey) {
+                    throw new InterruptedException("If no loading from scratch, then a unique key must be provided to lookup vertices");
+                }
+            }
             LOGGER.setLevel(Level.INFO);
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
+            try {
+                // Read (and/or Write) FaunusVertex (and respective properties) to Blueprints Graph
+                // Attempt to use the ID provided by Faunus
+                final Vertex blueprintsVertex = this.getOrCreateVertex(value, context);
 
-            // Write FaunusVertex (and respective properties) to Blueprints Graph
-            // Attempt to use the ID provided by Faunus
-            final Vertex blueprintsVertex = this.graph.addVertex(value.getIdAsLong());
-            context.getCounter(Counters.VERTICES_WRITTEN).increment(1l);
-            for (final String property : value.getPropertyKeys()) {
-                blueprintsVertex.setProperty(property, value.getProperty(property));
-                context.getCounter(Counters.VERTEX_PROPERTIES_WRITTEN).increment(1l);
-            }
+                // Propagate shell vertices with Blueprints ids
+                this.shellVertex.reuse(value.getIdAsLong());
+                this.shellVertex.setProperty(BLUEPRINTS_ID, blueprintsVertex.getId());
+                // TODO: Might need to be OUT for the sake of unidirectional edges in Titan
+                for (final Edge faunusEdge : value.getEdges(IN)) {
+                    this.longWritable.set((Long) faunusEdge.getVertex(OUT).getId());
+                    context.write(this.longWritable, this.vertexHolder.set('s', this.shellVertex));
+                }
 
-            // Propagate shell vertices with Blueprints ids
-            this.shellVertex.reuse(value.getIdAsLong());
-            this.shellVertex.setProperty(BLUEPRINTS_ID, blueprintsVertex.getId());
-            // TODO: Might need to be OUT for the sake of unidirectional edges in Titan
-            for (final Edge faunusEdge : value.getEdges(IN)) {
-                this.longWritable.set((Long) faunusEdge.getVertex(OUT).getId());
-                context.write(this.longWritable, this.vertexHolder.set('s', this.shellVertex));
-            }
-
-            this.longWritable.set(value.getIdAsLong());
-            value.getProperties().clear();  // no longer needed in reduce phase
-            value.setProperty(BLUEPRINTS_ID, blueprintsVertex.getId()); // need this for id resolution in reduce phase
-            value.removeEdges(Tokens.Action.DROP, IN); // no longer needed in reduce phase
-            context.write(this.longWritable, this.vertexHolder.set('v', value));
-
-            // after so many mutations, successfully commit the transaction (if graph is transactional)
-            if (this.graph instanceof TransactionalGraph && (++this.mutations % this.commitTx) == 0) {
-                try {
-                    ((TransactionalGraph) graph).commit();
-                    context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
-                } catch (Exception e) {
-                    LOGGER.error("Could not commit transaction during Map.map():", e);
+                this.longWritable.set(value.getIdAsLong());
+                value.getProperties().clear();  // no longer needed in reduce phase
+                value.setProperty(BLUEPRINTS_ID, blueprintsVertex.getId()); // need this for id resolution in reduce phase
+                value.removeEdges(Tokens.Action.DROP, IN); // no longer needed in reduce phase
+                context.write(this.longWritable, this.vertexHolder.set('v', value));
+            } catch (final Exception e) {
+                if (this.graph instanceof TransactionalGraph) {
+                    ((TransactionalGraph) this.graph).rollback();
                     context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
                 }
+                throw new IOException(e.getMessage(), e);
             }
+
         }
 
         @Override
         public void cleanup(final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
-            try {
-                if (this.graph instanceof TransactionalGraph) {
+            if (this.graph instanceof TransactionalGraph) {
+                try {
                     ((TransactionalGraph) this.graph).commit();
                     context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+                } catch (Exception e) {
+                    LOGGER.error("Could not commit transaction during Map.cleanup():", e);
+                    ((TransactionalGraph) this.graph).rollback();
+                    context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
                 }
-            } catch (Exception e) {
-                LOGGER.error("Could not commit transaction during Map.cleanup():", e);
-                context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
             }
             this.graph.shutdown();
+        }
+
+        private Vertex getOrCreateVertex(final FaunusVertex faunusVertex, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws InterruptedException {
+            final Vertex blueprintsVertex;
+            if (this.loadingFromScratch) {
+                blueprintsVertex = this.graph.addVertex(faunusVertex.getIdAsLong());
+                context.getCounter(Counters.VERTICES_WRITTEN).increment(1l);
+            } else {
+                final Object uniqueValue = faunusVertex.getProperty(this.uniqueKey);
+                if (null == uniqueValue) {
+                    throw new InterruptedException("The provided Faunus vertex does not have a property for the unique " + this.uniqueKey + " key: " + faunusVertex);
+                } else {
+                    final Iterator<Vertex> itty = this.graph.query().has(this.uniqueKey, uniqueValue).vertices().iterator();
+                    if (itty.hasNext()) {
+                        blueprintsVertex = itty.next();
+                        context.getCounter(Counters.VERTICES_RETRIEVED).increment(1l);
+                        if (itty.hasNext()) {
+                            LOGGER.error("The unique " + this.uniqueKey + " key is not unique as more than one vertex with the value: " + uniqueValue);
+                        }
+                    } else {
+                        blueprintsVertex = this.graph.addVertex(faunusVertex.getIdAsLong());
+                        context.getCounter(Counters.VERTICES_WRITTEN).increment(1l);
+                    }
+                }
+            }
+            for (final String property : faunusVertex.getPropertyKeys()) {
+                blueprintsVertex.setProperty(property, faunusVertex.getProperty(property));
+                context.getCounter(Counters.VERTEX_PROPERTIES_WRITTEN).increment(1l);
+            }
+            return blueprintsVertex;
         }
     }
 
@@ -150,93 +185,85 @@ public class BlueprintsGraphOutputMapReduce {
     public static class Reduce extends Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> {
 
         Graph graph;
-        private long mutations = 0;
-        private long commitTx = 5000;
         private final static FaunusVertex DEAD_FAUNUS_VERTEX = new FaunusVertex();
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
-            this.commitTx = context.getConfiguration().getLong(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_TX_COMMIT, 5000);
         }
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            FaunusVertex faunusVertex = null;
-            // generate a map of the faunus id with the blueprints id for all shell vertices (vertices incoming adjacent)
-            final java.util.Map<Long, Object> faunusBlueprintsIdMap = new HashMap<Long, Object>();
-            for (final Holder<FaunusVertex> holder : values) {
-                if (holder.getTag() == 's') {
-                    faunusBlueprintsIdMap.put(holder.get().getIdAsLong(), holder.get().getProperty(BLUEPRINTS_ID));
-                } else {
-                    final FaunusVertex toClone = holder.get();
-                    faunusVertex = new FaunusVertex(toClone.getIdAsLong());
-                    faunusVertex.setProperty(BLUEPRINTS_ID, toClone.getProperty(BLUEPRINTS_ID));
-                    faunusVertex.addEdges(OUT, toClone);
+            try {
+                FaunusVertex faunusVertex = null;
+                // generate a map of the faunus id with the blueprints id for all shell vertices (vertices incoming adjacent)
+                final java.util.Map<Long, Object> faunusBlueprintsIdMap = new HashMap<Long, Object>();
+                for (final Holder<FaunusVertex> holder : values) {
+                    if (holder.getTag() == 's') {
+                        faunusBlueprintsIdMap.put(holder.get().getIdAsLong(), holder.get().getProperty(BLUEPRINTS_ID));
+                    } else {
+                        final FaunusVertex toClone = holder.get();
+                        faunusVertex = new FaunusVertex(toClone.getIdAsLong());
+                        faunusVertex.setProperty(BLUEPRINTS_ID, toClone.getProperty(BLUEPRINTS_ID));
+                        faunusVertex.addEdges(OUT, toClone);
+                    }
                 }
-            }
-            // this means that the vertex receiving adjacent vertex messages wasn't created
-            if (null != faunusVertex) {
-                final Object blueprintsId = faunusVertex.getProperty(BLUEPRINTS_ID);
-                Vertex blueprintsVertex = null;
-                if (null != blueprintsId)
-                    blueprintsVertex = this.graph.getVertex(blueprintsId);
-                // this means that an adjacent vertex to this vertex wasn't created
-                if (null != blueprintsVertex) {
-                    for (final Edge faunusEdge : faunusVertex.getEdges(OUT)) {
-                        final Object otherId = faunusBlueprintsIdMap.get(faunusEdge.getVertex(IN).getId());
-                        Vertex otherVertex = null;
-                        if (null != otherId)
-                            otherVertex = this.graph.getVertex(otherId);
-                        if (null != otherVertex) {
-                            final Edge blueprintsEdge = this.graph.addEdge(null, blueprintsVertex, otherVertex, faunusEdge.getLabel());
-                            context.getCounter(Counters.EDGES_WRITTEN).increment(1l);
-                            for (final String property : faunusEdge.getPropertyKeys()) {
-                                blueprintsEdge.setProperty(property, faunusEdge.getProperty(property));
-                                context.getCounter(Counters.EDGE_PROPERTIES_WRITTEN).increment(1l);
-                            }
-                            // after so many mutations, successfully commit the transaction (if graph is transactional)
-                            // for titan, if the transaction is committed, need to 'reget' the vertex
-                            if (this.graph instanceof TransactionalGraph && (++this.mutations % this.commitTx) == 0) {
-                                try {
-                                    ((TransactionalGraph) graph).commit();
-                                    context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
-                                } catch (Exception e) {
-                                    LOGGER.error("Could not commit transaction during Reduce.reduce():", e);
-                                    context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                // this means that the vertex receiving adjacent vertex messages wasn't created
+                if (null != faunusVertex) {
+                    final Object blueprintsId = faunusVertex.getProperty(BLUEPRINTS_ID);
+                    Vertex blueprintsVertex = null;
+                    if (null != blueprintsId)
+                        blueprintsVertex = this.graph.getVertex(blueprintsId);
+                    // this means that an adjacent vertex to this vertex wasn't created
+                    if (null != blueprintsVertex) {
+                        for (final Edge faunusEdge : faunusVertex.getEdges(OUT)) {
+                            final Object otherId = faunusBlueprintsIdMap.get(faunusEdge.getVertex(IN).getId());
+                            Vertex otherVertex = null;
+                            if (null != otherId)
+                                otherVertex = this.graph.getVertex(otherId);
+                            if (null != otherVertex) {
+                                final Edge blueprintsEdge = this.graph.addEdge(null, blueprintsVertex, otherVertex, faunusEdge.getLabel());
+                                context.getCounter(Counters.EDGES_WRITTEN).increment(1l);
+                                for (final String property : faunusEdge.getPropertyKeys()) {
+                                    blueprintsEdge.setProperty(property, faunusEdge.getProperty(property));
+                                    context.getCounter(Counters.EDGE_PROPERTIES_WRITTEN).increment(1l);
                                 }
-                                // needed for Titan 0.2.0 and below.
-                                // TODO: DEPRECATE
-                                blueprintsVertex = this.graph.getVertex(blueprintsVertex.getId());
+                            } else {
+                                LOGGER.warn("No target vertex: faunusVertex[" + faunusEdge.getVertex(IN).getId() + "] blueprintsVertex[" + otherId + "]");
+                                context.getCounter(Counters.NULL_VERTEX_EDGES_IGNORED).increment(1l);
                             }
-                        } else {
-                            LOGGER.warn("No target vertex: faunusVertex[" + faunusEdge.getVertex(IN).getId() + "] blueprintsVertex[" + otherId + "]");
-                            context.getCounter(Counters.NULL_VERTEX_EDGES_IGNORED).increment(1l);
                         }
+                    } else {
+                        LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "] blueprintsVertex[" + blueprintsId + "]");
+                        context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                     }
                 } else {
-                    LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "] blueprintsVertex[" + blueprintsId + "]");
+                    LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "]");
                     context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                 }
-            } else {
-                LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "]");
-                context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
-            }
 
-            // the emitted vertex is not complete -- assuming this is the end of the stage and vertex is dead
-            context.write(NullWritable.get(), DEAD_FAUNUS_VERTEX);
+                // the emitted vertex is not complete -- assuming this is the end of the stage and vertex is dead
+                context.write(NullWritable.get(), DEAD_FAUNUS_VERTEX);
+            } catch (final Exception e) {
+                if (this.graph instanceof TransactionalGraph) {
+                    ((TransactionalGraph) this.graph).rollback();
+                    context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                }
+                throw new IOException(e.getMessage(), e);
+            }
         }
 
         @Override
         public void cleanup(final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            try {
-                if (this.graph instanceof TransactionalGraph) {
+            if (this.graph instanceof TransactionalGraph) {
+                try {
                     ((TransactionalGraph) this.graph).commit();
                     context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+                } catch (Exception e) {
+                    LOGGER.error("Could not commit transaction during Reduce.cleanup():", e);
+                    ((TransactionalGraph) this.graph).rollback();
+                    context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
                 }
-            } catch (Exception e) {
-                LOGGER.error("Could not commit transaction during Reduce.cleanup():", e);
-                context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
             }
             this.graph.shutdown();
         }
