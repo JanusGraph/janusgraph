@@ -5,10 +5,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +41,7 @@ public class ConsistentKeyLocker implements Locker {
      
     private final ConsistentKeyLockerConfiguration conf;
     
-    private final LockState lockState;
+    private final LockState<LockStatus> lockState;
     
     private static final StaticBuffer zeroBuf = ByteBufferUtil.getIntBuffer(0); // TODO this does not belong here
     
@@ -53,8 +53,7 @@ public class ConsistentKeyLocker implements Locker {
      * @param conf locker configuration
      */
     public ConsistentKeyLocker(ConsistentKeyLockerConfiguration conf) {
-        this.conf = conf;
-        this.lockState = new LockState();
+        this(conf, new LockState<LockStatus>());
     }
     
     /**
@@ -67,9 +66,10 @@ public class ConsistentKeyLocker implements Locker {
      * @param locks
      *            this locker's internal state map
      */
-    public ConsistentKeyLocker(ConsistentKeyLockerConfiguration conf, LockState locks) {
-        this.conf = conf;
-        this.lockState = locks;
+    public ConsistentKeyLocker(ConsistentKeyLockerConfiguration conf, LockState<LockStatus> locks) {
+        throw new RuntimeException("testing astyanax");
+//        this.conf = conf;
+//        this.lockState = locks;
     }
     
     /**
@@ -505,22 +505,22 @@ public class ConsistentKeyLocker implements Locker {
         }
     }
     
-    public static class LockState {
+    public static class LockState<S> {
 
         
         /**
          * Locks taken in the LocalLockMediator and written to the store (but not
          * necessarily checked)
          */
-        private final ConcurrentMap<StoreTransaction, Map<KeyColumn, LockStatus>> locks;
+        private final ConcurrentMap<StoreTransaction, Map<KeyColumn, S>> locks;
         
         public LockState() {
             // TODO this wild guess at the concurrency level should not be hardcoded
             this(new MapMaker().concurrencyLevel(8).weakKeys()
-                    .<StoreTransaction, Map<KeyColumn, LockStatus>>makeMap());
+                    .<StoreTransaction, Map<KeyColumn, S>>makeMap());
         }
         
-        public LockState(ConcurrentMap<StoreTransaction, Map<KeyColumn, LockStatus>> locks) {
+        public LockState(ConcurrentMap<StoreTransaction, Map<KeyColumn, S>> locks) {
             this.locks = locks;
         }
         
@@ -528,7 +528,7 @@ public class ConsistentKeyLocker implements Locker {
             return getLocksForTx(tx).containsKey(kc);
         }
         
-        public void take(StoreTransaction tx, KeyColumn kc, LockStatus ls) {
+        public void take(StoreTransaction tx, KeyColumn kc, S ls) {
             getLocksForTx(tx).put(kc, ls);
         }
         
@@ -536,12 +536,12 @@ public class ConsistentKeyLocker implements Locker {
             getLocksForTx(tx).remove(kc);
         }
         
-        public Map<KeyColumn, LockStatus> getLocksForTx(StoreTransaction tx) {
-            Map<KeyColumn, LockStatus> m = locks.get(tx);
+        public Map<KeyColumn, S> getLocksForTx(StoreTransaction tx) {
+            Map<KeyColumn, S> m = locks.get(tx);
             
             if (null == m) {
-                m = new HashMap<KeyColumn, LockStatus>();
-                final Map<KeyColumn, LockStatus> x = locks.putIfAbsent(tx, m);
+                m = new HashMap<KeyColumn, S>();
+                final Map<KeyColumn, S> x = locks.putIfAbsent(tx, m);
                 if (null != x) {
                     m = x;
                 }

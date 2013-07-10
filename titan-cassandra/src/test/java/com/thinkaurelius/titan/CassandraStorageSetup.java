@@ -26,6 +26,7 @@ public class CassandraStorageSetup {
 
     public static Configuration getCassandraStorageConfiguration() {
         BaseConfiguration config = new BaseConfiguration();
+        config.setProperty(GraphDatabaseConfiguration.LOCK_BACKEND, "astyanaxrecipe"); // TODO remove testing hack
         return config;
 
     }
@@ -47,6 +48,7 @@ public class CassandraStorageSetup {
     public static Configuration getAstyanaxGraphConfiguration() {
         BaseConfiguration config = new BaseConfiguration();
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "astyanax");
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.LOCK_BACKEND, "astyanaxrecipe"); // TODO remove testing hack
         return config;
     }
 

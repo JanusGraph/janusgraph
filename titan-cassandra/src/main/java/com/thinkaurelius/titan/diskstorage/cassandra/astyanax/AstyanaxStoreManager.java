@@ -18,6 +18,7 @@ import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.retry.RetryPolicy;
+import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
@@ -25,10 +26,13 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
+import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking.AstyanaxRecipeLocker;
+import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking.AstyanaxRecipeLockerConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -203,6 +207,19 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             openStores.put(name, store);
             return store;
         }
+    }
+    
+    public AstyanaxRecipeLocker openLocker(String cfName) throws StorageException {
+        
+        ColumnFamily<ByteBuffer, String> cf = new ColumnFamily<ByteBuffer, String>(
+                cfName,
+                ByteBufferSerializer.get(),
+                StringSerializer.get());
+        
+        AstyanaxRecipeLockerConfiguration conf =
+                new AstyanaxRecipeLockerConfiguration.Builder(keyspaceContext.getClient(), cf).build();
+        
+        return new AstyanaxRecipeLocker(conf);
     }
 
     @Override

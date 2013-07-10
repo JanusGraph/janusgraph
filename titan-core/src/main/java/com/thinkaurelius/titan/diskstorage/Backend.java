@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -156,19 +157,44 @@ public class Backend {
         return store;
     }
     
-    private final ConcurrentHashMap<String, ConsistentKeyLocker> lockers = new ConcurrentHashMap<String, ConsistentKeyLocker>();
+    private final ConcurrentHashMap<String, Locker> lockers = new ConcurrentHashMap<String, Locker>();
     
-    private ConsistentKeyLocker getLocker(KeyColumnValueStore lockerStore, String lockerName) {
+    private Locker getLocker(KeyColumnValueStore lockerStore, String lockerName) {
         Preconditions.checkNotNull(lockerStore);
         Preconditions.checkNotNull(lockerName);
         
-        ConsistentKeyLocker l = lockers.get(lockerName);
+        Locker l = lockers.get(lockerName);
         
         if (null == l) {
-            ConsistentKeyLockerConfiguration lockerConf =
-                    new ConsistentKeyLockerConfiguration.Builder(lockerStore).fromCommonsConfig(storageConfig).mediatorName(lockerName).build();
-            l = new ConsistentKeyLocker(lockerConf);
-            final ConsistentKeyLocker x = lockers.putIfAbsent(lockerName, l);
+
+            /*
+             * TODO this should be driven through a map and fixed constructor or factory interface, as with indices and stores
+             * 
+             * this is just hacked in for prototyping purposes (and also because
+             * I don't know what I want the constructor arguments / factory
+             * interface to look like yet)
+             */
+            if (storageConfig.containsKey(GraphDatabaseConfiguration.LOCK_BACKEND) &&
+                    storageConfig.getString(GraphDatabaseConfiguration.LOCK_BACKEND).equals("astyanaxrecipe")) {
+                try {
+                    Class c = storeManager.getClass();
+                    Method method = c.getMethod("openLocker", String.class);
+                    Object o = method.invoke(storeManager, lockerName);
+                    l = (Locker)o;
+                } catch (NoSuchMethodException e) {
+                    throw new IllegalArgumentException("Could not find method when configuring locking with Astyanax Recipes" );
+                } catch (IllegalAccessException e) {
+                    throw new IllegalArgumentException("Could not access method when configuring locking with Astyanax Recipes", e);
+                } catch (InvocationTargetException e) {
+                    throw new IllegalArgumentException("Could not invoke method when configuring locking with Astyanax Recipes", e);
+                }
+            } else {
+                ConsistentKeyLockerConfiguration lockerConf =
+                        new ConsistentKeyLockerConfiguration.Builder(lockerStore).fromCommonsConfig(storageConfig).mediatorName(lockerName).build();
+                l = new ConsistentKeyLocker(lockerConf);
+            }
+
+            final Locker x = lockers.putIfAbsent(lockerName, l);
             if (null != x) {
                 l = x;
             }
@@ -297,16 +323,12 @@ public class Backend {
         return builder.build();
     }
 
-    public final static<T> T getImplementationClass(Configuration config, String key, String defaultValue, Map<String,String> registeredImpls) {
-        String clazzname = config.getString(key,defaultValue);
-        if (registeredImpls.containsKey(clazzname.toLowerCase())) {
-            clazzname = registeredImpls.get(clazzname.toLowerCase());
-        }
+    public final static<T> T instantiate(String clazzname, Object... constructorArgs) {
 
         try {
             Class clazz = Class.forName(clazzname);
             Constructor constructor = clazz.getConstructor(Configuration.class);
-            T instance = (T)constructor.newInstance(config);
+            T instance = (T)constructor.newInstance(constructorArgs);
             return instance;
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Could not find implementation class: " + clazzname);
@@ -321,6 +343,15 @@ public class Backend {
         } catch (ClassCastException e) {
             throw new IllegalArgumentException("Could not instantiate implementation: " + clazzname, e);
         }
+    }
+    
+    public final static<T> T getImplementationClass(Configuration config, String key, String defaultValue, Map<String,String> registeredImpls) {
+        String clazzname = config.getString(key,defaultValue);
+        if (registeredImpls.containsKey(clazzname.toLowerCase())) {
+            clazzname = registeredImpls.get(clazzname.toLowerCase());
+        }
+
+        return instantiate(clazzname, config);
     }
 
     //1. Store
@@ -430,6 +461,11 @@ public class Backend {
         put("elasticsearch","com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
         put("es","com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
     }};
+    
+//    private static final Map<String, String> REGISTERED_LOCKERS = new HashMap<String, String>() {{
+//        put("consistentkey",  )
+//        put("astyanaxrecipe", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking.AstyanaxRecipeLocker");
+//    }};
 
 
     static {

@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.Locker;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
@@ -38,9 +39,9 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
      */
     final KeyColumnValueStore dataStore;
     
-    final ConsistentKeyLocker locker;
+    final Locker locker;
     
-    public ConsistentKeyLockStore(KeyColumnValueStore dataStore, ConsistentKeyLocker locker) {
+    public ConsistentKeyLockStore(KeyColumnValueStore dataStore, Locker locker) {
         Preconditions.checkNotNull(dataStore);
         this.dataStore = dataStore;
         this.locker = locker;
