@@ -67,9 +67,9 @@ public class ConsistentKeyLocker implements Locker {
      *            this locker's internal state map
      */
     public ConsistentKeyLocker(ConsistentKeyLockerConfiguration conf, LockState<LockStatus> locks) {
-        throw new RuntimeException("testing astyanax");
-//        this.conf = conf;
-//        this.lockState = locks;
+//        throw new RuntimeException("testing astyanax");
+        this.conf = conf;
+        this.lockState = locks;
     }
     
     /**
@@ -170,7 +170,7 @@ public class ConsistentKeyLocker implements Locker {
         for (int i = 0; i < conf.getLockRetryCount(); i++) {
             WriteResult wr = tryWriteLockOnce(lockKey, oldLockCol, txh);
             if (wr.isSuccessful() && wr.getDurationNS() <= conf.getLockWaitNS()) {
-                log.debug("Wrote lock {} to store {} using {}", new Object[] { lockID, conf.getStore().getName(), txh });
+//                log.debug("Wrote lock {} to store {} using {}", new Object[] { lockID, conf.getStore().getName(), txh });
                 return wr.getBeforeNS();
             }
             oldLockCol = wr.getLockCol();
@@ -343,7 +343,8 @@ public class ConsistentKeyLocker implements Locker {
             }
            
             if (tr.getTimestamp() == ls.getWrittenTimestamp(TimeUnit.NANOSECONDS)) {
-                log.debug("Checked lock {} in store {}", target, conf.getStore().getName());
+//                log.debug("Checked lock {} in store {}", target, conf.getStore().getName());
+                log.debug("Checked lock {}", target);
                 return;
             }
 
