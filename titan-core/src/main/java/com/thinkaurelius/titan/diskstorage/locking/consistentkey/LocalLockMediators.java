@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -28,6 +30,9 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
 
     @Override
     public LocalLockMediator get(String namespace) {
+        
+        Preconditions.checkNotNull(namespace);
+        
         LocalLockMediator m = mediators.get(namespace);
 
         if (null == m) {

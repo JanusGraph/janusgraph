@@ -119,12 +119,6 @@ public class Backend {
             log.debug("Buffering disabled because backend does not support batch mutations");
         } else bufferSize = bufferSizeTmp;
 
-//        if (!storeFeatures.supportsLocking() && storeFeatures.supportsConsistentKeyOperations()) {
-//            lockerConfig = TODO;
-//        } else {
-//            lockerConfig = null;
-//        }
-
         writeAttempts = storageConfig.getInt(WRITE_ATTEMPTS_KEY, WRITE_ATTEMPTS_DEFAULT);
         Preconditions.checkArgument(writeAttempts > 0, "Write attempts must be positive");
         readAttempts = storageConfig.getInt(READ_ATTEMPTS_KEY, READ_ATTEMPTS_DEFAULT);
@@ -151,7 +145,9 @@ public class Backend {
                 store = new TransactionalLockStore(store);
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
                 if (lockEnabled) {
-                    store = new ConsistentKeyLockStore(store, getLocker(store, store.getName() + LOCK_STORE_SUFFIX));
+                    final String lockerStoreName = store.getName() + LOCK_STORE_SUFFIX;
+                    final KeyColumnValueStore lockerStore = getStore(lockerStoreName);
+                    store = new ConsistentKeyLockStore(store, getLocker(lockerStore, lockerStoreName));
                 } else {
                     store = new ConsistentKeyLockStore(store, null);
                 }
@@ -162,15 +158,17 @@ public class Backend {
     
     private final ConcurrentHashMap<String, ConsistentKeyLocker> lockers = new ConcurrentHashMap<String, ConsistentKeyLocker>();
     
-    private ConsistentKeyLocker getLocker(KeyColumnValueStore store, String name) {
-        ConsistentKeyLocker l = lockers.get(name);
+    private ConsistentKeyLocker getLocker(KeyColumnValueStore lockerStore, String lockerName) {
+        Preconditions.checkNotNull(lockerStore);
+        Preconditions.checkNotNull(lockerName);
         
-        ConsistentKeyLockerConfiguration lockerConf =
-                new ConsistentKeyLockerConfiguration.Builder(store).fromCommonsConfig(storageConfig).build();
+        ConsistentKeyLocker l = lockers.get(lockerName);
         
         if (null == l) {
+            ConsistentKeyLockerConfiguration lockerConf =
+                    new ConsistentKeyLockerConfiguration.Builder(lockerStore).fromCommonsConfig(storageConfig).mediatorName(lockerName).build();
             l = new ConsistentKeyLocker(lockerConf);
-            final ConsistentKeyLocker x = lockers.putIfAbsent(name, l);
+            final ConsistentKeyLocker x = lockers.putIfAbsent(lockerName, l);
             if (null != x) {
                 l = x;
             }

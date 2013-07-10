@@ -170,7 +170,7 @@ public class ConsistentKeyLocker implements Locker {
         for (int i = 0; i < conf.getLockRetryCount(); i++) {
             WriteResult wr = tryWriteLockOnce(lockKey, oldLockCol, txh);
             if (wr.isSuccessful() && wr.getDurationNS() <= conf.getLockWaitNS()) {
-                log.debug("Lock write succeeded {} {}", lockID, txh);
+                log.debug("Wrote lock {} to store {} using {}", new Object[] { lockID, conf.getStore().getName(), txh });
                 return wr.getBeforeNS();
             }
             oldLockCol = wr.getLockCol();
@@ -343,7 +343,7 @@ public class ConsistentKeyLocker implements Locker {
             }
            
             if (tr.getTimestamp() == ls.getWrittenTimestamp(TimeUnit.NANOSECONDS)) {
-                log.debug("Lock check succeeded for {}", target);
+                log.debug("Checked lock {} in store {}", target, conf.getStore().getName());
                 return;
             }
 

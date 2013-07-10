@@ -57,7 +57,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
         this.consistentTx = consistentTx;
     }
 
-    StoreTransaction getWrappedTransaction() {
+    StoreTransaction getBaseTransaction() {
         return baseTx;
     }
     
@@ -65,7 +65,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
         return consistentTx;
     }
     
-    void lockedOn(ConsistentKeyLockStore store) {
+    private void lockedOn(ConsistentKeyLockStore store) {
         Map<KeyColumn, StaticBuffer> m = lockedOnStores.get(store);
         
         if (null == m) {
@@ -75,43 +75,55 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
     }
     
     void storeExpectedValue(ConsistentKeyLockStore store, KeyColumn lockID, StaticBuffer value) {
+        Preconditions.checkNotNull(store);
+        Preconditions.checkNotNull(lockID);
+
+        lockedOn(store);
         Map<KeyColumn, StaticBuffer> m = lockedOnStores.get(store);
         assert null != m;
-        m.put(lockID, value);
+        if (m.containsKey(lockID)) {
+            log.debug("Multiple expected values for {}: keeping initial value {} and discarding later value {}",
+                    new Object[] { lockID, m.get(lockID), value });
+        } else {
+            m.put(lockID, value);
+            log.debug("Store expected value for {}: {}", lockID, value);
+        }
     }
     
     void checkExpectedValues() throws StorageException {
         for (final ConsistentKeyLockStore store : lockedOnStores.keySet()) {
             final Map<KeyColumn, StaticBuffer> m = lockedOnStores.get(store);
             for (final KeyColumn kc : m.keySet()) {
-                final StaticBuffer value = m.get(kc);
+                
+                final StaticBuffer ev = m.get(kc);
+                
                 KeySliceQuery ksq = new KeySliceQuery(kc.getKey(), kc.getColumn(), ByteBufferUtil.nextBiggerBuffer(kc.getColumn()));
-                List<Entry> entries = store.getSlice(ksq, this); // TODO make this consistent/QUORUM?
+                List<Entry> actualEntries = store.getSlice(ksq, this); // TODO make this consistent/QUORUM?
                 
-                if (null == entries)
-                    entries = ImmutableList.<Entry>of();
+                if (null == actualEntries)
+                    actualEntries = ImmutableList.<Entry>of();
                 
-                Iterable<StaticBuffer> valueInStore = Iterables.transform(entries, new Function<Entry, StaticBuffer>() {
-
+                Iterable<StaticBuffer> avList = Iterables.transform(actualEntries, new Function<Entry, StaticBuffer>() {
                     @Override
                     public StaticBuffer apply(Entry e) {
+                        assert null != e.getColumn();
+                        assert e.getColumn().equals(kc.getColumn());
                         return e.getValue();
                     }
                 });
                 
-                final Iterable<StaticBuffer> valueExpected;
+                final Iterable<StaticBuffer> evList;
                 
-                if (null == value) {
-                    valueExpected = ImmutableList.<StaticBuffer>of();
+                if (null == ev) {
+                    evList = ImmutableList.<StaticBuffer>of();
                 } else {
-                    valueExpected = ImmutableList.<StaticBuffer>of(value);
+                    evList = ImmutableList.<StaticBuffer>of(ev);
                 }
                 
-                if (!Iterables.elementsEqual(valueExpected, valueInStore)) {
-                
-                throw new PermanentLockingException(
-                        "Expected value mismatch for " + kc + ": actual="
-                                +  valueInStore + " expected=" + value);
+                if (!Iterables.elementsEqual(evList, avList)) {
+                    throw new PermanentLockingException(
+                        "Expected value mismatch for " + kc + ": expected="
+                                +  evList + " vs actual=" + avList + " (store=" + store.getName() + ")");
                 }
             }
         }

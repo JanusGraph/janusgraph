@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -98,10 +99,14 @@ public class ConsistentKeyLockerConfiguration {
         
         public Builder fromCommonsConfig(Configuration config) {
             rid(new StaticArrayBuffer(DistributedStoreManager.getRid(config)));
+
+            final String llmPrefix = config.getString(
+                            ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
+                            null);
             
-            mediator(LocalLockMediators.INSTANCE.get(config.getString(
-                    ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
-                    null)));
+            if (null != llmPrefix) {
+                mediator(LocalLockMediators.INSTANCE.get(llmPrefix));
+            }
 
             lockRetryCount(config.getInt(
                     GraphDatabaseConfiguration.LOCK_RETRY_COUNT,
@@ -114,6 +119,12 @@ public class ConsistentKeyLockerConfiguration {
             lockExpireNS(config.getLong(
                     GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
                     GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT), TimeUnit.MILLISECONDS);
+            return this;
+        }
+        
+        public Builder mediatorName(String name) {
+            Preconditions.checkNotNull(name);
+            mediator(LocalLockMediators.INSTANCE.get(name));
             return this;
         }
         

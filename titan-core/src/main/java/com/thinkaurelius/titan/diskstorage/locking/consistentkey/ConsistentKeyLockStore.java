@@ -1,5 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -10,8 +15,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-
-import java.util.List;
 
 /**
  * A wrapper that adds locking support to a {@link KeyColumnValueStore} by
@@ -26,6 +29,8 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
      * Configuration setting key for the local lock mediator prefix
      */
     public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local-lock-mediator-prefix";
+    
+    private static final Logger log = LoggerFactory.getLogger(ConsistentKeyLockStore.class);
 
 
     /**
@@ -35,11 +40,8 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
     
     final ConsistentKeyLocker locker;
     
-    /**
-     * Create a 
-     * @param dataStore
-     */
     public ConsistentKeyLockStore(KeyColumnValueStore dataStore, ConsistentKeyLocker locker) {
+        Preconditions.checkNotNull(dataStore);
         this.dataStore = dataStore;
         this.locker = locker;
     }
@@ -48,20 +50,20 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
         return dataStore;
     }
 
-    private StoreTransaction getTx(StoreTransaction txh) {
-        Preconditions.checkArgument(txh != null);
+    private StoreTransaction getBaseTx(StoreTransaction txh) {
+        Preconditions.checkNotNull(txh);
         Preconditions.checkArgument(txh instanceof ConsistentKeyLockTransaction);
-        return ((ConsistentKeyLockTransaction) txh).getWrappedTransaction();
+        return ((ConsistentKeyLockTransaction) txh).getBaseTransaction();
     }
 
     @Override
     public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        return dataStore.containsKey(key, getTx(txh));
+        return dataStore.containsKey(key, getBaseTx(txh));
     }
 
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
-        return dataStore.getSlice(query, getTx(txh));
+        return dataStore.getSlice(query, getBaseTx(txh));
     }
 
     /**
@@ -81,7 +83,7 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
                 tx.checkExpectedValues();
             }
         }
-        dataStore.mutate(key, additions, deletions, getTx(txh));
+        dataStore.mutate(key, additions, deletions, getBaseTx(txh));
     }
     
     /**
@@ -89,7 +91,14 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
      * 
      * <p/>
      * 
-     * This implementation supports locking when {@code lockStore} is non-null.  
+     * This implementation supports locking when {@code lockStore} is non-null.
+     * <p>
+     * Consider the following scenario. This method is called twice with
+     * identical key, column, and txh arguments, but with different
+     * expectedValue arguments in each call. In testing, it seems titan's
+     * graphdb requires that implementations discard the second expectedValue
+     * and, when checking expectedValues vs actual values just prior to mutate,
+     * only the initial expectedValue argument should be considered.
      */
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
@@ -98,17 +107,17 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
             if (tx.isMutationStarted())
                 throw new PermanentLockingException("Attempted to obtain a lock after mutations had been persisted");
             KeyColumn lockID = new KeyColumn(key, column);
+            log.debug("Attempting to acquireLock on {} ev={}", lockID, expectedValue);
             locker.writeLock(lockID, tx.getConsistentTransaction());
-            tx.lockedOn(this);
             tx.storeExpectedValue(this, lockID, expectedValue);
         } else {
-            dataStore.acquireLock(key, column, expectedValue, getTx(txh));
+            dataStore.acquireLock(key, column, expectedValue, getBaseTx(txh));
         }
     }
 
     @Override
     public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        return dataStore.getKeys(getTx(txh));
+        return dataStore.getKeys(getBaseTx(txh));
     }
 
     @Override

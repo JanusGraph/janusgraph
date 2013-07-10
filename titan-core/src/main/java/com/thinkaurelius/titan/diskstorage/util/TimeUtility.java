@@ -51,6 +51,9 @@ public enum TimeUtility implements TimestampProvider {
      * startup times a million (i.e. CTM in ns)
      */
     private final long t0NanosSinceEpoch;
+    
+    // TODO this does not belong here
+    private static final long MILLION = 1000L * 1000L;
 
     /**
      * This returns the approximate number of nanoseconds
@@ -90,10 +93,38 @@ public enum TimeUtility implements TimestampProvider {
              nowNS < untilNS;
              nowNS = getApproxNSSinceEpoch(false)) {
 
-            final long deltaMS = TimeUnit.MILLISECONDS.convert(untilNS - nowNS, TimeUnit.NANOSECONDS);
-            assert 0 < deltaMS;
+            // Convert time delta from nano to millis, rounding up
+            final long deltaNS = untilNS - nowNS;
+            final long deltaMS;
+            if (0 != deltaNS % 1000000) {
+                deltaMS = deltaNS / MILLION + 1;
+            } else {
+                deltaMS = deltaNS / MILLION;
+            }
             
-            log.debug("About to sleep for {} ms", deltaMS);
+            if (0 >= deltaMS) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Skipped sleep: target wakeup time {} ms already past current time {} ms (delta {})",
+                        new Object[] {
+                            TimeUnit.MILLISECONDS.convert(untilNS, TimeUnit.NANOSECONDS),
+                            TimeUnit.MILLISECONDS.convert(nowNS, TimeUnit.NANOSECONDS),
+                            deltaMS
+                        }
+                    );
+                }
+                return nowNS;
+            }
+            
+            if (log.isDebugEnabled()) {
+                log.debug("Sleeping: target wakeup time {} ms, current time {} ms, duration {} ms",
+                    new Object[] {
+                        TimeUnit.MILLISECONDS.convert(untilNS, TimeUnit.NANOSECONDS),
+                        TimeUnit.MILLISECONDS.convert(nowNS, TimeUnit.NANOSECONDS),
+                        deltaMS
+                    }
+                );
+            }
+            
             Thread.sleep(deltaMS);
         }
         
