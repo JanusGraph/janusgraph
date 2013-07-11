@@ -8,7 +8,7 @@ import org.apache.hadoop.fs.PathFilter;
  */
 public class NoFilter implements PathFilter {
 
-    private final static NoFilter INSTANCE = new NoFilter();
+    private static final NoFilter INSTANCE = new NoFilter();
 
     public boolean accept(final Path path) {
         return true;
