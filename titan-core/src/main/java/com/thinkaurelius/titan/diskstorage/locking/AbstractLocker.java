@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package com.thinkaurelius.titan.diskstorage.locking;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -13,41 +13,84 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.LockerState;
-import com.thinkaurelius.titan.diskstorage.locking.LockStatus;
-import com.thinkaurelius.titan.diskstorage.locking.Locker;
-import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
-import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker.Builder;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
+/**
+ * Abstract base class for building lockers on distributed key-value stores.
+ * 
+ * @see ConsistentKeyLocker
+ * @param <S>
+ *            An implementation-specific type holding information about a single
+ *            lock; see {@link ConsistentKeyLockStatus} for an example
+ */
 public abstract class AbstractLocker<S extends LockStatus> implements Locker {
+    
     /**
      * Uniquely identifies a process within a domain (or across all domains,
      * though only intra-domain uniqueness is required)
      */
     protected final StaticBuffer rid;
     
+    /**
+     * Sole source of time. Don't call {@link System#currentTimeMillis()} or
+     * {@link System#nanoTime()} directly. Use only this object. This object is
+     * replaced with a mock during testing to give tests exact control over the
+     * flow of time.
+     */
     protected final TimestampProvider times;
     
+    /**
+     * This is sort-of Cassandra/HBase specific. It concatenates
+     * {@link KeyColumn} arguments into a single StaticBuffer containing the key
+     * followed by the column and vice-versa.
+     */
     protected final ConsistentKeyLockerSerializer serializer;
     
+    /**
+     * Resolves lock contention by multiple threads.
+     */
     protected final LocalLockMediator<StoreTransaction> llm;
     
+    /**
+     * Stores all information about all locks this implementation has taken on
+     * behalf of any {@link StoreTransaction}. It is parameterized in a type
+     * specific to the concrete subclass, so that concrete implementations can
+     * store information specific to their locking primitives.
+     */
     protected final LockerState<S> lockState;
     
+    /**
+     * The amount of time, in nanoseconds, that may pass after writing a lock
+     * before it is considered to be invalid and automatically unlocked.
+     */
     protected final long lockExpireNS;
     
     protected final Logger log;
     
+    /**
+     * Abstract builder for this Locker implementation. See
+     * {@link ConsistentKeyLocker} for an example of how to subclass this
+     * abstract builder into a concrete builder.
+     * <p>
+     * If you're wondering why the bounds for the type parameter {@code B} looks so hideous, see:
+     * 
+     * <a href="https://weblogs.java.net/blog/emcmanus/archive/2010/10/25/using-builder-pattern-subclasses">Using the builder pattern with subclasses by Eamonn McManus</a>
+     * 
+     * @param <S> The concrete type of {@link LockStatus}
+     * @param <B> The concrete type of the subclass extending this builder
+     */
     public static abstract class Builder<S, B extends Builder<S, B>> {
  
         protected StaticBuffer rid;
@@ -63,12 +106,16 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             this.times = TimeUtility.INSTANCE;
             this.serializer = new ConsistentKeyLockerSerializer();
             this.llm = null; // redundant, but it preserves this constructor's overall pattern
-//            this.lockExpireNS = TimeUnit.NANOSECONDS.convert(GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT, TimeUnit.MILLISECONDS);
             this.lockState = new LockerState<S>();
             this.lockExpireNS = NANOSECONDS.convert(GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT, MILLISECONDS);
             this.log = LoggerFactory.getLogger(AbstractLocker.class);
         }
         
+        /**
+         * Concrete subclasses should just "{@code return this;}".
+         * 
+         * @return concrete subclass instance
+         */
         protected abstract B self();
         
         public B rid(StaticBuffer rid) {
@@ -87,6 +134,12 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             this.llm = mediator; return self();
         }
         
+        /**
+         * Retrieve the mediator associated with {@code name} via {@link LocalLockMediators#get(String)}.
+         * 
+         * @param name the mediator name
+         * @return this builder
+         */
         public B mediatorName(String name) {
             Preconditions.checkNotNull(name);
             mediator(LocalLockMediators.INSTANCE.<StoreTransaction>get(name));
@@ -247,7 +300,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     }
     
     @Override
-    public void checkLocks(StoreTransaction tx) throws StorageException {
+    public void checkLocks(StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
         Map<KeyColumn, S> m = lockState.getLocksForTx(tx);
 
         if (m.isEmpty()) {
@@ -274,7 +327,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     }
     
     @Override
-    public void deleteLocks(StoreTransaction tx) throws StorageException {
+    public void deleteLocks(StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
         Map<KeyColumn, S> m = lockState.getLocksForTx(tx);
         
         Iterator<KeyColumn> iter = m.keySet().iterator();

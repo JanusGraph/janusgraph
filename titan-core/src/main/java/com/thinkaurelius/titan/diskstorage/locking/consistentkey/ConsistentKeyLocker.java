@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -26,8 +25,9 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.LockerState;
+import com.thinkaurelius.titan.diskstorage.locking.AbstractLocker;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
+import com.thinkaurelius.titan.diskstorage.locking.LockerState;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
@@ -37,8 +37,7 @@ import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
- * A locker which is built on {@link KeyColumnValueStore}. This class is not
- * safe for unsynchronized access by multiple threads.
+ * A locker built on {@link KeyColumnValueStore}.
  */
 public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus> implements Locker {
 

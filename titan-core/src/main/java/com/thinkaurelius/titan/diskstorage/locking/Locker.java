@@ -1,68 +1,100 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 
 /**
- * Cluster-wide discretionary locking.
+ * Threadsafe discretionary locking within and between processes Titan.
  * <p>
- * It is recommended that constructors and factories for implementations of this
- * class accept some kind of identifier distinguishing the processees/threads
- * involved in locking from one another. Each process/thread would then have its
- * own instance.
+ * Locks are identified {@link KeyColumn} instances.
+ * {@code KeyColumn#equals(Object)} should be used to determine whether two
+ * {@code KeyColumn} instances refer to the same or different locks.
+ * <p>
+ * Threads taking locks are identified by {@link StoreTransaction} instances.
+ * Either {@code equals(...)} or reference equality (the {@code ==} operator)
+ * can be used to compare these instances.
+ * <p>
+ * This interface follows a three-step locking model that supports both
+ * nonblocking and blocking locking primitives. Not all Titan
+ * {@code StoreTransaction}s will need locks and use this interface. For those
+ * {@code StoreTransaction}s that do take one or more locks, Titan will call the
+ * methods on this interface in the following order. {@code tx} refers to the
+ * same {@code StoreTransaction} instance in each step.
+ * 
+ * <ol>
+ * <li>{@code writeLock(kc, tx)} one or more times per distinct
+ * {@code KeyColumn kc}
+ * <li>{@code checkLocks(tx)} once if the user commits {@code tx} or never if
+ * the user aborts {@code tx}
+ * <li>{@code deleteLocks(tx)} once, regardless of whether
+ * {@code checkLocks(tx)} was called
+ * </ol>
+ * 
+ * <p>
+ * The first step, {@code writeLocks}, attempts to take a lock. This may, but
+ * need not necessarily, indicate whether the attempt succeeded or failed. The
+ * second step, {@code checkLocks}, returns if all previous {@code writeLocks}
+ * succeeded or throws an exception if one or more failed. The final step,
+ * {@code deleteLocks}, releases all locks and associated resources held by the
+ * {@code tx}.
+ * <p>
+ * All implementations of this interface must be safe for concurrent use by
+ * different threads. However, implementations may assume that, for any given
+ * {@code StoreTransaction tx}, all calls to this interface's methods with
+ * argument {@code tx} will either come from a single thread or multiple threads
+ * using external synchronization to provide the same effect.
  */
 public interface Locker {
-    
+
     /**
-     * Prepare to acquire the lock named by {@code lockID}
+     * Attempt to acquire/take/claim/write the lock named by {@code lockID}.
      * <p>
      * Returns on success and throws an exception on failure.
      * 
      * @param lockID
-     *            The return values of the methods {@link Entry#getColumn()} and
-     *            {@link Entry#getValue()} together specify the target lock.
-     *            Each distinct pair of return values corresponds to a distinct
-     *            lock which can be acquired and released separate from the
-     *            rest.
+     *            the lock to acquire
+     * @param tx
+     *            the transaction attempting to acquire the lock
+     * @throws TemporaryLockingException
+     *             a failure likely to disappear if the call is retried
+     * @throws PermanentLockingException
+     *             a failure unlikely to disappear if the call is retried
      */
-    public void writeLock(KeyColumn lockID, StoreTransaction tx) throws StorageException;
-    
+    public void writeLock(KeyColumn lockID, StoreTransaction tx)
+            throws TemporaryLockingException, PermanentLockingException;
+
     /**
-     * Attempt to acquire every lock previously specified by calls to
-     * {@link #writeLock(Entry)} since either creation of this {@code Locker}
-     * instance or the last {@link #unlockAll()} call.
-     * <p>
-     * In other words, {@code prepareLock(Entry)} must be called at least once
-     * before this method is called in order for this method to have an effect.
+     * Verify that all previous {@link #writeLock(KeyColumn, StoreTransaction)}
+     * calls with {@code tx} actually succeeded.
      * <p>
      * Returns on success and throws an exception on failure.
      * 
-     * @param timeout
-     *            The maximum wallclock time to attempt locking in the face of
-     *            temporary failures (such as the lock being held by another
-     *            process) before giving up and throwing an exception
-     * @param timeunits
-     *            The units of {@code timeout}
-     * @throws PermanentLockingException
+     * @param tx
+     *            the transaction attempting to check the result of previous
+     *            {@code writeLock(..., tx)} calls in which it was the
+     *            {@code tx} argument
      * @throws TemporaryLockingException
+     *             a failure likely to disappear if the call is retried
+     * @throws PermanentLockingException
+     *             a failure unlikely to disappear if the call is retried
      */
-    public void checkLocks(StoreTransaction tx) throws StorageException;
-    
+    public void checkLocks(StoreTransaction tx)
+            throws TemporaryLockingException, PermanentLockingException;
+
     /**
-     * Attempt to release every lock currently held by this instance.
+     * Release every lock currently held by {@code tx}.
      * <p>
      * Returns on success and throws an exception on failure.
      * 
-     * @param timeout
-     *            The maximum wallclock time to attempt locking in the face of
-     *            temporary failures (such as the lock being held by another
-     *            process) before giving up and throwing an exception
-     * @param timeunits
-     *            The units of {@code timeout}
-     * @throws PermanentLockingException
+     * @param tx
+     *            the transaction attempting to delete locks taken in previous
+     *            {@code writeLock(..., tx)} calls in which it was the
+     *            {@code tx} argument
      * @throws TemporaryLockingException
+     *             a failure likely to disappear if the call is retried
+     * @throws PermanentLockingException
+     *             a failure unlikely to disappear if the call is retried
      */
-    public void deleteLocks(StoreTransaction tx) throws StorageException;
+    public void deleteLocks(StoreTransaction tx)
+            throws TemporaryLockingException, PermanentLockingException;
 }
