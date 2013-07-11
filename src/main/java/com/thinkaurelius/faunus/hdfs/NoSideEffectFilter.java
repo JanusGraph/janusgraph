@@ -10,10 +10,9 @@ import org.apache.hadoop.fs.PathFilter;
  */
 public class NoSideEffectFilter implements PathFilter {
 
-    public NoSideEffectFilter() {
-    }
+    private static final NoSideEffectFilter INSTANCE = new NoSideEffectFilter();
 
-    public boolean accept(Path path) {
+    public boolean accept(final Path path) {
         try {
             if (!path.getFileSystem(new Configuration()).isFile(path))
                 return true;
@@ -22,5 +21,9 @@ public class NoSideEffectFilter implements PathFilter {
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }
+    }
+
+    public static NoSideEffectFilter instance() {
+        return INSTANCE;
     }
 }

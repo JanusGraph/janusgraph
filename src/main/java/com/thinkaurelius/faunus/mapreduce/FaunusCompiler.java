@@ -3,6 +3,8 @@ package com.thinkaurelius.faunus.mapreduce;
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.formats.FormatTools;
+import com.thinkaurelius.faunus.formats.JobConfigurationFormat;
 import com.thinkaurelius.faunus.hdfs.NoSideEffectFilter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -42,7 +44,7 @@ public class FaunusCompiler extends Configured implements Tool {
     public static final String PATH_ENABLED = Tokens.makeNamespace(FaunusCompiler.class) + ".pathEnabled";
     public static final String TESTING = Tokens.makeNamespace(FaunusCompiler.class) + ".testing";
 
-    protected final Logger logger = Logger.getLogger(FaunusCompiler.class);
+    public static final Logger logger = Logger.getLogger(FaunusCompiler.class);
 
     private FaunusGraph graph;
 
@@ -311,6 +313,10 @@ public class FaunusCompiler extends Configured implements Tool {
         final String jobPath = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
+            try {
+                ((JobConfigurationFormat) (FormatTools.getBaseOutputFormatClass(job).newInstance())).updateJob(job);
+            } catch (final Exception e) {
+            }
             logger.info("Executing job " + (i + 1) + " out of " + this.jobs.size() + ": " + job.getJobName());
             logger.info("Job data location: " + jobPath + "-" + i);
             boolean success = job.waitForCompletion(true);

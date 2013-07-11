@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.tinkerpop.gremlin.loaders
 
 import com.thinkaurelius.faunus.Tokens
 import com.thinkaurelius.faunus.hdfs.HDFSTools
+import com.thinkaurelius.faunus.hdfs.NoUnderscoreFilter
 import com.thinkaurelius.faunus.hdfs.TextFileLineIterator
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.*
@@ -60,7 +61,7 @@ class HadoopLoader {
             final FileSystem local = FileSystem.getLocal(new Configuration());
             final FSDataOutputStream outA = local.create(new Path(to));
 
-            HDFSTools.getAllFilePaths(fs, from).each {
+            HDFSTools.getAllFilePaths(fs, new Path(from), NoUnderscoreFilter.instance()).each {
                 final FSDataInputStream inA = fs.open(it);
                 IOUtils.copyBytes(inA, outA, 8192);
                 inA.close();
@@ -71,7 +72,7 @@ class HadoopLoader {
         FileSystem.metaClass.head = { final String path, final long totalLines ->
             final FileSystem fs = (FileSystem) delegate;
             final List<Path> paths = new LinkedList<Path>();
-            paths.addAll(HDFSTools.getAllFilePaths(fs, path));
+            paths.addAll(HDFSTools.getAllFilePaths(fs, new Path(path), NoUnderscoreFilter.instance()));
             if (paths.isEmpty())
                 return Collections.emptyList();
             else

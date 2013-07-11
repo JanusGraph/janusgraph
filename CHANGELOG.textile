@@ -34,6 +34,10 @@ h3. Version 0.3.2 (NOT OFFICIALLY RELEASED YET)
 * User can now provide their own @mapred.jar@ to deploy to the Hadoop cluster
 * Graph database bulk loading is now fail safe as transaction size is the size of the input split
 * Incremental bulk loading is now possible w/ @loading-from-scratch=false@ in @BlueprintsGraphOutputMapReduce@
+* Number of reduce tasks to use during bulk and incremental loading is computed as a function of input split size
+* Added more useful @PathFilter@ instances
+* Generalized @HDFSTools@ for more generic use throughout Faunus
+* Added @JobConfigurationFormat@ which supports dynamic job manipulation at execution time
 
 ==<hr/>==
 
