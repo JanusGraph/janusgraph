@@ -23,6 +23,6 @@ public interface LocalLockMediatorProvider {
      * @author Dan LaRocque <dalaro@hopcount.org>
      * @see LocalLockMediator
      */
-    public LocalLockMediator get(String namespace);
+    public <T> LocalLockMediator<T> get(String namespace);
 
 }

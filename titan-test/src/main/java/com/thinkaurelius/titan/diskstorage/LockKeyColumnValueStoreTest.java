@@ -37,7 +37,6 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerConfiguration;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -105,8 +104,8 @@ public abstract class LockKeyColumnValueStoreTest {
                     store[i] = new TransactionalLockStore(store[i]);
                 } else if (storeFeatures.supportsConsistentKeyOperations()) {
                     KeyColumnValueStore lockerStore = manager[i].openDatabase(dbName + "_lock_");
-                    ConsistentKeyLockerConfiguration c = new ConsistentKeyLockerConfiguration.Builder(lockerStore).fromCommonsConfig(sc).build();
-                    store[i] = new ConsistentKeyLockStore(store[i], new ConsistentKeyLocker(c));
+                    ConsistentKeyLocker c = new ConsistentKeyLocker.Builder(lockerStore).fromCommonsConfig(sc).build();
+                    store[i] = new ConsistentKeyLockStore(store[i], c);
                     for (int j = 0; j < numTx; j++)
                         tx[i][j] = new ConsistentKeyLockTransaction(tx[i][j], manager[i].beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
                 } else throw new IllegalArgumentException("Store needs to support some form of locking");

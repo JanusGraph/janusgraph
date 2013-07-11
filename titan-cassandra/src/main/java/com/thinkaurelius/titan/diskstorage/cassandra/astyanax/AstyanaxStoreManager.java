@@ -27,7 +27,6 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking.AstyanaxRecipeLocker;
-import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking.AstyanaxRecipeLockerConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
@@ -216,10 +215,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 ByteBufferSerializer.get(),
                 StringSerializer.get());
         
-        AstyanaxRecipeLockerConfiguration conf =
-                new AstyanaxRecipeLockerConfiguration.Builder(keyspaceContext.getClient(), cf).build();
-        
-        return new AstyanaxRecipeLocker(conf);
+        return new AstyanaxRecipeLocker.Builder(keyspaceContext.getClient(), cf).build();
     }
 
     @Override

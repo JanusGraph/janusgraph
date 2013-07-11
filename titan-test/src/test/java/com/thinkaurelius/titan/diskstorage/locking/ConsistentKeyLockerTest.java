@@ -1,9 +1,12 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
-import static org.easymock.EasyMock.*;
+import static org.easymock.EasyMock.createStrictControl;
+import static org.easymock.EasyMock.eq;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.expectLastCall;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -11,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
 import org.junit.After;
 import org.junit.Before;
@@ -19,7 +21,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -30,12 +31,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
-import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker.LockState;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker.LockStatus;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerConfiguration;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
@@ -73,8 +70,7 @@ public class ConsistentKeyLockerTest {
     private TimestampProvider times;
     private KeyColumnValueStore store;
     private LocalLockMediator<StoreTransaction> mediator;
-    private ConsistentKeyLockerConfiguration conf;
-    private LockState lockState;
+    private LockerState<ConsistentKeyLockStatus> lockState;
     private ConsistentKeyLocker locker;
     
     @SuppressWarnings("unchecked")
@@ -87,13 +83,14 @@ public class ConsistentKeyLockerTest {
         times = ctrl.createMock(TimestampProvider.class);
         store = ctrl.createMock(KeyColumnValueStore.class);
         mediator = ctrl.createMock(LocalLockMediator.class);
-        lockState = ctrl.createMock(LockState.class);
-        conf = new ConsistentKeyLockerConfiguration.Builder(
-                store).times(times).mediator(mediator)
+        lockState = ctrl.createMock(LockerState.class);
+        locker = new ConsistentKeyLocker.Builder(store)
+                .times(times)
+                .mediator(mediator)
+                .internalState(lockState)
                 .lockExpireNS(defaultExpireNS, TimeUnit.NANOSECONDS)
                 .lockWaitNS(defaultWaitNS, TimeUnit.NANOSECONDS)
                 .rid(defaultLockRid).build();
-        locker = new ConsistentKeyLocker(conf, lockState);
     }
     
     @After
@@ -115,16 +112,29 @@ public class ConsistentKeyLockerTest {
         // Now lock it locally to block other threads in the process
         recordSuccessfulLocalLock();
         // Write a lock claim column to the store
-        StaticBuffer lockCol = recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, null);
-        long lockColTimestampNS = codec.fromLockColumn(lockCol).getTimestamp();
+        LockInfo li = recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, null);
+//        long lockColTimestampNS = codec.fromLockColumn(lockCol).getTimestamp();
         // Update the expiration timestamp of the local (thread-level) lock
-        recordSuccessfulLocalLock(lockColTimestampNS);
+        recordSuccessfulLocalLock(li.tsNS);
         // Store the taken lock's key, column, and timestamp in the lockState map
-        LockStatus expectedLS = new LockStatus(lockColTimestampNS, TimeUnit.NANOSECONDS);
-        lockState.take(eq(defaultTx), eq(defaultLockID), eq(expectedLS));
+        lockState.take(eq(defaultTx), eq(defaultLockID), eq(li.stat));
         ctrl.replay();
         
         locker.writeLock(defaultLockID, defaultTx); // SUT
+    }
+    
+    public static class LockInfo {
+        
+        private final long tsNS;
+        private final ConsistentKeyLockStatus stat;
+        private final StaticBuffer col;
+        
+        public LockInfo(long tsNS, ConsistentKeyLockStatus stat,
+                StaticBuffer col) {
+            this.tsNS = tsNS;
+            this.stat = stat;
+            this.col = col;
+        }
     }
     
     /**
@@ -139,12 +149,10 @@ public class ConsistentKeyLockerTest {
     public void testWriteLockRetriesAfterOneStoreTimeout() throws StorageException {
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
         recordSuccessfulLocalLock();
-        StaticBuffer firstCol  = recordSuccessfulLockWrite(5, TimeUnit.SECONDS, null); // too slow
-        StaticBuffer secondCol = recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, firstCol); // plenty fast
-        final long secondTimestampNS = codec.fromLockColumn(secondCol).getTimestamp();
-        recordSuccessfulLocalLock(secondTimestampNS);
-        LockStatus expectedLS = new LockStatus(secondTimestampNS, TimeUnit.NANOSECONDS);
-        lockState.take(eq(defaultTx), eq(defaultLockID), eq(expectedLS));
+        StaticBuffer firstCol = recordSuccessfulLockWrite(5, TimeUnit.SECONDS, null).col; // too slow
+        LockInfo     secondLI = recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, firstCol); // plenty fast
+        recordSuccessfulLocalLock(secondLI.tsNS);
+        lockState.take(eq(defaultTx), eq(defaultLockID), eq(secondLI.stat));
         ctrl.replay();
         
         locker.writeLock(defaultLockID, defaultTx); // SUT
@@ -162,9 +170,9 @@ public class ConsistentKeyLockerTest {
     public void testWriteLockThrowsExceptionAfterMaxStoreTimeouts() throws StorageException {
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
         recordSuccessfulLocalLock();
-        StaticBuffer firstCol =  recordSuccessfulLockWrite(5, TimeUnit.SECONDS, null);
-        StaticBuffer secondCol = recordSuccessfulLockWrite(5, TimeUnit.SECONDS, firstCol);
-        StaticBuffer thirdCol =  recordSuccessfulLockWrite(5, TimeUnit.SECONDS, secondCol);
+        StaticBuffer firstCol =  recordSuccessfulLockWrite(5, TimeUnit.SECONDS, null).col;
+        StaticBuffer secondCol = recordSuccessfulLockWrite(5, TimeUnit.SECONDS, firstCol).col;
+        StaticBuffer thirdCol =  recordSuccessfulLockWrite(5, TimeUnit.SECONDS, secondCol).col;
         recordSuccessfulLockDelete(1, TimeUnit.NANOSECONDS, thirdCol);
         recordSuccessfulLocalUnlock();
         ctrl.replay();
@@ -219,12 +227,10 @@ public class ConsistentKeyLockerTest {
 
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
         recordSuccessfulLocalLock();
-        StaticBuffer firstCol  = recordExceptionLockWrite(1, TimeUnit.NANOSECONDS, null, tse);
-        StaticBuffer secondCol = recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, firstCol);
-        final long secondTimestampNS = codec.fromLockColumn(secondCol).getTimestamp();
-        recordSuccessfulLocalLock(secondTimestampNS);
-        LockStatus expectedLS = new LockStatus(secondTimestampNS, TimeUnit.NANOSECONDS);
-        lockState.take(eq(defaultTx), eq(defaultLockID), eq(expectedLS));
+        StaticBuffer firstCol = recordExceptionLockWrite(1, TimeUnit.NANOSECONDS, null, tse);
+        LockInfo secondLI     = recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, firstCol);
+        recordSuccessfulLocalLock(secondLI.tsNS);
+        lockState.take(eq(defaultTx), eq(defaultLockID), eq(secondLI.stat));
         ctrl.replay();
         
         locker.writeLock(defaultLockID, defaultTx); // SUT
@@ -263,11 +269,9 @@ public class ConsistentKeyLockerTest {
     public void testWriteLockIdempotence() throws StorageException {
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
         recordSuccessfulLocalLock();
-        StaticBuffer firstCol = recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, null);
-        final long timestampNS = codec.fromLockColumn(firstCol).getTimestamp();
-        recordSuccessfulLocalLock(timestampNS);
-        LockStatus expectedLS = new LockStatus(timestampNS, TimeUnit.NANOSECONDS);
-        lockState.take(eq(defaultTx), eq(defaultLockID), eq(expectedLS));
+        LockInfo li = recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, null);
+        recordSuccessfulLocalLock(li.tsNS);
+        lockState.take(eq(defaultTx), eq(defaultLockID), eq(li.stat));
         ctrl.replay();
         
         locker.writeLock(defaultLockID, defaultTx);
@@ -292,19 +296,29 @@ public class ConsistentKeyLockerTest {
     @Test
     public void testCheckLocksInSimplestCase() throws StorageException, InterruptedException {
         // Fake a pre-existing lock
-        final LockStatus ls = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        final ConsistentKeyLockStatus ls = makeStatusNow();
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, ls));
         currentTimeNS += TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
         // Checker should compare the fake lock's timestamp to the current time
-        expect(times.sleepUntil(ls.getWrittenTimestamp(TimeUnit.NANOSECONDS) + conf.getLockWait(TimeUnit.NANOSECONDS))).andReturn(currentTimeNS);
+        expect(times.sleepUntil(ls.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS)).andReturn(currentTimeNS);
         // Expect a store getSlice() and return the fake lock's column and value
         recordLockGetSliceAndReturnSingleEntry(
                 new StaticBufferEntry(
-                        codec.toLockCol(ls.getWrittenTimestamp(TimeUnit.NANOSECONDS), defaultLockRid),
+                        codec.toLockCol(ls.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid),
                         defaultLockVal));
         ctrl.replay();
         
         locker.checkLocks(defaultTx);
+    }
+    
+    private ConsistentKeyLockStatus makeStatus(long currentNS) {
+        return new ConsistentKeyLockStatus(
+                currentTimeNS, TimeUnit.NANOSECONDS,
+                defaultExpireNS, TimeUnit.NANOSECONDS);
+    }
+    
+    private ConsistentKeyLockStatus makeStatusNow() {
+        return makeStatus(currentTimeNS);
     }
     
     /**
@@ -319,17 +333,17 @@ public class ConsistentKeyLockerTest {
     @Test
     public void testCheckLocksIgnoresSingleExpiredLock() throws StorageException, InterruptedException {
         // Fake a pre-existing lock that's long since expired
-        final LockStatus expired = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        final ConsistentKeyLockStatus expired = makeStatusNow();
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, expired));
-        currentTimeNS += TimeUnit.NANOSECONDS.convert(100, TimeUnit.DAYS); // fake expiration here
+        currentTimeNS += TimeUnit.NANOSECONDS.convert(100, TimeUnit.DAYS); // pretend a huge multiple of the expiration time has passed
         
         // Checker should compare the fake lock's timestamp to the current time
-        expect(times.sleepUntil(expired.getWrittenTimestamp(TimeUnit.NANOSECONDS) + conf.getLockWait(TimeUnit.NANOSECONDS))).andReturn(currentTimeNS);
+        expect(times.sleepUntil(expired.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS)).andReturn(currentTimeNS);
 
         // Checker must slice the store; we return the single expired lock column
         recordLockGetSliceAndReturnSingleEntry(
                 new StaticBufferEntry(
-                        codec.toLockCol(expired.getWrittenTimestamp(TimeUnit.NANOSECONDS), defaultLockRid),
+                        codec.toLockCol(expired.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid),
                         defaultLockVal));
 
         ctrl.replay();
@@ -355,12 +369,12 @@ public class ConsistentKeyLockerTest {
     @Test
     public void testCheckLocksIdempotence() throws InterruptedException, StorageException {
         // Fake a pre-existing valid lock
-        final LockStatus ls = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        final ConsistentKeyLockStatus ls = makeStatusNow();
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, ls));
         currentTimeNS += TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
         
-        expect(times.sleepUntil(ls.getWrittenTimestamp(TimeUnit.NANOSECONDS) + conf.getLockWait(TimeUnit.NANOSECONDS))).andReturn(currentTimeNS);
-        final StaticBuffer lc = codec.toLockCol(ls.getWrittenTimestamp(TimeUnit.NANOSECONDS), defaultLockRid);
+        expect(times.sleepUntil(ls.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS)).andReturn(currentTimeNS);
+        final StaticBuffer lc = codec.toLockCol(ls.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid);
         recordLockGetSliceAndReturnSingleEntry(new StaticBufferEntry(lc, defaultLockVal));
         ctrl.replay();
         
@@ -395,13 +409,13 @@ public class ConsistentKeyLockerTest {
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
         // Expect checker to fetch locks for defaultTx; return just our own lock (not the other guy's)
         StaticBuffer ownJuniorLockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
-        LockStatus ownJuniorLS = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus ownJuniorLS = makeStatusNow();
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, ownJuniorLS));
         
         currentTimeNS += TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
         
         // Return defaultTx's lock in a map when requested
-        expect(times.sleepUntil(ownJuniorLS.getWrittenTimestamp(TimeUnit.NANOSECONDS) + conf.getLockWait(TimeUnit.NANOSECONDS))).andReturn(currentTimeNS);
+        expect(times.sleepUntil(ownJuniorLS.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS)).andReturn(currentTimeNS);
 
         // When the checker slices the store, return the senior lock col by a
         // foreign tx and the junior lock col by defaultTx (in that order)
@@ -434,7 +448,7 @@ public class ConsistentKeyLockerTest {
     public void testCheckLocksSucceedsWithJuniorClaimsByOthers() throws InterruptedException, StorageException {
         // Expect checker to fetch locks for defaultTx; return just our own lock (not the other guy's)
         StaticBuffer ownSeniorLockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
-        LockStatus ownSeniorLS = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus ownSeniorLS = makeStatusNow();
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
         // Make junior lock
         StaticBuffer otherJuniorLockCol = codec.toLockCol(currentTimeNS, otherLockRid);
@@ -443,7 +457,7 @@ public class ConsistentKeyLockerTest {
         currentTimeNS += TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
         
         // Return defaultTx's lock in a map when requested
-        expect(times.sleepUntil(ownSeniorLS.getWrittenTimestamp(TimeUnit.NANOSECONDS) + conf.getLockWait(TimeUnit.NANOSECONDS))).andReturn(currentTimeNS);
+        expect(times.sleepUntil(ownSeniorLS.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS)).andReturn(currentTimeNS);
 
         // When the checker slices the store, return the senior lock col by a
         // foreign tx and the junior lock col by defaultTx (in that order)
@@ -477,7 +491,7 @@ public class ConsistentKeyLockerTest {
         StaticBuffer myFirstLockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
         StaticBuffer mySecondLockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
-        LockStatus mySecondLS = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus mySecondLS = makeStatusNow();
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
         StaticBuffer myThirdLockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
@@ -486,7 +500,7 @@ public class ConsistentKeyLockerTest {
         
         // Return defaultTx's second lock in a map when requested
         currentTimeNS += TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
-        expect(times.sleepUntil(mySecondLS.getWrittenTimestamp(TimeUnit.NANOSECONDS) + conf.getLockWait(TimeUnit.NANOSECONDS))).andReturn(currentTimeNS);
+        expect(times.sleepUntil(mySecondLS.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS)).andReturn(currentTimeNS);
 
         // When the checker slices the store, return the senior lock col by a
         // foreign tx and the junior lock col by defaultTx (in that order)
@@ -515,12 +529,12 @@ public class ConsistentKeyLockerTest {
     public void testCheckLocksRetriesAfterSingleTemporaryStorageException() throws StorageException, InterruptedException {
         // Setup one lock column
         StaticBuffer lockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
-        LockStatus lockStatus = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus lockStatus = makeStatusNow();
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
         
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, lockStatus));
         
-        expect(times.sleepUntil(lockStatus.getWrittenTimestamp(TimeUnit.NANOSECONDS) + conf.getLockWait(TimeUnit.NANOSECONDS))).andReturn(currentTimeNS);
+        expect(times.sleepUntil(lockStatus.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS)).andReturn(currentTimeNS);
 
         // First getSlice will fail
         TemporaryStorageException tse = new TemporaryStorageException("Storage cluster will be right back");
@@ -549,12 +563,12 @@ public class ConsistentKeyLockerTest {
     @Test
     public void testCheckLocksThrowsExceptionAfterMaxTemporaryStorageExceptions() throws InterruptedException, StorageException {
         // Setup a LockStatus for defaultLockID
-        LockStatus lockStatus = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus lockStatus = makeStatusNow();
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
         
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, lockStatus));
         
-        expect(times.sleepUntil(lockStatus.getWrittenTimestamp(TimeUnit.NANOSECONDS) + conf.getLockWait(TimeUnit.NANOSECONDS))).andReturn(currentTimeNS);
+        expect(times.sleepUntil(lockStatus.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS)).andReturn(currentTimeNS);
 
         // Three successive getSlice calls, each throwing a distinct TSE
         recordExceptionalLockGetSlice(new TemporaryStorageException("Storage cluster is having me-time"));
@@ -583,12 +597,12 @@ public class ConsistentKeyLockerTest {
     @Test
     public void testCheckLocksDiesOnPermanentStorageException() throws InterruptedException, StorageException {
         // Setup a LockStatus for defaultLockID
-        LockStatus lockStatus = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus lockStatus = makeStatusNow();
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
         
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, lockStatus));
         
-        expect(times.sleepUntil(lockStatus.getWrittenTimestamp(TimeUnit.NANOSECONDS) + conf.getLockWait(TimeUnit.NANOSECONDS))).andReturn(currentTimeNS);
+        expect(times.sleepUntil(lockStatus.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS)).andReturn(currentTimeNS);
 
         // First and only getSlice call throws a PSE
         recordExceptionalLockGetSlice(new PermanentStorageException("Connection to storage cluster failed: peer is an IPv6 toaster"));
@@ -606,7 +620,7 @@ public class ConsistentKeyLockerTest {
     
     @Test
     public void testCheckLocksDoesNothingForUnrecognizedTransaction() throws StorageException {
-        expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.<KeyColumn, LockStatus>of());
+        expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.<KeyColumn, ConsistentKeyLockStatus>of());
         ctrl.replay();
         locker.checkLocks(defaultTx);
     }
@@ -619,16 +633,16 @@ public class ConsistentKeyLockerTest {
     @Test
     public void testDeleteLocksInSimplestCase() throws StorageException {
         // Setup a LockStatus for defaultLockID
-        final LockStatus lockStatus = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        final ConsistentKeyLockStatus lockStatus = makeStatusNow();
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
 
         @SuppressWarnings("serial")
-        Map<KeyColumn, LockStatus> expectedMap = new HashMap<KeyColumn, LockStatus>() {{
+        Map<KeyColumn, ConsistentKeyLockStatus> expectedMap = new HashMap<KeyColumn, ConsistentKeyLockStatus>() {{
             put(defaultLockID, lockStatus);
         }};
         expect(lockState.getLocksForTx(defaultTx)).andReturn(expectedMap);
         
-        StaticBuffer del = codec.toLockCol(lockStatus.getWrittenTimestamp(TimeUnit.NANOSECONDS), defaultLockRid);
+        StaticBuffer del = codec.toLockCol(lockStatus.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid);
         store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(Arrays.asList(del)), eq(defaultTx));
         expect(mediator.unlock(defaultLockID, defaultTx)).andReturn(true);
         ctrl.replay();
@@ -638,22 +652,22 @@ public class ConsistentKeyLockerTest {
     
     @Test
     public void testDeleteLocksOnTwoLocks() throws StorageException {
-        LockStatus defaultLS = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus defaultLS = makeStatusNow();
         currentTimeNS++;
-        LockStatus otherLS = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus otherLS = makeStatusNow();
         currentTimeNS++;
         
         // Expect a call for defaultTx's locks and return two
-        Map<KeyColumn, LockStatus> expectedMap = Maps.newLinkedHashMap();
+        Map<KeyColumn, ConsistentKeyLockStatus> expectedMap = Maps.newLinkedHashMap();
         expectedMap.put(defaultLockID, defaultLS);
         expectedMap.put(otherLockID, otherLS);
         expect(lockState.getLocksForTx(defaultTx)).andReturn(expectedMap);
         
-        List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(defaultLS.getWrittenTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
+        List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(defaultLS.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
         store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(dels), eq(defaultTx));
         expect(mediator.unlock(defaultLockID, defaultTx)).andReturn(true);
         
-        dels = ImmutableList.of(codec.toLockCol(otherLS.getWrittenTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
+        dels = ImmutableList.of(codec.toLockCol(otherLS.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
         store.mutate(eq(otherLockKey), eq(ImmutableList.<Entry>of()), eq(dels), eq(defaultTx));
         expect(mediator.unlock(otherLockID, defaultTx)).andReturn(true);
         ctrl.replay();
@@ -663,11 +677,11 @@ public class ConsistentKeyLockerTest {
     
     @Test
     public void testDeleteLocksRetriesOnTemporaryStorageException() throws StorageException {
-        LockStatus defaultLS = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus defaultLS = makeStatusNow();
         currentTimeNS++;
         expect(lockState.getLocksForTx(defaultTx)).andReturn(Maps.newLinkedHashMap(ImmutableMap.of(defaultLockID, defaultLS)));
         
-        List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(defaultLS.getWrittenTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
+        List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(defaultLS.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
         store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(dels), eq(defaultTx));
         expectLastCall().andThrow(new TemporaryStorageException("Storage cluster is backlogged"));
         store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(dels), eq(defaultTx));
@@ -680,11 +694,11 @@ public class ConsistentKeyLockerTest {
     
     @Test
     public void testDeleteLocksSkipsToNextLockAfterMaxTemporaryStorageExceptions() throws StorageException {
-        LockStatus defaultLS = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus defaultLS = makeStatusNow();
         currentTimeNS++;
         expect(lockState.getLocksForTx(defaultTx)).andReturn(Maps.newLinkedHashMap(ImmutableMap.of(defaultLockID, defaultLS)));
         
-        List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(defaultLS.getWrittenTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
+        List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(defaultLS.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
         store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(dels), eq(defaultTx));
         expectLastCall().andThrow(new TemporaryStorageException("Storage cluster is busy"));
         store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(dels), eq(defaultTx));
@@ -700,11 +714,11 @@ public class ConsistentKeyLockerTest {
     
     @Test
     public void testDeleteLocksSkipsToNextLockOnPermanentStorageException() throws StorageException {
-        LockStatus defaultLS = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus defaultLS = makeStatusNow();
         currentTimeNS++;
         expect(lockState.getLocksForTx(defaultTx)).andReturn(Maps.newLinkedHashMap(ImmutableMap.of(defaultLockID, defaultLS)));
         
-        List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(defaultLS.getWrittenTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
+        List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(defaultLS.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
         store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(dels), eq(defaultTx));
         expectLastCall().andThrow(new PermanentStorageException("Storage cluster has been destroyed by a tornado"));
         expect(mediator.unlock(defaultLockID, defaultTx)).andReturn(true);
@@ -716,7 +730,7 @@ public class ConsistentKeyLockerTest {
     
     @Test
     public void testDeleteLocksDeletesUncheckedLocks() throws StorageException {
-        LockStatus defaultLS = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus defaultLS = makeStatusNow();
         defaultLS.setChecked();
         assertTrue(defaultLS.isChecked());
         currentTimeNS++;
@@ -724,7 +738,7 @@ public class ConsistentKeyLockerTest {
         // Expect a call for defaultTx's locks and the checked one
         expect(lockState.getLocksForTx(defaultTx)).andReturn(Maps.newLinkedHashMap(ImmutableMap.of(defaultLockID, defaultLS)));
         
-        List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(defaultLS.getWrittenTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
+        List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(defaultLS.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
         store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(dels), eq(defaultTx));
         expect(mediator.unlock(defaultLockID, defaultTx)).andReturn(true);
 //        lockState.release(defaultTx, defaultLockID);
@@ -736,12 +750,12 @@ public class ConsistentKeyLockerTest {
     @Test
     public void testDeleteLocksIdempotence() throws StorageException {
         // Setup a LockStatus for defaultLockID
-        LockStatus lockStatus = new LockStatus(currentTimeNS, TimeUnit.NANOSECONDS);
+        ConsistentKeyLockStatus lockStatus = makeStatusNow();
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
         
         expect(lockState.getLocksForTx(defaultTx)).andReturn(Maps.newLinkedHashMap(ImmutableMap.of(defaultLockID, lockStatus)));
         
-        StaticBuffer del = codec.toLockCol(lockStatus.getWrittenTimestamp(TimeUnit.NANOSECONDS), defaultLockRid);
+        StaticBuffer del = codec.toLockCol(lockStatus.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid);
         store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(Arrays.asList(del)), eq(defaultTx));
         expect(mediator.unlock(defaultLockID, defaultTx)).andReturn(true);
 //        lockState.release(defaultTx, defaultLockID);
@@ -751,14 +765,14 @@ public class ConsistentKeyLockerTest {
         
         ctrl.verify();
         ctrl.reset();
-        expect(lockState.getLocksForTx(defaultTx)).andReturn(Maps.newLinkedHashMap(ImmutableMap.<KeyColumn, LockStatus>of()));
+        expect(lockState.getLocksForTx(defaultTx)).andReturn(Maps.newLinkedHashMap(ImmutableMap.<KeyColumn, ConsistentKeyLockStatus>of()));
         ctrl.replay();
         locker.deleteLocks(defaultTx);
     }
     
     @Test
     public void testDeleteLocksDoesNothingForUnrecognizedTransaction() throws StorageException {
-        expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.<KeyColumn, LockStatus>of());
+        expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.<KeyColumn, ConsistentKeyLockStatus>of());
         ctrl.replay();
         locker.deleteLocks(defaultTx);
     }
@@ -767,10 +781,12 @@ public class ConsistentKeyLockerTest {
      * Helpers
      */
     
-    private StaticBuffer recordSuccessfulLockWrite(long duration, TimeUnit tu, StaticBuffer del) throws StorageException {
+    private LockInfo recordSuccessfulLockWrite(long duration, TimeUnit tu, StaticBuffer del) throws StorageException {
         expect(times.getApproxNSSinceEpoch(false)).andReturn(++currentTimeNS);
         
-        StaticBuffer lockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
+        final long lockNS = currentTimeNS;
+        
+        StaticBuffer lockCol = codec.toLockCol(lockNS, defaultLockRid);
         Entry add = new StaticBufferEntry(lockCol, defaultLockVal);
 
         StaticBuffer k = eq(defaultLockKey);
@@ -786,9 +802,14 @@ public class ConsistentKeyLockerTest {
         store.mutate(k, adds, dels, eq(defaultTx));
 
         currentTimeNS += TimeUnit.NANOSECONDS.convert(duration, tu);
+        
         expect(times.getApproxNSSinceEpoch(false)).andReturn(currentTimeNS);
         
-        return lockCol;
+        ConsistentKeyLockStatus status = new ConsistentKeyLockStatus(
+                lockNS, TimeUnit.NANOSECONDS,
+                lockNS + defaultExpireNS, TimeUnit.NANOSECONDS);
+        
+        return new LockInfo(lockNS, status, lockCol);
     }
     
     private StaticBuffer recordExceptionLockWrite(long duration, TimeUnit tu, StaticBuffer del, Throwable t) throws StorageException {
@@ -859,33 +880,4 @@ public class ConsistentKeyLockerTest {
     private void recordLockGetSliceAndReturnSingleEntry(Entry returnSingleEntry) throws StorageException {
         recordLockGetSlice(ImmutableList.<Entry>of(returnSingleEntry));
     }
- 
-//    private static class Sleeper<T> implements IAnswer<T> {
-//
-//        private final T ret;
-//        private final long sleepMS;
-//        
-//        public Sleeper(T ret, long sleep, TimeUnit tu) {
-//            this.ret = ret;
-//            this.sleepMS = TimeUnit.MILLISECONDS.convert(sleep, tu);
-//        }
-//
-//        @Override
-//        public T answer() throws Throwable {
-//            
-//            long start = System.currentTimeMillis();
-//            long finish = start;
-//            long slept = 0L;
-//            long remaining = sleepMS;
-//            do {
-//                Thread.sleep(remaining);
-//                finish = System.currentTimeMillis();
-//                slept = finish - start;
-//                remaining = sleepMS - slept;
-//            } while (0 < remaining);
-//            
-//            return ret;
-//        }
-//        
-//    }
 }

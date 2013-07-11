@@ -1,87 +1,89 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking;
 
 import java.nio.ByteBuffer;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.netflix.astyanax.Keyspace;
+import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.recipes.locks.BusyLockException;
 import com.netflix.astyanax.recipes.locks.ColumnPrefixDistributedRowLock;
 import com.netflix.astyanax.recipes.locks.StaleLockException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.Locker;
+import com.thinkaurelius.titan.diskstorage.locking.LockerState;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker.LockState;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.AbstractLocker;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
-public class AstyanaxRecipeLocker implements Locker {
+public class AstyanaxRecipeLocker extends AbstractLocker<AstyanaxLockStatus> {
     
-    private final AstyanaxRecipeLockerConfiguration conf;
-    private final LockState<AstyanaxLockStatus> lockState;
+    private final Keyspace lockKeyspace;
+    
+    private final ColumnFamily<ByteBuffer, String> lockColumnFamily;
     
     private static final Logger log = LoggerFactory.getLogger(AstyanaxRecipeLocker.class);
     
-    public AstyanaxRecipeLocker(AstyanaxRecipeLockerConfiguration conf) {
-        this.conf = conf;
-        this.lockState = new LockState<AstyanaxLockStatus>();
-    }
+    public static class Builder extends AbstractLocker.Builder<AstyanaxLockStatus, Builder> {
 
-    @Override
-    public void writeLock(KeyColumn lockID, StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
-          
-        if (lockState.has(tx, lockID)) {
-            log.warn("Transaction {} already wrote lock on {}", tx, lockID);
-            return;
-        }
+        private Keyspace ks;
+        private ColumnFamily<ByteBuffer, String> cf;
         
-        if (lockLocally(lockID, tx)) {
-            boolean ok = false;
-            try {
-                AstyanaxLockStatus stat = tryLockRemotely(lockID, tx);
-                lockLocally(lockID, stat.getTimestamp(TimeUnit.NANOSECONDS), tx); // update local lock expiration time
-                lockState.take(tx, lockID, stat);
-                ok = true;
-            } catch (TemporaryStorageException tse) {
-                throw new TemporaryLockingException(tse);
-            } catch (AssertionError ae) {
-                // Concession to ease testing with mocks & behavior verification
-                ok = true;
-                throw ae;
-            } catch (Throwable t) {
-                throw new PermanentLockingException(t);
-            } finally {
-                if (!ok) {
-                    // lockState.release(tx, lockID); // has no effect
-                    unlockLocally(lockID, tx);
-                }
-            }
-        } else {
-            // Fail immediately with no retries on local contention
-            throw new TemporaryLockingException("Local lock contention");
-        }
         
+        public Builder(Keyspace ks, ColumnFamily<ByteBuffer, String> cf) {
+            this.ks = ks;
+            this.cf = cf;
+        }
+
+        public AstyanaxRecipeLocker build() {
+            super.preBuild();
+            return new AstyanaxRecipeLocker(rid, times, serializer, llm, lockState, lockExpireNS, log, ks, cf);
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        @Override
+        protected LocalLockMediator<StoreTransaction> getDefaultMediator() {
+            return LocalLockMediators.INSTANCE.get(cf.getName());
+        }
     }
     
-    protected AstyanaxLockStatus tryLockRemotely(KeyColumn lockID, StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
+    private AstyanaxRecipeLocker(StaticBuffer rid, TimestampProvider times,
+            ConsistentKeyLockerSerializer serializer,
+            LocalLockMediator<StoreTransaction> llm,
+            LockerState<AstyanaxLockStatus> lockState, long lockExpireNS,
+            Logger log, Keyspace lockKeyspace,
+            ColumnFamily<ByteBuffer, String> lockColumnFamily) {
+        super(rid, times, serializer, llm, lockState, lockExpireNS, log);
+        this.lockKeyspace = lockKeyspace;
+        this.lockColumnFamily = lockColumnFamily;
+    }
+    
+    @Override
+    protected AstyanaxLockStatus writeSingleLock(KeyColumn lockID, StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
         
-        long approxTimeNS = conf.getTimes().getApproxNSSinceEpoch(false);
+        long approxTimeNS = times.getApproxNSSinceEpoch(false);
         
-        ByteBuffer keyToLock = conf.getSerializer().toLockKey(lockID.getKey(), lockID.getColumn()).asByteBuffer();
+        ByteBuffer keyToLock = serializer.toLockKey(lockID.getKey(), lockID.getColumn()).asByteBuffer();
         
         ColumnPrefixDistributedRowLock<ByteBuffer> lock =
                 new ColumnPrefixDistributedRowLock<ByteBuffer>(
-                        conf.getKeyspace(), conf.getColumnFamily(), keyToLock).expireLockAfter(conf.getLockExpire(TimeUnit.NANOSECONDS), TimeUnit.NANOSECONDS).withConsistencyLevel(ConsistencyLevel.CL_QUORUM);
+                        lockKeyspace, lockColumnFamily, keyToLock).expireLockAfter(lockExpireNS, TimeUnit.NANOSECONDS).withConsistencyLevel(ConsistencyLevel.CL_QUORUM);
       
         try {
             lock.acquire();
+            log.debug("Locked {} in store {}", lockID, lockColumnFamily.getName());
             return new AstyanaxLockStatus(approxTimeNS, TimeUnit.NANOSECONDS, lock);
         } catch (StaleLockException e) {
             throw new TemporaryLockingException(e); // TODO handle gracefully?
@@ -91,66 +93,22 @@ public class AstyanaxRecipeLocker implements Locker {
             throw new PermanentLockingException(e);
         }
     }
-
-    private boolean lockLocally(KeyColumn lockID, StoreTransaction txh) {
-        return lockLocally(lockID, conf.getTimes().getApproxNSSinceEpoch(false), txh);
-    }
-    
-    private boolean lockLocally(KeyColumn lockID, long tsNS, StoreTransaction txh) {
-        final LocalLockMediator<StoreTransaction> m = conf.getLocalLockMediator();
-        return m.lock(lockID, txh, tsNS + conf.getLockExpireNS(), TimeUnit.NANOSECONDS);
-    }
-    
-    private void unlockLocally(KeyColumn lockID, StoreTransaction txh) {
-        final LocalLockMediator<StoreTransaction> m = conf.getLocalLockMediator();
-        m.unlock(lockID, txh);
-    }
     
     @Override
-    public void checkLocks(StoreTransaction tx) throws StorageException {
+    protected void checkSingleLock(
+            KeyColumn lockID,
+            AstyanaxLockStatus lockStatus,
+            StoreTransaction tx) throws Throwable {
         // Nothing to do
     }
-
-    @Override
-    public void deleteLocks(StoreTransaction tx) throws StorageException {
-        Map<KeyColumn, AstyanaxLockStatus> m = lockState.getLocksForTx(tx);
-        
-        Iterator<KeyColumn> iter = m.keySet().iterator();
-        while (iter.hasNext()) {
-            KeyColumn kc = iter.next();
-            AstyanaxLockStatus ls = m.get(kc);
-            tryDeleteSingleLock(kc, ls, tx);
-            // Regardless of whether we successfully deleted the lock from storage, take it out of the local mediator
-            conf.getLocalLockMediator().unlock(kc, tx);
-            iter.remove();
-        }
-    }
     
-    protected void tryDeleteSingleLock(KeyColumn lockID, AstyanaxLockStatus stat, StoreTransaction tx) throws PermanentLockingException {
+    @Override
+    protected void deleteSingleLock(KeyColumn lockID, AstyanaxLockStatus stat, StoreTransaction tx) throws PermanentLockingException {
         try {
             stat.getLock().release();
+            log.debug("Unlocked {} in store {}", lockID, lockColumnFamily.getName());
         } catch (Exception e) {
             throw new PermanentLockingException(e); // TODO handle better?
-        }
-    }
-    
-    public static class AstyanaxLockStatus {
-        private final long time;
-        private final TimeUnit timeUnit;
-        private final ColumnPrefixDistributedRowLock<ByteBuffer> lock;
-        public AstyanaxLockStatus(long time, TimeUnit timeUnit,
-                ColumnPrefixDistributedRowLock<ByteBuffer> lock) {
-            this.time = time;
-            this.timeUnit = timeUnit;
-            this.lock = lock;
-        }
-        
-        public long getTimestamp(TimeUnit tu) {
-            return tu.convert(time, timeUnit);
-        }
-
-        public ColumnPrefixDistributedRowLock<ByteBuffer> getLock() {
-            return lock;
         }
     }
 }

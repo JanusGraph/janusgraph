@@ -1,36 +1,19 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.core.Titan;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
-import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
-import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
-import com.thinkaurelius.titan.diskstorage.locking.Locker;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockConfiguration;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerConfiguration;
-import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
-import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
-import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
-
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.BUFFER_SIZE_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.BUFFER_SIZE_KEY;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.MERGE_BASIC_METRICS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.MERGE_BASIC_METRICS_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.READ_ATTEMPTS_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.READ_ATTEMPTS_KEY;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.SETUP_WAITTIME_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.SETUP_WAITTIME_KEY;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_ATTEMPT_WAITTIME_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_ATTEMPT_WAITTIME_KEY;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.WRITE_ATTEMPTS_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.WRITE_ATTEMPTS_KEY;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,7 +27,43 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.core.Titan;
+import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
+import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
+import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.BufferTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.BufferedKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.CachedKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
+import com.thinkaurelius.titan.diskstorage.locking.Locker;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
+import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
+import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
+import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 
 /**
  * Orchestrates and configures all backend systems:
@@ -189,9 +208,7 @@ public class Backend {
                     throw new IllegalArgumentException("Could not invoke method when configuring locking with Astyanax Recipes", e);
                 }
             } else {
-                ConsistentKeyLockerConfiguration lockerConf =
-                        new ConsistentKeyLockerConfiguration.Builder(lockerStore).fromCommonsConfig(storageConfig).mediatorName(lockerName).build();
-                l = new ConsistentKeyLocker(lockerConf);
+                l = new ConsistentKeyLocker.Builder(lockerStore).fromCommonsConfig(storageConfig).mediatorName(lockerName).build();
             }
 
             final Locker x = lockers.putIfAbsent(lockerName, l);
