@@ -74,8 +74,6 @@ public class BlueprintsGraphOutputMapReduce {
         final Configuration configuration = new EmptyConfiguration();
         configuration.setBoolean("mapred.map.tasks.speculative.execution", false);
         configuration.setBoolean("mapred.reduce.tasks.speculative.execution", false);
-        // 5mb transaction size for vertex writing
-        configuration.setLong("mapred.max.split.size", 5242880);
         return configuration;
     }
 

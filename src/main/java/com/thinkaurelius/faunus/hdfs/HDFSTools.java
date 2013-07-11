@@ -6,6 +6,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
@@ -37,19 +38,25 @@ public class HDFSTools {
             return "";
     }*/
 
-    public static List<Path> getAllFilePaths(final FileSystem fs, String path) throws IOException {
-        if (null == path) path = fs.getHomeDirectory().toString();
-        if (path.equals(FOWARD_SLASH)) path = "";
+    public static long getFileSize(final FileSystem fs, final Path path, final PathFilter filter) throws IOException {
+        long totalSize = 0l;
+        for (final Path p : getAllFilePaths(fs, path, filter)) {
+            totalSize = totalSize + fs.getFileStatus(p).getLen();
+        }
+        return totalSize;
+    }
+
+    public static List<Path> getAllFilePaths(final FileSystem fs, Path path, final PathFilter filter) throws IOException {
+        if (null == path) path = fs.getHomeDirectory();
+        if (path.toString().equals(FOWARD_SLASH)) path = new Path("");
 
         final List<Path> paths = new ArrayList<Path>();
-
-        for (final FileStatus status : fs.globStatus(new Path(path + FOWARD_ASTERISK))) {
-            final Path next = status.getPath();
-            if (!next.getName().startsWith(UNDERSCORE)) {
-                if (fs.isFile(next))
-                    paths.add(next);
-                else
-                    paths.addAll(getAllFilePaths(fs, next.toString()));
+        if (fs.isFile(path))
+            paths.add(path);
+        else {
+            for (final FileStatus status : fs.globStatus(new Path(path + FOWARD_ASTERISK), filter)) {
+                final Path next = status.getPath();
+                paths.addAll(getAllFilePaths(fs, next, filter));
             }
         }
         return paths;
