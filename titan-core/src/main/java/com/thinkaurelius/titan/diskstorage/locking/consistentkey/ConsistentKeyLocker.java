@@ -26,6 +26,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.AbstractLocker;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
 import com.thinkaurelius.titan.diskstorage.locking.LockerState;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;

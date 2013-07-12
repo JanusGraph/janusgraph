@@ -19,8 +19,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
@@ -28,7 +26,9 @@ import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
- * Abstract base class for building lockers on distributed key-value stores.
+ * Abstract base class for building lockers. Implements locking between threads
+ * using {@link LocalLockMediator} but delegates inter-process lock resolution
+ * to its subclasses.
  * 
  * @see ConsistentKeyLocker
  * @param <S>

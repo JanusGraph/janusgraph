@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage.locking;
 
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 

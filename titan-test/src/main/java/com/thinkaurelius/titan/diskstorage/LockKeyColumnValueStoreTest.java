@@ -31,12 +31,12 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreMan
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;

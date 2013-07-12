@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;

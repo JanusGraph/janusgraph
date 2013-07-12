@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package com.thinkaurelius.titan.diskstorage.locking;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

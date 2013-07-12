@@ -34,7 +34,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;

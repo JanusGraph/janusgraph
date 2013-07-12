@@ -1,4 +1,5 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package com.thinkaurelius.titan.diskstorage.locking;
+
 
 /**
  * Service provider interface for {@link LocalLockMediators}.

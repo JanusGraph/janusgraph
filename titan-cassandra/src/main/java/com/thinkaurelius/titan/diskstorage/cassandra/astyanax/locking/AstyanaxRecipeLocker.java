@@ -15,12 +15,12 @@ import com.netflix.astyanax.recipes.locks.StaleLockException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.AbstractLocker;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.LockerState;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediator;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
