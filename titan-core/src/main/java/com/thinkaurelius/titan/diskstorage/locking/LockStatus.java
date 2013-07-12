@@ -2,6 +2,12 @@ package com.thinkaurelius.titan.diskstorage.locking;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * A single held lock's expiration time. This is used by {@link AbstractLocker}.
+ * 
+ * @see AbstractLocker
+ * @see ConsistentKeyLockStatus
+ */
 public interface LockStatus {
     
     /**

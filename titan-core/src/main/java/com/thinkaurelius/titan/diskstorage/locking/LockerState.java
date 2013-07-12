@@ -8,6 +8,15 @@ import com.google.common.collect.MapMaker;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 
+/**
+ * A store for {@code LockStatus} objects. Thread-safe so long as the method
+ * calls with any give {@code StoreTransaction} are serially ordered. Put
+ * another way, thread-safety is only broken by concurrently calling this
+ * class's methods with the same {@code StoreTransaction} instance in each call.
+ * 
+ * @param <S>
+ *            The {@link LockStatus} type.
+ */
 public class LockerState<S> {
 
     /**
