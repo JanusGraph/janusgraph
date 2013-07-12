@@ -159,7 +159,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             rid(new StaticArrayBuffer(DistributedStoreManager.getRid(config)));
 
             final String llmPrefix = config.getString(
-                            ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
+                            ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
                             null);
             
             if (null != llmPrefix) {

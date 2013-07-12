@@ -34,8 +34,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -92,7 +92,7 @@ public abstract class LockKeyColumnValueStoreTest {
             }
 
             Configuration sc = new BaseConfiguration();
-            sc.addProperty(ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, "store" + i);
+            sc.addProperty(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, "store" + i);
             sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, (short) i);
             sc.addProperty(GraphDatabaseConfiguration.LOCK_EXPIRE_MS, EXPIRE_MS);
             sc.addProperty(GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_KEY,50);
@@ -104,9 +104,9 @@ public abstract class LockKeyColumnValueStoreTest {
                 } else if (storeFeatures.supportsConsistentKeyOperations()) {
                     KeyColumnValueStore lockerStore = manager[i].openDatabase(dbName + "_lock_");
                     ConsistentKeyLocker c = new ConsistentKeyLocker.Builder(lockerStore).fromCommonsConfig(sc).build();
-                    store[i] = new ConsistentKeyLockStore(store[i], c);
+                    store[i] = new ExpectedValueCheckingStore(store[i], c);
                     for (int j = 0; j < numTx; j++)
-                        tx[i][j] = new ConsistentKeyLockTransaction(tx[i][j], manager[i].beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
+                        tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(ConsistencyLevel.KEY_CONSISTENT), GraphDatabaseConfiguration.READ_ATTEMPTS_DEFAULT);
                 } else throw new IllegalArgumentException("Store needs to support some form of locking");
             }
 
@@ -122,7 +122,7 @@ public abstract class LockKeyColumnValueStoreTest {
     public StoreTransaction newTransaction(KeyColumnValueStoreManager manager) throws StorageException {
         StoreTransaction transaction = manager.beginTransaction(ConsistencyLevel.DEFAULT);
         if (!manager.getFeatures().supportsLocking() && manager.getFeatures().supportsConsistentKeyOperations()) {
-            transaction = new ConsistentKeyLockTransaction(transaction, manager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
+            transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT), GraphDatabaseConfiguration.READ_ATTEMPTS_DEFAULT);
         }
         return transaction;
     }

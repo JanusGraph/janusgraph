@@ -5,6 +5,7 @@ import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -112,7 +113,6 @@ public class ConsistentKeyLockerTest {
         recordSuccessfulLocalLock();
         // Write a lock claim column to the store
         LockInfo li = recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, null);
-//        long lockColTimestampNS = codec.fromLockColumn(lockCol).getTimestamp();
         // Update the expiration timestamp of the local (thread-level) lock
         recordSuccessfulLocalLock(li.tsNS);
         // Store the taken lock's key, column, and timestamp in the lockState map
@@ -120,20 +120,6 @@ public class ConsistentKeyLockerTest {
         ctrl.replay();
         
         locker.writeLock(defaultLockID, defaultTx); // SUT
-    }
-    
-    public static class LockInfo {
-        
-        private final long tsNS;
-        private final ConsistentKeyLockStatus stat;
-        private final StaticBuffer col;
-        
-        public LockInfo(long tsNS, ConsistentKeyLockStatus stat,
-                StaticBuffer col) {
-            this.tsNS = tsNS;
-            this.stat = stat;
-            this.col = col;
-        }
     }
     
     /**
@@ -256,6 +242,46 @@ public class ConsistentKeyLockerTest {
     }
     
     /**
+     * Claim a lock without errors using {@code defaultTx}, the check that
+     * {@code otherTx} can't claim it, instead throwing a
+     * TemporaryLockingException
+     * 
+     * @throws StorageException
+     *             shouldn't happen
+     */
+    @Test
+    public void testWriteLockDetectsMultiTxContention() throws StorageException {
+        // defaultTx
+        // Check to see whether the lock was already written before anything else
+        expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
+        // Now lock it locally to block other threads in the process
+        recordSuccessfulLocalLock();
+        // Write a lock claim column to the store
+        LockInfo li = recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, null);
+        // Update the expiration timestamp of the local (thread-level) lock
+        recordSuccessfulLocalLock(li.tsNS);
+        // Store the taken lock's key, column, and timestamp in the lockState map
+        lockState.take(eq(defaultTx), eq(defaultLockID), eq(li.stat));
+        
+        // otherTx
+        // Check to see whether the lock was already written before anything else
+        expect(lockState.has(otherTx, defaultLockID)).andReturn(false);
+        // Now try to take the lock but fail because defaultTX has it
+        recordFailedLocalLock(otherTx);
+        ctrl.replay();
+        
+        locker.writeLock(defaultLockID, defaultTx); // SUT
+
+        TemporaryLockingException tle = null;
+        try {
+            locker.writeLock(defaultLockID, otherTx); // SUT
+        } catch (TemporaryLockingException e) {
+            tle = e;
+        }
+        assertNotNull(tle);
+    }
+    
+    /**
      * Test that multiple calls to
      * {@link ConsistentKeyLocker#writeLock(KeyColumn, StoreTransaction)} with
      * the same arguments have no effect after the first call (until
@@ -308,16 +334,6 @@ public class ConsistentKeyLockerTest {
         ctrl.replay();
         
         locker.checkLocks(defaultTx);
-    }
-    
-    private ConsistentKeyLockStatus makeStatus(long currentNS) {
-        return new ConsistentKeyLockStatus(
-                currentTimeNS, TimeUnit.NANOSECONDS,
-                defaultExpireNS, TimeUnit.NANOSECONDS);
-    }
-    
-    private ConsistentKeyLockStatus makeStatusNow() {
-        return makeStatus(currentTimeNS);
     }
     
     /**
@@ -616,7 +632,14 @@ public class ConsistentKeyLockerTest {
         }
         assertNotNull(pse);
     }
-    
+
+    /**
+     * The lock checker should do nothing when passed a transaction for which it
+     * holds no locks.
+     * 
+     * @throws StorageException
+     *             shouldn't happen
+     */
     @Test
     public void testCheckLocksDoesNothingForUnrecognizedTransaction() throws StorageException {
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.<KeyColumn, ConsistentKeyLockStatus>of());
@@ -626,8 +649,9 @@ public class ConsistentKeyLockerTest {
     
     /**
      * Delete a single lock without any timeouts, errors, etc.
-     * @throws StorageException shouldn't happen
      * 
+     * @throws StorageException
+     *             shouldn't happen
      */
     @Test
     public void testDeleteLocksInSimplestCase() throws StorageException {
@@ -649,6 +673,12 @@ public class ConsistentKeyLockerTest {
         locker.deleteLocks(defaultTx);
     }
     
+    /**
+     * Delete two locks without any timeouts, errors, etc.
+     * 
+     * @throws StorageException
+     *             shouldn't happen
+     */
     @Test
     public void testDeleteLocksOnTwoLocks() throws StorageException {
         ConsistentKeyLockStatus defaultLS = makeStatusNow();
@@ -674,6 +704,13 @@ public class ConsistentKeyLockerTest {
         locker.deleteLocks(defaultTx);
     }
     
+    /**
+     * Lock deletion should retry if the first store mutation throws a temporary
+     * exception.
+     * 
+     * @throws StorageException
+     *             shouldn't happen
+     */
     @Test
     public void testDeleteLocksRetriesOnTemporaryStorageException() throws StorageException {
         ConsistentKeyLockStatus defaultLS = makeStatusNow();
@@ -691,6 +728,14 @@ public class ConsistentKeyLockerTest {
         locker.deleteLocks(defaultTx);
     }
     
+    /**
+     * If lock deletion exceeds the temporary exception retry count when trying
+     * to delete a lock, it should move onto the next lock rather than returning
+     * and potentially leaving the remaining locks undeleted.
+     * 
+     * @throws StorageException
+     *             shouldn't happen
+     */
     @Test
     public void testDeleteLocksSkipsToNextLockAfterMaxTemporaryStorageExceptions() throws StorageException {
         ConsistentKeyLockStatus defaultLS = makeStatusNow();
@@ -711,6 +756,15 @@ public class ConsistentKeyLockerTest {
         locker.deleteLocks(defaultTx);
     }
     
+    /**
+     * Same as
+     * {@link #testDeleteLocksSkipsToNextLockAfterMaxTemporaryStorageExceptions()}
+     * , except instead of exceeding the temporary exception retry count on a
+     * lock, that lock throws a single permanent exception.
+     * 
+     * @throws StorageException
+     *             shoudn't happen
+     */
     @Test
     public void testDeleteLocksSkipsToNextLockOnPermanentStorageException() throws StorageException {
         ConsistentKeyLockStatus defaultLS = makeStatusNow();
@@ -727,11 +781,18 @@ public class ConsistentKeyLockerTest {
         locker.deleteLocks(defaultTx);
     }
     
+    /**
+     * Deletion should remove previously written locks regardless of whether
+     * they were ever checked; this method fakes and verifies deletion on a
+     * single unchecked lock
+     * 
+     * @throws StorageException
+     *             shouldn't happen
+     */
     @Test
     public void testDeleteLocksDeletesUncheckedLocks() throws StorageException {
         ConsistentKeyLockStatus defaultLS = makeStatusNow();
-        defaultLS.setChecked();
-        assertTrue(defaultLS.isChecked());
+        assertFalse(defaultLS.isChecked());
         currentTimeNS++;
         
         // Expect a call for defaultTx's locks and the checked one
@@ -746,6 +807,13 @@ public class ConsistentKeyLockerTest {
         locker.deleteLocks(defaultTx);
     }
     
+    /**
+     * When delete is called multiple times with no intervening write or check
+     * calls, all calls after the first should have no effect.
+     * 
+     * @throws StorageException
+     *             shouldn't happen
+     */
     @Test
     public void testDeleteLocksIdempotence() throws StorageException {
         // Setup a LockStatus for defaultLockID
@@ -768,19 +836,57 @@ public class ConsistentKeyLockerTest {
         ctrl.replay();
         locker.deleteLocks(defaultTx);
     }
-    
+
+    /**
+     * Delete should do nothing when passed a transaction for which it holds no
+     * locks.
+     * 
+     * @throws StorageException
+     *             shouldn't happen
+     */
     @Test
     public void testDeleteLocksDoesNothingForUnrecognizedTransaction() throws StorageException {
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.<KeyColumn, ConsistentKeyLockStatus>of());
         ctrl.replay();
         locker.deleteLocks(defaultTx);
     }
+
+    
+    
     
     /*
      * Helpers
      */
     
+    public static class LockInfo {
+        
+        private final long tsNS;
+        private final ConsistentKeyLockStatus stat;
+        private final StaticBuffer col;
+        
+        public LockInfo(long tsNS, ConsistentKeyLockStatus stat,
+                StaticBuffer col) {
+            this.tsNS = tsNS;
+            this.stat = stat;
+            this.col = col;
+        }
+    }
+    
+    private ConsistentKeyLockStatus makeStatus(long currentNS) {
+        return new ConsistentKeyLockStatus(
+                currentTimeNS, TimeUnit.NANOSECONDS,
+                defaultExpireNS, TimeUnit.NANOSECONDS);
+    }
+    
+    private ConsistentKeyLockStatus makeStatusNow() {
+        return makeStatus(currentTimeNS);
+    }
+    
     private LockInfo recordSuccessfulLockWrite(long duration, TimeUnit tu, StaticBuffer del) throws StorageException {
+        return recordSuccessfulLockWrite(defaultTx, duration, tu, del);
+    }
+    
+    private LockInfo recordSuccessfulLockWrite(StoreTransaction tx, long duration, TimeUnit tu, StaticBuffer del) throws StorageException {
         expect(times.getApproxNSSinceEpoch(false)).andReturn(++currentTimeNS);
         
         final long lockNS = currentTimeNS;
@@ -798,7 +904,7 @@ public class ConsistentKeyLockerTest {
         } else {
             dels = eq(ImmutableList.<StaticBuffer>of());
         }
-        store.mutate(k, adds, dels, eq(defaultTx));
+        store.mutate(k, adds, dels, eq(tx));
 
         currentTimeNS += TimeUnit.NANOSECONDS.convert(duration, tu);
         
@@ -845,17 +951,29 @@ public class ConsistentKeyLockerTest {
     }
     
     private void recordSuccessfulLocalLock() {
+        recordSuccessfulLocalLock(defaultTx);
+    }
+    
+    private void recordSuccessfulLocalLock(StoreTransaction tx) {
         expect(times.getApproxNSSinceEpoch(false)).andReturn(++currentTimeNS);
-        expect(mediator.lock(defaultLockID, defaultTx, currentTimeNS + defaultExpireNS, TimeUnit.NANOSECONDS)).andReturn(true);
+        expect(mediator.lock(defaultLockID, tx, currentTimeNS + defaultExpireNS, TimeUnit.NANOSECONDS)).andReturn(true);
     }
     
     private void recordSuccessfulLocalLock(long ts) {
-        expect(mediator.lock(defaultLockID, defaultTx, ts + defaultExpireNS, TimeUnit.NANOSECONDS)).andReturn(true);
+        recordSuccessfulLocalLock(defaultTx, ts);
+    }
+    
+    private void recordSuccessfulLocalLock(StoreTransaction tx, long ts) {
+        expect(mediator.lock(defaultLockID, tx, ts + defaultExpireNS, TimeUnit.NANOSECONDS)).andReturn(true);
     }
     
     private void recordFailedLocalLock() {
+        recordFailedLocalLock(defaultTx);
+    }
+    
+    private void recordFailedLocalLock(StoreTransaction tx) {
         expect(times.getApproxNSSinceEpoch(false)).andReturn(++currentTimeNS);
-        expect(mediator.lock(defaultLockID, defaultTx, currentTimeNS + defaultExpireNS, TimeUnit.NANOSECONDS)).andReturn(false);
+        expect(mediator.lock(defaultLockID, tx, currentTimeNS + defaultExpireNS, TimeUnit.NANOSECONDS)).andReturn(false);
     }
     
     private void recordSuccessfulLocalUnlock() {

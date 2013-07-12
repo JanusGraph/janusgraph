@@ -18,21 +18,37 @@ import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 /**
- * A wrapper that adds locking support to a {@link KeyColumnValueStore} by
- * overridding
- * {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)
- * acquireLock()} and {@link #mutate(StaticBuffer, List, List, StoreTransaction)
- * mutate()}.
+ * A {@link KeyColumnValueStore} wrapper intended for nontransactional stores
+ * that forwards all <b>but</b> these two methods to an encapsulated store
+ * instance:
+ * 
+ * <ul>
+ *   <li>{@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}</li>
+ *   <li>{@link #mutate(StaticBuffer, List, List, StoreTransaction)}</li>
+ * </ul>
+ * 
+ * This wrapper adds some logic to both of the overridden methods before calling
+ * the encapsulated store's version.
+ * <p>
+ * This class, along with its collaborator class
+ * {@link ExpectedValueCheckingTransaction}, track all {@code expectedValue}
+ * arguments passed to {@code acquireLock} for each {@code StoreTransaction}.
+ * When the transaction first {@code mutate(...)}s, the these classes cooperate
+ * to check that all previously provided expected values match actual values,
+ * throwing an exception and preventing mutation if a mismatch is detected.
+ * <p>
+ * This relies on a {@code Locker} instance supplied during construction for
+ * locking.
+ * 
  */
-public class ConsistentKeyLockStore implements KeyColumnValueStore {
+public class ExpectedValueCheckingStore implements KeyColumnValueStore {
 
     /**
      * Configuration setting key for the local lock mediator prefix
      */
     public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local-lock-mediator-prefix";
     
-    private static final Logger log = LoggerFactory.getLogger(ConsistentKeyLockStore.class);
-
+    private static final Logger log = LoggerFactory.getLogger(ExpectedValueCheckingStore.class);
 
     /**
      * Titan data store.
@@ -41,7 +57,7 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
     
     final Locker locker;
     
-    public ConsistentKeyLockStore(KeyColumnValueStore dataStore, Locker locker) {
+    public ExpectedValueCheckingStore(KeyColumnValueStore dataStore, Locker locker) {
         Preconditions.checkNotNull(dataStore);
         this.dataStore = dataStore;
         this.locker = locker;
@@ -53,8 +69,8 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
 
     private StoreTransaction getBaseTx(StoreTransaction txh) {
         Preconditions.checkNotNull(txh);
-        Preconditions.checkArgument(txh instanceof ConsistentKeyLockTransaction);
-        return ((ConsistentKeyLockTransaction) txh).getBaseTransaction();
+        Preconditions.checkArgument(txh instanceof ExpectedValueCheckingTransaction);
+        return ((ExpectedValueCheckingTransaction) txh).getBaseTransaction();
     }
 
     @Override
@@ -77,7 +93,7 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         if (locker != null) {
-            ConsistentKeyLockTransaction tx = (ConsistentKeyLockTransaction) txh;
+            ExpectedValueCheckingTransaction tx = (ExpectedValueCheckingTransaction) txh;
             if (!tx.isMutationStarted()) {
                 tx.mutationStarted();
                 locker.checkLocks(tx.getConsistentTransaction());
@@ -104,7 +120,7 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         if (locker != null) {
-            ConsistentKeyLockTransaction tx = (ConsistentKeyLockTransaction) txh;
+            ExpectedValueCheckingTransaction tx = (ExpectedValueCheckingTransaction) txh;
             if (tx.isMutationStarted())
                 throw new PermanentLockingException("Attempted to obtain a lock after mutations had been persisted");
             KeyColumn lockID = new KeyColumn(key, column);
@@ -137,7 +153,7 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
         // TODO close locker?
     }
     
-    void deleteLocks(ConsistentKeyLockTransaction tx) throws StorageException {
+    void deleteLocks(ExpectedValueCheckingTransaction tx) throws StorageException {
         locker.deleteLocks(tx.getConsistentTransaction());
     }
 }

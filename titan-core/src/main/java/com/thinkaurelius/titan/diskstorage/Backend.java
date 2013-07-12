@@ -55,8 +55,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
@@ -167,9 +167,9 @@ public class Backend {
                 if (lockEnabled) {
                     final String lockerStoreName = store.getName() + LOCK_STORE_SUFFIX;
                     final KeyColumnValueStore lockerStore = getStore(lockerStoreName);
-                    store = new ConsistentKeyLockStore(store, getLocker(lockerStore, lockerStoreName));
+                    store = new ExpectedValueCheckingStore(store, getLocker(lockerStore, lockerStoreName));
                 } else {
-                    store = new ConsistentKeyLockStore(store, null);
+                    store = new ExpectedValueCheckingStore(store, null);
                 }
             } else throw new IllegalArgumentException("Store needs to support some form of locking");
         }
@@ -419,7 +419,7 @@ public class Backend {
             if (storeFeatures.supportsTransactions()) {
                 //No transaction wrapping needed
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
-                tx = new ConsistentKeyLockTransaction(tx, storeManager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
+                tx = new ExpectedValueCheckingTransaction(tx, storeManager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT), readAttempts);
             }
         }
 
