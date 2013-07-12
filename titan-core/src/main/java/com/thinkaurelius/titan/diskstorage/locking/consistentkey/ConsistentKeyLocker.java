@@ -37,7 +37,84 @@ import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
- * A locker built on {@link KeyColumnValueStore}.
+ * A global {@link Locker} that resolves inter-thread lock contention via
+ * {@link AbstractLocker} and resolves inter-process contention by reading and
+ * writing lock data using {@link KeyColumnValueStore}.
+ * 
+ * <h2>Protocol and internals</h2>
+ * 
+ * Locking is done in two stages: first between threads inside a shared process,
+ * and then between processes in a Titan cluster.
+ * 
+ * <h3>Inter-thread lock contention</h3>
+ * 
+ * Lock contention between transactions within a shared process is arbitrated by
+ * the {@code LocalLockMediator} class. This mediator uses standard
+ * {@code java.util.concurrent} classes to guarantee that at most one thread
+ * holds a lock on any given {@link KeyColumn} at any given time. The code that
+ * uses a mediator to resolve inter-thread lock contention is common to multiple
+ * {@code Locker} implementations and lives in the abstract base class
+ * {@link AbstractLocker}.
+ * <p>
+ * However, the mediator has no way to perform inter-process communication. The
+ * mediator can't detect or prevent a thread in another process (potentially on
+ * different machine) acquiring the same lock. This is addressed in the next
+ * section.
+ * 
+ * <h3>Inter-process lock contention</h3>
+ * 
+ * After the mediator signals that the current transaction has obtained a lock
+ * at the inter-thread/intra-process level, this implementation does the
+ * following series of writes and reads to {@code KeyColumnValueStore} to check
+ * whether it is the only process that holds the lock. These Cassandra
+ * operations go to a dedicated store holding nothing but locking data (a
+ * "store" in this context means a Cassandra column family, an HBase table,
+ * etc.)
+ * 
+ * <h4>Locking I/O sequence</h4>
+ * 
+ * <ol>
+ *   <li>Write a single column to the store with the following data
+ *     <dl>
+ *       <dt>key</dt>
+ *       <dd>{@link KeyColumn#getKey()} followed by {@link KeyColumn#getColumn()}.</dd>
+ *       <dt>column</dt>
+ *       <dd>the approximate current timestamp in nanoseconds followed by this
+ *       process's {@code rid} (an opaque identifier which uniquely identifie
+ *       this process either globally or at least within the Titan cluster)</dd>
+ *       <dt>value</dt>
+ *       <dd>the single byte 0; this is unused but reserved for future use</dd>
+ *     </dl>
+ *   </li>
+ *   
+ *   <li>If the write failed or took longer than {@code lockWait} to complete
+ *   successfully, then retry the write with an updated timestamp and everything
+ *   else the same until we either exceed the configured retry count (in which
+ *   case we abort the lock attempt) or successfully complete the write in less
+ *   than {@code lockWait}.</li>
+ *   
+ *   <li>Wait, if necessary, until the time interval {@code lockWait} has passed
+ *   between the timestamp on our successful write and the current time.</li>
+ *   
+ *   <li>Read all columns for the key we wrote in the first step.</li>
+ *   
+ *   <li>Discard any columns with timestamps older than {@code lockExpire}.</li>
+ *   
+ *   <li>If our column is either the first column read or is preceeded only by
+ *   columns containing our own {@code rid}, then we hold the lock.  Otherwise,
+ *   another process holds the lock and we have failed to acquire it.</li>
+ *   
+ *   <li>To release the lock, we delete from the store the column that we
+ *   wrote earlier in this sequence</li>
+ * </ol>
+ * 
+ * <p>
+ * As mentioned earlier, this class relies on {@link AbstractLocker} to obtain
+ * and release an intra-process lock before and after the sequence of steps
+ * listed above.  The mediator step is necessary for thread-safety, because
+ * {@code rid} is only unique at the process level.  Without a mediator, distinct
+ * threads could write lock columns with the same {@code rid} and be unable to
+ * tell their lock claims apart.
  */
 public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus> implements Locker {
 

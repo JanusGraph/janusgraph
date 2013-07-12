@@ -4,7 +4,11 @@ import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.diskstorage.locking.LockStatus;
 
-
+/**
+ * The timestamp and checked-ness of a held {@link ConsistentKeyLock}
+ * 
+ * {@see ConsistentKeyLockStore}
+ */
 public class ConsistentKeyLockStatus implements LockStatus {
     private long writeNS;
     private long expireNS;
