@@ -10,10 +10,12 @@ import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 
 /**
  * A store for {@code LockStatus} objects. Thread-safe so long as the method
- * calls with any give {@code StoreTransaction} are serially ordered. Put
- * another way, thread-safety is only broken by concurrently calling this
- * class's methods with the same {@code StoreTransaction} instance in each call.
+ * calls with any given {@code StoreTransaction} are serial. Put another way,
+ * thread-safety is only broken by concurrently calling this class's methods
+ * with the same {@code StoreTransaction} instance in the arguments to each
+ * concurrent call.
  * 
+ * @see AbstractLocker
  * @param <S>
  *            The {@link LockStatus} type.
  */
