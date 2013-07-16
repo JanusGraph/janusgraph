@@ -336,6 +336,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         		config.getInt(
                         MAX_OPERATIONS_PER_CONNECTION_KEY,
                         MAX_OPERATIONS_PER_CONNECTION_DEFAULT);
+        
         ConnectionPoolConfigurationImpl cpool =
         		new ConnectionPoolConfigurationImpl(usedFor + "TitanConnectionPool")
         			.setPort(port)
@@ -346,6 +347,12 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         			.setConnectTimeout(connectionTimeout)
         			.setSeeds(StringUtils.join(hostnames,","));
         
+        AstyanaxConfigurationImpl aconf =
+                new AstyanaxConfigurationImpl()
+                    .setConnectionPoolType(poolType)
+                    .setDiscoveryType(discType)
+                    .setTargetCassandraVersion("1.2");
+        
         if (0 < maxConnections) {
             cpool.setMaxConns(maxConnections);
         }
@@ -354,13 +361,9 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 new AstyanaxContext.Builder()
                         .forCluster(clusterName)
                         .forKeyspace(keySpaceName)
-                        .withAstyanaxConfiguration(
-                                new AstyanaxConfigurationImpl()
-                                        .setConnectionPoolType(poolType)
-                                        .setDiscoveryType(discType))
+                        .withAstyanaxConfiguration(aconf)
                         .withConnectionPoolConfiguration(cpool)
-                        .withConnectionPoolMonitor(new CountingConnectionPoolMonitor())
-                        .withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setTargetCassandraVersion("1.2"));
+                        .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
 
         return builder;
     }
