@@ -16,7 +16,6 @@ public class HBaseLockKeyColumnValueStoreTest extends LockKeyColumnValueStoreTes
     }
 
     public KeyColumnValueStoreManager openStorageManager(int idx) throws StorageException {
-        Configuration sc = HBaseStorageSetup.getHBaseStorageConfiguration();
-        return new HBaseStoreManager(sc);
+        return new HBaseStoreManager(HBaseStorageSetup.getHBaseStorageConfiguration());
     }
 }

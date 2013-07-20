@@ -111,6 +111,10 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         return name;
     }
 
+    public void clear() {
+        kcv.clear();
+    }
+
     @Override
     public void close() throws StorageException {
         kcv.clear();

@@ -270,8 +270,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             }
         } catch (ConnectionException e) {
             throw new PermanentStorageException(e);
-        } finally {
-            close();
         }
     }
 
