@@ -28,7 +28,7 @@
 export HBASE_CLASSPATH=$HBASE_CLASSPATH:./target/test-lib
 
 # The maximum amount of heap to use, in MB. Default is 1000.
-# export HBASE_HEAPSIZE=1000
+export HBASE_HEAPSIZE=4096
 
 # Extra Java runtime options.
 # Below are what we set by default.  May only work with SUN JVM.
@@ -37,11 +37,10 @@ export HBASE_CLASSPATH=$HBASE_CLASSPATH:./target/test-lib
 export HBASE_OPTS="$HBASE_OPTS -XX:+UseConcMarkSweepGC"
 
 # Uncomment below to enable java garbage collection logging in the .out file.
-# export HBASE_OPTS="$HBASE_OPTS -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps $HBASE_GC_OPTS" 
+export HBASE_OPTS="$HBASE_OPTS -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps $HBASE_GC_OPTS"
 
 # Uncomment below (along with above GC logging) to put GC information in its own logfile (will set HBASE_GC_OPTS)
-# export HBASE_USE_GC_LOGFILE=true
-
+export HBASE_USE_GC_LOGFILE=true
 
 # Uncomment below if you intend to use the EXPERIMENTAL off heap cache.
 # export HBASE_OPTS="$HBASE_OPTS -XX:MaxDirectMemorySize="
@@ -91,4 +90,4 @@ export HBASE_OPTS="$HBASE_OPTS -XX:+UseConcMarkSweepGC"
 # export HBASE_SLAVE_SLEEP=0.1
 
 # Tell HBase whether it should manage it's own instance of Zookeeper or not.
-# export HBASE_MANAGES_ZK=true
+export HBASE_MANAGES_ZK=true
