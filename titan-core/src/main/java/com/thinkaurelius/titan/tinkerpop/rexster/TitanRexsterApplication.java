@@ -28,27 +28,12 @@ public class TitanRexsterApplication extends AbstractMapRexsterApplication {
      * @param graph a graph instance.
      */
     public TitanRexsterApplication(final String graphName, final Graph graph, final List<HierarchicalConfiguration> extensionConfigurations) {
-        final RexsterApplicationGraph rag = new RexsterApplicationGraph(graphName, graph);
-
-        allowAllExtensions(rag);
-        configureExtensions(extensionConfigurations, rag);
-
-        this.graphs.put(graphName, rag);
-        logger.info(String.format("Graph [%s] loaded", rag.getGraph()));
-    }
-
-    private static void configureExtensions(final List<HierarchicalConfiguration> extensionConfigurations, final RexsterApplicationGraph rag) {
-        if (extensionConfigurations != null) {
-            //TODO
-            //rag.loadExtensionsConfigurations(extensionConfigurations);
-        }
-    }
-
-    private static void allowAllExtensions(final RexsterApplicationGraph rag) {
         final List<String> allowableNamespaces = new ArrayList<String>() {{
             add("*:*");
         }};
-        //TODO
-        //rag.loadAllowableExtensions(allowableNamespaces);
+
+        final RexsterApplicationGraph rag = new RexsterApplicationGraph(graphName, graph, allowableNamespaces, extensionConfigurations);
+        this.graphs.put(graphName, rag);
+        logger.info(String.format("Graph [%s] loaded", rag.getGraph()));
     }
 }
