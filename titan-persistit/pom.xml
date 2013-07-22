@@ -64,7 +64,7 @@
                         <exclude>**/*PerformanceTest.java</exclude>
                         <exclude>**/*ConcurrentTest.java</exclude>
                     </excludes>
-                    <forkMode>never</forkMode>
+                    <forkMode>always</forkMode>
                 </configuration>
             </plugin>
         </plugins>
