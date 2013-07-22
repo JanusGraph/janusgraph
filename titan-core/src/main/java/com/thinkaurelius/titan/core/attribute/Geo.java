@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
+import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
 
 /**
  * Comparison relations for geographic shapes.
@@ -9,12 +9,12 @@ import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public enum Geo implements Relation {
+public enum Geo implements TitanPredicate {
 
     INTERSECT {
 
         @Override
-        public boolean satisfiesCondition(Object value, Object condition) {
+        public boolean evaluate(Object value, Object condition) {
             Preconditions.checkArgument(condition instanceof Geoshape);
             if (value==null) return false;
             Preconditions.checkArgument(value instanceof Geoshape);
@@ -31,7 +31,7 @@ public enum Geo implements Relation {
 
 
         @Override
-        public boolean satisfiesCondition(Object value, Object condition) {
+        public boolean evaluate(Object value, Object condition) {
             Preconditions.checkArgument(condition instanceof Geoshape);
             if (value==null) return false;
             Preconditions.checkArgument(value instanceof Geoshape);
@@ -47,7 +47,7 @@ public enum Geo implements Relation {
     WITHIN {
 
         @Override
-        public boolean satisfiesCondition(Object value, Object condition) {
+        public boolean evaluate(Object value, Object condition) {
             Preconditions.checkArgument(condition instanceof Geoshape);
             if (value==null) return false;
             Preconditions.checkArgument(value instanceof Geoshape);

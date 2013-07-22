@@ -647,7 +647,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                 KeyAtom<TitanKey> standardIndexKey = null;
                 for (KeyCondition<TitanKey> cond : query.getCondition().getChildren()) {
                     KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>)cond;
-                    if (atom.getRelation()==Cmp.EQUAL && isVertexIndexProperty(atom.getKey()))
+                    if (atom.getTitanPredicate()==Cmp.EQUAL && isVertexIndexProperty(atom.getKey()))
                         standardIndexKey = atom;
                     keys.add(atom.getKey());
                 }
@@ -740,7 +740,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                 boolean needsFilter = false;
                 for (KeyCondition<TitanKey> c : condition.getChildren()) {
                     KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>)c;
-                    if (getGraph().getIndexInformation(index).supports(atom.getKey().getDataType(),atom.getRelation()) &&
+                    if (getGraph().getIndexInformation(index).supports(atom.getKey().getDataType(),atom.getTitanPredicate()) &&
                             atom.getKey().hasIndex(index,query.getType().getElementType()) && atom.getCondition()!=null) {
                         newConds.add(atom);
                     } else {

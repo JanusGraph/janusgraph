@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
+import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public enum Text implements Relation {
+public enum Text implements TitanPredicate {
 
     /**
      * Whether the text contains a given term
@@ -20,7 +20,7 @@ public enum Text implements Relation {
     CONTAINS {
 
         @Override
-        public boolean satisfiesCondition(Object value, Object condition) {
+        public boolean evaluate(Object value, Object condition) {
             Preconditions.checkArgument(isValidCondition(condition),"Invalid condition provided: %s",condition);
             if (value==null) return false;
             if (!(value instanceof String)) log.debug("Value not a string: " + value);
@@ -41,7 +41,7 @@ public enum Text implements Relation {
     PREFIX {
 
         @Override
-        public boolean satisfiesCondition(Object value, Object condition) {
+        public boolean evaluate(Object value, Object condition) {
             Preconditions.checkArgument(condition instanceof String);
             if (value==null) return false;
             if (!(value instanceof String)) log.debug("Value not a string: " + value);

@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb.database;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
@@ -34,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -254,7 +252,7 @@ public class IndexSerializer {
     }
     
     private List<Object> processSingleCondition(StandardElementQuery query, KeyAtom<TitanKey> cond, String index, BackendTransaction tx) {
-        Preconditions.checkArgument(cond.getRelation()==Cmp.EQUAL,"Only equality relations are supported by standard index [%s]",cond);
+        Preconditions.checkArgument(cond.getTitanPredicate()==Cmp.EQUAL,"Only equality relations are supported by standard index [%s]",cond);
         TitanKey key = cond.getKey();
         Object value = cond.getCondition();
         Preconditions.checkArgument(key.hasIndex(index,query.getType().getElementType()),
@@ -285,7 +283,7 @@ public class IndexSerializer {
         if (!condition.hasChildren()) {
             KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>)condition;
             Preconditions.checkArgument(atom.getKey().hasIndex(indexName, elementType));
-            Preconditions.checkArgument(indexes.get(indexName).supports(atom.getKey().getDataType(), atom.getRelation()));
+            Preconditions.checkArgument(indexes.get(indexName).supports(atom.getKey().getDataType(), atom.getTitanPredicate()));
         } else {
             for (KeyCondition<TitanKey> c : condition.getChildren()) verifyQuery(c,indexName,elementType);
         }
@@ -294,9 +292,9 @@ public class IndexSerializer {
     private static final KeyCondition<String> convert(KeyCondition<TitanKey> condition) {
         if (condition instanceof KeyAtom) {
             KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>) condition;
-            Relation relation = atom.getRelation();
+            TitanPredicate titanPredicate = atom.getTitanPredicate();
             TitanKey key = atom.getKey();
-            return KeyAtom.of(key2String(key),relation,atom.getCondition());
+            return KeyAtom.of(key2String(key), titanPredicate,atom.getCondition());
         } else if (condition instanceof KeyNot) {
             return KeyNot.of(convert(((KeyNot<TitanKey>)condition).getChild()));
         } else if (condition instanceof KeyAnd || condition instanceof KeyOr) {

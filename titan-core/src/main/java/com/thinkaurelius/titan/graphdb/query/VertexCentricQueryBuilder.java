@@ -9,12 +9,9 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAnd;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAtom;
-import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
+import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.VertexQuery;
+import com.tinkerpop.blueprints.*;
 
 import javax.annotation.Nullable;
 
@@ -103,21 +100,21 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
             KeyAtom<String> atom = constraints.get(i);
             TitanType t = getType(atom.getKey());
             if (t==null) {
-                if (atom.getRelation()==Cmp.EQUAL && atom.getCondition()==null) continue; //Ignore condition
+                if (atom.getTitanPredicate()==Cmp.EQUAL && atom.getCondition()==null) continue; //Ignore condition
                 else return VertexCentricQuery.INVALID;
             }
             Object condition = atom.getCondition();
-            Relation relation = atom.getRelation();
+            TitanPredicate titanPredicate = atom.getTitanPredicate();
             //Check condition
-            Preconditions.checkArgument(relation.isValidCondition(condition),"Invalid condition onf key [%s]: %s",t.getName(),condition);
+            Preconditions.checkArgument(titanPredicate.isValidCondition(condition),"Invalid condition onf key [%s]: %s",t.getName(),condition);
             if (t.isPropertyKey()) {
                 condition = AttributeUtil.verifyAttributeQuery((TitanKey)t,condition);
-                Preconditions.checkArgument(relation.isValidCondition(condition),"Invalid condition: %s",condition);
+                Preconditions.checkArgument(titanPredicate.isValidCondition(condition),"Invalid condition: %s",condition);
 //                Preconditions.checkArgument(relation.isValidDataType(((TitanKey)t).getDataType()),"Invalid data type for condition");
             } else { //t.isEdgeLabel()
                 Preconditions.checkArgument(((TitanLabel)t).isUnidirected() && (condition instanceof TitanVertex));
             }
-            c.add(new KeyAtom<TitanType>(t, relation, condition));
+            c.add(new KeyAtom<TitanType>(t, titanPredicate, condition));
         }
 
         return new VertexCentricQuery(vertex,dir,ts.toArray(new TitanType[ts.size()]),group,KeyAnd.of(c.toArray(new KeyAtom[c.size()])),includeHidden,limit,returnType);
@@ -180,12 +177,13 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
         return vertices;
     }
 
+
     /* ---------------------------------------------------------------
      * Query Construction
 	 * ---------------------------------------------------------------
 	 */
 
-    private VertexCentricQueryBuilder addConstraint(String type, Relation rel, Object value) {
+    private VertexCentricQueryBuilder addConstraint(String type, TitanPredicate rel, Object value) {
         Preconditions.checkNotNull(type);
         Preconditions.checkNotNull(rel);
         constraints.add(new KeyAtom<String>(type, rel, value));
@@ -208,23 +206,45 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
     }
 
     @Override
-    public <T extends Comparable<T>> VertexCentricQueryBuilder interval(TitanKey key, T start, T end) {
+    public TitanVertexQuery hasNot(String key, Object value) {
+        return has(key,Cmp.NOT_EQUAL,value);
+    }
+
+    @Override
+    public TitanVertexQuery has(String key, Predicate predicate, Object value) {
+        return addConstraint(key,TitanPredicate.Converter.convert(predicate),value);
+    }
+
+    @Override
+    public TitanVertexQuery has(TitanKey key, Predicate predicate, Object value) {
+        return has(key.getName(),predicate,value);
+    }
+
+    @Override
+    public TitanVertexQuery has(String key) {
+        return has(key,Cmp.NOT_EQUAL,(Object)null);
+    }
+
+    @Override
+    public TitanVertexQuery hasNot(String key) {
+        return has(key,Cmp.EQUAL,(Object)null);
+    }
+
+    @Override
+    public <T extends Comparable<?>> VertexCentricQueryBuilder interval(TitanKey key, T start, T end) {
         return interval(key.getName(),start,end);
     }
 
     @Override
-    public <T extends Comparable<T>> VertexCentricQueryBuilder interval(String key, T start, T end) {
+    public <T extends Comparable<?>> VertexCentricQueryBuilder interval(String key, T start, T end) {
         addConstraint(key,Cmp.GREATER_THAN_EQUAL,start);
         return addConstraint(key,Cmp.LESS_THAN,end);
     }
 
     @Override
+    @Deprecated
     public <T extends Comparable<T>> VertexCentricQueryBuilder has(String key, T value, Compare compare) {
-        return addConstraint(key,Cmp.convert(compare),value);
-    }
-
-    public <T extends Comparable<T>> VertexCentricQueryBuilder has(TitanKey key, T value, Compare compare) {
-        return has(key.getName(),value,compare);
+        return addConstraint(key,TitanPredicate.Converter.convert(compare),value);
     }
 
     @Override
@@ -275,10 +295,9 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
     }
 
     @Override
-    public VertexCentricQueryBuilder limit(long limit) {
+    public VertexCentricQueryBuilder limit(int limit) {
         Preconditions.checkArgument(limit>=0,"Limit must be non-negative [%s]",limit);
-        Preconditions.checkArgument(limit<Integer.MAX_VALUE,"Limit is too large [%s]",limit);
-        this.limit = (int)limit;
+        this.limit = limit;
         return this;
     }
 }

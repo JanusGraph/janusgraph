@@ -13,12 +13,13 @@ import com.thinkaurelius.titan.core.attribute.Interval;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAnd;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAtom;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyCondition;
-import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
+import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.stats.ObjectAccumulator;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.GraphQuery;
+import com.tinkerpop.blueprints.Predicate;
 import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +52,7 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
     }
 
     @Override
-    public TitanGraphQuery has(String key, Relation relation, Object condition) {
+    public TitanGraphQuery has(String key, Predicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         TitanType type = tx.getType(key);
         if (type==null || !(type instanceof TitanKey)) {
@@ -61,40 +62,58 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
             } else {
                 throw new IllegalArgumentException("Unknown or invalid property key: " + key);
             }
-        } else return has((TitanKey) type, relation, condition);
+        } else return has((TitanKey) type, predicate, condition);
     }
 
-    @Override
-    public TitanGraphQuery has(String key, Compare relation, Object value) {
-        return has(key,Cmp.convert(relation),value);
-    }
+//    @Override
+//    public TitanGraphQuery has(String key, Compare relation, Object value) {
+//        return has(key,relation,value);
+//    }
 
     @Override
-    public TitanGraphQuery has(TitanKey key, Relation relation, Object condition) {
+    public TitanGraphQuery has(TitanKey key, Predicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
-        Preconditions.checkNotNull(relation);
+        Preconditions.checkNotNull(predicate);
+        TitanPredicate titanPredicate = TitanPredicate.Converter.convert(predicate);
         condition=AttributeUtil.verifyAttributeQuery(key,condition);
-        Preconditions.checkArgument(relation.isValidCondition(condition),"Invalid condition: %s",condition);
-        Preconditions.checkArgument(relation.isValidDataType(key.getDataType()),"Invalid data type for condition: %s",key.getDataType());
+        Preconditions.checkArgument(titanPredicate.isValidCondition(condition),"Invalid condition: %s",condition);
+        Preconditions.checkArgument(titanPredicate.isValidDataType(key.getDataType()),"Invalid data type for condition: %s",key.getDataType());
         if (conditions!=INVALID) {
-            conditions.add(new KeyAtom<TitanKey>(key,relation,condition));
+            conditions.add(new KeyAtom<TitanKey>(key, titanPredicate,condition));
         }
         return this;
     }
 
     @Override
+    public TitanGraphQuery has(String key) {
+        return has(key,Cmp.NOT_EQUAL,(Object)null);
+    }
+
+    @Override
+    public TitanGraphQuery hasNot(String key) {
+        return has(key,Cmp.EQUAL,(Object)null);
+    }
+
+    @Override
+    @Deprecated
     public <T extends Comparable<T>> TitanGraphQuery has(String s, T t, Compare compare) {
-        return has(s,Cmp.convert(compare),t);
+        return has(s,compare,t);
     }
     
     @Override
-    public GraphQuery has(String key, Object value) {
+    public TitanGraphQuery has(String key, Object value) {
         return has(key,Cmp.EQUAL,value);
     }
 
     @Override
-    public <T extends Comparable<T>> TitanGraphQuery interval(String s, T t, T t2) {
-        return has(s,Cmp.INTERVAL,new Interval<T>(t,t2));
+    public TitanGraphQuery hasNot(String key, Object value) {
+        return has(key,Cmp.NOT_EQUAL,value);
+    }
+
+    @Override
+    public <T extends Comparable<?>> TitanGraphQuery interval(String s, T t1, T t2) {
+        has(s,Cmp.GREATER_THAN_EQUAL,t1);
+        return has(s,Cmp.LESS_THAN,t2);
     }
 
     private StandardElementQuery constructQuery(StandardElementQuery.Type elementType) {
@@ -118,10 +137,9 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
 
 
     @Override
-    public TitanGraphQueryBuilder limit(long max) {
+    public TitanGraphQueryBuilder limit(final int max) {
         Preconditions.checkArgument(max>=0,"Non-negative limit expected: %s",max);
-        Preconditions.checkArgument(max<=Integer.MAX_VALUE,"Limit expected to be smaller or equal than [%s] but given %s",Integer.MAX_VALUE,limit);
-        this.limit=(int)max;
+        this.limit=max;
         return this;
     }
 
@@ -137,7 +155,7 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
                 KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>)c;
                 if (atom.getCondition()==null) continue; //Cannot answer those with index
                 for (String index : atom.getKey().getIndexes(query.getType().getElementType())) {
-                    if (tx.getGraph().getIndexInformation(index).supports(atom.getKey().getDataType(),atom.getRelation()))
+                    if (tx.getGraph().getIndexInformation(index).supports(atom.getKey().getDataType(),atom.getTitanPredicate()))
                         opt.incBy(index,1);
                 }
             }

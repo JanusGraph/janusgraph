@@ -11,14 +11,14 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 public class KeyAtom<K> implements KeyCondition<K> {
 
     private final K key;
-    private final Relation relation;
+    private final TitanPredicate titanPredicate;
     private final Object condition;
 
-    public KeyAtom(K key, Relation relation, Object condition) {
+    public KeyAtom(K key, TitanPredicate titanPredicate, Object condition) {
         Preconditions.checkNotNull(key);
-        Preconditions.checkNotNull(relation);
+        Preconditions.checkNotNull(titanPredicate);
         this.key = key;
-        this.relation = relation;
+        this.titanPredicate = titanPredicate;
         this.condition = condition;
     }
 
@@ -41,8 +41,8 @@ public class KeyAtom<K> implements KeyCondition<K> {
         return key;
     }
 
-    public Relation getRelation() {
-        return relation;
+    public TitanPredicate getTitanPredicate() {
+        return titanPredicate;
     }
 
     public Object getCondition() {
@@ -51,7 +51,7 @@ public class KeyAtom<K> implements KeyCondition<K> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(key).append(relation).append(condition).toHashCode();
+        return new HashCodeBuilder().append(getType()).append(key).append(titanPredicate).append(condition).toHashCode();
     }
 
     @Override
@@ -60,16 +60,16 @@ public class KeyAtom<K> implements KeyCondition<K> {
         else if (other==null) return false;
         else if (!getClass().isInstance(other)) return false;
         KeyAtom oth = (KeyAtom)other;
-        return key.equals(oth.key) && relation.equals(oth.relation) && condition.equals(oth.condition);
+        return key.equals(oth.key) && titanPredicate.equals(oth.titanPredicate) && condition.equals(oth.condition);
     }
 
     @Override
     public String toString() {
-        return key.toString()+relation.toString()+String.valueOf(condition);
+        return key.toString()+ titanPredicate.toString()+String.valueOf(condition);
     }
 
-    public static final<K> KeyAtom<K> of(K key, Relation relation, Object condition) {
-        return new KeyAtom<K>(key, relation, condition);
+    public static final<K> KeyAtom<K> of(K key, TitanPredicate titanPredicate, Object condition) {
+        return new KeyAtom<K>(key, titanPredicate, condition);
     }
 
 }

@@ -129,7 +129,7 @@ public class StandardElementQuery implements Query<StandardElementQuery> {
     }
 
     private static final<T extends TitanType> boolean satisfiesCondition(KeyAtom<T> atom, Object value) {
-        return atom.getRelation().satisfiesCondition(value,atom.getCondition());
+        return atom.getTitanPredicate().evaluate(value, atom.getCondition());
     }
 
     public static final<T extends TitanType> boolean matchesCondition(TitanElement element, KeyCondition<T> condition) {

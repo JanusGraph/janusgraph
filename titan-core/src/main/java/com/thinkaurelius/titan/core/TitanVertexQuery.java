@@ -1,10 +1,7 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Query;
-import com.tinkerpop.blueprints.VertexQuery;
+import com.tinkerpop.blueprints.*;
 
 /**
  * TitanQuery constructs and executes a query over incident edges from the perspective of a vertex.
@@ -39,6 +36,7 @@ public interface TitanVertexQuery extends VertexQuery {
      * @param labels edge labels to query for
      * @return this query
      */
+    @Override
     public TitanVertexQuery labels(String... labels);
 
     /**
@@ -68,6 +66,7 @@ public interface TitanVertexQuery extends VertexQuery {
      * @param d Direction to query for
      * @return this query
      */
+    @Override
     public TitanVertexQuery direction(Direction d);
 
     /**
@@ -105,8 +104,26 @@ public interface TitanVertexQuery extends VertexQuery {
      * @param value Value for the property of the given key to match, or vertex to point unidirectional edge to
      * @return this query
      */
+    @Override
     public TitanVertexQuery has(String type, Object value);
 
+
+    @Override
+    public TitanVertexQuery hasNot(String key, Object value);
+
+    @Override
+    public TitanVertexQuery has(String key, Predicate predicate, Object value);
+
+    public TitanVertexQuery has(TitanKey key, Predicate predicate, Object value);
+
+    @Override
+    public TitanVertexQuery has(String key);
+
+    @Override
+    public TitanVertexQuery hasNot(String key);
+
+    @Override
+    @Deprecated
     public <T extends java.lang.Comparable<T>> TitanVertexQuery has(java.lang.String s, T t, Query.Compare compare);
 
     /**
@@ -117,7 +134,8 @@ public interface TitanVertexQuery extends VertexQuery {
      * @param end   value defining the end of the interval (exclusive)
      * @return this query
      */
-    public <T extends Comparable<T>> TitanVertexQuery interval(String key, T start, T end);
+    @Override
+    public <T extends Comparable<?>> TitanVertexQuery interval(String key, T start, T end);
 
     /**
      * Query for those edges that have an incident property whose values lies in the interval by [start,end).
@@ -127,7 +145,7 @@ public interface TitanVertexQuery extends VertexQuery {
      * @param end   value defining the end of the interval (exclusive)
      * @return this query
      */
-    public <T extends Comparable<T>> TitanVertexQuery interval(TitanKey key, T start, T end);
+    public <T extends Comparable<?>> TitanVertexQuery interval(TitanKey key, T start, T end);
 
     /**
      * Sets the retrieval limit for this query.
@@ -138,7 +156,8 @@ public interface TitanVertexQuery extends VertexQuery {
      * @param limit maximum number of relations to retrieve for this query
      * @return this query
      */
-    public TitanVertexQuery limit(long limit);
+    @Override
+    public TitanVertexQuery limit(int limit);
 
     /* ---------------------------------------------------------------
     * Query execution

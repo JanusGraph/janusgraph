@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
+import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
 import com.tinkerpop.blueprints.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public enum Cmp implements Relation {
+public enum Cmp implements TitanPredicate {
 
     EQUAL {
 
@@ -27,7 +27,7 @@ public enum Cmp implements Relation {
         }
 
         @Override
-        public boolean satisfiesCondition(Object value, Object condition) {
+        public boolean evaluate(Object value, Object condition) {
             if (condition==null) {
                 return value==null;
             } else {
@@ -54,7 +54,7 @@ public enum Cmp implements Relation {
         }
 
         @Override
-        public boolean satisfiesCondition(Object value, Object condition) {
+        public boolean evaluate(Object value, Object condition) {
             if (condition==null) {
                 return value!=null;
             } else {
@@ -82,7 +82,7 @@ public enum Cmp implements Relation {
         }
 
         @Override
-        public boolean satisfiesCondition(Object value, Object condition) {
+        public boolean evaluate(Object value, Object condition) {
             if (value==null) return false;
             try {
                 return ((Comparable)value).compareTo(condition)<0;
@@ -112,7 +112,7 @@ public enum Cmp implements Relation {
         }
 
         @Override
-        public boolean satisfiesCondition(Object value, Object condition) {
+        public boolean evaluate(Object value, Object condition) {
             if (value==null) return false;
             try {
                 return ((Comparable)value).compareTo(condition)<=0;
@@ -142,7 +142,7 @@ public enum Cmp implements Relation {
         }
 
         @Override
-        public boolean satisfiesCondition(Object value, Object condition) {
+        public boolean evaluate(Object value, Object condition) {
             if (value==null) return false;
             try {
                 return ((Comparable)value).compareTo(condition)>0;
@@ -172,7 +172,7 @@ public enum Cmp implements Relation {
         }
 
         @Override
-        public boolean satisfiesCondition(Object value, Object condition) {
+        public boolean evaluate(Object value, Object condition) {
             if (value==null) return false;
             try {
                 return ((Comparable)value).compareTo(condition)>=0;
@@ -202,7 +202,7 @@ public enum Cmp implements Relation {
         }
 
         @Override
-        public boolean satisfiesCondition(Object value, Object condition) {
+        public boolean evaluate(Object value, Object condition) {
             if (value==null) return false;
             Preconditions.checkArgument(condition instanceof Interval);
             try {
@@ -221,24 +221,5 @@ public enum Cmp implements Relation {
 
 
     private static final Logger log = LoggerFactory.getLogger(Cmp.class);
-
-
-    /**
-     * Convert Blueprint's comparison operators to Titan's
-     *
-     * @param comp Blueprint's comparison operator
-     * @return
-     */
-    public static final Cmp convert(Query.Compare comp) {
-        switch(comp) {
-            case EQUAL: return EQUAL;
-            case NOT_EQUAL: return NOT_EQUAL;
-            case GREATER_THAN: return GREATER_THAN;
-            case GREATER_THAN_EQUAL: return GREATER_THAN_EQUAL;
-            case LESS_THAN: return LESS_THAN;
-            case LESS_THAN_EQUAL: return LESS_THAN_EQUAL;
-            default: throw new IllegalArgumentException("Unexpected comparator: " + comp);
-        }
-    }
 
 }

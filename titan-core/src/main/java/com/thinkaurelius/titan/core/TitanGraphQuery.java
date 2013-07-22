@@ -1,10 +1,6 @@
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.GraphQuery;
-import com.tinkerpop.blueprints.Query;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.*;
 
 /**
  * Constructs a query against an external index to retrieve all elements (either vertices or edges)
@@ -24,34 +20,43 @@ public interface TitanGraphQuery extends GraphQuery {
      * specified relation
      *
      * @param key Key that identifies the property
-     * @param relation Relation between property and condition
+     * @param predicate Predicate between property and condition
      * @param condition
      * @return This query
      */
-    public TitanGraphQuery has(String key, Relation relation, Object condition);
+    @Override
+    public TitanGraphQuery has(String key, Predicate predicate, Object condition);
 
     /**
      * The returned element must have a property for the given key that matches the condition according to the
      * specified relation
      *
      * @param key Key that identifies the property
-     * @param relation Relation between property and condition
-     * @param value
-     * @return This query
-     */
-    public TitanGraphQuery has(String key, Query.Compare relation, Object value);
-
-
-    /**
-     * The returned element must have a property for the given key that matches the condition according to the
-     * specified relation
-     *
-     * @param key Key that identifies the property
-     * @param relation Relation between property and condition
+     * @param predicate Relation between property and condition
      * @param condition
      * @return This query
      */
-    public TitanGraphQuery has(TitanKey key, Relation relation, Object condition);
+    public TitanGraphQuery has(TitanKey key, Predicate predicate, Object condition);
+
+
+    @Override
+    public TitanGraphQuery has(String key);
+
+    @Override
+    public TitanGraphQuery hasNot(String key);
+
+    @Override
+    public TitanGraphQuery has(String key, Object value);
+
+    @Override
+    public TitanGraphQuery hasNot(String key, Object value);
+
+    @Override
+    @Deprecated
+    public <T extends Comparable<T>> TitanGraphQuery has(String key, T value, Compare compare);
+
+    @Override
+    public <T extends Comparable<?>> TitanGraphQuery interval(String key, T startValue, T endValue);
 
     /**
      * Returns all vertices that match the conditions.
@@ -71,6 +76,7 @@ public interface TitanGraphQuery extends GraphQuery {
      * @param max The maximum number of results to return
      * @return This query
      */
-    public TitanGraphQuery limit(final long max);
+    @Override
+    public TitanGraphQuery limit(final int max);
 
 }

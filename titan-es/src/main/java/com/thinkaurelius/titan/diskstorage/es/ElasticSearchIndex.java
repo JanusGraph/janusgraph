@@ -310,10 +310,10 @@ public class ElasticSearchIndex implements IndexProvider {
             KeyAtom<String> atom = (KeyAtom<String>) condition;
             Object value = atom.getCondition();
             String key = atom.getKey();
-            Relation relation = atom.getRelation();
+            TitanPredicate titanPredicate = atom.getTitanPredicate();
             if (value instanceof Number || value instanceof Interval) {
-                Preconditions.checkArgument(relation instanceof Cmp,"Relation not supported on numeric types: " + relation);
-                Cmp numRel = (Cmp)relation;
+                Preconditions.checkArgument(titanPredicate instanceof Cmp,"Relation not supported on numeric types: " + titanPredicate);
+                Cmp numRel = (Cmp) titanPredicate;
                 if (numRel==Cmp.INTERVAL) {
                     Preconditions.checkArgument(value instanceof Interval && ((Interval)value).getStart() instanceof Number);
                     Interval i = (Interval)value;
@@ -332,7 +332,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     }
                 }
             } else if (value instanceof String) {
-                if (relation == Text.CONTAINS) {
+                if (titanPredicate == Text.CONTAINS) {
                     return FilterBuilders.termFilter(key,((String)value).toLowerCase());
 //                } else if (relation == Txt.PREFIX) {
 //                    return new PrefixFilter(new Term(key+STR_SUFFIX,(String)value));
@@ -342,9 +342,9 @@ public class ElasticSearchIndex implements IndexProvider {
 //                    BooleanFilter q = new BooleanFilter();
 //                    q.add(new TermsFilter(new Term(key+STR_SUFFIX,(String)value)), BooleanClause.Occur.MUST_NOT);
 //                    return q;
-                } else throw new IllegalArgumentException("Relation is not supported for string value: " + relation);
+                } else throw new IllegalArgumentException("Relation is not supported for string value: " + titanPredicate);
             } else if (value instanceof Geoshape) {
-                Preconditions.checkArgument(relation==Geo.WITHIN,"Relation is not supported for geo value: " + relation);
+                Preconditions.checkArgument(titanPredicate ==Geo.WITHIN,"Relation is not supported for geo value: " + titanPredicate);
                 Geoshape shape = (Geoshape)value;
                 if (shape.getType()== Geoshape.Type.CIRCLE) {
                     Geoshape.Point center = shape.getPoint();
@@ -396,14 +396,14 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public boolean supports(Class<?> dataType, Relation relation) {
+    public boolean supports(Class<?> dataType, TitanPredicate titanPredicate) {
         if (Number.class.isAssignableFrom(dataType)) {
-            if (relation instanceof Cmp) return true;
+            if (titanPredicate instanceof Cmp) return true;
             else return false;
         } else if (dataType == Geoshape.class) {
-            return relation== Geo.WITHIN;
+            return titanPredicate == Geo.WITHIN;
         } else if (dataType == String.class) {
-            return relation == Text.CONTAINS; // || relation == Txt.PREFIX || relation == Cmp.EQUAL || relation == Cmp.NOT_EQUAL;
+            return titanPredicate == Text.CONTAINS; // || relation == Txt.PREFIX || relation == Cmp.EQUAL || relation == Cmp.NOT_EQUAL;
         } else return false;
     }
 

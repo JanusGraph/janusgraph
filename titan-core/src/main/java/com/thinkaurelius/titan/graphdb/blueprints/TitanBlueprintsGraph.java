@@ -85,6 +85,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
+    @Deprecated
     public void stopTransaction(Conclusion conclusion) {
         switch (conclusion) {
             case SUCCESS:

@@ -395,7 +395,7 @@ public class EdgeSerializer {
                         if (cons.isEmpty()) break;
                         //Find equality constraint if exists
                         KeyAtom<TitanType> equals = null;
-                        for (KeyAtom<TitanType> a : cons) if (a.getRelation()== Cmp.EQUAL) equals=a;
+                        for (KeyAtom<TitanType> a : cons) if (a.getTitanPredicate()== Cmp.EQUAL) equals=a;
                         if (equals!=null) {
                             Object condition = equals.getCondition();
                             if (kt.isEdgeLabel()) {
@@ -416,14 +416,14 @@ public class EdgeSerializer {
                             boolean lowerInc=true, upperInc=true;
                             boolean isProperInterval=true;
                             for (KeyAtom<TitanType> a : cons) {
-                                if ((a.getRelation()==Cmp.GREATER_THAN || a.getRelation()==Cmp.GREATER_THAN_EQUAL) &&
+                                if ((a.getTitanPredicate()==Cmp.GREATER_THAN || a.getTitanPredicate()==Cmp.GREATER_THAN_EQUAL) &&
                                         (lower==null || lower.compareTo(a.getCondition())<0)) {
                                     lower = (Comparable) a.getCondition();
-                                    lowerInc = a.getRelation()==Cmp.GREATER_THAN_EQUAL;
-                                } else if ((a.getRelation()==Cmp.LESS_THAN || a.getRelation()==Cmp.LESS_THAN_EQUAL) &&
+                                    lowerInc = a.getTitanPredicate()==Cmp.GREATER_THAN_EQUAL;
+                                } else if ((a.getTitanPredicate()==Cmp.LESS_THAN || a.getTitanPredicate()==Cmp.LESS_THAN_EQUAL) &&
                                         (upper==null || upper.compareTo(a.getCondition())>0)) {
                                     upper = (Comparable) a.getCondition();
-                                    upperInc = a.getRelation()==Cmp.LESS_THAN_EQUAL;
+                                    upperInc = a.getTitanPredicate()==Cmp.LESS_THAN_EQUAL;
                                 } else {
                                     isProperInterval=false;
                                 }

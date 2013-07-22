@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
-import com.thinkaurelius.titan.graphdb.query.keycondition.Relation;
+import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
 
 /**
  * An IndexInformation gives basic information on what a particular {@link IndexProvider} supports.
@@ -13,10 +13,10 @@ public interface IndexInformation {
     /**
      * Whether the index supports executing queries with the given relation and data type.
      * @param dataType
-     * @param relation
+     * @param titanPredicate
      * @return
      */
-    public boolean supports(Class<?> dataType, Relation relation);
+    public boolean supports(Class<?> dataType, TitanPredicate titanPredicate);
 
     /**
      * Whether the index supports the given data type
