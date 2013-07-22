@@ -39,7 +39,8 @@ public class TitanRexsterApplication extends AbstractMapRexsterApplication {
 
     private static void configureExtensions(final List<HierarchicalConfiguration> extensionConfigurations, final RexsterApplicationGraph rag) {
         if (extensionConfigurations != null) {
-            rag.loadExtensionsConfigurations(extensionConfigurations);
+            //TODO
+            //rag.loadExtensionsConfigurations(extensionConfigurations);
         }
     }
 
@@ -47,7 +48,7 @@ public class TitanRexsterApplication extends AbstractMapRexsterApplication {
         final List<String> allowableNamespaces = new ArrayList<String>() {{
             add("*:*");
         }};
-
-        rag.loadAllowableExtensions(allowableNamespaces);
+        //TODO
+        //rag.loadAllowableExtensions(allowableNamespaces);
     }
 }
