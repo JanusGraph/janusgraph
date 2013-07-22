@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
 import com.tinkerpop.blueprints.*;
 
 /**
@@ -36,7 +37,7 @@ public interface TitanGraphQuery extends GraphQuery {
      * @param condition
      * @return This query
      */
-    public TitanGraphQuery has(TitanKey key, Predicate predicate, Object condition);
+    public TitanGraphQuery has(TitanKey key, TitanPredicate predicate, Object condition);
 
 
     @Override

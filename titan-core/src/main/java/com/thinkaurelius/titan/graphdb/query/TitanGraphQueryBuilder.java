@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.TitanGraphQuery;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.core.attribute.Interval;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAnd;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAtom;
@@ -54,15 +55,21 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
     @Override
     public TitanGraphQuery has(String key, Predicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
+        TitanPredicate titanPredicate = TitanPredicate.Converter.convert(predicate);
         TitanType type = tx.getType(key);
         if (type==null || !(type instanceof TitanKey)) {
-            if (tx.getConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
+            if ( (titanPredicate==Cmp.EQUAL && condition==null) || (titanPredicate==Contain.NOT_IN) ||
+                    (titanPredicate==Cmp.NOT_EQUAL && condition!=null) ) {
+                //Trivially satisfied
+                return this;
+            }
+            else if (tx.getConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
                 conditions = INVALID;
                 return this;
             } else {
                 throw new IllegalArgumentException("Unknown or invalid property key: " + key);
             }
-        } else return has((TitanKey) type, predicate, condition);
+        } else return has((TitanKey) type, titanPredicate, condition);
     }
 
 //    @Override
@@ -71,15 +78,14 @@ public class TitanGraphQueryBuilder implements TitanGraphQuery, QueryOptimizer<S
 //    }
 
     @Override
-    public TitanGraphQuery has(TitanKey key, Predicate predicate, Object condition) {
+    public TitanGraphQuery has(TitanKey key, TitanPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
-        TitanPredicate titanPredicate = TitanPredicate.Converter.convert(predicate);
         condition=AttributeUtil.verifyAttributeQuery(key,condition);
-        Preconditions.checkArgument(titanPredicate.isValidCondition(condition),"Invalid condition: %s",condition);
-        Preconditions.checkArgument(titanPredicate.isValidDataType(key.getDataType()),"Invalid data type for condition: %s",key.getDataType());
+        Preconditions.checkArgument(predicate.isValidCondition(condition),"Invalid condition: %s",condition);
+        Preconditions.checkArgument(predicate.isValidDataType(key.getDataType()),"Invalid data type for condition: %s",key.getDataType());
         if (conditions!=INVALID) {
-            conditions.add(new KeyAtom<TitanKey>(key, titanPredicate,condition));
+            conditions.add(new KeyAtom<TitanKey>(key, predicate,condition));
         }
         return this;
     }
