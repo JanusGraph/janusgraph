@@ -94,7 +94,7 @@ public class BlueprintsGraphOutputMapReduce {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
             this.loadingFromScratch = context.getConfiguration().getBoolean(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_LOADING_FROM_SCRATCH, true);
             if (!this.loadingFromScratch) {
-                this.uniqueKey = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_UNIQUE_KEY,null);
+                this.uniqueKey = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_UNIQUE_KEY, null);
                 if (null == this.uniqueKey) {
                     throw new InterruptedException("If no loading from scratch, then a unique key must be provided to lookup vertices");
                 }
@@ -143,6 +143,7 @@ public class BlueprintsGraphOutputMapReduce {
                     LOGGER.error("Could not commit transaction during Map.cleanup():", e);
                     ((TransactionalGraph) this.graph).rollback();
                     context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                    throw new IOException(e.getMessage(), e);
                 }
             }
             this.graph.shutdown();
@@ -261,6 +262,7 @@ public class BlueprintsGraphOutputMapReduce {
                     LOGGER.error("Could not commit transaction during Reduce.cleanup():", e);
                     ((TransactionalGraph) this.graph).rollback();
                     context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                    throw new IOException(e.getMessage(), e);
                 }
             }
             this.graph.shutdown();
