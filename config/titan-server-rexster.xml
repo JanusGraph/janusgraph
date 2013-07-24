@@ -46,11 +46,39 @@ Be sure to read the following instructions for information:
         </thread-pool>
         <io-strategy>leader-follower</io-strategy>
     </rexpro>
+    <shutdown-port>8183</shutdown-port>
+    <shutdown-host>127.0.0.1</shutdown-host>
+    <script-engines>
+        <script-engine>
+            <name>gremlin-groovy</name>
+            <reset-threshold>-1</reset-threshold>
+            <init-script>config/init.groovy</init-script>
+            <imports>com.tinkerpop.rexster.client.*,com.thinkaurelius.titan.core.*,com.thinkaurelius.titan.core.attribute.*,com.thinkaurelius.titan.core.util.*,org.apache.commons.configuration.*</imports>
+            <static-imports>com.thinkaurelius.titan.core.attribute.Geo.*,com.thinkaurelius.titan.core.attribute.Text.*,com.thinkaurelius.titan.core.TypeMaker.UniquenessConsistency.*,com.tinkerpop.blueprints.Query.Compare.*</static-imports>
+        </script-engine>
+    </script-engines>
     <security>
         <authentication>
             <type>none</type>
         </authentication>
     </security>
-    <shutdown-port>8183</shutdown-port>
-    <shutdown-host>127.0.0.1</shutdown-host>
+    <metrics>
+        <reporter>
+            <type>jmx</type>
+        </reporter>
+        <reporter>
+            <type>http</type>
+        </reporter>
+        <reporter>
+            <type>console</type>
+            <properties>
+                <rates-time-unit>SECONDS</rates-time-unit>
+                <duration-time-unit>SECONDS</duration-time-unit>
+                <report-period>10</report-period>
+                <report-time-unit>MINUTES</report-time-unit>
+                <includes>http.rest.*</includes>
+                <excludes>http.rest.*.delete</excludes>
+            </properties>
+        </reporter>
+    </metrics>
 </rexster>
