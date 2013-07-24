@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.tinkerpop.rexster;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.rexster.Tokens;
 import com.tinkerpop.rexster.protocol.EngineConfiguration;
 import com.tinkerpop.rexster.protocol.EngineController;
@@ -79,7 +80,8 @@ public class RexsterTitanServer {
         final List<String> allowableNamespaces = new ArrayList<String>() {{
             add("*:*");
         }};
-        final RexsterApplication ra = new DefaultRexsterApplication(DEFAULT_GRAPH_NAME, graph, allowableNamespaces, extensionConfigurations, null);
+        final RexsterApplication ra = new DefaultRexsterApplication(DEFAULT_GRAPH_NAME, graph, allowableNamespaces,
+                extensionConfigurations, MetricManager.INSTANCE.getRegistry());
 
         startRexProServer(ra);
         startHttpServer(ra);
