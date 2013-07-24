@@ -7,6 +7,7 @@ import com.tinkerpop.rexster.Tokens;
 import com.tinkerpop.rexster.protocol.EngineConfiguration;
 import com.tinkerpop.rexster.protocol.EngineController;
 import com.tinkerpop.rexster.server.*;
+import com.tinkerpop.rexster.server.metrics.ReporterConfig;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -68,10 +69,11 @@ public class RexsterTitanServer {
     }
 
     public void start() {
-        configureScriptEngine((XMLConfiguration) this.rexsterConfig);
+        final XMLConfiguration xmlConfiguration = (XMLConfiguration) this.rexsterConfig;
+        configureScriptEngine(xmlConfiguration);
         graph = TitanFactory.open(titanConfig);
 
-        final List<HierarchicalConfiguration> extensionConfigurations = ((XMLConfiguration) rexsterConfig).configurationsAt(Tokens.REXSTER_GRAPH_EXTENSIONS_PATH);
+        final List<HierarchicalConfiguration> extensionConfigurations = xmlConfiguration.configurationsAt(Tokens.REXSTER_GRAPH_EXTENSIONS_PATH);
         log.info(extensionConfigurations.toString());
 
         final List<String> allowableNamespaces = new ArrayList<String>() {{
@@ -81,6 +83,8 @@ public class RexsterTitanServer {
 
         startRexProServer(ra);
         startHttpServer(ra);
+
+        new ReporterConfig(new RexsterProperties(xmlConfiguration), ra.getMetricRegistry()).enable();
     }
 
     public void startDaemon() {
