@@ -22,8 +22,8 @@ import java.util.List;
  * Standalone Titan database with fronting Rexster server.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-
 public class RexsterTitanServer {
 
     private static final Logger log =
@@ -77,7 +77,7 @@ public class RexsterTitanServer {
         final List<String> allowableNamespaces = new ArrayList<String>() {{
             add("*:*");
         }};
-        final RexsterApplication ra = new DefaultRexsterApplication(DEFAULT_GRAPH_NAME, graph, allowableNamespaces, extensionConfigurations);
+        final RexsterApplication ra = new DefaultRexsterApplication(DEFAULT_GRAPH_NAME, graph, allowableNamespaces, extensionConfigurations, null);
 
         startRexProServer(ra);
         startHttpServer(ra);
@@ -110,7 +110,7 @@ public class RexsterTitanServer {
         graph.shutdown();
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(final String[] args) throws Exception {
         RexsterTitanServer server;
         if (args.length == 2) {
             final Configuration titanConfig = new PropertiesConfiguration(args[1]);
