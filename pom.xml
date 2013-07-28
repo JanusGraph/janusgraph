@@ -7,7 +7,7 @@
     </parent>
     <groupId>com.thinkaurelius.titan</groupId>
     <artifactId>titan</artifactId>
-    <version>0.3.2-SNAPSHOT</version>
+    <version>0.3.2</version>
     <packaging>pom</packaging>
     <prerequisites>
         <maven>2.2.1</maven>
@@ -68,7 +68,8 @@
         <connection>scm:git:git@github.com:thinkaurelius/titan.git</connection>
         <developerConnection>scm:git:git@github.com:thinkaurelius/titan.git</developerConnection>
         <url>git@github.com:thinkaurelius/titan.git</url>
-    </scm>
+      <tag>0.3.2</tag>
+  </scm>
     <properties>
         <titan.compatible.versions>0.3.2,0.3.1,0.3.0</titan.compatible.versions>
         <tinkerpop.version>2.3.0</tinkerpop.version>
@@ -233,8 +234,7 @@
                             <servers>
                               ...
                               <server>
-                                <id>github</id> << must match
-                                <username>dalaro</username>
+                                <id>github</id> << must match <username>dalaro</username>
                                 <password>allmypasswordsareliterallypassword</password>
                               </server>
                             </servers>
