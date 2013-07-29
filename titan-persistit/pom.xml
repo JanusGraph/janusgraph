@@ -23,12 +23,12 @@
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-core</artifactId>
-            <version>${titan.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-test</artifactId>
-            <version>${titan.version}</version>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

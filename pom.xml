@@ -20,9 +20,10 @@
         <module>titan-test</module>
         <module>titan-berkeleyje</module>
         <module>titan-cassandra</module>
+        <module>titan-persistit</module>
+        <module>titan-hbase</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
-        <module>titan-hbase</module>
         <module>titan-all</module>
         <module>titan-site</module>
         <module>titan-dist</module>
