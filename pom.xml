@@ -68,8 +68,7 @@
         <connection>scm:git:git@github.com:thinkaurelius/titan.git</connection>
         <developerConnection>scm:git:git@github.com:thinkaurelius/titan.git</developerConnection>
         <url>git@github.com:thinkaurelius/titan.git</url>
-      <tag>HEAD</tag>
-  </scm>
+    </scm>
     <properties>
         <titan.compatible.versions>0.3.2,0.3.1,0.3.0</titan.compatible.versions>
         <tinkerpop.version>2.3.0</tinkerpop.version>
