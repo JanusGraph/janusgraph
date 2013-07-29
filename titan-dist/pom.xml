@@ -34,6 +34,7 @@
     -->
     <modules>
         <module>titan-dist-all</module>
+        <module>titan-dist-berkeleyje</module>
         <module>titan-dist-cassandra</module>
         <module>titan-dist-hbase</module>
     </modules>
