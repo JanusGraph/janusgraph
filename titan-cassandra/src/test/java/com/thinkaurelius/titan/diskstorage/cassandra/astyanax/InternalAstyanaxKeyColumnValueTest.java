@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
 
-import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
@@ -18,7 +17,6 @@ public class InternalAstyanaxKeyColumnValueTest extends AbstractCassandraKeyColu
 
     @Override
     public AbstractCassandraStoreManager openStorageManager() throws StorageException {
-        Configuration config = CassandraStorageSetup.getGenericCassandraStorageConfiguration(getClass().getSimpleName());
-        return new AstyanaxStoreManager(config);
+        return new AstyanaxStoreManager(CassandraStorageSetup.getGenericCassandraStorageConfiguration(getClass().getSimpleName()));
     }
 }
