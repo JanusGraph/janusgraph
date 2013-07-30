@@ -20,7 +20,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sesame.version>2.6.10</sesame.version>
         <tinkerpop.version>2.3.0</tinkerpop.version>
-        <titan.version>0.3.1</titan.version>
+        <titan.version>0.3.2</titan.version>
     </properties>
     <developers>
         <developer>

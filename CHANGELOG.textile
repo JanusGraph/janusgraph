@@ -23,6 +23,7 @@ h3. Version 0.3.2 (NOT OFFICIALLY RELEASED YET)
 * Added more useful @PathFilter@ instances
 * Generalized @HDFSTools@ for more generic use throughout Faunus
 * Added @JobConfigurationFormat@ which supports dynamic job manipulation at execution time
+* Bumped to support Titan 0.3.2
 
 h3. Version 0.3.1 (May 21, 2013)
 
