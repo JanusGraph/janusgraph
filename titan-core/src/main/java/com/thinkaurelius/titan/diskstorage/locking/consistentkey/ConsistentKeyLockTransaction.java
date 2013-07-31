@@ -185,7 +185,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 
         // Check to see whether we already hold this lock
         if (lockClaims.contains(lc)) {
-            log.trace("Skipping lock {}: already held", lc);
+            log.debug("Skipping lock {}: already held", lc);
             return;
         }
 
@@ -236,12 +236,13 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
                 if (backer.getLockWaitMS() < after - before) {
                     // Too slow
                     // Delete lock claim and loop again
+                    log.warn("Lock write took too long [" + lc + "]");
                     backer.getLockStore().mutate(lockKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(lc.getLockCol(tsNS, backer.getRid())), consistentTx);
                 } else {
                     ok = true;
                     lastLockApplicationTimesMS.put(backer, before);
                     lc.setTimestamp(tsNS);
-                    log.trace("Wrote lock: {}", lc);
+                    log.debug("Wrote lock: {}", lc);
                     lockClaims.add(lc);
                     return;
                 }
@@ -341,9 +342,11 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
             byte[] earliestRid = null;
             Set<StaticBuffer> ridsSeen = new HashSet<StaticBuffer>();
 
-            log.trace("Retrieved {} total lock claim(s) when verifying {}", entries.size(), lc);
+            log.debug("Retrieved {} total lock claim(s) when verifying {}", entries.size(), lc);
 
+            int entryCounter = 0;
             for (Entry e : entries) {
+                entryCounter++;
                 StaticBuffer bb = e.getColumn();
                 long tsNS = bb.getLong(0);
                 byte[] curRid = new byte[bb.length()-8];
@@ -351,6 +354,14 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
 
                 StaticBuffer curRidBuf = new StaticArrayBuffer(curRid);
                 ridsSeen.add(curRidBuf);
+
+                if (log.isTraceEnabled()) {
+                    log.trace(
+                            "Entry #{} for {}: ts={} rid={} (seen {} unique rids so far)",
+                            new Object[] { entryCounter, lc, tsNS,
+                                    Hex.encodeHexString(curRid),
+                                    ridsSeen.size() });
+                }
                 
                 // Ignore expired lock claims
                 if (tsNS < now - (backer.getLockExpireMS() * MILLION)) {
@@ -388,7 +399,7 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
             byte rid[] = backer.getRid();
             StaticBuffer myRidBuf = new StaticArrayBuffer(rid);
             if (!Arrays.equals(earliestRid, rid)) {
-                log.trace("My rid={} lost to earlier rid={},ts={}",
+                log.debug("My rid={} lost to earlier rid={},ts={}",
                         new Object[]{
                                 Hex.encodeHex(rid),          // TODO: I MADE THIS encodeHex from encodeHexString ?!
                                 null != earliestRid ? Hex.encodeHex(earliestRid) : "null",
@@ -452,8 +463,8 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
                 // Release lock remotely
                 lc.getBacker().getLockStore().mutate(lockKeyBuf, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(lockColBuf), consistentTx);
 
-                if (log.isTraceEnabled()) {
-                    log.trace("Released {} in lock store (txn={})", lc, this);
+                if (log.isDebugEnabled()) {
+                    log.debug("Released {} in lock store (txn={})", lc, this);
                 }
             } catch (Throwable t) {
                 log.error("Unexpected exception when releasing {} in lock store (txn={})", lc, this);
@@ -467,8 +478,8 @@ public class ConsistentKeyLockTransaction implements StoreTransaction {
             	boolean locallyUnlocked = lc.getBacker().getLocalLockMediator().unlock(lc.getKc(), this);
             	
             	if (locallyUnlocked) {
-            		if (log.isTraceEnabled()) {
-            			log.trace("Released {} locally (txn={})", lc, this);
+            		if (log.isDebugEnabled()) {
+            			log.debug("Released {} locally (txn={})", lc, this);
             		}
             	} else {
             		log.warn("Failed to release {} locally (txn={})", lc, this);

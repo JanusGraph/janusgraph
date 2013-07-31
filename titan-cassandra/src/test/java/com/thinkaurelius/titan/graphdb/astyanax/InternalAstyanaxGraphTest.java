@@ -13,7 +13,7 @@ public class InternalAstyanaxGraphTest extends TitanGraphTest {
     }
 
     public InternalAstyanaxGraphTest() {
-        super(CassandraStorageSetup.getAstyanaxGraphConfiguration());
+        super(CassandraStorageSetup.getAstyanaxGraphConfiguration(InternalAstyanaxGraphTest.class.getSimpleName()));
     }
 
 }

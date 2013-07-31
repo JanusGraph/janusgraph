@@ -15,7 +15,7 @@ public class ExternalCassandraLockKeyColumnValueStoreTest extends LockKeyColumnV
 
     @Override
     public KeyColumnValueStoreManager openStorageManager(int idx) throws StorageException {
-        Configuration sc = CassandraStorageSetup.getCassandraStorageConfiguration();
+        Configuration sc = CassandraStorageSetup.getGenericCassandraStorageConfiguration(getClass().getSimpleName());
         return new CassandraThriftStoreManager(sc);
     }
 

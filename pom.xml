@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -15,6 +14,21 @@
     </prerequisites>
     <name>Titan: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+
+    <modules>
+        <module>titan-core</module>
+        <module>titan-test</module>
+        <module>titan-berkeleyje</module>
+        <module>titan-cassandra</module>
+        <module>titan-persistit</module>
+        <module>titan-hbase</module>
+        <module>titan-es</module>
+        <module>titan-lucene</module>
+        <module>titan-all</module>
+        <module>titan-site</module>
+        <module>titan-dist</module>
+    </modules>
+
     <description>
         Titan is a distributed graph database optimized for processing massive-scale graphs represented over a machine
         cluster.
@@ -58,10 +72,12 @@
     </scm>
     <properties>
         <titan.version>0.4.0-SNAPSHOT</titan.version>
-        <titan.compatible.versions>0.3.0,0.3.1</titan.compatible.versions>
+        <titan.compatible.versions>0.3.2,0.3.1,0.3.0</titan.compatible.versions>
         <tinkerpop.version>2.4.0-SNAPSHOT</tinkerpop.version>
         <junit.version>4.8.1</junit.version>
         <metrics.version>3.0.0-BETA3</metrics.version>
+        <jna.version>3.2.7</jna.version>
+        <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <cassandra.dir>${project.build.directory}/cassandra-tmp/workdir</cassandra.dir>
@@ -70,66 +86,57 @@
         <!-- Required for PMD plugin. Used for compiler plugin -->
         <targetJdk>1.6</targetJdk>
     </properties>
-    <modules>
-        <module>titan-core</module>
-        <module>titan-test</module>
-        <module>titan-berkeleyje</module>
-        <module>titan-persistit</module>
-        <module>titan-cassandra</module>
-        <module>titan-es</module>
-        <module>titan-lucene</module>
-        <module>titan-hbase</module>
-        <module>titan-all</module>
-    </modules>
     <build>
         <directory>${basedir}/target</directory>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>2.1.2</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.8</version>
+                <artifactId>maven-release-plugin</artifactId>
                 <configuration>
-                  <excludePackageNames>
-                      com.thinkaurelius.titan.diskstorage;com.thinkaurelius.titan.graphdb;com.thinkaurelius.titan.tinkerpop;com.thinkaurelius.titan.util
-                  </excludePackageNames>
+                    <!--
+                      Only release:perform uses this configuration
+                      setting; release:prepare doesn't care and always
+                      runs "clean verify"
+                    -->
+                    <goals>javadoc:aggregate deploy</goals>
+
+                    <!--
+                      Tell the release plugin to never "git push".
+                      When releasing, you have to manually issue "git
+                      push" between release:prepare and
+                      release:perform.  You'll have to push both the
+                      branch you're releasing and the tag
+                      release:prepare locally created.
+                    -->
+                    <pushChanges>false</pushChanges>
+
+                    <!--
+                      @{...} is a special variable interpolation
+                      syntax that uses the target release version
+                      instead of the pom's actual version, which is
+                      usually a -SNAPSHOT version when this setting
+                      gets evaluated.
+                    -->
+                    <tagNameFormat>@{project.version}</tagNameFormat>
+
+                    <!--
+                      The release:perform goal activates these
+                      profiles when it invokes maven with the <goals>
+                      listed above.  Release engineering specific to
+                      release:perform and disabled during non-release
+                      operation should be encapsulated with the
+                      profile id listed below.
+                    -->
+                    <releaseProfiles>titan-release</releaseProfiles>
+
+                    <!--
+                      I am a criminal.
+
+                      (applies to both release:prepare and :perform)
+                    -->
+                    <arguments>-DskipTests=true</arguments>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
-            <!--<plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-                <version>1.4</version>
-                <executions>
-                    <execution>
-                        <id>sign-artifacts</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>sign</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>-->
-        </plugins>
+            </plugins>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -141,14 +148,200 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.11</version>
                     <configuration>
                         <runOrder>random</runOrder>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>3.3</version>
+                    <executions>
+                        <execution>
+                            <id>default-site</id>
+                            <phase>none</phase>
+                        </execution>
+                        <execution>
+                            <id>default-deploy</id>
+                            <phase>none</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin> 
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>2.7</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>2.4</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>2.6</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.4.1</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.9.1</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>2.4</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>2.4</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>2.2.1</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>2.5</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>1.4</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>wagon-maven-plugin</artifactId>
+                    <version>1.0-beta-4</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>1.2.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.github</groupId>
+                    <artifactId>site-maven-plugin</artifactId>
+                    <version>0.8</version>
+                    <configuration>
+                        <!--
+                          To push changes to gh-pages during
+                          release:perform using this plugin, your
+                          ~/.m2/settings.xml file must contain a
+                          <server> stanza that matches the
+                          <server>github</server> tag below.  Here's
+                          an example settings.xml:
+
+                          <settings>
+                            ...
+                            <servers>
+                              ...
+                              <server>
+                                <id>github</id> << must match <username>dalaro</username>
+                                <password>allmypasswordsareliterallypassword</password>
+                              </server>
+                            </servers>
+                          </settings>
+                        -->
+                        <server>github</server>
+                        <repositoryName>titan</repositoryName>
+                        <repositoryOwner>thinkaurelius</repositoryOwner>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>sonatype-oss-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.1.2</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.7</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.1</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>titan-release</id>
+            <!--
+              Sign artifacts artifacts only during release:perform
+              when this profile is automatically activated or whenever
+              else it is manually activated.
+    
+              Stolen from: http://blog.sonatype.com/people/2010/01/how-to-generate-pgp-signatures-with-maven/
+            -->
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

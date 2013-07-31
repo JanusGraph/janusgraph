@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 public class InternalCassandraEmbeddedGraphTest extends TitanGraphTest {
 
     public InternalCassandraEmbeddedGraphTest() {
-        super(CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration());
+        super(CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration(InternalCassandraEmbeddedGraphTest.class.getSimpleName()));
     }
 
 

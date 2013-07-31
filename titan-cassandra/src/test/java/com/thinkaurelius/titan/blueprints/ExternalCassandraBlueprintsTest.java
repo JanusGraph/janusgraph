@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.blueprints;
 
+import org.apache.commons.configuration.Configuration;
+
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -28,14 +30,14 @@ public class ExternalCassandraBlueprintsTest extends TitanBlueprintsTest {
 
     @Override
     public Graph generateGraph() {
-        Graph graph = TitanFactory.open(CassandraStorageSetup.getCassandraGraphConfiguration());
+        Graph graph = TitanFactory.open(getGraphConfig());
         return graph;
     }
 
     @Override
     public void cleanUp() throws StorageException {
         CassandraThriftStoreManager s = new CassandraThriftStoreManager(
-                CassandraStorageSetup.getCassandraGraphConfiguration().subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE));
+                getGraphConfig().subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE));
         s.clearStorage();
     }
 
@@ -49,5 +51,7 @@ public class ExternalCassandraBlueprintsTest extends TitanBlueprintsTest {
         throw new UnsupportedOperationException();
     }
 
-
+    private Configuration getGraphConfig() {
+        return CassandraStorageSetup.getCassandraGraphConfiguration(getClass().getSimpleName());
+    }
 }

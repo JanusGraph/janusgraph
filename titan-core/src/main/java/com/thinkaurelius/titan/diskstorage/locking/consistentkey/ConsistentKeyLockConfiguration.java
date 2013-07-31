@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.configuration.Configuration;
+
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 
 /**
  * A class that holds configuration specific to interprocess locking.
@@ -44,5 +46,15 @@ public class ConsistentKeyLockConfiguration {
                 GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
                 GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
     }
+
+    @Override
+    public String toString() {
+        return "ConsistentKeyLockConfiguration[rid=" + Hex.encodeHexString(rid)
+                + ", lockRetryCount=" + lockRetryCount + ", lockExpireMS="
+                + lockExpireMS + ", lockWaitMS=" + lockWaitMS
+                + ", localLockMediatorPrefix=" + localLockMediatorPrefix + "]";
+    }
+    
+    
 
 }

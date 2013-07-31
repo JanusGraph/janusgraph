@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
@@ -12,19 +11,28 @@
     <url>http://thinkaurelius.github.com/titan/</url>
     <properties>
         <astyanax.version>1.56.37</astyanax.version>
+        <jamm.version>0.2.5</jamm.version>
+        <jamm.group>com.github.stephenc</jamm.group>
+        <dependency.plugin.version>2.8</dependency.plugin.version>
+        <cassandra.surefire.version>2.15</cassandra.surefire.version>
     </properties>
     <!-- Libraries -->
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-core</artifactId>
-            <version>${titan.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-test</artifactId>
-            <version>${titan.version}</version>
+            <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-es</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.codahale.metrics</groupId>
@@ -42,9 +50,9 @@
         <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
-            <version>3.2.7</version>
-	    <optional>true</optional>
-	</dependency>
+            <version>${jna.version}</version>
+            <optional>true</optional>
+        </dependency>
         <!-- 
             Temporary hack to work around the outdated 12.0 Guava pom.xml
             dependency in Cassandra 1.2.2.  Cassandra 1.2.2 actually
@@ -89,9 +97,132 @@
             <version>1.0.5-M3</version>
         </dependency>
     </dependencies>
+
+
     <profiles>
         <profile>
+            <id>bop-test</id>
+            <activation>
+                <property>
+                    <name>!test</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${cassandra.surefire.version}</version>
+                        <executions>
+                            <execution>
+                                <id>bop-test</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <phase>test</phase>
+                                <configuration>
+                                    <argLine>-Xms256m -Xmx756m -javaagent:${basedir}/target/jamm-${jamm.version}.jar</argLine>
+                                    <includes>
+                                        <include>**/InternalCassandraEmbeddedKeyColumnValueTest.java</include>
+                                        <include>**/InternalCassandraEmbeddedLockKeyColumnValueStoreTest.java</include>
+                                        <include>**/InternalCassandraEmbeddedMultiWriteKeyColumnValueStoreTest.java</include>
+                                        <include>**/InternalCassandraEmbeddedGraphConcurrentTest.java</include>
+                                        <include>**/InternalCassandraEmbeddedGraphPerformanceTest.java</include>
+                                        <include>**/InternalCassandraEmbeddedGraphTest.java</include>
+                                        <include>**/RexsterServerClientCassandraEmbeddedTest.java</include>
+                                    </includes>
+                                    <excludes>
+                                        <exclude>**/External*.java</exclude>
+                                        <exclude>**/*PerformanceTest.java</exclude>
+                                        <exclude>**/*ConcurrentTest.java</exclude>
+                                    </excludes>
+                                    <parallel>classes</parallel>
+                                    <threadCount>2</threadCount>
+                                    <perCoreThreadCount>true</perCoreThreadCount>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>rp-test</id>
+            <activation>
+                <property>
+                    <name>!test</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${cassandra.surefire.version}</version>
+                        <executions>
+                            <execution>
+                                <id>rp-test</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <phase>test</phase>
+                                <configuration>
+                                    <argLine>-Xms256m -Xmx756m -javaagent:${basedir}/target/jamm-${jamm.version}.jar</argLine>
+                                    <excludes>
+                                        <exclude>**/InternalCassandraEmbeddedKeyColumnValueTest.java</exclude>
+                                        <exclude>**/InternalCassandraEmbeddedLockKeyColumnValueStoreTest.java</exclude>
+                                        <exclude>**/InternalCassandraEmbeddedMultiWriteKeyColumnValueStoreTest.java</exclude>
+                                        <exclude>**/InternalCassandraEmbeddedGraphConcurrentTest.java</exclude>
+                                        <exclude>**/InternalCassandraEmbeddedGraphPerformanceTest.java</exclude>
+                                        <exclude>**/InternalCassandraEmbeddedGraphTest.java</exclude>
+                                        <exclude>**/RexsterServerClientCassandraEmbeddedTest.java</exclude>
+                                        <exclude>**/External*.java</exclude>
+                                        <exclude>**/*PerformanceTest.java</exclude>
+                                        <exclude>**/*ConcurrentTest.java</exclude>
+                                    </excludes>
+                                    <parallel>classes</parallel>
+                                    <threadCount>2</threadCount>
+                                    <perCoreThreadCount>true</perCoreThreadCount>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>specific-test</id>
+            <activation>
+                <property>
+                    <name>test</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${cassandra.surefire.version}</version>
+                        <executions>
+                            <execution>
+                                <id>specific-test</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <phase>test</phase>
+                                <configuration>
+                                    <argLine>-Xms256m -Xmx756m -javaagent:${basedir}/target/jamm-${jamm.version}.jar</argLine>
+                                    <reuseForks>false</reuseForks>
+                                    <forkCount>2C</forkCount>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>comprehensive</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
             <build>
                 <plugins>
                     <plugin>
@@ -137,21 +268,16 @@
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.12.1</version>
-                <configuration>
-                    <argLine>-Xms256m -Xmx756m</argLine>
-                    <excludes>
-                        <exclude>**/External*.java</exclude>
-                        <!-- Excluded because these take too long to run and require a lot of memory - see comprehensive profile -->
-                        <exclude>**/*PerformanceTest.java</exclude>
-                        <exclude>**/*ConcurrentTest.java</exclude>
-                    </excludes>
-                    <forkMode>always</forkMode>
-                </configuration>
+                <version>${cassandra.surefire.version}</version>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>2.5</version>
                 <executions>
                     <execution>
                         <id>copy-resources-127.0.0.1</id>
@@ -175,34 +301,29 @@
                 </executions>
             </plugin>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.4</version>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>${dependency.plugin.version}</version>
                 <executions>
                     <execution>
-                        <phase>package</phase>
+                        <id>copy</id>
+                        <phase>process-resources</phase>
                         <goals>
-                            <goal>attached</goal>
+                            <goal>copy</goal>
                         </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${jamm.group}</groupId>
+                                    <artifactId>jamm</artifactId>
+                                    <version>${jamm.version}</version>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <attach>false</attach>
-                    <descriptors>
-                        <descriptor>src/assembly/distribution.xml</descriptor>
-                    </descriptors>
-                    <finalName>${project.artifactId}-${project.version}</finalName>
-                    <outputDirectory>target</outputDirectory>
-                    <workDirectory>target/assembly/work</workDirectory>
-                    <tarLongFileMode>warn</tarLongFileMode>
-                    <archiverConfig>
-                        <fileMode>420</fileMode>
-                        <!-- 420(dec) = 644(oct) -->
-                        <directoryMode>493</directoryMode>
-                        <!-- 493(dec) = 755(oct) -->
-                        <defaultDirectoryMode>493</defaultDirectoryMode>
-                    </archiverConfig>
-                </configuration>
             </plugin>
         </plugins>
     </build>
 </project>
+

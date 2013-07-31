@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -52,5 +54,27 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
      */
     public void clear() {
         mediators.clear();
+    }
+    
+    /**
+     * Only use this in testing.
+     * <p>
+     * This deletes all entries in the global map of namespaces to mediators
+     * whose key prefix equals the argument. Calling this in
+     * production would result in undetected locking failures and data
+     * corruption.
+     * 
+     * @param prefix 
+     */
+    public void clear(String prefix) {
+        Iterator<Entry<String, LocalLockMediator>> iter = mediators.entrySet().iterator();
+        
+        while (iter.hasNext()) {
+            Entry<String, LocalLockMediator> e = iter.next();
+            
+            if (e.getKey().startsWith(prefix + ":")) {
+                iter.remove();
+            }
+        }
     }
 }

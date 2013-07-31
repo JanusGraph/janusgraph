@@ -14,7 +14,7 @@ public class ExternalAstyanaxKeyColumnValueTest extends KeyColumnValueStoreTest 
 
     @Override
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        return new AstyanaxStoreManager(CassandraStorageSetup.getCassandraStorageConfiguration());
+        return new AstyanaxStoreManager(CassandraStorageSetup.getGenericCassandraStorageConfiguration(getClass().getSimpleName()));
     }
 
 

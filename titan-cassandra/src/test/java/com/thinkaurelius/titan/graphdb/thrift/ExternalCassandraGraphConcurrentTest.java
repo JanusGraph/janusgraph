@@ -11,7 +11,7 @@ public class ExternalCassandraGraphConcurrentTest extends TitanGraphConcurrentTe
     public static CassandraProcessStarter ch = new CassandraProcessStarter();
 
     public ExternalCassandraGraphConcurrentTest() {
-        super(CassandraStorageSetup.getCassandraThriftGraphConfiguration());
+        super(CassandraStorageSetup.getCassandraThriftGraphConfiguration(ExternalCassandraGraphConcurrentTest.class.getSimpleName()));
     }
 
     @BeforeClass

@@ -20,7 +20,6 @@ public class HBaseMultiWriteKeyColumnValueStoreTest extends MultiWriteKeyColumnV
     }
 
     private Configuration getConfig() {
-        Configuration c = HBaseStorageSetup.getHBaseStorageConfiguration();
-        return c;
+        return HBaseStorageSetup.getHBaseStorageConfiguration();
     }
 }

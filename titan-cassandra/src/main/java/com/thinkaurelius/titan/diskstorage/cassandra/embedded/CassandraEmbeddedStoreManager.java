@@ -298,6 +298,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
         try {
             MigrationManager.announceNewKeyspace(ksm);
+            log.debug("Created keyspace {}", keyspaceName);
         } catch (ConfigurationException e) {
             throw new PermanentStorageException("Failed to create keyspace " + keyspaceName, e);
         }
@@ -325,7 +326,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         try {
             CompressionParameters cp = new CompressionParameters(new SnappyCompressor(), 64 * 1024, ImmutableMap.<String, String>of());
             cfm.compressionParameters(cp);
-            log.warn("Set CompressionParameters {}", cp);
+            log.debug("Set CompressionParameters {}", cp);
         } catch (ConfigurationException e) {
             throw new PermanentStorageException("Failed to create compression parameters for " + keyspaceName + ":" + columnfamilyName, e);
         }

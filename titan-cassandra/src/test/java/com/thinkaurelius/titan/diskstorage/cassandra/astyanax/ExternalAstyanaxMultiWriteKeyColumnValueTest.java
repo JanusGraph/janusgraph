@@ -12,7 +12,7 @@ public class ExternalAstyanaxMultiWriteKeyColumnValueTest extends MultiWriteKeyC
 
     @Override
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        return new AstyanaxStoreManager(CassandraStorageSetup.getCassandraStorageConfiguration());
+        return new AstyanaxStoreManager(CassandraStorageSetup.getGenericCassandraStorageConfiguration(getClass().getSimpleName()));
     }
 
     public static CassandraProcessStarter ch = new CassandraProcessStarter();
