@@ -2,3 +2,8 @@
 target/
 .idea/
 *.iml
+# Eclipse project files
+/.classpath
+/.project
+/.settings/
+# End Eclipse project files

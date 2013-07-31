@@ -9,7 +9,6 @@
     </parent>
     <groupId>com.thinkaurelius.faunus</groupId>
     <artifactId>faunus</artifactId>
-    <!-- DON'T FORGET TO UPDATE Tokens.java -->
     <version>0.3.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <url>http://thinkaurelius.github.com/faunus/</url>
@@ -145,6 +144,15 @@
         </repository>
     </repositories>
     <build>
+        <!-- Used during release:perform to upload to S3 -->
+        <extensions>
+            <extension>
+                <groupId>org.kuali.maven.wagons</groupId>
+                <artifactId>maven-s3-wagon</artifactId>
+                <version>1.1.20</version>
+            </extension>
+        </extensions>
+
         <directory>${basedir}/target</directory>
         <finalName>${project.artifactId}-${project.version}
         </finalName>
@@ -169,30 +177,7 @@
                     <target>1.6</target>
                 </configuration>
             </plugin>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.4</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>assembly</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <attach>false</attach>
-                    <descriptors>
-                        <descriptor>src/assembly/hadoop-job.xml</descriptor>
-                        <descriptor>src/assembly/standalone.xml</descriptor>
-                        <descriptor>src/assembly/distribution.xml</descriptor>
-                    </descriptors>
-                    <finalName>${project.artifactId}-${project.version}</finalName>
-                    <outputDirectory>target</outputDirectory>
-                    <workDirectory>target/assembly/work</workDirectory>
-                    <tarLongFileMode>warn</tarLongFileMode>
-                </configuration>
-            </plugin>
+            
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -206,7 +191,7 @@
                     <execution>
                         <id>attach-sources</id>
                         <goals>
-                            <goal>jar</goal>
+                            <goal>jar-no-fork</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -241,21 +226,247 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <!--<plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-                <version>1.4</version>
+            </plugin>     
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
                 <executions>
                     <execution>
-                        <id>sign-artifacts</id>
-                        <phase>verify</phase>
+                        <id>build-detached-assemblies</id>
+                        <phase>package</phase>
                         <goals>
-                            <goal>sign</goal>
+                            <goal>single</goal>
                         </goals>
+                        <configuration>
+                            <attach>false</attach>
+                            <descriptors>
+                                <descriptor>src/assembly/hadoop-job.xml</descriptor>
+                                <descriptor>src/assembly/standalone.xml</descriptor>
+                            </descriptors>
+                            <finalName>${project.artifactId}-${project.version}</finalName>
+                        </configuration>
+                    </execution>
+
+                    <!-- I would use maven-resources-plugin for
+                         this, but I need to retain the executable
+                         mode bits on some script resources and is
+                         http://jira.codehaus.org/browse/MRESOURCES-132
+                         not yet resolved. -->
+                    <execution>
+                        <id>filter-release-resources</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <attach>false</attach>
+                            <finalName>release</finalName>
+                            <descriptors>
+                                <descriptor>src/assembly/release-resources.xml</descriptor>
+                            </descriptors>
+                        </configuration>
                     </execution>
                 </executions>
-            </plugin>-->
+            </plugin>
+            <plugin>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.4.1</version>
+                <configuration>
+                    <goals>deploy</goals>
+                    <pushChanges>false</pushChanges>
+                    <tagNameFormat>@{project.version}</tagNameFormat>
+                    <releaseProfiles>aurelius-release</releaseProfiles>
+                    <arguments>-DskipTests=true</arguments>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>aurelius-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>2.6</version>
+                        <executions>
+                            <!-- <execution>
+                                <id>filter-release-resources</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/release</outputDirectory>
+                                    <useDefaultDelimiters>false</useDefaultDelimiters>
+                                    <delimiters>
+                                        <delimiter>$MAVEN{*}</delimiter>
+                                    </delimiters>
+                                    <resources>
+                                        <resource>
+                                            <directory>src/release</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution> -->
+                            <!-- Copy _Layout.html to doc -->
+                            <execution>
+                                <id>copy-gollum-site-layout</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.basedir}/doc</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.build.directory}/release-resources/</directory>
+                                            <includes>
+                                                <include>_Layout.html</include>
+                                            </includes>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.2.1</version>
+                        <executions>
+                            <execution>
+                                <id>git-submodule-prep</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>git</executable>
+                                    <arguments>
+                                        <argument>submodule</argument>
+                                        <argument>update</argument>
+                                        <argument>--init</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <!-- Gollum doesn't understand submodules. It dies 
+                                    with a Grit [sic] error error when run on a submodule. This limitation is intrinsic 
+                                    to Gollum and not just a limitation of gollum-site. Poor submodule support has appeared 
+                                    in at least two Gollum issues:
+                                    
+                                    https://github.com/gollum/gollum/issues/151
+                                    https://github.com/gollum/gollum/issues/438 
+                                    
+                                    Gollum might eventually throw out Grit in favor of an alternative project called 
+                                    Rugged that supposedly handles submodules correctly:
+                                    
+                                    https://github.com/gollum/gollum-lib/pull/16 
+                                    
+                                    For now, we're hacking around Gollum's limitation. The doc submodule .git file usually 
+                                    contains this: gitdir: ../.git/modules/doc This is a sort of pretend symlink. Git 
+                                    is smart enough to handle an actual symlink in a way functionally identical to the 
+                                    gitdir: ... file, and making this a symlink placates Gollum and avoids the submodule 
+                                    Grit error that would otherwise kill it. -->
+                                <id>hack-submodule-gitdir-for-gollum</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>ln</executable>
+                                    <arguments>
+                                        <argument>-sf</argument>
+                                        <argument>../.git/modules/doc</argument>
+                                        <argument>.git</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.basedir}/doc</workingDirectory>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>gollum-site</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${project.build.directory}/release-resources/gollum-site-wrapper.sh</executable>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!--
+                       The distribution descriptor includes files written to the build
+                       directory by both the standalone and hadoop-job descriptors.
+                       That's why the execution for the distribution descriptor comes last.
+                    -->
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <executions>
+                            <execution>
+                                <id>build-attached-assemblies</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <attach>true</attach>
+                                    <finalName>${project.artifactId}</finalName>
+                                    <tarLongFileMode>gnu</tarLongFileMode>
+                                    <descriptors>
+                                        <descriptor>src/assembly/distribution.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.4</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>wagon-maven-plugin</artifactId>
+                        <version>1.0-beta-4</version>
+                        <executions>
+                            <execution>
+                                <id>deploy-distribution-archives-to-s3</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>upload</goal>
+                                </goals>
+                                <configuration>
+                                    <fromDir>${project.build.directory}</fromDir>
+                                    <includes>${project.artifactId}-${project.version}.zip*,${project.artifactId}-${project.version}.tar.bz2*</includes>
+                                    <serverId>aurelius.s3</serverId> <!-- your ~/.m2/settings.xml must match -->
+                                    <url>s3://s3.thinkaurelius.com/downloads/faunus/</url>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

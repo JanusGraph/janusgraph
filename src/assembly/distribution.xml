@@ -1,7 +1,9 @@
 <assembly>
-    <id>distribution</id>
+    <id>${project.version}</id>
+    <baseDirectory>${project.artifactId}-${project.version}</baseDirectory>
     <formats>
         <format>zip</format>
+        <format>tar.bz2</format>
     </formats>
     <fileSets>
         <fileSet>
@@ -20,9 +22,11 @@
         </fileSet>
         <fileSet>
             <directory>src</directory>
+            <outputDirectory>src/src</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>doc</directory>
+            <directory>doc/html</directory>
+            <outputDirectory>doc</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>data</directory>

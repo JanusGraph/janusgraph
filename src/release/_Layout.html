@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>{{ page.title }}</title>
+    <link rel="stylesheet" href="{{ wiki.base_path }}css/screen.css" type="text/css" charset="utf-8" />
+    <link rel="stylesheet" href="{{ wiki.base_path }}css/gollum.css" type="text/css" charset="utf-8" />
+    <link rel="stylesheet" href="{{ wiki.base_path }}css/syntax.css" type="text/css" charset="utf-8" />
+    <script src="{{ wiki.base_path }}javascript/jquery-1.4.2.min.js" type="text/javascript"></script>
+    <script src="{{ wiki.base_path }}javascript/jquery.text_selection-1.0.0.min.js" type="text/javascript"></script>
+    <script src="{{ wiki.base_path }}javascript/jquery.previewable_comment_form.js" type="text/javascript"></script>
+    <script src="{{ wiki.base_path }}javascript/jquery.tabs.js" type="text/javascript"></script>
+    <script src="{{ wiki.base_path }}javascript/gollum.js" type="text/javascript"></script>
+  </head>
+
+  <body>
+    <div id="main">
+      <div class="site">
+        <div id="guides">
+          <div class="guide">
+            <div class="main">
+              <div class="actions">
+                <div>
+                  <a href="{{ wiki.base_path }}Home.html">Aurelius Faunus ${project.version}</a>
+                </div>
+              </div>
+              <h1>{{ page.title }}</h1>
+              <div class="content wikistyle gollum {{ page.format }}">
+                {{ page.content }}
+              </div>
+            </div>
+          </div>
+          <div class="admin">
+            <div style="float: left;">
+              <small>Last edited by <b>{{ page.author }}</b>, {{ page.date }}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
