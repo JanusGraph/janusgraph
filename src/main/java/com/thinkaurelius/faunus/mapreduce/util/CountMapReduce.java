@@ -64,10 +64,8 @@ public class CountMapReduce {
                         pathCount = pathCount + edge.pathCount();
                     }
                 }
-                if (pathCount > 0) {
-                    this.longWritable.set(pathCount);
-                    context.write(NullWritable.get(), this.longWritable);
-                }
+                this.longWritable.set(pathCount);
+                context.write(NullWritable.get(), this.longWritable);
                 context.getCounter(Counters.EDGES_COUNTED).increment(edgesCounted);
             }
 

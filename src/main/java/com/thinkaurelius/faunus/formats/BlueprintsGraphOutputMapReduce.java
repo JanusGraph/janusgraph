@@ -124,6 +124,7 @@ public class BlueprintsGraphOutputMapReduce {
             try {
                 // Read (and/or Write) FaunusVertex (and respective properties) to Blueprints Graph
                 // Attempt to use the ID provided by Faunus
+                System.err.println(value.getProperty("amp3_long_id") + " amp3_long_id");
                 final Vertex blueprintsVertex = this.getOrCreateVertex(value, context);
 
                 // Propagate shell vertices with Blueprints ids
