@@ -39,7 +39,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
     public void testTinkerGraphIncrementalLoading() throws Exception {
         TinkerGraphOutputMapReduce.graph = new TinkerGraph();
         Configuration conf = new Configuration();
-        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/GetOrCreateVertex.groovy");
+        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
         mapReduceDriver.withConfiguration(conf);
 
         runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), mapReduceDriver);
@@ -64,7 +64,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         incrementalGraph.put(22l, stephen1);
         incrementalGraph.put(33l, vadas1);
         conf = new Configuration();
-        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/GetOrCreateVertex.groovy");
+        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
 
 
         setUp();
