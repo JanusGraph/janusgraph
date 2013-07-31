@@ -49,11 +49,10 @@ public class CountMapReduce {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
 
             if (this.isVertex) {
-                if (value.hasPaths()) {
-                    this.longWritable.set(value.pathCount());
-                    context.write(NullWritable.get(), this.longWritable);
-                    context.getCounter(Counters.VERTICES_COUNTED).increment(1);
-                }
+                final long pathCount = value.pathCount();
+                this.longWritable.set(pathCount);
+                context.write(NullWritable.get(), this.longWritable);
+                context.getCounter(Counters.VERTICES_COUNTED).increment(pathCount > 0 ? 1 : 0);
             } else {
                 long edgesCounted = 0;
                 long pathCount = 0;
@@ -64,10 +63,8 @@ public class CountMapReduce {
                         pathCount = pathCount + edge.pathCount();
                     }
                 }
-                if (pathCount > 0) {
-                    this.longWritable.set(pathCount);
-                    context.write(NullWritable.get(), this.longWritable);
-                }
+                this.longWritable.set(pathCount);
+                context.write(NullWritable.get(), this.longWritable);
                 context.getCounter(Counters.EDGES_COUNTED).increment(edgesCounted);
             }
 
