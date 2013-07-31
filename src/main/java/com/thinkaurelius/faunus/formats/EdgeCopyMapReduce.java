@@ -28,7 +28,6 @@ public class EdgeCopyMapReduce {
         EDGES_ADDED
     }
 
-
     public static Configuration createConfiguration(final Direction direction) {
         final Configuration configuration = new EmptyConfiguration();
         configuration.setEnum(FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, direction);
@@ -51,7 +50,6 @@ public class EdgeCopyMapReduce {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
-            System.err.println("map phase (edge copy): " + value.getProperty("amp3_long_id"));
             long edgesInverted = 0;
             for (final Edge edge : value.getEdges(this.direction)) {
                 final long id = (Long) edge.getVertex(this.direction.opposite()).getId();
@@ -92,7 +90,6 @@ public class EdgeCopyMapReduce {
                     this.vertex.addAll(holder.get());
                 }
             }
-            System.err.println("reduce phase (edge copy): " + this.vertex.getProperty("amp3_long_id"));
             context.write(NullWritable.get(), this.vertex);
             context.getCounter(Counters.EDGES_ADDED).increment(edgesAggregated);
         }
