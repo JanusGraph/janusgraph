@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
+import org.apache.commons.configuration.Configuration;
+
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.MultiWriteKeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -9,6 +11,7 @@ public class InternalCassandraEmbeddedMultiWriteKeyColumnValueStoreTest extends 
 
     @Override
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        return new CassandraEmbeddedStoreManager(CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(true));
+        Configuration config = CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(getClass().getSimpleName(), true);
+        return new CassandraEmbeddedStoreManager(config);
     }
 }

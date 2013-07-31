@@ -161,4 +161,11 @@ public class ConsistentKeyLockStore implements KeyColumnValueStore {
         dataStore.close();
         if (lockStore != null) lockStore.close();
     }
+
+    @Override
+    public String toString() {
+        return "ConsistentKeyLockStore[dataStore=" + dataStore
+                + ", lockStore=" + lockStore + ", localLockMediator="
+                + localLockMediator + ", configuration=" + configuration + "]";
+    }    
 }
