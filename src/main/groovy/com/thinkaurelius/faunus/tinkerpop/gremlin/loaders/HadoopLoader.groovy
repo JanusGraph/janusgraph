@@ -35,13 +35,16 @@ class HadoopLoader {
             return ((FileSystem) delegate).globStatus(new Path(path + "/*")).collect { it.toString() };
         }
 
+        FileSystem.metaClass.cp = { final String from, final String to ->
+            return FileUtil.copy(((FileSystem) delegate), new Path(from), ((FileSystem) delegate), new Path(to), false, new Configuration());
+        }
+
         FileSystem.metaClass.exists = { final String path ->
             return ((FileSystem) delegate).exists(new Path(path));
         }
 
         FileSystem.metaClass.rm = { final String path ->
             HDFSTools.globDelete((FileSystem) delegate, path, false);
-
         }
 
         FileSystem.metaClass.rmr = { final String path ->
