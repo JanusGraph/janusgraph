@@ -268,7 +268,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     public void writeLock(KeyColumn lockID, StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
           
         if (lockState.has(tx, lockID)) {
-            log.warn("Transaction {} already wrote lock on {}", tx, lockID);
+            log.debug("Transaction {} already wrote lock on {}", tx, lockID);
             return;
         }
         
