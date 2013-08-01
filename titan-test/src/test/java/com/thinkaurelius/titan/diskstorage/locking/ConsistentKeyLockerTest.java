@@ -362,10 +362,10 @@ public class ConsistentKeyLockerTest {
                         defaultLockVal));
 
         ctrl.replay();
-        PermanentLockingException ple = null;
+        TemporaryLockingException ple = null;
         try {
             locker.checkLocks(defaultTx);
-        } catch (PermanentLockingException e) {
+        } catch (TemporaryLockingException e) {
             ple = e;
         }
         assertNotNull(ple);

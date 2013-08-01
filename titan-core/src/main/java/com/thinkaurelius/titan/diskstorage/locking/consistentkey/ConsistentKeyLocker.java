@@ -433,7 +433,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
          * these two seem most likely.
          */
         if (0 == trCount) {
-            throw new PermanentLockingException("No lock columns found for " + target);
+            throw new TemporaryLockingException("No lock columns found for " + target);
         } else {
             final String msg = "Read "
                     + trCount

@@ -53,7 +53,7 @@ public abstract class LockKeyColumnValueStoreTest {
     public static final int CONCURRENCY = 8;
     public static final int NUM_TX = 2;
     public static final String DB_NAME = "test";
-    protected static final long EXPIRE_MS = 1000;
+    protected static final long EXPIRE_MS = 5000;
     
     /*
      * Don't change these back to static. We can run test classes concurrently
@@ -357,7 +357,10 @@ public abstract class LockKeyColumnValueStoreTest {
         // All runnables submitted to the executor are done
         
         for (int i = 0; i < CONCURRENCY; i++) {
-            Assert.assertEquals(lockOperationsPerThread, ls[i].succeeded);
+            if (0 < ls[i].temporaryFailures) {
+                log.warn("Recorded {} temporary failures for thread index {}", ls[i].temporaryFailures, i);
+            }
+            Assert.assertEquals(lockOperationsPerThread, ls[i].succeeded + ls[i].temporaryFailures);
         }
     }
 
@@ -530,6 +533,7 @@ public abstract class LockKeyColumnValueStoreTest {
         private final StaticBuffer toLock;
         
         private int succeeded = 0;
+        private int temporaryFailures = 0;
 
         private LockStressor(KeyColumnValueStoreManager manager,
                 KeyColumnValueStore store, CountDownLatch doneLatch, int opCount, StaticBuffer toLock) {
@@ -553,6 +557,8 @@ public abstract class LockKeyColumnValueStoreTest {
                     store.mutate(toLock, ImmutableList.<Entry>of(), Arrays.asList(toLock), tx);
                     tx.commit();
                     succeeded++;
+                } catch (TemporaryLockingException e) {
+                    temporaryFailures++;
                 } catch (Throwable t) {
                     log.error("Unexpected locking-related exception on iteration " + (opIndex + 1) + "/" + opCount, t);
                 }
