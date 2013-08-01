@@ -32,9 +32,12 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.Titan;
+import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
@@ -119,6 +122,7 @@ public class Backend {
     private final int writeAttempts;
     private final int readAttempts;
     private final int persistAttemptWaittime;
+    private final Function<String, Locker> lockerCreator;
     
     private final Configuration storageConfig;
 
@@ -145,6 +149,21 @@ public class Backend {
         Preconditions.checkArgument(readAttempts > 0, "Read attempts must be positive");
         persistAttemptWaittime = storageConfig.getInt(STORAGE_ATTEMPT_WAITTIME_KEY, STORAGE_ATTEMPT_WAITTIME_DEFAULT);
         Preconditions.checkArgument(persistAttemptWaittime > 0, "Persistence attempt retry wait time must be non-negative");
+        
+        final String lockBackendName =
+                storageConfig.getString(GraphDatabaseConfiguration.LOCK_BACKEND,
+                                        GraphDatabaseConfiguration.LOCK_BACKEND_DEFAULT);
+        if (REGISTERED_LOCKERS.containsKey(lockBackendName)) {
+            lockerCreator = REGISTERED_LOCKERS.get(lockBackendName);
+        } else {
+            throw new TitanConfigurationException("Unknown lock backend \"" + 
+                    lockBackendName + "\".  Known lock backends: " +
+                    Joiner.on(", ").join(REGISTERED_LOCKERS.keySet()) + ".");
+        }
+        // Never used for backends that have innate transaction support, but we
+        // want to maintain the non-null invariant regardless; it will default
+        // to connsistentkey impl if none is specified
+        Preconditions.checkNotNull(lockerCreator);
 
         if (storeFeatures.isDistributed() && storeFeatures.isKeyOrdered()) {
             log.debug("Wrapping index store with HashPrefix");
@@ -186,30 +205,32 @@ public class Backend {
         
         if (null == l) {
 
-            /*
-             * TODO this should be driven through a map and fixed constructor or factory interface, as with indices and stores
-             * 
-             * this is just hacked in for prototyping purposes (and also because
-             * I don't know what I want the constructor arguments / factory
-             * interface to look like yet)
-             */
-            if (storageConfig.containsKey(GraphDatabaseConfiguration.LOCK_BACKEND) &&
-                    storageConfig.getString(GraphDatabaseConfiguration.LOCK_BACKEND).equals("astyanaxrecipe")) {
-                try {
-                    Class c = storeManager.getClass();
-                    Method method = c.getMethod("openLocker", String.class);
-                    Object o = method.invoke(storeManager, lockerName);
-                    l = (Locker)o;
-                } catch (NoSuchMethodException e) {
-                    throw new IllegalArgumentException("Could not find method when configuring locking with Astyanax Recipes" );
-                } catch (IllegalAccessException e) {
-                    throw new IllegalArgumentException("Could not access method when configuring locking with Astyanax Recipes", e);
-                } catch (InvocationTargetException e) {
-                    throw new IllegalArgumentException("Could not invoke method when configuring locking with Astyanax Recipes", e);
-                }
-            } else {
-                l = new ConsistentKeyLocker.Builder(lockerStore).fromCommonsConfig(storageConfig).mediatorName(lockerName).build();
-            }
+            l = lockerCreator.apply(lockerName);
+//            /*
+//             * TODO this should be driven through a map and fixed constructor or factory interface, as with indices and stores
+//             * 
+//             * this is just hacked in for prototyping purposes (and also because
+//             * I don't know what I want the constructor arguments / factory
+//             * interface to look like yet)
+//             */
+//            if (storageConfig.containsKey(GraphDatabaseConfiguration.LOCK_BACKEND) &&
+//                    storageConfig.getString(GraphDatabaseConfiguration.LOCK_BACKEND).equals("astyanaxrecipe")) {
+//                try {
+//                    Class c = storeManager.getClass();
+//                    Method method = c.getMethod("openLocker", String.class);
+//                    Object o = method.invoke(storeManager, lockerName);
+//                    l = (Locker)o;
+//                } catch (NoSuchMethodException e) {
+//                    throw new IllegalArgumentException("Could not find method when configuring locking with Astyanax Recipes" );
+//                } catch (IllegalAccessException e) {
+//                    throw new IllegalArgumentException("Could not access method when configuring locking with Astyanax Recipes", e);
+//                } catch (InvocationTargetException e) {
+//                    throw new IllegalArgumentException("Could not invoke method when configuring locking with Astyanax Recipes", e);
+//                }
+//                
+//            } else {
+//                l = new ConsistentKeyLocker.Builder(lockerStore).fromCommonsConfig(storageConfig).mediatorName(lockerName).build();
+//            }
 
             final Locker x = lockers.putIfAbsent(lockerName, l);
             if (null != x) {
@@ -479,12 +500,51 @@ public class Backend {
         put("es","com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
     }};
     
-//    private static final Map<String, String> REGISTERED_LOCKERS = new HashMap<String, String>() {{
-//        put("consistentkey",  )
-//        put("astyanaxrecipe", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking.AstyanaxRecipeLocker");
-//    }};
+    private final Function<String, Locker> CONSISTENT_KEY_LOCKER_CREATOR = new Function<String, Locker>() {
+        @Override
+        public Locker apply(String lockerName) {
+            KeyColumnValueStore lockerStore;
+            try {
+                lockerStore = getStore(lockerName);
+            } catch (StorageException e) {
+                throw new TitanConfigurationException("Could not retrieve store named " + lockerName + " for locker configuration", e);
+            }
+            return new ConsistentKeyLocker.Builder(lockerStore).fromCommonsConfig(storageConfig).mediatorName(lockerName).build();
+        }
+    };
 
+    private final Function<String, Locker> ASTYANAX_RECIPE_LOCKER_CREATOR = new Function<String, Locker>() {
 
+        @Override
+        public Locker apply(String lockerName) {
+
+            String expectedManagerName = "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager";
+            String actualManagerName = storeManager.getClass().getCanonicalName();
+            // Require AstyanaxStoreManager
+            Preconditions.checkArgument(expectedManagerName.equals(actualManagerName),
+                    "Astyanax Recipe locker is only supported with the Astyanax storage backend (configured:"
+                            + actualManagerName + " != required:" + expectedManagerName + ")");
+
+            try {
+                Class<?> c = storeManager.getClass();
+                Method method = c.getMethod("openLocker", String.class);
+                Object o = method.invoke(storeManager, lockerName);
+                return (Locker)o;
+            } catch (NoSuchMethodException e) {
+                throw new IllegalArgumentException("Could not find method when configuring locking with Astyanax Recipes" );
+            } catch (IllegalAccessException e) {
+                throw new IllegalArgumentException("Could not access method when configuring locking with Astyanax Recipes", e);
+            } catch (InvocationTargetException e) {
+                throw new IllegalArgumentException("Could not invoke method when configuring locking with Astyanax Recipes", e);
+            }
+        }
+    };
+    
+    private final Map<String, Function<String, Locker>> REGISTERED_LOCKERS = ImmutableMap.of(
+        "consistentkey",  CONSISTENT_KEY_LOCKER_CREATOR,
+        "astyanaxrecipe", ASTYANAX_RECIPE_LOCKER_CREATOR
+    );
+    
     static {
         Properties props;
 
@@ -511,7 +571,7 @@ public class Backend {
             }
         }
     }
-
+    
 //
 //    public synchronized static final void registerStorageManager(String name, Class<? extends StoreManager> clazz) {
 //        Preconditions.checkNotNull(name);

@@ -895,9 +895,9 @@ public class ConsistentKeyLockerTest {
         Entry add = new StaticBufferEntry(lockCol, defaultLockVal);
 
         StaticBuffer k = eq(defaultLockKey);
-        assert null != add;
+//        assert null != add;
         final List<Entry> adds = eq(Arrays.<Entry>asList(add));
-        assert null != adds;
+//        assert null != adds;
         final List<StaticBuffer> dels;
         if (null != del) {
             dels = eq(Arrays.<StaticBuffer>asList(del));
@@ -924,9 +924,9 @@ public class ConsistentKeyLockerTest {
         Entry add = new StaticBufferEntry(lockCol, defaultLockVal);
 
         StaticBuffer k = eq(defaultLockKey);
-        assert null != add;
+//        assert null != add;
         final List<Entry> adds = eq(Arrays.<Entry>asList(add));
-        assert null != adds;
+//        assert null != adds;
         final List<StaticBuffer> dels;
         if (null != del) {
             dels = eq(Arrays.<StaticBuffer>asList(del));
