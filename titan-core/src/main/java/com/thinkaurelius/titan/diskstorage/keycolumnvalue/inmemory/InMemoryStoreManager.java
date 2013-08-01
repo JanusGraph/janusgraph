@@ -101,6 +101,10 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
         }
     }
 
+    @Override
+    public String getName() {
+        return toString();
+    }
 
     private class TransactionHandle extends AbstractStoreTransaction {
 

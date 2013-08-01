@@ -1,4 +1,5 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package com.thinkaurelius.titan.diskstorage.locking;
+
 
 /**
  * Service provider interface for {@link LocalLockMediators}.
@@ -23,6 +24,6 @@ public interface LocalLockMediatorProvider {
      * @author Dan LaRocque <dalaro@hopcount.org>
      * @see LocalLockMediator
      */
-    public LocalLockMediator get(String namespace);
+    public <T> LocalLockMediator<T> get(String namespace);
 
 }

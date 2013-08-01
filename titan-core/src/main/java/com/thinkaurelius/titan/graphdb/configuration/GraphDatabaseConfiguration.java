@@ -151,6 +151,12 @@ public class GraphDatabaseConfiguration {
      */
     public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
     public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
+    
+    /**
+     * Locker type to use.  The supported types are in {@link com.thinkaurelius.titan.diskstorage.Backend}.
+     */
+    public static final String LOCK_BACKEND = "lock-backend";
+    public static final String LOCK_BACKEND_DEFAULT = "consistentkey";
 
     /**
      * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.

@@ -1,10 +1,12 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package com.thinkaurelius.titan.diskstorage.locking;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.Map.Entry;
+import com.google.common.base.Preconditions;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -26,15 +28,20 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
      * Implementation note: for Cassandra, namespace is usually a column
      * family name.
      */
-    private final ConcurrentHashMap<String, LocalLockMediator> mediators = new ConcurrentHashMap<String, LocalLockMediator>();
+    private final ConcurrentHashMap<String, LocalLockMediator<?>> mediators = new ConcurrentHashMap<String, LocalLockMediator<?>>();
 
     @Override
-    public LocalLockMediator get(String namespace) {
-        LocalLockMediator m = mediators.get(namespace);
+    public <T> LocalLockMediator<T> get(String namespace) {
+        
+        Preconditions.checkNotNull(namespace);
+        
+        @SuppressWarnings("unchecked")
+        LocalLockMediator<T> m = (LocalLockMediator<T>)mediators.get(namespace);
 
         if (null == m) {
-            m = new LocalLockMediator(namespace);
-            LocalLockMediator old = mediators.putIfAbsent(namespace, m);
+            m = new LocalLockMediator<T>(namespace);
+            @SuppressWarnings("unchecked")
+            LocalLockMediator<T> old = (LocalLockMediator<T>)mediators.putIfAbsent(namespace, m);
             if (null != old)
                 m = old;
             else
@@ -60,19 +67,17 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
      * Only use this in testing.
      * <p>
      * This deletes all entries in the global map of namespaces to mediators
-     * whose key prefix equals the argument. Calling this in
-     * production would result in undetected locking failures and data
-     * corruption.
+     * whose namespace key equals the argument.
      * 
      * @param prefix 
      */
-    public void clear(String prefix) {
-        Iterator<Entry<String, LocalLockMediator>> iter = mediators.entrySet().iterator();
+    public void clear(String namespace) {
+        Iterator<Entry<String, LocalLockMediator<?>>> iter = mediators.entrySet().iterator();
         
         while (iter.hasNext()) {
-            Entry<String, LocalLockMediator> e = iter.next();
+            Entry<String, LocalLockMediator<?>> e = iter.next();
             
-            if (e.getKey().startsWith(prefix + ":")) {
+            if (e.getKey().equals(namespace)) {
                 iter.remove();
             }
         }

@@ -1,8 +1,43 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.BUFFER_SIZE_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.BUFFER_SIZE_KEY;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.MERGE_BASIC_METRICS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.MERGE_BASIC_METRICS_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.READ_ATTEMPTS_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.READ_ATTEMPTS_KEY;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.SETUP_WAITTIME_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.SETUP_WAITTIME_KEY;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_ATTEMPT_WAITTIME_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_ATTEMPT_WAITTIME_KEY;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.WRITE_ATTEMPTS_DEFAULT;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.WRITE_ATTEMPTS_KEY;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.Titan;
+import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
@@ -11,34 +46,27 @@ import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStor
 import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.BufferTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.BufferedKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.CachedKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockConfiguration;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.Locker;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.Callable;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
  * Orchestrates and configures all backend systems:
@@ -86,7 +114,6 @@ public class Backend {
 
     private final Map<String,IndexProvider> indexes;
 
-    private final ConsistentKeyLockConfiguration lockConfiguration;
     private final int bufferSize;
     private final boolean hashPrefixIndex;
     private final boolean basicMetrics;
@@ -95,8 +122,15 @@ public class Backend {
     private final int writeAttempts;
     private final int readAttempts;
     private final int persistAttemptWaittime;
+    private final Function<String, Locker> lockerCreator;
+    private final ConcurrentHashMap<String, Locker> lockers =
+            new ConcurrentHashMap<String, Locker>();
+
+    private final Configuration storageConfig;
 
     public Backend(Configuration storageConfig) {
+        this.storageConfig = storageConfig;
+        
         storeManager = getStorageManager(storageConfig);
         indexes = getIndexes(storageConfig);
         storeFeatures = storeManager.getFeatures();
@@ -111,18 +145,31 @@ public class Backend {
             log.debug("Buffering disabled because backend does not support batch mutations");
         } else bufferSize = bufferSizeTmp;
 
-        if (!storeFeatures.supportsLocking() && storeFeatures.supportsConsistentKeyOperations()) {
-            lockConfiguration = new ConsistentKeyLockConfiguration(storageConfig, storeManager.toString());
-        } else {
-            lockConfiguration = null;
-        }
-
         writeAttempts = storageConfig.getInt(WRITE_ATTEMPTS_KEY, WRITE_ATTEMPTS_DEFAULT);
         Preconditions.checkArgument(writeAttempts > 0, "Write attempts must be positive");
         readAttempts = storageConfig.getInt(READ_ATTEMPTS_KEY, READ_ATTEMPTS_DEFAULT);
         Preconditions.checkArgument(readAttempts > 0, "Read attempts must be positive");
         persistAttemptWaittime = storageConfig.getInt(STORAGE_ATTEMPT_WAITTIME_KEY, STORAGE_ATTEMPT_WAITTIME_DEFAULT);
         Preconditions.checkArgument(persistAttemptWaittime > 0, "Persistence attempt retry wait time must be non-negative");
+        
+        // If lock prefix is unspecified, specify it now
+        storageConfig.setProperty(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
+                storageConfig.getString(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, storeManager.getName()));
+        
+        final String lockBackendName =
+                storageConfig.getString(GraphDatabaseConfiguration.LOCK_BACKEND,
+                                        GraphDatabaseConfiguration.LOCK_BACKEND_DEFAULT);
+        if (REGISTERED_LOCKERS.containsKey(lockBackendName)) {
+            lockerCreator = REGISTERED_LOCKERS.get(lockBackendName);
+        } else {
+            throw new TitanConfigurationException("Unknown lock backend \"" + 
+                    lockBackendName + "\".  Known lock backends: " +
+                    Joiner.on(", ").join(REGISTERED_LOCKERS.keySet()) + ".");
+        }
+        // Never used for backends that have innate transaction support, but we
+        // want to maintain the non-null invariant regardless; it will default
+        // to connsistentkey impl if none is specified
+        Preconditions.checkNotNull(lockerCreator);
 
         if (storeFeatures.isDistributed() && storeFeatures.isKeyOrdered()) {
             log.debug("Wrapping index store with HashPrefix");
@@ -143,13 +190,31 @@ public class Backend {
                 store = new TransactionalLockStore(store);
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
                 if (lockEnabled) {
-                    store = new ConsistentKeyLockStore(store, getStore(store.getName() + LOCK_STORE_SUFFIX), lockConfiguration);
+                    final String lockerName = store.getName() + LOCK_STORE_SUFFIX;
+                    store = new ExpectedValueCheckingStore(store, getLocker(lockerName));
                 } else {
-                    store = new ConsistentKeyLockStore(store);
+                    store = new ExpectedValueCheckingStore(store, null);
                 }
             } else throw new IllegalArgumentException("Store needs to support some form of locking");
         }
         return store;
+    }
+    
+    private Locker getLocker(String lockerName) {
+        
+        Preconditions.checkNotNull(lockerName);
+        
+        Locker l = lockers.get(lockerName);
+        
+        if (null == l) {
+            l = lockerCreator.apply(lockerName);
+            final Locker x = lockers.putIfAbsent(lockerName, l);
+            if (null != x) {
+                l = x;
+            }
+        }
+        
+        return l;
     }
 
     private KeyColumnValueStore getBufferStore(String name) throws StorageException {
@@ -272,16 +337,12 @@ public class Backend {
         return builder.build();
     }
 
-    public final static<T> T getImplementationClass(Configuration config, String key, String defaultValue, Map<String,String> registeredImpls) {
-        String clazzname = config.getString(key,defaultValue);
-        if (registeredImpls.containsKey(clazzname.toLowerCase())) {
-            clazzname = registeredImpls.get(clazzname.toLowerCase());
-        }
+    public final static<T> T instantiate(String clazzname, Object... constructorArgs) {
 
         try {
             Class clazz = Class.forName(clazzname);
             Constructor constructor = clazz.getConstructor(Configuration.class);
-            T instance = (T)constructor.newInstance(config);
+            T instance = (T)constructor.newInstance(constructorArgs);
             return instance;
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Could not find implementation class: " + clazzname);
@@ -296,6 +357,15 @@ public class Backend {
         } catch (ClassCastException e) {
             throw new IllegalArgumentException("Could not instantiate implementation: " + clazzname, e);
         }
+    }
+    
+    public final static<T> T getImplementationClass(Configuration config, String key, String defaultValue, Map<String,String> registeredImpls) {
+        String clazzname = config.getString(key,defaultValue);
+        if (registeredImpls.containsKey(clazzname.toLowerCase())) {
+            clazzname = registeredImpls.get(clazzname.toLowerCase());
+        }
+
+        return instantiate(clazzname, config);
     }
 
     //1. Store
@@ -346,7 +416,7 @@ public class Backend {
             if (storeFeatures.supportsTransactions()) {
                 //No transaction wrapping needed
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
-                tx = new ConsistentKeyLockTransaction(tx, storeManager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
+                tx = new ExpectedValueCheckingTransaction(tx, storeManager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT), readAttempts);
             }
         }
 
@@ -405,8 +475,52 @@ public class Backend {
         put("elasticsearch","com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
         put("es","com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
     }};
+    
+    private final Function<String, Locker> CONSISTENT_KEY_LOCKER_CREATOR = new Function<String, Locker>() {
+        @Override
+        public Locker apply(String lockerName) {
+            KeyColumnValueStore lockerStore;
+            try {
+                lockerStore = getStore(lockerName);
+            } catch (StorageException e) {
+                throw new TitanConfigurationException("Could not retrieve store named " + lockerName + " for locker configuration", e);
+            }
+            return new ConsistentKeyLocker.Builder(lockerStore).fromCommonsConfig(storageConfig).build();
+        }
+    };
 
+    private final Function<String, Locker> ASTYANAX_RECIPE_LOCKER_CREATOR = new Function<String, Locker>() {
 
+        @Override
+        public Locker apply(String lockerName) {
+
+            String expectedManagerName = "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager";
+            String actualManagerName = storeManager.getClass().getCanonicalName();
+            // Require AstyanaxStoreManager
+            Preconditions.checkArgument(expectedManagerName.equals(actualManagerName),
+                    "Astyanax Recipe locker is only supported with the Astyanax storage backend (configured:"
+                            + actualManagerName + " != required:" + expectedManagerName + ")");
+
+            try {
+                Class<?> c = storeManager.getClass();
+                Method method = c.getMethod("openLocker", String.class);
+                Object o = method.invoke(storeManager, lockerName);
+                return (Locker)o;
+            } catch (NoSuchMethodException e) {
+                throw new IllegalArgumentException("Could not find method when configuring locking with Astyanax Recipes" );
+            } catch (IllegalAccessException e) {
+                throw new IllegalArgumentException("Could not access method when configuring locking with Astyanax Recipes", e);
+            } catch (InvocationTargetException e) {
+                throw new IllegalArgumentException("Could not invoke method when configuring locking with Astyanax Recipes", e);
+            }
+        }
+    };
+    
+    private final Map<String, Function<String, Locker>> REGISTERED_LOCKERS = ImmutableMap.of(
+        "consistentkey",  CONSISTENT_KEY_LOCKER_CREATOR,
+        "astyanaxrecipe", ASTYANAX_RECIPE_LOCKER_CREATOR
+    );
+    
     static {
         Properties props;
 
@@ -433,7 +547,7 @@ public class Backend {
             }
         }
     }
-
+    
 //
 //    public synchronized static final void registerStorageManager(String name, Class<? extends StoreManager> clazz) {
 //        Preconditions.checkNotNull(name);

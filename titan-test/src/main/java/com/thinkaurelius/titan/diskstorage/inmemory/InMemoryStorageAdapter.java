@@ -149,4 +149,9 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
     public void setConfigurationProperty(String key, String value) throws StorageException {
         config.put(key,value);
     }
+    
+    @Override
+    public String getName() {
+        return toString();
+    }
 }

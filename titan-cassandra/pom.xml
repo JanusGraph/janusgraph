@@ -90,6 +90,11 @@
             <artifactId>astyanax-cassandra</artifactId>
             <version>${astyanax.version}</version>
         </dependency>
+        <dependency>
+             <groupId>com.netflix.astyanax</groupId>
+             <artifactId>astyanax-recipes</artifactId>
+             <version>${astyanax.version}</version>
+        </dependency>
         <!-- The latest Snappy-java because 1.4.0.1 is broken on Mac OS X with JDK 7 -->
         <dependency>
             <groupId>org.xerial.snappy</groupId>

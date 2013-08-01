@@ -1,16 +1,24 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
+import java.util.concurrent.TimeUnit;
+
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility methods for measuring fine time intervals
  */
-public class TimeUtility {
+public enum TimeUtility implements TimestampProvider {
+    INSTANCE;
+    
+    private static final Logger log =
+            LoggerFactory.getLogger(TimeUtility.class);
 
     // Initialize the t0 variables
-    static {
+    {
 
 		/*
 		 * This is a crude attempt to establish a correspondence
@@ -37,12 +45,15 @@ public class TimeUtility {
     }
 
     // This is the value of System.nanoTime() at startup
-    private static final long t0NanoTime;
+    private final long t0NanoTime;
 
     /* This is the value of System.currentTimeMillis() at
      * startup times a million (i.e. CTM in ns)
      */
-    private static final long t0NanosSinceEpoch;
+    private final long t0NanosSinceEpoch;
+    
+    // TODO this does not belong here
+    private static final long MILLION = 1000L * 1000L;
 
     /**
      * This returns the approximate number of nanoseconds
@@ -58,13 +69,69 @@ public class TimeUtility {
      *               returned value be one?
      * @return a timestamp as described above
      */
-    public static long getApproxNSSinceEpoch(final boolean setLSB) {
+    @Override
+    public long getApproxNSSinceEpoch(final boolean setLSB) {
         final long nanosSinceEpoch = System.nanoTime() - t0NanoTime + t0NanosSinceEpoch;
         final long ts = ((nanosSinceEpoch) & 0xFFFFFFFFFFFFFFFEL) + (setLSB ? 1L : 0L);
         return ts;
     }
+    
+    /**
+     * Sleep until {@link #getApproxNSSinceEpoch(false)} returns a number
+     * greater than or equal to the argument. This method loops internally to
+     * handle spurious wakeup.
+     * 
+     * @param untilNS
+     *            the timestamp to meet or exceed before returning (unless
+     *            interrupted first)
+     */
+    @Override
+    public long sleepUntil(final long untilNS) throws InterruptedException {
+        long nowNS;
+        
+        for (nowNS = getApproxNSSinceEpoch(false);
+             nowNS < untilNS;
+             nowNS = getApproxNSSinceEpoch(false)) {
 
-    public static final void sleepUntil(long untilTimeMillis, Logger log) throws StorageException {
+            // Convert time delta from nano to millis, rounding up
+            final long deltaNS = untilNS - nowNS;
+            final long deltaMS;
+            if (0 != deltaNS % 1000000) {
+                deltaMS = deltaNS / MILLION + 1;
+            } else {
+                deltaMS = deltaNS / MILLION;
+            }
+            
+            if (0 >= deltaMS) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Skipped sleep: target wakeup time {} ms already past current time {} ms (delta {})",
+                        new Object[] {
+                            TimeUnit.MILLISECONDS.convert(untilNS, TimeUnit.NANOSECONDS),
+                            TimeUnit.MILLISECONDS.convert(nowNS, TimeUnit.NANOSECONDS),
+                            deltaMS
+                        }
+                    );
+                }
+                return nowNS;
+            }
+            
+            if (log.isDebugEnabled()) {
+                log.debug("Sleeping: target wakeup time {} ms, current time {} ms, duration {} ms",
+                    new Object[] {
+                        TimeUnit.MILLISECONDS.convert(untilNS, TimeUnit.NANOSECONDS),
+                        TimeUnit.MILLISECONDS.convert(nowNS, TimeUnit.NANOSECONDS),
+                        deltaMS
+                    }
+                );
+            }
+            
+            Thread.sleep(deltaMS);
+        }
+        
+        return nowNS;
+    }
+
+    public final void sleepUntil(long untilTimeMillis, Logger log) throws StorageException {
         long now;
 
         while (true) {

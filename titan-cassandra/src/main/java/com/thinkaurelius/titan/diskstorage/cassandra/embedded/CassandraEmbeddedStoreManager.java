@@ -193,8 +193,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
-        long deletionTimestamp = TimeUtility.getApproxNSSinceEpoch(false);
-        long additionTimestamp = TimeUtility.getApproxNSSinceEpoch(true);
+        long deletionTimestamp = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
+        long additionTimestamp = TimeUtility.INSTANCE.getApproxNSSinceEpoch(true);
 
         int size = 0;
         for (Map<StaticBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
