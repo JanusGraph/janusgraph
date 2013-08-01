@@ -54,7 +54,8 @@ public class Tokens {
     public static final String NEWLINE = "\n";
     public static final String EMPTY_STRING = "";
 
-    public static final String FAUNUS_JOB_JAR = "faunus-" + VERSION + "-job.jar";
+    // TODO: FIX BEFORE RELEASE
+    public static final String FAUNUS_JOB_JAR = "faunus-" + "0.3.2-SNAPSHOT" + "-job.jar";
     public static final String FAUNUS_HOME = "FAUNUS_HOME";
 
     public static final String PART = "part";
