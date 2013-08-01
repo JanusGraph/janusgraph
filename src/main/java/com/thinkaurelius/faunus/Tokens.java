@@ -1,9 +1,5 @@
 package com.thinkaurelius.faunus;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,16 +9,16 @@ import org.slf4j.LoggerFactory;
 public class Tokens {
 
     private static final Logger log = LoggerFactory.getLogger(Tokens.class);
-    
+
     public static final String VERSION_RESOURCE = "com/thinkaurelius/faunus/version.txt";
-    
-    public static final String VERSION;
+
+    public static final String VERSION = "0.3.2-SNAPSHOT";
 
     public enum Action {DROP, KEEP}
 
     private static final String NAMESPACE = "faunus.mapreduce";
     
-    static {
+    /*static {
         try {
             BufferedReader versionReader = new BufferedReader(new InputStreamReader(
                 Tokens.class.getClassLoader().getResourceAsStream(VERSION_RESOURCE)));
@@ -34,7 +30,7 @@ public class Tokens {
             log.error("The Faunus version file {} could not be found on the classpath", VERSION_RESOURCE, t);
             throw new RuntimeException(t);
         }
-    }
+    }*/
 
     public static String makeNamespace(final Class klass) {
         return NAMESPACE + "." + klass.getSimpleName().toLowerCase();
@@ -54,8 +50,7 @@ public class Tokens {
     public static final String NEWLINE = "\n";
     public static final String EMPTY_STRING = "";
 
-    // TODO: FIX BEFORE RELEASE
-    public static final String FAUNUS_JOB_JAR = "faunus-" + "0.3.2-SNAPSHOT" + "-job.jar";
+    public static final String FAUNUS_JOB_JAR = "faunus-" + VERSION + "-job.jar";
     public static final String FAUNUS_HOME = "FAUNUS_HOME";
 
     public static final String PART = "part";
