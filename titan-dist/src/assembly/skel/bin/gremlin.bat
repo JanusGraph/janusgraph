@@ -9,13 +9,14 @@
 
 
 set LIBDIR=..\lib
-
+set EXTDIR=..\ext
 
 set OLD_CLASSPATH=%CLASSPATH%
 set CP=
 
 
 for %%i in (%LIBDIR%\*.jar) do call :concatsep %%i
+for %%i in (%EXTDIR%\*.jar) do call :concatsep %%i
 
 :: cd ..\..\..\
 
