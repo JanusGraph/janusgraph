@@ -28,7 +28,6 @@ public class EdgeCopyMapReduce {
         EDGES_ADDED
     }
 
-
     public static Configuration createConfiguration(final Direction direction) {
         final Configuration configuration = new EmptyConfiguration();
         configuration.setEnum(FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, direction);

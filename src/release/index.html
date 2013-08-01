@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Faunus : Graph Analytics Engine" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Faunus: Graph Analytics Engine</title>
+  </head>
+
+  <body>
+  
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/thinkaurelius/faunus/wiki">View Documentation</a>
+
+          <h1 id="project_title">FAUNUS</h1>
+          <h2 id="project_tagline">Graph Analytics Engine</h2>
+          <section id="downloads">                                                                                                                  
+            <a class="zip_download_link" href="http://s3.thinkaurelius.com/downloads/faunus/faunus-${project.version}.zip">Download this project as a .zip file</a>              
+  </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+
+
+      <img id="faunuslogo" src="images/faunus-logo2.png" />
+ 
+<p>Faunus is a <a href="http://hadoop.apache.org/">Hadoop</a>-based graph analytics engine for analyzing graphs represented across a multi-machine compute cluster.
+A breadth-first version of the graph traversal language <a href="http://gremlin.tinkerpop.com">Gremlin</a> operates on graphs stored 
+in the distributed graph database <a href="http://thinkaurelius.github.com/titan/">Titan</a>, 
+in any <a href="http://rexster.tinkerpop.com">Rexster</a>-fronted graph database, or in <a href="http://hadoop.apache.org/hdfs">HDFS</a> via various text and binary formats. 
+
+<p>In addition, Faunus provides the following features:</p>
+
+<ul>
+<li>Scalable, distributed global graph processing.</li>
+
+<li>Support for various input and output formats:
+<ul>
+<li><a href="http://thinkaurelius.github.com/titan/">Aurelius Titan</a>
+<ul>
+<li><a href="http://cassandra.apache.org/">Apache Cassandra</a></li>
+<li><a href="http://hbase.apache.org/">Apache HBase</a></li>
+</ul></li>
+<li><a href="http://rexster.tinkerpop.com/">TinkerPop Rexster</a></li>
+<li><a href="https://github.com/thinkaurelius/faunus/wiki/GraphSON-Format">GraphSON Text Files</a></li>
+<li><a href="http://www.w3.org/RDF/">RDF Text Files</a></li>
+<li><a href="http://wiki.apache.org/hadoop/SequenceFile">Hadoop Binary Files</a></li>
+<li><a href="https://github.com/thinkaurelius/faunus/wiki/Script-Format">User Defined Import/Export Scripts</a></li>
+</ul>
+</li>
+
+
+<li>Native integration with the <a href="http://www.tinkerpop.com">TinkerPop</a> graph stack:
+<ul>
+<li><a href="http://gremlin.tinkerpop.com">Gremlin</a> graph query language</li>
+<li><a href="http://blueprints.tinkerpop.com">Blueprints</a> standard graph API</li>
+</ul>
+</li>
+
+<li>Open source with the liberal <a href="http://www.apache.org/licenses/LICENSE-2.0.html">Apache 2</a> license.</li>
+</ul>
+
+<p><a href="https://github.com/thinkaurelius/faunus/wiki/Downloads">Download</a> Faunus or <a href="https://github.com/thinkaurelius/faunus">clone</a> from GitHub.
+Read the <a href="https://github.com/thinkaurelius/faunus/wiki">Faunus documentation</a> and join the <a href="https://groups.google.com/forum/#!forum/aureliusgraphs">mailing list</a>.<br />
+
+<p>For <a href="http://thinkaurelius.com/subscription/">commercial Faunus support</a>, please <a href="mailto:info@thinkaurelius.com">contact</a> the graph experts at <a href="http://thinkaurelius.com">Aurelius</a>.</p>
+
+
+<h2> Quick Start </h2>
+
+<div class="highlight"><pre><span class="nt">&lt;dependency&gt;</span>
+   <span class="nt">&lt;groupId&gt;</span>com.thinkaurelius.faunus<span class="nt">&lt;/groupId&gt;</span>
+   <span class="nt">&lt;artifactId&gt;</span>faunus<span class="nt">&lt;/artifactId&gt;</span>
+   <span class="nt">&lt;version&gt;</span>${project.version}<span class="nt">&lt;/version&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</pre></div>
+
+<br>
+
+<div class="highlight"><pre><span class="c1">// which fathers have the most bellicose sons?</span>
+<span class="n">g</span><span class="o">.</span><span class="na">V</span><span class="o">.</span><span class="na">in</span><span class="o">(</span><span class="s1">'battled'</span><span class="o">).</span><span class="na">out</span><span class="o">(</span><span class="s1">'father'</span><span class="o">).</span><span class="na">groupCount</span>
+</pre></div>
+
+<p>Continue with the <a href="https://github.com/thinkaurelius/faunus/wiki/Getting-Started">Getting Started with Faunus</a> guide for a step-by-step introduction.</p>
+
+
+</section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Faunus is maintained by <a href="http://thinkaurelius.com">Aurelius</a></p>
+        <a href="https://twitter.com/aureliusgraphs" class="twitter-follow-button" data-show-count="false">Follow @aureliusgraphs</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+        &nbsp; <iframe src="http://ghbtns.com/github-btn.html?user=thinkaurelius&repo=faunus&type=watch&count=true&size=small"
+  allowtransparency="true" frameborder="0" scrolling="0" width="120" height="21"></iframe> 
+      </footer>
+    </div>
+
+  </body>
+</html>

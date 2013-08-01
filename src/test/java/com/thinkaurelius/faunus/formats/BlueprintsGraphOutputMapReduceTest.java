@@ -9,12 +9,15 @@ import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,8 +38,11 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
 
     public void testTinkerGraphIncrementalLoading() throws Exception {
         TinkerGraphOutputMapReduce.graph = new TinkerGraph();
-        mapReduceDriver.withConfiguration(new Configuration());
-        runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), mapReduceDriver);
+        Configuration conf = new Configuration();
+        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
+        mapReduceDriver.withConfiguration(conf);
+
+        runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), mapReduceDriver);
 
         Map<Long, FaunusVertex> incrementalGraph = new HashMap<Long, FaunusVertex>();
         // VERTICES
@@ -57,9 +63,9 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         incrementalGraph.put(11l, marko1);
         incrementalGraph.put(22l, stephen1);
         incrementalGraph.put(33l, vadas1);
-        Configuration conf = new Configuration();
-        conf.setBoolean(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_LOADING_FROM_SCRATCH, false);
-        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_UNIQUE_KEY, "name");
+        conf = new Configuration();
+        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
+
 
         setUp();
         mapReduceDriver.withConfiguration(conf);
@@ -330,11 +336,16 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
             @Override
             public void setup(final Mapper.Context context) throws IOException, InterruptedException {
                 this.graph = TinkerGraphOutputMapReduce.getGraph();
-                this.loadingFromScratch = context.getConfiguration().getBoolean(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_LOADING_FROM_SCRATCH, true);
-                if (!this.loadingFromScratch) {
-                    this.uniqueKey = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_UNIQUE_KEY, null);
-                    if (null == this.uniqueKey) {
-                        throw new InterruptedException("If no loading from scratch, then a unique key must be provided to lookup vertices");
+                final String file = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, null);
+                if (null == file)
+                    this.loadingFromScratch = true;
+                else {
+                    this.loadingFromScratch = false;
+                    final FileSystem fs = FileSystem.get(context.getConfiguration());
+                    try {
+                        engine.eval(new InputStreamReader(fs.open(new Path(file))));
+                    } catch (Exception e) {
+                        throw new IOException(e.getMessage());
                     }
                 }
             }

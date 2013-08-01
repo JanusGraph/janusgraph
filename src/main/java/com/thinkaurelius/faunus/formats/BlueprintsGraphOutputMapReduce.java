@@ -11,7 +11,10 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -20,9 +23,10 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import javax.script.Bindings;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashMap;
-import java.util.Iterator;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -52,11 +56,14 @@ public class BlueprintsGraphOutputMapReduce {
         FAILED_TRANSACTIONS
     }
 
-    public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_UNIQUE_KEY = "faunus.graph.output.blueprints.unique-key";
-    public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_LOADING_FROM_SCRATCH = "faunus.graph.output.blueprints.loading-from-scratch";
+    private static final String GET_OR_CREATE_VERTEX = "getOrCreateVertex(faunusVertex,graph,mapContext)";
+    private static final String FAUNUS_VERTEX = "faunusVertex";
+    private static final String GRAPH = "graph";
+    private static final String MAP_CONTEXT = "mapContext";
 
+    public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE = "faunus.graph.output.blueprints.script-file";
 
-    private static final Logger LOGGER = Logger.getLogger(BlueprintsGraphOutputMapReduce.class);
+    public static final Logger LOGGER = Logger.getLogger(BlueprintsGraphOutputMapReduce.class);
     // some random property that will 'never' be used by anyone
     public static final String BLUEPRINTS_ID = "_bId0192834";
 
@@ -81,9 +88,11 @@ public class BlueprintsGraphOutputMapReduce {
 
     // WRITE ALL THE VERTICES AND THEIR PROPERTIES
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
+
+        static GremlinGroovyScriptEngine engine = new GremlinGroovyScriptEngine();
+        static boolean firstRead = true;
         Graph graph;
         boolean loadingFromScratch;
-        String uniqueKey;
 
         private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
@@ -92,11 +101,19 @@ public class BlueprintsGraphOutputMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
-            this.loadingFromScratch = context.getConfiguration().getBoolean(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_LOADING_FROM_SCRATCH, true);
-            if (!this.loadingFromScratch) {
-                this.uniqueKey = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_UNIQUE_KEY,null);
-                if (null == this.uniqueKey) {
-                    throw new InterruptedException("If no loading from scratch, then a unique key must be provided to lookup vertices");
+            final String file = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, null);
+            if (null == file)
+                this.loadingFromScratch = true;
+            else {
+                this.loadingFromScratch = false;
+                if (firstRead) {
+                    final FileSystem fs = FileSystem.get(context.getConfiguration());
+                    try {
+                        engine.eval(new InputStreamReader(fs.open(new Path(file))));
+                    } catch (Exception e) {
+                        throw new IOException(e.getMessage());
+                    }
+                    firstRead = false;
                 }
             }
             LOGGER.setLevel(Level.INFO);
@@ -143,37 +160,31 @@ public class BlueprintsGraphOutputMapReduce {
                     LOGGER.error("Could not commit transaction during Map.cleanup():", e);
                     ((TransactionalGraph) this.graph).rollback();
                     context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                    throw new IOException(e.getMessage(), e);
                 }
             }
             this.graph.shutdown();
         }
 
-        private Vertex getOrCreateVertex(final FaunusVertex faunusVertex, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws InterruptedException {
+        public Vertex getOrCreateVertex(final FaunusVertex faunusVertex, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws InterruptedException {
             final Vertex blueprintsVertex;
             if (this.loadingFromScratch) {
                 blueprintsVertex = this.graph.addVertex(faunusVertex.getIdAsLong());
                 context.getCounter(Counters.VERTICES_WRITTEN).increment(1l);
-            } else {
-                final Object uniqueValue = faunusVertex.getProperty(this.uniqueKey);
-                if (null == uniqueValue) {
-                    throw new InterruptedException("The provided Faunus vertex does not have a property for the unique " + this.uniqueKey + " key: " + faunusVertex);
-                } else {
-                    final Iterator<Vertex> itty = this.graph.query().has(this.uniqueKey, uniqueValue).vertices().iterator();
-                    if (itty.hasNext()) {
-                        blueprintsVertex = itty.next();
-                        context.getCounter(Counters.VERTICES_RETRIEVED).increment(1l);
-                        if (itty.hasNext()) {
-                            LOGGER.error("The unique " + this.uniqueKey + " key is not unique as more than one vertex with the value: " + uniqueValue);
-                        }
-                    } else {
-                        blueprintsVertex = this.graph.addVertex(faunusVertex.getIdAsLong());
-                        context.getCounter(Counters.VERTICES_WRITTEN).increment(1l);
-                    }
+                for (final String property : faunusVertex.getPropertyKeys()) {
+                    blueprintsVertex.setProperty(property, faunusVertex.getProperty(property));
+                    context.getCounter(Counters.VERTEX_PROPERTIES_WRITTEN).increment(1l);
                 }
-            }
-            for (final String property : faunusVertex.getPropertyKeys()) {
-                blueprintsVertex.setProperty(property, faunusVertex.getProperty(property));
-                context.getCounter(Counters.VERTEX_PROPERTIES_WRITTEN).increment(1l);
+            } else {
+                try {
+                    final Bindings bindings = engine.createBindings();
+                    bindings.put(FAUNUS_VERTEX, faunusVertex);
+                    bindings.put(GRAPH, this.graph);
+                    bindings.put(MAP_CONTEXT, context);
+                    blueprintsVertex = (Vertex) engine.eval(GET_OR_CREATE_VERTEX, bindings);
+                } catch (Exception e) {
+                    throw new InterruptedException(e.getMessage());
+                }
             }
             return blueprintsVertex;
         }
@@ -261,9 +272,11 @@ public class BlueprintsGraphOutputMapReduce {
                     LOGGER.error("Could not commit transaction during Reduce.cleanup():", e);
                     ((TransactionalGraph) this.graph).rollback();
                     context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                    throw new IOException(e.getMessage(), e);
                 }
             }
             this.graph.shutdown();
         }
     }
+
 }
