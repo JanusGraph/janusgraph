@@ -30,9 +30,23 @@ exporter='gollum-site'
 
 cd "${project.basedir}/doc"
 
-# Check for gollum-site command
+# Check for gollum-site command.
 type "$exporter" >/dev/null
-[ 0 -eq $? ] || { echo "$0: $exporter not found, can't convert wiki to html."; exit -1; }
+if [ 0 -ne $? ]; then
+        echo "$0: $exporter not found, can't convert wiki to html."
+        exit -1
+fi
+
+# Verify that doc is on the master branch and abort otherwise.  Gollum
+# dies with a cryptic stacktrace when I run it on a detached HEAD.
+# GitHub can only render the master branch anyway, so a wiki repo off
+# master is normally a sign that something is broken.
+declare -r DOC_HEAD="`git symbolic-ref HEAD 2>/dev/null`"
+declare -r EXPECTED_HEAD='refs/heads/master'
+if [ "$DOC_HEAD" != "$EXPECTED_HEAD" ]; then
+        echo "$0: HEAD \"$DOC_HEAD\" isn't expected HEAD \"$EXPECTED_HEAD.\""
+        exit -2
+fi
 
 while [ 1 ] ; do
         echo "$0: $exporter execution attempt #$att"
