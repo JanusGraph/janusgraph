@@ -153,8 +153,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
-        long deletionTimestamp = TimeUtility.getApproxNSSinceEpoch(false);
-        long additionTimestamp = TimeUtility.getApproxNSSinceEpoch(true);
+        long deletionTimestamp = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
+        long additionTimestamp = TimeUtility.INSTANCE.getApproxNSSinceEpoch(true);
 
         ConsistencyLevel consistency = getTx(txh).getWriteConsistencyLevel().getThriftConsistency();
 
@@ -336,14 +336,15 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         .setStrategy_class("org.apache.cassandra.locator.SimpleStrategy")
                         .setStrategy_options(ImmutableMap.of("replication_factor", String.valueOf(replicationFactor)));
 
-                String schemaVer = client.system_add_keyspace(ksdef);
-
-                // Try to block until Cassandra converges on the new keyspace
+                client.set_keyspace(SYSTEM_KS);
                 try {
-                    CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
-                } catch (InterruptedException ie) {
-                    throw new TemporaryStorageException(ie);
+                    client.system_add_keyspace(ksdef);
+                    log.debug("Created keyspace {}", keyspaceName);
+                } catch (InvalidRequestException ire) {
+                    log.error("system_add_keyspace failed for keyspace=" + keyspaceName, ire);
+                    throw ire;
                 }
+                
             }
 
             return client.describe_keyspace(keyspaceName);
@@ -413,9 +414,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
 
         log.debug("Adding column family {} to keyspace {}...", cfName, ksName);
-        String schemaVer;
         try {
-            schemaVer = client.system_add_column_family(createColumnFamily);
+            client.system_add_column_family(createColumnFamily);
         } catch (SchemaDisagreementException e) {
             throw new TemporaryStorageException("Error in setting up column family", e);
         } catch (Exception e) {
@@ -423,14 +423,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
 
         log.debug("Added column family {} to keyspace {}.", cfName, ksName);
-
-        // Try to let Cassandra converge on the new column family
-        try {
-            CTConnectionFactory.validateSchemaIsSettled(client, schemaVer);
-        } catch (InterruptedException e) {
-            throw new TemporaryStorageException(e);
-        }
-
     }
 
     @Override

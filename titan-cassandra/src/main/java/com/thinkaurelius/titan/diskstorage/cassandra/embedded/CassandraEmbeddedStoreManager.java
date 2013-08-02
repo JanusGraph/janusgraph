@@ -193,8 +193,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
-        long deletionTimestamp = TimeUtility.getApproxNSSinceEpoch(false);
-        long additionTimestamp = TimeUtility.getApproxNSSinceEpoch(true);
+        long deletionTimestamp = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
+        long additionTimestamp = TimeUtility.INSTANCE.getApproxNSSinceEpoch(true);
 
         int size = 0;
         for (Map<StaticBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
@@ -298,6 +298,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
         try {
             MigrationManager.announceNewKeyspace(ksm);
+            log.debug("Created keyspace {}", keyspaceName);
         } catch (ConfigurationException e) {
             throw new PermanentStorageException("Failed to create keyspace " + keyspaceName, e);
         }
@@ -325,7 +326,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         try {
             CompressionParameters cp = new CompressionParameters(new SnappyCompressor(), 64 * 1024, ImmutableMap.<String, String>of());
             cfm.compressionParameters(cp);
-            log.warn("Set CompressionParameters {}", cp);
+            log.debug("Set CompressionParameters {}", cp);
         } catch (ConfigurationException e) {
             throw new PermanentStorageException("Failed to create compression parameters for " + keyspaceName + ":" + columnfamilyName, e);
         }

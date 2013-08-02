@@ -13,7 +13,7 @@ public class InternalAstyanaxGraphConcurrentTest extends TitanGraphConcurrentTes
     }
 
     public InternalAstyanaxGraphConcurrentTest() {
-        super(CassandraStorageSetup.getAstyanaxGraphConfiguration());
+        super(CassandraStorageSetup.getAstyanaxGraphConfiguration(InternalAstyanaxGraphConcurrentTest.class.getSimpleName()));
     }
 
 }

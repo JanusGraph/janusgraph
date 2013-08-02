@@ -22,16 +22,20 @@
  */
 -->
 <configuration>
-  <property>
-  <name>hbase.rootdir</name>
-  <value>file:///tmp/hbase</value>
-  </property>
-  <property>
-  <name>hbase.zookeeper.property.dataDir</name>
-  <value>/tmp/zookeeper</value>
-</property>
-<!--<property>
-  <name>hbase.master</name>
-  <value>local</value>
-</property>-->
+    <property>
+        <name>hbase.rootdir</name>
+        <value>file:///tmp/hbase</value>
+    </property>
+    <property>
+        <name>hbase.zookeeper.property.dataDir</name>
+        <value>/tmp/zookeeper</value>
+    </property>
+    <property>
+        <name>zookeeper.session.timeout</name>
+        <value>1200000</value>
+    </property>
+    <property>
+        <name>hbase.zookeeper.property.tickTime</name>
+        <value>6000</value>
+    </property>
 </configuration>

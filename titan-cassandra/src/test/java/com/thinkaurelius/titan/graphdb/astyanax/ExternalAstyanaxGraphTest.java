@@ -9,7 +9,7 @@ import org.junit.BeforeClass;
 public class ExternalAstyanaxGraphTest extends TitanGraphTest {
 
     public ExternalAstyanaxGraphTest() {
-        super(CassandraStorageSetup.getAstyanaxGraphConfiguration());
+        super(CassandraStorageSetup.getAstyanaxGraphConfiguration(ExternalAstyanaxGraphTest.class.getSimpleName()));
     }
 
     public static CassandraProcessStarter ch = new CassandraProcessStarter();

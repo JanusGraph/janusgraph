@@ -184,4 +184,9 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
     public void setConfigurationProperty(final String key, final String value) throws StorageException {
         storageConfig.setConfigurationProperty(key,value);
     }
+    
+    @Override
+    public String getName() {
+        return getClass().getSimpleName() + ":" + directory.toString();
+    }
 }

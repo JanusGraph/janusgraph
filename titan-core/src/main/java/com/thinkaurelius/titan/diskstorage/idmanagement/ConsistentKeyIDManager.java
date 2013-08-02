@@ -63,7 +63,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 log.warn("Temporary storage exception while reading id block - retrying in {} ms: {}", idApplicationWaitMS, e);
                 if (txh != null) txh.rollback();
                 if (idApplicationWaitMS > 0)
-                    TimeUtility.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
+                    TimeUtility.INSTANCE.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
             }
         }
         throw new TemporaryLockingException("Exceeded timeout count [" + idApplicationRetryCount + "] when attempting to read last id block");
@@ -132,7 +132,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                          * the same id block from another machine
                          */
 
-                        TimeUtility.sleepUntil(after + idApplicationWaitMS, log);
+                        TimeUtility.INSTANCE.sleepUntil(after + idApplicationWaitMS, log);
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
                         List<Entry> blocks = idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh);
@@ -172,7 +172,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                             } catch (StorageException e) {
                                 log.warn("Storage exception while deleting old block application - retrying in {} ms", rollbackWaitTime, e);
                                 if (rollbackWaitTime > 0)
-                                    TimeUtility.sleepUntil(System.currentTimeMillis() + rollbackWaitTime, log);
+                                    TimeUtility.INSTANCE.sleepUntil(System.currentTimeMillis() + rollbackWaitTime, log);
                             }
                         }
                     }
@@ -182,7 +182,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 if (txh != null) txh.rollback();
                 txh = null;
                 if (idApplicationWaitMS > 0)
-                    TimeUtility.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
+                    TimeUtility.INSTANCE.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
             } finally {
                 if (txh != null) txh.commit();
             }

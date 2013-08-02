@@ -60,7 +60,9 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
 
     @Override
     public void clearStorage() throws StorageException {
-        close();
+        for (InMemoryKeyColumnValueStore store : stores.values()) {
+            store.clear();
+        }
     }
 
     @Override
@@ -99,6 +101,10 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
         }
     }
 
+    @Override
+    public String getName() {
+        return toString();
+    }
 
     private class TransactionHandle extends AbstractStoreTransaction {
 

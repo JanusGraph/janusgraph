@@ -169,4 +169,9 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
         public void close() throws StorageException {
         }
     }
+    
+    @Override
+    public String getName() {
+        return toString();
+    }
 }

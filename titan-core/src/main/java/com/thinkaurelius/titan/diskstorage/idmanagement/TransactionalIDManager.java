@@ -58,7 +58,7 @@ public class TransactionalIDManager extends AbstractIDManager {
                 log.warn("Storage exception while allocating id block - retrying in {} ms: {}", idApplicationWaitMS, e);
                 if (txh != null) txh.rollback();
                 if (idApplicationWaitMS > 0)
-                    TimeUtility.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
+                    TimeUtility.INSTANCE.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
             }
         }
         throw new TemporaryLockingException("Exceeded timeout count [" + idApplicationRetryCount + "] when attempting to allocate next id block");
@@ -96,7 +96,7 @@ public class TransactionalIDManager extends AbstractIDManager {
                 log.warn("Storage exception while reading id block - retrying in {} ms: {}", idApplicationWaitMS, e);
                 if (txh != null) txh.rollback();
                 if (idApplicationWaitMS > 0)
-                    TimeUtility.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
+                    TimeUtility.INSTANCE.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
             }
         }
         throw new TemporaryLockingException("Exceeded timeout count [" + idApplicationRetryCount + "] when attempting to read id block");

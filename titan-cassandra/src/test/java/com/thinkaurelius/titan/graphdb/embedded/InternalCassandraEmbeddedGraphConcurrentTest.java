@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.graphdb.TitanGraphConcurrentTest;
 public class InternalCassandraEmbeddedGraphConcurrentTest extends TitanGraphConcurrentTest {
 
     public InternalCassandraEmbeddedGraphConcurrentTest() {
-        super(CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration());
+        super(CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration(InternalCassandraEmbeddedGraphConcurrentTest.class.getSimpleName()));
     }
 
 }
