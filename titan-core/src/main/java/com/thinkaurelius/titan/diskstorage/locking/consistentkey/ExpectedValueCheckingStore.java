@@ -2,16 +2,13 @@ package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import java.util.List;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
@@ -83,6 +80,11 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
         return dataStore.getSlice(query, getBaseTx(txh));
     }
 
+    @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        return dataStore.getSlice(keys, query, txh);
+    }
+
     /**
      * {@inheritDoc}
      * 
@@ -135,6 +137,16 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     @Override
     public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
         return dataStore.getKeys(getBaseTx(txh));
+    }
+
+    @Override
+    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
+        return dataStore.getKeys(query, txh);
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
+        return getKeys(query, txh);
     }
 
     @Override
