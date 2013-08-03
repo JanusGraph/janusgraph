@@ -91,18 +91,6 @@ public interface TypeMaker {
      */
     public TypeMaker unidirected();
 
-
-    /**
-     * Assigns the type to the specified {@link TypeGroup}.
-     * <p/>
-     * By default, the type is not assigned to {@link TypeGroup#DEFAULT_GROUP}.
-     *
-     * @param group group to assign type to.
-     * @return this type maker
-     * @see TypeGroup
-     */
-    public TypeMaker group(TypeGroup group);
-
     /**
      * Configures the composite primary key for this type.
      * <p/>

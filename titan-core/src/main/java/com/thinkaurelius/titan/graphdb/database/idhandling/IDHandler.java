@@ -5,8 +5,13 @@ import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+
+import java.nio.ByteBuffer;
+
+import static com.thinkaurelius.titan.graphdb.idmanagement.IDManager.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -15,7 +20,7 @@ import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 public class IDHandler {
 
     public final static StaticBuffer getKey(long id) {
-        assert id >= 0;
+        Preconditions.checkArgument(id >= 0);
         return ByteBufferUtil.getLongBuffer(id << 1);
     }
 
@@ -24,96 +29,78 @@ public class IDHandler {
         return value >>> 1;
     }
 
-    public final static void writeInlineEdgeType(WriteBuffer out, long etid, IDManager idManager) {
-        VariableLong.writePositive(out, idManager.removeGroupID(etid));
-        VariableLong.writePositive(out, idManager.getGroupID(etid));
+
+
+    public static final boolean isValidDirection(final int dirId) {
+        return dirId==PROPERTY_DIR || dirId==EDGE_IN_DIR || dirId==EDGE_OUT_DIR;
     }
 
-    public final static long readInlineEdgeType(ReadBuffer in, IDManager idManager) {
-        long etidNoGroup = VariableLong.readPositive(in);
-        return idManager.addGroupID(etidNoGroup, VariableLong.readPositive(in));
+    public final static int edgeTypeLength(long etid) {
+        return VariableLong.positiveWithPrefixLength(IDManager.getTypeCount(etid), DIR_BIT_LEN);
     }
 
-
-    public final static int edgeTypeLength(long etid, IDManager idManager) {
-        long groupbits = idManager.getGroupBits();
-        int result;
-        if (groupbits <= 6) {
-            result = 1;
-        } else if (groupbits <= 14) {
-            result = 2;
-        } else {
-            result = 4;
-        }
-        return result + VariableLong.positiveLength(idManager.removeGroupID(etid));
+    public final static void writeEdgeType(WriteBuffer out, long etid, int dirID) {
+        Preconditions.checkArgument(isValidDirection(dirID));
+        VariableLong.writePositiveWithPrefix(out,IDManager.getTypeCount(etid),dirID, DIR_BIT_LEN);
     }
 
-    private final static void writeEdgeTypeGroup(WriteBuffer out, long group, int dirID, IDManager idManager) {
-        assert dirID >= 0 && dirID < 4;
-        long groupbits = idManager.getGroupBits();
-        if (groupbits <= 6) {
-            assert group < (1 << 6);
-            byte b = (byte) (group | (dirID << 6));
-            out.putByte(b);
-        } else if (groupbits <= 14) {
-            assert group < (1 << 14);
-            short s = (short) (group | (dirID << 14));
-            out.putShort(s);
-        } else {
-            Preconditions.checkArgument(groupbits <= 30);
-            assert group < (1 << 30);
-            int i = (int) (group | (dirID << 30));
-            out.putInt(i);
-        }
-    }
-
-    public final static void writeEdgeType(WriteBuffer out, long etid, int dirID, IDManager idManager) {
-        long group = idManager.getGroupID(etid);
-        writeEdgeTypeGroup(out, group, dirID, idManager);
-        long etidNoGroup = idManager.removeGroupID(etid);
-        assert etidNoGroup >= 0;
-        VariableLong.writePositive(out, etidNoGroup);
-    }
-
-    private static final byte BYTE_GROUPMASK = (1 << 6) - 1;
-    private static final short SHORT_GROUPMASK = (1 << 14) - 1;
-    private static final int INT_GROUPMASK = (1 << 30) - 1;
-
-    public final static int getDirectionID(byte b) {
-        int dirid = b;
-        if (dirid < 0) dirid += 256;
-        return dirid >> 6;
-    }
-
-    public final static long readEdgeType(ReadBuffer in, IDManager idManager) {
-        long groupbits = idManager.getGroupBits();
-        int group;
-        if (groupbits <= 6) {
-            group = in.getByte() & BYTE_GROUPMASK;
-        } else if (groupbits <= 14) {
-            group = in.getShort() & SHORT_GROUPMASK;
-        } else {
-            group = in.getInt() & INT_GROUPMASK;
-        }
-        assert group < idManager.getMaxGroupID();
-        long etidNoGroup = VariableLong.readPositive(in);
-        return idManager.addGroupID(etidNoGroup, group);
-    }
-
-    public final static StaticBuffer getEdgeTypeGroup(long groupid, int dirID, IDManager idManager) {
-        int len = 4;
-        long groupbits = idManager.getGroupBits();
-        if (groupbits <= 6) len = 1;
-        else if (groupbits <= 14) len = 2;
-        WriteBuffer result = new WriteByteBuffer(len);
-        writeEdgeTypeGroup(result, groupid, dirID, idManager);
-        return result.getStaticBuffer();
-    }
-
-    public final static StaticBuffer getEdgeType(long etid, int dirID, IDManager idManager) {
-        WriteBuffer b = new WriteByteBuffer(edgeTypeLength(etid, idManager));
-        IDHandler.writeEdgeType(b, etid, dirID, idManager);
+    public final static StaticBuffer getEdgeType(long etid, int dirID) {
+        WriteBuffer b = new WriteByteBuffer(edgeTypeLength(etid));
+        IDHandler.writeEdgeType(b, etid, dirID);
         return b.getStaticBuffer();
     }
+
+    public final static long[] readEdgeType(ReadBuffer in) {
+        long[] countPrefix = VariableLong.readPositiveWithPrefix(in, DIR_BIT_LEN);
+        if (countPrefix[1]==PROPERTY_DIR)
+            countPrefix[0] = IDManager.getPropertyKeyID(countPrefix[0]);
+        else if (countPrefix[1]==EDGE_IN_DIR || countPrefix[1]==EDGE_OUT_DIR)
+            countPrefix[0] = IDManager.getEdgeLabelID(countPrefix[0]);
+        else throw new AssertionError("Invalid direction ID: " + countPrefix[1]);
+        return countPrefix;
+    }
+
+
+    public final static void writeInlineEdgeType(WriteBuffer out, long etid) {
+        long compressId = IDManager.getTypeCount(etid)<<1;
+        if (IDManager.isPropertyKeyID(etid))
+            compressId += 0;
+        else if (IDManager.isEdgeLabelID(etid))
+            compressId += 1;
+        else throw new AssertionError("Invalid type id: " + etid);
+        VariableLong.writePositive(out,compressId);
+    }
+
+    public final static long readInlineEdgeType(ReadBuffer in) {
+        long compressId = VariableLong.readPositive(in);
+        long id = compressId>>>1;
+        switch((int)(compressId & 1)) {
+            case 0:
+                id = IDManager.getPropertyKeyID(id);
+                break;
+            case 1:
+                id = IDManager.getEdgeLabelID(id);
+                break;
+            default: throw new AssertionError("Invalid type: " + compressId);
+        }
+        return id;
+    }
+
+
+    public static final StaticBuffer directionPlusZero(int dirId) {
+        Preconditions.checkArgument(isValidDirection(dirId));
+        byte[] arr = new byte[9];
+        arr[0] = (byte)(dirId<<(Byte.SIZE- DIR_BIT_LEN));
+        return new StaticArrayBuffer(arr);
+    }
+
+    public static final StaticBuffer directionPlusOne(int dirId) {
+        Preconditions.checkArgument(isValidDirection(dirId));
+        byte[] arr = new byte[9];
+        for (int i=0;i<arr.length;i++) arr[i]=(byte)-1;
+        arr[0] = (byte)((dirId<<(Byte.SIZE- DIR_BIT_LEN)) + (1<<(Byte.SIZE- DIR_BIT_LEN)) - 1);
+        return new StaticArrayBuffer(arr);
+    }
+
 
 }

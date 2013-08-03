@@ -1,14 +1,12 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.carrotsearch.hppc.LongIntMap;
-import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.tinkerpop.blueprints.Direction;
 
 public class AbstractTypeDefinition implements TypeDefinition {
 
     private String name;
-    private TypeGroup group;
     private boolean[] isUnique;
     private boolean[] hasUniqueLock;
     private boolean[] isStatic;
@@ -23,12 +21,11 @@ public class AbstractTypeDefinition implements TypeDefinition {
     AbstractTypeDefinition() {
     }
 
-    AbstractTypeDefinition(String name, TypeGroup group,
+    AbstractTypeDefinition(String name,
                                      boolean[] unique, boolean[] hasUniqueLock, boolean[] isStatic,
                                      boolean hidden, boolean modifiable,
                                      long[] primaryKey, long[] signature) {
         this.name = name;
-        this.group = group;
         isUnique = unique;
         this.hasUniqueLock = hasUniqueLock;
         this.isStatic = isStatic;
@@ -89,12 +86,6 @@ public class AbstractTypeDefinition implements TypeDefinition {
     public String getName() {
         return name;
     }
-
-    @Override
-    public TypeGroup getGroup() {
-        return group;
-    }
-
 
     @Override
     public boolean isModifiable() {

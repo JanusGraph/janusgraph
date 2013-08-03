@@ -239,11 +239,11 @@ public class SerializerTest {
 
     @Test
     public void serializeRelationshipType() {
-        StandardLabelDefinition relType = new StandardLabelDefinition("testName", SystemTypeManager.SYSTEM_TYPE_GROUP,
+        StandardLabelDefinition relType = new StandardLabelDefinition("testName",
         new boolean[2], new boolean[2], new boolean[2], false, true, new long[0], new long[0], false);
 
 
-        StandardKeyDefinition propType = new StandardKeyDefinition("testName", SystemTypeManager.SYSTEM_TYPE_GROUP,
+        StandardKeyDefinition propType = new StandardKeyDefinition("testName",
         new boolean[]{false,true}, new boolean[]{false,true}, new boolean[2], false ,true , new long[0], new long[0],
                 new IndexType[]{IndexType.of(Vertex.class)}, String.class);
         DataOutput out = serialize.getDataOutput(128, true);

@@ -12,26 +12,30 @@ import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 
 public class VariableLong {
 
-    private static final byte mask = 127;
-    private static final byte stopMask = -128;
+    public static final int unsignedByte(byte b) {
+        if (b<0) return b + 256;
+        else return b;
+    }
+
+    private static final byte stopMask = 1;
 
     private static long readUnsigned(ReadBuffer in) {
         long value = 0;
-        byte b;
+        int b;
         do {
-            b = in.getByte();
+            b = unsignedByte(in.getByte());
             value = value << 7;
-            value = value | (b & mask);
-        } while (b >= 0);
+            value = value | (b >>> 1);
+        } while ((b & stopMask) == 0);
         return value;
     }
 
 
     private static void writeUnsigned(WriteBuffer out, final long value) {
-        int offset = unsignedBitLength(value);
+        int offset = unsignedBlockBitLength(value);
         while (offset > 0) {
             offset -= 7;
-            byte b = (byte) ((value >>> offset) & mask);
+            byte b = (byte) ((value >>> offset) << 1);
             if (offset == 0) {
                 b = (byte) (b | stopMask);
             }
@@ -39,18 +43,22 @@ public class VariableLong {
         }
     }
 
-    private static int unsignedBitLength(final long value) {
-        int length = 7;
-        while ((value >>> length) > 0) {
-            length += 7;
-        }
-        return length;
+    private static int unsignedBlockBitLength(final long value) {
+        return unsignedLength(value)*7;
     }
 
-
     private static int unsignedLength(final long value) {
-        assert unsignedBitLength(value) % 7 == 0 && unsignedBitLength(value) > 0;
-        return unsignedBitLength(value) / 7;
+        return numVariableBlocks(unsignedBitLength(value));
+    }
+
+    private static final int numVariableBlocks(final int numBits) {
+        Preconditions.checkArgument(numBits>0);
+        return (numBits-1)/7 + 1;
+    }
+
+    private static final int unsignedBitLength(final long value) {
+        if (value==0) return 1;
+        else return Long.SIZE-Long.numberOfLeadingZeros(value);
     }
 
 
@@ -102,6 +110,64 @@ public class VariableLong {
         long value = readUnsigned(in);
         if ((value & 1) == 1) return -(value >>> 1);
         else return value >>> 1;
+    }
+
+    public static void writePositiveWithPrefix(final WriteBuffer out, final long value, long prefix, final int prefixBitLen) {
+        Preconditions.checkArgument(value>=0);
+        Preconditions.checkArgument(prefixBitLen>0 && prefixBitLen<7 && prefix>0 && (prefix<(1l<<prefixBitLen)),"Invalid prefix [%s] for length [%s]",prefix,prefixBitLen);
+        int valueBitLen = unsignedBitLength(value);
+        int blocks = numVariableBlocks(valueBitLen+prefixBitLen);
+        int offset = blocks*7-prefixBitLen;
+        Preconditions.checkArgument(value<(1l<<offset));
+        long newValue = (prefix<<offset) | value;
+        writePositive(out,newValue);
+    }
+
+    public static int positiveWithPrefixLength(final long value, final int prefixBitLen) {
+        Preconditions.checkArgument(value>=0);
+        Preconditions.checkArgument(prefixBitLen>0 && prefixBitLen<7);
+        return numVariableBlocks(unsignedBitLength(value)+prefixBitLen);
+    }
+
+    public static long[] readPositiveWithPrefix(final ReadBuffer in, final int prefixBitLen) {
+        Preconditions.checkArgument(prefixBitLen>0 && prefixBitLen<7,"Invalid prefix bit length: %s",prefixBitLen);
+        int posBefore = in.getPosition();
+        long newValue = readPositive(in);
+        int blocks = in.getPosition()-posBefore;
+        Preconditions.checkArgument(blocks>0);
+        int offset = blocks*7-prefixBitLen;
+        return new long[]{newValue & ((1l<<offset)-1), (newValue>>>offset)};
+    }
+
+    //Experimental
+
+    private static final byte SEVEN_BIT_MASK = Byte.MAX_VALUE;
+
+    private static void writeUnsignedBackward(WriteBuffer out, long value) {
+        boolean first = true;
+        do {
+            byte b = (byte) ((value & SEVEN_BIT_MASK) << 1);
+            value = value >>> 7;
+            if (first) {
+                b = (byte) (b | stopMask);
+                first = false;
+            }
+            out.putByte(b);
+        } while (value>0);
+    }
+
+    private static long readUnsignedBackward(ReadBuffer in) {
+        int position = in.getPosition();
+        long value = 0;
+        int b;
+        do {
+            b = unsignedByte(in.getByte(position));
+            value = value << 7;
+            value = value | (b >>> 1);
+            position--;
+        } while ((b & stopMask) == 0);
+        in.movePosition(position-in.getPosition());
+        return value;
     }
 
 }

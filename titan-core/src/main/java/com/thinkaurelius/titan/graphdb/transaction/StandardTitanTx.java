@@ -490,9 +490,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     }
 
     public TitanType getExistingType(long typeid) {
-        if (idInspector.getGroupID(typeid) == SystemTypeManager.SYSTEM_TYPE_GROUP.getID()) {
-            //its a systemtype
-            return SystemTypeManager.getSystemEdgeType(typeid);
+        Preconditions.checkArgument(idInspector.isTypeID(typeid),"Provided id [%s] is not a type id",typeid);
+        if (SystemTypeManager.isSystemRelationType(typeid)) {
+            return SystemTypeManager.getSystemRelationType(typeid);
         } else {
             InternalVertex v = getExistingVertex(typeid);
             Preconditions.checkArgument(v instanceof TitanType,"Given id is not a type: " + typeid);

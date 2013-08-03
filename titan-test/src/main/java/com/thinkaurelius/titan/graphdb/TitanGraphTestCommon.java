@@ -66,12 +66,8 @@ public abstract class TitanGraphTestCommon {
     }
 
     public TitanLabel makeSimpleEdgeLabel(String name) {
-        return makeSimpleEdgeLabel(name, TypeGroup.DEFAULT_GROUP);
-    }
-
-    public TitanLabel makeSimpleEdgeLabel(String name, TypeGroup group) {
         TypeMaker etmaker = tx.makeType();
-        etmaker.name(name).group(group);
+        etmaker.name(name);
         return etmaker.makeEdgeLabel();
     }
 
@@ -87,11 +83,11 @@ public abstract class TitanGraphTestCommon {
                unique(Direction.IN).indexed(Vertex.class).dataType(String.class).makePropertyKey();
     }
 
-    public TitanKey makeStringUIDPropertyKey(String name, TypeGroup group) {
+    public TitanKey makeStringUIDPropertyKey(String name) {
         return tx.makeType().name(name).
                 unique(Direction.OUT).
                 unique(Direction.IN).indexed(Vertex.class).
-                dataType(String.class).group(group).
+                dataType(String.class).
                 makePropertyKey();
     }
 
@@ -109,14 +105,10 @@ public abstract class TitanGraphTestCommon {
     }
 
     public TitanKey makeIntegerUIDPropertyKey(String name) {
-        return makeIntegerUIDPropertyKey(name, TypeGroup.DEFAULT_GROUP);
-    }
-
-    public TitanKey makeIntegerUIDPropertyKey(String name, TypeGroup group) {
         return tx.makeType().name(name).
                 unique(Direction.OUT).
                 unique(Direction.IN).indexed(Vertex.class).
-                dataType(Integer.class).group(group).
+                dataType(Integer.class).
                 makePropertyKey();
     }
 

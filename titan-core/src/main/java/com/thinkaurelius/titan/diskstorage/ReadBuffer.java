@@ -10,6 +10,8 @@ import java.nio.ByteBuffer;
  */
 public interface ReadBuffer extends ScanBuffer, StaticBuffer {
 
+    public int getPosition();
+
     public void movePosition(int delta);
 
     public ByteBuffer asRelativeByteBuffer();

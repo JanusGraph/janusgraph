@@ -28,7 +28,6 @@ public class StandardTypeMaker implements TypeMaker {
     private final StandardTitanTx tx;
 
     private String name;
-    private TypeGroup group;
     private boolean[] isUnique;
     private boolean[] hasUniqueLock;
     private boolean[] isStatic;
@@ -48,7 +47,6 @@ public class StandardTypeMaker implements TypeMaker {
 
         //Default assignments
         name = null;
-        group = TypeGroup.DEFAULT_GROUP;
         isUnique = new boolean[2]; //false
         hasUniqueLock = new boolean[2]; //false
         isStatic = new boolean[2]; //false
@@ -70,7 +68,6 @@ public class StandardTypeMaker implements TypeMaker {
             "Name starts with a reserved keyword: " + SystemTypeManager.systemETprefix);
         Preconditions.checkArgument(!RESERVED_NAMES.contains(name.toLowerCase()),
             "Name is reserved: " + name);
-        Preconditions.checkNotNull(group,"Need to specify a type group");
 
         for (int i=0;i<2;i++) Preconditions.checkArgument(!hasUniqueLock[i] || isUnique[i],
                 "Must be unique in order to have a lock");
@@ -130,7 +127,7 @@ public class StandardTypeMaker implements TypeMaker {
         Preconditions.checkArgument(dataType.isArray() || !Modifier.isAbstract(dataType.getModifiers()),"Datatype cannot be an abstract class: %s",dataType);
         Preconditions.checkArgument(!isUnique[EdgeDirection.position(IN)] ||
                 indexes.contains(IndexType.of(Vertex.class)), "A unique key requires the existence of a standard vertex index");
-        return tx.makePropertyKey(new StandardKeyDefinition(name, group, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,
+        return tx.makePropertyKey(new StandardKeyDefinition(name, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,
                 checkPrimaryKey(primaryKey), checkSignature(signature), checkIndexes(indexes), dataType));
 
     }
@@ -146,7 +143,7 @@ public class StandardTypeMaker implements TypeMaker {
                 (!isUnique[EdgeDirection.position(IN)] && !hasUniqueLock[EdgeDirection.position(IN)] && !isStatic[EdgeDirection.position(IN)]),
                 "Unidirectional labels cannot be unique or static");
 
-        return tx.makeEdgeLabel(new StandardLabelDefinition(name, group, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,
+        return tx.makeEdgeLabel(new StandardLabelDefinition(name, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,
                 checkPrimaryKey(primaryKey), checkSignature(signature), isUnidirectional));
     }
 
@@ -180,13 +177,6 @@ public class StandardTypeMaker implements TypeMaker {
     @Override
     public StandardTypeMaker unidirected() {
         isUnidirectional=true;
-        return this;
-    }
-
-    @Override
-    public StandardTypeMaker group(TypeGroup group) {
-        Preconditions.checkArgument(group!=null,"Need to specify a group");
-        this.group = group;
         return this;
     }
 

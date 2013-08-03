@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAnd;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAtom;
 import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
@@ -28,7 +29,6 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
 
     private Direction dir;
     private Set<String> types;
-    private TypeGroup group;
     private List<KeyAtom<String>> constraints;
     private boolean includeHidden;
     private int limit = Query.NO_LIMIT;
@@ -40,7 +40,6 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
 
         dir = Direction.BOTH;
         types = new HashSet<String>(4);
-        group = null;
         constraints = Lists.newArrayList();
         includeHidden = false;
     }
@@ -76,8 +75,6 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
                 TitanType t = getType(type);
                 if (t!=null) {
                     ts.add(t);
-                    if (group!=null && !group.equals(t.getGroup()))
-                        throw new IllegalArgumentException("Given type conflicts with group assignment: " + type);
                     if (t.isPropertyKey()) {
                         if (returnType==RelationType.EDGE)
                             throw new IllegalArgumentException("Querying for edges but including a property key: " + t.getName());
@@ -91,7 +88,6 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
                 }
             }
             if (ts.isEmpty()) return VertexCentricQuery.INVALID;
-            group = null;
         }
 
         //check constraints
@@ -117,7 +113,7 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
             c.add(new KeyAtom<TitanType>(t, titanPredicate, condition));
         }
 
-        return new VertexCentricQuery(vertex,dir,ts.toArray(new TitanType[ts.size()]),group,KeyAnd.of(c.toArray(new KeyAtom[c.size()])),includeHidden,limit,returnType);
+        return new VertexCentricQuery(vertex,dir,ts.toArray(new TitanType[ts.size()]),KeyAnd.of(c.toArray(new KeyAtom[c.size()])),includeHidden,limit,returnType);
     }
 
 
@@ -273,14 +269,6 @@ public class VertexCentricQueryBuilder implements TitanVertexQuery {
         types.add(type);
         return this;
     }
-
-    @Override
-    public VertexCentricQueryBuilder group(TypeGroup group) {
-        Preconditions.checkNotNull(group);
-        this.group = group;
-        return this;
-    }
-
 
     @Override
     public VertexCentricQueryBuilder direction(Direction d) {

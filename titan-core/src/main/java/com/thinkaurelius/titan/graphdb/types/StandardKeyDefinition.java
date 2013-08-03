@@ -4,7 +4,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.TypeGroup;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -23,12 +22,12 @@ public class StandardKeyDefinition extends AbstractTypeDefinition implements Pro
     StandardKeyDefinition() {
     }
 
-    public StandardKeyDefinition(String name, TypeGroup group,
+    public StandardKeyDefinition(String name,
                                  boolean[] unique, boolean[] hasUniqueLock, boolean[] isStatic,
                                  boolean hidden, boolean modifiable,
                                  long[] primaryKey, long[] signature,
                                  IndexType[] indexes, Class<?> objectType) {
-        super(name, group, unique, hasUniqueLock, isStatic, hidden, modifiable, primaryKey, signature);
+        super(name, unique, hasUniqueLock, isStatic, hidden, modifiable, primaryKey, signature);
         this.indexes = indexes;
         this.objectType = objectType;
     }

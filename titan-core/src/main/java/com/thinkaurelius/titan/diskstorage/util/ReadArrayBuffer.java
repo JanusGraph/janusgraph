@@ -50,6 +50,11 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
     }
 
     @Override
+    public int getPosition() {
+        return position;
+    }
+
+    @Override
     public boolean hasRemaining() {
         return position<length();
     }

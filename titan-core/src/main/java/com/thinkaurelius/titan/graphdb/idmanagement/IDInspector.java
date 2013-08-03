@@ -19,9 +19,4 @@ public interface IDInspector {
 
     public long getPartitionID(long id);
 
-    public long getGroupID(long etId);
-
-    public boolean isValidTypGroupID(long groupid);
-
-
 }

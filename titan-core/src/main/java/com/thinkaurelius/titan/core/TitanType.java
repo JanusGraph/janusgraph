@@ -12,7 +12,6 @@ import com.tinkerpop.blueprints.Direction;
  * <ul>
  * <li><strong>Uniqueness:</strong> Defines relations of this type to be unique in the OUTgoing or INcoming direction ({@link #isUnique(com.tinkerpop.blueprints.Direction)}}.
  * If a type is unique, that means there can be at most one relation (i.e. property or edge) of that type on any given element in that direction.</li>
- * <li><strong>Groups:</strong> Types can be grouped together for faster retrieval ({@link #getGroup()}</li>
  * </ul>
  * <br />
  * TitanTypes are constructed through {@link TypeMaker} which is accessed in the context of a {@link TitanTransaction}
@@ -65,17 +64,6 @@ public interface TitanType extends TitanVertex {
      * @return true, if relations of this type are modifiable, else false.
      */
     public boolean isModifiable();
-
-    /**
-     * Returns the type group of this type.
-     * <p/>
-     * TitanTypes can be grouped together which makes it more efficient to retrieve all relations associated with the
-     * type group.
-     *
-     * @return type group of this type.
-     * @see TypeGroup
-     */
-    public TypeGroup getGroup();
 
     /**
      * Checks if this type is a property key

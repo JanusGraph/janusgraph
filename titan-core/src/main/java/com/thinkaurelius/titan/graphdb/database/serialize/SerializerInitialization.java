@@ -20,7 +20,6 @@ public class SerializerInitialization {
         serializer.registerClass(String[].class,KRYO_OFFSET+1);
         serializer.registerClass(StandardKeyDefinition.class,KRYO_OFFSET+2);
         serializer.registerClass(StandardLabelDefinition.class,KRYO_OFFSET+3);
-        serializer.registerClass(StandardTypeGroup.class,KRYO_OFFSET+4);
         serializer.registerClass(Date.class, new DateSerializer(),KRYO_OFFSET+6);
         serializer.registerClass(ArrayList.class,KRYO_OFFSET+7);
         serializer.registerClass(HashMap.class,KRYO_OFFSET+8);

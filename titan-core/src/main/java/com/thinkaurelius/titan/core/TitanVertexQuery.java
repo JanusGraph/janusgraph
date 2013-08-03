@@ -49,17 +49,6 @@ public interface TitanVertexQuery extends VertexQuery {
     public TitanVertexQuery keys(String... keys);
 
     /**
-     * Query for only those relations having a type included in the given {@link TypeGroup}.
-     * <p/>
-     * This can be significantly more efficient than specifying all types explicitly.
-     *
-     * @param group group of types to restrict query to.
-     * @return this query
-     * @see TypeGroup
-     */
-    public TitanVertexQuery group(TypeGroup group);
-
-    /**
      * Query only for relations in the given direction.
      * By default, both directions are queried.
      *

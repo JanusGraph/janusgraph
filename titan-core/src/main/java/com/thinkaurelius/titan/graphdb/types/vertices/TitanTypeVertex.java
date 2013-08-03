@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.types.vertices;
 
-import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
@@ -30,11 +29,6 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
     @Override
     public boolean uniqueLock(Direction direction) {
         return getDefinition().uniqueLock(direction);
-    }
-
-    @Override
-    public TypeGroup getGroup() {
-        return getDefinition().getGroup();
     }
 
     @Override

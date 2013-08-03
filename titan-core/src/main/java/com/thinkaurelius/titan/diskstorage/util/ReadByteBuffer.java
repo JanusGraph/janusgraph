@@ -42,6 +42,11 @@ public class ReadByteBuffer extends StaticByteBuffer implements ReadBuffer {
     }
 
     @Override
+    public int getPosition() {
+        return position;
+    }
+
+    @Override
     public boolean hasRemaining() {
         return position<length();
     }

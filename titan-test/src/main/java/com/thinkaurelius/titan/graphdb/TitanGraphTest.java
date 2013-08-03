@@ -68,8 +68,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         clopen();
 
-        TitanLabel friend = tx.makeType().name("friend").directed().unique(Direction.OUT).
-                group(TypeGroup.of(5, "group1")).makeEdgeLabel();
+        TitanLabel friend = tx.makeType().name("friend").directed().unique(Direction.OUT).makeEdgeLabel();
 
         TitanKey id = tx.makeType().name("uid").unique(Direction.BOTH).indexed(Vertex.class).dataType(String.class).makePropertyKey();
 
@@ -106,7 +105,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertNull(tx.getVertex(id, "v1"));
 
         id = tx.getPropertyKey("uid");
-        assertEquals(TypeGroup.DEFAULT_GROUP, id.getGroup());
         assertTrue(id.isUnique(Direction.IN));
         assertTrue(id.hasIndex(Titan.Token.STANDARD_INDEX,Vertex.class));
         assertTrue(id.isUnique(Direction.OUT));
@@ -115,7 +113,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         //Basic properties
 
         friend = tx.getEdgeLabel("friend");
-        assertEquals(TypeGroup.of(5, "group1"), friend.getGroup());
         assertEquals("friend", friend.getName());
         assertTrue(friend.isDirected());
         assertFalse(friend.isUnidirected());
@@ -126,7 +123,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertFalse(((InternalType) friend).isHidden());
 
         connect = tx.getEdgeLabel("connect");
-        assertEquals(TypeGroup.getDefaultGroup(), connect.getGroup());
         assertEquals("connect", connect.getName());
         assertFalse(connect.isUnidirected());
         assertTrue(connect.isEdgeLabel());
@@ -771,79 +767,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertNull(e.getProperty("age"));
     }
 
-    @Test
-    public void testTypeGroup() {
-        TypeGroup g1 = TypeGroup.of(3, "group1");
-        TypeGroup g2 = TypeGroup.of(5, "group2");
-        try {
-            TypeGroup g3 = TypeGroup.of(126, "maxgroup");
-            assertEquals(126, g3.getID());
-            TypeGroup g4 = TypeGroup.of(127, "failgroup");
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        try {
-            TypeGroup g4 = TypeGroup.of(0, "failgroup");
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        try {
-            TypeGroup g4 = TypeGroup.of(-10, "failgroup");
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        try {
-            TypeGroup g4 = TypeGroup.of(5, null);
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        TypeGroup g22 = TypeGroup.of(5, "group2-copy");
-        assertEquals(g2, g22);
-        TypeGroup defaultgroup = TypeGroup.of(1, "default-copy");
-        assertEquals(TypeGroup.DEFAULT_GROUP, defaultgroup);
-        TitanKey name = makeStringUIDPropertyKey("name", g1);
-        TitanKey id = makeIntegerUIDPropertyKey("uid", g2);
-        TitanLabel connect = makeSimpleEdgeLabel("connect", g1);
-        TitanLabel knows = makeSimpleEdgeLabel("knows", g2);
-        TitanLabel friend = makeSimpleEdgeLabel("friend", g2);
-
-        int noNodes = 100;
-        TitanVertex nodes[] = new TitanVertex[noNodes];
-        for (int i = 0; i < noNodes; i++) {
-            nodes[i] = tx.addVertex();
-            nodes[i].addProperty(name, "Name" + (i));
-            nodes[i].addProperty(id, i);
-        }
-
-        int noEdges = 4;
-        for (int i = 0; i < noNodes; i++) {
-            TitanVertex n = nodes[i];
-            for (int j = 1; j <= noEdges; j++) {
-                n.addEdge(connect, nodes[wrapAround(i + j, noNodes)]);
-                n.addEdge(knows, nodes[wrapAround(i + j, noNodes)]);
-                n.addEdge(friend, nodes[wrapAround(i + j, noNodes)]);
-            }
-        }
-
-        clopen();
-
-        connect = tx.getEdgeLabel("connect");
-        assertEquals(g1, connect.getGroup());
-        id = tx.getPropertyKey("uid");
-        assertEquals(g2, id.getGroup());
-
-        for (int i = 0; i < noNodes; i++) {
-            TitanVertex n = tx.getVertex("uid", i);
-            assertEquals(1, Iterables.size(n.query().group(g1).properties()));
-            assertEquals(1, Iterables.size(n.query().group(g2).properties()));
-            assertEquals(noEdges, Iterables.size(n.query().group(g1).direction(OUT).edges()));
-            assertEquals(noEdges * 2, Iterables.size(n.query().group(g1).edges()));
-            assertEquals(noEdges * 2, Iterables.size(n.query().group(g2).direction(OUT).edges()));
-            assertEquals(noEdges * 4, Iterables.size(n.query().group(g2).edges()));
-
-        }
-
-    }
 
     //Test all element methods: vertex, edge, property, relation, element
     @Test

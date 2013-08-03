@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.types;
 
-import com.thinkaurelius.titan.core.TypeGroup;
 import com.tinkerpop.blueprints.Direction;
 
 
@@ -12,8 +11,6 @@ public interface TypeDefinition {
      * @return Name of this association.
      */
     public String getName();
-
-    public TypeGroup getGroup();
 
     public long[] getPrimaryKey();
 

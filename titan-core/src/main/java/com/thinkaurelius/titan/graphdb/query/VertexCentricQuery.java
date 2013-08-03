@@ -6,9 +6,9 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.core.TypeGroup;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAnd;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAtom;
 import com.thinkaurelius.titan.graphdb.query.keycondition.KeyCondition;
@@ -28,14 +28,13 @@ public class VertexCentricQuery implements Query<VertexCentricQuery> {
 
     private final Direction dir;
     private final TitanType[] types;
-    private final TypeGroup group;
 
     private final KeyAnd<TitanType> constraints;
     private final boolean includeHidden;
     private final int limit;
     private final RelationType returnType;
 
-    public VertexCentricQuery(InternalVertex vertex, Direction dir, TitanType[] types, TypeGroup group,
+    public VertexCentricQuery(InternalVertex vertex, Direction dir, TitanType[] types,
                               KeyAnd<TitanType> constraints,
                               boolean includeHidden, int limit, RelationType returnType) {
         Preconditions.checkNotNull(vertex);
@@ -46,7 +45,6 @@ public class VertexCentricQuery implements Query<VertexCentricQuery> {
         this.vertex = vertex;
         this.dir = dir;
         this.types = types;
-        this.group = group;
         this.constraints = constraints;
         this.includeHidden = includeHidden;
         this.limit = limit;
@@ -57,7 +55,6 @@ public class VertexCentricQuery implements Query<VertexCentricQuery> {
         this.vertex=other.vertex;
         this.dir = other.dir;
         this.types = other.types;
-        this.group = other.group;
         this.constraints = other.constraints;
         this.includeHidden = other.includeHidden;
         this.limit = newLimit;
@@ -68,7 +65,6 @@ public class VertexCentricQuery implements Query<VertexCentricQuery> {
         this.vertex=null;
         this.dir=Direction.BOTH;
         this.types=new TitanType[0];
-        this.group=null;
         constraints= KeyAnd.of();
         this.includeHidden=true;
         this.limit=0;
@@ -97,14 +93,6 @@ public class VertexCentricQuery implements Query<VertexCentricQuery> {
 
     public TitanType[] getTypes() {
         return types;
-    }
-
-    public boolean hasGroup() {
-        return group!=null;
-    }
-
-    public TypeGroup getGroup() {
-        return group;
     }
 
     public KeyAnd<TitanType> getConstraints() {
@@ -165,7 +153,7 @@ public class VertexCentricQuery implements Query<VertexCentricQuery> {
     public String toString() {
         StringBuilder s = new StringBuilder();
         s.append("[").append(vertex).append("]");
-        s.append("(").append(dir).append(",").append(group).append(",").append(Arrays.toString(types)).append(")");
+        s.append("(").append(dir).append(",").append(Arrays.toString(types)).append(")");
         s.append("-").append(constraints).append(":");
         s.append(includeHidden).append(":");
         if (hasLimit()) s.append(limit).append(":");
@@ -185,7 +173,6 @@ public class VertexCentricQuery implements Query<VertexCentricQuery> {
             int pos = EdgeDirection.position(dir);
             if (pos>r.getLen() || !r.getVertex(pos).equals(vertex)) return false;
         }
-        if (group!=null && !r.getType().getGroup().equals(group)) return false;
         if (types.length>0) {
             boolean matches = false;
             for (TitanType type : types) if (r.getType().equals(type)) { matches = true; break; }

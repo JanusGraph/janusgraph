@@ -2,8 +2,7 @@ package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.TypeGroup;
-import com.thinkaurelius.titan.graphdb.types.StandardTypeGroup;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 
 import java.util.Map;
 import java.util.Set;
@@ -12,12 +11,17 @@ public abstract class SystemTypeManager {
 
     public static final String systemETprefix = "#System#";
 
-    public static final TypeGroup SYSTEM_TYPE_GROUP = new StandardTypeGroup((short) 0, systemETprefix);
-
+    public static final int SYSTEM_TYPE_OFFSET = 8;
 
     private volatile static Map<Long, SystemType> systemEdgeTypes = null;
 
-    public static SystemType getSystemEdgeType(long id) {
+    public static boolean isSystemRelationType(long id) {
+        //TODO: also check if its a typeid?
+        return IDManager.getTypeCount(id)<=SYSTEM_TYPE_OFFSET;
+    }
+
+
+    public static SystemType getSystemRelationType(long id) {
         if (systemEdgeTypes == null) {
             //Initialize
             synchronized (SystemTypeManager.class) {

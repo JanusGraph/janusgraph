@@ -129,7 +129,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     public IDInspector getIDInspector() {
-        return idManager;
+        return idManager.getIDInspector();
     }
 
     public EdgeSerializer getEdgeSerializer() {

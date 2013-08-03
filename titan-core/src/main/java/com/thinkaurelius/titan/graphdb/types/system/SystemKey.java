@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.types.system;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.Titan;
 import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.graphdb.types.PropertyKeyDefinition;
 import com.thinkaurelius.titan.graphdb.types.StandardKeyDefinition;
 import com.thinkaurelius.titan.graphdb.types.StandardLabelDefinition;
@@ -14,19 +15,19 @@ import com.tinkerpop.blueprints.Vertex;
 public class SystemKey extends SystemType implements PropertyKeyDefinition, TitanKey {
 
     public static final SystemKey PropertyKeyDefinition =
-            new SystemKey("PropertyKeyDefinition", StandardKeyDefinition.class, 2);
+            new SystemKey("PropertyKeyDefinition", StandardKeyDefinition.class, 4);
 
     public static final SystemKey RelationTypeDefinition =
-            new SystemKey("EdgeLabelDefinition", StandardLabelDefinition.class, 3);
+            new SystemKey("EdgeLabelDefinition", StandardLabelDefinition.class, 5);
 
     public static final SystemKey TypeName =
-            new SystemKey("TypeName", String.class, 4, true, true, false);
+            new SystemKey("TypeName", String.class, 1, true, true, false);
 
     public static final SystemKey TypeClass =
-            new SystemKey("TypeClass", TitanTypeClass.class, 6, true, false, false);
+            new SystemKey("TypeClass", TitanTypeClass.class, 2, true, false, false);
 
     public static final SystemKey VertexState =
-            new SystemKey("VertexState", Byte.class, 7, false, false, true);
+            new SystemKey("VertexState", Byte.class, 3, false, false, true);
 
     public static final Iterable<SystemKey> values() {
         return ImmutableList.of(PropertyKeyDefinition, RelationTypeDefinition, TypeName, TypeClass, VertexState);
@@ -40,10 +41,11 @@ public class SystemKey extends SystemType implements PropertyKeyDefinition, Tita
     }
 
     private SystemKey(String name, Class<?> dataType, int id, boolean index, boolean unique, boolean modifiable) {
-        super(name,id,new boolean[]{true,unique},new boolean[]{!modifiable,unique && index},modifiable);
+        super(name,id, RelationType.PROPERTY,new boolean[]{true,unique},new boolean[]{!modifiable,unique && index},modifiable);
         this.dataType = dataType;
         this.index = index;
     }
+
 
     @Override
     public Class<?> getDataType() {
