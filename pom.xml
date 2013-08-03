@@ -60,7 +60,7 @@
         <titan.version>0.4.0-SNAPSHOT</titan.version>
         <titan.compatible.versions>0.3.0,0.3.1</titan.compatible.versions>
         <tinkerpop.version>2.3.0</tinkerpop.version>
-        <junit.version>4.10</junit.version>
+        <junit.version>4.11</junit.version>
         <metrics.version>3.0.0-BETA3</metrics.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
