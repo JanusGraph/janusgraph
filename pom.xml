@@ -84,6 +84,7 @@
         <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
         <!-- Required for PMD plugin. Used for compiler plugin -->
         <targetJdk>1.6</targetJdk>
+        <perf.jvm.opts></perf.jvm.opts>
     </properties>
     <build>
         <directory>${basedir}/target</directory>
@@ -135,7 +136,7 @@
                     <arguments>-DskipTests=true</arguments>
                 </configuration>
             </plugin>
-            </plugins>
+        </plugins>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -148,9 +149,9 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.11</version>
+                    <version>2.15</version>
                     <configuration>
-                        <runOrder>random</runOrder>
+                        <runOrder>alphabetical</runOrder>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -217,6 +218,7 @@
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>1.2.1</version>
                 </plugin>
+                
                 <plugin>
                     <groupId>com.github.github</groupId>
                     <artifactId>site-maven-plugin</artifactId>
@@ -249,6 +251,27 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.carrotsearch</groupId>
+                <artifactId>junit-benchmarks</artifactId>
+                <version>0.7.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.carrotsearch.randomizedtesting</groupId>
+                <artifactId>randomizedtesting-runner</artifactId>
+                <version>2.0.8</version>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>1.3.172</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <profiles>
         <profile>
@@ -336,6 +359,43 @@
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
+        <profile>
+            <id>performance-test</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>performance-test</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <phase>test</phase>
+                                <configuration>
+                                    <argLine>-Xms256m -Xmx1024m ${perf.jvm.opts}</argLine>
+                                    <reuseForks>false</reuseForks>
+                                    <forkCount>1</forkCount>
+                                    <parallel/>
+                                    <threadCount>1</threadCount>
+                                    <perCoreThreadCount>1</perCoreThreadCount>
+                                    <runOrder>alphabetical</runOrder>
+                                    <groups>com.thinkaurelius.titan.testcategory.PerformanceTests</groups>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>default-test</id>
+                                <phase>none</phase>
                             </execution>
                         </executions>
                     </plugin>

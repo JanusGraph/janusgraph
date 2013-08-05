@@ -1,6 +1,18 @@
 package com.thinkaurelius.titan.graphdb;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.text.NumberFormat;
+import java.util.LinkedHashMap;
+
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanKey;
@@ -10,26 +22,17 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
+import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
 import com.thinkaurelius.titan.testutil.MemoryAssess;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.text.NumberFormat;
-import java.util.LinkedHashMap;
-
-import static junit.framework.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 
-    private static final Logger log = LoggerFactory.getLogger(TitanGraphPerformanceTest.class);
+    @Rule
+    public TestRule benchmark = JUnitBenchmarkProvider.get();
 
     private static final int minBatchSizeAsPowerOf2 = 4;
     private static final int maxBatchSizeAsPowerOf2 = 14;
@@ -40,7 +43,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
     private final LinkedHashMap<String, Metric> metrics = new LinkedHashMap<String, Metric>();
 
     public TitanGraphPerformanceTest(Configuration config) {
-        this(config, 2, 8, true);
+        this(config, 0, 1, false);
     }
 
     public TitanGraphPerformanceTest(Configuration config, int jitPretrials, int trials, boolean tryBatching) {
