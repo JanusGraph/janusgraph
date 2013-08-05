@@ -35,37 +35,43 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreMan
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.LockingException;
+import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockConfiguration;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStore;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LocalLockMediators;
+import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 
 public abstract class LockKeyColumnValueStoreTest {
+    
+    private static final Logger log =
+            LoggerFactory.getLogger(LockKeyColumnValueStoreTest.class);
 
-    public final int concurrency = 8;
-    public final int numTx = 2;
+    public static final int CONCURRENCY = 8;
+    public static final int NUM_TX = 2;
+    public static final String DB_NAME = "test";
+    protected static final long EXPIRE_MS = 5000;
+    
+    /*
+     * Don't change these back to static. We can run test classes concurrently
+     * now. There are multiple concrete subclasses of this abstract class. If
+     * the subclasses run in separate threads and were to concurrently mutate
+     * static state on this common superclass, then thread safety fails.
+     * 
+     * Anything final and deeply immutable is of course fair game for static,
+     * but these are mutable.
+     */
     public KeyColumnValueStoreManager[] manager;
     public StoreTransaction[][] tx;
     public KeyColumnValueStore[] store;
-
     public IDAuthority[] idAuthorities;
-
-    public static final String dbName = "test";
-
-    protected final byte[][] rid1 = new byte[][]{{'a'}, {'b'}};
-    protected static final long EXPIRE_MS = 1000;
 
     private StaticBuffer k, c1, c2, v1, v2;
     
     private final String concreteClassName; 
-    
-    private static final Logger log =
-    		LoggerFactory.getLogger(LockKeyColumnValueStoreTest.class);
     
     public LockKeyColumnValueStoreTest() {
        concreteClassName = getClass().getSimpleName();
@@ -75,7 +81,7 @@ public abstract class LockKeyColumnValueStoreTest {
     public void setUp() throws Exception {
         openStorageManager(0).clearStorage();
         
-        for (int i = 0; i < concurrency; i++) {
+        for (int i = 0; i < CONCURRENCY; i++) {
             LocalLockMediators.INSTANCE.clear(concreteClassName + i);
         }
         
@@ -90,22 +96,22 @@ public abstract class LockKeyColumnValueStoreTest {
     public abstract KeyColumnValueStoreManager openStorageManager(int id) throws StorageException;
 
     public void open() throws StorageException {
-        manager = new KeyColumnValueStoreManager[concurrency];
-        tx = new StoreTransaction[concurrency][numTx];
-        store = new KeyColumnValueStore[concurrency];
-        idAuthorities = new IDAuthority[concurrency];
+        manager = new KeyColumnValueStoreManager[CONCURRENCY];
+        tx = new StoreTransaction[CONCURRENCY][NUM_TX];
+        store = new KeyColumnValueStore[CONCURRENCY];
+        idAuthorities = new IDAuthority[CONCURRENCY];
 
-        for (int i = 0; i < concurrency; i++) {
+        for (int i = 0; i < CONCURRENCY; i++) {
             manager[i] = openStorageManager(i);
             StoreFeatures storeFeatures = manager[i].getFeatures();
-            store[i] = manager[i].openDatabase(dbName);
-            for (int j = 0; j < numTx; j++) {
+            store[i] = manager[i].openDatabase(DB_NAME);
+            for (int j = 0; j < NUM_TX; j++) {
             	tx[i][j] = manager[i].beginTransaction(ConsistencyLevel.DEFAULT);
             	log.debug("Began transaction of class {}", tx[i][j].getClass().getCanonicalName());
             }
 
             Configuration sc = new BaseConfiguration();
-            sc.addProperty(ConsistentKeyLockStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, concreteClassName + i);
+            sc.addProperty(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, concreteClassName + i);
             sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, (short) i);
             sc.addProperty(GraphDatabaseConfiguration.LOCK_RETRY_COUNT, 10);
             sc.addProperty(GraphDatabaseConfiguration.LOCK_EXPIRE_MS, EXPIRE_MS);
@@ -116,10 +122,12 @@ public abstract class LockKeyColumnValueStoreTest {
                 if (storeFeatures.supportsTransactions()) {
                     store[i] = new TransactionalLockStore(store[i]);
                 } else if (storeFeatures.supportsConsistentKeyOperations()) {
-                    ConsistentKeyLockConfiguration lockConfiguration = new ConsistentKeyLockConfiguration(sc, concreteClassName + i);
-                    store[i] = new ConsistentKeyLockStore(store[i], manager[i].openDatabase(dbName + "_lock_"), lockConfiguration);
-                    for (int j = 0; j < numTx; j++)
-                        tx[i][j] = new ConsistentKeyLockTransaction(tx[i][j], manager[i].beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
+
+                    KeyColumnValueStore lockerStore = manager[i].openDatabase(DB_NAME + "_lock_");
+                    ConsistentKeyLocker c = new ConsistentKeyLocker.Builder(lockerStore).fromCommonsConfig(sc).mediatorName(concreteClassName + i).build();
+                    store[i] = new ExpectedValueCheckingStore(store[i], c);
+                    for (int j = 0; j < NUM_TX; j++)
+                        tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(ConsistencyLevel.KEY_CONSISTENT), GraphDatabaseConfiguration.READ_ATTEMPTS_DEFAULT);
                 } else throw new IllegalArgumentException("Store needs to support some form of locking");
             }
 
@@ -135,7 +143,7 @@ public abstract class LockKeyColumnValueStoreTest {
     public StoreTransaction newTransaction(KeyColumnValueStoreManager manager) throws StorageException {
         StoreTransaction transaction = manager.beginTransaction(ConsistencyLevel.DEFAULT);
         if (!manager.getFeatures().supportsLocking() && manager.getFeatures().supportsConsistentKeyOperations()) {
-            transaction = new ConsistentKeyLockTransaction(transaction, manager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT));
+            transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT), GraphDatabaseConfiguration.READ_ATTEMPTS_DEFAULT);
         }
         return transaction;
     }
@@ -146,11 +154,11 @@ public abstract class LockKeyColumnValueStoreTest {
     }
 
     public void close() throws StorageException {
-        for (int i = 0; i < concurrency; i++) {
+        for (int i = 0; i < CONCURRENCY; i++) {
             store[i].close();
             idAuthorities[i].close();
 
-            for (int j = 0; j < numTx; j++) {
+            for (int j = 0; j < NUM_TX; j++) {
             	log.debug("Committing tx[{}][{}] = {}", new Object[] {i, j, tx[i][j]});
                 if (tx[i][j] != null) tx[i][j].commit();
             }
@@ -196,14 +204,14 @@ public abstract class LockKeyColumnValueStoreTest {
             store[0].acquireLock(k, c1, null, tx[0][1]);
             Assert.fail("Lock contention exception not thrown");
         } catch (StorageException e) {
-            Assert.assertTrue(e instanceof LockingException);
+            Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
         }
 
         try {
             store[0].acquireLock(k, c1, null, tx[0][1]);
             Assert.fail("Lock contention exception not thrown (2nd try)");
         } catch (StorageException e) {
-            Assert.assertTrue(e instanceof LockingException);
+            Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
         }
     }
 
@@ -236,7 +244,7 @@ public abstract class LockKeyColumnValueStoreTest {
             store[1].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v2)), NO_DELETIONS, tx[1][0]);
             Assert.fail("Expected lock contention between remote transactions did not occur");
         } catch (StorageException e) {
-            Assert.assertTrue(e instanceof LockingException);
+            Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
         }
 
         // This should succeed
@@ -332,13 +340,13 @@ public abstract class LockKeyColumnValueStoreTest {
     
     @Test
     public void parallelNoncontendedLockStressTest() throws StorageException, InterruptedException {
-        final Executor stressPool = Executors.newFixedThreadPool(concurrency);
-        final CountDownLatch stressComplete = new CountDownLatch(concurrency);
+        final Executor stressPool = Executors.newFixedThreadPool(CONCURRENCY);
+        final CountDownLatch stressComplete = new CountDownLatch(CONCURRENCY);
         final long maxWalltimeAllowedMS = 90 * 1000L;
         final int lockOperationsPerThread = 100;
-        final LockStressor[] ls = new LockStressor[concurrency];
+        final LockStressor[] ls = new LockStressor[CONCURRENCY];
         
-        for (int i = 0; i < concurrency; i++) {
+        for (int i = 0; i < CONCURRENCY; i++) {
             ls[i] = new LockStressor(manager[i], store[i], stressComplete,
                     lockOperationsPerThread, KeyColumnValueStoreUtil.longToByteBuffer(i));
             stressPool.execute(ls[i]);
@@ -348,8 +356,11 @@ public abstract class LockKeyColumnValueStoreTest {
                 stressComplete.await(maxWalltimeAllowedMS, TimeUnit.MILLISECONDS));
         // All runnables submitted to the executor are done
         
-        for (int i = 0; i < concurrency; i++) {
-            Assert.assertEquals(lockOperationsPerThread, ls[i].succeeded);
+        for (int i = 0; i < CONCURRENCY; i++) {
+            if (0 < ls[i].temporaryFailures) {
+                log.warn("Recorded {} temporary failures for thread index {}", ls[i].temporaryFailures, i);
+            }
+            Assert.assertEquals(lockOperationsPerThread, ls[i].succeeded + ls[i].temporaryFailures);
         }
     }
 
@@ -388,7 +399,7 @@ public abstract class LockKeyColumnValueStoreTest {
                 s2.acquireLock(k, k, null, tx2);
                 Assert.fail("Expected lock contention between transactions did not occur");
             } catch (StorageException e) {
-                Assert.assertTrue(e instanceof LockingException);
+                Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
             }
         }
 
@@ -432,17 +443,17 @@ public abstract class LockKeyColumnValueStoreTest {
                 return blockSize;
             }
         };
-        for (int i = 0; i < concurrency; i++) idAuthorities[i].setIDBlockSizer(blockSizer);
+        for (int i = 0; i < CONCURRENCY; i++) idAuthorities[i].setIDBlockSizer(blockSizer);
         final List<List<Long>> ids = new ArrayList<List<Long>>(numPartitions);
         for (int i = 0; i < numPartitions; i++) {
-            ids.add(Collections.synchronizedList(new ArrayList<Long>(numAcquisitionsPerThreadPartition * concurrency)));
+            ids.add(Collections.synchronizedList(new ArrayList<Long>(numAcquisitionsPerThreadPartition * CONCURRENCY)));
         }
         
         final int maxIterations = numAcquisitionsPerThreadPartition * numPartitions * 2;
-        final Collection<Future<?>> futures = new ArrayList<Future<?>>(concurrency);
-        ExecutorService es = Executors.newFixedThreadPool(concurrency);
+        final Collection<Future<?>> futures = new ArrayList<Future<?>>(CONCURRENCY);
+        ExecutorService es = Executors.newFixedThreadPool(CONCURRENCY);
         
-        for (int i = 0; i < concurrency; i++) {
+        for (int i = 0; i < CONCURRENCY; i++) {
             final IDAuthority idAuthority = idAuthorities[i];
             final IDStressor stressRunnable = new IDStressor(
                     numAcquisitionsPerThreadPartition, numPartitions,
@@ -460,7 +471,7 @@ public abstract class LockKeyColumnValueStoreTest {
 
         for (int i = 0; i < numPartitions; i++) {
             List<Long> list = ids.get(i);
-            Assert.assertEquals(numAcquisitionsPerThreadPartition * concurrency, list.size());
+            Assert.assertEquals(numAcquisitionsPerThreadPartition * CONCURRENCY, list.size());
             Collections.sort(list);
 
             int pos = 0;
@@ -471,7 +482,7 @@ public abstract class LockKeyColumnValueStoreTest {
                  * If the ID allocator never timed out while servicing a
                  * request, then id = block on every iteration. However, if the
                  * ID allocator timed out while trying to claim some blocks,
-                 * then block = id + (blockSize * n) where n > 1. Intuitively,
+                 * then block = id + (blockSize * n) where n >= 1. Intuitively,
                  * this allows "dead" blocks lost to timeout exceptions to be
                  * skipped without failing the test.
                  */
@@ -489,7 +500,7 @@ public abstract class LockKeyColumnValueStoreTest {
 
     @Test
     public void testLocalPartitionAcquisition() throws StorageException {
-        for (int c = 0; c < concurrency; c++) {
+        for (int c = 0; c < CONCURRENCY; c++) {
             if (manager[c].getFeatures().hasLocalKeyPartition()) {
                 try {
                     StaticBuffer[] partition = idAuthorities[c].getLocalIDPartition();
@@ -522,6 +533,7 @@ public abstract class LockKeyColumnValueStoreTest {
         private final StaticBuffer toLock;
         
         private int succeeded = 0;
+        private int temporaryFailures = 0;
 
         private LockStressor(KeyColumnValueStoreManager manager,
                 KeyColumnValueStore store, CountDownLatch doneLatch, int opCount, StaticBuffer toLock) {
@@ -545,6 +557,8 @@ public abstract class LockKeyColumnValueStoreTest {
                     store.mutate(toLock, ImmutableList.<Entry>of(), Arrays.asList(toLock), tx);
                     tx.commit();
                     succeeded++;
+                } catch (TemporaryLockingException e) {
+                    temporaryFailures++;
                 } catch (Throwable t) {
                     log.error("Unexpected locking-related exception on iteration " + (opIndex + 1) + "/" + opCount, t);
                 }

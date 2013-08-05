@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class TemporaryLockingException extends TemporaryStorageException implements LockingException {
+public class TemporaryLockingException extends TemporaryStorageException {
 
     private static final long serialVersionUID = 482890657293484420L;
 

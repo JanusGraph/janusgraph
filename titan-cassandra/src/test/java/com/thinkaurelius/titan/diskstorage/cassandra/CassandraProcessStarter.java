@@ -7,7 +7,6 @@ import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraDaemonWrapper;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory;
-import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -36,8 +35,6 @@ public class CassandraProcessStarter {
     private final String cassandraDataDir;
     private final String cassandraInclude;
 
-    private static boolean isEmbeddedRunning = false;
-    
     private static final String cassandraCommand = "cassandra";
     private static final int port =
             AbstractCassandraStoreManager.PORT_DEFAULT;
@@ -217,7 +214,7 @@ public class CassandraProcessStarter {
     }
 
     public static synchronized void startCleanEmbedded(String cassandraYamlPath) {
-        if (isEmbeddedRunning) {
+        if (CassandraDaemonWrapper.isStarted()) {
             log.debug("Already started embedded cassandra; subsequent attempts to start do nothing");
             return;
         }
@@ -229,8 +226,6 @@ public class CassandraProcessStarter {
         }
 
         CassandraDaemonWrapper.start(cassandraYamlPath);
-        
-        isEmbeddedRunning = true;
     }
 }
 

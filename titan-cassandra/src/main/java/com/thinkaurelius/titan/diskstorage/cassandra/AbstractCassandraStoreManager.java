@@ -179,4 +179,8 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      *             if reading from Cassandra fails
      */
     public abstract Map<String, String> getCompressionOptions(String cf) throws StorageException;
+    
+    public String getName() {
+        return getClass().getSimpleName() + keySpaceName;
+    }
 }

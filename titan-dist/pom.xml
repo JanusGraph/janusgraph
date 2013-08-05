@@ -1,0 +1,293 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.thinkaurelius.titan</groupId>
+        <artifactId>titan</artifactId>
+        <version>0.4.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <packaging>pom</packaging>
+    <artifactId>titan-dist</artifactId>
+    <name>Titan-Dist: Parent for Tar and Zip Archives</name>
+    <url>http://thinkaurelius.github.com/titan/</url>
+
+    <!--
+      I resorted to a submodule build after several misadventures.
+      First, there's this:
+
+      https://jira.codehaus.org/browse/MASSEMBLY-614
+
+      I tried a single module build with multiple descriptors using
+      <includes> filtering, but that led to odd dependency inclusion
+      logic.  I might have made a mistake elsewhere, but it seemed
+      like the assembly plugin was halting dependency traversal at
+      titan artifacts.  My cassandra assembly would end up with all of
+      titan-cassandra's dependencies except titan-core, titan-es, etc
+      and their dependencies.
+
+      I now tiptoe around that case with a combination of include and
+      exclude filtering in each of the submodule descriptors.  There's
+      a lot of duplicated descirptor and pom.xml text, and this could
+      probably be folded back into a single submodule, but I'm loath
+      to touch it again at the moment and potentially spend time
+      trying to debug it again.
+    -->
+    <modules>
+        <module>titan-dist-all</module>
+        <module>titan-dist-berkeleyje</module>
+        <module>titan-dist-cassandra</module>
+        <module>titan-dist-hbase</module>
+    </modules>
+
+    <properties>
+        <!-- Submodules set this property.  Its value should be the
+             path to an XML assembly descriptor file. -->
+        <distribution.assembly.descriptor>UNSET</distribution.assembly.descriptor>
+    </properties>
+
+    <build>
+        <!-- Used during release:perform to upload to S3 -->
+        <extensions>
+            <extension>
+                <groupId>org.kuali.maven.wagons</groupId>
+                <artifactId>maven-s3-wagon</artifactId>
+                <version>${kuali.s3.wagon.version}</version>
+            </extension>
+        </extensions>
+
+        <resources>
+            <resource>
+                <directory>src/util-scripts</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
+        <plugins>
+            <!--
+              Filter the shell scripts in src/util-scripts during the
+              process-resources phase.  Disable default resource goal
+              bindings because we have no main or test resources.
+            -->
+            <plugin>
+                <inherited>false</inherited>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>filter-util-script-resources</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/util-scripts</outputDirectory>
+                            <useDefaultDelimiters>false</useDefaultDelimiters>
+                            <delimiters>
+                                <delimiter>$MAVEN{*}</delimiter>
+                            </delimiters>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>default-resources</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>default-testResources</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+              We use maven-resources-plugin to filter util-scripts,
+              but that plugin has an open bug about the fact that it
+              doesn't copy file permissions during filtering.  Make
+              the script executable with chmod.  Not portable.
+         
+              Bug: http://jira.codehaus.org/browse/MRESOURCES-132
+            -->
+            <plugin>
+                <inherited>false</inherited>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>fix-script-permissions</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>chmod</executable>
+                            <arguments>
+                                <argument>-R</argument>
+                                <argument>ug+x</argument>
+                                <argument>${project.build.directory}/util-scripts/</argument>
+                            </arguments>
+                            <workingDirectory>${project.parent.basedir}/doc</workingDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+            <!--
+              Unbind unused goals from their default phases.
+            -->
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-install-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-install</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Done disabling unnecessary default plugin goals -->
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>titan-release</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.thinkaurelius.titan</groupId>
+                    <artifactId>titan-site</artifactId>
+                    <classifier>htdocs</classifier>
+                    <version>${project.version}</version>
+                    <type>zip</type>
+                </dependency>
+            </dependencies> 
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-assembly-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>assemble-distribution-archive</id>
+                                    <phase>package</phase>
+                                    <goals>
+                                        <goal>single</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                            <configuration>
+                                <!-- 
+                                  We set attached=true so that the gpg plugin will
+                                  sign all of our assembly artifacts.  We handle
+                                  deployment of the artifacts manually because
+                                  maven-deploy-plugin can't upload files to a flat
+                                  S3 directory; it insists on creating a
+                                  long/packagename/and/artifactid/and/version/
+                                  path at the destination before uploading, and we
+                                  don't want that for our files S3.  codehaus's
+                                  wagon:upload plugin comes to our rescue.
+                                -->
+                                <attach>true</attach>
+                                <!--
+                                  archive filenames are of the form
+                                  ${finalName}-${<id /> from assembly descriptor}.${archive format extension}
+                                -->
+                                <finalName>titan</finalName>
+                                <tarLongFileMode>gnu</tarLongFileMode>
+                                <descriptors>
+                                    <!-- This property is intended to be set in submodules -->
+                                    <descriptor>${distribution.assembly.descriptor}</descriptor>
+                                </descriptors>
+                            </configuration>
+                        </plugin>
+    		        
+                        <plugin>
+                            <artifactId>maven-gpg-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>sign-artifacts</id>
+                                </execution>
+                            </executions>
+                        </plugin>
+    		        
+                        <plugin>
+                            <groupId>org.codehaus.mojo</groupId>
+                            <artifactId>wagon-maven-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>deploy-distribution-archives-to-s3</id>
+                                    <phase>deploy</phase>
+                                    <goals>
+                                        <goal>upload</goal>
+                                    </goals>
+                                    <configuration>
+                                        <fromDir>${project.build.directory}</fromDir>
+                                        <includes>*.tar.bz2.asc,*.zip.asc,*.zip,*.tar.bz2</includes>
+                                        <serverId>aurelius.s3</serverId> <!-- your ~/.m2/settings.xml must match -->
+                                        <url>s3://s3.thinkaurelius.com/downloads/titan/</url>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+    </profiles>
+</project>
+ 

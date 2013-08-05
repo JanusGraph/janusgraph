@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
 /**
  * This class overrides and adds nothing compared with
- * {@link com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockTransaction}; however, it creates a transaction type specific
+ * {@link com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction}; however, it creates a transaction type specific
  * to Cassandra, which lets us check for user errors like passing a HBase
  * transaction into a Cassandra method.
  *

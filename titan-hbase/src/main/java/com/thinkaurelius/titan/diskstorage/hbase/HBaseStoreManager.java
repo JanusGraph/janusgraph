@@ -321,6 +321,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new PermanentStorageException(e);
         }
     }
+    
+    @Override
+    public String getName() {
+        return tableName;
+    }
 
     private HBaseAdmin getAdminInterface() {
         try {

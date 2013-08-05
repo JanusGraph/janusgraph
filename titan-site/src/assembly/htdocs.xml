@@ -1,0 +1,17 @@
+<assembly>
+    <id>htdocs</id>
+    <baseDirectory>/</baseDirectory>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <fileSets>
+        <fileSet>
+            <directory>${project.parent.basedir}/doc/html/</directory>
+            <outputDirectory>/</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}/site/apidocs/</directory>
+            <outputDirectory>/javadoc</outputDirectory>
+        </fileSet>
+    </fileSets>
+</assembly>

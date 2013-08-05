@@ -115,4 +115,9 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     public void setConfigurationProperty(final String key, final String value) throws StorageException {
         manager.setConfigurationProperty(key, value);
     }
+    
+    @Override
+    public String getName() {
+        return manager.getName();
+    }
 }

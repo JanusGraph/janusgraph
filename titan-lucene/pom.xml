@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
@@ -10,32 +9,54 @@
     <artifactId>titan-lucene</artifactId>
     <name>Titan-Lucene: Indexing Support</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+
+    <properties>
+        <!--
+          Both this module and titan-es depend on Lucene (the titan-es
+          pom does not explicitly depend on Lucene, but the ES
+          artifacts do).  Mismatched versions on ES's Lucene
+          dependency and this dependency can lead to distros in which
+          the Lucene jars collectively have more than one version:
+          some Lucene jars at a newer version and others at an older
+          version.  @zachkinstner showed that a Lucene dependency
+          version mismatch in the minor position can cause a runtime
+          error:
+
+          https://github.com/thinkaurelius/titan/pull/303
+          
+          So, when modifying this version, also consider the Lucene
+          dependency behind the ES version declared in the titan-es
+          module.
+        -->
+        <lucene.version>4.2.1</lucene.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-core</artifactId>
-            <version>${titan.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-test</artifactId>
-            <version>${titan.version}</version>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
-            <version>4.1.0</version>
+            <version>${lucene.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
-            <version>4.1.0</version>
+            <version>${lucene.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-spatial</artifactId>
-            <version>4.1.0</version>
+            <version>${lucene.version}</version>
         </dependency>
     </dependencies>
     <profiles>
@@ -79,7 +100,6 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.5.1</version>
                 <configuration>
                     <source>${targetJdk}</source>
                     <target>${targetJdk}</target>
@@ -90,7 +110,6 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.12.1</version>
                 <configuration>
                     <argLine>-Xms256m -Xmx756m</argLine>
                     <excludes>

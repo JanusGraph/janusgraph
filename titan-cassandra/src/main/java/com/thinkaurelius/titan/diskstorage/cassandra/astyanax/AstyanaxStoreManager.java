@@ -18,6 +18,7 @@ import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.retry.RetryPolicy;
+import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
@@ -25,10 +26,12 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
+import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking.AstyanaxRecipeLocker;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -204,6 +207,16 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             return store;
         }
     }
+    
+    public AstyanaxRecipeLocker openLocker(String cfName) throws StorageException {
+        
+        ColumnFamily<ByteBuffer, String> cf = new ColumnFamily<ByteBuffer, String>(
+                cfName,
+                ByteBufferSerializer.get(),
+                StringSerializer.get());
+        
+        return new AstyanaxRecipeLocker.Builder(keyspaceContext.getClient(), cf).build();
+    }
 
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> batch, StoreTransaction txh) throws StorageException {
@@ -211,8 +224,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                                      .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanaxConsistency())
                                                      .withRetryPolicy(retryPolicy.duplicate());
 
-        final long delTS = TimeUtility.getApproxNSSinceEpoch(false);
-        final long addTS = TimeUtility.getApproxNSSinceEpoch(true);
+        final long delTS = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
+        final long addTS = TimeUtility.INSTANCE.getApproxNSSinceEpoch(true);
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> batchentry : batch.entrySet()) {
             String storeName = batchentry.getKey();
@@ -270,8 +283,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             }
         } catch (ConnectionException e) {
             throw new PermanentStorageException(e);
-        } finally {
-            close();
         }
     }
 
@@ -336,6 +347,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         		config.getInt(
                         MAX_OPERATIONS_PER_CONNECTION_KEY,
                         MAX_OPERATIONS_PER_CONNECTION_DEFAULT);
+        
         ConnectionPoolConfigurationImpl cpool =
         		new ConnectionPoolConfigurationImpl(usedFor + "TitanConnectionPool")
         			.setPort(port)
@@ -346,6 +358,12 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         			.setConnectTimeout(connectionTimeout)
         			.setSeeds(StringUtils.join(hostnames,","));
         
+        AstyanaxConfigurationImpl aconf =
+                new AstyanaxConfigurationImpl()
+                    .setConnectionPoolType(poolType)
+                    .setDiscoveryType(discType)
+                    .setTargetCassandraVersion("1.2");
+        
         if (0 < maxConnections) {
             cpool.setMaxConns(maxConnections);
         }
@@ -354,13 +372,9 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 new AstyanaxContext.Builder()
                         .forCluster(clusterName)
                         .forKeyspace(keySpaceName)
-                        .withAstyanaxConfiguration(
-                                new AstyanaxConfigurationImpl()
-                                        .setConnectionPoolType(poolType)
-                                        .setDiscoveryType(discType))
+                        .withAstyanaxConfiguration(aconf)
                         .withConnectionPoolConfiguration(cpool)
-                        .withConnectionPoolMonitor(new CountingConnectionPoolMonitor())
-                        .withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setTargetCassandraVersion("1.2"));
+                        .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
 
         return builder;
     }

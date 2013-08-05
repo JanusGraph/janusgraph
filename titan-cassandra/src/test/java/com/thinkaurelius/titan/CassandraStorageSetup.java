@@ -35,42 +35,26 @@ public class CassandraStorageSetup {
     
     public static Configuration getEmbeddedCassandraStorageConfiguration(String ks, boolean ordered) {
         Configuration config = getGenericCassandraStorageConfiguration(ks);
-        if (ordered)
-            config.addProperty(
+        config.addProperty(
                 CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
-                cassandraOrderedYamlPath);
-        else
-            config.addProperty(
-                CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
-                cassandraYamlPath);
+                ordered ? cassandraOrderedYamlPath : cassandraYamlPath);
         return config;
     }
 
     public static Configuration getAstyanaxGraphConfiguration(String ks) {
-        BaseConfiguration config = new BaseConfiguration();
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "astyanax");
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(KEYSPACE_KEY, cleanKeyspaceName(ks));
-        return config;
+        return getGraphBaseConfiguration(ks, "astyanax");
     }
 
     public static Configuration getCassandraGraphConfiguration(String ks) {
-        Configuration config = new BaseConfiguration();
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "cassandra");
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(KEYSPACE_KEY, cleanKeyspaceName(ks));
-        return config;
+        return getGraphBaseConfiguration(ks, "cassandra");
     }
 
     public static Configuration getCassandraThriftGraphConfiguration(String ks) {
-        Configuration config = new BaseConfiguration();
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "cassandrathrift");
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(KEYSPACE_KEY, cleanKeyspaceName(ks));
-        return config;
+        return getGraphBaseConfiguration(ks, "cassandrathrift");
     }
 
     public static Configuration getEmbeddedCassandraGraphConfiguration(String ks) {
-        Configuration config = new BaseConfiguration();
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "embeddedcassandra");
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(KEYSPACE_KEY, cleanKeyspaceName(ks));
+        Configuration config = getGraphBaseConfiguration(ks, "embeddedcassandra");
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(
                 CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
                 cassandraYamlPath);
@@ -78,9 +62,7 @@ public class CassandraStorageSetup {
     }
 
     public static Configuration getEmbeddedCassandraPartitionGraphConfiguration(String ks) {
-        Configuration config = new BaseConfiguration();
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "embeddedcassandra");
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(KEYSPACE_KEY, cleanKeyspaceName(ks));
+        Configuration config = getGraphBaseConfiguration(ks, "embeddedcassandra");
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(
                 CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
                 cassandraOrderedYamlPath);
@@ -103,5 +85,12 @@ public class CassandraStorageSetup {
         } else {
             return raw;
         }
+    }
+    
+    private static Configuration getGraphBaseConfiguration(String ks, String backend) {
+        Configuration config = new BaseConfiguration();
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(KEYSPACE_KEY, cleanKeyspaceName(ks));
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, backend);
+        return config;
     }
 }
