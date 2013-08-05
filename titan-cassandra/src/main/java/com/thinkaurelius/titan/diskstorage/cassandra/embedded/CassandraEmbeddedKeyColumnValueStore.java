@@ -11,11 +11,11 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 
+import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.filter.IDiskAtomFilter;
 import org.apache.cassandra.db.filter.QueryPath;
-import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.cassandra.dht.*;
 import org.apache.cassandra.exceptions.IsBootstrappingException;
 import org.apache.cassandra.exceptions.RequestTimeoutException;
@@ -159,7 +159,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         List<Row> rows;
 
         try {
-            IDiskAtomFilter filter = ThriftValidation.asIFilter(predicate, BytesType.instance);
+            IDiskAtomFilter filter = ThriftValidation.asIFilter(predicate, Schema.instance.getComparator(keyspace, columnFamily));
 
             rows = StorageProxy.getRangeSlice(new RangeSliceCommand(keyspace,
                                                                     new ColumnParent(columnFamily),
@@ -418,12 +418,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
                 List<Row> newKeys = getKeySlice(StorageService.getPartitioner().getToken(lastSeenKey), maximumToken, sliceQuery, pageSize);
 
-                // this is needed because we need to know when to stop if key upper bound wasn't set
-                if (newKeys.size() == 1 && newKeys.get(0).key.key.equals(lastSeenKey)) {
-                    return false;
-                }
-
-                keys = getRowsIterator(newKeys);
+                keys = getRowsIterator(newKeys, lastSeenKey);
                 hasNext = keys.hasNext();
             }
 
@@ -498,6 +493,23 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                 @Override
                 public boolean apply(@Nullable Row row) {
                     return !(row == null || row.cf == null || row.cf.isMarkedForDelete() || row.cf.hasOnlyTombstones());
+                }
+            });
+        }
+
+        private Iterator<Row> getRowsIterator(List<Row> rows, final ByteBuffer exceptKey)
+        {
+            Iterator<Row> rowIterator = getRowsIterator(rows);
+
+            if (rowIterator == null)
+                return null;
+
+            return Iterators.filter(rowIterator, new Predicate<Row>()
+            {
+                @Override
+                public boolean apply(@Nullable Row row)
+                {
+                    return row != null && !row.key.key.equals(exceptKey);
                 }
             });
         }
