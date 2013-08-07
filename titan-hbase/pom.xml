@@ -40,6 +40,10 @@
                     <artifactId>jruby-complete</artifactId>
                     <groupId>org.jruby</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>asm</artifactId>
+                    <groupId>asm</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -49,6 +53,7 @@
             <version>1.0.4</version>
         </dependency>
     </dependencies>
+
     <profiles>
         <profile>
             <id>comprehensive</id>

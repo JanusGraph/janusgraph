@@ -3,15 +3,13 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,7 +52,7 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-    private final StaticBuffer truncateKey(StaticBuffer key) {
+    private StaticBuffer truncateKey(StaticBuffer key) {
         return key.subrange(numPrefixBytes,key.length()-numPrefixBytes);
     }
 
@@ -67,6 +65,17 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         KeySliceQuery prefixQuery = new KeySliceQuery(prefixKey(query.getKey()),query);
         return store.getSlice(prefixQuery, txh);
+    }
+
+    @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        List<StaticBuffer> prefixedKeys = new ArrayList<StaticBuffer>(keys.size());
+
+        for (StaticBuffer key : keys) {
+            prefixedKeys.add(prefixKey(key));
+        }
+
+        return store.getSlice(prefixedKeys, query, txh);
     }
 
     @Override
@@ -102,6 +111,16 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
+    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
+        throw new UnsupportedOperationException("getKeys(KeyRangeQuery) is not supported in hash prefixed mode.");
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
+        return new PrefixedRowIterator(store.getKeys(columnQuery, txh));
+    }
+
+    @Override
     public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         throw new UnsupportedOperationException();
     }
@@ -114,5 +133,33 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public void close() throws StorageException {
         store.close();
+    }
+
+    private class PrefixedRowIterator implements KeyIterator {
+        private final KeyIterator rows;
+
+        public PrefixedRowIterator(KeyIterator rows) {
+            this.rows = rows;
+        }
+
+        @Override
+        public RecordIterator<Entry> getEntries() {
+            return rows.getEntries();
+        }
+
+        @Override
+        public boolean hasNext() throws StorageException {
+            return rows.hasNext();
+        }
+
+        @Override
+        public StaticBuffer next() throws StorageException {
+            return truncateKey(rows.next());
+        }
+
+        @Override
+        public void close() throws StorageException {
+            rows.close();
+        }
     }
 }

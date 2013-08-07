@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,10 +13,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
@@ -159,130 +157,223 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh)
-            throws StorageException {
-        boolean ok = false;
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
         containsKeyInvocationCounter.inc();
-        final Timer.Context tc = containsKeyTimer.time();
+        Timer.Context tc = containsKeyTimer.time();
+
         try {
-            final boolean result = backend.containsKey(key, txh);
-            ok = true;
-            return result;
+            return backend.containsKey(key, txh);
+        } catch (StorageException e) {
+            containsKeyFailureCounter.inc();
+            throw e;
         } finally {
             tc.stop();
-            if (!ok) containsKeyFailureCounter.inc();
         }
     }
 
     @Override
-    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh)
-            throws StorageException {
-        boolean ok = false;
+    public List<Entry> getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
+        return getSliceWithMetrics(new GetSliceCommand<List<Entry>>() {
+            @Override
+            public List<Entry> call() throws StorageException {
+                List<Entry> result = backend.getSlice(query, txh);
+                recordSliceMetrics(result);
+                return result;
+            }
+        });
+    }
+
+    @Override
+    public List<List<Entry>> getSlice(final List<StaticBuffer> keys,
+                                      final SliceQuery query,
+                                      final StoreTransaction txh) throws StorageException {
+        return getSliceWithMetrics(new GetSliceCommand<List<List<Entry>>>() {
+            @Override
+            public List<List<Entry>> call() throws StorageException {
+                List<List<Entry>> results = backend.getSlice(keys, query, txh);
+
+                for (List<Entry> result : results) {
+                    recordSliceMetrics(result);
+                }
+
+                return results;
+            }
+        });
+    }
+
+    private <V> V getSliceWithMetrics(GetSliceCommand<V> getSliceCommand) throws StorageException {
         getSliceInvocationCounter.inc();
-        final Timer.Context tc = getSliceTimer.time();
+        Timer.Context tc = getSliceTimer.time();
+
         try {
-            final List<Entry> result = backend.getSlice(query, txh);
-            final int size = result.size();
-            getSliceColumnCounter.inc(size);
-            getSliceColumnHisto.update(size);
-            ok = true;
-            return result;
+            return getSliceCommand.call();
+        } catch (StorageException e) {
+            getSliceFailureCounter.inc();
+            throw e;
         } finally {
             tc.stop();
-            if (!ok) getSliceFailureCounter.inc();
         }
-           
+    }
+
+    private void recordSliceMetrics(List<Entry> row) {
+        getSliceColumnCounter.inc(row.size());
+        getSliceColumnHisto.update(row.size());
     }
 
     @Override
-    public void mutate(StaticBuffer key, List<Entry> additions,
-            List<StaticBuffer> deletions, StoreTransaction txh)
-            throws StorageException {
-        boolean ok = false;
+    public void mutate(StaticBuffer key,
+                       List<Entry> additions,
+                       List<StaticBuffer> deletions,
+                       StoreTransaction txh) throws StorageException {
         mutateInvocationCounter.inc();
-        final Timer.Context tc = mutateTimer.time();
+        Timer.Context tc = mutateTimer.time();
+
         try  {
             backend.mutate(key, additions, deletions, txh);
-            ok = true;
+        } catch (StorageException e) {
+            mutateFailureCounter.inc();
+            throw e;
         } finally {
             tc.stop();
-            if (!ok) mutateFailureCounter.inc();
         }
     }
 
     @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer column,
-            StaticBuffer expectedValue, StoreTransaction txh)
-            throws StorageException {
-        boolean ok = false;
+    public void acquireLock(StaticBuffer key,
+                            StaticBuffer column,
+                            StaticBuffer expectedValue,
+                            StoreTransaction txh) throws StorageException {
         acquireLockInvocationCounter.inc();
-        final Timer.Context tc = acquireLockTimer.time();
+        Timer.Context tc = acquireLockTimer.time();
+
         try {
             backend.acquireLock(key, column, expectedValue, txh);
-            ok = true;
+        } catch (StorageException e) {
+            acquireLockFailureCounter.inc();
+            throw e;
         } finally {
             tc.stop();
-            if (!ok) acquireLockFailureCounter.inc();
         }
     }
 
     @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh)
-            throws StorageException {
-        boolean ok = false;
+    public RecordIterator<StaticBuffer> getKeys(final StoreTransaction txh) throws StorageException {
+        return getKeysWithMetrics(new KeyIteratorCommand() {
+            @Override
+            public KeyIterator call() throws StorageException {
+                return new KeyIterator() {
+                    final RecordIterator<StaticBuffer> keyIterator = backend.getKeys(txh);
+
+                    @Override
+                    public RecordIterator<Entry> getEntries() {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public boolean hasNext() throws StorageException {
+                        return keyIterator.hasNext();
+                    }
+
+                    @Override
+                    public StaticBuffer next() throws StorageException {
+                        return keyIterator.next();
+                    }
+
+                    @Override
+                    public void close() throws StorageException {
+                        keyIterator.close();
+                    }
+                };
+            }
+        });
+    }
+
+    @Override
+    public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws StorageException {
+        return getKeysWithMetrics(new KeyIteratorCommand() {
+            @Override
+            public KeyIterator call() throws StorageException {
+                return backend.getKeys(query, txh);
+            }
+        });
+    }
+
+    @Override
+    public KeyIterator getKeys(final SliceQuery query, final StoreTransaction txh) throws StorageException {
+        return getKeysWithMetrics(new KeyIteratorCommand() {
+            @Override
+            public KeyIterator call() throws StorageException {
+                return backend.getKeys(query, txh);
+            }
+        });
+    }
+
+    private KeyIterator getKeysWithMetrics(KeyIteratorCommand command) throws StorageException {
         getKeysInvocationCounter.inc();
         final Timer.Context tc = getKeysTimer.time();
+
         try {
-            final RecordIterator<StaticBuffer> iter = backend.getKeys(txh);
-            ok = true;
-            return MetricInstrumentedIterator.of(iter, getKeysIteratorMetricPrefix);
+            return MetricInstrumentedIterator.of(command.call(), getKeysIteratorMetricPrefix);
+        } catch (StorageException e) {
+            getKeysFailureCounter.inc();
+            throw e;
         } finally {
             tc.stop();
-            if (!ok) getKeysFailureCounter.inc();
         }
     }
 
     @Override
     public StaticBuffer[] getLocalKeyPartition() throws StorageException {
-        boolean ok = false;
         getLocalKeyPartitionInvocationCounter.inc();
-        final Timer.Context tc = getLocalKeyPartitionTimer.time();
+        Timer.Context tc = getLocalKeyPartitionTimer.time();
+
         try {
-            final StaticBuffer[] result = backend.getLocalKeyPartition();
-            ok = true;
-            return result;
+            return backend.getLocalKeyPartition();
+        } catch (StorageException e) {
+            getLocalKeyPartitionFailureCounter.inc();
+            throw e;
         } finally {
             tc.stop();
-            if (!ok) getLocalKeyPartitionFailureCounter.inc();
         }
     }
 
     @Override
     public String getName() {
-        boolean ok = false;
         getNameInvocationCounter.inc();
-        final Timer.Context tc = getNameTimer.time();
+        Timer.Context tc = getNameTimer.time();
+
         try {
-            final String result = backend.getName();
-            ok = true;
-            return result;
+            return backend.getName();
+        } catch (RuntimeException e) {
+            getNameFailureCounter.inc();
+            throw e;
         } finally {
             tc.stop();
-            if (!ok) getNameFailureCounter.inc();
         }
     }
 
     @Override
     public void close() throws StorageException {
-        boolean ok = false;
         closeInvocationCounter.inc();
-        final Timer.Context tc = closeTimer.time();
+        Timer.Context tc = closeTimer.time();
+
         try {
             backend.close();
-            ok = true;
+        } catch (StorageException e) {
+            closeFailureCounter.inc();
+            throw e;
         } finally {
             tc.stop();
-            if (!ok) closeFailureCounter.inc();
         }
+    }
+
+    private static interface KeyIteratorCommand extends Callable<KeyIterator> {
+        @Override
+        public KeyIterator call() throws StorageException;
+    }
+
+    private static interface GetSliceCommand<V> extends Callable<V> {
+        @Override
+        public V call() throws StorageException;
     }
 }

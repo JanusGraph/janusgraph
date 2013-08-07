@@ -2,10 +2,7 @@ package com.thinkaurelius.titan.diskstorage.locking.transactional;
 
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 import java.util.List;
@@ -37,6 +34,11 @@ public class TransactionalLockStore implements KeyColumnValueStore {
     }
 
     @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        return store.getSlice(keys, query, txh);
+    }
+
+    @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         store.mutate(key, additions, deletions, txh);
     }
@@ -49,6 +51,16 @@ public class TransactionalLockStore implements KeyColumnValueStore {
     @Override
     public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
         return store.getKeys(txh);
+    }
+
+    @Override
+    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
+        return store.getKeys(keyQuery, txh);
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
+        return store.getKeys(columnQuery, txh);
     }
 
     @Override

@@ -1,11 +1,14 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package com.thinkaurelius.titan.diskstorage.locking;
 
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class resolves lock contention between two transactions on the same JVM.
@@ -20,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 
-public class LocalLockMediator {
+public class LocalLockMediator<T> {
 
     private static final Logger log = LoggerFactory
             .getLogger(LocalLockMediator.class);
@@ -38,7 +41,7 @@ public class LocalLockMediator {
      * according to {@link AuditRecord#expires}, in which case the lock should
      * be considered invalid.
      */
-    private final ConcurrentHashMap<KeyColumn, AuditRecord> locks = new ConcurrentHashMap<KeyColumn, AuditRecord>();
+    private final ConcurrentHashMap<KeyColumn, AuditRecord<T>> locks = new ConcurrentHashMap<KeyColumn, AuditRecord<T>>();
 
     public LocalLockMediator(String name) {
         this.name = name;
@@ -52,7 +55,7 @@ public class LocalLockMediator {
      * <p/>
      * For any particular key-column, whatever value of {@code requestor} is
      * passed to this method must also be passed to the associated later call to
-     * {@link #unlock(KeyColumn, ConsistentKeyLockTransaction)}.
+     * {@link #unlock(KeyColumn, ExpectedValueCheckingTransaction)}.
      * <p/>
      * If some requestor {@code r} calls this method on a KeyColumn {@code k}
      * and this method returns true, then subsequent calls to this method by
@@ -76,17 +79,17 @@ public class LocalLockMediator {
      *
      * @param kc        lock identifier
      * @param requestor the object locking {@code kc}
-     * @param expiresAt the number of nanoseconds since the Epoch at which this
-     *                  acquired lock will be automatically considered unlocked
+     * @param expires   the absolute time since the UNIX epoch at which this lock will automatically expire
+     * @param tu        the units of {@code expires}
      * @return true if the lock is acquired, false if it was not acquired
      */
-    public boolean lock(KeyColumn kc, ConsistentKeyLockTransaction requestor,
-                        long expiresAt) {
+    public boolean lock(KeyColumn kc, T requestor,
+                        long expires, TimeUnit tu) {
         assert null != kc;
         assert null != requestor;
 
-        AuditRecord audit = new AuditRecord(requestor, expiresAt);
-        AuditRecord inmap = locks.putIfAbsent(kc, audit);
+        AuditRecord<T> audit = new AuditRecord<T>(requestor, TimeUnit.NANOSECONDS.convert(expires, tu));
+        AuditRecord<T> inmap = locks.putIfAbsent(kc, audit);
 
         boolean success = false;
 
@@ -113,7 +116,7 @@ public class LocalLockMediator {
                                     audit.expires});
                 }
             }
-        } else if (inmap.expires <= TimeUtility.getApproxNSSinceEpoch(false)) {
+        } else if (inmap.expires <= TimeUtility.INSTANCE.getApproxNSSinceEpoch(false)) {
             // the recorded lock has expired; replace it
             success = locks.replace(kc, inmap, audit);
             if (log.isTraceEnabled()) {
@@ -140,16 +143,16 @@ public class LocalLockMediator {
      * @param kc        lock identifier
      * @param requestor the object which previously locked {@code kc}
      */
-    public boolean unlock(KeyColumn kc, ConsistentKeyLockTransaction requestor) {
+    public boolean unlock(KeyColumn kc, T requestor) {
 
         if (!locks.containsKey(kc)) {
             log.error("Local unlock failed: no locks found for {}", kc);
             return false;
         }
 
-        AuditRecord unlocker = new AuditRecord(requestor, 0);
+        AuditRecord<T> unlocker = new AuditRecord<T>(requestor, 0);
 
-        AuditRecord holder = locks.get(kc);
+        AuditRecord<T> holder = locks.get(kc);
 
         if (!holder.equals(unlocker)) {
             log.error("Local unlock of {} by {} failed: it is held by {}",
@@ -184,12 +187,12 @@ public class LocalLockMediator {
      * A record containing the local transaction that holds a lock and the
      * lock's expiration time.
      */
-    private static class AuditRecord {
+    private static class AuditRecord<T> {
         
         /**
          * The local transaction that holds/held the lock.
          */
-        private final ConsistentKeyLockTransaction holder;
+        private final T holder;
         /**
          * The expiration time of a the lock. Conventionally, this is in
          * nanoseconds from the epoch as returned by
@@ -201,7 +204,7 @@ public class LocalLockMediator {
          */
         private int hashCode;
 
-        private AuditRecord(ConsistentKeyLockTransaction holder, long expires) {
+        private AuditRecord(T holder, long expires) {
             this.holder = holder;
             this.expires = expires;
         }
@@ -230,6 +233,13 @@ public class LocalLockMediator {
                 return false;
             if (getClass() != obj.getClass())
                 return false;
+            /*
+             * This warning suppression is harmless because we are only going to
+             * call other.holder.equals(...), and since equals(...) is part of
+             * Object, it is guaranteed to be defined no matter the concrete
+             * type of parameter T.
+             */
+            @SuppressWarnings("rawtypes")
             AuditRecord other = (AuditRecord) obj;
             if (holder == null) {
                 if (other.holder != null)

@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
 
 import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterators;
+import com.google.common.collect.*;
 import com.netflix.astyanax.ExceptionCallback;
 import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.OperationResult;
@@ -10,6 +9,7 @@ import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.*;
 import com.netflix.astyanax.query.AllRowsQuery;
 import com.netflix.astyanax.query.RowQuery;
+import com.netflix.astyanax.query.RowSliceQuery;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
@@ -22,16 +22,12 @@ import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.Partitioner;
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
-public class AstyanaxOrderedKeyColumnValueStore implements
-        KeyColumnValueStore {
+public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
 
     private static final ByteBuffer EMPTY = ByteBuffer.allocate(0);
 
@@ -87,64 +83,97 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+        ByteBuffer key = query.getKey().asByteBuffer();
+        List<Entry> slice = getNamesSlice(Arrays.asList(query.getKey()), query, txh).get(key.duplicate());
+        return (slice == null) ? Collections.<Entry>emptyList() : slice;
+    }
+
+    @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        return Lists.newArrayList(getNamesSlice(keys, query, txh).values());
+    }
+
+    public Map<ByteBuffer, List<Entry>> getNamesSlice(List<StaticBuffer> keys,
+                                                      SliceQuery query,
+                                                      StoreTransaction txh) throws StorageException {
+        ByteBuffer[] requestKeys = new ByteBuffer[keys.size()];
+        {
+            for (int i = 0; i < keys.size(); i++) {
+                requestKeys[i] = keys.get(i).asByteBuffer();
+            }
+        }
 
         /*
          * RowQuery<K,C> should be parameterized as
          * RowQuery<ByteBuffer,ByteBuffer>. However, this causes the following
          * compilation error when attempting to call withColumnRange on a
          * RowQuery<ByteBuffer,ByteBuffer> instance:
-         * 
+         *
          * java.lang.Error: Unresolved compilation problem: The method
          * withColumnRange(ByteBuffer, ByteBuffer, boolean, int) is ambiguous
          * for the type RowQuery<ByteBuffer,ByteBuffer>
-         * 
+         *
          * The compiler substitutes ByteBuffer=C for both startColumn and
          * endColumn, compares it to its identical twin with that type
          * hard-coded, and dies.
-         * 
+         *
          */
-        RowQuery rq = keyspace.prepareQuery(columnFamily)
-                .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
-                .withRetryPolicy(retryPolicy.duplicate())
-                .getKey(query.getKey().asByteBuffer());
-        int limit = Integer.MAX_VALUE - 1;
-        if (query.hasLimit()) limit = query.getLimit();
-        rq.withColumnRange(query.getSliceStart().asByteBuffer(), query.getSliceEnd().asByteBuffer(), false, limit + 1);
+        RowSliceQuery rq = keyspace.prepareQuery(columnFamily)
+                                   .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
+                                   .withRetryPolicy(retryPolicy.duplicate())
+                                   .getKeySlice(requestKeys);
 
-        OperationResult<ColumnList<ByteBuffer>> r;
+        // Thank you, Astyanax, for making builder pattern useful :(
+        int limit = ((query.hasLimit()) ? query.getLimit() : Integer.MAX_VALUE - 1);
+        rq.withColumnRange(query.getSliceStart().asByteBuffer(),
+                           query.getSliceEnd().asByteBuffer(),
+                           false,
+                           limit + 1);
+
+        OperationResult<Rows<ByteBuffer, ByteBuffer>> r;
         try {
-            @SuppressWarnings("unchecked")
-            OperationResult<ColumnList<ByteBuffer>> tmp = (OperationResult<ColumnList<ByteBuffer>>) rq.execute();
-            r = tmp;
+            r = (OperationResult<Rows<ByteBuffer, ByteBuffer>>) rq.execute();
         } catch (ConnectionException e) {
             throw new TemporaryStorageException(e);
         }
 
-        List<Entry> result = new ArrayList<Entry>(r.getResult().size());
+        return convertResult(r.getResult(), query.getSliceEnd().asByteBuffer(), limit);
+    }
 
+    private Map<ByteBuffer, List<Entry>> convertResult(Rows<ByteBuffer, ByteBuffer> rows, ByteBuffer lastColumn, int limit) {
+        Map<ByteBuffer, List<Entry>> result = new HashMap<ByteBuffer, List<Entry>>();
+
+        for (Row<ByteBuffer, ByteBuffer> row : rows) {
+            assert result.get(row.getKey()) == null;
+            result.put(row.getKey().duplicate(), excludeLastColumn(row, lastColumn, limit));
+        }
+
+        return result;
+    }
+
+    private static List<Entry> excludeLastColumn(Row<ByteBuffer, ByteBuffer> row, ByteBuffer lastColumn, int limit) {
         int i = 0;
+        List<Entry> entries = new ArrayList<Entry>();
 
-        ByteBuffer sliceEndBB = query.getSliceEnd().asByteBuffer();
-        
-        for (Column<ByteBuffer> c : r.getResult()) {
+        for (Column<ByteBuffer> c : row.getColumns()) {
             ByteBuffer colName = c.getName();
 
             // Cassandra treats the end of a slice column range inclusively, but
             // this method's contract promises to treat it exclusively. Check
             // for the final column in the Cassandra results and skip it if
             // found.
-            if (colName.equals(sliceEndBB)) {
+            if (colName.equals(lastColumn)) {
                 break;
             }
 
-            result.add(new ByteBufferEntry(colName, c.getByteBufferValue()));
+            entries.add(new ByteBufferEntry(colName, c.getByteBufferValue()));
 
             if (++i == limit) {
                 break;
             }
         }
 
-        return result;
+        return entries;
     }
 
     @Override
@@ -163,51 +192,79 @@ public class AstyanaxOrderedKeyColumnValueStore implements
 
     @Override
     public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        if (storeManager.getPartitioner() != Partitioner.RANDOM)
-            throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");;
+        return getKeys((SliceQuery) null, txh);
+    }
 
-        AllRowsQuery<ByteBuffer, ByteBuffer> allRowsQuery = keyspace.prepareQuery(columnFamily).getAllRows();
+    @Override
+    public KeyIterator getKeys(@Nullable SliceQuery sliceQuery, StoreTransaction txh) throws StorageException {
+        if (storeManager.getPartitioner() != Partitioner.RANDOM)
+            throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
+
+        AllRowsQuery allRowsQuery = keyspace.prepareQuery(columnFamily).getAllRows();
+
+        if (sliceQuery != null) {
+            int limit = (sliceQuery.hasLimit()) ? sliceQuery.getLimit() : Integer.MAX_VALUE;
+            allRowsQuery.withColumnRange(sliceQuery.getSliceStart().asByteBuffer(),
+                                         sliceQuery.getSliceEnd().asByteBuffer(),
+                                         false,
+                                         limit);
+        }
 
         Rows<ByteBuffer, ByteBuffer> result;
         try {
             /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
-            result = allRowsQuery.setRowLimit(storeManager.getPageSize()) // pre-fetch that many rows at a time
-                               .setConcurrencyLevel(1) // one execution thread for fetching portion of rows
-                               .setExceptionCallback(new ExceptionCallback() {
-                                   private int retries = 0;
+            OperationResult op = allRowsQuery.setRowLimit(storeManager.getPageSize()) // pre-fetch that many rows at a time
+                                             .setConcurrencyLevel(1) // one execution thread for fetching portion of rows
+                                             .setExceptionCallback(new ExceptionCallback() {
+                                                 private int retries = 0;
 
-                                   @Override
-                                   public boolean onException(ConnectionException e) {
-                                       try {
-                                           return retries > 2; // make 3 re-tries
-                                       } finally {
-                                           retries++;
-                                       }
-                                   }
-                               })
-                               .execute().getResult();
+                                                 @Override
+                                                 public boolean onException(ConnectionException e) {
+                                                     try {
+                                                         return retries > 2; // make 3 re-tries
+                                                     } finally {
+                                                         retries++;
+                                                     }
+                                                 }
+                                             }).execute();
+
+            result = ((OperationResult<Rows<ByteBuffer, ByteBuffer>>) op).getResult();
         } catch (ConnectionException e) {
             throw new PermanentStorageException(e);
         }
 
-        final Iterator<Row<ByteBuffer, ByteBuffer>> rows = Iterators.filter(result.iterator(), new KeyIterationPredicate());
+        return new RowIterator(result, sliceQuery);
+    }
 
-        return new RecordIterator<StaticBuffer>() {
-            @Override
-            public boolean hasNext() throws StorageException {
-                return rows.hasNext();
-            }
+    @Override
+    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
+        // this query could only be done when byte-ordering partitioner is used
+        // because Cassandra operates on tokens internally which means that even contiguous
+        // range of keys (e.g. time slice) with random partitioner could produce disjoint set of tokens
+        // returning ambiguous results to the user.
+        Partitioner partitioner = storeManager.getPartitioner();
+        if (partitioner != Partitioner.BYTEORDER && partitioner != Partitioner.LOCALBYTEORDER)
+            throw new PermanentStorageException("getKeys(KeyRangeQuery could only be used with byte-ordering partitioner.");
 
-            @Override
-            public StaticBuffer next() throws StorageException {
-                return new StaticByteBuffer(rows.next().getKey());
-            }
+        ByteBuffer start = query.getKeyStart().asByteBuffer(), end = query.getKeyEnd().asByteBuffer();
+        int limit = (query.hasLimit()) ? query.getLimit() : Integer.MAX_VALUE;
 
-            @Override
-            public void close() throws StorageException {
-                // nothing to clean-up here
-            }
-        };
+        RowSliceQuery rowSlice = keyspace.prepareQuery(columnFamily)
+                                         .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
+                                         .withRetryPolicy(retryPolicy.duplicate())
+                                         .getKeyRange(start, end, null, null, Integer.MAX_VALUE);
+
+        // Astyanax is bad at builder pattern :(
+        rowSlice.withColumnRange(query.getSliceStart().asByteBuffer(),
+                                 query.getSliceEnd().asByteBuffer(),
+                                 false,
+                                 limit);
+
+        try {
+            return new RowIterator(((OperationResult<Rows<ByteBuffer, ByteBuffer>>) rowSlice.execute()).getResult(), query);
+        } catch (ConnectionException e) {
+            throw new TemporaryStorageException(e);
+        }
     }
 
     @Override
@@ -223,7 +280,77 @@ public class AstyanaxOrderedKeyColumnValueStore implements
     private static class KeyIterationPredicate implements Predicate<Row<ByteBuffer, ByteBuffer>> {
         @Override
         public boolean apply(@Nullable Row<ByteBuffer, ByteBuffer> row) {
-            return (row == null) ? false : row.getColumns().size() > 0;
+            return (row != null) && row.getColumns().size() > 0;
+        }
+    }
+
+    private static class RowIterator implements KeyIterator {
+        private final Iterator<Row<ByteBuffer, ByteBuffer>> rows;
+        private Row<ByteBuffer, ByteBuffer> currentRow;
+        private final SliceQuery sliceQuery;
+        private boolean isClosed;
+
+        public RowIterator(Rows<ByteBuffer, ByteBuffer> rows, SliceQuery sliceQuery) {
+            this.rows = Iterators.filter(rows.iterator(), new KeyIterationPredicate());
+            this.sliceQuery = sliceQuery;
+        }
+
+        @Override
+        public RecordIterator<Entry> getEntries() {
+            ensureOpen();
+
+            if (sliceQuery == null)
+                throw new IllegalStateException("getEntries() requires SliceQuery to be set.");
+
+            return new RecordIterator<Entry>() {
+                private final Iterator<Entry> columns = excludeLastColumn(currentRow,
+                                                                          sliceQuery.getSliceEnd().asByteBuffer(),
+                                                                          sliceQuery.hasLimit()
+                                                                                  ? sliceQuery.getLimit()
+                                                                                  : Integer.MAX_VALUE)
+                                                                          .iterator();
+
+                @Override
+                public boolean hasNext() throws StorageException {
+                    ensureOpen();
+                    return columns.hasNext();
+                }
+
+                @Override
+                public Entry next() throws StorageException {
+                    ensureOpen();
+                    return columns.next();
+                }
+
+                @Override
+                public void close() throws StorageException {
+                    isClosed = true;
+                }
+            };
+        }
+
+        @Override
+        public boolean hasNext() throws StorageException {
+            ensureOpen();
+            return rows.hasNext();
+        }
+
+        @Override
+        public StaticBuffer next() throws StorageException {
+            ensureOpen();
+
+            currentRow = rows.next();
+            return new StaticByteBuffer(currentRow.getKey());
+        }
+
+        @Override
+        public void close() throws StorageException {
+            isClosed = true;
+        }
+
+        private void ensureOpen() {
+            if (isClosed)
+                throw new IllegalStateException("Iterator has been closed.");
         }
     }
 }

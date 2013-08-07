@@ -4,7 +4,10 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
@@ -14,12 +17,9 @@ import com.thinkaurelius.titan.util.stats.MetricManager;
  * {@link MetricInstrumentedStore#getSlice(com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery, com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction)}.
  * 
  * @author Dan LaRocque <dalaro@hopcount.org>
- * 
- * @param <E> Iterator element type
  */
-public class MetricInstrumentedIterator<E> implements RecordIterator<E> {
-    
-    private final RecordIterator<E> i;
+public class MetricInstrumentedIterator implements KeyIterator {
+    private final KeyIterator iterator;
     
     private final Timer nextTimer;
     private final Counter nextInvocationCounter;
@@ -39,25 +39,24 @@ public class MetricInstrumentedIterator<E> implements RecordIterator<E> {
      * on the wrapped instance will be prefixed with the string {@code p} which
      * must be non-null. If the iterator argument is null, then return null.
      * 
-     * @param i
+     * @param keyIterator
      *            The iterator to wrap with Metrics measurements
-     * @param p
+     * @param prefix
      *            The Metrics name prefix string
+     *
      * @return A wrapper around {@code i} or null if {@code i} is null
      */
-    public static <E> MetricInstrumentedIterator<E> of(RecordIterator<E> i, String p) {
-        if (null == i) {
+    public static MetricInstrumentedIterator of(KeyIterator keyIterator, String prefix) {
+        if (keyIterator == null) {
             return null;
         }
-        
-        Preconditions.checkNotNull(i);
-        Preconditions.checkNotNull(p);
-        
-        return new MetricInstrumentedIterator<E>(i, p);
+
+        Preconditions.checkNotNull(prefix);
+        return new MetricInstrumentedIterator(keyIterator, prefix);
     }
     
-    private MetricInstrumentedIterator(RecordIterator<E> i, String p) {
-        this.i = i;
+    private MetricInstrumentedIterator(KeyIterator i, String p) {
+        this.iterator = i;
         
         MetricRegistry metrics = MetricManager.INSTANCE.getRegistry();
         nextTimer =
@@ -84,45 +83,52 @@ public class MetricInstrumentedIterator<E> implements RecordIterator<E> {
 
     @Override
     public boolean hasNext() throws StorageException {
-        boolean ok = false;
         hasNextInvocationCounter.inc();
-        final Timer.Context tc = hasNextTimer.time();
+        Timer.Context tc = hasNextTimer.time();
+
         try {
-            boolean result = i.hasNext();
-            ok = true;
-            return result;
+            return iterator.hasNext();
+        } catch (StorageException e) {
+            hasNextFailureCounter.inc();
+            throw e;
         } finally {
             tc.stop();
-            if (!ok) hasNextFailureCounter.inc();
         }
     }
 
     @Override
-    public E next() throws StorageException {
-        boolean ok = false;
+    public StaticBuffer next() throws StorageException {
         nextInvocationCounter.inc();
-        final Timer.Context tc = nextTimer.time();
+        Timer.Context tc = nextTimer.time();
+
         try {
-            E result = i.next();
-            ok = true;
-            return result;
+            return iterator.next();
+        } catch (StorageException e) {
+            nextFailureCounter.inc();
+            throw e;
         } finally {
             tc.stop();
-            if (!ok) nextFailureCounter.inc();
         }
     }
 
     @Override
     public void close() throws StorageException {
-        boolean ok = false;
         closeInvocationCounter.inc();
-        final Timer.Context tc = closeTimer.time();
+        Timer.Context tc = closeTimer.time();
+
         try {
-            i.close();
-            ok = true;
+            iterator.close();
+        } catch (StorageException e) {
+            closeFailureCounter.inc();
+            throw e;
         } finally {
             tc.stop();
-            if (!ok) closeFailureCounter.inc();
         }
+    }
+
+    @Override
+    public RecordIterator<Entry> getEntries() {
+        // TODO: add metrics to entries if ever needed
+        return iterator.getEntries();
     }
 }

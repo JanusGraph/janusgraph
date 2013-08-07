@@ -56,4 +56,21 @@ public interface StoreManager {
      * @throws StorageException
      */
     public void setConfigurationProperty(final String key, final String value) throws StorageException;
+    
+    /**
+     * Return an identifier for the StoreManager. Two managers with the same
+     * name would open databases that read and write the same underlying data;
+     * two store managers with different names should be, for data read/write
+     * purposes, completely isolated from each other.
+     * <p>
+     * Examples:
+     * <ul>
+     * <li>Cassandra keyspace</li>
+     * <li>HBase tablename</li>
+     * <li>InMemoryStore heap address (i.e. default toString()).</li>
+     * </ul>
+     * 
+     * @return Name for this StoreManager
+     */
+    public String getName();
 }

@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.locking.LockingException;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 import java.util.List;
@@ -47,8 +46,17 @@ public interface KeyColumnValueStore {
      */
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException;
 
-    //TODO: for declarative query optimization
-    //public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException;
+    /**
+     * Retrieves the list of entries (i.e. column-value pairs) as specified by the given {@link SliceQuery} for all
+     * of the given keys together.
+     * @param keys List of keys
+     * @param query Slicequery specifying matching entries
+     * @param txh Transaction
+     * @return The result of the query for each of the given keys in the order of the keys. That means, nth entry in the returned list
+     * is a list that contains the entries that match the given query for the nth key (which may be empty).
+     * @throws StorageException
+     */
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException;
 
     /**
      * Verifies acquisition of locks {@code txh} from previous calls to
@@ -146,9 +154,32 @@ public interface KeyColumnValueStore {
      */
     public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException;
 
-    //TODO: for Fulgora, replace with these two: one for stores that maintain key order and those without according to StoreFeatures.isKeyOrdered()
-//    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException;
-//    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException; - like current getKeys if slice is empty, i.e. start==end
+    /**
+     * Returns a {@link KeyIterator} over all keys that fall within the key-range specified by the given query and have one or more columns matching the column-range.
+     * Calling {@link KeyIterator#getEntries()} returns the list of all entries that match the column-range specified by the given query.
+     *
+     * This method is only supported by stores which keep keys in byte-order.
+     *
+     * @param query
+     * @param txh
+     * @return
+     * @throws StorageException
+     */
+    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException;
+
+    /**
+     * Returns a {@link KeyIterator} over all keys in the store that have one or more columns matching the column-range. Calling {@link KeyIterator#getEntries()}
+     * returns the list of all entries that match the column-range specified by the given query.
+     *
+     * This method is only supported by stores which do not keep keys in byte-order.
+     *
+     * @param query
+     * @param txh
+     * @return
+     * @throws StorageException
+     */
+    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException;
+    // like current getKeys if column-slice is such that is queries for vertex state property
 
 
     /**

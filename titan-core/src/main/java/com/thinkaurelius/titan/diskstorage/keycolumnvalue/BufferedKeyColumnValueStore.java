@@ -41,6 +41,11 @@ public class BufferedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        return store.getSlice(keys, query, txh);
+    }
+
+    @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         if (bufferEnabled) {
             assert txh instanceof BufferTransaction;
@@ -58,6 +63,16 @@ public class BufferedKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
         return store.getKeys(getTx(txh));
+    }
+
+    @Override
+    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
+        return store.getKeys(keyQuery, txh);
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
+        return store.getKeys(columnQuery, txh);
     }
 
     @Override

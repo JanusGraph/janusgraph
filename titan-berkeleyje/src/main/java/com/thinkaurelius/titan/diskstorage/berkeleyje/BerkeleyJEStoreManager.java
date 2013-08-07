@@ -13,6 +13,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
+
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,5 +181,8 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         storageConfig.setConfigurationProperty(key,value);
     }
 
-
+    @Override
+    public String getName() {
+        return getClass().getSimpleName() + ":" + directory.toString();
+    }
 }

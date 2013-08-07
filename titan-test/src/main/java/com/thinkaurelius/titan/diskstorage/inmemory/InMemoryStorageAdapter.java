@@ -35,6 +35,10 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
                 return ImmutableList.of();
             }
 
+            public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+                return ImmutableList.of();
+            }
+
             @Override
             public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
                 //Do nothing
@@ -47,22 +51,17 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
 
             @Override
             public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-                return new RecordIterator<StaticBuffer>() {
-                    @Override
-                    public boolean hasNext() throws StorageException {
-                        return false;
-                    }
+                return new EmptyRowIterator();
+            }
 
-                    @Override
-                    public StaticBuffer next() throws StorageException {
-                        throw new NoSuchElementException();
-                    }
+            @Override
+            public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
+                return new EmptyRowIterator();
+            }
 
-                    @Override
-                    public void close() throws StorageException {
-                        //Do nothing
-                    }
-                };
+            @Override
+            public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
+                return new EmptyRowIterator();
             }
 
             @Override
@@ -148,5 +147,31 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
     @Override
     public void setConfigurationProperty(String key, String value) throws StorageException {
         config.put(key,value);
+    }
+
+    private static class EmptyRowIterator implements KeyIterator {
+        @Override
+        public RecordIterator<Entry> getEntries() {
+            return null;
+        }
+
+        @Override
+        public boolean hasNext() throws StorageException {
+            return false;
+        }
+
+        @Override
+        public StaticBuffer next() throws StorageException {
+            throw new NoSuchElementException();
+        }
+
+        @Override
+        public void close() throws StorageException {
+        }
+    }
+    
+    @Override
+    public String getName() {
+        return toString();
     }
 }

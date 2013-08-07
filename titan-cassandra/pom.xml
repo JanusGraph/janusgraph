@@ -37,7 +37,6 @@
         <dependency>
             <groupId>com.codahale.metrics</groupId>
             <artifactId>metrics-core</artifactId>
-            <version>${metrics.version}</version>
         </dependency>
         <!--
             JNA is not required to run Cassandra, but it improves
@@ -60,11 +59,49 @@
             and runtime NoClassDefFoundErrors looking for the class
             com/google/common/util/concurrent/RateLimiter.
         -->
-         <dependency>
+        <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
             <version>1.2.2</version>
+            <!-- Using avro-ipc 1.5.3 caused the following when opening the graphdb:
+                 java.lang.NoSuchMethodError: org.apache.avro.io.DecoderFactory.configureDirectDecoder(Z)Lorg/apache/avro/io/DecoderFactory
+
+                 Stock avro 1.4.0 or 1.4.1 might work, but I'd like to see
+                 what customizations were made in the cassandra copy of avro
+                 before trying to drop it for the stock artifact...
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.cassandra.deps</groupId>
+                    <artifactId>avro</artifactId>
+                </exclusion>
+            </exclusions>
+            -->
         </dependency>
+        <!--
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>1.4.0</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>netty</artifactId>
+                    <groupId>org.jboss.netty</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>paranamer</artifactId>
+                    <groupId>com.thoughtworks.paranamer</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>paranamer-ant</artifactId>
+                    <groupId>com.thoughtworks.paranamer</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>velocity</artifactId>
+                    <groupId>org.apache.velocity</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        -->
         <dependency>
             <groupId>commons-pool</groupId>
             <artifactId>commons-pool</artifactId>
@@ -90,11 +127,14 @@
             <artifactId>astyanax-cassandra</artifactId>
             <version>${astyanax.version}</version>
         </dependency>
-        <!-- The latest Snappy-java because 1.4.0.1 is broken on Mac OS X with JDK 7 -->
+        <dependency>
+             <groupId>com.netflix.astyanax</groupId>
+             <artifactId>astyanax-recipes</artifactId>
+             <version>${astyanax.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
-            <version>1.0.5-M3</version>
         </dependency>
     </dependencies>
 

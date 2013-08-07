@@ -36,6 +36,16 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
+    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
+        return store.getKeys(keyQuery, txh);
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
+        return store.getKeys(columnQuery, txh);
+    }
+
+    @Override
     public StaticBuffer[] getLocalKeyPartition() throws StorageException {
         return store.getLocalKeyPartition();
     }
@@ -60,4 +70,8 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
         return store.getSlice(query, txh);
     }
 
+    @Override
+    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        return store.getSlice(keys, query, txh);
+    }
 }

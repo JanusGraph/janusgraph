@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
 import org.apache.commons.configuration.Configuration;
+import org.junit.Test;
 
 
 public class BerkeleyDBjeKeyColumnValueVariableTest extends KeyColumnValueStoreTest {
@@ -16,4 +17,8 @@ public class BerkeleyDBjeKeyColumnValueVariableTest extends KeyColumnValueStoreT
         return new OrderedKeyValueStoreManagerAdapter(sm);
     }
 
+    @Test
+    public void testGetKeysWithKeyRange() throws Exception {
+        super.testGetKeysWithKeyRange();
+    }
 }
