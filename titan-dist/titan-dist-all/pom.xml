@@ -30,6 +30,16 @@
                     <version>${project.version}</version>
                 </dependency>
                 <dependency>
+                    <groupId>net.java.dev.jna</groupId>
+                    <artifactId>jna</artifactId>
+                    <version>${jna.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>com.tinkerpop.rexster</groupId>
+                    <artifactId>rexster-console</artifactId>
+                    <version>${tinkerpop.version}</version>
+                </dependency>
+                <dependency>
                     <groupId>com.thinkaurelius.titan</groupId>
                     <artifactId>titan-core</artifactId>
                     <version>${project.version}</version>

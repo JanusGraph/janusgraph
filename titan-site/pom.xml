@@ -269,7 +269,7 @@
                                         <argument>update</argument>
                                         <argument>--init</argument>
                                     </arguments>
-                                    <workingDirectory>${project.parent.basedir}</workingDirectory>
+                                    <workingDirectory>..</workingDirectory>
                                 </configuration>
                             </execution>
                             <execution>
