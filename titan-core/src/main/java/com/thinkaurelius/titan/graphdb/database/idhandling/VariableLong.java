@@ -101,9 +101,14 @@ public class VariableLong {
         return unsignedNumBlocks(value);
     }
 
-    private static long convert2Unsigned(long value) {
+    private static long convert2Unsigned(final long value) {
         assert value >= 0 || value > Long.MIN_VALUE;
         return Math.abs(value) << 1 | (value < 0 ? 1 : 0);
+    }
+
+    private static long convertFromUnsigned(final long value) {
+        if ((value & 1) == 1) return -(value >>> 1);
+        else return value >>> 1;
     }
 
     public static int length(long value) {
@@ -115,9 +120,7 @@ public class VariableLong {
     }
 
     public static long read(ReadBuffer in) {
-        long value = readUnsigned(in);
-        if ((value & 1) == 1) return -(value >>> 1);
-        else return value >>> 1;
+        return convertFromUnsigned(readUnsigned(in));
     }
 
     public static void writePositiveWithPrefix(final WriteBuffer out, long value, long prefix, final int prefixBitLen) {
@@ -178,6 +181,14 @@ public class VariableLong {
 
     public static long readPositiveBackward(ReadBuffer in) {
         return readUnsignedBackward(in);
+    }
+
+    public static void writeBackward(WriteBuffer out, final long value) {
+        writeUnsignedBackward(out, convert2Unsigned(value));
+    }
+
+    public static long readBackward(ReadBuffer in) {
+        return convertFromUnsigned(readUnsignedBackward(in));
     }
 
     private static void writeUnsignedBackward(WriteBuffer out, long value) {

@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -10,8 +9,6 @@ import org.apache.commons.lang.time.StopWatch;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.ByteBuffer;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -60,7 +57,7 @@ public class VariableLongTest {
             }
         } else {
             for (long i = (negative?-maxValue:0); i <= maxValue; i += jump) {
-                read.next(rb,i);
+                read.next(rb, i);
             }
         }
     }
@@ -99,13 +96,23 @@ public class VariableLongTest {
     }
 
     @Test
+    public void testPosBackwardWriteBig() {
+        readWriteTest(new PosBackwardReadWrite(), 10000000000000L, 1000000L, false, true);
+    }
+
+    @Test
+    public void testPosBackwardWriteSmall() {
+        readWriteTest(new PosBackwardReadWrite(), 1000000, 1, false, true);
+    }
+
+    @Test
     public void testBackwardWriteBig() {
-        readWriteTest(new BackwardReadWrite(), 10000000000000L, 1000000L, false, true);
+        readWriteTest(new BackwardReadWrite(), 10000000000000L, 10000000L, true, true);
     }
 
     @Test
     public void testBackwardWriteSmall() {
-        readWriteTest(new BackwardReadWrite(), 1000000, 1, false, true);
+        readWriteTest(new BackwardReadWrite(), 1000000, 1, true, true);
     }
 
     @Test
@@ -188,7 +195,7 @@ public class VariableLongTest {
         }
     }
 
-    public static class BackwardReadWrite implements ReadWriteLong {
+    public static class PosBackwardReadWrite implements ReadWriteLong {
 
         @Override
         public void write(WriteBuffer out, long value) {
@@ -205,6 +212,25 @@ public class VariableLongTest {
             return VariableLong.readPositiveBackward(in);
         }
     }
+
+    public static class BackwardReadWrite implements ReadWriteLong {
+
+        @Override
+        public void write(WriteBuffer out, long value) {
+            VariableLong.writeBackward(out,value);
+        }
+
+        @Override
+        public int length(long value) {
+            return VariableLong.length(value);
+        }
+
+        @Override
+        public long read(ReadBuffer in) {
+            return VariableLong.readBackward(in);
+        }
+    }
+
 
     public static class PrefixReadWrite implements ReadWriteLong {
 

@@ -151,39 +151,48 @@ public class EdgeSerializer {
         TitanType titanType = tx.getExistingType(typeId);
 
         TypeDefinition def = ((InternalType) titanType).getDefinition();
-        long[] keysig = def.getPrimaryKey();
-        if (keysig.length>0) {
-            for (int i = 0; i < keysig.length; i++) {
-                TitanType keyType = tx.getExistingType(keysig[i]);
-                builder.put(keyType.getID(),readInline(column, keyType));
+        if (!parseHeaderOnly) {
+            long[] keysig = def.getPrimaryKey();
+            if (keysig.length>0) {
+                for (int i = 0; i < keysig.length; i++) {
+                    TitanType keyType = tx.getExistingType(keysig[i]);
+                    builder.put(keyType.getID(),readInline(column, keyType));
+                }
             }
         }
 
-        ReadBuffer reader = column;
+        long relationId, vertexIdDiff=0;
         if (titanType.isUnique(dir)) {
-            reader = value;
+            if (rtype==RelationType.EDGE) vertexIdDiff = VariableLong.read(value);
+            relationId=VariableLong.readPositive(value);
+        } else {
+            //Move position to end to read backwards
+            column.movePosition(column.length()-column.getPosition()-1);
+
+            relationId=VariableLong.readPositiveBackward(column);
+            if (rtype==RelationType.EDGE) vertexIdDiff=VariableLong.readBackward(column);
         }
+        Preconditions.checkArgument(relationId>0);
+        builder.put(RELATION_ID,relationId);
 
         if (rtype==RelationType.EDGE) {
             Preconditions.checkArgument(titanType.isEdgeLabel());
-            long vertexIdDiff = VariableLong.read(reader);
             builder.put(OTHER_VERTEX_ID,vertexid+vertexIdDiff);
-        } else {
+        }
+
+        if (rtype==RelationType.PROPERTY) {
             Preconditions.checkArgument(titanType.isPropertyKey());
             TitanKey key = ((TitanKey) titanType);
             Object attribute = null;
 
             if (hasGenericDataType(key)) {
-                attribute = serializer.readClassAndObject(reader);
+                attribute = serializer.readClassAndObject(value);
             } else {
-                attribute = serializer.readObjectNotNull(reader, key.getDataType());
+                attribute = serializer.readObjectNotNull(value, key.getDataType());
             }
             Preconditions.checkNotNull(attribute);
             builder.put(VALUE_ID,attribute);
         }
-        long relationId = VariableLong.readPositive(reader);
-        Preconditions.checkArgument(relationId>0);
-        builder.put(RELATION_ID,relationId);
 
         if (!parseHeaderOnly) {
             //value signature
@@ -258,15 +267,25 @@ public class EdgeSerializer {
 
 
         DataOutput writer = colOut;
+        long vertexIdDiff = 0;
+        if (relation.isEdge()) vertexIdDiff = relation.getVertex((position+1)%2).getID() - relation.getVertex(position).getID();
+
         if (type.isUnique(dir)) {
+            if (!writeValue) return new StaticBufferEntry(colOut.getStaticBuffer(),null);
+            writer = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
+            if (relation.isEdge()) VariableLong.write(writer,vertexIdDiff);
+            VariableLong.writePositive(writer,relation.getID());
+        } else {
+            if (relation.isEdge()) VariableLong.writeBackward(writer,vertexIdDiff);
+            VariableLong.writePositiveBackward(writer,relation.getID());
+        }
+
+        if (!type.isUnique(dir)) {
             if (!writeValue) return new StaticBufferEntry(colOut.getStaticBuffer(),null);
             writer = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
         }
 
-        if (relation.isEdge()) {
-            long vertexIdDiff = relation.getVertex((position+1)%2).getID() - relation.getVertex(position).getID();
-            VariableLong.write(writer, vertexIdDiff);
-        } else {
+        if (relation.isProperty()) {
             Preconditions.checkArgument(relation.isProperty());
             Object value = ((TitanProperty)relation).getValue();
             Preconditions.checkNotNull(value);
@@ -277,12 +296,6 @@ public class EdgeSerializer {
             } else {
                 writer.writeObjectNotNull(value);
             }
-        }
-        VariableLong.writePositive(writer, relation.getID());
-
-        if (!type.isUnique(dir)) {
-            if (!writeValue) return new StaticBufferEntry(colOut.getStaticBuffer(),null);
-            writer = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
         }
 
         //Write signature
