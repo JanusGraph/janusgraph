@@ -460,8 +460,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             TypeAttribute.isValidLabelDefinition(definition);
             type = new TitanLabelVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
         }
-        addProperty(type, SystemKey.TypeClass, typeClass);
         addProperty(type, SystemKey.TypeName, name);
+        addProperty(type, SystemKey.TypeClass, typeClass);
         for (TypeAttribute attribute : definition.getAttributes()) {
             addProperty(type,SystemKey.TypeDefinition,attribute);
         }
