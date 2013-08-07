@@ -4,44 +4,38 @@ import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.Titan;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
-import com.thinkaurelius.titan.graphdb.types.PropertyKeyDefinition;
-import com.thinkaurelius.titan.graphdb.types.StandardKeyDefinition;
-import com.thinkaurelius.titan.graphdb.types.StandardLabelDefinition;
-import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
+import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 
-public class SystemKey extends SystemType implements PropertyKeyDefinition, TitanKey {
-
-    public static final SystemKey PropertyKeyDefinition =
-            new SystemKey("PropertyKeyDefinition", StandardKeyDefinition.class, 4);
-
-    public static final SystemKey RelationTypeDefinition =
-            new SystemKey("EdgeLabelDefinition", StandardLabelDefinition.class, 5);
+public class SystemKey extends SystemType implements TitanKey {
 
     public static final SystemKey TypeName =
-            new SystemKey("TypeName", String.class, 1, true, true, false);
+            new SystemKey("TypeName", String.class, 1, true, new boolean[]{true,true}, false);
+
+    public static final SystemKey TypeDefinition =
+            new SystemKey("TypeDefinition", TypeAttribute.class, 2, false, new boolean[]{false,false}, false);
 
     public static final SystemKey TypeClass =
-            new SystemKey("TypeClass", TitanTypeClass.class, 2, true, false, false);
+            new SystemKey("TypeClass", TitanTypeClass.class, 3, true, new boolean[]{true,false}, false);
 
     public static final SystemKey VertexState =
-            new SystemKey("VertexState", Byte.class, 3, false, false, true);
+            new SystemKey("VertexState", Byte.class, 4, false, new boolean[]{true,false}, true);
 
     public static final Iterable<SystemKey> values() {
-        return ImmutableList.of(PropertyKeyDefinition, RelationTypeDefinition, TypeName, TypeClass, VertexState);
+        return ImmutableList.of(TypeDefinition, TypeName, TypeClass, VertexState);
     }
 
     private final Class<?> dataType;
     private final boolean index;
 
     private SystemKey(String name, Class<?> dataType, int id) {
-        this(name, dataType, id, false, false, false);
+        this(name, dataType, id, false, new boolean[]{true,false}, false);
     }
 
-    private SystemKey(String name, Class<?> dataType, int id, boolean index, boolean unique, boolean modifiable) {
-        super(name,id, RelationType.PROPERTY,new boolean[]{true,unique},new boolean[]{!modifiable,unique && index},modifiable);
+    private SystemKey(String name, Class<?> dataType, int id, boolean index, boolean[] uniqueness, boolean modifiable) {
+        super(name,id, RelationType.PROPERTY,uniqueness,new boolean[]{!modifiable,uniqueness[1] && index},modifiable);
         this.dataType = dataType;
         this.index = index;
     }

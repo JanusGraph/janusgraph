@@ -18,8 +18,8 @@ public class SerializerInitialization {
 
     public static final void initialize(Serializer serializer) {
         serializer.registerClass(String[].class,KRYO_OFFSET+1);
-        serializer.registerClass(StandardKeyDefinition.class,KRYO_OFFSET+2);
-        serializer.registerClass(StandardLabelDefinition.class,KRYO_OFFSET+3);
+        serializer.registerClass(TypeAttributeType.class,KRYO_OFFSET+2);
+        serializer.registerClass(TypeAttribute.class,KRYO_OFFSET+3);
         serializer.registerClass(Date.class, new DateSerializer(),KRYO_OFFSET+6);
         serializer.registerClass(ArrayList.class,KRYO_OFFSET+7);
         serializer.registerClass(HashMap.class,KRYO_OFFSET+8);

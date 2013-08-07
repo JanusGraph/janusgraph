@@ -42,7 +42,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         if (t1.isUnique(dir1)) return 0;
 
         // 3) Compare primary key values
-        for (long typeid : t1.getDefinition().getPrimaryKey()) {
+        for (long typeid : t1.getPrimaryKey()) {
             int keycompare = compareOnKey(r1, r2, typeid);
             if (keycompare != 0) return keycompare;
         }

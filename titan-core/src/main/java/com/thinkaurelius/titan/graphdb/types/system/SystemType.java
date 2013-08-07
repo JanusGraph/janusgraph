@@ -6,11 +6,10 @@ import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.types.TypeDefinition;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.StringUtils;
 
-public abstract class SystemType extends EmptyVertex implements InternalVertex, InternalType, TypeDefinition {
+public abstract class SystemType extends EmptyVertex implements InternalVertex, InternalType {
 
     private final String name;
     private final long id;
@@ -86,11 +85,6 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
     @Override
     public long[] getSignature() {
         return new long[0];
-    }
-
-    @Override
-    public TypeDefinition getDefinition() {
-        return this;
     }
 
     @Override

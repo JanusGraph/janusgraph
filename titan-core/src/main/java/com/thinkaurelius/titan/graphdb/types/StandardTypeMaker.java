@@ -12,6 +12,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.lang.StringUtils;
+import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.*;
 
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -40,7 +41,6 @@ public class StandardTypeMaker implements TypeMaker {
 
     private Class<?> dataType;
     private Set<IndexType> indexes;
-
 
     public StandardTypeMaker(StandardTitanTx tx) {
         this.tx = tx;
@@ -117,6 +117,19 @@ public class StandardTypeMaker implements TypeMaker {
         return result;
     }
 
+
+    private final TypeAttribute.Map makeDefinition() {
+        TypeAttribute.Map def = new TypeAttribute.Map();
+        def.setValue(UNIQUENESS,isUnique);
+        def.setValue(UNIQUENESS_LOCK,hasUniqueLock);
+        def.setValue(STATIC,isStatic);
+        def.setValue(HIDDEN,isHidden);
+        def.setValue(MODIFIABLE,isModifiable);
+        def.setValue(PRIMARY_KEY,checkPrimaryKey(primaryKey));
+        def.setValue(SIGNATURE,checkSignature(signature));
+        return def;
+    }
+
     @Override
     public TitanKey makePropertyKey() {
         checkGeneralArguments();
@@ -127,9 +140,10 @@ public class StandardTypeMaker implements TypeMaker {
         Preconditions.checkArgument(dataType.isArray() || !Modifier.isAbstract(dataType.getModifiers()),"Datatype cannot be an abstract class: %s",dataType);
         Preconditions.checkArgument(!isUnique[EdgeDirection.position(IN)] ||
                 indexes.contains(IndexType.of(Vertex.class)), "A unique key requires the existence of a standard vertex index");
-        return tx.makePropertyKey(new StandardKeyDefinition(name, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,
-                checkPrimaryKey(primaryKey), checkSignature(signature), checkIndexes(indexes), dataType));
 
+        TypeAttribute.Map definition = makeDefinition();
+        definition.setValue(DATATYPE,dataType).setValue(INDEXES,checkIndexes(indexes));
+        return tx.makePropertyKey(name,definition);
     }
 
 
@@ -143,8 +157,9 @@ public class StandardTypeMaker implements TypeMaker {
                 (!isUnique[EdgeDirection.position(IN)] && !hasUniqueLock[EdgeDirection.position(IN)] && !isStatic[EdgeDirection.position(IN)]),
                 "Unidirectional labels cannot be unique or static");
 
-        return tx.makeEdgeLabel(new StandardLabelDefinition(name, isUnique, hasUniqueLock, isStatic, isHidden, isModifiable,
-                checkPrimaryKey(primaryKey), checkSignature(signature), isUnidirectional));
+        TypeAttribute.Map definition = makeDefinition();
+        definition.setValue(UNIDIRECTIONAL,isUnidirectional);
+        return tx.makeEdgeLabel(name,definition);
     }
 
     @Override

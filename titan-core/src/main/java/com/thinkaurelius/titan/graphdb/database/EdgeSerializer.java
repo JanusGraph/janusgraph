@@ -26,7 +26,6 @@ import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
 import com.thinkaurelius.titan.graphdb.relations.CacheProperty;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.TypeDefinition;
 import com.thinkaurelius.titan.util.datastructures.ImmutableLongObjectMap;
 import static com.thinkaurelius.titan.graphdb.idmanagement.IDManager.*;
 import com.tinkerpop.blueprints.Direction;
@@ -150,7 +149,7 @@ public class EdgeSerializer {
         builder.put(TYPE_ID,typeId);
         TitanType titanType = tx.getExistingType(typeId);
 
-        TypeDefinition def = ((InternalType) titanType).getDefinition();
+        InternalType def = (InternalType) titanType;
         if (!parseHeaderOnly) {
             long[] keysig = def.getPrimaryKey();
             if (keysig.length>0) {
@@ -258,7 +257,7 @@ public class EdgeSerializer {
         DataOutput colOut = serializer.getDataOutput(DEFAULT_PRIMARY_CAPACITY, true);
         IDHandler.writeEdgeType(colOut, typeid, dirID);
 
-        TypeDefinition definition = ((InternalType)type).getDefinition();
+        InternalType definition = (InternalType)type;
         long[] primaryKey = definition.getPrimaryKey();
         for (int i=0;i<primaryKey.length;i++) {
             TitanType t = tx.getExistingType(primaryKey[i]);
@@ -384,8 +383,8 @@ public class EdgeSerializer {
             int dirID = getDirID(dir,rt);
             Preconditions.checkArgument(query.numberTypes()==1);
             TitanType type = query.getTypes()[0];
-            isStatic = ((InternalType)type).isStatic(dir);
-            TypeDefinition def = ((InternalType)type).getDefinition();
+            InternalType def = (InternalType)type;
+            isStatic = def.isStatic(dir);
 
             if (query.hasConstraints() && def.getPrimaryKey().length>0) {
                 Multimap<TitanType,KeyAtom<TitanType>> constraintMap = query.getConstraintMap();

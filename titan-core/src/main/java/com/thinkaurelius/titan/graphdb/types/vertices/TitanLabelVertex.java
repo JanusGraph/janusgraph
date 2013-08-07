@@ -1,32 +1,13 @@
 package com.thinkaurelius.titan.graphdb.types.vertices;
 
-import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.EdgeLabelDefinition;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
 
 public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
 
-    private EdgeLabelDefinition definition = null;
-
     public TitanLabelVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
-    }
-
-    @Override
-    public EdgeLabelDefinition getDefinition() {
-        if (definition == null) {
-            synchronized (this) {
-                if (definition==null) {
-                    definition = QueryUtil.queryHiddenUniqueProperty(this, SystemKey.RelationTypeDefinition)
-                            .getValue(EdgeLabelDefinition.class);
-                    Preconditions.checkNotNull(definition);
-                }
-            }
-        }
-        return definition;
     }
 
     public boolean isDirected() {
@@ -34,7 +15,7 @@ public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
     }
 
     public boolean isUnidirected() {
-        return getDefinition().isUnidirectional();
+        return getDefinition().getValue(TypeAttributeType.UNIDIRECTIONAL,boolean.class);
     }
 
     @Override

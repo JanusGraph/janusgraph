@@ -38,15 +38,13 @@ import com.thinkaurelius.titan.graphdb.transaction.indexcache.SimpleIndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.ConcurrentVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.SimpleVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.VertexCache;
-import com.thinkaurelius.titan.graphdb.types.EdgeLabelDefinition;
-import com.thinkaurelius.titan.graphdb.types.PropertyKeyDefinition;
-import com.thinkaurelius.titan.graphdb.types.StandardTypeMaker;
-import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
+import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanLabelVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanTypeVertex;
 import com.thinkaurelius.titan.graphdb.util.FakeLock;
 import com.thinkaurelius.titan.graphdb.util.VertexCentricEdgeIterable;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
@@ -56,6 +54,7 @@ import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -449,30 +448,37 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
      * ------------------------------------ Type Handling ------------------------------------
      */
 
-
-    public TitanKey makePropertyKey(PropertyKeyDefinition definition) {
+    private final TitanType makeTitanType(TitanTypeClass typeClass, String name, TypeAttribute.Map definition) {
         verifyOpen();
-        TitanKeyVertex prop = new TitanKeyVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
-        addProperty(prop, SystemKey.TypeName, definition.getName());
-        addProperty(prop, SystemKey.PropertyKeyDefinition, definition);
-        addProperty(prop, SystemKey.TypeClass, TitanTypeClass.KEY);
-        graph.assignID(prop);
-        Preconditions.checkArgument(prop.getID()>0);
-        vertexCache.add(prop,prop.getID());
-        typeCache.put(definition.getName(),prop);
-        return prop;
+        Preconditions.checkArgument(StringUtils.isNotBlank(name));
+        TitanTypeVertex type;
+        if (typeClass==TitanTypeClass.KEY) {
+            TypeAttribute.isValidKeyDefinition(definition);
+            type = new TitanKeyVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
+        } else {
+            Preconditions.checkArgument(typeClass==TitanTypeClass.LABEL);
+            TypeAttribute.isValidLabelDefinition(definition);
+            type = new TitanLabelVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
+        }
+        addProperty(type, SystemKey.TypeClass, typeClass);
+        addProperty(type, SystemKey.TypeName, name);
+        for (TypeAttribute attribute : definition.getAttributes()) {
+            addProperty(type,SystemKey.TypeDefinition,attribute);
+        }
+        graph.assignID(type);
+        Preconditions.checkArgument(type.getID()>0);
+        vertexCache.add(type,type.getID());
+        typeCache.put(name,type);
+        return type;
+
     }
 
-    public TitanLabel makeEdgeLabel(EdgeLabelDefinition definition) {
-        verifyOpen();
-        TitanLabelVertex label = new TitanLabelVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
-        addProperty(label, SystemKey.TypeName, definition.getName());
-        addProperty(label, SystemKey.RelationTypeDefinition, definition);
-        addProperty(label, SystemKey.TypeClass, TitanTypeClass.LABEL);
-        graph.assignID(label);
-        vertexCache.add(label, label.getID());
-        typeCache.put(definition.getName(), label);
-        return label;
+    public TitanKey makePropertyKey(String name, TypeAttribute.Map definition) {
+        return (TitanKey)makeTitanType(TitanTypeClass.KEY,name,definition);
+    }
+
+    public TitanLabel makeEdgeLabel(String name, TypeAttribute.Map definition) {
+        return (TitanLabel)makeTitanType(TitanTypeClass.LABEL,name,definition);
     }
 
     @Override

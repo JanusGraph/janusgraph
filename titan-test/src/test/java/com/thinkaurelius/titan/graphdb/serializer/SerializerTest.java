@@ -9,9 +9,6 @@ import com.thinkaurelius.titan.graphdb.database.serialize.attribute.DoubleSerial
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.FloatSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.thinkaurelius.titan.graphdb.types.StandardKeyDefinition;
-import com.thinkaurelius.titan.graphdb.types.StandardLabelDefinition;
-import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
 import com.tinkerpop.blueprints.Vertex;
 import org.junit.After;
@@ -235,25 +232,6 @@ public class SerializerTest {
         assertEquals(TestEnum.Two, serialize.readObjectNotNull(b, TestEnum.class));
         assertFalse(b.hasRemaining());
 
-    }
-
-    @Test
-    public void serializeRelationshipType() {
-        StandardLabelDefinition relType = new StandardLabelDefinition("testName",
-        new boolean[2], new boolean[2], new boolean[2], false, true, new long[0], new long[0], false);
-
-
-        StandardKeyDefinition propType = new StandardKeyDefinition("testName",
-        new boolean[]{false,true}, new boolean[]{false,true}, new boolean[2], false ,true , new long[0], new long[0],
-                new IndexType[]{IndexType.of(Vertex.class)}, String.class);
-        DataOutput out = serialize.getDataOutput(128, true);
-        out.writeObjectNotNull(relType);
-        out.writeObjectNotNull(propType);
-        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
-        if (printStats) log.debug(bufferStats(b));
-        assertEquals("testName", serialize.readObjectNotNull(b, StandardLabelDefinition.class).getName());
-        assertEquals(String.class, serialize.readObjectNotNull(b, StandardKeyDefinition.class).getDataType());
-        assertFalse(b.hasRemaining());
     }
 
     @Test
