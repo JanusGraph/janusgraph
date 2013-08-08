@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexMutation;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.keycondition.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
@@ -287,20 +288,10 @@ public class LuceneIndex implements IndexProvider {
             Object value = atom.getCondition();
             String key = atom.getKey();
             TitanPredicate titanPredicate = atom.getTitanPredicate();
-            if (value instanceof Number || value instanceof Interval) {
+            if (value instanceof Number) {
                 Preconditions.checkArgument(titanPredicate instanceof Cmp,"Relation not supported on numeric types: " + titanPredicate);
-                if (titanPredicate ==Cmp.INTERVAL) {
-                    Preconditions.checkArgument(value instanceof Interval && ((Interval)value).getStart() instanceof Number);
-                    Interval i = (Interval)value;
-                    if (i.getStart() instanceof Long || i.getStart() instanceof Integer) {
-                        return NumericRangeFilter.newLongRange(key,((Number)i.getStart()).longValue(),((Number)i.getEnd()).longValue(),i.startInclusive(),i.endInclusive());
-                    } else {
-                        return NumericRangeFilter.newDoubleRange(key,((Number)i.getStart()).doubleValue(),((Number)i.getEnd()).doubleValue(),i.startInclusive(),i.endInclusive());
-                    }
-                } else {
-                    Preconditions.checkArgument(value instanceof Number);
-                    return numericFilter(key,(Cmp) titanPredicate,(Number)value);
-                }
+                Preconditions.checkArgument(value instanceof Number);
+                return numericFilter(key,(Cmp) titanPredicate,(Number)value);
             } else if (value instanceof String) {
                 if (titanPredicate == Text.CONTAINS) {
                     return new TermsFilter(new Term(key,((String)value).toLowerCase()));

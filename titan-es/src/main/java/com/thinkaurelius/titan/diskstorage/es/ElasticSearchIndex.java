@@ -13,6 +13,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexMutation;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.keycondition.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -311,25 +312,19 @@ public class ElasticSearchIndex implements IndexProvider {
             Object value = atom.getCondition();
             String key = atom.getKey();
             TitanPredicate titanPredicate = atom.getTitanPredicate();
-            if (value instanceof Number || value instanceof Interval) {
+            if (value instanceof Number) {
                 Preconditions.checkArgument(titanPredicate instanceof Cmp,"Relation not supported on numeric types: " + titanPredicate);
                 Cmp numRel = (Cmp) titanPredicate;
-                if (numRel==Cmp.INTERVAL) {
-                    Preconditions.checkArgument(value instanceof Interval && ((Interval)value).getStart() instanceof Number);
-                    Interval i = (Interval)value;
-                    return FilterBuilders.rangeFilter(key).from(i.getStart()).to(i.getEnd()).includeLower(i.startInclusive()).includeUpper(i.endInclusive());
-                } else {
-                    Preconditions.checkArgument(value instanceof Number);
+                Preconditions.checkArgument(value instanceof Number);
 
-                    switch(numRel) {
-                        case EQUAL: return FilterBuilders.inFilter(key,value);
-                        case NOT_EQUAL: return FilterBuilders.notFilter(FilterBuilders.inFilter(key,value));
-                        case LESS_THAN: return FilterBuilders.rangeFilter(key).lt(value);
-                        case LESS_THAN_EQUAL: return FilterBuilders.rangeFilter(key).lte(value);
-                        case GREATER_THAN: return FilterBuilders.rangeFilter(key).gt(value);
-                        case GREATER_THAN_EQUAL: return FilterBuilders.rangeFilter(key).gte(value);
-                        default: throw new IllegalArgumentException("Unexpected relation: " + numRel);
-                    }
+                switch(numRel) {
+                    case EQUAL: return FilterBuilders.inFilter(key,value);
+                    case NOT_EQUAL: return FilterBuilders.notFilter(FilterBuilders.inFilter(key,value));
+                    case LESS_THAN: return FilterBuilders.rangeFilter(key).lt(value);
+                    case LESS_THAN_EQUAL: return FilterBuilders.rangeFilter(key).lte(value);
+                    case GREATER_THAN: return FilterBuilders.rangeFilter(key).gt(value);
+                    case GREATER_THAN_EQUAL: return FilterBuilders.rangeFilter(key).gte(value);
+                    default: throw new IllegalArgumentException("Unexpected relation: " + numRel);
                 }
             } else if (value instanceof String) {
                 if (titanPredicate == Text.CONTAINS) {

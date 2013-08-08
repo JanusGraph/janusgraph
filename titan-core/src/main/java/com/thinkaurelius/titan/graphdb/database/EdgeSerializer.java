@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
@@ -28,11 +29,14 @@ import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.ImmutableLongObjectMap;
 import static com.thinkaurelius.titan.graphdb.idmanagement.IDManager.*;
+
+import com.thinkaurelius.titan.util.datastructures.Interval;
 import com.tinkerpop.blueprints.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -160,19 +164,19 @@ public class EdgeSerializer {
             }
         }
 
-        long relationId, vertexIdDiff=0;
+        long relationIdDiff, vertexIdDiff=0;
         if (titanType.isUnique(dir)) {
             if (rtype==RelationType.EDGE) vertexIdDiff = VariableLong.read(value);
-            relationId=VariableLong.readPositive(value);
+            relationIdDiff=VariableLong.read(value);
         } else {
             //Move position to end to read backwards
             column.movePosition(column.length()-column.getPosition()-1);
 
-            relationId=VariableLong.readPositiveBackward(column);
+            relationIdDiff=VariableLong.readBackward(column);
             if (rtype==RelationType.EDGE) vertexIdDiff=VariableLong.readBackward(column);
         }
-        Preconditions.checkArgument(relationId>0);
-        builder.put(RELATION_ID,relationId);
+        Preconditions.checkArgument(relationIdDiff+vertexid>0);
+        builder.put(RELATION_ID,relationIdDiff+vertexid);
 
         if (rtype==RelationType.EDGE) {
             Preconditions.checkArgument(titanType.isEdgeLabel());
@@ -267,16 +271,17 @@ public class EdgeSerializer {
 
         DataOutput writer = colOut;
         long vertexIdDiff = 0;
+        long relationIdDiff = relation.getID() - relation.getVertex(position).getID();
         if (relation.isEdge()) vertexIdDiff = relation.getVertex((position+1)%2).getID() - relation.getVertex(position).getID();
 
         if (type.isUnique(dir)) {
             if (!writeValue) return new StaticBufferEntry(colOut.getStaticBuffer(),null);
             writer = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
             if (relation.isEdge()) VariableLong.write(writer,vertexIdDiff);
-            VariableLong.writePositive(writer,relation.getID());
+            VariableLong.write(writer,relationIdDiff);
         } else {
             if (relation.isEdge()) VariableLong.writeBackward(writer,vertexIdDiff);
-            VariableLong.writePositiveBackward(writer,relation.getID());
+            VariableLong.writeBackward(writer,relationIdDiff);
         }
 
         if (!type.isUnique(dir)) {
@@ -366,6 +371,25 @@ public class EdgeSerializer {
         Preconditions.checkArgument(ids[0]==ids[1],"Invalid arguments [%s] [%s]",dir,rt);
         return ids[0];
     }
+
+//    public SliceQuery getQuery(RelationType resultType, Direction dir) {
+//
+//    }
+//
+//    public SliceQuery getQuery(InternalType type, Direction dir, List<Interval> primaryKey, VertexConstraint vertexCon) {
+//
+//    }
+//
+//    public class VertexConstraint {
+//        public final long vertexID;
+//        public final long otherVertexID;
+//
+//        public VertexConstraint(long vertexID, long otherVertexID) {
+//            this.vertexID = vertexID;
+//            this.otherVertexID = otherVertexID;
+//        }
+//    }
+
 
     public FittedSliceQuery getQuery(VertexCentricQuery query) {
         Preconditions.checkNotNull(query);
