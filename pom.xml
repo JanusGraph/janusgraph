@@ -514,6 +514,11 @@
                 <artifactId>libthrift</artifactId>
                 <version>0.7.0</version>
             </dependency>
+            <dependency>
+                <groupId>org.javassist</groupId>
+                <artifactId>javassist</artifactId>
+                <version>3.18.0-GA</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <profiles>
