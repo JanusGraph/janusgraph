@@ -1,0 +1,8 @@
+../../titan-dist/titan-dist-all/target/titan-all-*/titan-all-*/lib/*.jar /usr/share/titan/lib/
+../payload/rexster-console.sh /usr/bin/
+../payload/titan /usr/sbin/
+../payload/titan.in.sh /usr/share/titan/
+../payload/titan-env.sh /etc/titan/
+../payload/config.properties /etc/titan/
+../payload/rexster.xml /etc/titan/
+../payload/cassandra.yaml /etc/titan/

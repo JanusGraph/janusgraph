@@ -1,0 +1,15 @@
+Source: titan
+Section: misc
+Priority: extra
+Maintainer: Dan LaRocque <dalaro@hopcount.org>
+Build-Depends: debhelper (>= 7), openjdk-6-jdk (>= 6b11) | java6-sdk, maven
+Homepage: http://titan.thinkaurelius.com
+Vcs-Git: https://github.com/thinkaurelius/titan.git
+Vcs-Browser: https://github.com/thinkaurelius/titan
+Standards-Version: 3.8.3
+
+Package: titan
+Architecture: all
+Depends: openjdk-6-jre-headless (>= 6b11) | java6-runtime, adduser, ${misc:Depends}
+Recommends: ntp, cassandra
+Description: Titan is a scalable, distributed, concurrent graph database 

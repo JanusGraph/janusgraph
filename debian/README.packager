@@ -1,0 +1,3 @@
+Notes for developers building Titan debian packages
+
+dpkg-buildpackage -Itarget -I.git -I.project -I.settings -I.classpath
