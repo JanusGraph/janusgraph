@@ -1,3 +1,3 @@
 #!/bin/bash
 
-`dirname $0`/../target/titan-*-standalone/bin/upgrade010to020.sh $@
+`dirname $0`/../titan-dist/titan-dist-all/target/titan-all-standalone/bin/upgrade010to020.sh $@
