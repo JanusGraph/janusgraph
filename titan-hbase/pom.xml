@@ -25,6 +25,7 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-es</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
