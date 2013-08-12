@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.testcategory.PerformanceTests;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-@Category({PerformanceTests.class})
+//@Category({PerformanceTests.class})
 public class InternalCassandraEmbeddedGraphConcurrentTest extends TitanGraphConcurrentTest {
 
     public InternalCassandraEmbeddedGraphConcurrentTest() {

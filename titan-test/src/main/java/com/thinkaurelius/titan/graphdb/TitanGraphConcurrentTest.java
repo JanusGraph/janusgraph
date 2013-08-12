@@ -19,6 +19,7 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanKey;
@@ -32,12 +33,13 @@ import com.thinkaurelius.titan.testutil.RandomGenerator;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
+//@BenchmarkOptions(warmupRounds=0, benchmarkRounds=3)
 public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 
     // TODO guarantee that any exception in an executor thread generates an exception in the unit test that submitted the thread; due to open bugs on the jdk, this is not as simple as overriding ThreadPoolExecutor.afterExecute()
 
-    @Rule
-    public TestRule benchmark = JUnitBenchmarkProvider.get();
+//    @Rule
+//    public TestRule benchmark = JUnitBenchmarkProvider.get();
     
     // Parallelism settings
     private static final int CORE_COUNT = ManagementFactory.

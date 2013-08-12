@@ -47,11 +47,6 @@
             <groupId>com.carrotsearch.randomizedtesting</groupId>
             <artifactId>randomizedtesting-runner</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
         <!--
             JNA is not required to run Cassandra, but it improves
             efficiency of certain of Cassandra's filesystem and memory
