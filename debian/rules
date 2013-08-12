@@ -13,7 +13,7 @@ test:
 clean:
 	dh_testdir
 	dh_testroot
-	#$(MVN) $(MVN_OPTS) clean
+#	$(MVN) $(MVN_OPTS) clean
 	dh_clean
 
 build-arch:
@@ -23,7 +23,7 @@ build-indep:
 	dh_testdir
 	cd titan-dist/titan-dist-all && \
 	$(MVN) $(MVN_OPTS) clean package -Ptitan-release -Dgpg.skip=true
-	#cd titan-dist && $(MVN) $(MVN_OPTS) package -DskipTests=true # -Ptitan-release
+#	cd titan-dist && $(MVN) $(MVN_OPTS) package -DskipTests=true # -Ptitan-release
 
 build: build-indep build-arch
 # No-op
@@ -32,9 +32,10 @@ install: build
 	dh_testdir
 	dh_testroot
 	mkdir debian/tmp 2>/dev/null || true
-	#$(TAR) -C debian/tmp -xjf ~/titan-all-0.3.2.tar.bz2
-	dh_install --sourcedir=debian/tmp
+	pkgcommon/bin/partition-jars.sh
 	dh_installdirs
+	dh_install
+	pkgcommon/bin/install-jars.sh 'debian/titan${m:+-$m}/usr/share/titan/lib${m:+/$m}'
 
 # Build architecture-independent files here.
 binary-indep: build install

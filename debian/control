@@ -11,5 +11,37 @@ Standards-Version: 3.8.3
 Package: titan
 Architecture: all
 Depends: openjdk-6-jre-headless (>= 6b11) | java6-runtime, adduser, ${misc:Depends}
-Recommends: ntp, cassandra
+Recommends: ntp
 Description: Titan is a scalable, distributed, concurrent graph database 
+
+Package: titan-berkeleyje
+Architecture: all
+Depends: titan
+Description: BerkeleyDB Java Edition storage backend for the Titan graph database
+
+Package: titan-cassandra
+Architecture: all
+Depends: titan
+Recommends: cassandra
+Description: Cassandra storage backend for the Titan graph database
+
+Package: titan-hbase
+Architecture: all
+Depends: titan
+Description: HBase storage backend for the Titan graph database
+
+Package: titan-persistit
+Architecture: all
+Depends: titan
+Description: Persistit storage backend for the Titan graph database
+
+Package: titan-es
+Architecture: all
+Depends: titan
+Description: Elasticsearch indexing support for the Titan graph database
+
+Package: titan-lucene
+Architecture: all
+Depends: titan, titan-es
+Description: Lucene indexing for the Titan graph database
+

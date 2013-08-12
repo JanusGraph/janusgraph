@@ -1,0 +1,13 @@
+cd "`dirname $BASH_SOURCE`"
+d=`pwd`
+cd - >/dev/null
+
+declare -r MODULES="berkeleyje cassandra hbase persistit lucene es"
+declare -r DEP_DIR="$d"/tmp
+declare -r M2_REPO=/tmp/aurelius-pkgbuild-repo
+declare -r MVN_OPTS="-Dmaven.repo.local=$M2_REPO"
+
+if [ ! -e "$M2_REPO" ]; then
+    echo "$M2_REPO does not exist.  Symlinking to ~/.m2/repository."
+    ln -s ~/.m2/repository "$M2_REPO"
+fi
