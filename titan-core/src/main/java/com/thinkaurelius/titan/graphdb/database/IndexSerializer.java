@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
@@ -32,10 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.NO_ADDITIONS;
 import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.NO_DELETIONS;
@@ -189,7 +187,14 @@ public class IndexSerializer {
             }
 
             if (condition instanceof PredicateCondition) {
-                results = processSingleCondition(resultType, (PredicateCondition) condition, query.getLimit(), tx);
+                PredicateCondition pc = (PredicateCondition)condition;
+                if (pc.getPredicate()== Contain.IN) {
+                    results = new ArrayList<Object>(query.getLimit());
+                    for (Object value : (Collection)pc.getCondition()) {
+                        results.addAll(processSingleCondition(resultType,new PredicateCondition(pc.getKey(),Cmp.EQUAL,value),query.getLimit(),tx));
+                        if (results.size()>query.getLimit()) break;
+                    }
+                } else results = processSingleCondition(resultType, pc, query.getLimit(), tx);
             } else if (condition instanceof And) {
                 /*
                  * Iterate over the KeyAtoms in the collection
