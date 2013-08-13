@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 
-//@Category({PerformanceTests.class})
+@Category({PerformanceTests.class})
 public class InternalAstyanaxGraphConcurrentTest extends TitanGraphConcurrentTest {
 
     @BeforeClass

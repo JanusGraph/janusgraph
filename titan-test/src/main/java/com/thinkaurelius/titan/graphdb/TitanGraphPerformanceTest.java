@@ -54,7 +54,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
         this.tryBatching = tryBatching;
     }
 
-//    @Test
+    @Test
     public void testMultipleDatabases() {
         long memoryBaseline = 0;
         for (int i = 0; i < 100; i++) {
@@ -101,7 +101,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
         tx = null;
     }
 
-//    @Test
+    @Test
     public void testInTxIndex() throws Exception {
         int trials = 2; int numV = 2000; int offset = 10000;
         tx.makeType().name("uid").dataType(Long.class).indexed(Vertex.class).unique(Direction.OUT).makePropertyKey();
@@ -120,12 +120,12 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
         System.out.println("Total time (ms): " + (System.currentTimeMillis()-start));
     }
 
-//    @Test
+    @Test
     public void unlabeledEdgeInsertion() throws Exception {
         runEdgeInsertion(new UnlabeledEdgeInsertion());
     }
 
-//    @Test
+    @Test
     public void labeledEdgeInsertion() throws Exception {
         runEdgeInsertion(new LabeledEdgeInsertion());
     }
