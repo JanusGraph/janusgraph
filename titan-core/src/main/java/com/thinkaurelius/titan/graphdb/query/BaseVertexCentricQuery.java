@@ -15,6 +15,7 @@ import java.util.List;
 
 class BaseVertexCentricQuery extends BaseQuery {
 
+    //Condition in CNF
     private final Condition<TitanRelation> condition;
     private final List<BackendQueryHolder<SliceQuery>> queries;
 
@@ -23,6 +24,7 @@ class BaseVertexCentricQuery extends BaseQuery {
                                   int limit) {
         super(limit);
         Preconditions.checkNotNull(condition);
+        Preconditions.checkArgument(QueryUtil.isQueryNormalForm(condition));
         Preconditions.checkNotNull(queries);
         Preconditions.checkArgument(limit >= 0);
         this.condition = condition;

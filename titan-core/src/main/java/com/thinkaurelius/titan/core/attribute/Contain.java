@@ -13,7 +13,8 @@ import java.util.Collection;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public enum Contain implements TitanPredicate {
+public enum
+        Contain implements TitanPredicate {
 
     /**
      * Whether an element is in a collection
@@ -27,7 +28,10 @@ public enum Contain implements TitanPredicate {
             return col.contains(value);
         }
 
-
+        @Override
+        public TitanPredicate negate() {
+            return NOT_IN;
+        }
     },
 
     /**
@@ -42,12 +46,17 @@ public enum Contain implements TitanPredicate {
             return !col.contains(value);
         }
 
+        @Override
+        public TitanPredicate negate() {
+            return IN;
+        }
+
     };
 
     private static final Logger log = LoggerFactory.getLogger(Contain.class);
 
     @Override
-    public boolean isValidDataType(Class<?> clazz) {
+    public boolean isValidValueType(Class<?> clazz) {
         return true;
     }
 
@@ -55,5 +64,16 @@ public enum Contain implements TitanPredicate {
     public boolean isValidCondition(Object condition) {
         return condition!=null && (condition instanceof Collection) && !((Collection) condition).isEmpty();
     }
+
+    @Override
+    public boolean hasNegation() {
+        return true;
+    }
+
+    @Override
+    public boolean isQNF() {
+        return false;
+    }
+
 
 }

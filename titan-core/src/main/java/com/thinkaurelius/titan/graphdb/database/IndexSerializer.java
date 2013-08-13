@@ -182,33 +182,36 @@ public class IndexSerializer {
             List<Object> results = null;
             ElementType resultType = ElementType.getByName(query.getStore());
             Condition<?> condition = query.getCondition();
-            if (condition instanceof And && condition.numChildren()==1) {
-                condition = condition.getChildren().iterator().next();
-            }
 
+            //Condition is in QNF, so process either a single PredicateCondition or an AND of ORs
             if (condition instanceof PredicateCondition) {
                 PredicateCondition pc = (PredicateCondition)condition;
-                if (pc.getPredicate()== Contain.IN) {
-                    results = new ArrayList<Object>(query.getLimit());
-                    for (Object value : (Collection)pc.getCondition()) {
-                        results.addAll(processSingleCondition(resultType,new PredicateCondition(pc.getKey(),Cmp.EQUAL,value),query.getLimit(),tx));
-                        if (results.size()>query.getLimit()) break;
-                    }
-                } else results = processSingleCondition(resultType, pc, query.getLimit(), tx);
+                results = processSingleCondition(resultType, pc, query.getLimit(), tx);
             } else if (condition instanceof And) {
+                Preconditions.checkArgument(condition instanceof And,"Invalid query (not in QNF): %s",condition);
                 /*
-                 * Iterate over the KeyAtoms in the collection
+                 * Iterate over the clauses in the and collection
                  * query.getCondition().getChildren(), taking the intersection
                  * of current results with cumulative results on each iteration.
                  */
-                int limit = query.getLimit() * condition.numChildren();
+                int limit = query.getLimit() * condition.numChildren(); //TODO: smarter initial estimate
                 boolean exhaustedResults;
                 do {
                     exhaustedResults = true;
                     Set<Object> cumulativeResults = null;
-                    for (Condition child : condition.getChildren()) {
-                        Preconditions.checkArgument(child instanceof PredicateCondition);
-                        List<Object> r = processSingleCondition(resultType, (PredicateCondition)child, limit, tx);
+                    for (Condition<?> child : condition.getChildren()) {
+                        List<Object> r=null;
+                        if (child instanceof Or) { //Concatenate results until we have enough for limit
+                            r = new ArrayList<Object>(limit);
+                            for (Condition nested : child.getChildren()) {
+                                Preconditions.checkArgument(nested instanceof PredicateCondition,"Invalid query (not in QNF): %s",condition);
+                                r.addAll(processSingleCondition(resultType,(PredicateCondition)nested,limit,tx));
+                                if (r.size()>=limit) break;
+                            }
+                        } else if (child instanceof PredicateCondition) {
+                            r = processSingleCondition(resultType, (PredicateCondition)child, limit, tx);
+                        } else throw new IllegalArgumentException("Invalid query provided (not in QNF):" + child);
+
                         if (r.size()>=limit) exhaustedResults=false;
                         if (cumulativeResults == null) {
                             cumulativeResults = Sets.newHashSet(r);
@@ -230,39 +233,14 @@ public class IndexSerializer {
         }
     }
 
-    public IndexQuery getQuery(final String indexName, Condition<TitanElement> condition, final ElementType resultType) {
-        Preconditions.checkNotNull(resultType);
-        if (indexName==null) { //Special case which requires iterating over all elements which is handled in the transaction
-            return new IndexQuery(null,new FixedCondition<TitanElement>(true));
-        } else {
-            Preconditions.checkNotNull(condition);
-            if (indexName.equals(Titan.Token.STANDARD_INDEX)) {
-                return new IndexQuery(resultType.getName(),condition);
-            } else {
-                return new IndexQuery(resultType.getName(), ConditionUtil.literalTransformation(condition,new Function<Condition<TitanElement>, Condition<TitanElement>>() {
-                    @Nullable
-                    @Override
-                    public Condition<TitanElement> apply(@Nullable Condition<TitanElement> condition) {
-                        Preconditions.checkArgument(condition instanceof PredicateCondition);
-                        PredicateCondition pc = (PredicateCondition) condition;
-                        TitanKey key = (TitanKey) pc.getKey();
-                        Preconditions.checkArgument(key.hasIndex(indexName, resultType.getElementType()));
-                        Preconditions.checkArgument(indexes.get(indexName).supports(key.getDataType(), pc.getPredicate()));
-                        return new PredicateCondition<String, TitanElement>(key2String(key), pc.getPredicate(), pc.getCondition());
-                    }
-                }));
-            }
-        }
-    }
-    
     private List<Object> processSingleCondition(ElementType resultType, PredicateCondition pc, int limit, BackendTransaction tx) {
         Preconditions.checkArgument(resultType==ElementType.EDGE || resultType==ElementType.VERTEX);
         Preconditions.checkArgument(pc.getPredicate() == Cmp.EQUAL, "Only equality index retrievals are supported on standard index");
-        Preconditions.checkNotNull(pc.getCondition());
+        Preconditions.checkNotNull(pc.getValue());
         TitanKey key = (TitanKey)pc.getKey();
         Preconditions.checkArgument(key.hasIndex(Titan.Token.STANDARD_INDEX,resultType.getElementType()),
                 "Cannot retrieve for given property key - it does not have an index [%s]",key.getName());
-        Object value = pc.getCondition();
+        Object value = pc.getValue();
         StaticBuffer column = getUniqueIndexColumn(key);
         KeySliceQuery sq = new KeySliceQuery(getIndexKey(value),column, SliceQuery.pointRange(column),((InternalType)key).isStatic(Direction.IN)).setLimit(limit);
         List<Entry> r;
@@ -283,6 +261,32 @@ public class IndexSerializer {
         Preconditions.checkArgument(!(resultType==ElementType.VERTEX && key.isUnique(Direction.IN)) || results.size()<=1);
         return results;
     }
+
+    public IndexQuery getQuery(final String indexName, Condition<TitanElement> condition, final ElementType resultType) {
+        Preconditions.checkNotNull(resultType);
+        if (indexName==null) { //Special case which requires iterating over all elements which is handled in the transaction
+            return new IndexQuery(null,new FixedCondition<TitanElement>(true));
+        } else {
+            Preconditions.checkNotNull(condition);
+            if (indexName.equals(Titan.Token.STANDARD_INDEX)) {
+                return new IndexQuery(resultType.getName(),condition);
+            } else {
+                return new IndexQuery(resultType.getName(), ConditionUtil.literalTransformation(condition,new Function<Condition<TitanElement>, Condition<TitanElement>>() {
+                    @Nullable
+                    @Override
+                    public Condition<TitanElement> apply(@Nullable Condition<TitanElement> condition) {
+                        Preconditions.checkArgument(condition instanceof PredicateCondition);
+                        PredicateCondition pc = (PredicateCondition) condition;
+                        TitanKey key = (TitanKey) pc.getKey();
+                        Preconditions.checkArgument(key.hasIndex(indexName, resultType.getElementType()));
+                        Preconditions.checkArgument(indexes.get(indexName).supports(key.getDataType(), pc.getPredicate()));
+                        return new PredicateCondition<String, TitanElement>(key2String(key), pc.getPredicate(), pc.getValue());
+                    }
+                }));
+            }
+        }
+    }
+
 
     /* ################################################
                 Utility Functions

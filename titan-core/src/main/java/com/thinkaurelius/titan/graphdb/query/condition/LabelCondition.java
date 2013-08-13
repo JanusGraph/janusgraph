@@ -14,30 +14,25 @@ import java.util.Set;
 
 public class LabelCondition<E extends TitanRelation> extends Literal<E> {
 
-    private final Set<TitanType> labels;
+    private final TitanType label;
 
-    public LabelCondition(TitanType... labels) {
-        this(Sets.newHashSet(labels));
-    }
-
-    public LabelCondition(Set<TitanType> labels) {
-        Preconditions.checkNotNull(labels);
-        Preconditions.checkArgument(!labels.isEmpty());
-        this.labels=labels;
+    public LabelCondition(TitanType label) {
+        Preconditions.checkNotNull(label);
+        this.label=label;
     }
 
     @Override
     public boolean evaluate(E element) {
-        return labels.contains(element.getType());
+        return label.equals(element.getType());
     }
 
-    public Set<TitanType> getLabels() {
-        return labels;
+    public TitanType getLabel() {
+        return label;
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(labels).toHashCode();
+        return new HashCodeBuilder().append(getType()).append(label).toHashCode();
     }
 
     @Override
@@ -46,12 +41,12 @@ public class LabelCondition<E extends TitanRelation> extends Literal<E> {
         else if (other==null) return false;
         else if (!getClass().isInstance(other)) return false;
         LabelCondition oth = (LabelCondition)other;
-        return labels.equals(oth.labels);
+        return label.equals(oth.label);
     }
 
     @Override
     public String toString() {
-        return "label["+labels.toString()+"]";
+        return "label["+label.toString()+"]";
     }
 
 }

@@ -18,20 +18,20 @@ public class PredicateCondition<K,E extends TitanElement> extends Literal<E> {
 
     private final K key;
     private final TitanPredicate predicate;
-    private final Object condition;
+    private final Object value;
 
-    public PredicateCondition(K key, TitanPredicate predicate, Object condition) {
+    public PredicateCondition(K key, TitanPredicate predicate, Object value) {
         Preconditions.checkNotNull(key);
         Preconditions.checkArgument(key instanceof String || key instanceof TitanType, "Key must either be a string or type, but was given: %s", key);
         Preconditions.checkNotNull(predicate);
         this.key = key;
         this.predicate = predicate;
-        this.condition = condition;
+        this.value = value;
     }
 
 
     private final boolean satisfiesCondition(Object value) {
-        return predicate.evaluate(value, condition);
+        return predicate.evaluate(value, this.value);
     }
 
     @Override
@@ -69,13 +69,13 @@ public class PredicateCondition<K,E extends TitanElement> extends Literal<E> {
         return predicate;
     }
 
-    public Object getCondition() {
-        return condition;
+    public Object getValue() {
+        return value;
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(key).append(predicate).append(condition).toHashCode();
+        return new HashCodeBuilder().append(getType()).append(key).append(predicate).append(value).toHashCode();
     }
 
     @Override
@@ -84,12 +84,12 @@ public class PredicateCondition<K,E extends TitanElement> extends Literal<E> {
         else if (other==null) return false;
         else if (!getClass().isInstance(other)) return false;
         PredicateCondition oth = (PredicateCondition)other;
-        return key.equals(oth.key) && predicate.equals(oth.predicate) && condition.equals(oth.condition);
+        return key.equals(oth.key) && predicate.equals(oth.predicate) && value.equals(oth.value);
     }
 
     @Override
     public String toString() {
-        return key.toString()+ predicate.toString()+String.valueOf(condition);
+        return key.toString()+ predicate.toString()+String.valueOf(value);
     }
 
     public static final<K,E extends TitanElement> PredicateCondition<K,E> of(K key, TitanPredicate titanPredicate, Object condition) {

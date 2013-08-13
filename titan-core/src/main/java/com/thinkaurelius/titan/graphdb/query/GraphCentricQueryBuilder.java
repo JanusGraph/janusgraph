@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.query;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanGraphQuery;
@@ -12,9 +11,7 @@ import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementType;
-import com.thinkaurelius.titan.graphdb.query.condition.And;
-import com.thinkaurelius.titan.graphdb.query.condition.Condition;
-import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
+import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.stats.ObjectAccumulator;
 import com.tinkerpop.blueprints.Edge;
@@ -143,21 +140,23 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
         if (limit==0) return GraphCentricQuery.emptyQuery();
 
         //Prepare constraints
-        And<TitanElement> conditions = new And<TitanElement>(constraints.size()+4);
-        if (!QueryUtil.prepareConstraints(tx,conditions,constraints)) return GraphCentricQuery.emptyQuery();
+        And<TitanElement> conditions = QueryUtil.constraints2QNF(tx,constraints);
+        if (conditions==null) return GraphCentricQuery.emptyQuery();
 
-        //Find most suitable index
+        //Find most suitable index by checking all top level (i.e. AND level) predicate conditions and
+        //checking which indexes cover those (we ignore NOT and nested OR since they are much less constraining).
+        //For each index, count the matches. Equality constraints count more since they have much higher selectivity than all others.
         final ObjectAccumulator<String> counts = new ObjectAccumulator<String>(5);
         for (Condition<TitanElement> child : conditions.getChildren()) {
             if (child instanceof PredicateCondition) {
                 PredicateCondition<TitanType,TitanElement> atom = (PredicateCondition)child;
-                if (atom.getCondition()!=null) {
+                if (atom.getValue()!=null) {
                     Preconditions.checkArgument(atom.getKey().isPropertyKey());
                     TitanKey key = (TitanKey)atom.getKey();
                     TitanPredicate predicate = atom.getPredicate();
                     for (String index : key.getIndexes(elementType.getElementType())) {
                         if (serializer.getIndexInformation(index).supports(key.getDataType(),atom.getPredicate()))
-                            counts.incBy(index,(predicate==Cmp.EQUAL || predicate== Contain.IN)?2:1);
+                            counts.incBy(index,(predicate==Cmp.EQUAL)?5:1);
                     }
                 }
             }
@@ -167,33 +166,48 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
         log.debug("Best index for query: {}",bestIndex);
         BackendQueryHolder<IndexQuery> query = null;
         if (bestIndex==null) {
-            //No suitable index could be found
+            //No suitable index could be found => requires iterating over all elements
             query = new BackendQueryHolder<IndexQuery>(serializer.getQuery(null,null,elementType),false,null);
             query.getBackendQuery().setLimit(Query.NO_LIMIT);
         } else {
-            //Filter out IndexQuery
+            //Filter the conditions so that matchingConditions contains all those that can be handled by bestIndex
+            //and reaminingConditions contains the remaining ones. In filtering, make sure OR-clauses are considered as one
             final And<TitanElement> matchingConditions = new And<TitanElement>(conditions.size()), remainingConditions = new And<TitanElement>(conditions.size()-1);
             for (Condition<TitanElement> child : conditions.getChildren()) {
-                if (child instanceof PredicateCondition) {
-                    PredicateCondition<TitanType,TitanElement> atom = (PredicateCondition)child;
-                    if (atom.getCondition()!=null) {
-                        Preconditions.checkArgument(atom.getKey().isPropertyKey());
-                        TitanKey key = (TitanKey)atom.getKey();
-                        if (serializer.getIndexInformation(bestIndex).supports(key.getDataType(),atom.getPredicate())) {
-                            matchingConditions.add(child);
-                        } else {
-                            remainingConditions.add(child);
-                        }
-                    }
-                }
+                if (isIndexCondition(bestIndex,child)) matchingConditions.add(child);
+                else remainingConditions.add(child);
             }
+
             int indexLimit = limit==Query.NO_LIMIT?DEFAULT_NO_LIMIT:Math.min(MAX_BASE_LIMIT,limit);
             indexLimit = Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, remainingConditions, indexLimit));
             query = new BackendQueryHolder<IndexQuery>(serializer.getQuery(bestIndex,matchingConditions,elementType),remainingConditions.isEmpty(),bestIndex);
             query.getBackendQuery().setLimit(indexLimit);
         }
-        return new GraphCentricQuery(elementType,conditions,query,limit);
+        return new GraphCentricQuery(elementType,QueryUtil.simplifyQNF(conditions),query,limit);
     }
 
+
+    private final boolean isIndexCondition(String index, Condition<TitanElement> condition) {
+        if (condition instanceof PredicateCondition) {
+            PredicateCondition<TitanType,TitanElement> atom = (PredicateCondition)condition;
+            if (atom.getValue()!=null) {
+                Preconditions.checkArgument(atom.getKey().isPropertyKey());
+                TitanKey key = (TitanKey)atom.getKey();
+                if (serializer.getIndexInformation(index).supports(key.getDataType(),atom.getPredicate())) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } else return false;
+        } else if (condition instanceof Not) {
+            return isIndexCondition(index,((Not<TitanElement>)condition).getChild());
+        } else if (condition instanceof Or) {
+            boolean matchesAll = true;
+            for (Condition<TitanElement> child : condition.getChildren()) {
+                if (!isIndexCondition(index,child)) matchesAll=false;
+            }
+            return matchesAll;
+        } else throw new IllegalArgumentException("Query not in QNF: " + condition);
+    }
 
 }

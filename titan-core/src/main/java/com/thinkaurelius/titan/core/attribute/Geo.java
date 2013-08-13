@@ -25,6 +25,16 @@ public enum Geo implements TitanPredicate {
         public String toString() {
             return "intersect";
         }
+
+        @Override
+        public boolean hasNegation() {
+            return true;
+        }
+
+        @Override
+        public TitanPredicate negate() {
+            return DISJOINT;
+        }
     },
 
     DISJOINT {
@@ -42,6 +52,16 @@ public enum Geo implements TitanPredicate {
         public String toString() {
             return "disjoint";
         }
+
+        @Override
+        public boolean hasNegation() {
+            return true;
+        }
+
+        @Override
+        public TitanPredicate negate() {
+            return INTERSECT;
+        }
     },
 
     WITHIN {
@@ -58,6 +78,16 @@ public enum Geo implements TitanPredicate {
         public String toString() {
             return "within";
         }
+
+        @Override
+        public boolean hasNegation() {
+            return false;
+        }
+
+        @Override
+        public TitanPredicate negate() {
+            throw new UnsupportedOperationException();
+        }
     };
 
 
@@ -67,9 +97,14 @@ public enum Geo implements TitanPredicate {
     }
 
     @Override
-    public boolean isValidDataType(Class<?> clazz) {
+    public boolean isValidValueType(Class<?> clazz) {
         Preconditions.checkNotNull(clazz);
         return clazz.equals(Geoshape.class);
+    }
+
+    @Override
+    public boolean isQNF() {
+        return true;
     }
 
 }

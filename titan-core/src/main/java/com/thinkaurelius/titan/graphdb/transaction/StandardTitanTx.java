@@ -660,7 +660,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                     }
                     vertices=vertexSet.iterator();
                 } else {
-                    vertices = Iterators.transform(newVertexIndexEntries.get(standardIndexKey.getCondition(),standardIndexKey.getKey()).iterator(),new Function<TitanProperty, TitanVertex>() {
+                    vertices = Iterators.transform(newVertexIndexEntries.get(standardIndexKey.getValue(),standardIndexKey.getKey()).iterator(),new Function<TitanProperty, TitanVertex>() {
                         @Nullable
                         @Override
                         public TitanVertex apply(@Nullable TitanProperty o) {

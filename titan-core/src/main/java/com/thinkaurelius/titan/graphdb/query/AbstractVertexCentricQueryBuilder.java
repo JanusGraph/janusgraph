@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb.query;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
@@ -199,8 +198,8 @@ abstract class AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
         Preconditions.checkArgument(getVertexConstraint()==null || returnType==RelationType.EDGE);
 
         //Prepare constraints
-        And<TitanRelation> conditions = new And<TitanRelation>(constraints.size()+4);
-        if (!QueryUtil.prepareConstraints(getTx(),conditions,constraints)) return BaseVertexCentricQuery.emptyQuery();
+        And<TitanRelation> conditions = QueryUtil.constraints2QNF(getTx(),constraints);
+        if (conditions==null) return BaseVertexCentricQuery.emptyQuery();
 
         Preconditions.checkArgument(limit>0);
         int sliceLimit = limit;
@@ -253,59 +252,79 @@ abstract class AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
                         for (int i=0;i<primaryKeys.length;i++) {
                             TitanType pktype = getTx().getExistingType(primaryKeys[i]);
                             Interval interval=null;
-                            //First check for equality constraints
+                            //First check for equality constraints, since those are the most constraining
                             for (Iterator<Condition<TitanRelation>> iter=remainingConditions.iterator();iter.hasNext();) {
                                 PredicateCondition<TitanType,TitanRelation> atom = (PredicateCondition)iter.next();
                                 if (atom.getKey().equals(pktype) && atom.getPredicate()==Cmp.EQUAL && interval==null) {
-                                    interval=new PointInterval(atom.getCondition());
+                                    interval=new PointInterval(atom.getValue());
                                     iter.remove();
                                 }
                             }
 
+                            //If there are no equality constraints, check if the primary key's datatype allows comparison
+                            //and if so, find a bounding interval from the remaining constraints
                             if (interval==null && pktype.isPropertyKey()
                                     && Comparable.class.isAssignableFrom(((TitanKey) pktype).getDataType())) {
                                 ProperInterval pint = new ProperInterval();
                                 for (Iterator<Condition<TitanRelation>> iter=remainingConditions.iterator();iter.hasNext();) {
-                                    PredicateCondition<TitanType,TitanRelation> atom = (PredicateCondition)iter.next();
-                                    if (atom.getKey().equals(pktype)) {
-                                        TitanPredicate predicate = atom.getPredicate();
-                                        Object value = atom.getCondition();
-                                        if (predicate instanceof Cmp) {
-                                            switch ((Cmp)predicate) {
-                                                case NOT_EQUAL: break;
-                                                case LESS_THAN:
-                                                    if (pint.getEnd()==null || pint.getEnd().compareTo(value)<=0) {
-                                                        pint.setEnd((Comparable)value);
-                                                        pint.setEndInclusive(false);
-                                                    }
-                                                    iter.remove();
-                                                    break;
-                                                case LESS_THAN_EQUAL:
-                                                    if (pint.getEnd()==null || pint.getEnd().compareTo(value)<0) {
-                                                        pint.setEnd((Comparable)value);
-                                                        pint.setEndInclusive(true);
-                                                    }
-                                                    iter.remove();
-                                                    break;
-                                                case GREATER_THAN:
-                                                    if (pint.getStart()==null || pint.getStart().compareTo(value)>=0) {
-                                                        pint.setStart((Comparable)value);
-                                                        pint.setStartInclusive(false);
-                                                    }
-                                                    iter.remove();
-                                                    break;
-                                                case GREATER_THAN_EQUAL:
-                                                    if (pint.getStart()==null || pint.getStart().compareTo(value)>0) {
-                                                        pint.setStart((Comparable)value);
-                                                        pint.setStartInclusive(true);
-                                                    }
-                                                    iter.remove();
-                                                    break;
+                                    Condition<TitanRelation> cond = iter.next();
+                                    if (cond instanceof PredicateCondition) {
+                                        PredicateCondition<TitanType,TitanRelation> atom = (PredicateCondition)iter.next();
+                                        if (atom.getKey().equals(pktype)) {
+                                            TitanPredicate predicate = atom.getPredicate();
+                                            Object value = atom.getValue();
+                                            if (predicate instanceof Cmp) {
+                                                switch ((Cmp)predicate) {
+                                                    case NOT_EQUAL: break;
+                                                    case LESS_THAN:
+                                                        if (pint.getEnd()==null || pint.getEnd().compareTo(value)>=0) {
+                                                            pint.setEnd((Comparable)value);
+                                                            pint.setEndInclusive(false);
+                                                        }
+                                                        iter.remove();
+                                                        break;
+                                                    case LESS_THAN_EQUAL:
+                                                        if (pint.getEnd()==null || pint.getEnd().compareTo(value)>0) {
+                                                            pint.setEnd((Comparable)value);
+                                                            pint.setEndInclusive(true);
+                                                        }
+                                                        iter.remove();
+                                                        break;
+                                                    case GREATER_THAN:
+                                                        if (pint.getStart()==null || pint.getStart().compareTo(value)<=0) {
+                                                            pint.setStart((Comparable)value);
+                                                            pint.setStartInclusive(false);
+                                                        }
+                                                        iter.remove();
+                                                        break;
+                                                    case GREATER_THAN_EQUAL:
+                                                        if (pint.getStart()==null || pint.getStart().compareTo(value)<0) {
+                                                            pint.setStart((Comparable)value);
+                                                            pint.setStartInclusive(true);
+                                                        }
+                                                        iter.remove();
+                                                        break;
+                                                }
                                             }
-                                        } else if (predicate== Contain.IN) {
-                                            //TODO: Consider splitting query for IN constraints on primary key with a limited number (<=3) of possible values
+                                        }
+                                    } else if (cond instanceof Or) {
+                                        //Grab a probe so we can investigate what type of or-condition this is and whether it allows us to constrain this primary key
+                                        Condition probe = ((Or)cond).get(0);
+                                        if (probe instanceof PredicateCondition && ((PredicateCondition)probe).getKey().equals(pktype) &&
+                                                ((PredicateCondition)probe).getPredicate()==Cmp.EQUAL) {
+                                            //We make the assumption that this or-condition is a group of equality constraints for the same type (i.e. an unrolled Contain.IN)
+                                            //This assumption is enforced by precondition statements below
+                                            //TODO: Consider splitting query on primary key with a limited number (<=3) of possible values in or-clause
+
+                                            //Now, we find the smallest and largest value in this group of equality constraints to bound the interval
                                             Comparable smallest = null, largest = null;
-                                            for (Object v: ((Collection)value)) {
+                                            for (Condition child : cond.getChildren()) {
+                                                Preconditions.checkArgument(child instanceof PredicateCondition);
+                                                PredicateCondition pc = (PredicateCondition)child;
+                                                Preconditions.checkArgument(pc.getKey().equals(pktype));
+                                                Preconditions.checkArgument(pc.getPredicate()==Cmp.EQUAL);
+
+                                                Object v = pc.getValue();
                                                 if (smallest==null) {
                                                     smallest= (Comparable) v; largest= (Comparable) v;
                                                 } else {
@@ -316,18 +335,18 @@ abstract class AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
                                                     }
                                                 }
                                             }
-                                            Preconditions.checkArgument(smallest!=null && largest!=null);
-                                            if (pint.getEnd()==null || pint.getEnd().compareTo(largest)<0) {
+                                            //After finding the smallest and largest value respectively, we constrain the interval
+                                            Preconditions.checkArgument(smallest!=null && largest!=null); //due to probing, there must be at least one
+                                            if (pint.getEnd()==null || pint.getEnd().compareTo(largest)>0) {
                                                 pint.setEnd(largest);
                                                 pint.setEndInclusive(true);
                                             }
-                                            if (pint.getStart()==null || pint.getStart().compareTo(smallest)>0) {
+                                            if (pint.getStart()==null || pint.getStart().compareTo(smallest)<0) {
                                                 pint.setStart(smallest);
                                                 pint.setStartInclusive(true);
                                             }
+                                            //We cannot remove this condition from remainingConditions, since its not exactly fulfilled (only bounded)
                                         }
-
-
                                     }
                                 }
                                 if (pint.isEmpty()) return BaseVertexCentricQuery.emptyQuery();
@@ -359,10 +378,20 @@ abstract class AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
                 }
             }
             if (queries.isEmpty()) return BaseVertexCentricQuery.emptyQuery();
-            else conditions.add(new LabelCondition<TitanRelation>(ts));
+            else conditions.add(getTypeCondition(ts));
         }
 
-        return new BaseVertexCentricQuery(conditions,queries,limit);
+        return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions),queries,limit);
+    }
+
+    private final static Condition<TitanRelation> getTypeCondition(Set<TitanType> types) {
+        Preconditions.checkArgument(!types.isEmpty());
+        if (types.size()==1) return new LabelCondition<TitanRelation>(types.iterator().next());
+        else {
+            Or<TitanRelation> typeCond = new Or<TitanRelation>(types.size());
+            for (TitanType type : types) typeCond.add(new LabelCondition<TitanRelation>(type));
+            return typeCond;
+        }
     }
 
     private final int computeLimit(And<TitanRelation> conditions, int baseLimit) {

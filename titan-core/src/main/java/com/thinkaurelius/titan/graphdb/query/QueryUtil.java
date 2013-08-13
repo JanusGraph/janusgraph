@@ -1,23 +1,19 @@
 package com.thinkaurelius.titan.graphdb.query;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
-import com.thinkaurelius.titan.core.attribute.Geo;
-import com.thinkaurelius.titan.core.attribute.Text;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.query.condition.And;
-import com.thinkaurelius.titan.graphdb.query.condition.MultiCondition;
-import com.thinkaurelius.titan.graphdb.query.condition.Or;
-import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
+import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 
-import java.util.ArrayList;
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 
@@ -52,60 +48,132 @@ public class QueryUtil {
         return (InternalType)t;
     }
 
-    public static final<E extends TitanElement> boolean prepareConstraints(StandardTitanTx tx, And<E> conditions, List<PredicateCondition<String,E>> constraints) {
+    /**
+     * Query-normal-form (QNF) for Titan is a variant of CNF (conjunctive normal form) with negation inlined where possible
+     * @param condition
+     * @return
+     */
+    public static final boolean isQueryNormalForm(Condition<?> condition) {
+        if (isQNFLiteralOrNot(condition)) return true;
+        else if (condition instanceof And) {
+            for (Condition<?> child : ((And<?>) condition).getChildren()) {
+                if (isQNFLiteralOrNot(child)) continue;
+                else if (condition instanceof Or) {
+                    for (Condition<?> child2 : ((Or<?>) condition).getChildren()) {
+                        if (!isQNFLiteralOrNot(child2)) return false;
+                    }
+                } else return false;
+            }
+            return true;
+        } else return false;
+    }
+
+    private static final boolean isQNFLiteralOrNot(Condition<?> condition) {
+        if (condition instanceof Not) {
+            Condition child = ((Not)condition).getChild();
+            if (!isQNFLiteral(child)) return false;
+            else if (child instanceof PredicateCondition) {
+                return !((PredicateCondition)child).getPredicate().hasNegation();
+            } else return true;
+        } else return isQNFLiteral(condition);
+    }
+
+    private static final boolean isQNFLiteral(Condition<?> condition) {
+        if (condition.getType()!=Condition.Type.LITERAL) return false;
+        if (condition instanceof PredicateCondition) {
+            return ((PredicateCondition)condition).getPredicate().isQNF();
+        } else return true;
+    }
+
+    private static final<E extends TitanElement> Condition<E> inlineNegation(Condition<E> condition) {
+        if (ConditionUtil.containsType(condition, Condition.Type.NOT)) {
+            return ConditionUtil.transformation(condition,new Function<Condition<E>, Condition<E>>() {
+                @Nullable
+                @Override
+                public Condition<E> apply(@Nullable Condition<E> cond) {
+                    if (cond instanceof Not) {
+                        Condition<E> child = ((Not)cond).getChild();
+                        Preconditions.checkArgument(child.getType()== Condition.Type.LITERAL); //verify QNF
+                        if (child instanceof PredicateCondition) {
+                            PredicateCondition<?,E> pc = (PredicateCondition)child;
+                            if (pc.getPredicate().hasNegation()) {
+                                return new PredicateCondition(pc.getKey(),pc.getPredicate().negate(),pc.getValue());
+                            }
+                        }
+                    }
+                    return null;
+                }
+            });
+        } else return condition;
+    }
+
+    public static final<E extends TitanElement> Condition<E> simplifyQNF(Condition<E> condition) {
+        Preconditions.checkArgument(isQueryNormalForm(condition));
+        if (condition.numChildren()==1) {
+            Condition<E> child = ((And)condition).get(0);
+            if (child.getType()== Condition.Type.LITERAL) return child;
+        }
+        return condition;
+    }
+
+    /**
+     * Prepares the constraints from the query builder into a QNF compliant condition.
+     * If the condition is invalid or trivially false, it returns null.
+     *
+     * @param tx
+     * @param constraints
+     * @param <E>
+     * @return
+     *
+     * @see #isQueryNormalForm(com.thinkaurelius.titan.graphdb.query.condition.Condition)
+     */
+    public static final<E extends TitanElement> And<E> constraints2QNF(StandardTitanTx tx, List<PredicateCondition<String,E>> constraints) {
+        And<E> conditions = new And<E>(constraints.size()+4);
         for (int i=0;i<constraints.size();i++) {
             PredicateCondition<String,E> atom = constraints.get(i);
             TitanType type = getType(tx,atom.getKey());
             if (type==null) {
-                if (atom.getPredicate()== Cmp.EQUAL && atom.getCondition()==null) continue; //Ignore condition
-                else return false;
+                if (atom.getPredicate()== Cmp.EQUAL && atom.getValue()==null) continue; //Ignore condition, its trivially satisifed
+                else return null;
             }
-            Object value = atom.getCondition();
+            Object value = atom.getValue();
             TitanPredicate predicate = atom.getPredicate();
             Preconditions.checkArgument(predicate.isValidCondition(value),"Invalid condition: %s",value);
             if (type.isPropertyKey()) {
-                Preconditions.checkArgument(predicate.isValidDataType(((TitanKey)type).getDataType()),"Data type of key is not compatible with condition");
+                Preconditions.checkArgument(predicate.isValidValueType(((TitanKey) type).getDataType()),"Data type of key is not compatible with condition");
             } else { //its a label
                 Preconditions.checkArgument(((TitanLabel)type).isUnidirected());
-                Preconditions.checkArgument(predicate.isValidDataType(TitanVertex.class),"Data type of key is not compatible with condition");
+                Preconditions.checkArgument(predicate.isValidValueType(TitanVertex.class),"Data type of key is not compatible with condition");
             }
 
-
-            if (predicate==Contain.NOT_IN) { //Rewrite contains relationship
+            if (predicate instanceof Contain) {
+                //Rewrite contains conditions
                 Collection values = (Collection)value;
-                for (Object invalue : values) addConstraint(type,Cmp.NOT_EQUAL,invalue,conditions);
-            } else if (predicate==Contain.IN && ((Collection)value).size()==1) {
-                addConstraint(type,Cmp.EQUAL,((Collection)value).iterator().next(),conditions);
+                if (predicate==Contain.NOT_IN) {
+                    for (Object invalue : values) addConstraint(type,Cmp.NOT_EQUAL,invalue,conditions);
+                } else {
+                    Preconditions.checkArgument(predicate==Contain.IN);
+                    if (values.size()==1) addConstraint(type,Cmp.EQUAL,values.iterator().next(),conditions);
+                    else {
+                        Or<E> nested = new Or<E>(values.size());
+                        for (Object invalue : values) addConstraint(type,Cmp.EQUAL,invalue,nested);
+                        conditions.add(nested);
+                    }
+                }
             } else {
                 addConstraint(type,predicate,value,conditions);
             }
-
-
         }
-        return true;
+        return conditions;
     }
 
     private static final<E extends TitanElement> void addConstraint(TitanType type, TitanPredicate predicate, Object value, MultiCondition<E> conditions) {
-        if (predicate instanceof Contain) {
-            Collection values = (Collection)value;
-            Collection newValues = new ArrayList(values.size());
-            for (Object v : values) {
-                if (type.isPropertyKey()) {
-                    v = AttributeUtil.verifyAttributeQuery((TitanKey) type, v); //TODO: replace by AttributeSerializer based handling
-                } else { //t.isEdgeLabel()
-                    Preconditions.checkArgument(v instanceof TitanVertex);
-                }
-                newValues.add(v);
-            }
-            conditions.add(new PredicateCondition<TitanType,E>(type, predicate, newValues));
-        } else {
-            if (type.isPropertyKey()) {
-                value = AttributeUtil.verifyAttributeQuery((TitanKey) type, value); //TODO: replace by AttributeSerializer based handling
-            } else { //t.isEdgeLabel()
-                Preconditions.checkArgument(value instanceof TitanVertex);
-            }
-            conditions.add(new PredicateCondition<TitanType,E>(type, predicate, value));
+        if (type.isPropertyKey()) {
+            value = AttributeUtil.verifyAttributeQuery((TitanKey) type, value); //TODO: replace by AttributeSerializer based handling
+        } else { //t.isEdgeLabel()
+            Preconditions.checkArgument(value instanceof TitanVertex);
         }
+        conditions.add(new PredicateCondition<TitanType,E>(type, predicate, value));
     }
 
 

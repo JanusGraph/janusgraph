@@ -15,7 +15,13 @@ public interface TitanPredicate extends Predicate {
 
     public boolean isValidCondition(Object condition);
 
-    public boolean isValidDataType(Class<?> clazz);
+    public boolean isValidValueType(Class<?> clazz);
+
+    public boolean hasNegation();
+
+    public TitanPredicate negate();
+
+    public boolean isQNF();
 
     @Override
     public boolean evaluate(Object value, Object condition);

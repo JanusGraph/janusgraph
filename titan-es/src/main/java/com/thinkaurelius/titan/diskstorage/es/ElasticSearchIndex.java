@@ -309,7 +309,7 @@ public class ElasticSearchIndex implements IndexProvider {
     public FilterBuilder getFilter(Condition<?> condition) {
         if (condition instanceof PredicateCondition) {
             PredicateCondition<String,?> atom = (PredicateCondition) condition;
-            Object value = atom.getCondition();
+            Object value = atom.getValue();
             String key = atom.getKey();
             TitanPredicate titanPredicate = atom.getPredicate();
             if (value instanceof Number) {

@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.query.BackendQuery;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import org.apache.commons.lang.StringUtils;
 
@@ -22,6 +23,7 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
 
     public IndexQuery(String store, Condition condition) {
         Preconditions.checkNotNull(condition);
+        Preconditions.checkArgument(QueryUtil.isQueryNormalForm(condition));
         this.condition=condition;
         this.store = store;
     }

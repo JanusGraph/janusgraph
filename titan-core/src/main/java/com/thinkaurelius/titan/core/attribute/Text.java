@@ -60,9 +60,25 @@ public enum Text implements TitanPredicate {
 
 
     @Override
-    public boolean isValidDataType(Class<?> clazz) {
+    public boolean isValidValueType(Class<?> clazz) {
         Preconditions.checkNotNull(clazz);
         return clazz.equals(String.class);
     }
+
+    @Override
+    public boolean hasNegation() {
+        return false;
+    }
+
+    @Override
+    public TitanPredicate negate() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isQNF() {
+        return true;
+    }
+
 
 }

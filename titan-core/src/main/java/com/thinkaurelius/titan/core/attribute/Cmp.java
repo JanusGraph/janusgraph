@@ -16,7 +16,7 @@ public enum Cmp implements TitanPredicate {
     EQUAL {
 
         @Override
-        public boolean isValidDataType(Class<?> clazz) {
+        public boolean isValidValueType(Class<?> clazz) {
             return true;
         }
 
@@ -38,12 +38,17 @@ public enum Cmp implements TitanPredicate {
         public String toString() {
             return "=";
         }
+
+        @Override
+        public TitanPredicate negate() {
+            return NOT_EQUAL;
+        }
     },
 
     NOT_EQUAL {
 
         @Override
-        public boolean isValidDataType(Class<?> clazz) {
+        public boolean isValidValueType(Class<?> clazz) {
             return true;
         }
 
@@ -65,12 +70,17 @@ public enum Cmp implements TitanPredicate {
         public String toString() {
             return "<>";
         }
+
+        @Override
+        public TitanPredicate negate() {
+            return EQUAL;
+        }
     },
 
     LESS_THAN {
 
         @Override
-        public boolean isValidDataType(Class<?> clazz) {
+        public boolean isValidValueType(Class<?> clazz) {
             Preconditions.checkNotNull(clazz);
             return Comparable.class.isAssignableFrom(clazz);
         }
@@ -95,12 +105,17 @@ public enum Cmp implements TitanPredicate {
         public String toString() {
             return "<";
         }
+
+        @Override
+        public TitanPredicate negate() {
+            return GREATER_THAN_EQUAL;
+        }
     },
 
     LESS_THAN_EQUAL {
 
         @Override
-        public boolean isValidDataType(Class<?> clazz) {
+        public boolean isValidValueType(Class<?> clazz) {
             Preconditions.checkNotNull(clazz);
             return Comparable.class.isAssignableFrom(clazz);
         }
@@ -125,12 +140,17 @@ public enum Cmp implements TitanPredicate {
         public String toString() {
             return "<=";
         }
+
+        @Override
+        public TitanPredicate negate() {
+            return GREATER_THAN;
+        }
     },
 
     GREATER_THAN {
 
         @Override
-        public boolean isValidDataType(Class<?> clazz) {
+        public boolean isValidValueType(Class<?> clazz) {
             Preconditions.checkNotNull(clazz);
             return Comparable.class.isAssignableFrom(clazz);
         }
@@ -155,12 +175,17 @@ public enum Cmp implements TitanPredicate {
         public String toString() {
             return ">";
         }
+
+        @Override
+        public TitanPredicate negate() {
+            return LESS_THAN_EQUAL;
+        }
     },
 
     GREATER_THAN_EQUAL {
 
         @Override
-        public boolean isValidDataType(Class<?> clazz) {
+        public boolean isValidValueType(Class<?> clazz) {
             Preconditions.checkNotNull(clazz);
             return Comparable.class.isAssignableFrom(clazz);
         }
@@ -185,7 +210,23 @@ public enum Cmp implements TitanPredicate {
         public String toString() {
             return ">=";
         }
+
+        @Override
+        public TitanPredicate negate() {
+            return LESS_THAN;
+        }
     };
+
+
+    @Override
+    public boolean hasNegation() {
+        return true;
+    }
+
+    @Override
+    public boolean isQNF() {
+        return true;
+    }
 
     private static final Logger log = LoggerFactory.getLogger(Cmp.class);
 

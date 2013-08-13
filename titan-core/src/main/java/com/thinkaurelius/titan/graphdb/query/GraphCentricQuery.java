@@ -23,6 +23,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
     public GraphCentricQuery(ElementType type, Condition<TitanElement> condition, BackendQueryHolder<IndexQuery> indexQuery, int limit) {
         super(limit);
         Preconditions.checkNotNull(condition);
+        Preconditions.checkArgument(QueryUtil.isQueryNormalForm(condition));
         Preconditions.checkNotNull(type);
         Preconditions.checkNotNull(indexQuery);
         this.condition = condition;
