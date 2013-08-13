@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.locking;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

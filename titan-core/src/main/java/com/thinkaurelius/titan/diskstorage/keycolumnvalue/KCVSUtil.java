@@ -30,7 +30,7 @@ public class KCVSUtil {
      * @return Value for key and column or NULL if such does not exist
      */
     public static StaticBuffer get(KeyColumnValueStore store, StaticBuffer key, StaticBuffer column, StoreTransaction txh) throws StorageException {
-        KeySliceQuery query = new KeySliceQuery(key,column, ByteBufferUtil.nextBiggerBuffer(column),2);
+        KeySliceQuery query = new KeySliceQuery(key,column, ByteBufferUtil.nextBiggerBuffer(column)).setLimit(2);
         List<Entry> result = store.getSlice(query,txh);
         if (result.size()>1) log.warn("GET query returned more than 1 result: store {} | key {} | column {}",new Object[]{store.getName(),
                 key,column});

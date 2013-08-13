@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
+import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Before;
@@ -89,17 +90,20 @@ public class IDManagementTest {
             long count = RandomGenerator.randomLong(1, eid.getMaxTitanTypeCount());
             long id;
             int dirID;
+            RelationType type;
             if (Math.random() < 0.5) {
                 id = eid.getEdgeLabelID(count);
                 assertTrue(eid.isEdgeLabelID(id));
+                type = RelationType.EDGE;
                 if (Math.random() < 0.5)
-                    dirID = IDManager.EDGE_IN_DIR;
+                    dirID = IDHandler.EDGE_IN_DIR;
                 else
-                    dirID = IDManager.EDGE_OUT_DIR;
+                    dirID = IDHandler.EDGE_OUT_DIR;
             } else {
+                type = RelationType.PROPERTY;
                 id = eid.getPropertyKeyID(count);
                 assertTrue(eid.isPropertyKeyID(id));
-                dirID = IDManager.PROPERTY_DIR;
+                dirID = IDHandler.PROPERTY_DIR;
             }
             assertTrue(eid.isTypeID(id));
 
@@ -123,45 +127,22 @@ public class IDManagementTest {
             assertEquals(b, out.getStaticBuffer());
 
             //Make sure the bounds are right
-            StaticBuffer lower = IDHandler.directionPlusZero(dirID);
-            StaticBuffer upper = IDHandler.directionPlusOne(dirID);
-            assertTrue(lower.compareTo(b)<0);
-            assertTrue(upper.compareTo(b)>0);
+            StaticBuffer[] bounds = IDHandler.getBounds(type);
+            assertTrue(bounds[0].compareTo(b)<0);
+            assertTrue(bounds[1].compareTo(b)>0);
+            bounds = IDHandler.getBounds(RelationType.RELATION);
+            assertTrue(bounds[0].compareTo(b)<0);
+            assertTrue(bounds[1].compareTo(b)>0);
         }
     }
 
     @Test
     public void testDirectionPrefix() {
-        for (int dirID=0;dirID<4;dirID++) {
-            if (IDHandler.isValidDirection(dirID)) {
-                ReadBuffer rb = IDHandler.directionPlusOne(dirID).asReadBuffer();
-//                System.out.println(getBuffer(IDHandler.directionPlusOne(dirID).asReadBuffer()));
-                boolean first=true;
-                while (rb.hasRemaining()) {
-                    int b = VariableLong.unsignedByte(rb.getByte());
-                    if (first) {
-                        assertEquals("Original value: "+b,dirID,(b>>>6));
-                        assertEquals(64-1 , b & ((1<<6)-1));
-                        first = false;
-                    } else {
-                        assertEquals(255,b);
-                    }
-                }
-
-                rb = IDHandler.directionPlusZero(dirID).asReadBuffer();
-//                System.out.println(getBuffer(IDHandler.directionPlusZero(dirID).asReadBuffer()));
-                first=true;
-                while (rb.hasRemaining()) {
-                    int b = VariableLong.unsignedByte(rb.getByte());
-                    if (first) {
-                        assertEquals(dirID,(b>>>6));
-                        assertEquals(0 , b & ((1<<6)-1));
-                        first = false;
-                    } else {
-                        assertEquals(0,b);
-                    }
-                }
-            }
+        for (RelationType type : RelationType.values()) {
+            StaticBuffer[] bounds = IDHandler.getBounds(type);
+            assertEquals(1,bounds[0].length());
+            assertEquals(1,bounds[1].length());
+            assertTrue(bounds[0].compareTo(bounds[1])<0);
         }
     }
 

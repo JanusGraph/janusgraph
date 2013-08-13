@@ -6,17 +6,10 @@ import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.rexster.Tokens;
 import com.tinkerpop.rexster.config.GraphConfiguration;
 import com.tinkerpop.rexster.config.GraphConfigurationException;
-
-import org.apache.commons.configuration.AbstractConfiguration;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.CompositeConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.configuration.*;
 
 import java.io.File;
 import java.util.Iterator;
-import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  * Implements a Rexster GraphConfiguration for Titan

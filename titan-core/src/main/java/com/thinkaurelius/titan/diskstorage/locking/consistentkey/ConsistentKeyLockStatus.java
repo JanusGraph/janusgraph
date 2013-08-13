@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import java.util.concurrent.TimeUnit;
-
 import com.thinkaurelius.titan.diskstorage.locking.LockStatus;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * The timestamp and checked-ness of a held {@link ConsistentKeyLock}

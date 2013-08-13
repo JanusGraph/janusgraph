@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.database;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
@@ -18,21 +18,21 @@ import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import com.thinkaurelius.titan.graphdb.internal.ElementType;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
-import com.thinkaurelius.titan.graphdb.query.StandardElementQuery;
-import com.thinkaurelius.titan.graphdb.query.keycondition.*;
+import com.thinkaurelius.titan.graphdb.query.GraphCentricQuery;
+import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +56,12 @@ public class IndexSerializer {
     public IndexSerializer(Serializer serializer, Map<String,? extends IndexInformation> indexes) {
         this.serializer = serializer;
         this.indexes = indexes;
+    }
+
+    public IndexInformation getIndexInformation(String indexName) {
+        IndexInformation indexinfo = indexes.get(indexName);
+        Preconditions.checkArgument(indexinfo!=null,"Index is unknown or not configured: %s",indexName);
+        return indexinfo;
     }
 
     /* ################################################
@@ -157,20 +163,6 @@ public class IndexSerializer {
         }
     }
 
-    private static final StaticBuffer relationID2ByteBuffer(RelationIdentifier rid) {
-        long[] longs = rid.getLongRepresentation();
-        Preconditions.checkArgument(longs.length==3);
-        WriteBuffer buffer = new WriteByteBuffer(24);
-        for (int i=0;i<3;i++) VariableLong.writePositive(buffer,longs[i]);
-        return buffer.getStaticBuffer();
-    }
-
-    private static final RelationIdentifier bytebuffer2RelationId(ReadBuffer b) {
-        long[] relationId = new long[3];
-        for (int i=0;i<3;i++) relationId[i]=VariableLong.readPositive(b);
-        return RelationIdentifier.get(relationId);
-    }
-
     private void addKeyValue(TitanElement element, TitanKey key, Object value, String index, BackendTransaction tx) throws StorageException {
         Preconditions.checkArgument(key.isUnique(Direction.OUT),"Only out-unique properties are supported by index [%s]",index);
         tx.getIndexTransactionHandle(index).add(getStoreName(element),element2String(element),key2String(key),value,element.isNew());
@@ -185,83 +177,91 @@ public class IndexSerializer {
                 Querying
     ################################################### */
 
-    public List<Object> query(StandardElementQuery query, BackendTransaction tx) {
-        Preconditions.checkArgument(query.hasIndex());
-        String index = query.getIndex();
-        Preconditions.checkArgument(indexes.containsKey(index),"Index unknown or unconfigured: %s",index);
-        List<Object> results = null;
-        if (index.equals(Titan.Token.STANDARD_INDEX)) {
-            if (query.getCondition() instanceof KeyAtom) {
-                results = processSingleCondition(query, (KeyAtom<TitanKey>)query.getCondition(), index, tx);
-            } else if (query.getCondition() instanceof KeyAnd) {
+    public List<Object> query(String indexName, IndexQuery query, BackendTransaction tx) {
+        Preconditions.checkArgument(query.hasStore());
+        Preconditions.checkArgument(indexes.containsKey(indexName),"Index unknown or unconfigured: %s",indexName);
+        if (indexName.equals(Titan.Token.STANDARD_INDEX)) {
+            List<Object> results = null;
+            ElementType resultType = ElementType.getByName(query.getStore());
+            Condition<?> condition = query.getCondition();
+            if (condition instanceof And && condition.numChildren()==1) {
+                condition = condition.getChildren().iterator().next();
+            }
+
+            if (condition instanceof PredicateCondition) {
+                results = processSingleCondition(resultType, (PredicateCondition) condition, query.getLimit(), tx);
+            } else if (condition instanceof And) {
                 /*
                  * Iterate over the KeyAtoms in the collection
                  * query.getCondition().getChildren(), taking the intersection
                  * of current results with cumulative results on each iteration.
                  */
-                Set<Object> cumulativeResults = null;
-                for (KeyCondition<TitanKey> k : query.getCondition().getChildren()) {
-                    KeyAtom<TitanKey> curCondition = (KeyAtom<TitanKey>)k;
-                    // This could be optimized: it is inefficient in terms of comparisons, space, and garbage
-                    List<Object> r = processSingleCondition(query, curCondition, index, tx);
-                    if (cumulativeResults == null) {
-                        cumulativeResults = Sets.newHashSet(r);
-                    } else {
-                        Set<Object> curResultSet = ImmutableSet.builder().addAll(r).build();
-                        Iterator<Object> iter = cumulativeResults.iterator();
-                        while (iter.hasNext()) {
-                            Object o = iter.next();
-                            if (!curResultSet.contains(o)) {
-                                iter.remove();
-                            }
+                int limit = query.getLimit() * condition.numChildren();
+                boolean exhaustedResults;
+                do {
+                    exhaustedResults = true;
+                    Set<Object> cumulativeResults = null;
+                    for (Condition child : condition.getChildren()) {
+                        Preconditions.checkArgument(child instanceof PredicateCondition);
+                        List<Object> r = processSingleCondition(resultType, (PredicateCondition)child, limit, tx);
+                        if (r.size()>=limit) exhaustedResults=false;
+                        if (cumulativeResults == null) {
+                            cumulativeResults = Sets.newHashSet(r);
+                        } else {
+                            cumulativeResults.retainAll(r);
                         }
                     }
-                }
-                results = ImmutableList.builder().addAll(cumulativeResults).build();
-            } else if (query.getCondition() instanceof KeyOr) {
-                /*
-                 * Iterate over the KeyAtoms in the collection
-                 * query.getCondition().getChildren(), adding each iteration's
-                 * results to a cumulative result set (i.e. iterative union).
-                 * 
-                 * We don't use Guava's Sets#union() method because the Javadoc
-                 * for that method contains a warning to avoid exactly this sort
-                 * of iterative invocation pattern, claiming that it can result
-                 * in cubic performance due to Guava's implementation of union.
-                 */
+                    results = ImmutableList.builder().addAll(cumulativeResults).build();
+                    limit = (int)Math.min(Integer.MAX_VALUE-1,Math.pow(limit,1.5));
+                } while (results.size()<query.getLimit() && !exhaustedResults);
 
-                // This could be optimized: it is inefficient in terms of comparisons, space, and garbage
-                Set<Object> cumulativeResults = Sets.newHashSet();
-                for (KeyCondition<TitanKey> k : query.getCondition().getChildren()) {
-                    KeyAtom<TitanKey> curCondition = (KeyAtom<TitanKey>)k;
-                    cumulativeResults.addAll(processSingleCondition(query, curCondition, index, tx));
-                }
-                results = ImmutableList.builder().addAll(cumulativeResults).build();
             }
-            
             return results;
         } else {
-            verifyQuery(query.getCondition(),index,query.getType().getElementType());
-            KeyCondition<String> condition = convert(query.getCondition());
-            IndexQuery iquery = new IndexQuery(getStoreName(query),condition,query.getLimit());
-            List<String> r = tx.indexQuery(index, iquery);
+            List<String> r = tx.indexQuery(indexName, query);
             List<Object> result = new ArrayList<Object>(r.size());
             for (String id : r) result.add(string2ElementId(id));
             return result;
         }
     }
-    
-    private List<Object> processSingleCondition(StandardElementQuery query, KeyAtom<TitanKey> cond, String index, BackendTransaction tx) {
-        Preconditions.checkArgument(cond.getTitanPredicate()==Cmp.EQUAL,"Only equality relations are supported by standard index [%s]",cond);
-        TitanKey key = cond.getKey();
-        Object value = cond.getCondition();
-        Preconditions.checkArgument(key.hasIndex(index,query.getType().getElementType()),
-                "Cannot retrieve for given property key - it does not have an index [%s]",key.getName());
 
+    public IndexQuery getQuery(final String indexName, Condition<TitanElement> condition, final ElementType resultType) {
+        Preconditions.checkNotNull(resultType);
+        if (indexName==null) { //Special case which requires iterating over all elements which is handled in the transaction
+            return new IndexQuery(null,new FixedCondition<TitanElement>(true));
+        } else {
+            Preconditions.checkNotNull(condition);
+            if (indexName.equals(Titan.Token.STANDARD_INDEX)) {
+                return new IndexQuery(resultType.getName(),condition);
+            } else {
+                return new IndexQuery(resultType.getName(), ConditionUtil.literalTransformation(condition,new Function<Condition<TitanElement>, Condition<TitanElement>>() {
+                    @Nullable
+                    @Override
+                    public Condition<TitanElement> apply(@Nullable Condition<TitanElement> condition) {
+                        Preconditions.checkArgument(condition instanceof PredicateCondition);
+                        PredicateCondition pc = (PredicateCondition) condition;
+                        TitanKey key = (TitanKey) pc.getKey();
+                        Preconditions.checkArgument(key.hasIndex(indexName, resultType.getElementType()));
+                        Preconditions.checkArgument(indexes.get(indexName).supports(key.getDataType(), pc.getPredicate()));
+                        return new PredicateCondition<String, TitanElement>(key2String(key), pc.getPredicate(), pc.getCondition());
+                    }
+                }));
+            }
+        }
+    }
+    
+    private List<Object> processSingleCondition(ElementType resultType, PredicateCondition pc, int limit, BackendTransaction tx) {
+        Preconditions.checkArgument(resultType==ElementType.EDGE || resultType==ElementType.VERTEX);
+        Preconditions.checkArgument(pc.getPredicate() == Cmp.EQUAL, "Only equality index retrievals are supported on standard index");
+        Preconditions.checkNotNull(pc.getCondition());
+        TitanKey key = (TitanKey)pc.getKey();
+        Preconditions.checkArgument(key.hasIndex(Titan.Token.STANDARD_INDEX,resultType.getElementType()),
+                "Cannot retrieve for given property key - it does not have an index [%s]",key.getName());
+        Object value = pc.getCondition();
         StaticBuffer column = getUniqueIndexColumn(key);
-        KeySliceQuery sq = new KeySliceQuery(getIndexKey(value),column, SliceQuery.pointRange(column),query.getLimit(),((InternalType)key).isStatic(Direction.IN));
+        KeySliceQuery sq = new KeySliceQuery(getIndexKey(value),column, SliceQuery.pointRange(column),((InternalType)key).isStatic(Direction.IN)).setLimit(limit);
         List<Entry> r;
-        if (query.getType()== StandardElementQuery.Type.VERTEX) {
+        if (resultType== ElementType.VERTEX) {
             r = tx.vertexIndexQuery(sq);
         } else {
             r = tx.edgeIndexQuery(sq);
@@ -269,49 +269,33 @@ public class IndexSerializer {
         List<Object> results = new ArrayList<Object>(r.size());
         for (Entry entry : r) {
             ReadBuffer entryValue = entry.getReadValue();
-            if (query.getType()== StandardElementQuery.Type.VERTEX) {
+            if (resultType==ElementType.VERTEX) {
                 results.add(Long.valueOf(VariableLong.readPositive(entryValue)));
             } else {
                 results.add(bytebuffer2RelationId(entryValue));
             }
         }
-        Preconditions.checkArgument(!(query.getType()== StandardElementQuery.Type.VERTEX && key.isUnique(Direction.IN)) || results.size()<=1);
+        Preconditions.checkArgument(!(resultType==ElementType.VERTEX && key.isUnique(Direction.IN)) || results.size()<=1);
         return results;
-    }
-
-    private final void verifyQuery(KeyCondition<TitanKey> condition, String indexName, Class<? extends Element> elementType) {
-        if (!condition.hasChildren()) {
-            KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>)condition;
-            Preconditions.checkArgument(atom.getKey().hasIndex(indexName, elementType));
-            Preconditions.checkArgument(indexes.get(indexName).supports(atom.getKey().getDataType(), atom.getTitanPredicate()));
-        } else {
-            for (KeyCondition<TitanKey> c : condition.getChildren()) verifyQuery(c,indexName,elementType);
-        }
-    }
-
-    private static final KeyCondition<String> convert(KeyCondition<TitanKey> condition) {
-        if (condition instanceof KeyAtom) {
-            KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>) condition;
-            TitanPredicate titanPredicate = atom.getTitanPredicate();
-            TitanKey key = atom.getKey();
-            return KeyAtom.of(key2String(key), titanPredicate,atom.getCondition());
-        } else if (condition instanceof KeyNot) {
-            return KeyNot.of(convert(((KeyNot<TitanKey>)condition).getChild()));
-        } else if (condition instanceof KeyAnd || condition instanceof KeyOr) {
-            List<KeyCondition<String>> cond = Lists.newArrayList();
-            for (KeyCondition<TitanKey> c : condition.getChildren()) {
-                cond.add(convert(c));
-            }
-            if (condition instanceof KeyAnd)
-                return KeyAnd.of(cond.toArray(new KeyCondition[cond.size()]));
-            else
-                return KeyOr.of(cond.toArray(new KeyCondition[cond.size()]));
-        } else throw new IllegalArgumentException("Invalid condition: " + condition);
     }
 
     /* ################################################
                 Utility Functions
     ################################################### */
+
+    private static final StaticBuffer relationID2ByteBuffer(RelationIdentifier rid) {
+        long[] longs = rid.getLongRepresentation();
+        Preconditions.checkArgument(longs.length==3);
+        WriteBuffer buffer = new WriteByteBuffer(24);
+        for (int i=0;i<3;i++) VariableLong.writePositive(buffer,longs[i]);
+        return buffer.getStaticBuffer();
+    }
+
+    private static final RelationIdentifier bytebuffer2RelationId(ReadBuffer b) {
+        long[] relationId = new long[3];
+        for (int i=0;i<3;i++) relationId[i]=VariableLong.readPositive(b);
+        return RelationIdentifier.get(relationId);
+    }
 
     private static final String element2String(TitanElement element) {
         if (element instanceof TitanVertex) return longID2Name(element.getID());
@@ -342,7 +326,7 @@ public class IndexSerializer {
     public static final String EDGEINDEX_NAME = "edge";
     public static final String VERTEXINDEX_NAME = "vertex";
 
-    private static final String getStoreName(StandardElementQuery query) {
+    private static final String getStoreName(GraphCentricQuery query) {
         switch (query.getType()) {
             case VERTEX: return VERTEXINDEX_NAME;
             case EDGE: return EDGEINDEX_NAME;

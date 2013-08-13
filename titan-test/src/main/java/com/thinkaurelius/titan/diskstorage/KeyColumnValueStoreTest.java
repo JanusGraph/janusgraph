@@ -263,7 +263,7 @@ public abstract class KeyColumnValueStoreTest {
         if (limit <= 0)
             entries = store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end)), tx);
         else
-            entries = store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), limit), tx);
+            entries = store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end)).setLimit(limit), tx);
 
         int pos = 0;
         for (int i = start; i < end; i++) {
@@ -399,7 +399,7 @@ public abstract class KeyColumnValueStoreTest {
 		 * all matching columns must be returned.
 		 */
         List<Entry> result =
-                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd, cols), txn);
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(cols), txn);
         Assert.assertEquals(cols, result.size());
 
         for (int i=0; i<result.size(); i++) {
@@ -412,7 +412,7 @@ public abstract class KeyColumnValueStoreTest {
 
         Assert.assertEquals(entries, result);
         result =
-                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd, cols + 10), txn);
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(cols + 10), txn);
         Assert.assertEquals(cols, result.size());
         Assert.assertEquals(entries, result);
 
@@ -421,12 +421,12 @@ public abstract class KeyColumnValueStoreTest {
 		 * limit (ordered bytewise) must be returned.
 		 */
         result =
-                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd, cols - 1), txn);
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(cols - 1), txn);
         Assert.assertEquals(cols - 1, result.size());
         entries.remove(entries.size() - 1);
         Assert.assertEquals(entries, result);
         result =
-                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd, 1), txn);
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(1), txn);
         Assert.assertEquals(1, result.size());
         List<Entry> firstEntrySingleton = Arrays.asList(entries.get(0));
         Assert.assertEquals(firstEntrySingleton, result);

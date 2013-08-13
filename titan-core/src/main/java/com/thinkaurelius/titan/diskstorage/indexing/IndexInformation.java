@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
-import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 
 /**
  * An IndexInformation gives basic information on what a particular {@link IndexProvider} supports.

@@ -6,25 +6,30 @@ import com.google.common.base.Predicate;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Weigher;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
-import com.thinkaurelius.titan.graphdb.database.FittedSliceQuery;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
+import com.thinkaurelius.titan.graphdb.internal.ElementType;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.*;
-import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAnd;
-import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAtom;
-import com.thinkaurelius.titan.graphdb.query.keycondition.KeyCondition;
+import com.thinkaurelius.titan.graphdb.query.condition.And;
+import com.thinkaurelius.titan.graphdb.query.condition.Condition;
+import com.thinkaurelius.titan.graphdb.query.condition.DirectionCondition;
+import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
@@ -38,7 +43,9 @@ import com.thinkaurelius.titan.graphdb.transaction.indexcache.SimpleIndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.ConcurrentVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.SimpleVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.VertexCache;
-import com.thinkaurelius.titan.graphdb.types.*;
+import com.thinkaurelius.titan.graphdb.types.StandardTypeMaker;
+import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
+import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
@@ -49,7 +56,6 @@ import com.thinkaurelius.titan.graphdb.util.FakeLock;
 import com.thinkaurelius.titan.graphdb.util.VertexCentricEdgeIterable;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
-import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -90,7 +96,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     private final AtomicLong temporaryID;
     private final AddedRelationsContainer addedRelations;
     private Map<Long,InternalRelation> deletedRelations;
-    private final Cache<StandardElementQuery,List<Object>> indexCache;
+    private final Cache<IndexQuery,List<Object>> indexCache;
     private final IndexCache newVertexIndexEntries;
     private ConcurrentMap<UniqueLockApplication,Lock> uniqueLocks;
 
@@ -110,9 +116,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         this.txHandle = txHandle;
 
         temporaryID = new AtomicLong(-1);
-        Cache<StandardElementQuery,List<Object>> indexCacheBuilder = CacheBuilder.newBuilder().weigher(new Weigher<StandardElementQuery, List<Object>>() {
+        Cache<GraphCentricQuery,List<Object>> indexCacheBuilder = CacheBuilder.newBuilder().weigher(new Weigher<GraphCentricQuery, List<Object>>() {
                     @Override
-                    public int weigh(StandardElementQuery q, List<Object> r) {
+                    public int weigh(GraphCentricQuery q, List<Object> r) {
                         return 2 + r.size();
                     }
                 }).
@@ -133,9 +139,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         }
         for (SystemType st : SystemKey.values()) typeCache.put(st.getName(),st);
 
-        indexCache = CacheBuilder.newBuilder().weigher(new Weigher<StandardElementQuery, List<Object>>() {
+        indexCache = CacheBuilder.newBuilder().weigher(new Weigher<IndexQuery, List<Object>>() {
             @Override
-            public int weigh(StandardElementQuery q, List<Object> r) {
+            public int weigh(IndexQuery q, List<Object> r) {
                 return 2 + r.size();
             }
         }).concurrencyLevel(concurrencyLevel).maximumWeight(DEFAULT_CACHE_SIZE).build();
@@ -531,7 +537,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     @Override
     public TypeMaker makeType() {
-        return new StandardTypeMaker(this);
+        return new StandardTypeMaker(this,graph.getIndexSerializer());
     }
 
     /*
@@ -539,95 +545,80 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
      */
 
     public VertexCentricQueryBuilder query(TitanVertex vertex) {
-        return new VertexCentricQueryBuilder((InternalVertex)vertex);
+        return new VertexCentricQueryBuilder((InternalVertex)vertex,graph.getEdgeSerializer());
     }
 
-    public final QueryExecutor<VertexCentricQuery,TitanRelation> edgeProcessor = new QueryExecutor<VertexCentricQuery, TitanRelation>() {
+    public final QueryExecutor<VertexCentricQuery,TitanRelation,SliceQuery> edgeProcessor = new QueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery>() {
 
-        @Override
-        public boolean hasNew(final VertexCentricQuery query) {
-            return query.getVertex().isNew() || ((InternalVertex)query.getVertex()).hasAddedRelations();
+        private final boolean hasSingleDirectionCondition(Condition<TitanRelation> condition) {
+            Preconditions.checkArgument(condition instanceof And);
+            for (Condition<TitanRelation> c : condition.getChildren()) {
+                if (c instanceof DirectionCondition)
+                    return ((DirectionCondition) c).getDirection()!=Direction.BOTH;
+            }
+            throw new IllegalStateException("Could not find direction condition: " + condition);
         }
 
         @Override
         public Iterator<TitanRelation> getNew(final VertexCentricQuery query) {
-            return (Iterator)((InternalVertex)query.getVertex()).getAddedRelations(new Predicate<InternalRelation>() {
-                //Need to filter out self-loops if query only asks for one direction
+            if (query.getVertex().isNew() || (query.getVertex()).hasAddedRelations()) {
+                return (Iterator)(query.getVertex()).getAddedRelations(new Predicate<InternalRelation>() {
+                    //Need to filter out self-loops if query only asks for one direction
 
-                private TitanRelation previous=null;
+                    private TitanRelation previous=null;
 
-                @Override
-                public boolean apply(@Nullable InternalRelation relation) {
-                    if (query.hasSingleDirection() && (relation instanceof TitanEdge)
-                            && ((TitanEdge)relation).isLoop()) {
-                        if (relation.equals(previous)) return false;
-                        else previous=relation;
+                    @Override
+                    public boolean apply(@Nullable InternalRelation relation) {
+                        if ((relation instanceof TitanEdge) && relation.isLoop()
+                                && hasSingleDirectionCondition(query.getCondition())) {
+                            if (relation.equals(previous)) return false;
+                            else previous=relation;
+                        }
+                        return query.matches(relation);
                     }
-                    return query.matches(relation);
-                }
-            }).iterator();
+                }).iterator();
+            } else {
+                return Iterators.emptyIterator();
+            }
         }
 
         @Override
-        public Iterator<TitanRelation> execute(final VertexCentricQuery query) {
+        public boolean hasDeletions(VertexCentricQuery query) {
+            return !deletedRelations.isEmpty() && !query.getVertex().isNew() && query.getVertex().hasRemovedRelations();
+        }
+
+        @Override
+        public boolean isDeleted(VertexCentricQuery query, TitanRelation result) {
+            return deletedRelations.containsKey(Long.valueOf(result.getID())) || result!=((InternalRelation)result).it();
+        }
+
+        @Override
+        public Iterator<TitanRelation> execute(final VertexCentricQuery query, final SliceQuery sq, final Object exeInfo) {
             if (query.getVertex().isNew()) return Iterators.emptyIterator();
 
             final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
-            FittedSliceQuery sq = edgeSerializer.getQuery(query);
-            final boolean fittedQuery = sq.isFitted();
             final InternalVertex v = query.getVertex();
-            final boolean needsFiltering = !sq.isFitted() || !deletedRelations.isEmpty();
-            if (needsFiltering && sq.hasLimit()) sq = new FittedSliceQuery(sq,QueryUtil.updateLimit(sq.getLimit(),1.1));
-
             Iterable<TitanRelation> result = null;
-            double limitMultiplier = 1.0;
-            int previousDiskSize = 0;
-            boolean finished;
-            do {
-                finished = true;
-                Iterable<Entry> iter = null;
 
-                if (v instanceof CacheVertex) {
-                    CacheVertex cv = (CacheVertex)v;
-                    iter = ((CacheVertex) v).loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
-                        @Override
-                        public List<Entry> get(SliceQuery query) {
-                            return graph.edgeQuery(v.getID(), query, txHandle);
-                        }
-                    });
-                } else {
-                    iter = graph.edgeQuery(v.getID(),sq,txHandle);
-                }
-                result = Iterables.transform(iter, new Function<Entry, TitanRelation>() {
-                    @Nullable
+            Iterable<Entry> iter = null;
+            if (v instanceof CacheVertex) {
+                iter = ((CacheVertex) v).loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
                     @Override
-                    public TitanRelation apply(@Nullable Entry entry) {
-                        return edgeSerializer.readRelation(v, entry);
+                    public List<Entry> get(SliceQuery query) {
+                        return graph.edgeQuery(v.getID(), query, txHandle);
                     }
                 });
-                if (needsFiltering) {
-                    result = Iterables.filter(result,new Predicate<TitanRelation>() {
-                        @Override
-                        public boolean apply(@Nullable TitanRelation relation) {
-                            //Filter out updated and deleted relations
-                            return (relation==((InternalRelation)relation).it() && !deletedRelations.containsKey(Long.valueOf(relation.getID())))
-                                    && (fittedQuery || query.matches(relation));
-                        }
-                    });
+            } else {
+                iter = graph.edgeQuery(v.getID(),sq,txHandle);
+            }
+            result = Iterables.transform(iter, new Function<Entry, TitanRelation>() {
+                @Nullable
+                @Override
+                public TitanRelation apply(@Nullable Entry entry) {
+                    return edgeSerializer.readRelation(v, entry);
                 }
-                //Determine termination
-                if (needsFiltering && query.hasLimit()) {
-                    if (!IterablesUtil.sizeLargerOrEqualThan(result,query.getLimit())) {
-                        int currentDiskSize = IterablesUtil.size(iter);
-                        if (currentDiskSize>previousDiskSize) {
-                            finished=false;
-                            previousDiskSize=currentDiskSize;
-                            limitMultiplier*=2;
-                            sq = new FittedSliceQuery(sq,QueryUtil.updateLimit(sq.getLimit(),limitMultiplier));
-                        }
-                    }
-                }
-            } while (!finished);
+            });
+
 
             return result.iterator();
         }
@@ -635,25 +626,18 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     };
 
 
-    public final QueryExecutor<StandardElementQuery,TitanElement> elementProcessor = new QueryExecutor<StandardElementQuery, TitanElement>() {
+    public final QueryExecutor<GraphCentricQuery,TitanElement,IndexQuery> elementProcessor = new QueryExecutor<GraphCentricQuery, TitanElement,IndexQuery>() {
 
         @Override
-        public boolean hasNew(StandardElementQuery query) {
-            if (query.getType()== StandardElementQuery.Type.VERTEX) return hasModifications();
-            else if (query.getType()== StandardElementQuery.Type.EDGE) return !addedRelations.isEmpty();
-            else throw new AssertionError("Unexpected type: " + query.getType());
-        }
-
-        @Override
-        public Iterator<TitanElement> getNew(final StandardElementQuery query) {
-            Preconditions.checkArgument(query.getType()== StandardElementQuery.Type.VERTEX || query.getType()== StandardElementQuery.Type.EDGE);
-            if (query.getType()==StandardElementQuery.Type.VERTEX && hasModifications()) {
+        public Iterator<TitanElement> getNew(final GraphCentricQuery query) {
+            Preconditions.checkArgument(query.getType()== ElementType.VERTEX || query.getType()== ElementType.EDGE);
+            if (query.getType()== ElementType.VERTEX && hasModifications()) {
                 //Collect all keys from the query - ASSUMPTION: query is an AND of KeyAtom
                 final Set<TitanKey> keys = Sets.newHashSet();
-                KeyAtom<TitanKey> standardIndexKey = null;
-                for (KeyCondition<TitanKey> cond : query.getCondition().getChildren()) {
-                    KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>)cond;
-                    if (atom.getTitanPredicate()==Cmp.EQUAL && isVertexIndexProperty(atom.getKey()))
+                PredicateCondition<TitanKey,TitanElement> standardIndexKey = null;
+                for (Condition<TitanElement> cond : query.getCondition().getChildren()) {
+                    PredicateCondition<TitanKey,TitanElement> atom = (PredicateCondition)cond;
+                    if (atom.getPredicate()==Cmp.EQUAL && isVertexIndexProperty(atom.getKey()))
                         standardIndexKey = atom;
                     keys.add(atom.getKey());
                 }
@@ -692,25 +676,32 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                         return query.matches(vertex);
                     }
                 });
-            } else if (query.getType()==StandardElementQuery.Type.EDGE && !addedRelations.isEmpty()) {
+            } else if (query.getType()== ElementType.EDGE && !addedRelations.isEmpty()) {
                 return (Iterator)addedRelations.getView(new Predicate<InternalRelation>() {
                     @Override
                     public boolean apply(@Nullable InternalRelation relation) {
                         return (relation instanceof TitanEdge) && !relation.isHidden() && query.matches(relation);
                     }
                 }).iterator();
-            } else throw new IllegalArgumentException("Unexpected type: " + query.getType());
+            } else return Iterators.emptyIterator();
         }
 
-        private boolean isDeleted(StandardElementQuery query, TitanElement result) {
+
+        @Override
+        public boolean hasDeletions(GraphCentricQuery query) {
+            return hasModifications();
+        }
+
+        @Override
+        public boolean isDeleted(GraphCentricQuery query, TitanElement result) {
             if (result.isRemoved()) return true;
-            else if (query.getType()== StandardElementQuery.Type.VERTEX) {
+            else if (query.getType()== ElementType.VERTEX) {
                 Preconditions.checkArgument(result instanceof InternalVertex);
                 InternalVertex v = ((InternalVertex)result).it();
                 if (v.hasAddedRelations() || v.hasRemovedRelations()) {
                     return !query.matches(result);
                 } else return false;
-            } else if (query.getType()==StandardElementQuery.Type.EDGE) {
+            } else if (query.getType()== ElementType.EDGE) {
                 //Loaded edges are immutable and new edges are previously filtered
                 Preconditions.checkArgument(result.isLoaded() || result.isNew());
                 return false;
@@ -718,57 +709,23 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         }
 
         @Override
-        public Iterator<TitanElement> execute(final StandardElementQuery query) {
+        public Iterator<TitanElement> execute(final GraphCentricQuery query, final IndexQuery indexQuery, final Object exeInfo) {
+            Preconditions.checkArgument(exeInfo!=null && exeInfo instanceof String);
+            final String indexName = (String)exeInfo;
             Iterator<TitanElement> iter = null;
-            if (!query.hasIndex()) {
+            if (!indexQuery.hasStore()) {
                 log.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes",query.getCondition());
-                if (query.getType()==StandardElementQuery.Type.VERTEX) {
+                if (query.getType()== ElementType.VERTEX) {
                     iter=(Iterator)getVertices().iterator();
-                } else if (query.getType()==StandardElementQuery.Type.EDGE) {
+                } else if (query.getType()== ElementType.EDGE) {
                     iter=(Iterator)getEdges().iterator();
                 } else throw new IllegalArgumentException("Unexpected type: "+query.getType());
-                iter = Iterators.filter(iter,new Predicate<TitanElement>() {
-                    @Override
-                    public boolean apply(@Nullable TitanElement element) {
-                        return query.matches(element);
-                    }
-                });
             } else {
-                String index = query.getIndex();
-                log.debug("Answering query [{}] with index {}",query,index);
-                //Filter out everything not covered by the index
-                KeyCondition<TitanKey> condition = query.getCondition();
-                //ASSUMPTION: query is an AND of KeyAtom
-                Preconditions.checkArgument(condition instanceof KeyAnd);
-                Preconditions.checkArgument(condition.hasChildren());
-                List<KeyCondition<TitanKey>> newConds = Lists.newArrayList();
-
-                boolean needsFilter = false;
-                for (KeyCondition<TitanKey> c : condition.getChildren()) {
-                    KeyAtom<TitanKey> atom = (KeyAtom<TitanKey>)c;
-                    if (getGraph().getIndexInformation(index).supports(atom.getKey().getDataType(),atom.getTitanPredicate()) &&
-                            atom.getKey().hasIndex(index,query.getType().getElementType()) && atom.getCondition()!=null) {
-                        newConds.add(atom);
-                    } else {
-                        log.debug("Filtered out atom [{}] from query [{}] because it is not indexed or not covered by the index");
-                        needsFilter = true;
-                    }
-                }
-                Preconditions.checkArgument(!newConds.isEmpty(),"Invalid index assignment [%s] to query [%s]",index, query);
-                final StandardElementQuery indexQuery;
-                if (needsFilter) {
-                    Preconditions.checkArgument(!newConds.isEmpty(),"Query has been assigned an index [%s] in error: %s",query.getIndex(),query);
-                    log.debug("Removing backend limit on filtered query [{}]", query);
-                    indexQuery = new StandardElementQuery(query.getType(),KeyAnd.of(newConds.toArray(new KeyAtom[newConds.size()])),Query.NO_LIMIT,index);
-                } else {
-                    log.debug("Applying backend limit of {} index hits on unfiltered query [{}]", query.getLimit(), query);
-                    indexQuery = query;
-                }
                 try {
                     iter = Iterators.transform(indexCache.get(indexQuery,new Callable<List<Object>>() {
                         @Override
                         public List<Object> call() throws Exception {
-                            return graph.elementQuery(indexQuery,txHandle);
+                            return graph.elementQuery(indexName,indexQuery,txHandle);
                         }
                     }).iterator(),new Function<Object, TitanElement>() {
                         @Nullable
@@ -783,21 +740,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                 } catch (Exception e) {
                     throw new TitanException("Could not call index",e);
                 }
-                if (needsFilter) {
-                    iter = Iterators.limit(Iterators.filter(iter,new Predicate<TitanElement>() {
-                        @Override
-                        public boolean apply(@Nullable TitanElement element) {
-                            return element!=null && !element.isRemoved() && !isDeleted(query,element) && query.matches(element);
-                        }
-                    }), query.getLimit());
-                } else {
-                    iter = Iterators.filter(iter,new Predicate<TitanElement>() {
-                        @Override
-                        public boolean apply(@Nullable TitanElement element) {
-                            return element!=null && !element.isRemoved() && !isDeleted(query,element) ;
-                        }
-                    });
-                }
             }
             return iter;
         }
@@ -805,8 +747,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     };
 
     @Override
-    public TitanGraphQueryBuilder query() {
-        return new TitanGraphQueryBuilder(this);
+    public GraphCentricQueryBuilder query() {
+        return new GraphCentricQueryBuilder(this, graph.getIndexSerializer());
     }
 
     @Override

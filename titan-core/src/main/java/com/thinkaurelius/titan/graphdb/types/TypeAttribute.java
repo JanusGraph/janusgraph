@@ -3,11 +3,9 @@ package com.thinkaurelius.titan.graphdb.types;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
-import java.util.Map;
 import java.util.Set;
 
 /**

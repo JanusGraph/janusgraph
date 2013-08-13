@@ -80,7 +80,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
     }
 
     private long getCurrentID(StaticBuffer partitionKey, StoreTransaction txh) throws StorageException {
-        List<Entry> blocks = idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE, 5), txh);
+        List<Entry> blocks = idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh);
         if (blocks == null) throw new TemporaryStorageException("Could not read from storage");
 
         long latest = BASE_ID;

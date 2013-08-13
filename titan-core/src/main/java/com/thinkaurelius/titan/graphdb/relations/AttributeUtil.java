@@ -5,7 +5,6 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.attribute.FullDouble;
 import com.thinkaurelius.titan.core.attribute.FullFloat;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.core.attribute.Interval;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.DoubleSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.FloatSerializer;
 
@@ -19,11 +18,7 @@ public class AttributeUtil {
 
     public static final Object verifyAttributeQuery(TitanKey key, Object attribute) {
         if (attribute==null) return attribute;
-        else if (attribute instanceof Interval) {
-            Comparable start = (Comparable) verifyAttributeQuery(key,((Interval)attribute).getStart());
-            Comparable end = (Comparable) verifyAttributeQuery(key,((Interval)attribute).getEnd());
-            return new Interval(start,end);
-        } else return verifyAttribute(key,attribute);
+        else return verifyAttribute(key,attribute);
     }
 
 

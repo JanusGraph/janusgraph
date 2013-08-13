@@ -1,7 +1,10 @@
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
-import com.tinkerpop.blueprints.*;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.GraphQuery;
+import com.tinkerpop.blueprints.Predicate;
+import com.tinkerpop.blueprints.Vertex;
 
 /**
  * Constructs a query against an external index to retrieve all elements (either vertices or edges)

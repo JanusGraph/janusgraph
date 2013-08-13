@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.query.Query;
-import com.thinkaurelius.titan.graphdb.query.keycondition.KeyCondition;
+import com.thinkaurelius.titan.graphdb.query.BackendQuery;
+import com.thinkaurelius.titan.graphdb.query.BaseQuery;
+import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -14,27 +15,18 @@ import org.apache.commons.lang.StringUtils;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class IndexQuery {
+public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
 
-    private final KeyCondition<String> condition;
+    private final Condition condition;
     private final String store;
-    private final int limit;
 
-
-    public IndexQuery(String store, KeyCondition<String> condition) {
-        this(store,condition,Query.NO_LIMIT);
-    }
-
-    public IndexQuery(String store, KeyCondition<String> condition, int limit) {
+    public IndexQuery(String store, Condition condition) {
         Preconditions.checkNotNull(condition);
-        Preconditions.checkArgument(StringUtils.isNotBlank(store));
-        Preconditions.checkArgument(limit>=0);
         this.condition=condition;
-        this.store=store;
-        this.limit=limit;
+        this.store = store;
     }
 
-    public KeyCondition<String> getCondition() {
+    public Condition getCondition() {
         return condition;
     }
 
@@ -42,21 +34,25 @@ public class IndexQuery {
         return store;
     }
 
-    /**
-     *
-     * @return The maximum number of results to return
-     */
-    public int getLimit() {
-        return limit;
+    public boolean hasStore() {
+        return StringUtils.isNotBlank(store);
     }
 
-    public boolean hasLimit() {
-        return limit!= Query.NO_LIMIT;
+    @Override
+    public IndexQuery setLimit(int limit) {
+        Preconditions.checkArgument(!hasLimit());
+        super.setLimit(limit);
+        return this;
+    }
+
+    @Override
+    public IndexQuery updateLimit(int newLimit) {
+        return new IndexQuery(store,condition).setLimit(newLimit);
     }
 
     @Override
     public int hashCode() {
-        return condition.hashCode()*9876469 + store.hashCode()*4711 + limit;
+        return condition.hashCode()*9876469 + store.hashCode()*4711 + getLimit();
     }
 
     @Override
@@ -65,14 +61,15 @@ public class IndexQuery {
         else if (other==null) return false;
         else if (!getClass().isInstance(other)) return false;
         IndexQuery oth = (IndexQuery)other;
-        return store.equals(oth.store) && condition.equals(oth.condition) && limit==oth.limit;
+        return ((store ==oth.store) || (store !=null && store.equals(oth.store)))
+                && condition.equals(oth.condition) && getLimit()==oth.getLimit();
     }
 
     @Override
     public String toString() {
         StringBuilder b = new StringBuilder();
         b.append("[").append(condition.toString()).append("]");
-        if (hasLimit()) b.append("(").append(limit).append(")");
+        if (hasLimit()) b.append("(").append(getLimit()).append(")");
         b.append(":").append(store);
         return b.toString();
     }

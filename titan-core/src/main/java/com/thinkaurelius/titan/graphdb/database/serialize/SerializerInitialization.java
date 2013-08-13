@@ -5,7 +5,10 @@ import com.thinkaurelius.titan.core.attribute.FullDouble;
 import com.thinkaurelius.titan.core.attribute.FullFloat;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
-import com.thinkaurelius.titan.graphdb.types.*;
+import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
+import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
+import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
 
 import java.util.ArrayList;
 import java.util.Date;

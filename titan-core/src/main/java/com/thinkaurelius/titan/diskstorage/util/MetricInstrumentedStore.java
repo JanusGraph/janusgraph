@@ -1,19 +1,18 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
-import java.util.List;
-import java.util.concurrent.Callable;
-
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.util.stats.MetricManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.concurrent.Callable;
 
 /**
  * This class instruments an arbitrary KeyColumnValueStore backend with Metrics.

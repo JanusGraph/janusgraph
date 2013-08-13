@@ -3,7 +3,8 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.graphdb.query.Query;
+import com.thinkaurelius.titan.graphdb.query.BackendQuery;
+import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 
 
 /**
@@ -15,42 +16,34 @@ import com.thinkaurelius.titan.graphdb.query.Query;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class SliceQuery {
+public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     public static final boolean DEFAULT_STATIC = false;
 
     private final StaticBuffer sliceStart;
     private final StaticBuffer sliceEnd;
-    private final int limit;
+
     private final boolean isStatic;
 
     protected int hashcode;
 
-    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd, final int limit, boolean isStatic) {
+    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd, boolean isStatic) {
         Preconditions.checkNotNull(sliceStart);
         Preconditions.checkNotNull(sliceEnd);
-        Preconditions.checkArgument(limit>0,"Expected positive limit");
         this.sliceStart = sliceStart;
         this.sliceEnd = sliceEnd;
-        this.limit = limit;
         this.isStatic = isStatic;
     }
 
-    public SliceQuery(final SliceQuery query) {
-        this(query.getSliceStart(),query.getSliceEnd(),query.getLimit(),query.isStatic());
-    }
-
     public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd) {
-        this(sliceStart,sliceEnd, Query.NO_LIMIT,DEFAULT_STATIC);
+        this(sliceStart,sliceEnd ,DEFAULT_STATIC);
     }
 
-    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd, final int limit) {
-        this(sliceStart,sliceEnd,limit,DEFAULT_STATIC);
+    public SliceQuery(final SliceQuery query) {
+        this(query.getSliceStart(),query.getSliceEnd(),query.isStatic());
+        setLimit(query.getLimit());
     }
 
-    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd, final boolean isStatic) {
-        this(sliceStart,sliceEnd,Query.NO_LIMIT,isStatic);
-    }
 
     /**
      * Whether the result set, if non-empty, is static, i.e. does not
@@ -60,18 +53,6 @@ public class SliceQuery {
      */
     public boolean isStatic() {
         return isStatic;
-    }
-
-    /**
-     *
-     * @return The maximum number of results to return
-     */
-    public int getLimit() {
-        return limit;
-    }
-
-    public boolean hasLimit() {
-        return limit!=Query.NO_LIMIT;
     }
 
     /**
@@ -113,12 +94,24 @@ public class SliceQuery {
     public boolean subsumes(SliceQuery oth) {
         Preconditions.checkNotNull(oth);
         if (this==oth) return true;
-        else return limit>=oth.limit && sliceStart.compareTo(oth.sliceStart)<=0
+        else return getLimit()>=oth.getLimit() && sliceStart.compareTo(oth.sliceStart)<=0
                 && sliceEnd.compareTo(oth.sliceEnd)>=0;
     }
 
     public static final StaticBuffer pointRange(StaticBuffer point) {
         return ByteBufferUtil.nextBiggerBuffer(point);
+    }
+
+    @Override
+    public SliceQuery setLimit(int limit) {
+        Preconditions.checkArgument(!hasLimit());
+        super.setLimit(limit);
+        return this;
+    }
+
+    @Override
+    public SliceQuery updateLimit(int newLimit) {
+        return new SliceQuery(sliceStart,sliceEnd,isStatic).setLimit(newLimit);
     }
 
 }

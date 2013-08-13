@@ -87,14 +87,9 @@ public class IDManager {
         }
     }
 
-
-    public static final int PROPERTY_DIR = 1;
-    public static final int EDGE_OUT_DIR = 2;
-    public static final int EDGE_IN_DIR = 3;
-
-    /** Number of bits that the direction ID consumes
+    /** Number of bits that need to be reserved from the type ids for storing additional information during serialization
      */
-    public static final int DIR_BIT_LEN = 2;
+    public static final int TYPE_LEN_RESERVE = 2;
 
     /**Total number of bits available to a Titan assigned id
         We use only 63 bits to make sure that all ids are positive
@@ -105,7 +100,7 @@ public class IDManager {
     private static final long DEFAULT_PARTITION_BITS = 0;
 
     private static final long MAX_TITAN_TYPE_ID = (1l << (TOTAL_BITS - IDType.EdgeLabel.offset()
-            - DIR_BIT_LEN)) - 1;
+            - TYPE_LEN_RESERVE)) - 1;
 
 //    public static final long relationTypePaddingBits = 3; //??
 

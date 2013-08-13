@@ -3,9 +3,10 @@ package com.thinkaurelius.titan.graphdb.database;
 import com.carrotsearch.hppc.LongOpenHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Multimap;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.TitanLabel;
+import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
@@ -21,22 +22,17 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
-import com.thinkaurelius.titan.graphdb.query.VertexCentricQuery;
-import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAtom;
 import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
 import com.thinkaurelius.titan.graphdb.relations.CacheProperty;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.ImmutableLongObjectMap;
-import static com.thinkaurelius.titan.graphdb.idmanagement.IDManager.*;
-
 import com.thinkaurelius.titan.util.datastructures.Interval;
 import com.tinkerpop.blueprints.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.List;
+import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -230,6 +226,19 @@ public class EdgeSerializer {
         return key.getDataType().equals(Object.class);
     }
 
+    private static final int getDirID(Direction dir, RelationType rt) {
+        if (rt==RelationType.PROPERTY) {
+            Preconditions.checkArgument(dir==Direction.BOTH);
+            return PROPERTY_DIR;
+        } else if (rt==RelationType.EDGE) {
+            if (dir==Direction.OUT) return EDGE_OUT_DIR;
+            else if (dir==Direction.IN) return EDGE_IN_DIR;
+            else throw new IllegalArgumentException("Invalid direction: " + dir);
+        } else {
+            throw new IllegalArgumentException("Invalid relation type: " + rt);
+        }
+
+    }
 
     public Entry writeRelation(InternalRelation relation, int pos, StandardTitanTx tx) {
         return writeRelation(relation,pos,true,tx);
@@ -240,23 +249,8 @@ public class EdgeSerializer {
         TitanType type = relation.getType();
         long typeid = type.getID();
 
-        int dirID;
         Direction dir = EdgeDirection.fromPosition(position);
-        if (relation.isProperty()) {
-            dirID = PROPERTY_DIR;
-        } else if (position==0) {
-            //Out Relation
-            Preconditions.checkArgument(relation.isEdge());
-            dirID = EDGE_OUT_DIR;
-        } else if (position==1) {
-            //In Relation
-            Preconditions.checkArgument(relation.isEdge());
-            dirID = EDGE_IN_DIR;
-        } else {
-            throw new IllegalArgumentException("Invalid position: " + position);
-        }
-
-        //int typeIDLength = IDHandler.edgeTypeLength(typeid, idManager);
+        int dirID=getDirID(dir,relation.isProperty()?RelationType.PROPERTY:RelationType.EDGE);
 
         DataOutput colOut = serializer.getDataOutput(DEFAULT_PRIMARY_CAPACITY, true);
         IDHandler.writeEdgeType(colOut, typeid, dirID);
@@ -349,160 +343,120 @@ public class EdgeSerializer {
     }
 
 
-    private static int[] getDirIDInterval(Direction dir, RelationType rt) {
-        if (dir==Direction.OUT) {
-            if (rt== RelationType.PROPERTY) return new int[]{PROPERTY_DIR,PROPERTY_DIR};
-            else if (rt== RelationType.EDGE) return new int[]{EDGE_OUT_DIR,EDGE_OUT_DIR};
-            else if (rt== RelationType.RELATION) return new int[]{PROPERTY_DIR,EDGE_OUT_DIR};
-            else throw new IllegalArgumentException("Invalid dir+return-type: " + dir + "|" + rt);
-        } else if (dir==Direction.IN) {
-            if (rt== RelationType.EDGE) return new int[]{EDGE_IN_DIR,EDGE_IN_DIR};
-            else throw new IllegalArgumentException("Invalid dir+return-type: " + dir + "|" + rt);
-        } else if (dir==Direction.BOTH) {
-            if (rt== RelationType.PROPERTY) return new int[]{PROPERTY_DIR,PROPERTY_DIR};
-            else if (rt== RelationType.EDGE) return new int[]{EDGE_OUT_DIR,EDGE_IN_DIR};
-            else if (rt== RelationType.RELATION) return new int[]{PROPERTY_DIR,EDGE_IN_DIR};
-            else throw new IllegalArgumentException("Invalid dir+return-type: " + dir + "|" + rt);
-        } else throw new IllegalArgumentException("Invalid dir+return-type: " + dir + "|" + rt);
+//    private static int[] getDirIDInterval(Direction dir, RelationType rt) {
+//        if (dir==Direction.OUT) {
+//            if (rt== RelationType.PROPERTY) return new int[]{PROPERTY_DIR,PROPERTY_DIR};
+//            else if (rt== RelationType.EDGE) return new int[]{EDGE_OUT_DIR,EDGE_OUT_DIR};
+//            else if (rt== RelationType.RELATION) return new int[]{PROPERTY_DIR,EDGE_OUT_DIR};
+//            else throw new IllegalArgumentException("Invalid dir+return-type: " + dir + "|" + rt);
+//        } else if (dir==Direction.IN) {
+//            if (rt== RelationType.EDGE) return new int[]{EDGE_IN_DIR,EDGE_IN_DIR};
+//            else throw new IllegalArgumentException("Invalid dir+return-type: " + dir + "|" + rt);
+//        } else if (dir==Direction.BOTH) {
+//            if (rt== RelationType.PROPERTY) return new int[]{PROPERTY_DIR,PROPERTY_DIR};
+//            else if (rt== RelationType.EDGE) return new int[]{EDGE_OUT_DIR,EDGE_IN_DIR};
+//            else if (rt== RelationType.RELATION) return new int[]{PROPERTY_DIR,EDGE_IN_DIR};
+//            else throw new IllegalArgumentException("Invalid dir+return-type: " + dir + "|" + rt);
+//        } else throw new IllegalArgumentException("Invalid dir+return-type: " + dir + "|" + rt);
+//    }
+//
+//    private static int getDirID(Direction dir, RelationType rt) {
+//        int[] ids = getDirIDInterval(dir,rt);
+//        Preconditions.checkArgument(ids[0]==ids[1],"Invalid arguments [%s] [%s]",dir,rt);
+//        return ids[0];
+//    }
+
+    public SliceQuery getQuery(RelationType resultType) {
+        Preconditions.checkNotNull(resultType);
+        StaticBuffer[] bound = getBounds(resultType);
+        return new SliceQuery(bound[0],bound[1]);
     }
 
-    private static int getDirID(Direction dir, RelationType rt) {
-        int[] ids = getDirIDInterval(dir,rt);
-        Preconditions.checkArgument(ids[0]==ids[1],"Invalid arguments [%s] [%s]",dir,rt);
-        return ids[0];
-    }
+    public SliceQuery getQuery(InternalType type, Direction dir, TypedInterval[] primaryKey, VertexConstraint vertexCon) {
+        Preconditions.checkNotNull(type);
+        Preconditions.checkNotNull(dir);
 
-//    public SliceQuery getQuery(RelationType resultType, Direction dir) {
-//
-//    }
-//
-//    public SliceQuery getQuery(InternalType type, Direction dir, List<Interval> primaryKey, VertexConstraint vertexCon) {
-//
-//    }
-//
-//    public class VertexConstraint {
-//        public final long vertexID;
-//        public final long otherVertexID;
-//
-//        public VertexConstraint(long vertexID, long otherVertexID) {
-//            this.vertexID = vertexID;
-//            this.otherVertexID = otherVertexID;
-//        }
-//    }
-
-
-    public FittedSliceQuery getQuery(VertexCentricQuery query) {
-        Preconditions.checkNotNull(query);
-        Preconditions.checkArgument(!query.getVertex().isNew() && query.getVertex().hasId());
-
-        boolean isFitted=false;
         StaticBuffer sliceStart=null, sliceEnd=null;
-        boolean isStatic=false;
-        int limit=query.getLimit();
-
-        Direction dir = query.getDirection();
-        RelationType rt = query.getReturnType();
-
-        if (dir!=Direction.BOTH && rt!=RelationType.RELATION && query.numberTypes()==1) {
-            int dirID = getDirID(dir,rt);
-            Preconditions.checkArgument(query.numberTypes()==1);
-            TitanType type = query.getTypes()[0];
-            InternalType def = (InternalType)type;
-            isStatic = def.isStatic(dir);
-
-            if (query.hasConstraints() && def.getPrimaryKey().length>0) {
-                Multimap<TitanType,KeyAtom<TitanType>> constraintMap = query.getConstraintMap();
-                long[] primaryKey = def.getPrimaryKey();
-                StandardTitanTx tx = query.getVertex().tx();
-
-                DataOutput start = serializer.getDataOutput(DEFAULT_PRIMARY_CAPACITY, true);
-                DataOutput end = serializer.getDataOutput(DEFAULT_PRIMARY_CAPACITY, true);
-
-                IDHandler.writeEdgeType(start, type.getID(), dirID);
-                IDHandler.writeEdgeType(end, type.getID(), dirID);
-
-                int con;
-                for (con=0;con<primaryKey.length;con++) {
-                    TitanType kt = tx.getExistingType(primaryKey[con]);
-                    Collection<KeyAtom<TitanType>> cons = constraintMap.get(kt);
-                    if (cons.isEmpty()) break;
-                    //Find equality constraint if exists
-                    KeyAtom<TitanType> equals = null;
-                    for (KeyAtom<TitanType> a : cons) if (a.getTitanPredicate()== Cmp.EQUAL) equals=a;
-                    if (equals!=null) {
-                        Object condition = equals.getCondition();
-                        if (kt.isEdgeLabel()) {
-                            long id = 0;
-                            if (condition != null) id = ((TitanVertex) condition).getID();
-                            VariableLong.writePositive(start, id);
-                            VariableLong.writePositive(end, id);
-                        } else {
-                            Preconditions.checkArgument(!hasGenericDataType((TitanKey)kt));
-                            start.writeObject(condition,((TitanKey) kt).getDataType());
-                            end.writeObject(condition, ((TitanKey) kt).getDataType());
-                        }
-                    } else {
-                        Preconditions.checkArgument(kt.isPropertyKey());
-                        Preconditions.checkArgument(!hasGenericDataType((TitanKey)kt));
-                        //Range constraint
-                        Comparable lower=null, upper=null;
-                        boolean lowerInc=true, upperInc=true;
-                        boolean isProperInterval=true;
-                        for (KeyAtom<TitanType> a : cons) {
-                            if ((a.getTitanPredicate()==Cmp.GREATER_THAN || a.getTitanPredicate()==Cmp.GREATER_THAN_EQUAL) &&
-                                    (lower==null || lower.compareTo(a.getCondition())<0)) {
-                                lower = (Comparable) a.getCondition();
-                                lowerInc = a.getTitanPredicate()==Cmp.GREATER_THAN_EQUAL;
-                            } else if ((a.getTitanPredicate()==Cmp.LESS_THAN || a.getTitanPredicate()==Cmp.LESS_THAN_EQUAL) &&
-                                    (upper==null || upper.compareTo(a.getCondition())>0)) {
-                                upper = (Comparable) a.getCondition();
-                                upperInc = a.getTitanPredicate()==Cmp.LESS_THAN_EQUAL;
-                            } else {
-                                isProperInterval=false;
-                            }
-                        }
-                        if (lower!=null && upper!=null && lower.compareTo(upper)>=0) { //Interval santity check
-                            isProperInterval=false;
-                        }
-
-                        if (lower != null) {
-                            start.writeObject(lower,((TitanKey) kt).getDataType());
-                            sliceStart = start.getStaticBuffer();
-                            if (!lowerInc)
-                                sliceStart = ByteBufferUtil.nextBiggerBuffer(sliceStart);
-                        } else {
-                            sliceStart = start.getStaticBuffer();
-                        }
-
-                        if (upper != null) {
-                            end.writeObject(upper,((TitanKey) kt).getDataType());
-                        }
-                        sliceEnd = end.getStaticBuffer();
-                        if (upperInc) sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceEnd);
-
-                        isFitted = (con+1==constraintMap.keySet().size()) && isProperInterval;
-                        break;
-                    }
-                }
-                if (sliceStart==null) {
-                    sliceStart = start.getStaticBuffer();
-                    sliceEnd = FittedSliceQuery.pointRange(sliceStart);
-                    isFitted = (con==constraintMap.keySet().size());
-                }
-            } else {
-                sliceStart = IDHandler.getEdgeType(type.getID(), dirID);
-                sliceEnd = FittedSliceQuery.pointRange(sliceStart);
-                isFitted=!query.hasConstraints();
-            }
+        boolean isStatic;
+        RelationType rt = type.isPropertyKey()?RelationType.PROPERTY:RelationType.EDGE;
+        if (dir==Direction.BOTH) {
+            isStatic = type.isStatic(Direction.OUT) && type.isStatic(Direction.IN);
+            sliceStart = IDHandler.getEdgeType(type.getID(),getDirID(Direction.OUT,rt));
+            sliceEnd = IDHandler.getEdgeType(type.getID(),getDirID(Direction.IN,rt));
+            Preconditions.checkArgument(ByteBufferUtil.isSmallerThan(sliceStart,sliceEnd));
+            sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceEnd);
         } else {
-            int[] dirIds = getDirIDInterval(dir, rt);
-            sliceStart = IDHandler.directionPlusZero(dirIds[0]);
-            sliceEnd = IDHandler.directionPlusOne(dirIds[1]);
-            isFitted = !query.hasType() && !query.hasConstraints() && query.isIncludeHidden();
+            isStatic = type.isStatic(dir);
+            int dirID=getDirID(dir,rt);
+
+            DataOutput colStart = serializer.getDataOutput(DEFAULT_PRIMARY_CAPACITY, true);
+            DataOutput colEnd = serializer.getDataOutput(DEFAULT_PRIMARY_CAPACITY, true);
+            IDHandler.writeEdgeType(colStart, type.getID(), dirID);
+            IDHandler.writeEdgeType(colEnd, type.getID(), dirID);
+
+            long[] primaryKeyIDs = type.getPrimaryKey();
+            Preconditions.checkArgument(primaryKey.length==primaryKeyIDs.length);
+            boolean wroteEntirePrimaryKey=true;
+            for (int i=0;i<primaryKeyIDs.length;i++) {
+                TitanType t = primaryKey[i].type;
+                Interval interval = primaryKey[i].interval;
+                if (interval==null || interval.isEmpty()) {
+                    wroteEntirePrimaryKey=false;
+                    break;
+                }
+                Preconditions.checkArgument(t.getID()==primaryKeyIDs[i]);
+                writeInline(colStart, t, interval.getStart(), false);
+                writeInline(colEnd, t, interval.getEnd(), false);
+                if (!interval.isPoint()) {
+                    sliceStart=colStart.getStaticBuffer();
+                    if (!interval.startInclusive()) sliceStart=ByteBufferUtil.nextBiggerBuffer(sliceStart);
+                    sliceEnd=colEnd.getStaticBuffer();
+                    if (interval.endInclusive()) sliceEnd=ByteBufferUtil.nextBiggerBuffer(sliceEnd);
+                    wroteEntirePrimaryKey=false;
+                    break;
+                }
+            }
+
+            if (vertexCon!=null) {
+                Preconditions.checkArgument(wroteEntirePrimaryKey && !type.isUnique(dir));
+                Preconditions.checkArgument(type.isEdgeLabel());
+                long vertexIdDiff = vertexCon.getVertexIdDiff();
+                VariableLong.writeBackward(colStart,vertexIdDiff);
+                VariableLong.writeBackward(colEnd,vertexIdDiff);
+
+                //VariableLong.writeBackward(colStart,relationIdDiff);
+            }
+            if (!wroteEntirePrimaryKey) {
+                sliceStart=colStart.getStaticBuffer();
+                sliceEnd=ByteBufferUtil.nextBiggerBuffer(colEnd.getStaticBuffer());
+            }
         }
-        Preconditions.checkNotNull(sliceStart);
-        Preconditions.checkNotNull(sliceEnd);
-        return new FittedSliceQuery(isFitted,sliceStart,sliceEnd,limit,isStatic);
+        return new SliceQuery(sliceStart,sliceEnd,isStatic);
+    }
+
+    public static class VertexConstraint {
+        public final long vertexID;
+        public final long otherVertexID;
+
+        public VertexConstraint(long vertexID, long otherVertexID) {
+            this.vertexID = vertexID;
+            this.otherVertexID = otherVertexID;
+        }
+
+        private final long getVertexIdDiff() {
+            return otherVertexID-vertexID;
+        }
+    }
+
+    public static class TypedInterval {
+        public final InternalType type;
+        public final Interval interval;
+
+
+        public TypedInterval(InternalType type, Interval interval) {
+            this.type = type;
+            this.interval = interval;
+        }
     }
 
 }

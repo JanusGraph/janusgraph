@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.graphdb.query.Query;
 
 /**
  * Extends {@link SliceQuery} by a key that identifies the location of the slice in the key-ring.
@@ -13,8 +12,8 @@ public class KeySliceQuery extends SliceQuery {
 
     private final StaticBuffer key;
 
-    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd, int limit, boolean isStatic) {
-        super(sliceStart, sliceEnd, limit, isStatic);
+    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd, boolean isStatic) {
+        super(sliceStart, sliceEnd, isStatic);
         Preconditions.checkNotNull(key);
         this.key=key;
     }
@@ -26,15 +25,7 @@ public class KeySliceQuery extends SliceQuery {
     }
 
     public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd) {
-        this(key,sliceStart,sliceEnd, Query.NO_LIMIT,DEFAULT_STATIC);
-    }
-
-    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd, int limit) {
-        this(key,sliceStart,sliceEnd,limit,DEFAULT_STATIC);
-    }
-
-    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd, boolean isStatic) {
-        this(key,sliceStart,sliceEnd,Query.NO_LIMIT,isStatic);
+        this(key,sliceStart,sliceEnd,DEFAULT_STATIC);
     }
 
     /**
@@ -43,6 +34,17 @@ public class KeySliceQuery extends SliceQuery {
      */
     public StaticBuffer getKey() {
         return key;
+    }
+
+    @Override
+    public KeySliceQuery setLimit(int limit) {
+        super.setLimit(limit);
+        return this;
+    }
+
+    @Override
+    public KeySliceQuery updateLimit(int newLimit) {
+        return new KeySliceQuery(key,this).setLimit(newLimit);
     }
 
 

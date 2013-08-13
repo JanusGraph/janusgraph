@@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.graphdb.query.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 
 import java.util.List;
@@ -69,6 +70,8 @@ public interface InternalVertex extends TitanVertex, InternalElement {
      * @return
      */
     public boolean hasAddedRelations();
+
+    public VertexCentricQueryBuilder query();
 
 
 }

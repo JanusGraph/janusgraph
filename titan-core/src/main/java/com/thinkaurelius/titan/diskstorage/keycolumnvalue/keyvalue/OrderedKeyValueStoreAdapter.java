@@ -10,8 +10,8 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
 import javax.annotation.Nullable;
+import java.util.*;
 
 /**
  * Wraps a {@link OrderedKeyValueStore} and exposes it as a {@link KeyColumnValueStore}.

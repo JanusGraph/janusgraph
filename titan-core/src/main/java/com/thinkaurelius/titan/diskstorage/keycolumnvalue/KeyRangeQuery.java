@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.graphdb.query.Query;
 
 /**
  * Extends a {@link SliceQuery} by a key range which identifies the range of keys (start inclusive, end exclusive)
@@ -17,8 +16,16 @@ public class KeyRangeQuery extends SliceQuery {
     private final StaticBuffer keyEnd;
 
 
-    public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, StaticBuffer sliceStart, StaticBuffer sliceEnd, int limit, boolean isStatic) {
-        super(sliceStart, sliceEnd, limit, isStatic);
+    public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, StaticBuffer sliceStart, StaticBuffer sliceEnd, boolean isStatic) {
+        super(sliceStart, sliceEnd, isStatic);
+        Preconditions.checkNotNull(keyStart);
+        Preconditions.checkNotNull(keyEnd);
+        this.keyStart=keyStart;
+        this.keyEnd = keyEnd;
+    }
+
+    public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, SliceQuery query) {
+        super(query);
         Preconditions.checkNotNull(keyStart);
         Preconditions.checkNotNull(keyEnd);
         this.keyStart=keyStart;
@@ -26,16 +33,9 @@ public class KeyRangeQuery extends SliceQuery {
     }
 
     public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, StaticBuffer sliceStart, StaticBuffer sliceEnd) {
-        this(keyStart,keyEnd,sliceStart,sliceEnd, Query.NO_LIMIT,DEFAULT_STATIC);
+        this(keyStart,keyEnd,sliceStart,sliceEnd,DEFAULT_STATIC);
     }
 
-    public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, StaticBuffer sliceStart, StaticBuffer sliceEnd, int limit) {
-        this(keyStart,keyEnd,sliceStart,sliceEnd,limit,DEFAULT_STATIC);
-    }
-
-    public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, StaticBuffer sliceStart, StaticBuffer sliceEnd, boolean isStatic) {
-        this(keyStart, keyEnd, sliceStart, sliceEnd, Query.NO_LIMIT, isStatic);
-    }
 
     public StaticBuffer getKeyStart() {
         return keyStart;
@@ -44,6 +44,18 @@ public class KeyRangeQuery extends SliceQuery {
     public StaticBuffer getKeyEnd() {
         return keyEnd;
     }
+
+    @Override
+    public KeyRangeQuery setLimit(int limit) {
+        super.setLimit(limit);
+        return this;
+    }
+
+    @Override
+    public KeyRangeQuery updateLimit(int newLimit) {
+        return new KeyRangeQuery(keyStart,keyEnd,this).setLimit(newLimit);
+    }
+
 
     @Override
     public int hashCode() {

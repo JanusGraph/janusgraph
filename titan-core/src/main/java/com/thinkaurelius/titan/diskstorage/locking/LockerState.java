@@ -1,12 +1,12 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-
 import com.google.common.collect.MapMaker;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * A store for {@code LockStatus} objects. Thread-safe so long as the method

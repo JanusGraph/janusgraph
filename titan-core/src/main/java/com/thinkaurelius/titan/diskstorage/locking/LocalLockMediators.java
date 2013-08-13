@@ -1,12 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.Map.Entry;
-import com.google.common.base.Preconditions;
-
 import java.util.concurrent.ConcurrentHashMap;
 
 /**

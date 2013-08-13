@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
-import org.apache.commons.lang.StringUtils;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

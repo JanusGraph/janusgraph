@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.database.indexing;
 
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
-import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

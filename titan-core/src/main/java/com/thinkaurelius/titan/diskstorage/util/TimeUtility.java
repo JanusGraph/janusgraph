@@ -1,12 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
-import java.util.concurrent.TimeUnit;
-
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Utility methods for measuring fine time intervals

@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.lucene;
 
 import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.attribute.Geo;
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.core.attribute.Text;
+import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProviderTest;
@@ -47,7 +44,6 @@ public class LuceneIndexTest extends IndexProviderTest {
         assertTrue(index.supports(Double.class, Cmp.EQUAL));
         assertTrue(index.supports(Double.class, Cmp.GREATER_THAN_EQUAL));
         assertTrue(index.supports(Double.class, Cmp.LESS_THAN));
-        assertTrue(index.supports(Long.class, Cmp.INTERVAL));
         assertTrue(index.supports(Geoshape.class, Geo.WITHIN));
 
         assertFalse(index.supports(String.class, Text.PREFIX));

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.query.keycondition;
+package com.thinkaurelius.titan.graphdb.query;
 
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;

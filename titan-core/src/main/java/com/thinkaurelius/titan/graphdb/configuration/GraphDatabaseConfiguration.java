@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
-import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
@@ -11,7 +10,6 @@ import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.types.DisableDefaultTypeMaker;
 import com.thinkaurelius.titan.util.stats.MetricManager;
-
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -19,10 +17,9 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.MBeanServerFactory;
 import java.io.File;
 import java.util.*;
-
-import javax.management.MBeanServerFactory;
 
 /**
  * Provides functionality to configure a {@link com.thinkaurelius.titan.core.TitanGraph} INSTANCE.

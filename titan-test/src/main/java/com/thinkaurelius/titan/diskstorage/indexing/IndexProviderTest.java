@@ -4,8 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAnd;
-import com.thinkaurelius.titan.graphdb.query.keycondition.KeyAtom;
+import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Before;
@@ -95,39 +94,39 @@ public abstract class IndexProviderTest {
 
         for (String store : stores) {
 
-            List<String> result = tx.query(new IndexQuery(store, KeyAtom.of("text", Text.CONTAINS, "world")));
+            List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "world")));
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Text.CONTAINS, "world"), KeyAtom.of("text", Text.CONTAINS, "hello"))));
+            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("text", Text.CONTAINS, "world"), PredicateCondition.of("text", Text.CONTAINS, "hello"))));
             assertEquals(1,result.size());
             assertEquals("doc1",result.get(0));
 
-            result = tx.query(new IndexQuery(store, KeyAtom.of("text", Text.CONTAINS, "Bob")));
+            result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "Bob")));
             assertEquals(1,result.size());
             assertEquals("doc3",result.get(0));
 
-            result = tx.query(new IndexQuery(store, KeyAtom.of("text", Text.CONTAINS, "bob")));
+            result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "bob")));
             assertEquals(1,result.size());
             assertEquals("doc3",result.get(0));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Text.CONTAINS, "world"), KeyAtom.of("weight", Cmp.GREATER_THAN,6.0))));
+            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("text", Text.CONTAINS, "world"), PredicateCondition.of("weight", Cmp.GREATER_THAN,6.0))));
             assertEquals(1,result.size());
             assertEquals("doc2",result.get(0));
 
-            result = tx.query(new IndexQuery(store, KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00))));
+            result = tx.query(new IndexQuery(store, PredicateCondition.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00))));
             assertEquals(2,result.size());
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Text.CONTAINS, "tomorrow"), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00)))));
+            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("text", Text.CONTAINS, "tomorrow"), PredicateCondition.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00)))));
             assertEquals(ImmutableSet.of("doc2"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("time", Cmp.INTERVAL, Interval.of(-1000,1010)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
+            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("time", Cmp.GREATER_THAN_EQUAL, -1000),PredicateCondition.of("time", Cmp.LESS_THAN, 1010), PredicateCondition.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
             assertEquals(ImmutableSet.of("doc1","doc3"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.GREATER_THAN, 10.0))));
+            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("weight", Cmp.GREATER_THAN, 10.0))));
             assertEquals(ImmutableSet.of("doc3"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("blah", Cmp.GREATER_THAN, 10.0))));
+            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("blah", Cmp.GREATER_THAN, 10.0))));
             assertEquals(0, result.size());
 
             //Update some data
@@ -145,26 +144,26 @@ public abstract class IndexProviderTest {
 
         for (String store : stores) {
 
-            List<String> result = tx.query(new IndexQuery(store, KeyAtom.of("text", Text.CONTAINS, "world")));
+            List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "world")));
             assertEquals(ImmutableSet.of("doc1", "doc3"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Text.CONTAINS, "world"), KeyAtom.of("weight", Cmp.GREATER_THAN,6.0))));
+            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("text", Text.CONTAINS, "world"), PredicateCondition.of("weight", Cmp.GREATER_THAN,6.0))));
             assertEquals(1,result.size());
             assertEquals("doc1",result.get(0));
 
-            result = tx.query(new IndexQuery(store, KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00))));
+            result = tx.query(new IndexQuery(store, PredicateCondition.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00))));
             assertEquals(ImmutableSet.of("doc1"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("text", Text.CONTAINS, "tomorrow"), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00)))));
+            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("text", Text.CONTAINS, "tomorrow"), PredicateCondition.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,200.00)))));
             assertEquals(ImmutableSet.of(), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("time", Cmp.INTERVAL, Interval.of(-1000,1010)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
+            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("time", Cmp.GREATER_THAN_EQUAL, -1000),PredicateCondition.of("time", Cmp.LESS_THAN, 1010), PredicateCondition.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
             assertEquals(ImmutableSet.of("doc1","doc4"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.GREATER_THAN, 10.0))));
+            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("weight", Cmp.GREATER_THAN, 10.0))));
             assertEquals(ImmutableSet.of("doc1","doc4"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("blah", Cmp.GREATER_THAN, 10.0))));
+            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("blah", Cmp.GREATER_THAN, 10.0))));
             assertEquals(0, result.size());
 
         }
@@ -182,16 +181,16 @@ public abstract class IndexProviderTest {
         }
         clopen();
 
-//        List<String> result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.INTERVAL, Interval.of(0.2,0.3)))));
-//        List<String> result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
+//        List<String> result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("weight", Cmp.INTERVAL, Interval.of(0.2,0.3)))));
+//        List<String> result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
         long time = System.currentTimeMillis();
-        List<String> result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.INTERVAL, Interval.of(0.2,0.6)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
+        List<String> result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("weight", Cmp.GREATER_THAN_EQUAL,0.2),PredicateCondition.of("weight", Cmp.LESS_THAN, 0.6), PredicateCondition.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))));
         int oldresultSize = result.size();
         System.out.println(result.size() + " vs " + (numDoc/1000 * 2.4622623015));
         System.out.println("Query time on "+numDoc+" docs (ms): " + (System.currentTimeMillis()-time));
-        result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.INTERVAL, Interval.of(0.2,0.6)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00))),numDoc/1000));
+        result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("weight", Cmp.GREATER_THAN_EQUAL,0.2),PredicateCondition.of("weight", Cmp.LESS_THAN, 0.6), PredicateCondition.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))).setLimit(numDoc/1000));
         assertEquals(numDoc/1000,result.size());
-        result = tx.query(new IndexQuery(store, KeyAnd.of(KeyAtom.of("weight", Cmp.INTERVAL, Interval.of(0.2,0.6)), KeyAtom.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00))),numDoc/1000*100));
+        result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("weight", Cmp.GREATER_THAN_EQUAL,0.2),PredicateCondition.of("weight", Cmp.LESS_THAN, 0.6), PredicateCondition.of("location", Geo.WITHIN,Geoshape.circle(48.5,0.5,1000.00)))).setLimit(numDoc/1000*100));
         assertEquals(oldresultSize,result.size());
     }
 

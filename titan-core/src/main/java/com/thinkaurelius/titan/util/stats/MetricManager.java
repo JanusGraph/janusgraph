@@ -1,20 +1,14 @@
 package com.thinkaurelius.titan.util.stats;
 
-import java.io.File;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-
+import com.codahale.metrics.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.CsvReporter;
-import com.codahale.metrics.JmxReporter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Slf4jReporter;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+import java.io.File;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public enum MetricManager {
     INSTANCE;

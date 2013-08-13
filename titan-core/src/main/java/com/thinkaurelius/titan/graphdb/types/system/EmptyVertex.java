@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.query.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
@@ -29,7 +30,7 @@ public class EmptyVertex implements InternalVertex {
 	 */
 
     @Override
-    public TitanVertexQuery query() {
+    public VertexCentricQueryBuilder query() {
         throw new UnsupportedOperationException(errorName + " do not support querying");
     }
 

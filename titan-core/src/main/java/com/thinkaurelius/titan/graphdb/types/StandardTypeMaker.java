@@ -3,7 +3,11 @@ package com.thinkaurelius.titan.graphdb.types;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.TitanLabel;
+import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.TypeMaker;
+import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
@@ -12,11 +16,11 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.lang.StringUtils;
-import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.*;
 
 import java.lang.reflect.Modifier;
 import java.util.*;
 
+import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.*;
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
 
@@ -27,6 +31,7 @@ public class StandardTypeMaker implements TypeMaker {
     private static final char[] RESERVED_CHARS = {'{','}'};
 
     private final StandardTitanTx tx;
+    private final IndexSerializer indexSerializer;
 
     private String name;
     private boolean[] isUnique;
@@ -42,8 +47,11 @@ public class StandardTypeMaker implements TypeMaker {
     private Class<?> dataType;
     private Set<IndexType> indexes;
 
-    public StandardTypeMaker(StandardTitanTx tx) {
+    public StandardTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer) {
+        Preconditions.checkNotNull(tx);
+        Preconditions.checkNotNull(indexSerializer);
         this.tx = tx;
+        this.indexSerializer=indexSerializer;
 
         //Default assignments
         name = null;
@@ -109,7 +117,7 @@ public class StandardTypeMaker implements TypeMaker {
         for (IndexType it : indexes) {
             Preconditions.checkArgument(isUnique[EdgeDirection.position(OUT)] || (it.isStandardIndex() && it.getElementType()==Vertex.class),
                     "Only standard index is allowed on non-unique property keys");
-            Preconditions.checkArgument(tx.getGraph().getIndexInformation(it.getIndexName()).supports(dataType),"" +
+            Preconditions.checkArgument(indexSerializer.getIndexInformation(it.getIndexName()).supports(dataType),"" +
                     "Index ["+it.getIndexName()+"] does not support data type: " + dataType);
             result[i]=it;
             i++;

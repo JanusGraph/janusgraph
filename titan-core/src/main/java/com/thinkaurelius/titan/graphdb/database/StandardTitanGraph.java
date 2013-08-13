@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -26,7 +26,6 @@ import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.query.StandardElementQuery;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
@@ -122,10 +121,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         }
     }
 
-    public IndexInformation getIndexInformation(String indexName) {
-        IndexInformation indexinfo = backend.getIndexInformation().get(indexName);
-        Preconditions.checkArgument(indexinfo!=null,"Index is unknown or not configured: %s",indexName);
-        return indexinfo;
+    public IndexSerializer getIndexSerializer() {
+        return indexSerializer;
     }
 
     public IDInspector getIDInspector() {
@@ -171,8 +168,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
 
-    public List<Object> elementQuery(StandardElementQuery query, BackendTransaction tx) {
-        return indexSerializer.query(query,tx);
+    public List<Object> elementQuery(String indexName, IndexQuery query, BackendTransaction tx) {
+        return indexSerializer.query(indexName,query,tx);
     }
 
     public List<Entry> edgeQuery(long vid, SliceQuery query, BackendTransaction tx) {

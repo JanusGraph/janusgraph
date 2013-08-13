@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
-import com.thinkaurelius.titan.graphdb.query.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
@@ -25,8 +24,7 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
     @Override
     public String getName() {
         if (name == null) {
-            name = Iterables.getOnlyElement(
-                    new VertexCentricQueryBuilder(this).
+            name = Iterables.getOnlyElement(query().
                             includeHidden().
                             type(SystemKey.TypeName).
                             properties(), null).getValue(String.class);
@@ -38,7 +36,7 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
     protected TypeAttribute.Map getDefinition() {
         if (definition == null) {
             TypeAttribute.Map def = new TypeAttribute.Map();
-            for (TitanProperty p : new VertexCentricQueryBuilder(this).includeHidden().
+            for (TitanProperty p : query().includeHidden().
                     type(SystemKey.TypeDefinition).properties()) {
                 def.add(p.getValue(TypeAttribute.class));
             }

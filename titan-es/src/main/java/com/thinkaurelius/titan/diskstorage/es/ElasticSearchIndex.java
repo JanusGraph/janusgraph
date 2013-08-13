@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import com.thinkaurelius.titan.graphdb.query.keycondition.*;
+import com.thinkaurelius.titan.graphdb.query.condition.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.ElasticSearchInterruptedException;
@@ -306,12 +306,12 @@ public class ElasticSearchIndex implements IndexProvider {
         }  catch (Exception e) {  throw convert(e);  }
     }
 
-    public FilterBuilder getFilter(KeyCondition<String> condition) {
-        if (condition instanceof KeyAtom) {
-            KeyAtom<String> atom = (KeyAtom<String>) condition;
+    public FilterBuilder getFilter(Condition<?> condition) {
+        if (condition instanceof PredicateCondition) {
+            PredicateCondition<String,?> atom = (PredicateCondition) condition;
             Object value = atom.getCondition();
             String key = atom.getKey();
-            TitanPredicate titanPredicate = atom.getTitanPredicate();
+            TitanPredicate titanPredicate = atom.getPredicate();
             if (value instanceof Number) {
                 Preconditions.checkArgument(titanPredicate instanceof Cmp,"Relation not supported on numeric types: " + titanPredicate);
                 Cmp numRel = (Cmp) titanPredicate;
@@ -350,17 +350,17 @@ public class ElasticSearchIndex implements IndexProvider {
                     return FilterBuilders.geoBoundingBoxFilter(key).bottomRight(southwest.getLatitude(), northeast.getLongitude()).topLeft(northeast.getLatitude(), southwest.getLongitude());
                 } else throw new IllegalArgumentException("Unsupported or invalid search shape type: " + shape.getType());
             } else throw new IllegalArgumentException("Unsupported type: " + value);
-        } else if (condition instanceof KeyNot) {
-            return FilterBuilders.notFilter(getFilter(((KeyNot)condition).getChild()));
-        } else if (condition instanceof KeyAnd) {
+        } else if (condition instanceof Not) {
+            return FilterBuilders.notFilter(getFilter(((Not)condition).getChild()));
+        } else if (condition instanceof And) {
             AndFilterBuilder b = FilterBuilders.andFilter();
-            for (KeyCondition<String> c : condition.getChildren()) {
+            for (Condition c : condition.getChildren()) {
                 b.add(getFilter(c));
             }
             return b;
-        } else if (condition instanceof KeyOr) {
+        } else if (condition instanceof Or) {
             OrFilterBuilder b = FilterBuilders.orFilter();
-            for (KeyCondition<String> c : condition.getChildren()) {
+            for (Condition c : condition.getChildren()) {
                 b.add(getFilter(c));
             }
             return b;

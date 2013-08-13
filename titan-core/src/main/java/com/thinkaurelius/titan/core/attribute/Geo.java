@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 
 /**
  * Comparison relations for geographic shapes.
@@ -71,4 +71,5 @@ public enum Geo implements TitanPredicate {
         Preconditions.checkNotNull(clazz);
         return clazz.equals(Geoshape.class);
     }
+
 }

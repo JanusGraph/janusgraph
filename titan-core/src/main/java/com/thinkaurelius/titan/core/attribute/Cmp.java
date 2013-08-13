@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.query.keycondition.TitanPredicate;
-import com.tinkerpop.blueprints.Query;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -186,39 +185,7 @@ public enum Cmp implements TitanPredicate {
         public String toString() {
             return ">=";
         }
-    },
-
-    INTERVAL {
-
-        @Override
-        public boolean isValidDataType(Class<?> clazz) {
-            Preconditions.checkNotNull(clazz);
-            return Comparable.class.isAssignableFrom(clazz);
-        }
-
-        @Override
-        public boolean isValidCondition(Object condition) {
-            return condition!=null && condition instanceof Interval;
-        }
-
-        @Override
-        public boolean evaluate(Object value, Object condition) {
-            if (value==null) return false;
-            Preconditions.checkArgument(condition instanceof Interval);
-            try {
-                return ((Interval)condition).inInterval(value);
-            } catch (Throwable e) {
-                log.warn("Could not compare element: {} - {}",value,condition);
-                return false;
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "in";
-        }
     };
-
 
     private static final Logger log = LoggerFactory.getLogger(Cmp.class);
 
