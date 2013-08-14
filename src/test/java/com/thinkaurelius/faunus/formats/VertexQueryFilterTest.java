@@ -18,7 +18,7 @@ public class VertexQueryFilterTest extends BaseTest {
         Configuration config = new Configuration();
         VertexQueryFilter query = VertexQueryFilter.create(config);
         assertFalse(query.doesFilter());
-        assertEquals(query.limit, Long.MAX_VALUE);
+        assertEquals(query.limit, Integer.MAX_VALUE);
         assertEquals(query.hasContainers.size(), 0);
         assertEquals(query.direction, Direction.BOTH);
         assertEquals(query.labels.length, 0);

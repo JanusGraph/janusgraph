@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus.tinkerpop.gremlin;
 
+import com.tinkerpop.gremlin.groovy.jsr223.DefaultImportCustomizerProvider;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
 import groovy.lang.GroovyClassLoader;
 import org.codehaus.groovy.control.CompilerConfiguration;
@@ -30,7 +31,7 @@ public class FaunusGremlinScriptEngine extends GremlinGroovyScriptEngine {
     }
 
     public static ImportCustomizer getImportCustomizer() {
-        final ImportCustomizer ic = GremlinGroovyScriptEngine.getImportCustomizer();
+        final ImportCustomizer ic = new DefaultImportCustomizerProvider().getImportCustomizer();
         for (final String imp : Imports.getImports()) {
             ic.addStarImports(imp.replace(DOT_STAR, EMPTY_STRING));
         }

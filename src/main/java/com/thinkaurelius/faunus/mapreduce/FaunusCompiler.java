@@ -43,7 +43,6 @@ public class FaunusCompiler extends Configured implements Tool {
 
     public static final String PATH_ENABLED = Tokens.makeNamespace(FaunusCompiler.class) + ".pathEnabled";
     public static final String TESTING = Tokens.makeNamespace(FaunusCompiler.class) + ".testing";
-
     public static final Logger logger = Logger.getLogger(FaunusCompiler.class);
 
     private FaunusGraph graph;

@@ -5,6 +5,8 @@ import com.tinkerpop.gremlin.groovy.console.ErrorHookClosure;
 import com.tinkerpop.gremlin.groovy.console.NullResultHookClosure;
 import com.tinkerpop.gremlin.groovy.console.PromptClosure;
 import jline.History;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.codehaus.groovy.tools.shell.Groovysh;
 import org.codehaus.groovy.tools.shell.IO;
 import org.codehaus.groovy.tools.shell.InteractiveShellRunner;
@@ -20,6 +22,13 @@ public class Console {
     private static final String HISTORY_FILE = ".gremlin_faunus_history";
     private static final String STANDARD_INPUT_PROMPT = "gremlin> ";
     private static final String STANDARD_RESULT_PROMPT = "==>";
+
+    /*static {
+      try {
+            System.setProperty("log4j.configuration", "./resources" + File.separatorChar + "log4j.properties");
+        } catch (Exception e) {
+        }
+    }*/
 
     public Console(final IO io, final String inputPrompt, final String resultPrompt) {
         io.out.println();

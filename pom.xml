@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -17,8 +18,8 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sesame.version>2.6.10</sesame.version>
-        <tinkerpop.version>2.3.0</tinkerpop.version>
-        <titan.version>0.3.2</titan.version>
+        <tinkerpop.version>2.4.0</tinkerpop.version>
+        <titan.version>0.4.0-SNAPSHOT</titan.version>
     </properties>
     <developers>
         <developer>
@@ -55,6 +56,11 @@
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
             <artifactId>blueprints-core</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.blueprints</groupId>
+            <artifactId>blueprints-sail-graph</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
@@ -177,7 +183,7 @@
                     <target>1.6</target>
                 </configuration>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -208,6 +214,11 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <excludes>
+                        <exclude>**/log4j.properties</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.gmaven</groupId>
@@ -226,7 +237,7 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>     
+            </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.4</version>
@@ -397,7 +408,8 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>${project.build.directory}/release-resources/gollum-site-wrapper.sh</executable>
+                                    <executable>${project.build.directory}/release-resources/gollum-site-wrapper.sh
+                                    </executable>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
                             </execution>
@@ -458,8 +470,11 @@
                                 </goals>
                                 <configuration>
                                     <fromDir>${project.build.directory}</fromDir>
-                                    <includes>${project.artifactId}-${project.version}.zip*,${project.artifactId}-${project.version}.tar.bz2*</includes>
-                                    <serverId>aurelius.s3</serverId> <!-- your ~/.m2/settings.xml must match -->
+                                    <includes>
+                                        ${project.artifactId}-${project.version}.zip*,${project.artifactId}-${project.version}.tar.bz2*
+                                    </includes>
+                                    <serverId>aurelius.s3</serverId>
+                                    <!-- your ~/.m2/settings.xml must match -->
                                     <url>s3://s3.thinkaurelius.com/downloads/faunus/</url>
                                 </configuration>
                             </execution>
