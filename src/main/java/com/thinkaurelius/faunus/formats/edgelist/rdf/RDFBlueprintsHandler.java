@@ -19,9 +19,6 @@ import org.openrdf.rio.Rio;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,7 +34,6 @@ import java.util.Set;
 public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement> {
 
     private final Logger logger = Logger.getLogger(RDFBlueprintsHandler.class);
-    private final MessageDigest md;
     private final boolean enablePath;
     private final boolean useFragments;
     private final Set<String> asProperties = new HashSet<String>();
@@ -83,11 +79,6 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
         this.literalAsProperty = configuration.getBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, false);
         for (final String property : configuration.getStringCollection(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_AS_PROPERTIES)) {
             this.asProperties.add(property.trim());
-        }
-        try {
-            this.md = MessageDigest.getInstance("MD5");
-        } catch (NoSuchAlgorithmException e) {
-            throw new IOException(e.getMessage(), e);
         }
         this.parser = Rio.createParser(formats.get(configuration.get(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_FORMAT)));
         this.parser.setRDFHandler(this);
@@ -147,8 +138,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
 
     public void handleStatement(final Statement s) throws RDFHandlerException {
         if (this.asProperties.contains(s.getPredicate().toString())) {
-            final ByteBuffer bb = ByteBuffer.wrap(md.digest(s.getSubject().stringValue().getBytes()));
-            final FaunusVertex subject = new FaunusVertex(bb.getLong());
+            final FaunusVertex subject = new FaunusVertex(Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), postProcess(s.getObject()));
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
@@ -156,8 +146,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
             subject.enablePath(this.enablePath);
             this.queue.add(subject);
         } else if (this.literalAsProperty && (s.getObject() instanceof Literal)) {
-            final ByteBuffer bb = ByteBuffer.wrap(md.digest(s.getSubject().stringValue().getBytes()));
-            final FaunusVertex subject = new FaunusVertex(bb.getLong());
+            final FaunusVertex subject = new FaunusVertex(Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), castLiteral((Literal) s.getObject()));
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
@@ -165,8 +154,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
             subject.enablePath(this.enablePath);
             this.queue.add(subject);
         } else {
-            ByteBuffer bb = ByteBuffer.wrap(md.digest(s.getSubject().stringValue().getBytes()));
-            long subjectId = bb.getLong();
+            long subjectId = Crc64.digest(s.getSubject().stringValue().getBytes());
             final FaunusVertex subject = new FaunusVertex(subjectId);
             subject.reuse(subjectId);
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
@@ -175,8 +163,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
             subject.enablePath(this.enablePath);
             this.queue.add(subject);
 
-            bb = ByteBuffer.wrap(md.digest(s.getObject().stringValue().getBytes()));
-            long objectId = bb.getLong();
+            long objectId = Crc64.digest(s.getObject().stringValue().getBytes());
             final FaunusVertex object = new FaunusVertex(objectId);
             object.reuse(objectId);
             object.setProperty(RDFInputFormat.URI, s.getObject().stringValue());

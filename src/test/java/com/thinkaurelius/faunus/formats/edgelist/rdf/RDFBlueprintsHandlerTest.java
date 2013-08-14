@@ -28,6 +28,15 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         assertEquals(ids.size(), loops);
     }
 
+    public void testCrc64HashUniqueness() throws NoSuchAlgorithmException {
+        final Set<Long> ids = new HashSet<Long>();
+        int loops = 1000000;
+        for (int i = 0; i < loops; i++) {
+            ids.add(Crc64.digest(("http://test#" + UUID.randomUUID().toString()).getBytes()));
+        }
+        assertEquals(ids.size(), loops);
+    }
+
     public void testUseFragments() throws Exception {
         Configuration config = new Configuration();
         config.setBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
