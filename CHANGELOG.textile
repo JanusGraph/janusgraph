@@ -17,6 +17,7 @@ h3. Version 0.4.0 (NOT OFFICIALLY RELEASED YET)
 
 * Renamed @FaunusRexsterExtension@ to @FaunusRexsterInputFormatExtension@
 * Added @FaunusRexsterExecutorExtension@ which allows remote execution of a Faunus script and tracking of its progress
+* Global GremlinFaunus variables are now available in @ScriptEngine@ use cases
 
 ==<hr/>==
 

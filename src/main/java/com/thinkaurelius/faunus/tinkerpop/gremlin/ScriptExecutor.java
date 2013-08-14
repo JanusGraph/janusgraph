@@ -20,7 +20,7 @@ public class ScriptExecutor {
         }
     }
 
-    protected static void evaluate(final Reader reader, final List<String> arguments) {
+    protected static void evaluate(final Reader reader, final List<String> arguments) throws IOException {
         final FaunusGremlinScriptEngine engine = new FaunusGremlinScriptEngine();
 
         final Bindings bindings = engine.createBindings();
@@ -29,6 +29,7 @@ public class ScriptExecutor {
                 bindings.put("a" + (i + 1), arguments.get(i));
             }
         }
+
         try {
             engine.eval(reader, bindings);
         } catch (Exception e) {

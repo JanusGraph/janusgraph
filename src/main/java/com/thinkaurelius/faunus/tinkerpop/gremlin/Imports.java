@@ -1,7 +1,12 @@
 package com.thinkaurelius.faunus.tinkerpop.gremlin;
 
 import com.tinkerpop.pipes.transform.TransformPipe;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 
+import javax.script.Bindings;
+import javax.script.SimpleBindings;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +17,9 @@ public class Imports {
 
     private static final List<String> imports = new ArrayList<String>();
     private static final List<String> evaluates = new ArrayList<String>();
+
+    public static final String HDFS = "hdfs";
+    public static final String LOCAL = "local";
 
     static {
 
@@ -60,5 +68,12 @@ public class Imports {
 
     public static List<String> getEvaluates() {
         return Imports.evaluates;
+    }
+
+    public static Bindings getEvaluateBindings() throws IOException {
+        Bindings bindings = new SimpleBindings();
+        bindings.put(Imports.HDFS, FileSystem.get(new Configuration()));
+        bindings.put(Imports.LOCAL, FileSystem.getLocal(new Configuration()));
+        return bindings;
     }
 }
