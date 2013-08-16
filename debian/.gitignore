@@ -5,3 +5,14 @@
 /titan-hbase/
 /titan-lucene/
 /titan-persistit/
+/files
+/titan-berkeleyje.substvars
+/titan-cassandra.substvars
+/titan-es.substvars
+/titan-hbase.substvars
+/titan-lucene.substvars
+/titan-persistit.substvars
+/titan.postinst.debhelper
+/titan.postrm.debhelper
+/titan.prerm.debhelper
+/titan.substvars

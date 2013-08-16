@@ -3,7 +3,7 @@
 
 Name:           titan
 Version:        0.4.0
-Release:        0.1.snap
+Release:        0.1.20130816snap
 Summary:        Titan Distributed Graph Database
 
 Group:          Applications/Databases
@@ -23,37 +23,42 @@ complex graph traversals.
 %package cassandra
 Summary:        Cassandra graph storage for Titan
 Group:          Applications/Databases
+Requires:       titan >= %{version}
 %description cassandra
 Cassandra backend storage module for Titan
 
 %package hbase
 Summary:        HBase graph storage for Titan
 Group:          Applications/Databases
+Requires:       titan >= %{version}
 %description hbase
 HBase backend storage module for Titan
 
 %package berkeleyje
 Summary:        BerkeleyDB Java Edition graph storage for Titan
 Group:          Applications/Databases
+Requires:       titan >= %{version}
 %description berkeleyje
 BerkeleyDB Java Edition (BDB JE) backend storage module for Titan
 
 %package persistit
 Summary:        Persistit graph storage for Titan
 Group:          Applications/Databases
+Requires:       titan >= %{version}
 %description persistit
 Persistit backend storage module for Titan
 
 %package es
 Summary:        Elasticsearch graph indexing for Titan
 Group:          Applications/Databases
-Requires:       titan-lucene
+Requires:       titan >= %{version}, titan-lucene >= %{version}
 %description es
 Elasticsearch indexing module for Titan
 
 %package lucene
 Summary:        Lucene graph indexing for Titan
 Group:          Applications/Databases
+Requires:       titan >= %{version}
 %description lucene
 Lucene indexing module for Titan
 
