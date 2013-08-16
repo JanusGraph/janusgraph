@@ -13,6 +13,7 @@
 
     <properties>
         <distribution.assembly.descriptor>assembly-all.xml</distribution.assembly.descriptor>
+        <pkgtools.dir>${project.basedir}/../../</pkgtools.dir>
     </properties>
 
     <profiles>
@@ -133,13 +134,41 @@
                                 </goals>
                                 <configuration> 
                                     <attach>false</attach>
-                                    <outputDirectory>${project.basedir}/../../</outputDirectory>
+                                    <outputDirectory>${pkgtools.dir}</outputDirectory>
                                     <finalName>/</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                     <descriptors>
                                         <descriptor>assembly-pkg.xml</descriptor>
                                     </descriptors>
                                 </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>clean-package-tools</id>
+                                <phase>clean</phase>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <configuration> 
+                                    <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                                    <filesets>
+                                        <fileset>
+                                            <directory>${pkgtools.dir}</directory>
+                                            <includes>
+                                                <include>pkgcommon</include>
+                                                <include>debian</include>
+                                                <include>redhat</include>
+                                            </includes>
+                                            <excludes>
+                                                <exclude>*</exclude>
+                                            </excludes>
+                                        </fileset>
+                                    </filesets>
+                                </configuration> 
                             </execution>
                         </executions>
                     </plugin>
