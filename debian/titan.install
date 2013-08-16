@@ -1,6 +1,6 @@
-../payload/rexster-console.sh /usr/bin/
-../payload/titan /usr/sbin/
-../payload/titan.in.sh /usr/share/titan/
-../payload/titan-env.sh /etc/titan/
-../payload/config.properties /etc/titan/
-../payload/rexster.xml /etc/titan/
+/usr/bin/rexster-console.sh
+/usr/sbin/titan
+/usr/share/titan/titan.in.sh
+/etc/titan/titan-env.sh
+/etc/titan/config.properties
+/etc/titan/rexster.xml

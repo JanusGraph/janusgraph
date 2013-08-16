@@ -2,8 +2,8 @@
 %define payload_dir redhat/payload
 
 Name:           titan
-Version:        0.3.2
-Release:        1%{?dist}
+Version:        0.4.0
+Release:        0.1.snap
 Summary:        Titan Distributed Graph Database
 
 Group:          Applications/Databases
@@ -92,23 +92,28 @@ mkdir -p "$RPM_BUILD_ROOT"/usr/share/titan/lib/persistit
 mkdir -p "$RPM_BUILD_ROOT"/usr/share/titan/lib/es
 mkdir -p "$RPM_BUILD_ROOT"/usr/share/titan/lib/lucene
 
+# copy files
+pkgcommon/bin/install-payload.sh "$RPM_BUILD_ROOT"/
+cp %{payload_dir}/titan.init "$RPM_BUILD_ROOT"/etc/rc.d/init.d/titan
+cp %{payload_dir}/titan.sysconfig "$RPM_BUILD_ROOT"/etc/default/titan
+
 # executables
-cp %{payload_dir}/rexster-console.sh "$RPM_BUILD_ROOT"/usr/bin/
-cp %{payload_dir}/titan "$RPM_BUILD_ROOT"/usr/sbin/
-#cp %{payload_dir}/upgrade010to020 "$RPM_BUILD_ROOT"/usr/sbin/titan_upgrade010to020
+#cp %{payload_dir}/rexster-console.sh "$RPM_BUILD_ROOT"/usr/bin/
+#cp %{payload_dir}/titan "$RPM_BUILD_ROOT"/usr/sbin/
+##cp %{payload_dir}/upgrade010to020 "$RPM_BUILD_ROOT"/usr/sbin/titan_upgrade010to020
 
 # configs
-#'cp %{payload_dir}/*.local "$RPM_BUILD_ROOT"/etc/titan/
-cp %{payload_dir}/config.properties "$RPM_BUILD_ROOT"/etc/titan/
-cp %{payload_dir}/rexster.xml "$RPM_BUILD_ROOT"/etc/titan/
-cp %{payload_dir}/cassandra.yaml "$RPM_BUILD_ROOT"/etc/titan/
-cp %{payload_dir}/titan-env.sh "$RPM_BUILD_ROOT"/etc/titan/
-cp %{payload_dir}/titan.in.sh "$RPM_BUILD_ROOT"/usr/share/titan/
-cp %{payload_dir}/env.d/* "$RPM_BUILD_ROOT"/etc/titan/env.d/
+##'cp %{payload_dir}/*.local "$RPM_BUILD_ROOT"/etc/titan/
+#cp %{payload_dir}/config.properties "$RPM_BUILD_ROOT"/etc/titan/
+#cp %{payload_dir}/rexster.xml "$RPM_BUILD_ROOT"/etc/titan/
+#cp %{payload_dir}/cassandra.yaml "$RPM_BUILD_ROOT"/etc/titan/
+#cp %{payload_dir}/titan-env.sh "$RPM_BUILD_ROOT"/etc/titan/
+#cp %{payload_dir}/titan.in.sh "$RPM_BUILD_ROOT"/usr/share/titan/
+#cp %{payload_dir}/env.d/* "$RPM_BUILD_ROOT"/etc/titan/env.d/
 
 # init.d
-cp %{payload_dir}/titan.init "$RPM_BUILD_ROOT"/etc/rc.d/init.d/titan
-cp %{payload_dir}/titan.default "$RPM_BUILD_ROOT"/etc/default/titan
+#cp %{payload_dir}/titan.init "$RPM_BUILD_ROOT"/etc/rc.d/init.d/titan
+#cp %{payload_dir}/titan.default "$RPM_BUILD_ROOT"/etc/default/titan
 
 # jars
 pkgcommon/bin/install-jars.sh "$RPM_BUILD_ROOT"/usr/share/titan/lib'${m:+/$m}'

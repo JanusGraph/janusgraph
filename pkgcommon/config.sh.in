@@ -4,6 +4,7 @@ cd - >/dev/null
 
 declare -r MODULES="berkeleyje cassandra hbase persistit lucene es"
 declare -r DEP_DIR="$d"/tmp
+declare -r PAYLOAD_DIR="$d"/payload
 declare -r M2_REPO=/tmp/aurelius-pkgbuild-repo
 declare -r MVN_OPTS="-Dmaven.repo.local=$M2_REPO"
 

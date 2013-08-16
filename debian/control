@@ -6,7 +6,7 @@ Build-Depends: debhelper (>= 7), openjdk-6-jdk (>= 6b11) | java6-sdk, maven
 Homepage: http://titan.thinkaurelius.com
 Vcs-Git: https://github.com/thinkaurelius/titan.git
 Vcs-Browser: https://github.com/thinkaurelius/titan
-Standards-Version: 3.8.3
+Standards-Version: 3.9.4
 
 Package: titan
 Architecture: all

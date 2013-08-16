@@ -3,7 +3,7 @@
 set -e
 set -u
 
-TITAN_VERSION=0.3.2
+TITAN_VERSION=0.4.0
 TOPDIR=~/rpmbuild
 
 cd "$(dirname $0)"/.. 

@@ -34,8 +34,9 @@ install: build
 	mkdir debian/tmp 2>/dev/null || true
 	pkgcommon/bin/partition-jars.sh
 	dh_installdirs
-	dh_install
-	pkgcommon/bin/install-jars.sh 'debian/titan${m:+-$m}/usr/share/titan/lib${m:+/$m}'
+	pkgcommon/bin/install-jars.sh 'debian/titan$${m:+-$$m}/usr/share/titan/lib$${m:+/$$m}'
+	pkgcommon/bin/install-payload.sh 'debian/titan$${m:+-$$m}/'
+	cp -a debian/titan.default debian/titan/etc/default/titan
 
 # Build architecture-independent files here.
 binary-indep: build install

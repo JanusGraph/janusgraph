@@ -104,7 +104,7 @@ if [ -f "$TITAN_CONF/titan-env.sh" ]; then
     . "$TITAN_CONF/titan-env.sh"
 fi
 
-# Run shell fragments for to setup environment variables for extensions.
+# Run module-specific shell fragments
 for s in "$TITAN_ENV_DIR"/*.sh.in; do
     . "$TITAN_ENV_DIR"/*.sh.in
 done
