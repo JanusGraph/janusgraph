@@ -157,15 +157,13 @@
                                     <excludeDefaultDirectories>true</excludeDefaultDirectories>
                                     <filesets>
                                         <fileset>
-                                            <directory>${pkgtools.dir}</directory>
-                                            <includes>
-                                                <include>pkgcommon</include>
-                                                <include>debian</include>
-                                                <include>redhat</include>
-                                            </includes>
-                                            <excludes>
-                                                <exclude>*</exclude>
-                                            </excludes>
+                                            <directory>${project.basedir}/../../debian/</directory>
+                                        </fileset>
+                                        <fileset>
+                                            <directory>${project.basedir}/../../pkgcommon/</directory>
+                                        </fileset>
+                                        <fileset>
+                                            <directory>${project.basedir}/../../redhat/</directory>
                                         </fileset>
                                     </filesets>
                                 </configuration> 
