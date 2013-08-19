@@ -87,32 +87,33 @@ public class IDManager {
         }
     }
 
-    /** Number of bits that need to be reserved from the type ids for storing additional information during serialization
+    /**
+     * Number of bits that need to be reserved from the type ids for storing additional information during serialization
      */
     public static final int TYPE_LEN_RESERVE = 2;
 
-    /**Total number of bits available to a Titan assigned id
-        We use only 63 bits to make sure that all ids are positive
+    /**
+     * Total number of bits available to a Titan assigned id
+     * We use only 63 bits to make sure that all ids are positive
+     * @see com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.getKey(long)
      */
     private static final long TOTAL_BITS = 63;
 
+    /**
+     * Maximum number of bits that can be used for the partition prefix of an id
+     */
     private static final long MAX_PARTITION_BITS = 31;
+    /**
+     * Default number of bits used for the partition prefix. 0 means there is no partition prefix
+     */
     private static final long DEFAULT_PARTITION_BITS = 0;
 
+    /**
+     * Maximum id of any titan type
+     */
     private static final long MAX_TITAN_TYPE_ID = (1l << (TOTAL_BITS - IDType.EdgeLabel.offset()
             - TYPE_LEN_RESERVE)) - 1;
 
-//    public static final long relationTypePaddingBits = 3; //??
-
-
-//    private static final long titanTypeDirectionOffset = totalNoBits - relationTypeDirectionBits;
-//    private static final long titanTypeDirectionMask = ((1l << relationTypeDirectionBits) - 1) << (titanTypeDirectionOffset);
-
-//    private static final long maxDirectionID = (1l << relationTypeDirectionBits) - 2; //Need extra number for bounding
-
-//    public static final long titanTypePaddingMask = (1l << relationTypePaddingBits) - 1;
-//    public static final long titanTypePaddingFrontOffset = titanTypeDirectionOffset - relationTypePaddingBits;
-//    public static final long titanTypePaddingFrontMask = titanTypePaddingMask << titanTypePaddingFrontOffset;
 
     @SuppressWarnings("unused")
     private final long partitionBits;
@@ -121,16 +122,6 @@ public class IDManager {
 
     private final long maxRelationID;
     private final long maxVertexID;
-
-//    private final long groupIDMask;
-//    private final long inverseGroupIDMask;
-//
-//    private final long groupIDMaskTMP;
-//    private final long groupIDFrontMask;
-//    private final long groupIDDeltaOffset;
-//    private final long titanTypeIDBackLength;
-//    private final long titanTypeCountPartMask;
-
 
 
     public IDManager(long partitionBits) {
@@ -145,18 +136,6 @@ public class IDManager {
         maxVertexID = (1l << (TOTAL_BITS - partitionBits - IDType.Vertex.offset())) - 1;
 
         partitionOffset = TOTAL_BITS - partitionBits;
-//        groupOffset = partitionOffset - groupBits - relationTypeDirectionBits;
-//
-//        groupIDMask = (1l << (groupOffset + groupBits)) - (1l << groupOffset);
-//        inverseGroupIDMask = ~groupIDMask;
-
-//        titanTypeIDBackLength = relationTypePaddingBits + relationTypeDirectionBits;
-//        groupIDMaskTMP = ((1l << groupBits) - 1) << relationTypePaddingBits;
-//        groupIDDeltaOffset = titanTypePaddingFrontOffset - groupBits - relationTypePaddingBits;
-//        groupIDFrontMask = groupIDMaskTMP << groupIDDeltaOffset;
-
-//        titanTypeCountPartMask = (1l << (totalNoBits - titanTypeIDBackLength)) - 1;
-
     }
 
     public IDManager() {

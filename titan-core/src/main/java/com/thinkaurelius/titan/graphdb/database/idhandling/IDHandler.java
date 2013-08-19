@@ -26,11 +26,12 @@ public class IDHandler {
         return value >>> 1;
     }
 
+    //Would only need 1 bit to store relation-type-id, but using two so we can upper bound
     private static final int PREFIX_BIT_LEN = 2;
 
-    public static final int PROPERTY_DIR = 0;
-    public static final int EDGE_OUT_DIR = 2;
-    public static final int EDGE_IN_DIR = 3;
+    public static final int PROPERTY_DIR = 0; //00b
+    public static final int EDGE_OUT_DIR = 2; //10b
+    public static final int EDGE_IN_DIR = 3;  //11b
 
     private static final int getDirection(int dirID) {
         //0=out, 1=in
@@ -52,12 +53,19 @@ public class IDHandler {
     }
 
     public final static int edgeTypeLength(long etid) {
-        Preconditions.checkArgument(etid>0 && (etid<<1)>0);
-        return VariableLong.positiveWithPrefixLength(IDManager.getTypeCount(etid<<1), PREFIX_BIT_LEN);
+        Preconditions.checkArgument(etid>0 && (etid<<1)>0);  //Check positive and no-overflow
+        return VariableLong.positiveWithPrefixLength(IDManager.getTypeCount(etid)<<1, PREFIX_BIT_LEN);
     }
 
+
+    /**
+     * The edge type is written as follows: [ Relation-Type-ID (2 bit) | Relation-Type-Count (variable) | Direction-ID (1 bit)]
+     * @param out
+     * @param etid
+     * @param dirID
+     */
     public final static void writeEdgeType(WriteBuffer out, long etid, int dirID) {
-        Preconditions.checkArgument(etid>0 && (etid<<1)>0);
+        Preconditions.checkArgument(etid>0 && (etid<<1)>0); //Check positive and no-overflow
         Preconditions.checkArgument(isValidDirection(dirID));
         etid = (IDManager.getTypeCount(etid)<<1) + getDirection(dirID);
         VariableLong.writePositiveWithPrefix(out,etid,getRelationType(dirID), PREFIX_BIT_LEN);

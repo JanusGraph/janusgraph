@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class IDManagementTest {
@@ -111,9 +112,11 @@ public class IDManagementTest {
 //            System.out.println(dirID);
 //            System.out.println(getBinary(id));
 //            System.out.println(getBuffer(b.asReadBuffer()));
-            long[] vals = IDHandler.readEdgeType(b.asReadBuffer());
+            ReadBuffer rb = b.asReadBuffer();
+            long[] vals = IDHandler.readEdgeType(rb);
             assertEquals(id,vals[0]);
             assertEquals(dirID, vals[1]);
+            assertFalse(rb.hasRemaining());
 
             //Inline edge type
             WriteBuffer wb = new WriteByteBuffer(9);
@@ -146,10 +149,6 @@ public class IDManagementTest {
         }
     }
 
-    public static final int getRandomDirectionDir() {
-        return RandomGenerator.randomInt(0, 3);
-    }
-
     @Test
     public void keyTest() {
         Random random = new Random();
@@ -158,13 +157,6 @@ public class IDManagementTest {
             assertEquals(i, IDHandler.getKeyID(IDHandler.getKey(i)));
         }
         assertEquals(Long.MAX_VALUE, IDHandler.getKeyID(IDHandler.getKey(Long.MAX_VALUE)));
-    }
-
-    //@Test
-    public void testBinaryFormat() {
-        IDManager eid = new IDManager(0);
-        long id = eid.getEdgeLabelID(15);
-        System.out.println(getBinary(id));
     }
 
     public String getBuffer(ReadBuffer r) {
