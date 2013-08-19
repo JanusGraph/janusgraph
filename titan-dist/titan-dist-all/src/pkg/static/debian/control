@@ -37,11 +37,11 @@ Description: Persistit storage backend for the Titan graph database
 
 Package: titan-es
 Architecture: all
-Depends: titan
+Depends: titan, titan-lucene
 Description: Elasticsearch indexing support for the Titan graph database
 
 Package: titan-lucene
 Architecture: all
-Depends: titan, titan-es
+Depends: titan
 Description: Lucene indexing for the Titan graph database
 

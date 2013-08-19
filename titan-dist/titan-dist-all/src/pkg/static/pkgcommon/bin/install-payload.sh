@@ -5,9 +5,7 @@ set -e
 
 [ -n "${1:-}" ] || { echo "Usage: $0 directory-pattern" >&2; exit 1; }
 
-. `dirname $0`/../config.sh.in
-
-set -x
+. `dirname $0`/../etc/config.sh
 
 unset m
 dir="`eval echo $1`"

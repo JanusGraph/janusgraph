@@ -1,4 +1,10 @@
-#! /bin/sh
+#!/bin/sh
+#
+# titan        Titan graph database startup script
+#
+# chkconfig: - 64 36
+# description: Titan graph database.
+# pidfile: /var/run/titan.pid
 ### BEGIN INIT INFO
 # Provides:          titan
 # Required-Start:    $network $named $time
@@ -16,42 +22,71 @@
 #                    thousands of concurrent users.
 ### END INIT INFO
 
-# Author: Dan LaRocque <dalaro@hopcount.org>
+# This script borrows heavily from the PostgreSQL init.d script
 
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Get local environment overrides
+. /etc/sysconfig/titan
+
+# Find the name of the script
 NAME=titan
-PIDFILE=/var/run/$NAME.pid
-PATHNAME=/usr/sbin/$NAME
+#NAME=`basename $0`
+#if [ ${NAME:0:1} = "S" -o ${NAME:0:1} = "K" ]
+#then
+#	NAME=${NAME:3}
+#fi
 
-# Read configuration variable file if it is present
-[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+# For SELinux we need to use 'runuser' not 'su'
+#if [ -x /sbin/runuser ]
+#then
+#    SU=runuser
+#else
+#    SU=su
+#fi
 
-# Load the VERBOSE setting and other rcS variables
-. /lib/init/vars.sh
+# Set defaults for configuration variables
+#PGENGINE=/usr/bin
+#PGPORT=5432
+#PGDATA=/var/lib/pgsql/data
+#PGLOG=/var/lib/pgsql/pgstartup.log
+# Value to set as postmaster process's oom_adj
+#PG_OOM_ADJ=-17
 
-# Define LSB log_* functions.
-# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
-. /lib/lsb/init-functions
+# Override defaults from /etc/sysconfig/pgsql if file is present
+[ -f /etc/sysconfig/$NAME ] && . /etc/sysconfig/$NAME
+
+#lockfile="/var/lock/subsys/${NAME}"
+pidfile="/var/run/$NAME.pid"
 
 
 start() {
-    local errmsg stat
-    log_daemon_msg "Starting Titan graph database" "main"
-    $PATHNAME -p "$PIDFILE" >/var/log/titan/console.log 2>&1
-    log_end_msg $?
+    local stat
+    echo -n $"Starting $NAME: "
+    /usr/sbin/titan -p $pidfile >/var/log/titan/console.log 2>&1
+    stat=$?
+    if [ 0 -eq $stat ]; then
+	echo_success
+    else
+	stat=1 # "generic or unspecified error" in LSB
+	echo_failure
+    fi
+    return $stat
 }
 
 stop() {
     local errmsg stat
-    log_daemon_msg "Stopping Titan graph database" "main"
+    echo -n $"Stopping $NAME: "
     errmsg="`killproc -p $PIDFILE $PATHNAME 2>&1`"
     stat=$?
-    log_end_msg $stat
-    [ $stat -ne 0 ] && echo "$errmsg" >&2
+    if [ 0 -eq $stat ]; then
+	echo_success
+    else
+	stat=1 # "generic or unspecified error" in LSB
+	echo_failure
+    fi
     return $stat
-}
-
-status() {
-    status_of_proc -p "$PIDFILE" "$PATHNAME" $NAME
 }
 
 restart() {
@@ -60,16 +95,24 @@ restart() {
 }
 
 case "$1" in
-    start|stop|restart|status)
+    status)
+        status -p "$PIDFILE" $NAME
+        exit $?
+        ;;
+    start|stop|restart)
         $1
         exit $?
+	;;
+    condrestart|try-restart)
+	rh_status_q || exit 0
+	restart
 	;;
     force-reload)
         restart
         exit $?
 	;;
     *)
-	echo "Usage: $0 {start|stop|restart|force-reload|status}" >&2
+	echo "Usage: $0 {start|stop|restart|force-reload|status|condrestart|try-restart}" >&2
 	exit 3
 	;;
 esac

@@ -1,12 +1,13 @@
 #!/usr/bin/make -f
 
 #export DH_VERBOSE=1
-
-MVN_OPTS = -Dmaven.repo.local=/tmp/titan-deb-repo
 MVN = /usr/bin/mvn
 #TAR = /bin/tar
 
-test:
+changes:
+	debian/generate-changes.sh
+
+test: changes
 	dh_testdir
 	$(MVN) $(MVN_OPTS) test
 
@@ -19,7 +20,7 @@ clean:
 build-arch:
 # No-op
 
-build-indep:
+build-indep: changes
 	dh_testdir
 	cd titan-dist/titan-dist-all && \
 	$(MVN) $(MVN_OPTS) clean package -Ptitan-release -Dgpg.skip=true
@@ -57,4 +58,4 @@ binary-arch: build install
 
 binary: binary-indep binary-arch
 
-.PHONY: build build-indep build-arch test clean binary-indep binary-arch binary install
+.PHONY: build build-indep build-arch test clean binary-indep binary-arch binary install changes

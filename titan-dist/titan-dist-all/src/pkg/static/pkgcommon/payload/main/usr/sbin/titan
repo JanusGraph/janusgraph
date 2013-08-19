@@ -106,7 +106,7 @@ fi
 
 # Run module-specific shell fragments
 for s in "$TITAN_ENV_DIR"/*.sh.in; do
-    . "$TITAN_ENV_DIR"/*.sh.in
+    . "$s"
 done
 
 # Special-case path variables.

@@ -8,7 +8,7 @@
 # partition cell called main.  Dependencies that appear in exactly one
 # module go into a cell named after the module.  The list of
 # dependencies in each cell are written to the files
-# dep-<cellname>.txt in the repo root.
+# dep-part-<cellname>.txt in the repo root.
 #
 # The point of all this is to determine which jars should go into
 # which .deb or .rpm subpackage.  I don't think Maven's dependency or
@@ -23,43 +23,66 @@ set -u
 cd "`dirname $0`/../../"
 
 # Load config
-. pkgcommon/config.sh.in
+. pkgcommon/etc/config.sh
+. pkgcommon/etc/version.sh
 
 # Clean up
-rm -f $DEP_DIR/{dep,jar}-main.txt
-for m in $MODULES; do
-    rm -f $DEP_DIR/{dep,jar}-$m.txt
-done
+pkgcommon/bin/clean.sh
+
+#set -x
+
+mvn_deps() {
+    local outfile="$1"
+    mvn dependency:list $MVN_OPTS \
+        -Ptitan-release \
+        -DexcludeGroupIds=com.thinkaurelius.titan \
+        -DoutputFile=$outfile -DincludeScope=runtime \
+        -DoutputAbsoluteArtifactFilename=true
+    # Delete first two lines of human-readable junk and kill leading spaces
+    sed -ri '1d; 2d; s/^ +//; /^$/d' $outfile
+    cat $outfile | sort > $outfile.tmp
+    mv  $outfile{.tmp,}
+}
 
 # Generate complete dependency list (incl transitive deps) for each module
 for m in $MODULES; do
     cd titan-$m
-    mvn dependency:list $MVN_OPTS \
-        -DexcludeGroupIds=com.thinkaurelius.titan \
-        -DoutputFile=$DEP_DIR/dep-$m.txt -DincludeScope=runtime \
-        -DoutputAbsoluteArtifactFilename=true
-    # Delete first two lines of human-readable junk and kill leading spaces
-    sed -ri '1d; 2d; s/^ +//; /^$/d' $DEP_DIR/dep-$m.txt
-    cat $DEP_DIR/dep-$m.txt | sort > $DEP_DIR/dep-$m.txt.tmp
-    mv  $DEP_DIR/dep-$m.txt{.tmp,}
+    mvn_deps "$DEP_DIR/dep-part-$m.txt"
     cd - >/dev/null
 done
 
-# Any dependency that appears in more than one module goes in dep-main.txt
-cat $DEP_DIR/dep-*.txt | sort | uniq --repeated > $DEP_DIR/dep-main.txt
+# dep-all.txt lists every dependency in the project
+cd titan-dist/titan-dist-all/
+mvn_deps "$DEP_DIR/dep-all.txt"
+cd - >/dev/null
+cat $DEP_DIR/dep-part-*.txt $DEP_DIR/dep-all.txt | sort | uniq > \
+    $DEP_DIR/dep-all.txt.tmp
+mv  $DEP_DIR/dep-all.txt{.tmp,}
 
-# Any dependency that appears in exactly one module goes in dep-<module>.txt
+# dep-repeated.txt lists all deps that occur in two or more modules
+cat $DEP_DIR/dep-part-*.txt | sort | uniq --repeated > $DEP_DIR/dep-repeated.txt
+
+# Rewrite dep-<module>.txt files: Any dependency that appears in
+# exactly one module goes in dep-<module>.txt; remaining deps are
+# deleted.
 for m in $MODULES; do
-    comm -1 -3 $DEP_DIR/dep-main.txt $DEP_DIR/dep-$m.txt > $DEP_DIR/dep-$m.txt.tmp
-    mv $DEP_DIR/dep-$m.txt{.tmp,}
+    comm -1 -3 $DEP_DIR/dep-repeated.txt $DEP_DIR/dep-part-$m.txt > $DEP_DIR/dep-part-$m.txt.tmp
+    mv $DEP_DIR/dep-part-$m.txt{.tmp,}
 done
+
+# We can't use dep-repeated.txt as the contents of the main titan
+# partition, because that would drop jars that exist only on the
+# titan-dist assembly.  Generate the main titan partition my
+# subtracting the union of all module partitions from dep-all.txt.
+cat $DEP_DIR/dep-part-*.txt | sort | uniq > $DEP_DIR/dep-modules.txt
+comm -2 -3 $DEP_DIR/dep-all.txt $DEP_DIR/dep-modules.txt > $DEP_DIR/dep-part-main.txt
 
 
 # This is a hack for Lucene and ES.  Every Lucene jar used by titan-lucene
 # is also used by titan-es, so those go into titan-main.  Some additional
 # Lucene jars are used only by titan-es, so those go into titan-es.  The
 # result is a completely empty dep-lucene.txt file with Lucene jars split
-# between dep-es.txt and dep-main.txt.  It's technically the intended
+# between dep-es.txt and dep-part-main.txt.  It's technically the intended
 # result of the partition algorithm, but it's also utterly nonsensical from
 # a practical point of view.
 #
@@ -68,18 +91,24 @@ done
 # titan-lucene subpackage for this to work.
 for m in $MODULES main; do
     [ "$m" = "lucene" ] && continue
-    grep '^org\.apache\.lucene:' $DEP_DIR/dep-$m.txt >> $DEP_DIR/dep-lucene.txt || continue
-    grep -v '^org\.apache\.lucene:' $DEP_DIR/dep-$m.txt >> $DEP_DIR/dep-$m.txt.tmp
-    mv $DEP_DIR/dep-$m.txt{.tmp,}
+    grep '^org\.apache\.lucene:' $DEP_DIR/dep-part-$m.txt >> $DEP_DIR/dep-part-lucene.txt || continue
+    grep -v '^org\.apache\.lucene:' $DEP_DIR/dep-part-$m.txt >> $DEP_DIR/dep-part-$m.txt.tmp
+    mv $DEP_DIR/dep-part-$m.txt{.tmp,}
 done
+cat $DEP_DIR/dep-part-lucene.txt | sort > $DEP_DIR/dep-part-lucene.txt.tmp
+mv  $DEP_DIR/dep-part-lucene.txt{.tmp,}
 
-cat $DEP_DIR/dep-lucene.txt | sort > $DEP_DIR/dep-lucene.txt.tmp
-mv $DEP_DIR/dep-lucene.txt{.tmp,}
+
+my_pwd=`pwd`
 
 # Convert dependency lists to equivalent jar filename lists
 for m in $MODULES main; do
-    for j in `cat $DEP_DIR/dep-$m.txt | sed -r 's/(.+):(.+)/\2/'`; do
+    for j in `cat $DEP_DIR/dep-part-$m.txt | sed -r 's/(.+):(.+)/\2/'`; do
         echo $j >> $DEP_DIR/jar-$m.txt
     done
+    if [ 'main' = $m ]; then
+	echo "$my_pwd"/titan-core/target/titan-core-$VER.jar >> $DEP_DIR/jar-$m.txt
+    else
+	echo "$my_pwd"/titan-$m/target/titan-$m-$VER.jar >> $DEP_DIR/jar-$m.txt
+    fi
 done
-

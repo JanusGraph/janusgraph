@@ -32,9 +32,17 @@ PATHNAME=/usr/sbin/$NAME
 # Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
 . /lib/lsb/init-functions
 
+privilegecheck() {
+    [ 0 -eq `id -u` ] || { echo "Must be run as root." >&2; exit 4; }
+}
+
+printusage() {
+    echo "Usage: $0 {start|stop|restart|force-reload|status}" >&2
+}
 
 start() {
     local errmsg stat
+    privilegecheck
     log_daemon_msg "Starting Titan graph database" "main"
     $PATHNAME -p "$PIDFILE" >/var/log/titan/console.log 2>&1
     log_end_msg $?
@@ -42,6 +50,7 @@ start() {
 
 stop() {
     local errmsg stat
+    privilegecheck
     log_daemon_msg "Stopping Titan graph database" "main"
     errmsg="`killproc -p $PIDFILE $PATHNAME 2>&1`"
     stat=$?
@@ -59,6 +68,8 @@ restart() {
     start
 }
 
+[ 1 -ne "$#" ] && { printusage; exit 2; }
+
 case "$1" in
     start|stop|restart|status)
         $1
@@ -69,7 +80,7 @@ case "$1" in
         exit $?
 	;;
     *)
-	echo "Usage: $0 {start|stop|restart|force-reload|status}" >&2
+        printusage
 	exit 3
 	;;
 esac
