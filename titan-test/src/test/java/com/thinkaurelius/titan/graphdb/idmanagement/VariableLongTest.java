@@ -60,6 +60,23 @@ public class VariableLongTest {
                 read.next(rb, i);
             }
         }
+
+        //Test boundaries
+        wb = new WriteByteBuffer(512);
+        impl.write(wb,0);
+        impl.write(wb,Long.MAX_VALUE);
+        if (negative) impl.write(wb,-Long.MAX_VALUE);
+        rb = wb.getStaticBuffer().asReadBuffer();
+        if (backward) {
+            rb.movePosition(rb.length()-1);
+            if (negative) assertEquals(-Long.MAX_VALUE, impl.read(rb));
+            assertEquals(Long.MAX_VALUE, impl.read(rb));
+            assertEquals(0, impl.read(rb));
+        } else {
+            assertEquals(0, impl.read(rb));
+            assertEquals(Long.MAX_VALUE, impl.read(rb));
+            if (negative) assertEquals(-Long.MAX_VALUE, impl.read(rb));
+        }
     }
 
     private interface ReadVerify {
@@ -133,19 +150,6 @@ public class VariableLongTest {
     @Test
     public void testPrefix3WriteSmall() {
         positiveReadWriteTest(new PrefixReadWrite(2,0),100000, 1);
-    }
-
-
-    @Test
-    public void testBoundary() {
-        WriteBuffer wb = new WriteByteBuffer(512);
-        VariableLong.write(wb, 0);
-        VariableLong.write(wb, Long.MAX_VALUE);
-        VariableLong.write(wb, -Long.MAX_VALUE);
-        ReadBuffer rb = wb.getStaticBuffer().asReadBuffer();
-        assertEquals(0, VariableLong.read(rb));
-        assertEquals(Long.MAX_VALUE, VariableLong.read(rb));
-        assertEquals(-Long.MAX_VALUE, VariableLong.read(rb));
     }
 
 
