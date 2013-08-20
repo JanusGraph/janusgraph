@@ -215,7 +215,7 @@ public class VertexIDAssigner {
                 for (int pos = 0; pos < relation.getArity(); pos++) {
                     try {
                         Preconditions.checkArgument(relation.getVertex(pos).hasId());
-                        assignID(relation, idManager.getPartitionID(relation.getVertex(pos).getID()));
+                        assignID(relation, getPartitionID(relation.getVertex(pos)));
                         break;
                     } catch (IDPoolExhaustedException e) {
                     }
@@ -223,6 +223,12 @@ public class VertexIDAssigner {
                 if (!relation.hasId()) assignID(relation);
             }
         }
+    }
+
+    private final long getPartitionID(final InternalVertex v) {
+        long vid = v.getID();
+        if (IDManager.IDType.TitanType.is(vid)) return 0;
+        else return idManager.getPartitionID(vid);
     }
 
     private void assignID(final InternalElement vertex, final long partitionIDl) {

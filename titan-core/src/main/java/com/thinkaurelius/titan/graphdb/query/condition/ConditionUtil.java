@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.query.condition;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.core.TitanElement;
 
 import javax.annotation.Nullable;
@@ -50,5 +51,18 @@ public class ConditionUtil {
         }
         return false;
     }
+
+    public static final<E extends TitanElement> void traversal(Condition<E> condition, Predicate<Condition<E>> evaluator) {
+        if (!evaluator.apply(condition)) return; //Abort if the evaluator returns false
+
+        if (condition.getType()== Condition.Type.LITERAL) {
+            return;
+        } else if (condition instanceof Not) {
+            traversal(((Not) condition).getChild(), evaluator);
+        } else if (condition instanceof MultiCondition) {
+            for (Condition<E> child : condition.getChildren()) traversal(child, evaluator);
+        } else throw new IllegalArgumentException("Unexpected condition type: " + condition);
+    }
+
 
 }

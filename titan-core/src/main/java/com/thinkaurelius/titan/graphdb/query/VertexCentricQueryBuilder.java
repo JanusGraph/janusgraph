@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.graphdb.query.condition.And;
+import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.DirectionCondition;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
@@ -167,13 +168,15 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
 
     protected VertexCentricQuery constructQuery(RelationType returnType) {
         BaseVertexCentricQuery vq = super.constructQuery(returnType);
-        And<TitanRelation> condition = (And)vq.getCondition();
-        //Add other-vertex and direction related conditions
-        if (getDirection()!=Direction.BOTH) {
-            condition.add(new DirectionCondition<TitanRelation>(vertex,getDirection()));
+        Condition<TitanRelation> condition = vq.getCondition();
+        if (!vq.isEmpty()) {
+            //Add other-vertex and direction related conditions
+            And<TitanRelation> newcond = (condition instanceof And)?(And)condition : new And<TitanRelation>(condition);
+            newcond.add(new DirectionCondition<TitanRelation>(vertex,getDirection()));
+            //TODO: add incidence condition for other vertex
+            condition=newcond;
         }
-        //TODO: add incidence condition for other vertex
-        return new VertexCentricQuery(vertex,condition,vq.getQueries(),vq.getLimit());
+        return new VertexCentricQuery(vertex,condition,vq.getDirection(),vq.getQueries(),vq.getLimit());
     }
 
     public Iterable<TitanRelation> relations(RelationType returnType) {

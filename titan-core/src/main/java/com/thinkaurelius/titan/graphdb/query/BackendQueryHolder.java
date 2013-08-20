@@ -19,6 +19,10 @@ public class BackendQueryHolder<E extends BackendQuery<E>> {
         this.executionInfo = executionInfo;
     }
 
+    public BackendQueryHolder(E backendQuery, boolean fitted) {
+        this(backendQuery,fitted,null);
+    }
+
     public Object getExecutionInfo() {
         return executionInfo;
     }

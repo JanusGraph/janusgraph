@@ -26,10 +26,7 @@ import com.thinkaurelius.titan.graphdb.internal.ElementType;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.*;
-import com.thinkaurelius.titan.graphdb.query.condition.And;
-import com.thinkaurelius.titan.graphdb.query.condition.Condition;
-import com.thinkaurelius.titan.graphdb.query.condition.DirectionCondition;
-import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
+import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
@@ -550,15 +547,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     public final QueryExecutor<VertexCentricQuery,TitanRelation,SliceQuery> edgeProcessor = new QueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery>() {
 
-        private final boolean hasSingleDirectionCondition(Condition<TitanRelation> condition) {
-            Preconditions.checkArgument(condition instanceof And);
-            for (Condition<TitanRelation> c : condition.getChildren()) {
-                if (c instanceof DirectionCondition)
-                    return ((DirectionCondition) c).getDirection()!=Direction.BOTH;
-            }
-            throw new IllegalStateException("Could not find direction condition: " + condition);
-        }
-
         @Override
         public Iterator<TitanRelation> getNew(final VertexCentricQuery query) {
             if (query.getVertex().isNew() || (query.getVertex()).hasAddedRelations()) {
@@ -570,7 +558,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                     @Override
                     public boolean apply(@Nullable InternalRelation relation) {
                         if ((relation instanceof TitanEdge) && relation.isLoop()
-                                && hasSingleDirectionCondition(query.getCondition())) {
+                                && query.getDirection()!=Direction.BOTH) {
                             if (relation.equals(previous)) return false;
                             else previous=relation;
                         }
@@ -596,6 +584,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         public Iterator<TitanRelation> execute(final VertexCentricQuery query, final SliceQuery sq, final Object exeInfo) {
             if (query.getVertex().isNew()) return Iterators.emptyIterator();
 
+            final boolean filterDirection = (exeInfo!=null)?(Boolean)exeInfo:false;
             final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
             final InternalVertex v = query.getVertex();
             Iterable<TitanRelation> result = null;
@@ -611,6 +600,17 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             } else {
                 iter = graph.edgeQuery(v.getID(),sq,txHandle);
             }
+
+            if (filterDirection) {
+                Preconditions.checkArgument(query.getDirection()!=Direction.BOTH);
+                iter = Iterables.filter(iter,new Predicate<Entry>() {
+                    @Override
+                    public boolean apply(@Nullable Entry entry) {
+                        return edgeSerializer.parseDirection(entry)==query.getDirection();
+                    }
+                });
+            }
+
             result = Iterables.transform(iter, new Function<Entry, TitanRelation>() {
                 @Nullable
                 @Override
@@ -628,21 +628,38 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     public final QueryExecutor<GraphCentricQuery,TitanElement,IndexQuery> elementProcessor = new QueryExecutor<GraphCentricQuery, TitanElement,IndexQuery>() {
 
+        private final PredicateCondition<TitanKey,TitanElement> getEqualityCondition(Condition<TitanElement> condition) {
+            if (condition instanceof PredicateCondition) {
+                PredicateCondition<TitanKey,TitanElement> pc = (PredicateCondition)condition;
+                if (pc.getPredicate()==Cmp.EQUAL && isVertexIndexProperty(pc.getKey())) return pc;
+            } else if (condition instanceof And) {
+                for (Condition<TitanElement> child : ((And<TitanElement>)condition).getChildren()) {
+                    PredicateCondition<TitanKey,TitanElement> p = getEqualityCondition(child);
+                    if (p!=null) return p;
+                }
+            }
+            return null;
+        }
+
+
         @Override
         public Iterator<TitanElement> getNew(final GraphCentricQuery query) {
             Preconditions.checkArgument(query.getType()== ElementType.VERTEX || query.getType()== ElementType.EDGE);
             if (query.getType()== ElementType.VERTEX && hasModifications()) {
-                //Collect all keys from the query - ASSUMPTION: query is an AND of KeyAtom
-                final Set<TitanKey> keys = Sets.newHashSet();
-                PredicateCondition<TitanKey,TitanElement> standardIndexKey = null;
-                for (Condition<TitanElement> cond : query.getCondition().getChildren()) {
-                    PredicateCondition<TitanKey,TitanElement> atom = (PredicateCondition)cond;
-                    if (atom.getPredicate()==Cmp.EQUAL && isVertexIndexProperty(atom.getKey()))
-                        standardIndexKey = atom;
-                    keys.add(atom.getKey());
-                }
+                Preconditions.checkArgument(QueryUtil.isQueryNormalForm(query.getCondition()));
+                PredicateCondition<TitanKey,TitanElement> standardIndexKey = getEqualityCondition(query.getCondition());
                 Iterator<TitanVertex> vertices;
                 if (standardIndexKey==null) {
+                    final Set<TitanKey> keys = Sets.newHashSet();
+                    ConditionUtil.traversal(query.getCondition(),new Predicate<Condition<TitanElement>>() {
+                        @Override
+                        public boolean apply(@Nullable Condition<TitanElement> cond) {
+                            Preconditions.checkArgument(cond.getType()!= Condition.Type.LITERAL || cond instanceof PredicateCondition);
+                            if (cond instanceof PredicateCondition) keys.add(((PredicateCondition<TitanKey,TitanElement>) cond).getKey());
+                            return true;
+                        }
+                    });
+                    Preconditions.checkArgument(!keys.isEmpty(),"Invalid query condition: %s",query.getCondition());
                     Set<TitanVertex> vertexSet = Sets.newHashSet();
                     for (TitanRelation r : addedRelations.getView(new Predicate<InternalRelation>() {
                         @Override
@@ -694,7 +711,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
         @Override
         public boolean isDeleted(GraphCentricQuery query, TitanElement result) {
-            if (result.isRemoved()) return true;
+            if (result==null || result.isRemoved()) return true;
             else if (query.getType()== ElementType.VERTEX) {
                 Preconditions.checkArgument(result instanceof InternalVertex);
                 InternalVertex v = ((InternalVertex)result).it();
@@ -710,8 +727,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
         @Override
         public Iterator<TitanElement> execute(final GraphCentricQuery query, final IndexQuery indexQuery, final Object exeInfo) {
-            Preconditions.checkArgument(exeInfo!=null && exeInfo instanceof String);
-            final String indexName = (String)exeInfo;
             Iterator<TitanElement> iter = null;
             if (!indexQuery.hasStore()) {
                 log.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes",query.getCondition());
@@ -721,6 +736,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                     iter=(Iterator)getEdges().iterator();
                 } else throw new IllegalArgumentException("Unexpected type: "+query.getType());
             } else {
+                Preconditions.checkArgument(exeInfo!=null && exeInfo instanceof String);
+                final String indexName = (String)exeInfo;
                 try {
                     iter = Iterators.transform(indexCache.get(indexQuery,new Callable<List<Object>>() {
                         @Override
@@ -732,7 +749,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                         @Override
                         public TitanElement apply(@Nullable Object id) {
                             Preconditions.checkNotNull(id);
-                            if (id instanceof Long) return (TitanVertex)getVertex((Long)id);
+                            if (id instanceof Long) return getExistingVertex((Long) id);
                             else if (id instanceof RelationIdentifier) return (TitanElement)getEdge((RelationIdentifier)id);
                             else throw new IllegalArgumentException("Unexpected id type: " + id);
                         }

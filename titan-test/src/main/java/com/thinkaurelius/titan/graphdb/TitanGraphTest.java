@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb;
 
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -658,8 +659,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             TitanVertex n = tx.addVertex();
             n.addProperty(id, i);
             n.addProperty(name, "Name" + (i % mod));
-
-            TitanEdge e = n.addEdge(connect,tx.getVertex(id,Math.max(0,i-1)));
+            TitanVertex other = tx.getVertex(id,Math.max(0,i-1));
+            Preconditions.checkNotNull(other);
+            TitanEdge e = n.addEdge(connect,other);
             e.setProperty(id,i);
             e.setProperty(name,"Edge"+(i%mod));
         }
@@ -802,6 +804,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         n3.addEdge(connect, n3);
         e.setProperty(id, 111);
         assertEquals(4, Iterables.size(n3.getEdges()));
+        assertEquals(2, Iterables.size(n3.getEdges(Direction.OUT)));
+        assertEquals(2, Iterables.size(n3.getEdges(Direction.IN)));
 
         clopen();
 
@@ -854,6 +858,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(111, e.getProperty(id));
 
         assertEquals(4, Iterables.size(n3.getEdges()));
+        assertEquals(2, Iterables.size(n3.getEdges(Direction.OUT)));
+        assertEquals(2, Iterables.size(n3.getEdges(Direction.IN)));
+
 
         //Delete Edges, create new ones
         e = Iterables.getOnlyElement(n2.getTitanEdges(OUT, tx.getEdgeLabel("knows")));

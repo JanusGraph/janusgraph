@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.relations.RelationComparator;
+import com.tinkerpop.blueprints.Direction;
 
 import java.util.Comparator;
 import java.util.List;
@@ -19,9 +20,10 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
     private final InternalVertex vertex;
 
     public VertexCentricQuery(InternalVertex vertex, Condition<TitanRelation> condition,
+                              Direction direction,
                               List<BackendQueryHolder<SliceQuery>> queries,
                               int limit) {
-        super(condition, queries, limit);
+        super(condition, direction, queries, limit);
         Preconditions.checkNotNull(vertex);
         this.vertex = vertex;
     }
@@ -58,7 +60,7 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
 
     @Override
     public boolean hasDuplicateResults() {
-        return true; //Because self-loops can occur twice
+        return false; //We wanna count self-loops twice
     }
 
     @Override

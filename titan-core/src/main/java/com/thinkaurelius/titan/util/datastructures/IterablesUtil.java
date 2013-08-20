@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.util.datastructures;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -22,6 +24,19 @@ public class IterablesUtil {
             }
 
         };
+    }
+
+    public static final<O> Iterable<O> limitedIterable(final Iterable<O> iterable, final int limit) {
+        return Iterables.filter(iterable,new Predicate<O>() {
+
+            int count = 0;
+
+            @Override
+            public boolean apply(@Nullable O o) {
+                count++;
+                return count<=limit;
+            }
+        });
     }
 
     public static final int size(Iterable i) {

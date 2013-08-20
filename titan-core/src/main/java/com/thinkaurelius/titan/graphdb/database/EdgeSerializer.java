@@ -126,6 +126,18 @@ public class EdgeSerializer {
     }
 
 
+    public Direction parseDirection(Entry data) {
+        long[] typeAndDir = IDHandler.readEdgeType(data.getReadColumn());
+        int dirID = (int)typeAndDir[1];
+
+        switch(dirID) {
+            case PROPERTY_DIR:
+            case EDGE_OUT_DIR: return Direction.OUT;
+            case EDGE_IN_DIR: return Direction.IN;
+            default: throw new IllegalArgumentException("Invalid dirID read from disk: " + dirID);
+        }
+    }
+
     private ImmutableLongObjectMap parseProperties(long vertexid, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
         Preconditions.checkArgument(vertexid>0);
         ImmutableLongObjectMap.Builder builder = new ImmutableLongObjectMap.Builder();
@@ -228,7 +240,7 @@ public class EdgeSerializer {
 
     private static final int getDirID(Direction dir, RelationType rt) {
         if (rt==RelationType.PROPERTY) {
-            Preconditions.checkArgument(dir==Direction.BOTH);
+            Preconditions.checkArgument(dir==Direction.OUT);
             return PROPERTY_DIR;
         } else if (rt==RelationType.EDGE) {
             if (dir==Direction.OUT) return EDGE_OUT_DIR;
@@ -396,12 +408,12 @@ public class EdgeSerializer {
 
             long[] primaryKeyIDs = type.getPrimaryKey();
             Preconditions.checkArgument(primaryKey.length==primaryKeyIDs.length);
-            boolean wroteEntirePrimaryKey=true;
-            for (int i=0;i<primaryKeyIDs.length;i++) {
+            int i;
+            boolean wroteInterval = false;
+            for (i=0;i<primaryKeyIDs.length && primaryKey[i]!=null;i++) {
                 TitanType t = primaryKey[i].type;
                 Interval interval = primaryKey[i].interval;
                 if (interval==null || interval.isEmpty()) {
-                    wroteEntirePrimaryKey=false;
                     break;
                 }
                 Preconditions.checkArgument(t.getID()==primaryKeyIDs[i]);
@@ -412,10 +424,12 @@ public class EdgeSerializer {
                     if (!interval.startInclusive()) sliceStart=ByteBufferUtil.nextBiggerBuffer(sliceStart);
                     sliceEnd=colEnd.getStaticBuffer();
                     if (interval.endInclusive()) sliceEnd=ByteBufferUtil.nextBiggerBuffer(sliceEnd);
-                    wroteEntirePrimaryKey=false;
+                    wroteInterval=true;
                     break;
                 }
             }
+            boolean wroteEntirePrimaryKey=i>=primaryKeyIDs.length;
+
 
             if (vertexCon!=null) {
                 Preconditions.checkArgument(wroteEntirePrimaryKey && !type.isUnique(dir));
@@ -426,7 +440,7 @@ public class EdgeSerializer {
 
                 //VariableLong.writeBackward(colStart,relationIdDiff);
             }
-            if (!wroteEntirePrimaryKey) {
+            if (!wroteInterval) {
                 sliceStart=colStart.getStaticBuffer();
                 sliceEnd=ByteBufferUtil.nextBiggerBuffer(colEnd.getStaticBuffer());
             }

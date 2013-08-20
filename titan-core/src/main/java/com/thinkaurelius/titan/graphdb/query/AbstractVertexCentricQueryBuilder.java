@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.query;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -211,14 +212,14 @@ abstract class AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
         if (types.isEmpty()) {
             BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType),
                             ((dir==Direction.BOTH || returnType==RelationType.PROPERTY && dir==Direction.OUT)
-                                          && !conditions.hasChildren() && includeHidden),null);
+                                          && !conditions.hasChildren() && includeHidden),Boolean.valueOf(dir!=Direction.BOTH));
             query.getBackendQuery().setLimit(computeLimit(conditions,
                     ((dir != Direction.BOTH && (returnType == RelationType.EDGE || returnType == RelationType.RELATION)) ? sliceLimit * 2 : sliceLimit) +
                             //If only one direction is queried, ask for twice the limit from backend since approximately half will be filtered
                             ((!includeHidden && (returnType == RelationType.PROPERTY || returnType == RelationType.RELATION)) ? 2 : 0)
                     //on properties, add some for the hidden properties on a vertex
             ));
-            queries.add(query);
+            queries = ImmutableList.of(query);
             //Add remaining conditions that only apply if no type is defined
             if (!includeHidden) conditions.add(new HiddenFilterCondition<TitanRelation>());
             conditions.add(returnType);
@@ -241,16 +242,15 @@ abstract class AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
                         returnType = RelationType.EDGE;
                     }
                     //Construct primary key constraints (if any, and if not direction==Both)
-                    EdgeSerializer.TypedInterval[] primaryKeyConstraints;
+                    EdgeSerializer.TypedInterval[] primaryKeyConstraints=new EdgeSerializer.TypedInterval[type.getPrimaryKey().length];
                     And<TitanRelation> remainingConditions=conditions;
                     boolean vertexConstraintApplies = true;
                     if (type.getPrimaryKey().length>0 && conditions.hasChildren()) {
                         remainingConditions=conditions.clone();
                         long[] primaryKeys = type.getPrimaryKey();
-                        primaryKeyConstraints=new EdgeSerializer.TypedInterval[primaryKeys.length];
 
                         for (int i=0;i<primaryKeys.length;i++) {
-                            TitanType pktype = getTx().getExistingType(primaryKeys[i]);
+                            InternalType pktype = (InternalType)getTx().getExistingType(primaryKeys[i]);
                             Interval interval=null;
                             //First check for equality constraints, since those are the most constraining
                             for (Iterator<Condition<TitanRelation>> iter=remainingConditions.iterator();iter.hasNext();) {
@@ -269,7 +269,7 @@ abstract class AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
                                 for (Iterator<Condition<TitanRelation>> iter=remainingConditions.iterator();iter.hasNext();) {
                                     Condition<TitanRelation> cond = iter.next();
                                     if (cond instanceof PredicateCondition) {
-                                        PredicateCondition<TitanType,TitanRelation> atom = (PredicateCondition)iter.next();
+                                        PredicateCondition<TitanType,TitanRelation> atom = (PredicateCondition)cond;
                                         if (atom.getKey().equals(pktype)) {
                                             TitanPredicate predicate = atom.getPredicate();
                                             Object value = atom.getValue();
@@ -353,13 +353,13 @@ abstract class AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
                                 if (pint.getStart()!=null || pint.getEnd()!=null) interval=pint;
                             }
 
-                            primaryKeyConstraints[i]=new EdgeSerializer.TypedInterval(type,interval);
+                            primaryKeyConstraints[i]=new EdgeSerializer.TypedInterval(pktype,interval);
                             if (interval==null || !interval.isPoint()) {
                                 vertexConstraintApplies=false;
                                 break;
                             }
                         }
-                    } else primaryKeyConstraints= new EdgeSerializer.TypedInterval[0];
+                    }
 
                     Direction[] dirs = {dir};
                     EdgeSerializer.VertexConstraint vertexConstraint = getVertexConstraint();
@@ -370,10 +370,10 @@ abstract class AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
                     }
                     for (Direction dir : dirs) {
                         EdgeSerializer.VertexConstraint vertexCon = vertexConstraint;
-                        if (!vertexConstraintApplies || type.isUnique(dir)) vertexCon=null;
+                        if (vertexCon==null || !vertexConstraintApplies || type.isUnique(dir)) vertexCon=null;
                         SliceQuery q=serializer.getQuery(type,dir,primaryKeyConstraints,vertexCon);
                         q.setLimit(computeLimit(remainingConditions, sliceLimit));
-                        queries.add(new BackendQueryHolder<SliceQuery>(q,(!remainingConditions.hasChildren() && vertexConstraint==vertexCon),null));
+                        queries.add(new BackendQueryHolder<SliceQuery>(q,(!remainingConditions.hasChildren() && vertexConstraint==vertexCon)));
                     }
                 }
             }
@@ -381,7 +381,7 @@ abstract class AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
             else conditions.add(getTypeCondition(ts));
         }
 
-        return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions),queries,limit);
+        return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions),dir,queries,limit);
     }
 
     private final static Condition<TitanRelation> getTypeCondition(Set<TitanType> types) {

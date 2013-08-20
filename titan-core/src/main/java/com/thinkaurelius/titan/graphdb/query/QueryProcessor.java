@@ -125,7 +125,7 @@ public class QueryProcessor<Q extends ElementQuery<R,B>,R extends TitanElement,B
             for (int i=0;i<query.numSubQueries();i++) {
                 BackendQueryHolder<B> subq = query.getSubQuery(i);
                 Iterator subiter = new LimitAdjustingIterator(subq);
-                subiter = getFilterIterator(subiter,hasDeletions,subq.isFitted());
+                subiter = getFilterIterator(subiter,hasDeletions,!subq.isFitted());
                 if (!allNew.isEmpty()) {
                     subiter = Iterators.filter(subiter,new Predicate<R>() {
                         @Override

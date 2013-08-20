@@ -60,14 +60,14 @@ public class ProperInterval<T extends Comparable<T>> implements Interval<T> {
 
     @Override
     public boolean isPoint() {
-        return start.equals(end) && startInclusive && endInclusive;
+        return start!=null && end!=null && start.equals(end) && startInclusive && endInclusive;
     }
 
     @Override
     public boolean isEmpty() {
         if (start==null || end==null) return false;
         int cmp = start.compareTo(end);
-        return cmp<0 || (cmp==0 && startInclusive && endInclusive);
+        return cmp>0 || (cmp==0 && (!startInclusive || !endInclusive));
     }
 
     @Override

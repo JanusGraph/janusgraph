@@ -69,11 +69,11 @@ public class IndexSerializer {
     public void newPropertyKey(TitanKey key, BackendTransaction tx) throws StorageException {
         for (String index : key.getIndexes(Vertex.class)) {
             if (!index.equals(Titan.Token.STANDARD_INDEX))
-                tx.getIndexTransactionHandle(index).register(VERTEXINDEX_NAME,key2String(key),key.getDataType());
+                tx.getIndexTransactionHandle(index).register(ElementType.VERTEX.getName(),key2String(key),key.getDataType());
         }
         for (String index : key.getIndexes(Edge.class)) {
             if (!index.equals(Titan.Token.STANDARD_INDEX))
-                tx.getIndexTransactionHandle(index).register(EDGEINDEX_NAME,key2String(key),key.getDataType());
+                tx.getIndexTransactionHandle(index).register(ElementType.EDGE.getName(),key2String(key),key.getDataType());
         }
     }
 
@@ -188,7 +188,7 @@ public class IndexSerializer {
                 PredicateCondition pc = (PredicateCondition)condition;
                 results = processSingleCondition(resultType, pc, query.getLimit(), tx);
             } else if (condition instanceof And) {
-                Preconditions.checkArgument(condition instanceof And,"Invalid query (not in QNF): %s",condition);
+
                 /*
                  * Iterate over the clauses in the and collection
                  * query.getCondition().getChildren(), taking the intersection
@@ -223,6 +223,8 @@ public class IndexSerializer {
                     limit = (int)Math.min(Integer.MAX_VALUE-1,Math.pow(limit,1.5));
                 } while (results.size()<query.getLimit() && !exhaustedResults);
 
+            } else {
+                Preconditions.checkArgument(false,"Invalid query (not in QNF): %s",condition);
             }
             return results;
         } else {
@@ -332,20 +334,9 @@ public class IndexSerializer {
         return LongEncoding.decode(name);
     }
 
-    public static final String EDGEINDEX_NAME = "edge";
-    public static final String VERTEXINDEX_NAME = "vertex";
-
-    private static final String getStoreName(GraphCentricQuery query) {
-        switch (query.getType()) {
-            case VERTEX: return VERTEXINDEX_NAME;
-            case EDGE: return EDGEINDEX_NAME;
-            default: throw new IllegalArgumentException("Invalid type: " + query.getType());
-        }
-    }
-
     private static final String getStoreName(TitanElement element) {
-        if (element instanceof TitanVertex) return VERTEXINDEX_NAME;
-        else if (element instanceof TitanEdge) return EDGEINDEX_NAME;
+        if (element instanceof TitanVertex) return ElementType.VERTEX.getName();
+        else if (element instanceof TitanEdge) return ElementType.EDGE.getName();
         else throw new IllegalArgumentException("Invalid class: " + element.getClass());
     }
 

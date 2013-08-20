@@ -58,8 +58,8 @@ public class QueryUtil {
         else if (condition instanceof And) {
             for (Condition<?> child : ((And<?>) condition).getChildren()) {
                 if (isQNFLiteralOrNot(child)) continue;
-                else if (condition instanceof Or) {
-                    for (Condition<?> child2 : ((Or<?>) condition).getChildren()) {
+                else if (child instanceof Or) {
+                    for (Condition<?> child2 : ((Or<?>) child).getChildren()) {
                         if (!isQNFLiteralOrNot(child2)) return false;
                     }
                 } else return false;
@@ -114,6 +114,10 @@ public class QueryUtil {
             if (child.getType()== Condition.Type.LITERAL) return child;
         }
         return condition;
+    }
+
+    public static final boolean isEmpty(Condition<?> condition) {
+        return condition.getType()!= Condition.Type.LITERAL && condition.numChildren()==0;
     }
 
     /**

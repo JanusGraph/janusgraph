@@ -100,7 +100,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
 
     @Override
     public boolean matches(TitanElement element) {
-        return condition.equals(element);
+        return condition.evaluate(element);
     }
 
 

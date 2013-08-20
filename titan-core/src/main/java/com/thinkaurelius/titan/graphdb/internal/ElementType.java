@@ -21,7 +21,7 @@ public enum ElementType {
     public String getName() {
         switch(this) {
             case VERTEX: return "vertex";
-            case EDGE: return "relation";
+            case EDGE: return "edge";
             default: throw new IllegalArgumentException();
         }
     }

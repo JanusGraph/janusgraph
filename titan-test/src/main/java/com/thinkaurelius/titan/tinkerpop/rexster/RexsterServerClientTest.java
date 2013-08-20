@@ -11,6 +11,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -59,6 +60,7 @@ public abstract class RexsterServerClientTest extends TitanGraphTestCommon {
     }
 
     @Test
+    @Ignore
     public void simpleQuerying() throws Exception {
         List<Map<String, Object>> result;
 //      result = client.query("g.V");
