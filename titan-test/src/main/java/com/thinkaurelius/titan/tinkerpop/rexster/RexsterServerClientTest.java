@@ -33,6 +33,9 @@ public abstract class RexsterServerClientTest extends TitanGraphTestCommon {
     public RexsterServerClientTest(Configuration config) {
         super(config);
         rexsterConfig = new XMLConfiguration();
+
+        // script engine is not defaulted by rexster.
+        rexsterConfig.addProperty("script-engines.script-engine.name", "gremlin-groovy");
     }
 
     @Before
@@ -60,7 +63,6 @@ public abstract class RexsterServerClientTest extends TitanGraphTestCommon {
     }
 
     @Test
-    @Ignore
     public void simpleQuerying() throws Exception {
         List<Map<String, Object>> result;
 //      result = client.query("g.V");
