@@ -179,7 +179,7 @@ public interface KeyColumnValueStore {
      * @throws StorageException
      */
     public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException;
-    // like current getKeys if column-slice is such that is queries for vertex state property
+    // like current getKeys if column-slice is such that it queries for vertex state property
 
 
     /**
