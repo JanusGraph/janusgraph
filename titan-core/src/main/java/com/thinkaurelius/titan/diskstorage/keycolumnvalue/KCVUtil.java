@@ -14,7 +14,7 @@ import java.util.List;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class KCVSUtil {
+public class KCVUtil {
 
     private static final Logger log = LoggerFactory.getLogger(KeyColumnValueStore.class);
 

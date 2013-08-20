@@ -404,7 +404,9 @@ public class Backend {
             indexTx.put(entry.getKey(),new IndexTransaction(entry.getValue()));
         }
 
-        return new BackendTransaction(tx, edgeStore, vertexIndexStore, edgeIndexStore, readAttempts, persistAttemptWaittime, indexTx);
+        return new BackendTransaction(tx, storeManager.getFeatures(),
+                edgeStore, vertexIndexStore, edgeIndexStore,
+                readAttempts, persistAttemptWaittime, indexTx);
     }
 
     public void close() throws StorageException {

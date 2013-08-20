@@ -169,7 +169,7 @@ public interface KeyColumnValueStore {
 
     /**
      * Returns a {@link KeyIterator} over all keys in the store that have one or more columns matching the column-range. Calling {@link KeyIterator#getEntries()}
-     * returns the list of all entries that match the column-range specified by the given query.
+     * returns the list of all entries that match the column-range specified by the given query.n
      *
      * This method is only supported by stores which do not keep keys in byte-order.
      *

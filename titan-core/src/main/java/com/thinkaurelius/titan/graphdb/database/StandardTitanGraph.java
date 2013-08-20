@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
@@ -29,6 +30,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
+import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.blueprints.Direction;
@@ -39,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.Callable;
 
 public class StandardTitanGraph extends TitanBlueprintsGraph {
@@ -145,19 +148,36 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     public RecordIterator<Long> getVertexIDs(final BackendTransaction tx) {
-        if (!backend.getStoreFeatures().supportsScan())
-            throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
-        final RecordIterator<StaticBuffer> keyiter = tx.edgeStoreKeys();
+        final KeyIterator keyiter = tx.edgeStoreKeys(
+                edgeSerializer.getQuery(SystemKey.VertexState,Direction.OUT,new EdgeSerializer.TypedInterval[0],null));
         return new RecordIterator<Long>() {
+
+            private Long next=null;
+
+            private Long nextInternal() throws StorageException  {
+                Long next=null;
+                while (next==null && keyiter.hasNext()) {
+                    StaticBuffer b = keyiter.next();
+                    RecordIterator<Entry> entries = keyiter.getEntries();
+                    if (entries.hasNext()) next=IDHandler.getKeyID(b);
+                    entries.close();
+                }
+                return next;
+            }
 
             @Override
             public boolean hasNext() throws StorageException {
-                return keyiter.hasNext();
+                if (next==null) next=nextInternal();
+                return next!=null;
             }
 
             @Override
             public Long next() throws StorageException {
-                return IDHandler.getKeyID(keyiter.next());
+                if (next==null) next=nextInternal();
+                if (next==null) throw new NoSuchElementException();
+                Long result = next;
+                next=null;
+                return result;
             }
 
             @Override

@@ -15,6 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.junit.After;
@@ -27,14 +28,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVSUtil;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVUtil;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
@@ -175,7 +169,7 @@ public abstract class LockKeyColumnValueStoreTest {
         tx[0][0].commit();
 
         tx[0][0] = newTransaction(manager[0]);
-        Assert.assertEquals(v1, KCVSUtil.get(store[0],k, c1, tx[0][0]));
+        Assert.assertEquals(v1, KCVUtil.get(store[0], k, c1, tx[0][0]));
     }
 
     @Test
@@ -187,7 +181,7 @@ public abstract class LockKeyColumnValueStoreTest {
         tx[0][0].commit();
 
         tx[0][0] = newTransaction(manager[0]);
-        Assert.assertEquals(v1, KCVSUtil.get(store[0],k, c1, tx[0][0]));
+        Assert.assertEquals(v1, KCVUtil.get(store[0], k, c1, tx[0][0]));
     }
 
     @Test(expected = PermanentLockingException.class)
@@ -252,7 +246,7 @@ public abstract class LockKeyColumnValueStoreTest {
 
         tx[0][0].commit();
         tx[0][0] = newTransaction(manager[0]);
-        Assert.assertEquals(v1, KCVSUtil.get(store[0],k, c1, tx[0][0]));
+        Assert.assertEquals(v1, KCVUtil.get(store[0], k, c1, tx[0][0]));
     }
 
     @Test
@@ -367,8 +361,8 @@ public abstract class LockKeyColumnValueStoreTest {
     private void tryWrites(KeyColumnValueStore store1, KeyColumnValueStoreManager checkmgr,
                            StoreTransaction tx1, KeyColumnValueStore store2,
                            StoreTransaction tx2) throws StorageException {
-        Assert.assertNull(KCVSUtil.get(store1,k, c1, tx1));
-        Assert.assertNull(KCVSUtil.get(store2,k, c2, tx2));
+        Assert.assertNull(KCVUtil.get(store1, k, c1, tx1));
+        Assert.assertNull(KCVUtil.get(store2, k, c2, tx2));
 
         store1.acquireLock(k, c1, null, tx1);
         store2.acquireLock(k, c2, null, tx2);
@@ -381,8 +375,8 @@ public abstract class LockKeyColumnValueStoreTest {
             tx2.commit();
 
         StoreTransaction checktx = newTransaction(checkmgr);
-        Assert.assertEquals(v1, KCVSUtil.get(store1,k, c1, checktx));
-        Assert.assertEquals(v2, KCVSUtil.get(store2,k, c2, checktx));
+        Assert.assertEquals(v1, KCVUtil.get(store1, k, c1, checktx));
+        Assert.assertEquals(v2, KCVUtil.get(store2, k, c2, checktx));
         checktx.commit();
     }
 
