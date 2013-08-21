@@ -2,13 +2,16 @@ package com.thinkaurelius.titan.diskstorage.cassandra;
 
 import org.apache.cassandra.db.marshal.TimeUUIDType;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import com.thinkaurelius.titan.testcategory.StandaloneTests;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
-
+@Category({StandaloneTests.class})
 public class UUIDTest {
     public static final String z = "00000000-0000-1000-0000-000000000000";
     public static final String v = "9451e273-7753-11e0-92df-e700f669bcfc";

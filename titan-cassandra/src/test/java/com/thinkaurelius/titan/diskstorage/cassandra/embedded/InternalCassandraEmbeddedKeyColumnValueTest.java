@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -12,7 +13,9 @@ import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraKeyColumnV
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.testcategory.ByteOrderedPartitionerTests;
 
+@Category({ByteOrderedPartitionerTests.class})
 public class InternalCassandraEmbeddedKeyColumnValueTest extends AbstractCassandraKeyColumnValueStoreTest {
     
     @BeforeClass
