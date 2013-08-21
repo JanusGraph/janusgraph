@@ -31,6 +31,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     }
 
     public OrderedKeyValueStoreManagerAdapter(OrderedKeyValueStoreManager manager, Map<String, Integer> keyLengths) {
+        Preconditions.checkArgument(manager.getFeatures().isKeyOrdered(),"Expected backing store to be ordered: %s",manager);
         this.manager = manager;
         ImmutableMap.Builder<String, Integer> mb = ImmutableMap.builder();
         if (keyLengths != null && !keyLengths.isEmpty()) mb.putAll(keyLengths);

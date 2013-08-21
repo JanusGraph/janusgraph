@@ -134,18 +134,13 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     }
 
     @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        return dataStore.getKeys(getBaseTx(txh));
-    }
-
-    @Override
     public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
         return dataStore.getKeys(query, txh);
     }
 
     @Override
     public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
-        return getKeys(query, txh);
+        return dataStore.getKeys(query, txh);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -89,19 +90,18 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
         }
     }
 
-    @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        return new KeysIterator(store.getKeys(txh));
-    }
 
     @Override
-    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
-        return new KeysIterator(store.getKeys(txh), keyQuery, txh);
+    public KeyIterator getKeys(final KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
+        RecordIterator<KeyValueEntry> iter = store.getSlice(concatenatePrefix(keyQuery.getKeyStart(),keyQuery.getSliceStart()),
+                concatenatePrefix(keyQuery.getKeyEnd(),keyQuery.getSliceEnd()),new KeyRangeSliceSelector(keyQuery),txh);
+        return new KeyIteratorImpl(keyQuery,iter);
     }
+
 
     @Override
     public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
-        return new KeysIterator(store.getKeys(txh), columnQuery, txh);
+        throw new UnsupportedOperationException("This stored has ordered keys, use getKeys(KeyRangeQuery,StoreTransaction) instead");
     }
 
     @Override
@@ -127,42 +127,47 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
     }
 
 
-    private List<Entry> convert(List<KeyValueEntry> entries) {
-        if (entries == null) return null;
-        List<Entry> newentries = new ArrayList<Entry>(entries.size());
-        for (KeyValueEntry entry : entries) {
-            newentries.add(new StaticBufferEntry(getColumn(entry.getKey()), entry.getValue()));
+    private List<Entry> convert(RecordIterator<KeyValueEntry> entries) throws StorageException {
+        List<Entry> newentries = new ArrayList<Entry>(entries.hasNext()?20:0);
+        while (entries.hasNext()) {
+            KeyValueEntry entry = entries.next();
+            newentries.add(getEntry(entry));
         }
+        entries.close();
         return newentries;
     }
 
-    private Map<StaticBuffer, List<Entry>> convertKey(List<KeyValueEntry> entries) {
-        if (entries == null) return null;
-        Map<StaticBuffer, List<Entry>> keyentries = new HashMap<StaticBuffer, List<Entry>>((int) Math.sqrt(entries.size()));
-        StaticBuffer key = null;
-        List<Entry> newentries = null;
-        for (KeyValueEntry entry : entries) {
-            StaticBuffer currentKey = getKey(entry.getKey());
-            if (key == null || !key.equals(currentKey)) {
-                if (key != null) {
-                    assert newentries != null;
-                    keyentries.put(key, newentries);
-                }
-                key = currentKey;
-                newentries = new ArrayList<Entry>((int) Math.sqrt(entries.size()));
-            }
-            newentries.add(new StaticBufferEntry(getColumn(entry.getKey()), entry.getValue()));
-        }
-        if (key != null) {
-            assert newentries != null;
-            keyentries.put(key, newentries);
-        }
-        return keyentries;
+    private final Entry getEntry(KeyValueEntry entry) {
+        return new StaticBufferEntry(getColumn(entry.getKey()), entry.getValue());
     }
 
-    private final int getKeyLength() {
-        return keyLength;
-    }
+//    private Map<StaticBuffer, List<Entry>> convertKey(List<KeyValueEntry> entries) {
+//        if (entries == null) return null;
+//        Map<StaticBuffer, List<Entry>> keyentries = new HashMap<StaticBuffer, List<Entry>>((int) Math.sqrt(entries.size()));
+//        StaticBuffer key = null;
+//        List<Entry> newentries = null;
+//        for (KeyValueEntry entry : entries) {
+//            StaticBuffer currentKey = getKey(entry.getKey());
+//            if (key == null || !key.equals(currentKey)) {
+//                if (key != null) {
+//                    assert newentries != null;
+//                    keyentries.put(key, newentries);
+//                }
+//                key = currentKey;
+//                newentries = new ArrayList<Entry>((int) Math.sqrt(entries.size()));
+//            }
+//            newentries.add(new StaticBufferEntry(getColumn(entry.getKey()), entry.getValue()));
+//        }
+//        if (key != null) {
+//            assert newentries != null;
+//            keyentries.put(key, newentries);
+//        }
+//        return keyentries;
+//    }
+//
+//    private final int getKeyLength() {
+//        return keyLength;
+//    }
 
     private final boolean hasFixedKeyLength() {
         return keyLength > 0;
@@ -231,11 +236,11 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
     }
 
     private final boolean columnInRange(StaticBuffer concat, StaticBuffer columnStart,
-                                        StaticBuffer columnEnd, boolean startInc, boolean endInc) {
+                                        StaticBuffer columnEnd) {
         StaticBuffer column = getColumn(concat);
         int startComp = columnStart.compareTo(column);
         int endComp = column.compareTo(columnEnd);
-        return (startComp<0 || (startComp==0 && startInc)) && (endComp<0 || (endComp==0 && endInc));
+        return (startComp<=0 && endComp<0);
     }
 
     private class ContainsSelector implements KeySelector {
@@ -260,6 +265,33 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
         @Override
         public boolean reachedLimit() {
             return true;
+        }
+
+    }
+
+    private class KeyRangeSliceSelector implements KeySelector {
+
+        private final StaticBuffer columnStart;
+        private final StaticBuffer columnEnd;
+
+        private final int columnLimit;
+
+        public KeyRangeSliceSelector(SliceQuery query) {
+            columnStart=query.getSliceStart();
+            columnEnd=query.getSliceEnd();
+            columnLimit=query.getLimit();
+        }
+
+        private StaticBuffer lastKey;
+
+        @Override
+        public boolean include(StaticBuffer keycolumn) {
+            return columnInRange(keycolumn,columnStart,columnEnd);
+        }
+
+        @Override
+        public boolean reachedLimit() {
+            return false;
         }
 
     }
@@ -297,117 +329,201 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
     }
 
-    protected class KeysIterator implements KeyIterator {
-        final RecordIterator<StaticBuffer> iterator;
-        final StaticBuffer startKey, endKey;
-        final SliceQuery sliceQuery;
-        final StoreTransaction txn;
+    private class KeyIteratorImpl implements KeyIterator {
 
-        StaticBuffer nextKey, currentKey;
+        private final KeyRangeQuery query;
+        private final RecordIterator<KeyValueEntry> iter;
 
-        public KeysIterator(RecordIterator<StaticBuffer> iterator) throws StorageException {
-            this(iterator, null, null, null, null);
+        private StaticBuffer currentKey=null;
+        private RecordIter currentIter=null;
+        private boolean currentKeyReturned = true;
+        private KeyValueEntry current;
+
+        private KeyIteratorImpl(KeyRangeQuery query, RecordIterator<KeyValueEntry> iter) {
+            this.query = query;
+            this.iter = iter;
         }
 
-        public KeysIterator(RecordIterator<StaticBuffer> iterator,
-                             KeyRangeQuery keyRangeQuery,
-                             StoreTransaction txn) throws StorageException {
-            this(iterator, keyRangeQuery.getKeyStart(), keyRangeQuery.getKeyEnd(), keyRangeQuery, txn);
-        }
-
-        public KeysIterator(RecordIterator<StaticBuffer> iterator,
-                             SliceQuery sliceQuery,
-                             StoreTransaction txn) throws StorageException {
-            this(iterator, null, null, sliceQuery, txn);
-        }
-
-        public KeysIterator(RecordIterator<StaticBuffer> iterator,
-                            @Nullable StaticBuffer startKey,
-                            @Nullable StaticBuffer endKey,
-                            @Nullable SliceQuery sliceQuery,
-                            @Nullable StoreTransaction txn) throws StorageException {
-            this.iterator = iterator;
-            this.nextKey = null;
-            this.startKey = startKey;
-            this.endKey = endKey;
-            this.sliceQuery = sliceQuery;
-            this.txn = txn;
-
-            getNextKey();
-            currentKey = nextKey;
-        }
-
-        private void getNextKey() throws StorageException {
-            boolean foundNextKey = false;
-
-            while (!foundNextKey && iterator.hasNext()) {
-                StaticBuffer keycolumn = iterator.next();
-
-                if (startKey != null && endKey != null && (keycolumn.compareTo(startKey) < 0 || keycolumn.compareTo(endKey) >= 0))
-                    continue;
-
-                if (nextKey == null || !equalKey(keycolumn, nextKey)) {
-                    foundNextKey = true;
-                    nextKey = getKey(keycolumn);
+        private StaticBuffer nextKey() throws StorageException{
+            while (iter.hasNext()) {
+                current = iter.next();
+                StaticBuffer key = getKey(current.getKey());
+                if (currentKey==null || !key.equals(currentKey)) {
+                    return key;
                 }
             }
-
-            if (!foundNextKey)
-                nextKey = null;
-        }
-
-        @Override
-        public boolean hasNext() throws StorageException {
-            return nextKey != null;
-        }
-
-        @Override
-        public StaticBuffer next() throws StorageException {
-            if (nextKey == null)
-                throw new NoSuchElementException();
-
-            currentKey = nextKey;
-            getNextKey();
-
-            return currentKey;
+            return null;
         }
 
         @Override
         public RecordIterator<Entry> getEntries() {
-            if (currentKey == null)
-                throw new NoSuchElementException();
+            Preconditions.checkState(currentIter!=null);
+            return currentIter;
+        }
 
-            if (sliceQuery == null || txn == null)
-                throw new IllegalStateException("getEntries() could only be used when columnSlice and transaction are set.");
-
-            try {
-                return new RecordIterator<Entry>() {
-                    final Iterator<Entry> entries = getSlice(new KeySliceQuery(currentKey, sliceQuery), txn).iterator();
-
-                    @Override
-                    public boolean hasNext() throws StorageException {
-                        return entries.hasNext();
-                    }
-
-                    @Override
-                    public Entry next() throws StorageException {
-                        return entries.next();
-                    }
-
-                    @Override
-                    public void close() throws StorageException {
-                        iterator.close();
-                    }
-                };
-            } catch (StorageException e) {
-                throw new RuntimeException(e);
+        @Override
+        public boolean hasNext() throws StorageException {
+            if (currentKeyReturned) {
+                currentKey = nextKey();
+                currentKeyReturned = false;
+                currentIter.close();
+                currentIter = new RecordIter();
             }
+            return currentKey!=null;
+        }
+
+        @Override
+        public StaticBuffer next() throws StorageException {
+            if (!hasNext()) throw new NoSuchElementException();
+            currentKeyReturned=true;
+            return currentKey;
         }
 
         @Override
         public void close() throws StorageException {
-            iterator.close();
+            iter.close();
+        }
+
+        private class RecordIter implements RecordIterator<Entry> {
+
+            private boolean open = true;
+            private int count = 0;
+
+            @Override
+            public boolean hasNext() throws StorageException {
+                Preconditions.checkState(open);
+                if (count>=query.getLimit() || current==null) return false;
+                return getKey(current.getKey()).equals(currentKey);
+            }
+
+            @Override
+            public Entry next() throws StorageException {
+                Preconditions.checkState(open);
+                if (!hasNext()) throw new NoSuchElementException();
+                Entry kve = getEntry(current);
+                current=iter.hasNext()?iter.next():null;
+                count++;
+                return kve;
+            }
+
+            @Override
+            public void close() throws StorageException {
+                open=false;
+            }
         }
     }
+
+//    protected class KeysIterator implements KeyIterator {
+//        final RecordIterator<StaticBuffer> iterator;
+//        final StaticBuffer startKey, endKey;
+//        final SliceQuery sliceQuery;
+//        final StoreTransaction txn;
+//
+//        StaticBuffer nextKey, currentKey;
+//
+//        public KeysIterator(RecordIterator<StaticBuffer> iterator) throws StorageException {
+//            this(iterator, null, null, null, null);
+//        }
+//
+//        public KeysIterator(RecordIterator<StaticBuffer> iterator,
+//                             KeyRangeQuery keyRangeQuery,
+//                             StoreTransaction txn) throws StorageException {
+//            this(iterator, keyRangeQuery.getKeyStart(), keyRangeQuery.getKeyEnd(), keyRangeQuery, txn);
+//        }
+//
+//        public KeysIterator(RecordIterator<StaticBuffer> iterator,
+//                             SliceQuery sliceQuery,
+//                             StoreTransaction txn) throws StorageException {
+//            this(iterator, null, null, sliceQuery, txn);
+//        }
+//
+//        public KeysIterator(RecordIterator<StaticBuffer> iterator,
+//                            @Nullable StaticBuffer startKey,
+//                            @Nullable StaticBuffer endKey,
+//                            @Nullable SliceQuery sliceQuery,
+//                            @Nullable StoreTransaction txn) throws StorageException {
+//            this.iterator = iterator;
+//            this.nextKey = null;
+//            this.startKey = startKey;
+//            this.endKey = endKey;
+//            this.sliceQuery = sliceQuery;
+//            this.txn = txn;
+//
+//            getNextKey();
+//            currentKey = nextKey;
+//        }
+//
+//        private void getNextKey() throws StorageException {
+//            boolean foundNextKey = false;
+//
+//            while (!foundNextKey && iterator.hasNext()) {
+//                StaticBuffer keycolumn = iterator.next();
+//
+//                if (startKey != null && endKey != null && (keycolumn.compareTo(startKey) < 0 || keycolumn.compareTo(endKey) >= 0))
+//                    continue;
+//
+//                if (nextKey == null || !equalKey(keycolumn, nextKey)) {
+//                    foundNextKey = true;
+//                    nextKey = getKey(keycolumn);
+//                }
+//            }
+//
+//            if (!foundNextKey)
+//                nextKey = null;
+//        }
+//
+//        @Override
+//        public boolean hasNext() throws StorageException {
+//            return nextKey != null;
+//        }
+//
+//        @Override
+//        public StaticBuffer next() throws StorageException {
+//            if (nextKey == null)
+//                throw new NoSuchElementException();
+//
+//            currentKey = nextKey;
+//            getNextKey();
+//
+//            return currentKey;
+//        }
+//
+//        @Override
+//        public RecordIterator<Entry> getEntries() {
+//            if (currentKey == null)
+//                throw new NoSuchElementException();
+//
+//            if (sliceQuery == null || txn == null)
+//                throw new IllegalStateException("getEntries() could only be used when columnSlice and transaction are set.");
+//
+//            try {
+//                return new RecordIterator<Entry>() {
+//                    final Iterator<Entry> entries = getSlice(new KeySliceQuery(currentKey, sliceQuery), txn).iterator();
+//
+//                    @Override
+//                    public boolean hasNext() throws StorageException {
+//                        return entries.hasNext();
+//                    }
+//
+//                    @Override
+//                    public Entry next() throws StorageException {
+//                        return entries.next();
+//                    }
+//
+//                    @Override
+//                    public void close() throws StorageException {
+//                        iterator.close();
+//                    }
+//                };
+//            } catch (StorageException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//
+//        @Override
+//        public void close() throws StorageException {
+//            iterator.close();
+//        }
+//    }
 
 }

@@ -146,15 +146,6 @@ public interface KeyColumnValueStore {
 
 
     /**
-     * Returns an iterator over all keys in this store. The keys may be
-     * ordered but not necessarily.
-     *
-     * @return An iterator over all keys in this store.
-     * @throws UnsupportedOperationException if the underlying store does not support this operation. Check {@link StoreFeatures#supportsScan()} first.
-     */
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException;
-
-    /**
      * Returns a {@link KeyIterator} over all keys that fall within the key-range specified by the given query and have one or more columns matching the column-range.
      * Calling {@link KeyIterator#getEntries()} returns the list of all entries that match the column-range specified by the given query.
      *

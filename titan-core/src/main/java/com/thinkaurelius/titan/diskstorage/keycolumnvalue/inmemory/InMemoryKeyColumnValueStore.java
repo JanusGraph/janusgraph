@@ -77,12 +77,6 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public RecordIterator<StaticBuffer> getKeys(final StoreTransaction txh) throws StorageException {
-        Preconditions.checkArgument(txh.getConsistencyLevel() == ConsistencyLevel.DEFAULT);
-        return new RowIterator(kcv.entrySet().iterator(), null, txh);
-    }
-
-    @Override
     public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws StorageException {
         Preconditions.checkArgument(txh.getConsistencyLevel() == ConsistencyLevel.DEFAULT);
         return new RowIterator(kcv.subMap(query.getKeyStart(), query.getKeyEnd()).entrySet().iterator(), query, txh);

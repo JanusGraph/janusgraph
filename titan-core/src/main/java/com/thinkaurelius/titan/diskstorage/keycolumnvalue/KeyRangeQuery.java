@@ -7,6 +7,9 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
  * Extends a {@link SliceQuery} by a key range which identifies the range of keys (start inclusive, end exclusive)
  * to which the slice query is applied.
  *
+ * The limit of a KeyRangeQuery applies to the maximum number of columns returned per key which fall into the specified slice range
+ * and NOT to the maximum number of keys returned.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 

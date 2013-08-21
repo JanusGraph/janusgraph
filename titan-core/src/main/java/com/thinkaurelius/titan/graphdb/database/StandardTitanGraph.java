@@ -149,7 +149,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     public RecordIterator<Long> getVertexIDs(final BackendTransaction tx) {
         final KeyIterator keyiter = tx.edgeStoreKeys(
-                edgeSerializer.getQuery(SystemKey.VertexState,Direction.OUT,new EdgeSerializer.TypedInterval[0],null));
+                edgeSerializer.getQuery(SystemKey.VertexState,Direction.OUT,new EdgeSerializer.TypedInterval[0],null).setLimit(2));
         return new RecordIterator<Long>() {
 
             private Long next=null;
@@ -173,8 +173,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
             @Override
             public Long next() throws StorageException {
-                if (next==null) next=nextInternal();
-                if (next==null) throw new NoSuchElementException();
+                if (!hasNext()) throw new NoSuchElementException();
                 Long result = next;
                 next=null;
                 return result;

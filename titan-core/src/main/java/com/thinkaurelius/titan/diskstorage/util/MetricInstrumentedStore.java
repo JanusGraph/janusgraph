@@ -256,38 +256,6 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public RecordIterator<StaticBuffer> getKeys(final StoreTransaction txh) throws StorageException {
-        return getKeysWithMetrics(new KeyIteratorCommand() {
-            @Override
-            public KeyIterator call() throws StorageException {
-                return new KeyIterator() {
-                    final RecordIterator<StaticBuffer> keyIterator = backend.getKeys(txh);
-
-                    @Override
-                    public RecordIterator<Entry> getEntries() {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public boolean hasNext() throws StorageException {
-                        return keyIterator.hasNext();
-                    }
-
-                    @Override
-                    public StaticBuffer next() throws StorageException {
-                        return keyIterator.next();
-                    }
-
-                    @Override
-                    public void close() throws StorageException {
-                        keyIterator.close();
-                    }
-                };
-            }
-        });
-    }
-
-    @Override
     public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws StorageException {
         return getKeysWithMetrics(new KeyIteratorCommand() {
             @Override

@@ -89,28 +89,6 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        final RecordIterator<StaticBuffer> keys = store.getKeys(txh);
-        return new RecordIterator<StaticBuffer>() {
-
-            @Override
-            public boolean hasNext() throws StorageException {
-                return keys.hasNext();
-            }
-
-            @Override
-            public StaticBuffer next() throws StorageException {
-                return truncateKey(keys.next());
-            }
-
-            @Override
-            public void close() throws StorageException {
-                keys.close();
-            }
-        };
-    }
-
-    @Override
     public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException("getKeys(KeyRangeQuery) is not supported in hash prefixed mode.");
     }

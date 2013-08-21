@@ -51,5 +51,14 @@ public class KCVUtil {
         return get(store,key,column,txh)!=null;
     }
 
+    public static boolean matches(SliceQuery query, StaticBuffer column) {
+        return query.getSliceStart().compareTo(column)<=0 && query.getSliceEnd().compareTo(column)>0;
+    }
+
+    public static boolean matches(KeyRangeQuery query, StaticBuffer key, StaticBuffer column) {
+        return matches(query,column) && query.getKeyStart().compareTo(key)<=0 && query.getKeyEnd().compareTo(key)>0;
+
+    }
+
 
 }
