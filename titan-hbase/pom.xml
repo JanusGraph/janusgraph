@@ -95,7 +95,6 @@
         <plugins>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>2.7</version>
                 <executions>
                     <execution>
                         <phase>test-compile</phase>
@@ -114,7 +113,7 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>-Xms256m -Xmx1024m</argLine>
+                    <argLine>-Xms256m -Xmx1024m ${jacoco.opts}</argLine>
                     <excludes>
                         <!-- Excluded because these take too long to run and require a lot of memory - see comprehensive profile -->
                         <exclude>**/*PerformanceTest.java</exclude>
@@ -122,6 +121,18 @@
                     </excludes>
                 </configuration>
             </plugin>
+            <!-- Plugin declarations for code coverage -->
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+            </plugin>
+            <!-- End plugin declarations for code coverage -->
         </plugins>
     </build>
 </project>

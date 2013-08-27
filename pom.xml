@@ -163,6 +163,7 @@
                     <arguments>-DskipTests=true</arguments>
                 </configuration>
             </plugin>
+
         </plugins>
         <pluginManagement>
             <plugins>
@@ -237,6 +238,11 @@
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>2.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
                     <artifactId>wagon-maven-plugin</artifactId>
                     <version>1.0-beta-4</version>
                 </plugin>
@@ -244,6 +250,14 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>1.2.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>cobertura-maven-plugin</artifactId>
+                    <version>2.5.2</version>
+                    <configuration>
+                        <aggregate>true</aggregate>
+                    </configuration>
                 </plugin>
                 
                 <plugin>
@@ -274,6 +288,15 @@
                         <repositoryName>titan</repositoryName>
                         <repositoryOwner>thinkaurelius</repositoryOwner>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>1.7</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>0.6.3.201306030806</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -497,6 +520,11 @@
                 <version>2.1</version>
             </dependency>
             <dependency>
+                <groupId>org.jacoco</groupId>
+                <artifactId>org.jacoco.ant</artifactId>
+                <version>0.6.2.201302030002</version>
+            </dependency>
+            <dependency>
                 <groupId>com.yammer.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
                 <version>${metrics2.version}</version>
@@ -629,6 +657,182 @@
             </build>
         </profile>
         
+        <profile>
+            <id>coverage</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-resources-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>copy-sources-for-jacoco</id>
+                                    <phase>process-resources</phase>
+                                    <goals>
+                                        <goal>copy-resources</goal>
+                                    </goals>
+                                    <configuration>
+                                        <outputDirectory>${project.build.directory}/jacoco-sources</outputDirectory>
+                                        <resources>
+                                            <resource>
+                                                <directory>${project.basedir}/src/main/java/</directory>
+                                                <filtering>false</filtering>
+                                            </resource>
+                                        </resources>
+                                    </configuration>
+                                </execution>
+                                <execution>
+                                    <id>copy-classes-for-jacoco</id>
+                                    <phase>process-classes</phase>
+                                    <goals>
+                                        <goal>copy-resources</goal>
+                                    </goals>
+                                    <configuration>
+                                        <outputDirectory>${project.build.directory}/jacoco-classes</outputDirectory>
+                                        <resources>
+                                            <resource>
+                                                <directory>${project.build.directory}/classes/</directory>
+                                                <filtering>false</filtering>
+                                            </resource>
+                                        </resources>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <artifactId>maven-dependency-plugin</artifactId>
+                            <executions>
+                               <!-- Unpack all dependency class and source files for use by JaCoCo -->
+                               <execution>
+                                   <id>unpack-dependency-sources</id>
+                                   <phase>generate-resources</phase>
+                                   <goals>
+                                       <goal>unpack-dependencies</goal>
+                                   </goals>
+                                   <configuration>
+                                       <classifier>sources</classifier>
+                                       <outputDirectory>${project.build.directory}/jacoco-sources</outputDirectory>
+                                       <includeGroupIds>${project.groupId}</includeGroupIds>
+	                	           <excludeArtifactIds>titan-test</excludeArtifactIds>
+                                   </configuration>
+                               </execution> 
+                               <execution>
+                                    <id>unpack-dependency-classes</id>
+                                    <phase>generate-resources</phase>
+                                    <goals>
+                                        <goal>unpack-dependencies</goal>
+                                    </goals>
+                                    <configuration>
+                                        <classifier/> <!-- empty classifier requests the artifact containing classes -->
+                                        <outputDirectory>${project.build.directory}/jacoco-classes</outputDirectory>
+                                        <includeGroupIds>${project.groupId}</includeGroupIds>
+	                		    <excludeArtifactIds>titan-test</excludeArtifactIds>
+                                    </configuration>
+                                </execution>
+                             </executions>
+                        </plugin>
+                        <plugin>
+                             <groupId>org.jacoco</groupId>
+                             <artifactId>jacoco-maven-plugin</artifactId>
+                             <executions>
+                                 <execution> 
+                                     <id>prepare-jacoco-agent</id>
+                                     <phase>process-resources</phase>
+                                     <goals>
+                                         <goal>prepare-agent</goal>
+                                     </goals>
+                                     <configuration>
+                                         <destFile>../target/jacoco-combined.exec</destFile>
+                                         <append>true</append>
+                                         <propertyName>jacoco.opts</propertyName>
+                                     </configuration>
+                                 </execution>
+                             </executions>
+                        </plugin>
+                        <plugin>
+                            <!-- The Maven JaCoCo plugin doesn't allow
+                                 configuration of sourcefiles and destfiles
+                                 directories.  The Ant JaCoCo task does.  That's
+                                 why we use antrun here for JaCoCo instead of
+                                 JaCoCo's Maven plugin. -->
+                            <artifactId>maven-antrun-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>default-cli</id>
+                                    <phase>post-integration-test</phase>
+                                    <goals>
+                                        <goal>run</goal>
+                                    </goals>
+                                    <configuration>
+                                        <target>
+                                            <taskdef name="report" classname="org.jacoco.ant.ReportTask" classpathref="maven.plugin.classpath" />
+                                                <report>
+                                                    <executiondata>
+                                                        <file file="../target/jacoco-combined.exec" />
+                                                    </executiondata>
+                                                    <structure name="Integration test coverage">
+                                                        <classfiles>
+                                                            <fileset dir="${project.build.directory}/jacoco-classes" />
+                                                        </classfiles>
+                                                        <sourcefiles encoding="UTF-8">
+                                                            <fileset dir="${project.build.directory}/jacoco-sources" />
+                                                        </sourcefiles>
+                                                    </structure>
+                                                    <html destdir="${project.build.directory}/jacoco-report" />
+                                                </report>
+                                        </target>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                            <dependencies>
+                                <dependency>
+                                    <groupId>org.jacoco</groupId>
+                                    <artifactId>org.jacoco.ant</artifactId>
+                                    <version>0.6.2.201302030002</version>
+                                </dependency>
+                            </dependencies>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+	    </build>
+        </profile>
+
+        <profile>
+            <id>sonar-upload</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sonar.jacoco.reportPath>../target/jacoco-combined.exec</sonar.jacoco.reportPath>
+                <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.sonar</groupId>
+                        <artifactId>sonar-maven-plugin</artifactId>
+                        <version>3.7</version>
+                        <inherited>false</inherited>
+                    </plugin>
+                </plugins>
+	    </build>
+        </profile>
+
+        <profile>
+            <id>jacoco-report</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+
+                </plugins>
+	    </build>
+        </profile>
+
         <profile>
             <id>performance-test</id>
             <activation>
