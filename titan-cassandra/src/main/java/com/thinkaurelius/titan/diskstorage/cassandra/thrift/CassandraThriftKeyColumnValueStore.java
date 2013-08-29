@@ -245,11 +245,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public RecordIterator<StaticBuffer> getKeys(final StoreTransaction txh) throws StorageException {
-        return getKeys((SliceQuery) null, txh);
-    }
-
-    @Override
     public KeyIterator getKeys(@Nullable SliceQuery sliceQuery, StoreTransaction txh) throws StorageException {
         final IPartitioner<?> partitioner = storeManager.getCassandraPartitioner();
 
@@ -458,7 +453,10 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
         @Override
         public void close() throws StorageException {
-            closeIterator();
+            if (!isClosed) {
+                pool.returnObjectUnsafe(keyspace, connection);
+                isClosed = true;
+            }
         }
 
         @Override
@@ -471,19 +469,16 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
                 @Override
                 public boolean hasNext() throws StorageException {
-                    ensureOpen();
                     return columns.hasNext();
                 }
 
                 @Override
                 public Entry next() throws StorageException {
-                    ensureOpen();
                     return columns.next();
                 }
 
                 @Override
                 public void close() throws StorageException {
-                    closeIterator();
                 }
             };
         }
@@ -491,13 +486,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         private void ensureOpen() {
             if (isClosed)
                 throw new IllegalStateException("Iterator has been closed.");
-        }
-
-        private void closeIterator() {
-            if (!isClosed) {
-                isClosed = true;
-                pool.returnObjectUnsafe(keyspace, connection);
-            }
         }
     }
 }

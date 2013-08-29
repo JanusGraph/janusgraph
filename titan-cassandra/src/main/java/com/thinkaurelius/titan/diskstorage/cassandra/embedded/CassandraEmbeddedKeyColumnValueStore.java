@@ -114,11 +114,6 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        return new RowIterator(getMinimumToken(), getMaximumToken(), null, storeManager.getPageSize());
-    }
-
-    @Override
     public KeyIterator getKeys(KeyRangeQuery keyRangeQuery, StoreTransaction txh) throws StorageException {
         IPartitioner partitioner = StorageService.getPartitioner();
 
@@ -460,19 +455,16 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
                     @Override
                     public boolean hasNext() throws StorageException {
-                        ensureOpen();
                         return columns.hasNext();
                     }
 
                     @Override
                     public Entry next() throws StorageException {
-                        ensureOpen();
                         return columns.next();
                     }
 
                     @Override
                     public void close() throws StorageException {
-                        isClosed = true;
                     }
                 };
             } catch (StorageException e) {

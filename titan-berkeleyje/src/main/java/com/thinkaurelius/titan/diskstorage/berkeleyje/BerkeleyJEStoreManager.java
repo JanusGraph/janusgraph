@@ -30,9 +30,9 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     private final Map<String, BerkeleyJEKeyValueStore> stores;
 
-    private Environment environment;
-    private final StoreFeatures features;
-    private final FileStorageConfiguration storageConfig;
+    protected Environment environment;
+    protected final StoreFeatures features;
+    protected final FileStorageConfiguration storageConfig;
 
     public BerkeleyJEStoreManager(Configuration configuration) throws StorageException {
         super(configuration);

@@ -143,19 +143,16 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
                 @Override
                 public boolean hasNext() throws StorageException {
-                    ensureOpen();
                     return items.hasNext();
                 }
 
                 @Override
                 public Entry next() throws StorageException {
-                    ensureOpen();
                     return items.next();
                 }
 
                 @Override
                 public void close() throws StorageException {
-                    isClosed = true;
                 }
             };
         }

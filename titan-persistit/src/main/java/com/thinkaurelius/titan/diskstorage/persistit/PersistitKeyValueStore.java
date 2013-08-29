@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVUtil;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeySelector;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
@@ -14,7 +15,6 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.List;
 import static com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager.VOLUME_NAME;
 
 /**
@@ -77,79 +77,6 @@ public class PersistitKeyValueStore implements OrderedKeyValueStore {
             exchange.removeTree();
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex.toString());
-        }
-    }
-
-    private static class KeysIterator implements RecordIterator<StaticBuffer> {
-
-        final PersistitTransaction transaction;
-        final Exchange exchange;
-        Object nextKey = null;
-        private boolean isClosed = false;
-
-        public KeysIterator(PersistitTransaction tx, Exchange exchange) throws StorageException {
-            transaction = tx;
-            this.exchange = exchange;
-            begin();
-            getNextKey();
-        }
-
-        private void getNextKey() throws StorageException {
-            synchronized (transaction) {
-                transaction.assign();
-                try {
-                    if (exchange.hasNext()) {
-                        exchange.next();
-                        nextKey = getKey(exchange);
-                    } else {
-                        nextKey = null;
-                    }
-                } catch (PersistitException e) {
-                    throw new PermanentStorageException(e);
-                }
-            }
-        }
-
-        private void begin() throws StorageException {
-            synchronized (transaction) {
-                transaction.assign();
-                exchange.getKey().to(Key.BEFORE);
-            }
-        }
-
-        @Override
-        public boolean hasNext() {
-            return nextKey != null;
-        }
-
-        @Override
-        public StaticBuffer next() throws StorageException {
-            if (nextKey == null) throw new NoSuchElementException();
-            StaticBuffer returnKey = (StaticBuffer) nextKey;
-            getNextKey();
-            return returnKey;
-        }
-
-        @Override
-        public void close() {
-            synchronized (transaction) {
-                transaction.releaseExchange(exchange);
-                isClosed = true;
-            }
-        }
-
-        @Override
-        protected void finalize() {
-            if (!isClosed) {
-                close();
-            }
-        }
-    }
-
-    @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction tx) throws StorageException {
-        synchronized (tx) {
-            return new KeysIterator((PersistitTransaction)tx, ((PersistitTransaction) tx).getExchange(name));
         }
     }
 
@@ -249,21 +176,23 @@ public class PersistitKeyValueStore implements OrderedKeyValueStore {
      * @return
      * @throws StorageException
      */
-    private List<KeyValueEntry> getSlice(final StaticBuffer keyStart, final StaticBuffer keyEnd, final KeySelector selector, final Integer limit, StoreTransaction txh) throws StorageException {
-        final PersistitTransaction tx = (PersistitTransaction) txh;
+    private RecordIterator<KeyValueEntry> getSlice(final StaticBuffer keyStart, final StaticBuffer keyEnd,
+                                                   final KeySelector selector, final Integer limit, StoreTransaction txh) throws StorageException {
+
+        PersistitTransaction tx = (PersistitTransaction) txh;
+        final List<KeyValueEntry> results = new ArrayList<KeyValueEntry>();
+
         synchronized (tx) {
             tx.assign();
-            final Exchange exchange = tx.getExchange(name);
+            Exchange exchange = tx.getExchange(name);
 
             try {
-                ArrayList<KeyValueEntry> results = new ArrayList<KeyValueEntry>();
-
                 byte[] start = getArray(keyStart);
                 byte[] end = getArray(keyEnd);
 
                 //bail out if the start key comes after the end
                 if (compare(start, end) > 0) {
-                    return results;
+                    return KVUtil.EMPTY_ITERATOR;
                 }
 
                 KeyFilter.Term[] terms = {KeyFilter.rangeTerm(start, end, true, false, null)};
@@ -273,8 +202,7 @@ public class PersistitKeyValueStore implements OrderedKeyValueStore {
                 while (exchange.next(keyFilter)) {
                     StaticBuffer k = getKey(exchange);
                     //check the key against the selector, and that is has a corresponding value
-                    if (exchange.getValue().isDefined() && (selector == null || selector.include(k))){
-
+                    if (exchange.getValue().isDefined() && (selector == null || selector.include(k))) {
                         StaticBuffer v = getValue(exchange);
                         KeyValueEntry kv = new KeyValueEntry(k, v);
                         results.add(kv);
@@ -284,29 +212,40 @@ public class PersistitKeyValueStore implements OrderedKeyValueStore {
                         if (selector != null && selector.reachedLimit()) break;
                     }
                 }
-                return results;
             } catch (PersistitException ex) {
                 throw new PermanentStorageException(ex);
             } finally {
                 tx.releaseExchange(exchange);
             }
         }
-    }
 
-//    @Override
-//    public List<KeyValueEntry> getSlice(final StaticBuffer keyStart, final StaticBuffer keyEnd, StoreTransaction txh) throws StorageException {
-//        return getSlice(keyStart, keyEnd, null, null, txh);
-//    }
+        // For those who is wondering, we could have used lazy iterator instead of pre-fetching results but synchronization
+        // and resource release becomes much trickier e.g. have to use finalizer to ensure that transaction gets released
+        // which becomes huge bottleneck for GC as finalization processing is single threaded and objects are kept
+        // on heap for at least 2 collections.
+        return new RecordIterator<KeyValueEntry>() {
+            private final Iterator<KeyValueEntry> entries = results.iterator();
+
+            @Override
+            public boolean hasNext() throws StorageException {
+                return entries.hasNext();
+            }
+
+            @Override
+            public KeyValueEntry next() throws StorageException {
+                return entries.next();
+            }
+
+            @Override
+            public void close() throws StorageException {
+            }
+        };
+    }
 
     @Override
-    public List<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws StorageException {
+    public RecordIterator<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws StorageException {
         return getSlice(keyStart, keyEnd, selector, null, txh);
     }
-
-//    @Override
-//    public List<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, int limit, StoreTransaction txh) throws StorageException {
-//        return getSlice(keyStart, keyEnd, null, limit, txh);
-//    }
 
     @Override
     public void insert(final StaticBuffer key, final StaticBuffer value, final StoreTransaction txh) throws StorageException {

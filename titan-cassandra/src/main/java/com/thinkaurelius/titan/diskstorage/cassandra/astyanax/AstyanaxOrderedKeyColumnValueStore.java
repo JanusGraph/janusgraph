@@ -191,11 +191,6 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        return getKeys((SliceQuery) null, txh);
-    }
-
-    @Override
     public KeyIterator getKeys(@Nullable SliceQuery sliceQuery, StoreTransaction txh) throws StorageException {
         if (storeManager.getPartitioner() != Partitioner.RANDOM)
             throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
@@ -312,19 +307,16 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
 
                 @Override
                 public boolean hasNext() throws StorageException {
-                    ensureOpen();
                     return columns.hasNext();
                 }
 
                 @Override
                 public Entry next() throws StorageException {
-                    ensureOpen();
                     return columns.next();
                 }
 
                 @Override
                 public void close() throws StorageException {
-                    isClosed = true;
                 }
             };
         }

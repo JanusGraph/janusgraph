@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
 import org.junit.*;
 import org.slf4j.Logger;
@@ -243,19 +244,29 @@ public abstract class KeyColumnValueStoreTest {
         if (manager.getFeatures().supportsScan()) {
             String[][] values = generateValues();
             loadValues(values);
-            RecordIterator<StaticBuffer> iterator0 = store.getKeys(tx);
+            RecordIterator<StaticBuffer> iterator0 = getKeys(tx);
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator0));
             clopen();
-            RecordIterator<StaticBuffer> iterator1 = store.getKeys(tx);
-            RecordIterator<StaticBuffer> iterator2 = store.getKeys(tx);
+            RecordIterator<StaticBuffer> iterator1 = getKeys(tx);
+            RecordIterator<StaticBuffer> iterator2 = getKeys(tx);
             // The idea is to open an iterator without using it
             // to make sure that closing a transaction will clean it up.
             // (important for BerkeleyJE where leaving cursors open causes exceptions)
             @SuppressWarnings("unused")
-            RecordIterator<StaticBuffer> iterator3 = store.getKeys(tx);
+            RecordIterator<StaticBuffer> iterator3 = getKeys(tx);
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator1));
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator2));
         }
+    }
+
+    private RecordIterator<StaticBuffer> getKeys(StoreTransaction tx) throws StorageException {
+        return manager.getFeatures().isKeyOrdered()
+                ? store.getKeys(new KeyRangeQuery(KeyValueStoreUtil.getBuffer(0),
+                                                  KeyValueStoreUtil.getBuffer(numKeys),
+                                                  new SliceQuery(KeyValueStoreUtil.getBuffer(0),
+                                                                 KeyValueStoreUtil.getBuffer(1))),
+                                                  tx)
+                : store.getKeys((SliceQuery) null, tx);
     }
 
     public void checkSlice(String[][] values, Set<KeyColumn> removed, int key, int start, int end, int limit) throws StorageException {
@@ -540,9 +551,14 @@ public abstract class KeyColumnValueStoreTest {
 
         StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
 
-        KeyIterator keyIterator = store.getKeys(new SliceQuery(new ReadArrayBuffer("b".getBytes()),
-                                                               new ReadArrayBuffer("c".getBytes())),
-                                                txn);
+        SliceQuery slice = new SliceQuery(new ReadArrayBuffer("b".getBytes()), new ReadArrayBuffer("c".getBytes()));
+
+        KeyIterator keyIterator = (manager.getFeatures().isKeyOrdered())
+                                    ? store.getKeys(new KeyRangeQuery(KeyColumnValueStoreUtil.longToByteBuffer(1),
+                                                                      KeyColumnValueStoreUtil.longToByteBuffer(101),
+                                                                      slice),
+                                                    txn)
+                                    : store.getKeys(slice, txn);
 
         try {
             examineGetKeysResults(keyIterator, 0, 100, 1);
@@ -552,7 +568,7 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     /**
-     * This test is not marked with @Test becuase some of the implementations use random partitioning (passes for BerkeleyDB and HBase)
+     * This test is not marked with @Test because some of the implementations use random partitioning (passes for BerkeleyDB and HBase)
      */
     protected void testGetKeysWithKeyRange() throws Exception {
         populateDBWith100Keys();

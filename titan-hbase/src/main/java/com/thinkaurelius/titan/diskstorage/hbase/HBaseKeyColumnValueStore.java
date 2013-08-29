@@ -190,25 +190,6 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     *
-     * IMPORTANT: Makes the assumption that all keys are 8 byte longs
-     *
-     * @param txh
-     * @return
-     * @throws StorageException
-     */
-    @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        FilterList filters = new FilterList(FilterList.Operator.MUST_PASS_ALL);
-        // returns first instance of a row, then skip to next row
-        filters.addFilter(new FirstKeyOnlyFilter());
-        // only return the Key, don't return the value
-        filters.addFilter(new KeyOnlyFilter());
-
-        return executeKeySliceQuery(filters, null);
-    }
-
     @Override
     public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
         return executeKeySliceQuery(query.getKeyStart().as(StaticBuffer.ARRAY_FACTORY),
@@ -348,21 +329,17 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
                 @Override
                 public boolean hasNext() throws StorageException {
-                    ensureOpen();
                     return kv.hasNext();
                 }
 
                 @Override
                 public Entry next() throws StorageException {
-                    ensureOpen();
-
                     Map.Entry<byte[], byte[]> column = kv.next();
                     return StaticBufferEntry.of(new StaticArrayBuffer(column.getKey()), new StaticArrayBuffer(column.getValue()));
                 }
 
                 @Override
                 public void close() throws StorageException {
-                    isClosed = true;
                 }
             };
         }

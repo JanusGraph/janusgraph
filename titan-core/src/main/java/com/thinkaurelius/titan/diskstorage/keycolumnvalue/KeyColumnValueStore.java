@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 import java.util.List;
 
@@ -143,7 +142,6 @@ public interface KeyColumnValueStore {
      *             transactions or a locking-specific storage problem
      */
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException;
-
 
     /**
      * Returns a {@link KeyIterator} over all keys that fall within the key-range specified by the given query and have one or more columns matching the column-range.

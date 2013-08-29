@@ -50,11 +50,6 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
             }
 
             @Override
-            public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-                return new EmptyRowIterator();
-            }
-
-            @Override
             public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
                 return new EmptyRowIterator();
             }

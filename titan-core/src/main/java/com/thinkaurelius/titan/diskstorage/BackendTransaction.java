@@ -7,7 +7,6 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +29,8 @@ public class BackendTransaction implements TransactionHandle {
             LoggerFactory.getLogger(BackendTransaction.class);
 
     //Assumes 64 bit key length as specified in IDManager
-    private static final StaticBuffer EDGESTORE_MIN_KEY = ByteBufferUtil.zeroBuffer(8);
-    private static final StaticBuffer EDGESTORE_MAX_KEY = ByteBufferUtil.oneBuffer(8);
+    public static final StaticBuffer EDGESTORE_MIN_KEY = ByteBufferUtil.zeroBuffer(8);
+    public static final StaticBuffer EDGESTORE_MAX_KEY = ByteBufferUtil.oneBuffer(8);
 
     private final StoreTransaction storeTx;
     private final StoreFeatures storeFeatures;
@@ -192,11 +191,9 @@ public class BackendTransaction implements TransactionHandle {
         return executeRead(new Callable<KeyIterator>() {
             @Override
             public KeyIterator call() throws Exception {
-                if (storeFeatures.isKeyOrdered()) {
-                    return edgeStore.getKeys(new KeyRangeQuery(EDGESTORE_MIN_KEY,EDGESTORE_MAX_KEY,sliceQuery),storeTx);
-                } else {
-                    return edgeStore.getKeys(sliceQuery,storeTx);
-                }
+                return (storeFeatures.isKeyOrdered())
+                        ? edgeStore.getKeys(new KeyRangeQuery(EDGESTORE_MIN_KEY, EDGESTORE_MAX_KEY, sliceQuery), storeTx)
+                        : edgeStore.getKeys(sliceQuery, storeTx);
             }
             @Override
             public String toString() { return "EdgeStoreKeys"; }
