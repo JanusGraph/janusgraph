@@ -95,6 +95,7 @@
         <!-- Required for PMD plugin. Used for compiler plugin -->
         <targetJdk>1.6</targetJdk>
         <perf.jvm.opts></perf.jvm.opts>
+        <jacoco.opts></jacoco.opts>
     </properties>
     <build>
         <directory>${basedir}/target</directory>
