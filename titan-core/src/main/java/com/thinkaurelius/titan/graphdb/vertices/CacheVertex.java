@@ -20,18 +20,20 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 public class CacheVertex extends StandardVertex {
 
-    /**
-     * Holder object for two concurrent collections.
+    /*
+     * queryCache must always be written after relationCache during lazy
+     * initialization. Additionally, only queryCache may be used in
+     * double-checked locking. I think these two constraints are sufficient to
+     * make this class's code thread-safe, but breaking either constraint (or
+     * both) would make it unsafe.
      * 
-     * We could forego the holder and make {@link State#queryCache} and
-     * {@link State#relationCache} fields on this class. However, when we do
-     * that one of the two fields must then be marked volatile for use in the
-     * double-checked locking pattern below. Using the nonvolatile field in DCL
-     * would be a thread safety failure. I think the holder idiom is slightly
-     * easier to use, so I'm defaulting to it unless this proves to be a memory
-     * or cpu problem.
+     * We could encapsulate both fields in a holder class. Using single holder
+     * class reference would simplify the DCL and write ordering considerations.
+     * But it would also make these instances have a fatter memory footprint in
+     * their initialized state, which is by far the most common state.
      */
-    private volatile State state;
+    private SortedSet<Entry> relationCache;
+    private volatile QueryCache queryCache;
 
     public CacheVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
@@ -41,40 +43,32 @@ public class CacheVertex extends StandardVertex {
     public Iterable<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery, List<Entry>> lookup) {
         if (isNew()) return ImmutableList.of();
         else {
-            if (null == state) {
+            if (null == queryCache) {
                 //Initialize datastructures
                 if (tx().getConfiguration().isSingleThreaded()) {
-                    state = new State();
+                    relationCache = new ConcurrentSkipListSet<Entry>();
+                    queryCache = new ConcurrentQueryCache();
                 } else {
                     synchronized (this) {
-                        if (null == state) {
-                            state = new State();
+                        if (null == queryCache) {
+                            relationCache = new ConcurrentSkipListSet<Entry>();
+                            queryCache = new ConcurrentQueryCache();
                         }
                     }
                 }
             }
-            if (state.queryCache.isCovered(query)) {
-                SortedSet<Entry> results = state.relationCache.subSet(StaticBufferEntry.of(query.getSliceStart(), null),StaticBufferEntry.of(query.getSliceEnd(),null));
+            if (queryCache.isCovered(query)) {
+                SortedSet<Entry> results = relationCache.subSet(StaticBufferEntry.of(query.getSliceStart(), null),StaticBufferEntry.of(query.getSliceEnd(),null));
                 return results;
             } else {
                 List<Entry> results = lookup.get(query);
-                state.relationCache.addAll(results);
+                relationCache.addAll(results);
                 if (query.hasLimit() && results.size()<query.getLimit()) {
                     query = query.updateLimit(Query.NO_LIMIT);
                 }
-                state.queryCache.add(query);
+                queryCache.add(query);
                 return results;
             }
-        }
-    }
-
-    private static class State {
-        private SortedSet<Entry> relationCache;
-        private QueryCache queryCache;
-        
-        private State() {
-            relationCache = new ConcurrentSkipListSet<Entry>();
-            queryCache = new ConcurrentQueryCache();
         }
     }
 }
