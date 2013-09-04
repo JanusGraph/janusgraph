@@ -1,0 +1,4 @@
+# Include Elasticsearch jars
+for j in /usr/share/titan/lib/es/*.jar; do
+    CLASSPATH="$j:$CLASSPATH"
+done

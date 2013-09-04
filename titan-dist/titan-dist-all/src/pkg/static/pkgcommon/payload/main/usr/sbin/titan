@@ -1,0 +1,182 @@
+#!/bin/sh
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# This script is derived from the bin/cassandra script shipped with
+# Apache Cassandra version 1.2.8.
+#
+
+# OPTIONS:
+#   -f: start in foreground
+#   -p <filename>: log the pid to a file (useful to kill it later)
+
+# CONTROLLING STARTUP:
+# 
+# This script relies on few environment variables to determine startup
+# behavior, those variables are:
+#
+#   CLASSPATH -- A Java classpath containing everything necessary to run.
+#   JVM_OPTS -- Additional arguments to the JVM for heap size, etc
+#   TITAN_CONF -- Directory containing Titan configuration files.
+#
+# As a convenience, a fragment of shell is sourced in order to set one or
+# more of these variables. This so-called `include' can be placed in a 
+# number of locations and will be searched for in order. The lowest 
+# priority search path is the same directory as the startup script, and
+# since this is the location of the sample in the project tree, it should
+# almost work Out Of The Box.
+#
+# Any serious use-case though will likely require customization of the
+# include. For production installations, it is recommended that you copy
+# the sample to one of /usr/share/titan/titan.in.sh,
+# /usr/local/share/titan/titan.in.sh, or 
+# /opt/titan/titan.in.sh and make your modifications there.
+#
+# Another option is to specify the full path to the include file in the
+# environment. For example:
+#
+#   $ TITAN_INCLUDE=/path/to/in.sh titan -p /var/run/titan.pid
+#
+# If you would rather configure startup entirely from the environment, you
+# can disable the include by exporting an empty TITAN_INCLUDE, or by 
+# ensuring that no include files exist in the aforementioned search list.
+# Be aware that you will be entirely responsible for populating the needed
+# environment variables.
+
+# If an include wasn't specified in the environment, then search for one...
+if [ "x$TITAN_INCLUDE" = "x" ]; then
+    # Locations (in order) to use when searching for an include file.
+    for include in /usr/share/titan/titan.in.sh \
+                   /usr/local/share/titan/titan.in.sh \
+                   /opt/titan/titan.in.sh \
+                   "$HOME/.titan.in.sh" \
+                   "`dirname "$0"`/titan.in.sh"; do
+        if [ -r "$include" ]; then
+            . "$include"
+            break
+        fi
+    done
+# ...otherwise, source the specified include.
+elif [ -r "$TITAN_INCLUDE" ]; then
+    . "$TITAN_INCLUDE"
+fi
+
+# Use JAVA_HOME if set, otherwise look for java in PATH
+if [ -n "$JAVA_HOME" ]; then
+    JAVA="$JAVA_HOME/bin/java"
+else
+    JAVA=java
+fi
+
+# If numactl is available, use it. For Cassandra, the priority is to
+# avoid disk I/O. Even for the purpose of CPU efficiency, we don't
+# really have CPU<->data affinity anyway. Also, empirically test that numactl
+# works before trying to use it (CASSANDRA-3245).
+NUMACTL_ARGS="--interleave=all"
+if which numactl >/dev/null 2>/dev/null && numactl $NUMACTL_ARGS ls / >/dev/null 2>/dev/null
+then
+    NUMACTL="numactl $NUMACTL_ARGS"
+else
+    NUMACTL=""
+fi
+
+if [ -z "$TITAN_CONF" -o -z "$CLASSPATH" ]; then
+    echo "You must set the TITAN_CONF and CLASSPATH vars" >&2
+    exit 1
+fi
+
+# Run shell fragment to setup core environment.
+if [ -f "$TITAN_CONF/titan-env.sh" ]; then
+    . "$TITAN_CONF/titan-env.sh"
+fi
+
+# Run module-specific shell fragments
+for s in "$TITAN_ENV_DIR"/*.sh.in; do
+    . "$s"
+done
+
+# Special-case path variables.
+case "`uname`" in
+    CYGWIN*) 
+        CLASSPATH=`cygpath -p -w "$CLASSPATH"`
+        TITAN_CONF=`cygpath -p -w "$TITAN_CONF"`
+    ;;
+esac
+
+launch_service()
+{
+    pidpath="$1"
+    foreground="$2"
+    props="$3"
+    class="$4"
+    #parms="-Dlog4j.configuration=file://"$TITAN_CONF"/log4j.properties -Dlog4j.defaultInitOverride=true"
+    parms=''
+
+    if [ "x$foreground" != "x" ]; then
+        export CLASSPATH
+        exec $NUMACTL "$JAVA" $JVM_OPTS $parms $props "$class" "$REXSTER_CFG" "$TITAN_CFG"
+    else
+        export CLASSPATH
+        exec $NUMACTL "$JAVA" $JVM_OPTS $parms $props "$class" "$REXSTER_CFG" "$TITAN_CFG" <&- &
+        [ ! -z "$pidpath" ] && printf "%d" $! > "$pidpath"
+        true
+    fi
+
+    return $?
+}
+
+# Parse any command line options.
+args=`getopt fhp:bD: "$@"`
+eval set -- "$args"
+
+classname="com.thinkaurelius.titan.tinkerpop.rexster.RexsterTitanServer"
+
+while true; do
+    case "$1" in
+        -p)
+            pidfile="$2"
+            shift 2
+        ;;
+        -f)
+            foreground="yes"
+            shift
+        ;;
+        -h)
+            echo "Usage: $0 [-f] [-h] [-p pidfile]"
+            exit 0
+        ;;
+        -D)
+            properties="$properties -D$2"
+            shift 2
+        ;;
+        --)
+            shift
+            break
+        ;;
+        *)
+            echo "Error parsing arguments!" >&2
+            exit 1
+        ;;
+    esac
+done
+
+# Start up the service
+launch_service "$pidfile" "$foreground" "$properties" "$classname"
+
+exit $?
+
+# vi:ai sw=4 ts=4 tw=0 et
