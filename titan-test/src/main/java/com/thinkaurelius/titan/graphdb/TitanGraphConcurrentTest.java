@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.lang.management.ManagementFactory;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,15 +35,11 @@ import com.tinkerpop.blueprints.Vertex;
 @BenchmarkOptions(warmupRounds=0, benchmarkRounds=3)
 public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 
-    // TODO guarantee that any exception in an executor thread generates an exception in the unit test that submitted the thread; due to open bugs on the jdk, this is not as simple as overriding ThreadPoolExecutor.afterExecute()
-
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get();
     
     // Parallelism settings
-    private static final int CORE_COUNT = ManagementFactory.
-            getOperatingSystemMXBean().getAvailableProcessors();
-    private static final int THREAD_COUNT = CORE_COUNT * 8;
+    private static final int THREAD_COUNT = getThreadCount();
     private static final int TASK_COUNT = THREAD_COUNT * 256;
 
     // Graph structure settings
@@ -186,6 +181,8 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
         Runnable relMaker =
                 new FixedRelationshipMaker(tx, id,
                         makeSimpleEdgeLabel("dummyRelationship"));
+        
+        newTx();
 
         Future<?> propFuture = executor.submit(propMaker);
         Future<?> relFuture = executor.submit(relMaker);
@@ -202,6 +199,46 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 
         propFuture.cancel(true);
         relFuture.cancel(true);
+    }
+    
+    /**
+     * Load-then-read test of standard-indexed vertex properties. This test
+     * contains no edges.
+     * 
+     * The load stage is serial. The read stage is concurrent.
+     * 
+     * Create a set of vertex property types with standard indices
+     * (threadPoolSize * 5 by default) serially. Serially write 1k vertices with
+     * values for all of the indexed property types. Concurrently query the
+     * properties. Each thread uses a single, distinct transaction for all index
+     * retrievals in that thread.
+     */
+    @Test
+    public void testStandardIndexVertexPropertyReads() {
+        final int propCount = THREAD_COUNT * 5;
+        final int vertexCount =  1  * 1000;
+        // Create props with standard indexes
+        TypeMaker tm = tx.makeType();
+        log.info("Creating types");
+        for (int i = 0; i < propCount; i++) {
+            tm.name("p" + i).dataType(Integer.class)
+                .indexed(Vertex.class).unique(Direction.BOTH).makePropertyKey();
+        }
+        newTx();
+        log.info("Creating vertices");
+        // Write vertices with indexed properties
+        for (int i = 0; i < vertexCount; i++) {
+            Vertex v = tx.addVertex();
+            for (int p = 0; p < propCount; p++) {
+                v.setProperty("p" + p, i);
+            }
+        }
+        newTx();
+        log.info("Querying vertex property indices");
+        // Execute runnables
+        for (int i = 0; i < TASK_COUNT; i++) {
+            executor.submit(new VertexPropertyQuerier(propCount, vertexCount));
+        }
     }
 
     private static class RandomPropertyMaker implements Runnable {
@@ -334,6 +371,30 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
             }
 
             stopLatch.countDown();
+        }
+    }
+    
+    /**
+     * See {@line #testStandardIndex()}
+     */
+    private class VertexPropertyQuerier implements Runnable {
+        
+        private final int propCount;
+        private final int vertexCount;
+
+        public VertexPropertyQuerier(int propCount, int vertexCount) {
+            this.propCount = propCount;
+            this.vertexCount = vertexCount;
+        }
+        
+        @Override
+        public void run() {
+            TitanTransaction tx = graph.newTransaction();
+            for (int i = 0; i < vertexCount; i++) {
+                for (int p = 0; p < propCount; p++) {
+                    tx.getVertices("p" + p, i);
+                }
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ public abstract class TitanGraphTestCommon {
     public Configuration config;
     public StandardTitanGraph graph;
     public TitanTransaction tx;
+    public static final int DEFAULT_THREAD_COUNT = 4;
 
     public TitanGraphTestCommon(Configuration config) {
         this.config = config;
@@ -30,6 +31,14 @@ public abstract class TitanGraphTestCommon {
     @After
     public void tearDown() throws Exception {
         close();
+    }
+
+    public static int getThreadCount() {
+        String s = System.getProperty("titan.test.threads");
+        if (null != s)
+            return Integer.valueOf(s);
+        else
+            return DEFAULT_THREAD_COUNT;
     }
 
     public void open() {
