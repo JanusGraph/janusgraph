@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database;
 
+import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -175,6 +176,16 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     public List<Entry> edgeQuery(long vid, SliceQuery query, BackendTransaction tx) {
         Preconditions.checkArgument(vid>0);
         return tx.edgeStoreQuery(new KeySliceQuery(IDHandler.getKey(vid),query));
+    }
+
+    public List<List<Entry>> edgeMultiQuery(LongArrayList vids, SliceQuery query, BackendTransaction tx) {
+        Preconditions.checkArgument(vids!=null && !vids.isEmpty());
+        List<StaticBuffer> vertexIds = new ArrayList<StaticBuffer>(vids.size());
+        for (int i=0;i<vids.size();i++) {
+            Preconditions.checkArgument(vids.get(i)>0);
+            vertexIds.add(IDHandler.getKey(vids.get(i)));
+        }
+        return tx.edgeStoreMultiQuery(vertexIds, query);
     }
 
 

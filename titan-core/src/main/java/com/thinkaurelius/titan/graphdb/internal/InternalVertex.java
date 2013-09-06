@@ -60,6 +60,13 @@ public interface InternalVertex extends TitanVertex, InternalElement {
     public Iterable<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery,List<Entry>> lookup);
 
     /**
+     * Returns true if the results for the given query have already been loaded for this vertex and are locally cached.
+     * @param query
+     * @return
+     */
+    public boolean hasLoadedRelations(SliceQuery query);
+
+    /**
      * Whether this vertex has removed relations
      * @return
      */
