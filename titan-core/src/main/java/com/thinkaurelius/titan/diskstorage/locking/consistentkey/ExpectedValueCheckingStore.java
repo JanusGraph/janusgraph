@@ -81,7 +81,7 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
 
     @Override
     public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        return dataStore.getSlice(keys, query, txh);
+        return dataStore.getSlice(keys, query, getBaseTx(txh));
     }
 
     /**

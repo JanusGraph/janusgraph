@@ -95,13 +95,15 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        List<List<Entry>> results = new ArrayList<List<Entry>>();
-
-        for (StaticBuffer key : keys) {
-            results.add(getSlice(new KeySliceQuery(key, query), txh));
+        if (query.isStatic() && !query.hasLimit()) {
+            List<List<Entry>> results = new ArrayList<List<Entry>>(keys.size());
+            for (StaticBuffer key : keys) {
+                results.add(getSlice(new KeySliceQuery(key, query), txh));
+            }
+            return results;
+        } else {
+            return store.getSlice(keys,query,txh);
         }
-
-        return results;
     }
 
     @Override
