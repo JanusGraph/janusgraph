@@ -111,6 +111,8 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
 
     public TitanGraphQuery query();
 
+    public TitanMultiVertexQuery multiQuery(TitanVertex... vertices);
+
     public TitanVertex getVertex(TitanKey key, Object attribute);
 
     public TitanVertex getVertex(String key, Object attribute);

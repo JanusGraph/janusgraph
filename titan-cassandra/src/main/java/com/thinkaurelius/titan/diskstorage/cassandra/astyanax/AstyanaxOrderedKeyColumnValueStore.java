@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
@@ -90,7 +91,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        return Lists.newArrayList(getNamesSlice(keys, query, txh).values());
+        return CassandraHelper.order(getNamesSlice(keys, query, txh), keys);
     }
 
     public Map<ByteBuffer, List<Entry>> getNamesSlice(List<StaticBuffer> keys,

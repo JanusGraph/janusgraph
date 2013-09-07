@@ -93,7 +93,7 @@
         <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
         <gpg.skip>false</gpg.skip>
         <!-- Required for PMD plugin. Used for compiler plugin -->
-        <targetJdk>1.6</targetJdk>
+        <targetJdk>1.7</targetJdk>
         <perf.jvm.opts></perf.jvm.opts>
         <jacoco.opts></jacoco.opts>
     </properties>
@@ -173,7 +173,7 @@
                     <version>2.5.1</version>
                     <configuration>
                         <source>1.6</source>
-                        <target>1.6</target>
+                        <target>1.7</target>
                     </configuration>
                 </plugin>
                 <plugin>

@@ -40,7 +40,7 @@ public class CacheVertex extends StandardVertex {
     }
 
     @Override
-    public Iterable<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery, List<Entry>> lookup) {
+    public Iterable<Entry> loadRelations(SliceQuery query, final Retriever<SliceQuery, List<Entry>> lookup) {
         if (isNew()) return ImmutableList.of();
         else {
             if (null == queryCache) {
@@ -57,7 +57,7 @@ public class CacheVertex extends StandardVertex {
                     }
                 }
             }
-            if (queryCache.isCovered(query)) {
+            if (hasLoadedRelations(query)) {
                 SortedSet<Entry> results = relationCache.subSet(StaticBufferEntry.of(query.getSliceStart(), null),StaticBufferEntry.of(query.getSliceEnd(),null));
                 return results;
             } else {
@@ -71,4 +71,10 @@ public class CacheVertex extends StandardVertex {
             }
         }
     }
+
+    @Override
+    public boolean hasLoadedRelations(final SliceQuery query) {
+        return queryCache!=null && queryCache.isCovered(query);
+    }
+
 }

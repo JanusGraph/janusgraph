@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
+import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -566,6 +567,37 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         return new VertexCentricQueryBuilder((InternalVertex)vertex,graph.getEdgeSerializer());
     }
 
+    @Override
+    public TitanMultiVertexQuery multiQuery(TitanVertex... vertices) {
+        MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this, graph.getEdgeSerializer());
+        for (TitanVertex v : vertices) builder.addVertex(v);
+        return builder;
+    }
+
+    public void executeMultiQuery(final Collection<InternalVertex> vertices, final SliceQuery sq) {
+        LongArrayList vids = new LongArrayList(vertices.size());
+        for (InternalVertex v : vertices) {
+            if (!v.isNew() && v.hasId() && (v instanceof CacheVertex) && !v.hasLoadedRelations(sq)) vids.add(v.getID());
+        }
+
+        if (!vids.isEmpty()) {
+            List<List<Entry>> results = graph.edgeMultiQuery(vids,sq,txHandle);
+            int pos = 0;
+            for (TitanVertex v : vertices) {
+                if (vids.get(pos)==v.getID()) {
+                    final List<Entry> vresults = results.get(pos);
+                    ((CacheVertex)v).loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
+                        @Override
+                        public List<Entry> get(SliceQuery query) {
+                            return vresults;
+                        }
+                    });
+                }
+                pos++;
+            }
+        }
+    }
+
     public final QueryExecutor<VertexCentricQuery,TitanRelation,SliceQuery> edgeProcessor = new QueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery>() {
 
         @Override
@@ -610,17 +642,12 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             final InternalVertex v = query.getVertex();
             Iterable<TitanRelation> result = null;
 
-            Iterable<Entry> iter = null;
-            if (v instanceof CacheVertex) {
-                iter = ((CacheVertex) v).loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
-                    @Override
-                    public List<Entry> get(SliceQuery query) {
-                        return graph.edgeQuery(v.getID(), query, txHandle);
-                    }
-                });
-            } else {
-                iter = graph.edgeQuery(v.getID(),sq,txHandle);
-            }
+            Iterable<Entry> iter = v.loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
+                @Override
+                public List<Entry> get(SliceQuery query) {
+                    return graph.edgeQuery(v.getID(), query, txHandle);
+                }
+            });
 
             if (filterDirection) {
                 Preconditions.checkArgument(query.getDirection()!=Direction.BOTH);
@@ -680,7 +707,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                             return true;
                         }
                     });
-                    Preconditions.checkArgument(!keys.isEmpty(),"Invalid query condition: %s",query.getCondition());
+                    Preconditions.checkArgument(!keys.isEmpty(), "Invalid query condition: %s", query.getCondition());
                     Set<TitanVertex> vertexSet = Sets.newHashSet();
                     for (TitanRelation r : addedRelations.getView(new Predicate<InternalRelation>() {
                         @Override

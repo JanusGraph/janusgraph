@@ -45,6 +45,11 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
+    public boolean hasLoadedRelations(SliceQuery query) {
+        return false;
+    }
+
+    @Override
     public boolean hasRemovedRelations() {
         return false;
     }

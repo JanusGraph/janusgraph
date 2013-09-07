@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.query.condition;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanVertex;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -11,21 +12,25 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 
 public class IncidenceCondition<E extends TitanRelation> extends Literal<E> {
 
-    private final TitanVertex vertex;
+    private final TitanVertex baseVertex;
+    private final TitanVertex otherVertex;
 
-    public IncidenceCondition(TitanVertex vertex) {
-        Preconditions.checkNotNull(vertex);
-        this.vertex = vertex;
+    public IncidenceCondition(TitanVertex baseVertex, TitanVertex otherVertex) {
+        Preconditions.checkNotNull(baseVertex);
+        Preconditions.checkNotNull(otherVertex);
+        this.baseVertex = baseVertex;
+        this.otherVertex = otherVertex;
     }
 
     @Override
-    public boolean evaluate(E element) {
-        return element.isIncidentOn(vertex);
+    public boolean evaluate(E relation) {
+        if (!relation.isEdge()) return false;
+        return ((TitanEdge)relation).getOtherVertex(baseVertex).equals(otherVertex);
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(vertex).toHashCode();
+        return new HashCodeBuilder().append(getType()).append(baseVertex).append(otherVertex).toHashCode();
     }
 
     @Override
@@ -34,11 +39,11 @@ public class IncidenceCondition<E extends TitanRelation> extends Literal<E> {
         else if (other==null) return false;
         else if (!getClass().isInstance(other)) return false;
         IncidenceCondition oth = (IncidenceCondition)other;
-        return vertex.equals(oth.vertex);
+        return baseVertex.equals(oth.baseVertex) && otherVertex.equals(oth.otherVertex);
     }
 
     @Override
     public String toString() {
-        return "incidence["+vertex+"]";
+        return "incidence["+ baseVertex + "-" + otherVertex + "]";
     }
 }

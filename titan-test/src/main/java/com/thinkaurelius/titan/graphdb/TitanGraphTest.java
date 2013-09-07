@@ -918,7 +918,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             e.setProperty(author, vs[i % 5]);
         }
 
-        VertexList vl = null;
+        VertexList vl;
         clopen();
         for (int i = 0; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
         v = vs[0];
@@ -927,7 +927,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         //Queries
         int lastTime = 0;
         for (Edge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
-            int nowTime = (Integer) e.getProperty("time");
+            int nowTime = e.getProperty("time");
             //System.out.println(nowTime);
             assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
             lastTime = nowTime;
@@ -965,6 +965,22 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertices()));
         assertEquals(25, Iterables.size(v.query().labels("connect", "friend", "knows").has("weight", 1.5).vertexIds()));
         assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).count());
+        //Adjacent queries
+        assertEquals(1,v.query().labels("connect").direction(OUT).adjacentVertex(vs[6]).has("time",6).count());
+        assertEquals(1,v.query().labels("connect").adjacentVertex(vs[6]).has("time",6).count());
+        assertEquals(0,v.query().labels("connect").adjacentVertex(vs[8]).has("time",8).count());
+        assertEquals(1,v.query().labels("knows").direction(OUT).adjacentVertex(vs[11]).count());
+        assertEquals(1,v.query().labels("knows").direction(OUT).adjacentVertex(vs[11]).has("weight",3.5).count());
+
+        //MultiQueries
+        TitanVertex[] qvs = {vs[6],vs[9],vs[12],vs[15],vs[60]};
+        Map<TitanVertex,Iterable<TitanEdge>>  results;
+        results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(1,Iterables.size(result));
+        results = tx.multiQuery(qvs).labels("connect").titanEdges();
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(1,Iterables.size(result));
+        results = tx.multiQuery(qvs).labels("knows").titanEdges();
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(0,Iterables.size(result));
 
         clopen();
         for (int i = 0; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
@@ -973,6 +989,12 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         //Same queries as above but without memory loading        
         assertEquals(0, v.query().labels("follows").has("time", 10, Query.Compare.LESS_THAN).count());
 
+        //Adjacent queries
+        assertEquals(1,v.query().labels("connect").direction(OUT).adjacentVertex(vs[6]).has("time",6).count());
+        assertEquals(1,v.query().labels("connect").adjacentVertex(vs[6]).has("time",6).count());
+        assertEquals(0,v.query().labels("connect").adjacentVertex(vs[8]).has("time",8).count());
+        assertEquals(1,v.query().labels("knows").direction(OUT).adjacentVertex(vs[11]).count());
+        assertEquals(1,v.query().labels("knows").direction(OUT).adjacentVertex(vs[11]).has("weight",3.5).count());
 
         assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).count());
         assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).count());
@@ -999,6 +1021,17 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(98, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", 10, Query.Compare.NOT_EQUAL).count());
         assertEquals(99, Iterables.size(v.query().direction(OUT).vertices()));
 
+        clopen();
+
+        //MultiQueries
+        TitanVertex[] qvs2 = new TitanVertex[qvs.length]; for (int i=0;i<qvs.length;i++) qvs2[i]=tx.getVertex(qvs[i].getID()); qvs=qvs2;
+        results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(1,Iterables.size(result));
+        results = tx.multiQuery(qvs).labels("connect").titanEdges();
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(1,Iterables.size(result));
+        results = tx.multiQuery(qvs).labels("knows").titanEdges();
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(0,Iterables.size(result));
+
         newTx();
 
         v = (TitanVertex) tx.getVertices("name", "v0").iterator().next();
@@ -1012,6 +1045,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertNotNull(v);
         assertEquals(2, v.query().has("weight", 1.5).interval("time", 10, 30).limit(2).count());
         assertEquals(5, v.query().has("weight", 1.5).interval("time", 10, 30).count());
+
+
+
+
 
     }
 

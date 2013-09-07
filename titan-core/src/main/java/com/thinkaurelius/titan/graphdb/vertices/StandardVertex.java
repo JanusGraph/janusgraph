@@ -71,6 +71,11 @@ public class StandardVertex extends AbstractVertex {
     }
 
     @Override
+    public boolean hasLoadedRelations(SliceQuery query) {
+        return false;
+    }
+
+    @Override
     public boolean hasRemovedRelations() {
         return ElementLifeCycle.hasRemovedRelations(lifecycle);
     }

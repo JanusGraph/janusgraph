@@ -4,10 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.apache.commons.lang.StringUtils;
@@ -165,6 +162,17 @@ public class BackendTransaction implements TransactionHandle {
             }
             @Override
             public String toString() { return "EdgeStoreQuery"; }
+        });
+    }
+
+    public List<List<Entry>> edgeStoreMultiQuery(final List<StaticBuffer> keys, final SliceQuery query) {
+        return executeRead(new Callable<List<List<Entry>>>() {
+            @Override
+            public List<List<Entry>> call() throws Exception {
+                return edgeStore.getSlice(keys,query,storeTx);
+            }
+            @Override
+            public String toString() { return "MultiEdgeStoreQuery"; }
         });
     }
 
