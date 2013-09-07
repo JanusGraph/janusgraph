@@ -417,11 +417,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             if (config.hasVerifyUniqueness()) {
                 if (key.isUnique(Direction.OUT)) {
                     Preconditions.checkArgument(Iterables.isEmpty(query(vertex).includeHidden().type(key).direction(Direction.OUT).properties()),
-                            "An property with the given key already exists on the vertex and the property key is defined as out-unique");
+                            "A property with the given key [%s] already exists on the vertex [%s] and the property key is defined as out-unique", key.getName(), vertex);
                 }
                 if (key.isUnique(Direction.IN)) {
                     Preconditions.checkArgument(Iterables.isEmpty(getVertices(key, value)),
-                            "The given value is already used as a property and the property key is defined as in-unique");
+                            "The given value [%s] is already used as a property and the property key [%s] is defined as in-unique", value, key.getName());
                 }
             }
             StandardProperty prop = new StandardProperty(temporaryID.decrementAndGet(), key, (InternalVertex) vertex, value, ElementLifeCycle.New);
