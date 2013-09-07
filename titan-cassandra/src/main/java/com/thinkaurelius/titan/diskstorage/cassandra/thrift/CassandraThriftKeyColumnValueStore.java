@@ -7,6 +7,7 @@ import java.util.*;
 
 import javax.annotation.Nullable;
 
+import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.apache.cassandra.dht.*;
 import org.apache.cassandra.thrift.Cassandra;
@@ -33,7 +34,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -116,7 +116,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        return Lists.newArrayList(getNamesSlice(keys, query, txh).values());
+        return CassandraHelper.order(getNamesSlice(keys, query, txh), keys);
     }
 
     public Map<ByteBuffer, List<Entry>> getNamesSlice(List<StaticBuffer> keys,

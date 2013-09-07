@@ -918,7 +918,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             e.setProperty(author, vs[i % 5]);
         }
 
-        VertexList vl = null;
+        VertexList vl;
         clopen();
         for (int i = 0; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
         v = vs[0];
@@ -927,7 +927,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         //Queries
         int lastTime = 0;
         for (Edge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
-            int nowTime = (Integer) e.getProperty("time");
+            int nowTime = e.getProperty("time");
             //System.out.println(nowTime);
             assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
             lastTime = nowTime;
