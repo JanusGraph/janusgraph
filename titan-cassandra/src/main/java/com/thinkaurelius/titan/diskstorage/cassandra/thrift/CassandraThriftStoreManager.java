@@ -270,7 +270,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 log.error("Keyspace {} does not exist, not attempting to truncate.", keySpaceName);
                 return;
             } catch (InvalidRequestException e) {
-                
+                log.error("InvalidRequestException when attempting to describe keyspace {}, not attempting to truncate.", keySpaceName);
+                return;
             }
             
             

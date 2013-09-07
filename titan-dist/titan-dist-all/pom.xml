@@ -13,31 +13,8 @@
 
     <properties>
         <distribution.assembly.descriptor>assembly-all.xml</distribution.assembly.descriptor>
+        <pkgtools.dir>${project.basedir}/../../</pkgtools.dir>
     </properties>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>       
-                    <execution>
-                        <id>assemble-standalone-dir</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <attach>false</attach>
-                            <finalName>titan</finalName>
-                            <descriptors>
-                                <descriptor>assembly-standalone.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                    </execution>
-                </executions>       
-            </plugin>
-        </plugins>
-    </build>
 
     <dependencies>
         <dependency>
@@ -49,6 +26,16 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-cassandra</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>${jna.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.rexster</groupId>
+            <artifactId>rexster-console</artifactId>
+            <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -70,9 +57,46 @@
             <artifactId>titan-lucene</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-persistit</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <profiles>
+        <profile>
+            <id>assemble-standalone-dir</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>assemble-package-tools</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration> 
+                                    <attach>false</attach>
+                                    <finalName>/</finalName>
+                                    <outputDirectory>${project.build.directory}/titan-all-standalone/</outputDirectory>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <descriptors>
+                                        <descriptor>assembly-standalone.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>titan-release</id>
             <dependencies>
@@ -109,6 +133,75 @@
                         <executions>
                             <execution>
                                 <id>deploy-distribution-archives-to-s3</id>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>pkg-tools</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <id>set-version-properties</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>parse-version</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>assemble-package-tools</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration> 
+                                    <attach>false</attach>
+                                    <outputDirectory>${pkgtools.dir}</outputDirectory>
+                                    <finalName>/</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <descriptors>
+                                        <descriptor>assembly-pkg.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>clean-package-tools</id>
+                                <phase>clean</phase>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <configuration> 
+                                    <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                                    <filesets>
+                                        <fileset>
+                                            <directory>${project.basedir}/../../debian/</directory>
+                                        </fileset>
+                                        <fileset>
+                                            <directory>${project.basedir}/../../pkgcommon/</directory>
+                                        </fileset>
+                                        <fileset>
+                                            <directory>${project.basedir}/../../redhat/</directory>
+                                        </fileset>
+                                    </filesets>
+                                </configuration> 
                             </execution>
                         </executions>
                     </plugin>

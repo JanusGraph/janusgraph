@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+This is a default Rexster configuration for Titan/Cassandra.
+Be sure to read the following instructions for information:
+   https://github.com/thinkaurelius/titan/wiki/Rexster-Graph-Server
+-->
+<rexster>
+    <http>
+        <server-port>8182</server-port>
+        <server-host>0.0.0.0</server-host>
+        <base-uri>http://localhost</base-uri>
+        <character-set>UTF-8</character-set>
+        <enable-jmx>false</enable-jmx>
+        <max-post-size>2097152</max-post-size>
+        <max-header-size>8192</max-header-size>
+        <upload-timeout-millis>30000</upload-timeout-millis>
+        <thread-pool>
+            <worker>
+                <core-size>8</core-size>
+                <max-size>8</max-size>
+            </worker>
+            <kernal>
+                <core-size>4</core-size>
+                <max-size>4</max-size>
+            </kernal>
+        </thread-pool>
+        <io-strategy>leader-follower</io-strategy>
+    </http>
+    <rexpro>
+        <server-port>8184</server-port>
+        <server-host>0.0.0.0</server-host>
+        <session-max-idle>1790000</session-max-idle>
+        <session-check-interval>3000000</session-check-interval>
+        <connection-max-idle>180000</connection-max-idle>
+        <connection-check-interval>3000000</connection-check-interval>
+        <enable-jmx>false</enable-jmx>
+        <thread-pool>
+            <worker>
+                <core-size>8</core-size>
+                <max-size>8</max-size>
+            </worker>
+            <kernal>
+                <core-size>4</core-size>
+                <max-size>4</max-size>
+            </kernal>
+        </thread-pool>
+        <io-strategy>leader-follower</io-strategy>
+    </rexpro>
+    <security>
+        <authentication>
+            <type>none</type>
+        </authentication>
+    </security>
+    <shutdown-port>8183</shutdown-port>
+    <shutdown-host>127.0.0.1</shutdown-host>
+</rexster>

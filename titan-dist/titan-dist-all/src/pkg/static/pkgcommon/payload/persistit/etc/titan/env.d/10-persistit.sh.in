@@ -1,0 +1,4 @@
+# Include Persistit jars
+for j in /usr/share/titan/lib/persistit/*.jar; do
+    CLASSPATH="$j:$CLASSPATH"
+done
