@@ -11,12 +11,20 @@ public class CharacterSerializer implements AttributeSerializer<Character> {
     @Override
     public Character read(ScanBuffer buffer) {
         short s = ss.read(buffer);
-        return Character.valueOf((char)(s-Short.MIN_VALUE));
+        return Character.valueOf(short2char(s));
     }
 
     @Override
     public void writeObjectData(WriteBuffer out, Character attribute) {
-        ss.writeObjectData(out,(short)(attribute.charValue()+Short.MIN_VALUE));
+        ss.writeObjectData(out, char2short(attribute.charValue()));
+    }
+
+    public static final short char2short(char c) {
+        return (short) (((int) c) + Short.MIN_VALUE);
+    }
+
+    public static final char short2char(short s) {
+        return (char) (((int) s) - Short.MIN_VALUE);
     }
 
     @Override
@@ -26,8 +34,8 @@ public class CharacterSerializer implements AttributeSerializer<Character> {
 
     @Override
     public Character convert(Object value) {
-        if (value instanceof String && ((String)value).length()==1) {
-            return Character.valueOf(((String)value).charAt(0));
+        if (value instanceof String && ((String) value).length() == 1) {
+            return Character.valueOf(((String) value).charAt(0));
         }
         return null;
     }

@@ -11,20 +11,34 @@ import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 
 public class StringSerializer implements AttributeSerializer<String> {
 
+    private final CharacterSerializer cs = new CharacterSerializer();
+
     @Override
     public String read(ScanBuffer buffer) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        StringBuilder s = new StringBuilder();
+        while (true) {
+            char c = cs.read(buffer);
+            if (((int) c) > 0) s.append(c);
+            else break;
+        }
+        return s.toString();
     }
 
     @Override
     public void writeObjectData(WriteBuffer buffer, String attribute) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        for (int i = 0; i < attribute.length(); i++) {
+            char c = attribute.charAt(i);
+            Preconditions.checkArgument(((int) c) > 0, "No null characters allowed in string @ position %s: %s", i, attribute);
+            cs.writeObjectData(buffer, c);
+        }
+        cs.writeObjectData(buffer, (char) 0);
     }
 
     @Override
     public void verifyAttribute(String value) {
-        //Check that it contains no null-characters
-
+        for (int i = 0; i < value.length(); i++) {
+            Preconditions.checkArgument(((int) value.charAt(i)) > 0, "No null characters allowed in string @ position %s: %s", i, value);
+        }
     }
 
     @Override
