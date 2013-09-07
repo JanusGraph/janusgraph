@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.AttributeHandler;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization;
@@ -13,14 +14,14 @@ import com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitializati
 public class RegisteredAttributeClass<T> implements Comparable<RegisteredAttributeClass> {
 
     private final Class<T> type;
-    private final AttributeSerializer<T> serializer;
+    private final AttributeHandler<T> serializer;
     private final int position;
 
     public RegisteredAttributeClass(Class<T> type, int position) {
         this(type, null, position);
     }
 
-    public RegisteredAttributeClass(Class<T> type, AttributeSerializer<T> serializer, int position) {
+    public RegisteredAttributeClass(Class<T> type, AttributeHandler<T> serializer, int position) {
         Preconditions.checkArgument(position>=0,"Invalid position: %s",position);
         this.type = type;
         this.serializer = serializer;
@@ -33,7 +34,8 @@ public class RegisteredAttributeClass<T> implements Comparable<RegisteredAttribu
 
     void registerWith(Serializer s) {
         if (serializer == null) s.registerClass(type,getPosition());
-        else s.registerClass(type, serializer, getPosition());
+        else if (serializer instanceof AttributeSerializer) s.registerClass(type, (AttributeSerializer)serializer, getPosition());
+        else s.registerClass(type,serializer);
     }
 
     @Override

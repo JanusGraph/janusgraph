@@ -20,6 +20,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.ElementType;
@@ -27,7 +28,6 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
-import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
 import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
@@ -86,6 +86,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     private final StandardTitanGraph graph;
     private final TransactionConfig config;
     private final IDInspector idInspector;
+    private final AttributeHandling attributeHandler;
     private final BackendTransaction txHandle;
 
     //Internal data structures
@@ -110,6 +111,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         this.graph = graph;
         this.config = config;
         this.idInspector = graph.getIDInspector();
+        this.attributeHandler = graph.getAttributeHandling();
         this.txHandle = txHandle;
 
         temporaryID = new AtomicLong(-1);
@@ -280,6 +282,25 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
      * ------------------------------------ Adding and Removing Relations ------------------------------------
      */
 
+    public final Object verifyAttribute(TitanKey key, Object attribute) {
+        Preconditions.checkNotNull(attribute, "Attribute cannot be null");
+        Class<?> datatype = key.getDataType();
+        if (datatype.equals(Object.class)) {
+            return attribute;
+        } else {
+            if (!attribute.getClass().equals(datatype)) {
+                Object converted = attributeHandler.convert(datatype, attribute);
+                Preconditions.checkArgument(converted!=null,
+                        "Value [%s] is not an instance of the expected data type for property key [%s] and cannot be converted. Expected: %s, found: %s", attribute,
+                        key.getName(), datatype, attribute.getClass());
+                attribute=converted;
+            }
+            Preconditions.checkState(attribute.getClass().equals(datatype));
+            attributeHandler.verifyAttribute(datatype, attribute);
+            return attribute;
+        }
+    }
+
     private static final boolean isVertexIndexProperty(InternalRelation relation) {
         if (!(relation instanceof TitanProperty)) return false;
         return isVertexIndexProperty(((TitanProperty) relation).getPropertyKey());
@@ -386,7 +407,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         verifyWriteAccess(vertex);
         vertex = ((InternalVertex)vertex).it();
         Preconditions.checkNotNull(key);
-        value = AttributeUtil.verifyAttribute(key,value);
+        value = verifyAttribute(key,value);
         Lock uniqueLock = FakeLock.INSTANCE;
         if (config.hasVerifyUniqueness() && (key.isUnique(Direction.OUT) || key.isUnique(Direction.IN))) uniqueLock=getUniquenessLock(vertex,key,value);
         uniqueLock.lock();

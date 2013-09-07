@@ -9,7 +9,6 @@ import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
-import com.thinkaurelius.titan.graphdb.relations.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 
@@ -154,26 +153,27 @@ public class QueryUtil {
                 //Rewrite contains conditions
                 Collection values = (Collection)value;
                 if (predicate==Contain.NOT_IN) {
-                    for (Object invalue : values) addConstraint(type,Cmp.NOT_EQUAL,invalue,conditions);
+                    for (Object invalue : values) addConstraint(type,Cmp.NOT_EQUAL,invalue,conditions,tx);
                 } else {
                     Preconditions.checkArgument(predicate==Contain.IN);
-                    if (values.size()==1) addConstraint(type,Cmp.EQUAL,values.iterator().next(),conditions);
+                    if (values.size()==1) addConstraint(type,Cmp.EQUAL,values.iterator().next(),conditions,tx);
                     else {
                         Or<E> nested = new Or<E>(values.size());
-                        for (Object invalue : values) addConstraint(type,Cmp.EQUAL,invalue,nested);
+                        for (Object invalue : values) addConstraint(type,Cmp.EQUAL,invalue,nested,tx);
                         conditions.add(nested);
                     }
                 }
             } else {
-                addConstraint(type,predicate,value,conditions);
+                addConstraint(type,predicate,value,conditions,tx);
             }
         }
         return conditions;
     }
 
-    private static final<E extends TitanElement> void addConstraint(TitanType type, TitanPredicate predicate, Object value, MultiCondition<E> conditions) {
+    private static final<E extends TitanElement> void addConstraint(TitanType type, TitanPredicate predicate,
+                                               Object value, MultiCondition<E> conditions, StandardTitanTx tx) {
         if (type.isPropertyKey()) {
-            value = AttributeUtil.verifyAttributeQuery((TitanKey) type, value); //TODO: replace by AttributeSerializer based handling
+            if (value!=null) value = tx.verifyAttribute((TitanKey)type,value);
         } else { //t.isEdgeLabel()
             Preconditions.checkArgument(value instanceof TitanVertex);
         }

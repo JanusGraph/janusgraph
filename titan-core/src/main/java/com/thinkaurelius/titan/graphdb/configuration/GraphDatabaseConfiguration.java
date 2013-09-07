@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.AttributeHandler;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.diskstorage.Backend;
@@ -526,7 +527,7 @@ public class GraphDatabaseConfiguration {
             try {
                 int position = Integer.parseInt(key.substring(ATTRIBUTE_PREFIX.length()));
                 Class<?> clazz = null;
-                AttributeSerializer<?> serializer = null;
+                AttributeHandler<?> serializer = null;
                 String classname = config.getString(key);
                 try {
                     clazz = Class.forName(classname);
@@ -539,7 +540,7 @@ public class GraphDatabaseConfiguration {
                     String serializername = config.getString(SERIALIZER_PREFIX + position);
                     try {
                         Class sclass = Class.forName(serializername);
-                        serializer = (AttributeSerializer) sclass.newInstance();
+                        serializer = (AttributeHandler) sclass.newInstance();
                     } catch (ClassNotFoundException e) {
                         throw new IllegalArgumentException("Could not find serializer class" + serializername);
                     } catch (InstantiationException e) {

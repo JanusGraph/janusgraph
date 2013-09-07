@@ -181,7 +181,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         v.addProperty(weight, 0.5);
         v.addProperty(boolval,true);
         try {
-            v.addProperty(weight, "0.5");
+            v.addProperty(weight, "x");
             fail();
         } catch (IllegalArgumentException e) {
         }

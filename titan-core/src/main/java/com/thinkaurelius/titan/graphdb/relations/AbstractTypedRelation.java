@@ -119,7 +119,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     public void setProperty(TitanKey key, Object value) {
         Preconditions.checkArgument(!it().isRemoved(),"Cannot modified removed relation");
         Preconditions.checkArgument(key.isUnique(Direction.OUT),"Key must have unique assignment");
-        it().setPropertyDirect(key,AttributeUtil.verifyAttribute(key,value));
+        it().setPropertyDirect(key,tx().verifyAttribute(key,value));
     }
 
     @Override

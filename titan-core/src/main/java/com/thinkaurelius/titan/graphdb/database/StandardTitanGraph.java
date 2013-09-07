@@ -19,6 +19,7 @@ import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
@@ -133,6 +134,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         return edgeSerializer;
     }
 
+    public AttributeHandling getAttributeHandling() {
+        return serializer;
+    }
+
     public GraphDatabaseConfiguration getConfiguration() {
         return config;
     }
@@ -169,12 +174,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
 
     public List<Object> elementQuery(String indexName, IndexQuery query, BackendTransaction tx) {
-        return indexSerializer.query(indexName,query,tx);
+        return indexSerializer.query(indexName, query, tx);
     }
 
     public List<Entry> edgeQuery(long vid, SliceQuery query, BackendTransaction tx) {
         Preconditions.checkArgument(vid>0);
-        return tx.edgeStoreQuery(new KeySliceQuery(IDHandler.getKey(vid),query));
+        return tx.edgeStoreQuery(new KeySliceQuery(IDHandler.getKey(vid), query));
     }
 
 

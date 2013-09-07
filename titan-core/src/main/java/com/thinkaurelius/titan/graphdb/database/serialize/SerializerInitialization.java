@@ -39,14 +39,14 @@ public class SerializerInitialization {
         serializer.registerClass(Long.class, new LongSerializer(),KRYO_OFFSET+19);
         serializer.registerClass(IndexType.class,KRYO_OFFSET+20);
         serializer.registerClass(IndexType[].class,KRYO_OFFSET+21);
-        serializer.registerClass(Geoshape.class,KRYO_OFFSET+22);
+        serializer.registerClass(Geoshape.class,new GeoshapeHandler(), KRYO_OFFSET+22);
         serializer.registerClass(Byte.class, new ByteSerializer(),KRYO_OFFSET+23);
         serializer.registerClass(Short.class, new ShortSerializer(),KRYO_OFFSET+24);
         serializer.registerClass(Character.class, new CharacterSerializer(),KRYO_OFFSET+25);
         serializer.registerClass(Boolean.class, new BooleanSerializer(),KRYO_OFFSET+26);
         serializer.registerClass(Object.class, KRYO_OFFSET+27);
-        serializer.registerClass(FullFloat.class, KRYO_OFFSET+28);
-        serializer.registerClass(FullDouble.class, KRYO_OFFSET+29);
+        serializer.registerClass(FullFloat.class, new FullFloatHandler(), KRYO_OFFSET+28);
+        serializer.registerClass(FullDouble.class, new FullDoubleHandler(), KRYO_OFFSET+29);
         serializer.registerClass(char[].class, KRYO_OFFSET+30);
         serializer.registerClass(short[].class, KRYO_OFFSET+31);
         serializer.registerClass(float[].class, KRYO_OFFSET+32);

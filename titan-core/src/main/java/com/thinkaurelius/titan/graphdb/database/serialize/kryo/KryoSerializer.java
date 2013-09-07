@@ -8,19 +8,21 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.thinkaurelius.titan.core.AttributeHandler;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization;
+import com.thinkaurelius.titan.graphdb.database.serialize.DefaultAttributeHandling;
 
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public class KryoSerializer implements Serializer {
+public class KryoSerializer extends DefaultAttributeHandling implements Serializer {
 
     private static final int MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
 
@@ -73,7 +75,14 @@ public class KryoSerializer implements Serializer {
     }
 
     @Override
+    public <T> void registerClass(Class<T> type, AttributeHandler<T> handler, int id) {
+        super.registerClass(type,handler);
+        this.registerClass(type,id);
+    }
+
+    @Override
     public synchronized  <T> void registerClass(Class<T> type, AttributeSerializer<T> serializer, int id) {
+        super.registerClass(type,serializer);
         Preconditions.checkArgument(!initialized,"Serializer has already been initialized!");
         Preconditions.checkArgument(id>0,"Invalid id provided: %s",id);
         Preconditions.checkArgument(!registrations.containsKey(id),"ID has already been registered: %s",id);

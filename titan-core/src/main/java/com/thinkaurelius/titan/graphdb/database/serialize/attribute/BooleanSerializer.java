@@ -19,4 +19,20 @@ public class BooleanSerializer implements AttributeSerializer<Boolean> {
         out.putByte((byte)(attribute.booleanValue()?1:0));
     }
 
+    @Override
+    public void verifyAttribute(Boolean value) {
+        //All values are valid
+    }
+
+    @Override
+    public Boolean convert(Object value) {
+        if (value instanceof Number) {
+            Number n = (Number)value;
+            if (n.doubleValue()==1.0) return Boolean.TRUE;
+            else if (n.doubleValue()==0.0) return Boolean.FALSE;
+            else throw new IllegalArgumentException("Number does not map to boolean value: " + value);
+        } else if (value instanceof String) {
+            return Boolean.parseBoolean((String)value);
+        } else return null;
+    }
 }
