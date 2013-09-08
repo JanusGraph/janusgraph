@@ -379,6 +379,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             v.addProperty(key, s);
         }
 
+        //Verify correct number of properties
+        assertEquals(values.size(), Iterables.size(v.getProperties(key)));
+
         // Check that removeProperty(TitanKey) returns a valid value
         String lastValueRemoved = v.removeProperty(key);
         assertNotNull(lastValueRemoved);
@@ -400,6 +403,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         for (String s : values) {
             v.addProperty(pname, s);
         }
+        assertEquals(values.size(), Iterables.size(v.getProperties(key)));
 
         // Test removeProperty(String) method on the vertex
         lastValueRemoved = v.removeProperty(pname);

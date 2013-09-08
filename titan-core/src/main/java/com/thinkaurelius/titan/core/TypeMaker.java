@@ -47,17 +47,18 @@ public interface TypeMaker {
     public TypeMaker name(String name);
 
     /**
-     * Configures the type to be unique in the given direction with the provided uniqueness consistency.
+     * Configures the type to be unique for any given vertex in the given direction with the provided uniqueness consistency.
      * A type is unique in a given direction if there can be at most one relation (edge or property) in that direction for
      * a particular element. For instance, an out-unique edge label ensures that there can be at most one outgoing edge
-     * of said label for any vertex. For property keys, in-uniqueness has the special meaning that there is at most one
-     * vertex associated with the property value. Hence, it allows to ensure that values are uniquely assigned to vertices
-     * in the database.
+     * of said label for any vertex. Similarly, an out-unique property key guarantees that there is at most one property
+     * for this key on any given vertex.
      * <p/>
      * <p/>
      * The consistency parameter specifies the consistency guarantees given when ensuring uniqueness. Without acquiring locks,
-     * unique relations may be overwritten by competing transactions. Acquring locks prohibits that at and additional "locking cost".
+     * unique relations may be overwritten by competing transactions. Acquring locks prohibits that at an additional "locking cost".
      *
+     * @param direction   Direction in which to ensure uniqueness from the perspective of a vertex
+     * @param consistency The consistency level of this uniqueness constraint
      * @return this type maker
      */
     public TypeMaker vertexUnique(Direction direction, UniquenessConsistency consistency);
@@ -65,17 +66,50 @@ public interface TypeMaker {
     /**
      * Configures the type to be unique in the given direction with the default uniqueness consistency {@link UniquenessConsistency#LOCK}.
      *
-     * @param direction
+     * @param direction Direction in which to ensure uniqueness from the perspective of a vertex
      * @return
      * @see #vertexUnique(com.tinkerpop.blueprints.Direction, com.thinkaurelius.titan.core.TypeMaker.UniquenessConsistency)
      */
     public TypeMaker vertexUnique(Direction direction);
 
+    /**
+     * Configures this property to allow multiple values to be associated with a single vertex via this key. By default, only a single
+     * value can be associated with any given vertex at any one time through a key. <br/>
+     * For example, by declaring the property key "name" to be multi-valued, a vertex can have multiple name properties which can be
+     * retrieved by {@link TitanVertex#getProperties(TitanKey)}.
+     * <p/>
+     * Note, that adding properties for multi-valued keys must be done through {@link TitanVertex#addProperty(TitanKey, Object)} and NOT
+     * {@link TitanVertex#setProperty(TitanKey, Object)} which is reserved for single-valued property keys (the default).
+     * <p/>
+     * This configuration option only applies to property keys.
+     *
+     * @return
+     */
     public TypeMaker multiValued();
 
+    /**
+     * Configures this property key to be unique across the entire graph, which means, that for each property value there can
+     * be at most one vertex in the graph associated with that value via this key. <br/>
+     * For example, by
+     * <p/>
+     * The consistency parameter specifies the consistency guarantees given when ensuring uniqueness. Without acquiring locks,
+     * unique values may be silently overwritten by competing transactions. Acquring locks prohibits that at an additional "locking cost".
+     * <p/>
+     * This configuration option only applies to property keys. A graph unique property key must have a vertex-index defined via {@link #indexed(Class)}.
+     *
+     * @param consistency The consistency level of this uniqueness constraint
+     * @return
+     */
+    public TypeMaker graphUnique(UniquenessConsistency consistency);
+
+    /**
+     * Configures this property key to be unique across the entire graph with the default uniqueness consistency {@link UniquenessConsistency#LOCK}.
+     *
+     * @return
+     * @see #graphUnique(com.thinkaurelius.titan.core.TypeMaker.UniquenessConsistency)
+     */
     public TypeMaker graphUnique();
 
-    public TypeMaker graphUnique(UniquenessConsistency consistency);
 
     /**
      * Configures the type to be directed. This only applies to edge labels.

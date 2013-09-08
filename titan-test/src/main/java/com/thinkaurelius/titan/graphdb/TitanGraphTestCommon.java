@@ -120,7 +120,7 @@ public abstract class TitanGraphTestCommon {
     }
 
     public TitanKey makeNonUniqueStringPropertyKey(String name) {
-        return tx.makeType().name(name).
+        return tx.makeType().name(name).multiValued().
                 indexed(Vertex.class).
                 dataType(String.class).
                 makePropertyKey();
