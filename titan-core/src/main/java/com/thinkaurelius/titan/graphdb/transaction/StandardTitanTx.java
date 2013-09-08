@@ -372,11 +372,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             if (config.hasVerifyUniqueness()) {
                 if (label.isUnique(Direction.OUT)) {
                     Preconditions.checkArgument(Iterables.isEmpty(query(outVertex).includeHidden().type(label).direction(Direction.OUT).titanEdges()),
-                            "An edge with the given type already exists on the out-vertex");
+                            "An edge with the given type already exists on the out-vertex and the label [%s] is out-unique", label.getName());
                 }
                 if (label.isUnique(Direction.IN)) {
                     Preconditions.checkArgument(Iterables.isEmpty(query(inVertex).includeHidden().type(label).direction(Direction.IN).titanEdges()),
-                            "An edge with the given type already exists on the in-vertex");
+                            "An edge with the given type already exists on the in-vertex and the label [%s] is in-unique", label.getName());
                 }
             }
             StandardEdge edge = new StandardEdge(temporaryID.decrementAndGet(), label, (InternalVertex) outVertex, (InternalVertex) inVertex, ElementLifeCycle.New);
@@ -417,11 +417,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             if (config.hasVerifyUniqueness()) {
                 if (key.isUnique(Direction.OUT)) {
                     Preconditions.checkArgument(Iterables.isEmpty(query(vertex).includeHidden().type(key).direction(Direction.OUT).properties()),
-                            "A property with the given key [%s] already exists on the vertex [%s] and the property key is defined as out-unique", key.getName(), vertex);
+                            "A property with the given key [%s] already exists on the vertex [%s] and the property key is defined as single-valued", key.getName(), vertex);
                 }
                 if (key.isUnique(Direction.IN)) {
                     Preconditions.checkArgument(Iterables.isEmpty(getVertices(key, value)),
-                            "The given value [%s] is already used as a property and the property key [%s] is defined as in-unique", value, key.getName());
+                            "The given value [%s] is already used as a property and the property key [%s] is defined as graph-unique", value, key.getName());
                 }
             }
             StandardProperty prop = new StandardProperty(temporaryID.decrementAndGet(), key, (InternalVertex) vertex, value, ElementLifeCycle.New);

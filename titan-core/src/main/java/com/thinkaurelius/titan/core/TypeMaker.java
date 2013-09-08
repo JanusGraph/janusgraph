@@ -53,23 +53,29 @@ public interface TypeMaker {
      * of said label for any vertex. For property keys, in-uniqueness has the special meaning that there is at most one
      * vertex associated with the property value. Hence, it allows to ensure that values are uniquely assigned to vertices
      * in the database.
-     *
-     * <p />
+     * <p/>
+     * <p/>
      * The consistency parameter specifies the consistency guarantees given when ensuring uniqueness. Without acquiring locks,
      * unique relations may be overwritten by competing transactions. Acquring locks prohibits that at and additional "locking cost".
      *
      * @return this type maker
      */
-    public TypeMaker unique(Direction direction, UniquenessConsistency consistency);
+    public TypeMaker vertexUnique(Direction direction, UniquenessConsistency consistency);
 
     /**
      * Configures the type to be unique in the given direction with the default uniqueness consistency {@link UniquenessConsistency#LOCK}.
      *
      * @param direction
      * @return
-     * @see #unique(com.tinkerpop.blueprints.Direction, com.thinkaurelius.titan.core.TypeMaker.UniquenessConsistency)
+     * @see #vertexUnique(com.tinkerpop.blueprints.Direction, com.thinkaurelius.titan.core.TypeMaker.UniquenessConsistency)
      */
-    public TypeMaker unique(Direction direction);
+    public TypeMaker vertexUnique(Direction direction);
+
+    public TypeMaker multiValued();
+
+    public TypeMaker graphUnique();
+
+    public TypeMaker graphUnique(UniquenessConsistency consistency);
 
     /**
      * Configures the type to be directed. This only applies to edge labels.
