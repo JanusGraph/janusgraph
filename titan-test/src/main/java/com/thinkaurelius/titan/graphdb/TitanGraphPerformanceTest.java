@@ -29,7 +29,7 @@ import com.thinkaurelius.titan.testutil.RandomGenerator;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
-@BenchmarkOptions(warmupRounds=0, benchmarkRounds=3)
+@BenchmarkOptions(warmupRounds = 0, benchmarkRounds = 3)
 public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 
     @Rule
@@ -62,12 +62,12 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
             clopen();
             if (i == 1) {
                 memoryBaseline = MemoryAssess.getMemoryUse();
-                System.out.println("Memory before: "+ memoryBaseline / 1024);
+                System.out.println("Memory before: " + memoryBaseline / 1024);
             }
         }
         close();
         long memoryAfter = MemoryAssess.getMemoryUse();
-        System.out.println("Memory after: "+ memoryAfter / 1024);
+        System.out.println("Memory after: " + memoryAfter / 1024);
         //assertTrue(memoryAfter<100*1024*1024);
     }
 
@@ -86,7 +86,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 
         p = new PerformanceTest(true);
         for (int i = 0; i < noNodes; i++) {
-            new StandardEdge(i+1,connect, (InternalVertex) nodes[i], (InternalVertex) nodes[(i + 1) % noNodes], ElementLifeCycle.New);
+            new StandardEdge(i + 1, connect, (InternalVertex) nodes[i], (InternalVertex) nodes[(i + 1) % noNodes], ElementLifeCycle.New);
         }
         p.end();
         System.out.println("Time per edge in (ns): " + (p.getNanoTime() / noNodes));
@@ -103,21 +103,23 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
 
     @Test
     public void testInTxIndex() throws Exception {
-        int trials = 2; int numV = 2000; int offset = 10000;
-        tx.makeType().name("uid").dataType(Long.class).indexed(Vertex.class).unique(Direction.OUT).makePropertyKey();
+        int trials = 2;
+        int numV = 2000;
+        int offset = 10000;
+        tx.makeType().name("uid").dataType(Long.class).indexed(Vertex.class).vertexUnique(Direction.OUT).makePropertyKey();
         newTx();
 
         long start = System.currentTimeMillis();
-        for (int t=0;t<trials;t++) {
-            for (int i=offset;i<offset+numV;i++) {
-                if (Iterables.isEmpty(tx.getVertices("uid",Long.valueOf(i)))) {
+        for (int t = 0; t < trials; t++) {
+            for (int i = offset; i < offset + numV; i++) {
+                if (Iterables.isEmpty(tx.getVertices("uid", Long.valueOf(i)))) {
                     Vertex v = tx.addVertex();
-                    v.setProperty("uid",Long.valueOf(i));
+                    v.setProperty("uid", Long.valueOf(i));
                 }
             }
         }
-        assertEquals(numV,Iterables.size(tx.getVertices()));
-        System.out.println("Total time (ms): " + (System.currentTimeMillis()-start));
+        assertEquals(numV, Iterables.size(tx.getVertices()));
+        System.out.println("Total time (ms): " + (System.currentTimeMillis() - start));
     }
 
     @Test
@@ -147,7 +149,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
         else
             batchStatus = "batching=false";
 
-        System.out.println("Beginning "+trials+" trials ("+jitPretrials+" pretrials) of ["+task+"]; "+batchStatus);
+        System.out.println("Beginning " + trials + " trials (" + jitPretrials + " pretrials) of [" + task + "]; " + batchStatus);
 
         for (int trial = 0; trial < trials + jitPretrials; trial++) {
 
@@ -177,7 +179,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
         }
 
         logMetrics();
-        System.out.println("Beginning "+trials+" trials ("+jitPretrials+" pretrials) of ["+task+"]; "+batchStatus);
+        System.out.println("Beginning " + trials + " trials (" + jitPretrials + " pretrials) of [" + task + "]; " + batchStatus);
     }
 
     private Metric getMetric(String description, String units) {
@@ -260,24 +262,24 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
         @Override
         protected void doLoad() {
             TitanKey weight = tx.makeType().name("weight").
-                    unique(Direction.OUT).
+                    vertexUnique(Direction.OUT).
                     dataType(Double.class).
                     makePropertyKey();
             TitanKey id = tx.makeType().name("uid").
-                    unique(Direction.OUT).
+                    vertexUnique(Direction.OUT).
                     //unique(Direction.IN).
-                    indexed(Vertex.class).
+                            indexed(Vertex.class).
                     dataType(Integer.class).
                     makePropertyKey();
             TitanLabel knows = tx.makeType().name("knows").
                     primaryKey(id).signature(weight).directed().makeEdgeLabel();
-            TitanKey name = tx.makeType().name("name").unique(Direction.OUT)
+            TitanKey name = tx.makeType().name("name").vertexUnique(Direction.OUT)
                     .indexed(Vertex.class).dataType(String.class).makePropertyKey();
 
             String[] names = new String[noNodes];
             TitanVertex[] nodes = new TitanVertex[noNodes];
             for (int i = 0; i < noNodes; i++) {
-                names[i]="Node"+i;
+                names[i] = "Node" + i;
                 nodes[i] = tx.addVertex();
                 nodes[i].addProperty(name, names[i]);
                 nodes[i].addProperty(id, i);
@@ -321,7 +323,7 @@ public abstract class TitanGraphPerformanceTest extends TitanGraphTestCommon {
             String[] names = new String[noNodes];
             TitanVertex[] nodes = new TitanVertex[noNodes];
             for (int i = 0; i < noNodes; i++) {
-                names[i]="Node"+i;
+                names[i] = "Node" + i;
                 nodes[i] = tx.addVertex();
                 nodes[i].addProperty(name, names[i]);
                 nodes[i].addProperty(id, i);

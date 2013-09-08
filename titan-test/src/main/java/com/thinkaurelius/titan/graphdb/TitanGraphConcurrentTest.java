@@ -33,14 +33,14 @@ import com.thinkaurelius.titan.testutil.RandomGenerator;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
-@BenchmarkOptions(warmupRounds=0, benchmarkRounds=3)
+@BenchmarkOptions(warmupRounds = 0, benchmarkRounds = 3)
 public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 
     // TODO guarantee that any exception in an executor thread generates an exception in the unit test that submitted the thread; due to open bugs on the jdk, this is not as simple as overriding ThreadPoolExecutor.afterExecute()
 
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get();
-    
+
     // Parallelism settings
     private static final int CORE_COUNT = ManagementFactory.
             getOperatingSystemMXBean().getAvailableProcessors();
@@ -108,27 +108,27 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
     public void concurrentTxRead() throws Exception {
         final int numTypes = 20;
         final int numThreads = 100;
-        for (int i=0;i<numTypes/2;i++) {
-            TypeMaker tm = tx.makeType().name("test"+i).dataType(String.class);
-            if (i%4==0) tm.unique(Direction.BOTH).indexed(Vertex.class);
-            else tm.unique(Direction.OUT);
+        for (int i = 0; i < numTypes / 2; i++) {
+            TypeMaker tm = tx.makeType().name("test" + i).dataType(String.class);
+            if (i % 4 == 0) tm.vertexUnique(Direction.OUT).graphUnique().indexed(Vertex.class);
+            else tm.vertexUnique(Direction.OUT);
             tm.makePropertyKey();
         }
-        for (int i=numTypes/2;i<numTypes;i++) {
-            TypeMaker tm = tx.makeType().name("test"+i);
-            if (i%4==1) tm.unidirected();
+        for (int i = numTypes / 2; i < numTypes; i++) {
+            TypeMaker tm = tx.makeType().name("test" + i);
+            if (i % 4 == 1) tm.unidirected();
             tm.makeEdgeLabel();
         }
         clopen();
         Thread[] threads = new Thread[numThreads];
-        for (int t=0;t<numThreads;t++) {
-            threads[t]=new Thread(new Runnable() {
+        for (int t = 0; t < numThreads; t++) {
+            threads[t] = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    TitanTransaction tx= graph.newTransaction();
-                    for (int i=0;i<numTypes;i++) {
-                        TitanType type = tx.getType("test"+i);
-                        if (i<numTypes/2) assertTrue(type.isPropertyKey());
+                    TitanTransaction tx = graph.newTransaction();
+                    for (int i = 0; i < numTypes; i++) {
+                        TitanType type = tx.getType("test" + i);
+                        if (i < numTypes / 2) assertTrue(type.isPropertyKey());
                         else assertTrue(type.isEdgeLabel());
                     }
                     tx.commit();
@@ -136,7 +136,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
             });
             threads[t].start();
         }
-        for (int t=0;t<numThreads;t++) {
+        for (int t = 0; t < numThreads; t++) {
             threads[t].join();
         }
     }
@@ -297,7 +297,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
             TitanVertex n = Iterables.getOnlyElement(tx.getVertices(id, nodeid));
 
             for (int i = 0; i < nodeTraversalCount; i++) {
-                assertEquals("On vertex: " + n.getID(),expectedEdges, Iterables.size(n.getTitanEdges(Direction.BOTH, relTypeToTraverse)));
+                assertEquals("On vertex: " + n.getID(), expectedEdges, Iterables.size(n.getTitanEdges(Direction.BOTH, relTypeToTraverse)));
                 for (TitanEdge r : n.getTitanEdges(Direction.OUT, relTypeToTraverse)) {
                     n = r.getVertex(Direction.IN);
                 }
