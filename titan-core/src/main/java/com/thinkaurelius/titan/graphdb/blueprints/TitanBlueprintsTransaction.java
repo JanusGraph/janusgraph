@@ -150,6 +150,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         return StringFactory.graphString(this, null);
     }
 
+
     // ########## INDEX HANDLING ###########################
 
     @Override
@@ -207,10 +208,24 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         Preconditions.checkArgument(elementClass == Vertex.class || elementClass == Edge.class, "Must provide either Vertex.class or Edge.class as an argument");
 
         Set<String> indexedkeys = new HashSet<String>();
-        for (TitanVertex v : getVertices(SystemKey.TypeClass, TitanTypeClass.KEY)) {
-            TitanKey k = (TitanKey) v;
+        for (TitanKey k : getTypes(TitanKey.class)) {
             if (!Iterables.isEmpty(k.getIndexes(elementClass))) indexedkeys.add(k.getName());
         }
         return indexedkeys;
     }
+
+    @Override
+    public <T extends TitanType> Iterable<T> getTypes(Class<T> clazz) {
+        Preconditions.checkNotNull(clazz);
+        Iterable<TitanVertex> types = null;
+        if (TitanKey.class.equals(clazz)) {
+            types = getVertices(SystemKey.TypeClass, TitanTypeClass.KEY);
+        } else if (TitanLabel.class.equals(clazz)) {
+            types = getVertices(SystemKey.TypeClass, TitanTypeClass.LABEL);
+        } else if (TitanType.class.equals(clazz)) {
+            types = Iterables.concat(getVertices(SystemKey.TypeClass, TitanTypeClass.KEY), getVertices(SystemKey.TypeClass, TitanTypeClass.LABEL));
+        } else throw new IllegalArgumentException("Unknown type class: " + clazz);
+        return Iterables.filter(types, clazz);
+    }
+
 }
