@@ -27,9 +27,6 @@ import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
@@ -43,7 +40,6 @@ import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnect
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
-import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
  * A Titan {@code KeyColumnValueStore} backed by Cassandra.
@@ -62,10 +58,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     private final String keyspace;
     private final String columnFamily;
     private final CTConnectionPool pool;
-    
-    // Metrics setup
-    private final Timer   getKeySliceTimer;
-    private final Counter getKeySliceCounter;
 
     public CassandraThriftKeyColumnValueStore(String keyspace, String columnFamily, CassandraThriftStoreManager storeManager,
                                               CTConnectionPool pool) {
@@ -73,15 +65,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         this.keyspace = keyspace;
         this.columnFamily = columnFamily;
         this.pool = pool;
-        
-        // Metrics setup
-        MetricRegistry metrics = MetricManager.INSTANCE.getRegistry();
-        Class<?> myClass = CassandraThriftKeyColumnValueStore.class;
-        getKeySliceTimer =
-                metrics.timer(MetricRegistry.name(myClass, "getKeySlice", "time"));
-        getKeySliceCounter =
-                metrics.counter(MetricRegistry.name(myClass, "getKeySlice", "keyslices"));
-        
     }
 
     /**
@@ -362,9 +345,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         }
 
 
-        Timer.Context timerContext = getKeySliceTimer.time();
-
-         try {
+        try {
             List<KeySlice> slices =
                     client.get_range_slices(new ColumnParent(columnFamily),
                             new SlicePredicate()
@@ -372,14 +353,10 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                             keyRange,
                             ConsistencyLevel.QUORUM);
 
-            getKeySliceCounter.inc(slices.size());
-
             /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
             return Iterators.filter(slices.iterator(), new KeyIterationPredicate());
         } catch (Exception e) {
             throw convertException(e);
-        } finally {
-            timerContext.stop();
         }
     }
 
