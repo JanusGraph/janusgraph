@@ -2,6 +2,14 @@
 target/
 .idea/
 *.iml
+# When executing tests in alphabetical order, Maven generates temporary
+# files with names like this:
+#
+#  .surefire-0320969CE4BEF3CC28F07EE3E21C2DCF89CB569C
+#
+# These files appear alongside pom.xml files.  The files are just lists
+# of test names and don't contain any important information.
+/titan-*/.surefire-*
 # Eclipse junk; leading slash makes patterns non-recursive
 # Note that * also can't match slashes
 /.settings/
