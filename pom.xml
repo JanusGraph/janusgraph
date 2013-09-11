@@ -24,6 +24,8 @@
         <module>titan-hbase</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
+        <module>titan-hazelcast</module>
+        <module>titan-ehcache</module>
         <module>titan-all</module>
         <module>titan-site</module>
         <module>titan-dist</module>
