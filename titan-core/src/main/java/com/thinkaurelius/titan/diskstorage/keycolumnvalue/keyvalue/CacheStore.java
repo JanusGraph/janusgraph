@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
@@ -10,7 +11,16 @@ import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
  */
 
 public interface CacheStore extends KeyValueStore {
-
+    /**
+     * Insert a new value into cache for the given key.
+     *
+     * @param key The key to use for insertion.
+     * @param value The new value to assign the key.
+     * @param tx The transactional context for the change.
+     *
+     * @throws StorageException
+     */
+    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction tx) throws StorageException;
 
     /**
      * Sets the value associated with key "key" to "value" if the current value associated with this key is "oldValue", otherwise
@@ -24,7 +34,6 @@ public interface CacheStore extends KeyValueStore {
      */
     public void replace(StaticBuffer key, StaticBuffer value, StaticBuffer oldValue, StoreTransaction txh) throws StorageException;
 
-
     /**
      * Returns an iterator over all keys in this store that match the given KeySelector. The keys may be
      * ordered but not necessarily.
@@ -32,5 +41,4 @@ public interface CacheStore extends KeyValueStore {
      * @return An iterator over all keys in this store.
      */
     public RecordIterator<KeyValueEntry> getKeys(KeySelector selector, StoreTransaction txh) throws StorageException;
-
 }

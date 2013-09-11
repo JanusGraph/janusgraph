@@ -7,8 +7,6 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
  */
 
 public interface CacheStoreManager extends KeyValueStoreManager {
-
     @Override
     public CacheStore openDatabase(String name) throws StorageException;
-
 }

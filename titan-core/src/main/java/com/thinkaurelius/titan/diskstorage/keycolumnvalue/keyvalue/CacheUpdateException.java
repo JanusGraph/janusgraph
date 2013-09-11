@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
-public abstract class CacheUpdateException extends StorageException {
+public class CacheUpdateException extends StorageException {
 
     /**
      * @param msg Exception message
@@ -34,6 +34,4 @@ public abstract class CacheUpdateException extends StorageException {
     public CacheUpdateException(Throwable cause) {
         this("Exception in storage backend.", cause);
     }
-
-
 }
