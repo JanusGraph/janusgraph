@@ -54,11 +54,6 @@
             <artifactId>titan-hazelcast</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-ehcache</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
 
     <build>
