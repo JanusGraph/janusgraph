@@ -12,17 +12,6 @@ import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 public interface CacheStore extends KeyValueStore {
     /**
-     * Insert a new value into cache for the given key.
-     *
-     * @param key The key to use for insertion.
-     * @param value The new value to assign the key.
-     * @param tx The transactional context for the change.
-     *
-     * @throws StorageException
-     */
-    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction tx) throws StorageException;
-
-    /**
      * Sets the value associated with key "key" to "value" if the current value associated with this key is "oldValue", otherwise
      * it throws an {@link CacheUpdateException}.
      *
