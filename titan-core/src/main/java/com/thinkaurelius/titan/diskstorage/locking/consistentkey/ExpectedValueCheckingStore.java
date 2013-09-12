@@ -145,7 +145,7 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
 
     @Override
     public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
-        return getKeys(query, txh);
+        return dataStore.getKeys(query, txh);
     }
 
     @Override
