@@ -3,10 +3,13 @@ package com.thinkaurelius.titan.diskstorage.locking;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 
 /**
- * This exception signifies a (potentially) temporary exception while attempting to acquire a lock
- * in the Titan storage backend.
+ * This exception signifies a (potentially) temporary exception while attempting
+ * to acquire a lock in the Titan storage backend. These can occur due to
+ * request timeouts, network failures, etc. Temporary failures represented by
+ * this exception might disappear if the request is retried, even if no machine
+ * modifies the underlying lock state between the failure and follow-up request.
  * <p/>
- * <p/>
+ * 
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
