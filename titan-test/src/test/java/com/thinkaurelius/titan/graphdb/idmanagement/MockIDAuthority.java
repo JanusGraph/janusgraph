@@ -73,13 +73,6 @@ public class MockIDAuthority implements IDAuthority {
         return new long[]{lowerBound, Math.min(lowerBound + size, blockSizeLimit)};
     }
 
-    @Override
-    public long peekNextID(int partition) throws StorageException {
-        AtomicLong id = ids.get(Integer.valueOf(partition));
-        if (id == null) return 1;
-        else return id.get();
-    }
-
     public void setLocalPartition(int[] local) {
         this.localPartition = local;
     }
