@@ -294,7 +294,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             }
         } else {
             // Fail immediately with no retries on local contention
-            throw new TemporaryLockingException("Local lock contention");
+            throw new PermanentLockingException("Local lock contention");
         }
     }
     
