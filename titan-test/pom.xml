@@ -74,9 +74,6 @@
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <argLine>-Xms256m -Xmx756m ${jacoco.opts}</argLine>
-                </configuration>
             </plugin>
             <!-- Plugin declarations for code coverage -->
             <plugin>

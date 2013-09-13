@@ -9,6 +9,7 @@
     <artifactId>titan-persistit</artifactId>
     <name>Titan-Persistit: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -29,49 +30,12 @@
     </dependencies>
 
     <build>
-        <directory>${basedir}/target</directory>
-        <finalName>${project.artifactId}-${project.version}</finalName>
         <resources>
             <resource>
                 <directory>${basedir}/src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
         </resources>
-        <testResources>
-            <testResource>
-                <directory>${basedir}/src/test/resources</directory>
-            </testResource>
-        </testResources>
-        <plugins>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <argLine>-Xms256m -Xmx756m ${jacoco.opts}</argLine>
-                    <excludes>
-                        <exclude>**/External*.java</exclude>
-                        <!-- Excluded because these take too long to run and require a lot of memory - see comprehensive profile -->
-                        <exclude>**/*PerformanceTest.java</exclude>
-                        <exclude>**/*ConcurrentTest.java</exclude>
-                    </excludes>
-                    <forkMode>always</forkMode>
-                </configuration>
-            </plugin>
-            <!-- Plugin declarations for code coverage -->
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
-            </plugin>
-            <!-- End plugin declarations for code coverage -->
-        </plugins>
     </build>
 </project>
 

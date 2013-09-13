@@ -95,7 +95,8 @@
         <!-- Required for PMD plugin. Used for compiler plugin -->
         <targetJdk>1.7</targetJdk>
         <perf.jvm.opts></perf.jvm.opts>
-        <jacoco.opts></jacoco.opts>
+        <test.jvm.opts>-Xms256m -Xmx756m ${test.extra.jvm.opts} ${jacoco.opts}</test.jvm.opts>
+        <test.extra.jvm.opts></test.extra.jvm.opts>
     </properties>
     <build>
         <directory>${basedir}/target</directory>
@@ -180,7 +181,13 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.15</version>
                     <configuration>
+                        <argLine>${test.jvm.opts}</argLine>
                         <runOrder>alphabetical</runOrder>
+                        <excludes>
+                            <exclude>**/External*.java</exclude>
+                            <exclude>**/*PerformanceTest.java</exclude>
+                            <exclude>**/*ConcurrentTest.java</exclude>
+                        </excludes>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -264,7 +271,6 @@
                         <aggregate>true</aggregate>
                     </configuration>
                 </plugin>
-                
                 <plugin>
                     <groupId>com.github.github</groupId>
                     <artifactId>site-maven-plugin</artifactId>
@@ -663,12 +669,49 @@
         </profile>
         
         <profile>
+            <id>default-props</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <!-- When I put this empty default value in the pom's
+                     top-level <properties>, it overwrites the jacoco
+                     plugin's generated value.  When I put it here,
+                     the jacoco plugin's generated value overrides the
+                     empty default.  So here it is, even though it
+                     looks kind of weird. -->
+                <jacoco.opts></jacoco.opts>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>sonar-upload</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <sonar.jacoco.reportPath>../target/jacoco-combined.exec</sonar.jacoco.reportPath>
+                <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- This binds no goals by default.  The user has to run the sonar:sonar goal for this plugin to do anything. -->
+                    <plugin>
+                        <groupId>org.codehaus.sonar</groupId>
+                        <artifactId>sonar-maven-plugin</artifactId>
+                        <version>3.7</version>
+                        <inherited>false</inherited>
+                    </plugin>
+                </plugins>
+	    </build>
+        </profile>
+
+        <profile>
             <id>coverage</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
             <build>
-                <pluginManagement>
                     <plugins>
                         <plugin>
                             <artifactId>maven-resources-plugin</artifactId>
@@ -707,7 +750,7 @@
                                 </execution>
                             </executions>
                         </plugin>
-                        <plugin>
+                       <plugin>
                             <artifactId>maven-dependency-plugin</artifactId>
                             <executions>
                                <!-- Unpack all dependency class and source files for use by JaCoCo -->
@@ -745,7 +788,7 @@
                              <executions>
                                  <execution> 
                                      <id>prepare-jacoco-agent</id>
-                                     <phase>process-resources</phase>
+                                     <phase>test-compile</phase>
                                      <goals>
                                          <goal>prepare-agent</goal>
                                      </goals>
@@ -781,7 +824,7 @@
                                                     <structure name="Integration test coverage">
                                                         <classfiles>
                                                             <fileset dir="${project.build.directory}/jacoco-classes" />
-                                                        </classfiles>
+                                                        u</classfiles>
                                                         <sourcefiles encoding="UTF-8">
                                                             <fileset dir="${project.build.directory}/jacoco-sources" />
                                                         </sourcefiles>
@@ -801,40 +844,6 @@
                             </dependencies>
                         </plugin>
                     </plugins>
-                </pluginManagement>
-	    </build>
-        </profile>
-
-        <profile>
-            <id>sonar-upload</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <sonar.jacoco.reportPath>../target/jacoco-combined.exec</sonar.jacoco.reportPath>
-                <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.sonar</groupId>
-                        <artifactId>sonar-maven-plugin</artifactId>
-                        <version>3.7</version>
-                        <inherited>false</inherited>
-                    </plugin>
-                </plugins>
-	    </build>
-        </profile>
-
-        <profile>
-            <id>jacoco-report</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-
-                </plugins>
 	    </build>
         </profile>
 
@@ -855,7 +864,7 @@
                                 </goals>
                                 <phase>test</phase>
                                 <configuration>
-                                    <argLine>-Xms256m -Xmx1024m ${perf.jvm.opts}</argLine>
+                                    <argLine>${test.jvm.opts} ${perf.jvm.opts}</argLine>
                                     <reuseForks>false</reuseForks>
                                     <forkCount>1</forkCount>
                                     <parallel/>
@@ -870,6 +879,31 @@
                                 <phase>none</phase>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>comprehensive-test</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>-Xms256m -Xmx1024m</argLine>
+                            <includes>
+                                <include>**/*Test.java</include>
+                            </includes>
+                            <excludes>
+                                <exclude>**/Internal*.java</exclude>
+                                <exclude>**/*Suite.java</exclude>
+                            </excludes>
+                            <forkMode>always</forkMode>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
