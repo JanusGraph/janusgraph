@@ -128,7 +128,7 @@
 
     <profiles>
         <profile>
-            <id>titan-release</id>
+            <id>aurelius-release</id>
             <dependencies>
                 <dependency>
                     <groupId>${project.groupId}</groupId>

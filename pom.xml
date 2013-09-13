@@ -155,7 +155,7 @@
                       operation should be encapsulated with the
                       profile id listed below.
                     -->
-                    <releaseProfiles>titan-release</releaseProfiles>
+                    <releaseProfiles>aurelius-release</releaseProfiles>
 
                     <!--
                       I am a criminal.
@@ -614,7 +614,7 @@
         </profile>
 
         <profile>
-            <id>titan-release</id>
+            <id>aurelius-release</id>
             <!--
               Sign artifacts artifacts only during release:perform
               when this profile is automatically activated or whenever
