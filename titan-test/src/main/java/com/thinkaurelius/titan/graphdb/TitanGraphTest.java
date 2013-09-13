@@ -890,7 +890,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     }
 
-
     @Test
     public void testQuery() {
         TitanKey name = tx.makeType().name("name").dataType(String.class).vertexUnique(Direction.OUT).indexed(Vertex.class).graphUnique().makePropertyKey();
@@ -1056,7 +1055,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(2, v.query().has("weight", 1.5).interval("time", 10, 30).limit(2).count());
         assertEquals(5, v.query().has("weight", 1.5).interval("time", 10, 30).count());
 
-
     }
 
     //Merge above
@@ -1220,4 +1218,15 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(1, Iterators.size(i.iterator()));
     }
 
+    @Test
+    public void testSimpleGlobalVertexCount() {
+        final int n = 3;
+        for (int i = 0; i < n; i++) {
+            tx.addVertex();
+        }
+        assertEquals(n, Iterables.size(tx.getVertices()));
+        tx.commit();
+        tx = graph.newTransaction();
+        assertEquals(n, Iterables.size(tx.getVertices()));
+    }
 }
