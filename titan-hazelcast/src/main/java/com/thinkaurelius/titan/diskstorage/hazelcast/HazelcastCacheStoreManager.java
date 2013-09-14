@@ -29,10 +29,17 @@ public class HazelcastCacheStoreManager extends AbstractHazelcastStoreManager im
 
     @Override
     public void clearStorage() throws StorageException {
-        for (String storeName : stores.keySet()) {
-            manager.getMap(storeName).clear();
+        for (HazelcastCacheStore store : stores.values()) {
+            store.clear();
         }
 
         close();
+    }
+
+    @Override
+    public void close() throws StorageException {
+        for (HazelcastCacheStore store : stores.values()) {
+            store.close();
+        }
     }
 }

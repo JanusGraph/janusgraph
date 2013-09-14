@@ -9,6 +9,7 @@ import com.tinkerpop.blueprints.Graph;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Assert;
+import org.junit.Ignore;
 
 import java.io.File;
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import java.util.Map;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+@Ignore
 public class HazelcastBlueprintsTest extends TitanBlueprintsTest {
 
     private static final String DEFAULT_DIR_NAME = "standard";

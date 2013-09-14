@@ -58,14 +58,10 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
         features.supportsBatchMutation = false;
         features.supportsConsistentKeyOperations = false;
         features.supportsLocking = false;
-        features.isKeyOrdered = true;
+        features.isKeyOrdered = false;
         features.hasLocalKeyPartition = false;
 
         return features;
-    }
-
-    @Override
-    public void close() throws StorageException {
     }
 
     public static class HazelCastTransaction extends AbstractStoreTransaction {

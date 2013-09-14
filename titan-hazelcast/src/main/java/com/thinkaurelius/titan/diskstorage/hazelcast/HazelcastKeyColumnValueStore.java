@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.hazelcast;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.nio.ByteBuffer;
+import java.util.*;
 
 import javax.annotation.Nullable;
 
@@ -41,7 +40,7 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
                 if (column == null)
                     return false;
 
-                StaticBuffer name  = new StaticArrayBuffer(column.name);
+                StaticBuffer name = new StaticArrayBuffer(column.name);
                 return name.compareTo(query.getSliceStart()) >= 0 && name.compareTo(query.getSliceEnd()) < 0;
             }
         });
@@ -68,16 +67,16 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
-        for (Entry addition : additions) {
-            cache.put(key.as(StaticArrayBuffer.ARRAY_FACTORY), new Column(addition.getColumn(), addition.getValue()));
-        }
-
         for (StaticBuffer columnToDelete : deletions) {
             for (Column column : cache.get(key.as(StaticArrayBuffer.ARRAY_FACTORY))) {
                 if (new StaticArrayBuffer(column.name).equals(columnToDelete)) {
                     cache.remove(key, column);
                 }
             }
+        }
+
+        for (Entry addition : additions) {
+            cache.put(key.as(StaticArrayBuffer.ARRAY_FACTORY), new Column(addition.getColumn(), addition.getValue()));
         }
     }
 
@@ -164,6 +163,8 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
             ensureOpen();
 
             return new RecordIterator<Entry>() {
+                private int count = 0;
+
                 private final Iterator<Column> columns = Iterators.filter(cache.get(currentKey).iterator(), new Predicate<Column>() {
                     @Override
                     public boolean apply(@Nullable Column column) {
@@ -171,7 +172,7 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
                             return false;
 
                         StaticBuffer name = new StaticArrayBuffer(column.name);
-                        return name.compareTo(query.getSliceStart()) >= 0 && name.compareTo(query.getSliceEnd()) < 0;
+                        return name.compareTo(query.getSliceStart()) >= 0 && name.compareTo(query.getSliceEnd()) < 0 && count < query.getLimit();
                     }
                 });
 
@@ -185,8 +186,8 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
                 @Override
                 public Entry next() throws StorageException {
                     ensureOpen();
-
                     Column column = columns.next();
+                    count++;
                     return new StaticBufferEntry(new StaticArrayBuffer(column.name), new StaticArrayBuffer(column.value));
                 }
 

@@ -49,4 +49,11 @@ public class HazelcastKeyColumnValueStoreManager extends AbstractHazelcastStoreM
 
         close();
     }
+
+    @Override
+    public void close() throws StorageException {
+        for (HazelcastKeyColumnValueStore store : stores.values()) {
+            store.close();
+        }
+    }
 }

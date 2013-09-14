@@ -441,8 +441,7 @@ public class Backend {
         put("local", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
         put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
         put("persistit", "com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager");
-        put("hazelcast", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastStoreManager");
-        put("ehcache", "com.thinkaurelius.titan.diskstorage.ehcache.EhCacheStoreManager");
+        put("hazelcast", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastKeyColumnValueStoreManager");
         put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
         put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
