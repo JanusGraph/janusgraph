@@ -219,9 +219,11 @@ public abstract class GroovySerialTest {
             String pkey  = gen.getHighDegEdgeProp()
             def v = graph.V(GraphGenerator.UID_PROP, uid).next();
             
-            def c1 = v.outE(label).count()
-            assertEquals(Math.round(VERTEX_COUNT - 1), c1)
+            // Only uncomment this in debugging...
+//            def c1 = v.outE(label).count()
+//            assertEquals(Math.round(VERTEX_COUNT - 1), c1)
             
+            // TODO add a T.gt to limit the total size to ~100 or something equivalently fast
             def c2 = v.outE(label).has(pkey, T.lt, (int)(gen.getMaxUid() / 4)).count()
             assertEquals(Math.round(VERTEX_COUNT / 4) - 1, c2)
         })
