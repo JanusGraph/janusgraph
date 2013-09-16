@@ -51,7 +51,7 @@ public class InternalCassandraGraphSerialTest extends GroovySerialTest {
         GraphGenerator gg = getGenerator();
         GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(conf);
         graphconfig.getBackend().clearStorage();
-        gg.generateScaleFreeTitanGraph(g, VERTEX_COUNT, EDGE_COUNT);
+        gg.generate(g, VERTEX_COUNT, EDGE_COUNT);
         System.out.println("Initialized graph");
     }
 }

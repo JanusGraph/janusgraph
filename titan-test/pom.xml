@@ -93,7 +93,18 @@
 		    <artifactId>gmaven-runtime-1.5</artifactId>
 		    <version>1.5</version>
 		    <scope>test</scope>
+		    <exclusions>
+		    	<exclusion>
+		    		<groupId>org.apache.ant</groupId>
+		    		<artifactId>ant</artifactId>
+		    	</exclusion>
+		    </exclusions>
 		</dependency>
+		<dependency>
+		    <groupId>com.tinkerpop.gremlin</groupId>
+		    <artifactId>gremlin-groovy</artifactId>
+		    <version>${tinkerpop.version}</version>
+		 </dependency>
     </dependencies>
     <build>
         <directory>${basedir}/target</directory>
