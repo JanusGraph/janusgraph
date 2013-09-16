@@ -86,6 +86,14 @@
             <artifactId>easymock</artifactId>
             <version>3.1</version>
         </dependency>
+        
+        <!-- Groovy -->
+		<dependency>
+		    <groupId>org.codehaus.gmaven.runtime</groupId>
+		    <artifactId>gmaven-runtime-1.5</artifactId>
+		    <version>1.5</version>
+		    <scope>test</scope>
+		</dependency>
     </dependencies>
     <build>
         <directory>${basedir}/target</directory>
@@ -109,6 +117,60 @@
                     <argLine>-Xms256m -Xmx756m</argLine>
                 </configuration>
             </plugin>
+	        <!-- Groovy -->
+	        <plugin>
+	    		<groupId>org.codehaus.gmaven</groupId>
+			    <artifactId>gmaven-plugin</artifactId>
+			    <version>1.5</version>
+	    		<configuration>
+	            	<providerSelection>1.5</providerSelection>
+	                <sources>
+	                    <fileset>
+	                        <directory>src/main/groovy</directory>
+	                        <includes>
+	                            <include>**/*.groovy</include>
+	                        </includes>
+	                    </fileset>
+	                    <fileset>
+	                        <directory>src/test/groovy</directory>
+	                        <includes>
+	                            <include>**/*.groovy</include>
+	                        </includes>
+	                    </fileset>
+	                </sources>
+	                <debug>true</debug>
+					<verbose>true</verbose>
+					<stacktrace>true</stacktrace>
+	            </configuration>
+			    <executions>
+			        <execution>
+			            <id>default</id>
+			            <goals>
+			                <goal>compile</goal>
+			            </goals>
+			            <configuration>
+			            	<providerSelection>1.5</providerSelection>
+			                <sources>
+			                    <fileset>
+			                        <directory>${project.basedir}/src/main/groovy</directory>
+			                        <includes>
+			                            <include>**/*.groovy</include>
+			                        </includes>
+			                    </fileset>
+			                    <fileset>
+			                        <directory>${project.basedir}/src/test/groovy</directory>
+			                        <includes>
+			                            <include>**/*.groovy</include>
+			                        </includes>
+			                    </fileset>
+			                </sources>
+			                <debug>true</debug>
+       						<verbose>true</verbose>
+        					<stacktrace>true</stacktrace>
+			            </configuration>
+			        </execution>
+			    </executions>
+			</plugin>
         </plugins>
     </build>
 </project>

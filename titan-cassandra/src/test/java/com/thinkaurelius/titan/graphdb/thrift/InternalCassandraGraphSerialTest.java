@@ -8,14 +8,14 @@ import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
-import com.thinkaurelius.titan.graphdb.TitanGraphSerialTest;
+import com.thinkaurelius.titan.graphdb.GroovySerialTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.testcategory.RandomPartitionerTests;
 import com.thinkaurelius.titan.testutil.GraphGenerator;
 
 @Category({RandomPartitionerTests.class})
-public class InternalCassandraGraphSerialTest extends TitanGraphSerialTest {
+public class InternalCassandraGraphSerialTest extends GroovySerialTest {
     
     private static StandardTitanGraph graph; 
     private static GraphGenerator gen;
