@@ -46,9 +46,9 @@ abstract class GroovySerialTest {
     protected final TitanGraph graph
     protected final Configuration conf
     
-    protected static final int VERTEX_COUNT = 10 * 100
+    protected static final int VERTEX_COUNT = 10 * 1000
     protected static final int EDGE_COUNT = VERTEX_COUNT * 5
-    private static final int TX_COUNT = 5
+    private static final int TX_COUNT = 10
     private static final int OPS_PER_TX = 100
     private static final Logger LOG = LoggerFactory.getLogger(GroovySerialTest)
 
