@@ -41,17 +41,8 @@ public class InternalCassandraGraphSerialTest extends GroovySerialTest {
     @Override
     protected GraphGenerator getGenerator() {
         if (null == gen) {
-            gen = new GraphGenerator(VERTEX_PROP_COUNT, EDGE_PROP_COUNT);
+            gen = new GraphGenerator.Builder(VERTEX_COUNT, EDGE_COUNT).build();
         }
         return gen;
-    }
-
-    private void initializeGraph(TitanGraph g) throws StorageException {
-        System.out.println("Initializing graph");
-        GraphGenerator gg = getGenerator();
-        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(conf);
-        graphconfig.getBackend().clearStorage();
-        gg.generate(g, VERTEX_COUNT, EDGE_COUNT);
-        System.out.println("Initialized graph");
     }
 }
