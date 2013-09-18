@@ -1,22 +1,19 @@
-package com.thinkaurelius.titan.blueprints.hazelcast;
+package com.thinkaurelius.titan.diskstorage.hazelcast;
 
 import java.util.*;
 
 import com.thinkaurelius.titan.HazelcastStorageSetup;
 import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStore;
-import com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import org.junit.*;
-import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HazelcastKeyValueTest {
+public class HazelcastCacheStoreTest {
     private static final Logger logger = LoggerFactory.getLogger(KeyValueStoreTest.class);
 
     private static final int NUM_KEYS = 2000;
@@ -26,7 +23,7 @@ public class HazelcastKeyValueTest {
     protected StoreTransaction tx;
     protected HazelcastCacheStore store;
 
-    public HazelcastKeyValueTest() throws StorageException {
+    public HazelcastCacheStoreTest() throws StorageException {
         manager = new HazelcastCacheStoreManager(HazelcastStorageSetup.getHazelcastGraphConfig());
         store = (HazelcastCacheStore) manager.openDatabase(STORE_NAME);
     }

@@ -8,6 +8,9 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import com.google.common.primitives.SignedBytes;
+import com.google.common.primitives.UnsignedBytes;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.nio.ObjectDataInput;
@@ -16,6 +19,7 @@ import com.hazelcast.nio.serialization.DataSerializable;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
@@ -33,25 +37,36 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public List<Entry> getSlice(final KeySliceQuery query, StoreTransaction txh) throws StorageException {
-        byte[] key = query.getKey().as(StaticArrayBuffer.ARRAY_FACTORY);
-        final Iterator<Column> columns = Iterators.filter(cache.get(key).iterator(), new Predicate<Column>() {
-            @Override
-            public boolean apply(@Nullable Column column) {
-                if (column == null)
-                    return false;
+        int count = 0;
+        List<Entry> results = new ArrayList<Entry>();
+        List<Column> columns = Lists.newArrayList(cache.get(query.getKey().as(StaticArrayBuffer.ARRAY_FACTORY)));
 
-                StaticBuffer name = new StaticArrayBuffer(column.name);
-                return name.compareTo(query.getSliceStart()) >= 0 && name.compareTo(query.getSliceEnd()) < 0;
+        Collections.sort(columns, new Comparator<Column>() {
+            private final Comparator<byte[]> byteComparator = SignedBytes.lexicographicalComparator();
+
+            @Override
+            public int compare(Column a, Column b) {
+                return byteComparator.compare(a.name, b.name);
             }
         });
 
-        List<Entry> result = new ArrayList<Entry>();
-        while (columns.hasNext()) {
-            Column column = columns.next();
-            result.add(new StaticBufferEntry(new StaticArrayBuffer(column.name), new StaticArrayBuffer(column.value)));
+        for (Column column : columns) {
+            if (query.hasLimit() && count >= query.getLimit())
+                break;
+
+            StaticBuffer name = new StaticArrayBuffer(column.name);
+
+            if (name.compareTo(query.getSliceStart()) < 0)
+                continue;
+
+            if (name.compareTo(query.getSliceEnd()) >= 0)
+                break;
+
+            results.add(new StaticBufferEntry(new StaticArrayBuffer(column.name), new StaticArrayBuffer(column.value)));
+            count++;
         }
 
-        return result;
+        return results;
     }
 
     @Override
@@ -70,7 +85,7 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
         for (StaticBuffer columnToDelete : deletions) {
             for (Column column : cache.get(key.as(StaticArrayBuffer.ARRAY_FACTORY))) {
                 if (new StaticArrayBuffer(column.name).equals(columnToDelete)) {
-                    cache.remove(key, column);
+                    cache.remove(key.as(StaticArrayBuffer.ARRAY_FACTORY), column);
                 }
             }
         }
@@ -111,6 +126,10 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public String getName() {
         return cache.getName();
+    }
+
+    public void clear() {
+        cache.clear();
     }
 
     @Override

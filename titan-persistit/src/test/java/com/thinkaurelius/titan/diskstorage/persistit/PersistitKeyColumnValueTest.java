@@ -15,7 +15,7 @@ public class PersistitKeyColumnValueTest extends KeyColumnValueStoreTest {
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
         Configuration config = PersistitStorageSetup.getPersistitGraphConfig();
         PersistitStoreManager sm = new PersistitStoreManager(config.subset(STORAGE_NAMESPACE));
-        OrderedKeyValueStoreManagerAdapter smadapter = new OrderedKeyValueStoreManagerAdapter(sm, ImmutableMap.of(storeName, 8));
+        OrderedKeyValueStoreManagerAdapter smadapter = new OrderedKeyValueStoreManagerAdapter(sm, ImmutableMap.of(STORE_NAME, 8));
         return smadapter;
     }
 
