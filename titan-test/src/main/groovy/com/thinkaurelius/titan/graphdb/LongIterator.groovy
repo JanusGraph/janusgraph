@@ -11,6 +11,15 @@ interface LongIterator {
     boolean hasNext()
 }
 
+/**
+ * This isn't truly random.  It returnes a sequence of longs at a randomly
+ * calculated offset and modulo a specified maximum.  As long as the sequence
+ * length is less than the modulus, this iterator never repeats values.
+ * 
+ * I started with true randomness, but the possibility of visiting the same
+ * long twice wasn't useful for the application I had in mind.  The name is
+ * kind of a misnomer now.
+ */
 class RandomLongIterator implements LongIterator {
     
     private long i = 0L
@@ -34,6 +43,10 @@ class RandomLongIterator implements LongIterator {
     }
 }
 
+/*
+ * This should probably be implemented using RandomLongIterator.
+ * It's just that with an offset of 0.
+ */
 class SequentialLongIterator implements LongIterator {
     
     private long i = 0L

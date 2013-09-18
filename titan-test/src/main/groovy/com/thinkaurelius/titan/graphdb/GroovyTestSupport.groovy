@@ -15,22 +15,29 @@ import com.thinkaurelius.titan.core.TitanGraph
 import com.thinkaurelius.titan.diskstorage.StorageException
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph
-import com.thinkaurelius.titan.testutil.GraphGenerator
+import com.thinkaurelius.titan.testutil.gen.Schema
+import com.thinkaurelius.titan.testutil.gen.GraphGenerator
 import com.tinkerpop.gremlin.groovy.Gremlin
 import com.thinkaurelius.titan.diskstorage.StorageException
+
+import java.util.zip.GZIPInputStream
+import java.io.IOException
+import java.io.FileInputStream
 
 abstract class GroovyTestSupport {
     
     private static final Logger LOG = LoggerFactory.getLogger(GroovyTestSupport)
     
     // Graph generation settings
-    public static final int VERTEX_COUNT = 10 * 1000
+    public static final int VERTEX_COUNT = 10 * 100
     public static final int EDGE_COUNT = VERTEX_COUNT * 5
     
     // Query execution setting defaults
     public static final int DEFAULT_TX_COUNT = 3
     public static final int DEFAULT_OPS_PER_TX = 100
     public static final int DEFAULT_ITERATIONS = DEFAULT_TX_COUNT * DEFAULT_OPS_PER_TX
+    
+    public static final String RELATION_FILE = "data/v10k.graphml.gz"
     
     // Mutable state
     protected Random random = new Random(7) // Arbitrary seed
@@ -57,8 +64,8 @@ abstract class GroovyTestSupport {
                 throw new RuntimeException(e);
             }
         }
-        if (null == gen)
-            gen = getGenerator()
+        if (null == schema)
+            schema = getSchema()
     }
     
     @After
@@ -73,13 +80,11 @@ abstract class GroovyTestSupport {
     }
 
     protected abstract StandardTitanGraph getGraph() throws StorageException;
-    protected abstract GraphGenerator getGenerator();
+    protected abstract Schema getSchema();
 
     /*
      * Helper methods
      */
-    
-    
     
     protected void sequentialUidTask(int txCount = DEFAULT_TX_COUNT, int opsPerTx = DEFAULT_OPS_PER_TX, closure) {
         def uids = new SequentialLongIterator(txCount * opsPerTx)
@@ -87,21 +92,22 @@ abstract class GroovyTestSupport {
     }
     
     protected void randomUidTask(int txCount = DEFAULT_TX_COUNT, int opsPerTx = DEFAULT_OPS_PER_TX, closure) {
-        def uids = new RandomLongIterator(txCount * opsPerTx, gen.getMaxUid(), random)
+        def uids = new RandomLongIterator(txCount * opsPerTx, schema.getMaxUid(), random)
         multiVertexTask(uids, txCount, opsPerTx, closure)
     }
 
-    protected void supernodeTask(closure) {
-        
-        long uid = gen.getHighDegVertexUid()
-        String label = gen.getHighDegEdgeLabel()
-        assertNotNull(label)
-        String pkey  = gen.getPrimaryKeyForLabel(label)
-        assertNotNull(pkey)
-        def v = graph.V(GraphGenerator.UID_PROP, uid).next()
-        assertNotNull(v)
-        
-        closure(v, label, pkey)
+    protected void supernodeTask(int repeat = 1, closure) {
+        for (int i = 0; i < repeat; i++) {
+            long uid = schema.getSupernodeUid()
+            String label = schema.getSupernodeOutLabel()
+            assertNotNull(label)
+            String pkey  = schema.getPrimaryKeyForLabel(label)
+            assertNotNull(pkey)
+            def v = graph.V(Schema.UID_PROP, uid).next()
+            assertNotNull(v)
+            
+            closure(v, label, pkey)
+        }
     }
     
     protected void multiVertexTask(LongIterator uids, int txCount = DEFAULT_TX_COUNT, int opsPerTx = DEFAULT_OPS_PER_TX, closure) {
@@ -112,7 +118,7 @@ abstract class GroovyTestSupport {
         
         while (uids.hasNext()) {
             long u = uids.next()
-            Vertex v = tx.getVertex(GraphGenerator.UID_PROP, u)
+            Vertex v = tx.getVertex(Schema.UID_PROP, u)
             assertNotNull(v)
             closure.call(tx, v)
             if (opsPerTx <= ++op) {
@@ -126,57 +132,39 @@ abstract class GroovyTestSupport {
     }
     
     
-    protected void standardIndexEdgeTask(closure) {
-        final int keyCount = gen.getEdgePropKeys()
+    protected void standardIndexEdgeTask(int repeat = 1, closure) {
+        final int keyCount = schema.getEdgePropKeys()
         
-        for (int i = 0; i < keyCount; i++) {
+        for (int i = 0; i < keyCount * repeat; i++) {
             def tx = graph.newTransaction()
-            closure(tx, gen.getEdgePropertyName(i), 0)
+            closure(tx, schema.getEdgePropertyName(i % keyCount), 0)
             tx.commit()
         }
     }
     
-    protected void standardIndexVertexTask(closure) {
-        final int keyCount = gen.getVertexPropKeys()
+    protected void standardIndexVertexTask(int repeat = 1, closure) {
+        final int keyCount = schema.getVertexPropKeys()
         
-        for (int i = 0; i < keyCount; i++) {
+        for (int i = 0; i < keyCount * repeat; i++) {
             def tx = graph.newTransaction()
-            closure(tx, gen.getVertexPropertyName(i), 0)
+            closure(tx, schema.getVertexPropertyName(i % keyCount), 0)
             tx.commit()
-        }
-    }
-    
-    protected void rollbackTx(closure) {
-        doTx(closure, { tx -> tx.rollback() })
-    }
-    
-    protected void commitTx(closure) {
-        doTx(closure, { tx -> tx.commit() })
-    }
-
-    protected void doTx(txWork, afterWork) {
-        def tx
-        for (int t = 0; t < DEFAULT_TX_COUNT; t++) {
-            tx = graph.newTransaction()
-            txWork.call(t, tx)
-            afterWork.call(tx)
-        }
-    }
-    
-    protected void noTx(closure) {
-        for (int t = 0; t < DEFAULT_TX_COUNT; t++) {
-            closure.call(t)
-            graph.rollback()
         }
     }
     
     protected void initializeGraph(TitanGraph g) throws StorageException {
         LOG.info("Initializing graph...");
         long before = System.currentTimeMillis()
-        GraphGenerator generator = getGenerator();
+        Schema schema = getSchema();
+        GraphGenerator generator = new GraphGenerator(schema);
         GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(conf);
         graphconfig.getBackend().clearStorage();
-        generator.generate(g);
+//        generator.generate(g);
+        try {
+            generator.generateTypesAndLoadData(g, new GZIPInputStream(new FileInputStream(RELATION_FILE)))
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         long after = System.currentTimeMillis()
         long duration = after - before
         if (15 * 1000 <= duration) {

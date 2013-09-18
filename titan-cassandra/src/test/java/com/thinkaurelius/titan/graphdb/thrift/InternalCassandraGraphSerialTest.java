@@ -5,20 +5,18 @@ import org.junit.experimental.categories.Category;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.graphdb.GroovySerialTest;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.testcategory.RandomPartitionerTests;
-import com.thinkaurelius.titan.testutil.GraphGenerator;
+import com.thinkaurelius.titan.testcategory.PerformanceTests;
+import com.thinkaurelius.titan.testutil.gen.Schema;
 
-@Category({RandomPartitionerTests.class})
+@Category({PerformanceTests.class})
 public class InternalCassandraGraphSerialTest extends GroovySerialTest {
     
     private static StandardTitanGraph graph; 
-    private static GraphGenerator gen;
+    private static Schema schema;
     
     public InternalCassandraGraphSerialTest() throws StorageException {
         super(CassandraStorageSetup.getCassandraThriftGraphConfiguration(InternalCassandraGraphSerialTest.class.getSimpleName()));
@@ -39,10 +37,10 @@ public class InternalCassandraGraphSerialTest extends GroovySerialTest {
     }
     
     @Override
-    protected GraphGenerator getGenerator() {
-        if (null == gen) {
-            gen = new GraphGenerator.Builder(VERTEX_COUNT, EDGE_COUNT).build();
+    protected Schema getSchema() {
+        if (null == schema) {
+            schema = new Schema.Builder(VERTEX_COUNT, EDGE_COUNT).build();
         }
-        return gen;
+        return schema;
     }
 }
