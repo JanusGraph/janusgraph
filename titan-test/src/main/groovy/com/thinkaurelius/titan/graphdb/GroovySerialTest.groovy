@@ -3,201 +3,45 @@ package com.thinkaurelius.titan.graphdb
 import static org.junit.Assert.*
 
 import org.apache.commons.configuration.Configuration
-import org.junit.After
-import org.junit.Before
+import org.junit.FixMethodOrder;
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestRule
+import org.junit.runners.MethodSorters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import com.carrotsearch.junitbenchmarks.BenchmarkOptions
 import com.google.common.base.Preconditions
-import com.google.common.collect.ImmutableSet
 import com.google.common.collect.Iterables
 import com.thinkaurelius.titan.core.TitanEdge
 import com.thinkaurelius.titan.core.TitanGraph
 import com.thinkaurelius.titan.core.TitanKey
 import com.thinkaurelius.titan.core.TitanVertex
-import com.thinkaurelius.titan.diskstorage.StorageException
 import com.thinkaurelius.titan.graphdb.FakeVertex
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph
 import com.thinkaurelius.titan.testutil.GraphGenerator
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider
 import com.tinkerpop.blueprints.Vertex
 import com.tinkerpop.frames.FramedGraph
 import com.tinkerpop.gremlin.Tokens.T
-import com.tinkerpop.gremlin.groovy.Gremlin
+import com.thinkaurelius.titan.diskstorage.StorageException
 
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @BenchmarkOptions(warmupRounds=1, benchmarkRounds=1)
-abstract class GroovySerialTest {
-
-    @Rule
-    public TestRule benchmark = JUnitBenchmarkProvider.get();
+abstract class GroovySerialTest extends GroovyTestSupport {
     
-    static {
-        Gremlin.load()
-    }
-    
-    protected final Random random = new Random(7) // Arbitrary seed
-    protected final GraphGenerator gen
-    protected final TitanGraph graph
-    protected final Configuration conf
-    
-    protected static final int VERTEX_COUNT = 10 * 1000
-    protected static final int EDGE_COUNT = VERTEX_COUNT * 5
-    private static final int TX_COUNT = 10
-    private static final int OPS_PER_TX = 100
     private static final Logger LOG = LoggerFactory.getLogger(GroovySerialTest)
 
+    @Rule public TestRule benchmark = JUnitBenchmarkProvider.get()
+    
     GroovySerialTest(Configuration conf) throws StorageException {
-        this.conf = conf;
-    }
-    
-    @Before
-    void open() {
-        Preconditions.checkArgument(TX_COUNT * OPS_PER_TX <= VERTEX_COUNT);
-        
-        if (null == graph) {
-            try {
-                graph = getGraph();
-            } catch (StorageException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        if (null == gen)
-            gen = getGenerator()
-    }
-    
-    @After
-    void rollback() {
-        if (null != graph)
-            graph.rollback()
-    }
-    
-    void close() {
-        if (null != graph)
-            graph.shutdown()
+        super(conf)
     }
 
-    protected abstract StandardTitanGraph getGraph() throws StorageException;
-    protected abstract GraphGenerator getGenerator();
-    
-    /**
-     * Retrieve 100 vertices, each by its exact uid. Repeat the process with
-     * different uids in 50 transactions. The transactions are read-only and are
-     * all rolled back rather than committed.
-     * 
-     */
     @Test
     void testVertexUidLookup() throws Exception {
-        rollbackTx({ txIndex, tx ->
-            TitanKey uidKey = tx.getPropertyKey(GraphGenerator.UID_PROP)
-            for (int u = 0; u < GroovySerialTest.OPS_PER_TX; u++) {
-                Preconditions.checkNotNull(uidKey)
-                long uid = txIndex * GroovySerialTest.OPS_PER_TX + u
-                TitanVertex v = tx.getVertex(uidKey, uid)
-                assertNotNull(v)
-                assertEquals(uid, v.getProperty(uidKey))
-            }
-        })
-    }
-    
-    /**
-     * Same as {@link #testVertexUidLookup}, except add or modify a single property
-     * on every vertex retrieved and commit the changes in each transaction
-     * instead of rolling back.
-     * 
-     */
-    @Test
-    void testVertexPropertyModification() {
-        commitTx({ txIndex, tx ->
-            TitanKey uidKey = tx.getPropertyKey(GraphGenerator.UID_PROP)
-            for (int u = 0; u < GroovySerialTest.OPS_PER_TX; u++) {
-                Preconditions.checkNotNull(uidKey)
-                long uid = txIndex * GroovySerialTest.OPS_PER_TX + u
-                TitanVertex v = tx.getVertex(uidKey, uid)
-                assertNotNull("Vertex ID #" + uid + " failed", v)
-                assertEquals(uid, v.getProperty(uidKey))
-                Set<String> props = ImmutableSet.copyOf(v.getPropertyKeys())
-                String propKeyToModify = gen.getVertexPropertyName(random.nextInt(gen.getVertexPropKeys()))
-                if (props.contains(propKeyToModify) && !propKeyToModify.equals(GraphGenerator.UID_PROP)) {
-                    v.removeProperty(propKeyToModify)
-                    v.setProperty(propKeyToModify, random.nextInt(gen.getMaxVertexPropVal()))
-                }
-            }
-        })
-    }
-
-    /**
-     * Retrieve a vertex by randomly chosen uid, then delete its first edge.
-     * 
-     */
-    @Test
-    void testEdgeRemoval() {
-        int deleted = 0;
-        commitTx({ txIndex, tx ->
-            TitanKey uidKey = tx.getPropertyKey(GraphGenerator.UID_PROP)
-            for (int u = 0; u < GroovySerialTest.OPS_PER_TX; u++) {
-                long uid = Math.abs(random.nextLong()) % gen.getMaxUid()
-                Preconditions.checkArgument(null != uidKey)
-                TitanVertex v = tx.getVertex(uidKey, uid)
-                assertNotNull(v)
-                Iterable<TitanEdge> edges = v.getEdges()
-                assertNotNull(edges)
-                TitanEdge e = Iterables.getFirst(edges, null)
-                if (null == e) {
-                    u--
-                    continue
-                }
-                e.remove()
-                deleted++
-            }
-        })
-        assertEquals(TX_COUNT * GroovySerialTest.OPS_PER_TX, deleted);
-    }
-
-    /**
-     * Retrieve a vertex by randomly chosen uid, then remove the vertex. After
-     * removing all vertices, add new vertices with the same uids as those
-     * removed (but no incident edges or properties besides uid)
-     * 
-     */
-    @Test
-    void testVertexRemoval() {
-        Set<Long> visited = new HashSet<Long>(TX_COUNT);
-        commitTx({ txIndex, tx ->
-            long uid
-            Vertex v = null
-            while (null == v) {
-                uid = Math.abs(random.nextLong()) % gen.getMaxUid();
-                TitanKey uidKey = tx.getPropertyKey(GraphGenerator.UID_PROP);
-                v = tx.getVertex(uidKey, uid);
-            }
-            assertNotNull(v)
-            tx.removeVertex(v)
-            visited.add(uid)
-        })
-        
-        def tx = graph.newTransaction()
-        // Insert new vertices with the same uids as removed vertices, but no edges or properties besides uid
-        TitanKey uidKey = tx.getPropertyKey(GraphGenerator.UID_PROP)
-        for (long uid : visited) {
-            TitanVertex v = tx.addVertex()
-            v.setProperty(uidKey, uid)
-        }
-        tx.commit()
-    }
-    
-    /**
-     * JUnitBenchmarks appears to include {@code Before} method execution in round-avg times.
-     * This method has no body and exists only to measure that overhead.
-     */
-    @Test
-    void testNoop() {
-        // Do nothing
+        randomUidTask { tx, vertex ->  assertNotNull(vertex) }
     }
     
     /**
@@ -206,84 +50,64 @@ abstract class GroovySerialTest {
      */
     @Test
     void testVertexCentricIndexQuery() {
+        
         Preconditions.checkArgument(1000 <= VERTEX_COUNT)
         
-        long uid = gen.getHighDegVertexUid()
-        String label = gen.getHighDegEdgeLabel()
-        assertNotNull(label)
-        String pkey  = gen.getPrimaryKeyForLabel(label)
-        assertNotNull(pkey)
-        def v = graph.V(GraphGenerator.UID_PROP, uid).next()
-        assertNotNull(v)
-        
-        def c = v.outE(label)
-             .has(pkey, T.gte, 25)
-             .has(pkey, T.lt,  75)
-             .count()
-        assertEquals(50, c)
-        
-        c = v.outE(label)
-            .has(pkey, T.gte, 125)
-            .has(pkey, T.lt,  225)
-            .count()
-        assertEquals(100, c)
-        
-        c = v.outE(label)
-             .has(pkey, T.gte, (int)((VERTEX_COUNT / 2) - 250))
-             .has(pkey, T.lt,  (int)((VERTEX_COUNT / 2) + 250))
-             .count()
-        assertEquals(500, c)
-             
-        c = v.outE(label)
-             .has(pkey, T.gt, 0)
-             .has(pkey, T.lt, 2)
-             .count()
-        assertEquals(1, c)
+        supernodeTask { v, indexLabel, indexPK ->
+            
+            def c = v.outE(indexLabel)
+                 .has(indexPK, T.gte, 25)
+                 .has(indexPK, T.lt,  75)
+                 .count()
+            assertEquals(50, c)
+       
+            c = v.outE(indexLabel)
+                .has(indexPK, T.gte, 125)
+                .has(indexPK, T.lt,  225)
+                .count()
+            assertEquals(100, c)
+            
+            c = v.outE(indexLabel)
+                 .has(indexPK, T.gte, 500)
+                 .has(indexPK, T.lt,  1000)
+                 .count()
+            assertEquals(500, c)
+                 
+            c = v.outE(indexLabel)
+                 .has(indexPK, T.gt, 0)
+                 .has(indexPK, T.lt, 2)
+                 .count()
+            assertEquals(1, c)
+        }
     }
     
     @Test
     void testLabeledEdgeTraversal() {
-        long uid = gen.getHighDegVertexUid()
-        String label = gen.getHighDegEdgeLabel()
-        assertNotNull(label)
-        def v = graph.V(GraphGenerator.UID_PROP, uid).next()
-        assertNotNull(v)
-        
-        def c = v.outE(label)[0..99].inV().outE(label).count()
-        assertTrue(0 < c)
+        supernodeTask { v, indexLabel, indexPK ->
+            def c = v.outE(indexLabel)[0..99].inV().outE(indexLabel).count()
+            assertTrue(0 < c)
+        }
     }
     
     @Test
     void testEdgeTraversalUsingVertexCentricIndex() {
-        long uid = gen.getHighDegVertexUid()
-        String label = gen.getHighDegEdgeLabel()
-        assertNotNull(label)
-        String pkey  = gen.getPrimaryKeyForLabel(label)
-        assertNotNull(pkey)
-        def v = graph.V(GraphGenerator.UID_PROP, uid).next()
-        assertNotNull(v)
-        
-        def c = v.outE(label)
-                 .has(pkey, T.gte, 1).has(pkey, T.lte, 100)
-                 .inV()
-                 .outE(label)
-                 .count()
-        assertTrue(0 < c)
+        supernodeTask { v, label, pkey ->
+            def c = v.outE(label)
+                     .has(pkey, T.gte, 1).has(pkey, T.lte, 100)
+                     .inV()
+                     .outE(label)
+                     .count()
+            assertTrue(0 < c)
+        }
     }
     
-    /**
-     * Same query as in {@link #testEdgePropertyQuery()}, except with limit(1).
-     * 
-     */
     @Test
-    void testLimitedEdgeQuery() {
-        rollbackTx({ txIndex, tx ->
-            for (int u = 0; u < GroovySerialTest.OPS_PER_TX; u++) {
-                int n = Iterables.size(tx.query().limit(1).has(gen.getEdgePropertyName(0), 0).edges());
-                assertTrue(0 <= n);
-                assertTrue(n <= 1);
-            }
-        })
+    void testLimitedGlobalEdgePropertyQuery() {
+        standardIndexEdgeTask { tx, indexedPropName, indexedPropVal ->
+            int n = Iterables.size(tx.query().limit(1).has(indexedPropName, indexedPropVal).edges())
+            assertTrue(0 <= n)
+            assertTrue(n <= 1)
+        }
     }
     
     /**
@@ -291,30 +115,20 @@ abstract class GroovySerialTest {
      * 
      */
     @Test
-    void testLimitedVertexQuery() {
-        rollbackTx({ txIndex, tx ->
-            for (int u = 0; u < GroovySerialTest.OPS_PER_TX; u++) {
-                int n = Iterables.size(tx.query().limit(1).has(gen.getVertexPropertyName(0), 0).vertices());
-                assertTrue(0 <= n);
-                assertTrue(n <= 1);
-            }
-        })
+    void testLimitedGlobalVertexPropertyQuery() {
+        standardIndexVertexTask { tx, indexedPropName, indexedPropVal ->
+            int n = Iterables.size(tx.query().limit(1).has(indexedPropName, indexedPropVal).vertices())
+            assertTrue(0 <= n)
+            assertTrue(n <= 1)
+        }
     }
     
-    /**
-     * Retrieve all vertices with uid equal to a randomly chosen value. Note
-     * that uid is standard-indexed and BOTH-unique, so this query should return
-     * one vertex in practice, but no limit is specified.
-     * 
-     */
     @Test
-    void testVertexPropertyQuery() {
-        rollbackTx({ txIndex, tx ->
-            for (int u = 0; u < GroovySerialTest.OPS_PER_TX; u++) {
-                int n = Iterables.size(tx.query().has(GraphGenerator.UID_PROP, Math.abs(random.nextLong()) % gen.getMaxUid()).vertices());
-                assertTrue(1 == n);
-            }
-        })
+    void testGlobalVertexPropertyQuery() {
+        standardIndexVertexTask { tx, indexedPropName, indexedPropVal ->
+            int n = Iterables.size(tx.query().has(indexedPropName, indexedPropVal).vertices())
+            assertTrue(0 < n)
+        }
     }
     
     /**
@@ -322,40 +136,26 @@ abstract class GroovySerialTest {
      * 
      */
     @Test
-    void testEdgePropertyQuery() {
-        rollbackTx({ txIndex, tx ->
-            int n = Iterables.size(tx.query().has(gen.getEdgePropertyName(0), 0).edges())
+    void testGlobalEdgePropertyQuery() {
+        standardIndexEdgeTask { tx, indexedPropName, indexedPropVal ->
+            int n = Iterables.size(tx.query().has(indexedPropName, indexedPropVal).edges())
             assertTrue(0 < n)
-        })
+        }
     }
     
-    /**
-     * Retrieve all edges matching on has(...) clause and one hasNot(...)
-     * clause, both on OUT-unique standard-indexed properties. No limit.
-     * 
-     */
-    @Test
-    void testHasAndHasNotEdgeQuery() {
-        rollbackTx({ txIndex, tx ->
-            int n = Iterables.size(tx.query().has(gen.getEdgePropertyName(0), 0).hasNot(gen.getEdgePropertyName(1), 0).edges());
-            assertTrue(0 < n);
-        })
-    }
-    
-    /**
-     * Retrieve all vertices matching on has(...) clause and one hasNot(...)
-     * clause, both on OUT-unique standard-indexed properties. No limit.
-     * 
-     */
-    @Test
-    void testHasAndHasNotVertexQuery() {
-        rollbackTx({ txIndex, tx ->
-            for (int u = 0; u < GroovySerialTest.OPS_PER_TX; u++) {
-                int n = Iterables.size(tx.query().has(gen.getVertexPropertyName(0), 0).hasNot(gen.getVertexPropertyName(1), 0).vertices());
-                assertTrue(0 < n);
-            }
-        })
-    }
+//    /**
+//     * Retrieve all edges matching on has(...) clause and one hasNot(...)
+//     * clause, both on OUT-unique standard-indexed properties. No limit.
+//     * 
+//     */
+//    @Test
+//    void testGlobalCompositeEdgeQuery() {
+//        rollbackTx({ txIndex, tx ->
+//            int n = Iterables.size(tx.query().has(gen.getEdgePropertyName(0), 0).hasNot(gen.getEdgePropertyName(1), 0).edges());
+//            assertTrue(0 < n);
+//        })
+//    }
+
     
     /**
      * Retrieve vertices by uid, then retrieve their associated properties. All
@@ -367,9 +167,9 @@ abstract class GroovySerialTest {
     void testFramedUidAndPropertyLookup() {
         FramedGraph<TitanGraph> fg = new FramedGraph<TitanGraph>(graph);
         int totalNonNullProps = 0;
-        for (int t = 0; t < TX_COUNT; t++) {
-            for (int u = 0; u < GroovySerialTest.OPS_PER_TX; u++) {
-                Long uid = (long)t * GroovySerialTest.OPS_PER_TX + u;
+        for (int t = 0; t < DEFAULT_TX_COUNT; t++) {
+            for (int u = 0; u < 100; u++) {
+                Long uid = (long)t * 100 + u;
                 Iterable<FakeVertex> iter = fg.getVertices(GraphGenerator.UID_PROP, uid, FakeVertex.class);
                 boolean visited = false;
                 for (FakeVertex fv : iter) {
@@ -397,47 +197,87 @@ abstract class GroovySerialTest {
     }
     
     
-    /*
-     * Helper methods
+    /**
+     * Retrieve a vertex by randomly chosen uid, then remove the vertex. After
+     * removing all vertices, add new vertices with the same uids as those
+     * removed (but no incident edges or properties besides uid)
+     *
      */
+//    @Test
+//    void testVertexRemoval() {
+//
+//        Set<Long> visited = new HashSet<Long>();
+//        commitTx({ txIndex, tx ->
+//            long uid
+//            Vertex v = null
+//            while (null == v) {
+//                uid = Math.abs(random.nextLong()) % gen.getMaxUid();
+//                TitanKey uidKey = tx.getPropertyKey(GraphGenerator.UID_PROP);
+//                v = tx.getVertex(uidKey, uid);
+//            }
+//            assertNotNull(v)
+//            tx.removeVertex(v)
+//            visited.add(uid)
+//        })
+//
+//        def tx = graph.newTransaction()
+//        // Insert new vertices with the same uids as removed vertices, but no edges or properties besides uid
+//        TitanKey uidKey = tx.getPropertyKey(GraphGenerator.UID_PROP)
+//        for (long uid : visited) {
+//            TitanVertex v = tx.addVertex()
+//            v.setProperty(uidKey, uid)
+//        }
+//        tx.commit()
+//    }
     
-    void rollbackTx(closure) {
-        doTx(closure, { tx -> tx.rollback() })
-    }
-    
-    void commitTx(closure) {
-        doTx(closure, { tx -> tx.commit() })
-    }
-
-    void doTx(txWork, afterWork) {
-        def tx
-        for (int t = 0; t < TX_COUNT; t++) {
-            tx = graph.newTransaction()
-            txWork.call(t, tx)
-            afterWork.call(tx)
+    @Test
+    void testZVertexPropertyModification() {
+        int propsModified = 0
+        int visited = 0
+        int n = 314159
+        sequentialUidTask { tx, vertex ->
+            visited++
+            for (p in vertex.getPropertyKeys()) {
+                if (p.equals(GraphGenerator.UID_PROP))
+                    continue
+                int old = vertex.getProperty(p)
+                vertex.removeProperty(p)
+                vertex.setProperty(p, old * n)
+                n *= n
+                propsModified++
+                break
+            }
         }
+        assertEquals(DEFAULT_ITERATIONS, visited)
+        assertTrue(0 < propsModified)
     }
     
-    void noTx(closure) {
-        for (int t = 0; t < TX_COUNT; t++) {
-            closure.call(t)
-            graph.rollback()
+    @Test
+    void testZEdgeAddition() {
+        int edgesAdded = 0
+        int skipped = 0
+        long last = -1
+        sequentialUidTask { tx, vertex ->
+            if (-1 != last && last == vertex.getId()) {
+                Vertex target = tx.getVertex(last)
+                vertex.addEdge(gen.getEdgeLabelName(0), target)
+                edgesAdded++
+            } else {
+                skipped++
+            }
+            last = vertex.getId()
         }
+        assertEquals(DEFAULT_ITERATIONS, edgesAdded + skipped)
+        assertTrue(edgesAdded < skipped)
     }
     
-    protected void initializeGraph(TitanGraph g) throws StorageException {
-        LOG.info("Initializing graph...");
-        long before = System.currentTimeMillis()
-        GraphGenerator generator = getGenerator();
-        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(conf);
-        graphconfig.getBackend().clearStorage();
-        generator.generate(g);
-        long after = System.currentTimeMillis()
-        long duration = after - before
-        if (15 * 1000 <= duration) {
-            LOG.warn("Initialized graph (" + duration + " ms).")
-        } else {
-            LOG.info("Initialized graph (" + duration + " ms).")
-        }
+    /**
+     * JUnitBenchmarks appears to include {@code Before} method execution in round-avg times.
+     * This method has no body and exists only to measure that overhead.
+     */
+    @Test
+    void testNoop() {
+        // Do nothing
+        LOG.debug("Noop test executed");
     }
 }
