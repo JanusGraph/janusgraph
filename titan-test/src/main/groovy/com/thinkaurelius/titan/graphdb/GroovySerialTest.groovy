@@ -7,6 +7,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestRule
+import org.junit.rules.TestName
 import org.junit.runners.MethodSorters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -32,7 +33,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException
 @BenchmarkOptions(warmupRounds=1, benchmarkRounds=1)
 abstract class GroovySerialTest extends GroovyTestSupport {
     
-    private static final Logger LOG = LoggerFactory.getLogger(GroovySerialTest)
+    private static final Logger log = LoggerFactory.getLogger(GroovySerialTest)
 
     @Rule public TestRule benchmark = JUnitBenchmarkProvider.get()
     
@@ -98,7 +99,7 @@ abstract class GroovySerialTest extends GroovyTestSupport {
 
     @Test
     void testVertexUidLookup() throws Exception {
-        sequentialUidTask(10) { tx, vertex ->  assertNotNull(vertex) }
+        sequentialUidTask { tx, vertex ->  assertNotNull(vertex) }
     }
     
     /**
@@ -108,8 +109,12 @@ abstract class GroovySerialTest extends GroovyTestSupport {
     @Test
     void testVertexCentricIndexQuery() {
         
-        Preconditions.checkArgument(1000 <= VERTEX_COUNT)
-        supernodeTask(500) { v, indexLabel, indexPK ->
+        final long maxUid = 1000L; // exclusive
+        final long minUid = 1L;    // inclusive
+        
+        Preconditions.checkArgument(maxUid - minUid <= VERTEX_COUNT)
+        
+        supernodeTask { v, indexLabel, indexPK ->
             
             def c = v.outE(indexLabel)
                  .has(indexPK, T.gte, 25)
@@ -140,7 +145,7 @@ abstract class GroovySerialTest extends GroovyTestSupport {
     @Test
     void testLabeledEdgeTraversal() {
         int i = 0
-        supernodeTask(10) { v, indexLabel, indexPK ->
+        supernodeTask { v, indexLabel, indexPK ->
             int start = 100 * i++
             int end   = start + 99
             def c = v.outE(indexLabel)[start..end].inV().outE(indexLabel).inV().outE(indexLabel).count()
@@ -150,7 +155,7 @@ abstract class GroovySerialTest extends GroovyTestSupport {
     
     @Test
     void testEdgeTraversalUsingVertexCentricIndex() {
-        supernodeTask(100) { v, label, pkey ->
+        supernodeTask { v, label, pkey ->
             def c = v.outE(label)
                      .has(pkey, T.gte, 0).has(pkey, T.lte, 100)
                      .inV()
@@ -164,7 +169,7 @@ abstract class GroovySerialTest extends GroovyTestSupport {
     
     @Test
     void testLimitedGlobalEdgePropertyQuery() {
-        standardIndexEdgeTask(100) { tx, indexedPropName, indexedPropVal ->
+        standardIndexEdgeTask { tx, indexedPropName, indexedPropVal ->
             int n = Iterables.size(tx.query().limit(1).has(indexedPropName, indexedPropVal).edges())
             assertTrue(0 <= n)
             assertTrue(n <= 1)
@@ -173,7 +178,7 @@ abstract class GroovySerialTest extends GroovyTestSupport {
     
     @Test
     void testLimitedGlobalVertexPropertyQuery() {
-        standardIndexVertexTask(100) { tx, indexedPropName, indexedPropVal ->
+        standardIndexVertexTask { tx, indexedPropName, indexedPropVal ->
             int n = Iterables.size(tx.query().limit(1).has(indexedPropName, indexedPropVal).vertices())
             assertTrue(0 <= n)
             assertTrue(n <= 1)
@@ -182,7 +187,7 @@ abstract class GroovySerialTest extends GroovyTestSupport {
     
     @Test
     void testGlobalVertexPropertyQuery() {
-        standardIndexVertexTask(100) { tx, indexedPropName, indexedPropVal ->
+        standardIndexVertexTask { tx, indexedPropName, indexedPropVal ->
             int n = Iterables.size(tx.query().has(indexedPropName, indexedPropVal).vertices())
             assertTrue(0 < n)
         }
@@ -268,7 +273,6 @@ abstract class GroovySerialTest extends GroovyTestSupport {
                 break
             }
         }
-        assertEquals(DEFAULT_ITERATIONS, visited)
         assertTrue(0 < propsModified)
     }
     
@@ -277,18 +281,19 @@ abstract class GroovySerialTest extends GroovyTestSupport {
         int edgesAdded = 0
         int skipped = 0
         long last = -1
+        String labelName = schema.getEdgeLabelName(0)
         sequentialUidTask { tx, vertex ->
-            if (-1 != last && last == vertex.getId()) {
+            if (-1 != last && last != vertex.getId()) {
                 Vertex target = tx.getVertex(last)
-                vertex.addEdge(gen.getEdgeLabelName(0), target)
+                vertex.addEdge(labelName, target)
                 edgesAdded++
             } else {
                 skipped++
             }
             last = vertex.getId()
         }
-        assertEquals(DEFAULT_ITERATIONS, edgesAdded + skipped)
-        assertTrue(edgesAdded < skipped)
+        assertTrue(0 < edgesAdded + skipped)
+        assertTrue(edgesAdded > skipped)
     }
     
     /**
@@ -331,6 +336,6 @@ abstract class GroovySerialTest extends GroovyTestSupport {
     @Test
     void testNoop() {
         // Do nothing
-        LOG.debug("Noop test executed");
+        log.debug("Noop test executed");
     }
 }
