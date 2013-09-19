@@ -98,7 +98,7 @@ abstract class GroovySerialTest extends GroovyTestSupport {
 
     @Test
     void testVertexUidLookup() throws Exception {
-        randomUidTask(DEFAULT_TX_COUNT * 2, DEFAULT_OPS_PER_TX * 10) { tx, vertex ->  assertNotNull(vertex) }
+        sequentialUidTask(10) { tx, vertex ->  assertNotNull(vertex) }
     }
     
     /**
@@ -134,7 +134,7 @@ abstract class GroovySerialTest extends GroovyTestSupport {
                  .has(indexPK, T.lt, 2)
                  .count()
             assertEquals(1, c)
-            }
+        }
     }
     
     @Test

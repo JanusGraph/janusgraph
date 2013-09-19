@@ -37,10 +37,16 @@ abstract class GroovyTestSupport {
     public static final int DEFAULT_OPS_PER_TX = 100
     public static final int DEFAULT_ITERATIONS = DEFAULT_TX_COUNT * DEFAULT_OPS_PER_TX
     
-    public static final String RELATION_FILE = "data/v10k.graphml.gz"
+    public static final String RELATION_FILE = "../titan-test/data/v10k.graphml.gz"
     
     // Mutable state
-    protected Random random = new Random(7) // Arbitrary seed
+
+    /*  JUnit constructs a new test class instance before executing each test method. 
+     * Ergo, each test method gets its own Random instance. 
+     * The seed is arbitrary and carries no special significance,
+     * but we keep the see fixed for repeatability.
+     */
+    protected Random random = new Random(7) 
     protected GraphGenerator gen
     protected TitanGraph graph
     protected Configuration conf
@@ -55,7 +61,7 @@ abstract class GroovyTestSupport {
     
     @Before
     void open() {
-//        Preconditions.checkArgument(TX_COUNT * opsPerTx <= VERTEX_COUNT);
+//        Preconditions.checkArgument(TX_COUNT * DEFAULT_OPS_PER_TX <= VERTEX_COUNT);
         
         if (null == graph) {
             try {
@@ -86,16 +92,27 @@ abstract class GroovyTestSupport {
      * Helper methods
      */
     
-    protected void sequentialUidTask(int txCount = DEFAULT_TX_COUNT, int opsPerTx = DEFAULT_OPS_PER_TX, closure) {
-        def uids = new SequentialLongIterator(txCount * opsPerTx)
-        multiVertexTask(uids, txCount, opsPerTx, closure)
+    protected void sequentialUidTask(double scale = 1D, closure) {
+        long count  = Math.round(scale * DEFAULT_TX_COUNT * DEFAULT_OPS_PER_TX)
+        long offset = Math.abs(random.nextLong()) % schema.getMaxUid()
+        def uids    = new SequentialLongIterator(count, schema.getMaxUid(), offset)
+        int op      = 0
+        def tx      = graph.newTransaction()
+        while (uids.hasNext()) {
+            long u = uids.next()
+            Vertex v = tx.getVertex(Schema.UID_PROP, u)
+            assertNotNull(v)
+            closure.call(tx, v)
+            if (DEFAULT_OPS_PER_TX <= ++op) {
+                op = 0
+                tx.commit()
+                tx = graph.newTransaction()
+            }
+        }
+        
+        0 < op ? tx.commit() : tx.rollback()
     }
     
-    protected void randomUidTask(int txCount = DEFAULT_TX_COUNT, int opsPerTx = DEFAULT_OPS_PER_TX, closure) {
-        def uids = new RandomLongIterator(txCount * opsPerTx, schema.getMaxUid(), random)
-        multiVertexTask(uids, txCount, opsPerTx, closure)
-    }
-
     protected void supernodeTask(int repeat = 1, closure) {
         for (int i = 0; i < repeat; i++) {
             long uid = schema.getSupernodeUid()
@@ -109,28 +126,6 @@ abstract class GroovyTestSupport {
             closure(v, label, pkey)
         }
     }
-    
-    protected void multiVertexTask(LongIterator uids, int txCount = DEFAULT_TX_COUNT, int opsPerTx = DEFAULT_OPS_PER_TX, closure) {
-        Preconditions.checkNotNull(uids)
-        
-        int op = 0
-        def tx = graph.newTransaction()
-        
-        while (uids.hasNext()) {
-            long u = uids.next()
-            Vertex v = tx.getVertex(Schema.UID_PROP, u)
-            assertNotNull(v)
-            closure.call(tx, v)
-            if (opsPerTx <= ++op) {
-                op = 0
-                tx.commit()
-                tx = graph.newTransaction()
-            }
-        }
-        
-        0 < op ? tx.commit() : tx.rollback()
-    }
-    
     
     protected void standardIndexEdgeTask(int repeat = 1, closure) {
         final int keyCount = schema.getEdgePropKeys()

@@ -12,26 +12,19 @@ interface LongIterator {
 }
 
 /**
- * This isn't truly random.  It returnes a sequence of longs at a randomly
- * calculated offset and modulo a specified maximum.  As long as the sequence
- * length is less than the modulus, this iterator never repeats values.
- * 
- * I started with true randomness, but the possibility of visiting the same
- * long twice wasn't useful for the application I had in mind.  The name is
- * kind of a misnomer now.
+ * Returns a sequence of longs modulo some fixed limit and starting at some fixed value.
  */
-class RandomLongIterator implements LongIterator {
+class SequentialLongIterator implements LongIterator {
     
     private long i = 0L
     private long offset
     private long count
     private long max
-    private Random random
     
-    RandomLongIterator(long count, long max, Random random) {
+    SequentialLongIterator(long count, long max, long offset) {
         this.count = count
         this.max = max
-        this.offset = Math.abs(random.nextLong()) % max
+        this.offset = offset
     }
     
     long next() {
@@ -41,21 +34,4 @@ class RandomLongIterator implements LongIterator {
     boolean hasNext() {
         i < count
     }
-}
-
-/*
- * This should probably be implemented using RandomLongIterator.
- * It's just that with an offset of 0.
- */
-class SequentialLongIterator implements LongIterator {
-    
-    private long i = 0L
-    private long count
-    
-    SequentialLongIterator(long count) {
-        this.count = count
-    }
-    
-    long next() { i++ }
-    boolean hasNext() { i < count }
 }
