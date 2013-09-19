@@ -8,7 +8,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreMan
 
 
 public class HazelcastKeyColumnValueStoreTest extends KeyColumnValueStoreTest {
-
     public HazelcastKeyColumnValueStoreTest() throws StorageException {
         manager = openStorageManager();
         store = manager.openDatabase(STORE_NAME);
@@ -29,7 +28,7 @@ public class HazelcastKeyColumnValueStoreTest extends KeyColumnValueStoreTest {
         if (tx != null)
             tx.commit();
 
-        ((HazelcastKeyColumnValueStore) store).clear();
+        ((HazelcastKeyColumnValueStoreManager) manager).clear(store.getName());
     }
 
     @Override

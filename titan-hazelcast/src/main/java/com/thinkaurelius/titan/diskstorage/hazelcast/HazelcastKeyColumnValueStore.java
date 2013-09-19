@@ -128,10 +128,6 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
         return cache.getName();
     }
 
-    public void clear() {
-        cache.clear();
-    }
-
     @Override
     public void close() throws StorageException {
         cache.destroy();

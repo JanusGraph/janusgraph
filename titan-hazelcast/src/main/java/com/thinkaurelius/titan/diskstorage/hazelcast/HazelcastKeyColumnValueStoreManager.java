@@ -44,10 +44,14 @@ public class HazelcastKeyColumnValueStoreManager extends AbstractHazelcastStoreM
     @Override
     public void clearStorage() throws StorageException {
         for (String storeName : stores.keySet()) {
-            manager.getMultiMap(storeName).clear();
+            clear(storeName);
         }
 
         close();
+    }
+
+    public void clear(String storeName) {
+        manager.getMultiMap(storeName).clear();
     }
 
     @Override
