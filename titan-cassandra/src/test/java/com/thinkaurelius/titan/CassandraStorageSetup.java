@@ -3,7 +3,6 @@ package com.thinkaurelius.titan;
 import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.KEYSPACE_KEY;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
@@ -32,14 +31,6 @@ public class CassandraStorageSetup {
         config.addProperty(KEYSPACE_KEY, cleanKeyspaceName(ks));
         return config;
     }
-    
-    public static Configuration getEmbeddedCassandraStorageConfiguration(String ks, boolean ordered) {
-        Configuration config = getGenericCassandraStorageConfiguration(ks);
-        config.addProperty(
-                CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
-                ordered ? cassandraOrderedYamlPath : cassandraYamlPath);
-        return config;
-    }
 
     public static Configuration getAstyanaxGraphConfiguration(String ks) {
         return getGraphBaseConfiguration(ks, "astyanax");
@@ -51,25 +42,6 @@ public class CassandraStorageSetup {
 
     public static Configuration getCassandraThriftGraphConfiguration(String ks) {
         return getGraphBaseConfiguration(ks, "cassandrathrift");
-    }
-
-    public static Configuration getEmbeddedCassandraGraphConfiguration(String ks) {
-        Configuration config = getGraphBaseConfiguration(ks, "embeddedcassandra");
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(
-                CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
-                cassandraYamlPath);
-        return config;
-    }
-
-    public static Configuration getEmbeddedCassandraPartitionGraphConfiguration(String ks) {
-        Configuration config = getGraphBaseConfiguration(ks, "embeddedcassandra");
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(
-                CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
-                cassandraOrderedYamlPath);
-        config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_PARTITION_KEY, true);
-        config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_FLUSH_KEY, false);
-//        config.subset(GraphDatabaseConfiguration.METRICS_NAMESPACE).addProperty(GraphDatabaseConfiguration.METRICS_CONSOLE_INTERVAL, 3000L);
-        return config;
     }
     
     /*

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
+package com.thinkaurelius.titan.diskstorage.cassandra.utils;
 
 import org.apache.cassandra.service.CassandraDaemon;
 import org.slf4j.Logger;
