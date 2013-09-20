@@ -51,25 +51,6 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
     }
 
     @Override
-    public long peekNextID(int partition) throws StorageException {
-        for (int retry = 0; retry < idApplicationRetryCount; retry++) {
-            StoreTransaction txh = null;
-            try {
-                txh = manager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT);
-                long nextID = getCurrentID(getPartitionKey(partition), txh);
-                txh.commit();
-                return nextID;
-            } catch (TemporaryStorageException e) {
-                log.warn("Temporary storage exception while reading id block - retrying in {} ms: {}", idApplicationWaitMS, e);
-                if (txh != null) txh.rollback();
-                if (idApplicationWaitMS > 0)
-                    TimeUtility.INSTANCE.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
-            }
-        }
-        throw new TemporaryLockingException("Exceeded timeout count [" + idApplicationRetryCount + "] when attempting to read last id block");
-    }
-
-    @Override
     public StaticBuffer[] getLocalIDPartition() throws StorageException {
         return idStore.getLocalKeyPartition();
     }

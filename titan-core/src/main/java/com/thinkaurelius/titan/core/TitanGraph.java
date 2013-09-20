@@ -1,4 +1,3 @@
-
 package com.thinkaurelius.titan.core;
 
 import com.tinkerpop.blueprints.Graph;
@@ -17,8 +16,8 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
 
     /**
      * Opens a new thread-independent {@link TitanTransaction}.
-     *
-     * <p />
+     * <p/>
+     * <p/>
      * Note, that this returns a thread independent transaction object. It is not necessary to call this method
      * to use Blueprint's standard transaction framework which will automatically start a transaction with the first
      * operation on the graph.
@@ -48,6 +47,16 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
     public TypeMaker makeType();
 
     /**
+     * Returns an iterable over all defined types that have the given clazz (either {@link TitanLabel} which returns all labels,
+     * {@link TitanKey} which returns all keys, or {@link TitanType} which returns all types).
+     *
+     * @param clazz {@link TitanType} or sub-interface
+     * @param <T>
+     * @return Iterable over all types for the given category (label, key, or both)
+     */
+    public <T extends TitanType> Iterable<T> getTypes(Class<T> clazz);
+
+    /**
      * Returns a {@link TitanGraphQuery} to query for vertices or edges in the graph by their properties.
      *
      * @return
@@ -57,6 +66,7 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
 
     /**
      * Returns the {@link TitanType} uniquely identified by the given name, or NULL if such does not exist.
+     *
      * @param name
      * @return
      */

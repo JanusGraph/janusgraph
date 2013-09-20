@@ -1,0 +1,6 @@
+/usr/bin/rexster-console.sh
+/usr/sbin/titan
+/usr/share/titan/titan.in.sh
+/etc/titan/titan-env.sh
+/etc/titan/config.properties
+/etc/titan/rexster.xml

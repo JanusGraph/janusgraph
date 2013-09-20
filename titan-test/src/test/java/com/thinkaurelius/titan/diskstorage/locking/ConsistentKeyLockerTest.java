@@ -232,13 +232,13 @@ public class ConsistentKeyLockerTest {
         recordFailedLocalLock();
         ctrl.replay();
         
-        TemporaryLockingException tle = null;
+        PermanentLockingException le = null;
         try {
             locker.writeLock(defaultLockID, defaultTx); // SUT
-        } catch (TemporaryLockingException e) {
-            tle = e;
+        } catch (PermanentLockingException e) {
+            le = e;
         }
-        assertNotNull(tle);
+        assertNotNull(le);
     }
     
     /**
@@ -272,13 +272,13 @@ public class ConsistentKeyLockerTest {
         
         locker.writeLock(defaultLockID, defaultTx); // SUT
 
-        TemporaryLockingException tle = null;
+        PermanentLockingException le = null;
         try {
             locker.writeLock(defaultLockID, otherTx); // SUT
-        } catch (TemporaryLockingException e) {
-            tle = e;
+        } catch (PermanentLockingException e) {
+            le = e;
         }
-        assertNotNull(tle);
+        assertNotNull(le);
     }
     
     /**

@@ -1,0 +1,4 @@
+/etc/titan/env.d/
+/etc/default/
+/usr/share/titan/lib/
+/var/log/titan/

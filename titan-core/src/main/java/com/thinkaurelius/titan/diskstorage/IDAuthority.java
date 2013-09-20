@@ -25,13 +25,18 @@ public interface IDAuthority {
     public long[] getIDBlock(int partition) throws StorageException;
 
     /**
-     * Returns the smallest not yet allocated id for the given partition
-     *
+     * Returns the smallest not yet allocated id for the given partition. This
+     * never returns a value that is too low, but it may return a value that is
+     * too high. Intuitively, this method is allowed to "skip" unallocated id
+     * blocks. In general, this behavior should only emerge in the presence of
+     * multiple concurrent writers to a single ID space, but it is allowed to
+     * happen under any circumstances.
+     * 
      * @param partition
      * @return
      * @throws StorageException
      */
-    public long peekNextID(int partition) throws StorageException;
+    //public long peekNextID(int partition) throws StorageException;
 
     /**
      * Returns the lower and upper limits of the key range assigned to this local machine as an array with two entries.

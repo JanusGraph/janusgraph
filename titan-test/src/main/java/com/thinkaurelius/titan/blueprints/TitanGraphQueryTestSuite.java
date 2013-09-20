@@ -20,8 +20,8 @@ public class TitanGraphQueryTestSuite extends GraphQueryTestSuite {
     @Override
     public void testGraphQueryForVertices() {
         TitanGraph g = (TitanGraph) graphTest.generateGraph();
-        if (g.getType("age")==null) {
-            TitanKey age = g.makeType().name("age").dataType(Integer.class).unique(Direction.OUT).makePropertyKey();
+        if (g.getType("age") == null) {
+            TitanKey age = g.makeType().name("age").dataType(Integer.class).vertexUnique(Direction.OUT).makePropertyKey();
         }
         g.shutdown();
         super.testGraphQueryForVertices();
@@ -30,8 +30,8 @@ public class TitanGraphQueryTestSuite extends GraphQueryTestSuite {
     @Override
     public void testGraphQueryForEdges() {
         TitanGraph g = (TitanGraph) graphTest.generateGraph();
-        if (g.getType("weight")==null) {
-            TitanKey weight = g.makeType().name("weight").dataType(Double.class).unique(Direction.OUT).makePropertyKey();
+        if (g.getType("weight") == null) {
+            TitanKey weight = g.makeType().name("weight").dataType(Double.class).vertexUnique(Direction.OUT).makePropertyKey();
         }
         g.shutdown();
         super.testGraphQueryForEdges();

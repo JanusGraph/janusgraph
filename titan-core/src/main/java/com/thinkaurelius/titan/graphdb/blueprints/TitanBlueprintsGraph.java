@@ -23,7 +23,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     private static final Logger log =
             LoggerFactory.getLogger(TitanBlueprintsGraph.class);
-    
+
     // ########## TRANSACTION HANDLING ###########################
 
     private ThreadLocal<TitanTransaction> txs = new ThreadLocal<TitanTransaction>() {
@@ -93,7 +93,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     public abstract TitanTransaction newThreadBoundTransaction();
 
     private TitanTransaction getAutoStartTx() {
-        if (txs==null)  ExceptionFactory.graphShutdown();
+        if (txs == null) ExceptionFactory.graphShutdown();
         TitanTransaction tx = txs.get();
         if (tx == null) {
             tx = newThreadBoundTransaction();
@@ -126,6 +126,10 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 //        return StringFactory.graphString(this,config.getBackendDescription());
     }
 
+    @Override
+    public <T extends TitanType> Iterable<T> getTypes(Class<T> clazz) {
+        return getAutoStartTx().getTypes(clazz);
+    }
 
     // ########## INDEX HANDLING ###########################
 
@@ -174,6 +178,10 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     @Override
     public TitanGraphQuery query() {
         return getAutoStartTx().query();
+    }
+
+    public TitanMultiVertexQuery multiQuery(TitanVertex... vertices) {
+        return getAutoStartTx().multiQuery(vertices);
     }
 
     @Override

@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# This file borrows heavily from from Debian's postgres-common.postinst flie.
+
+set -e
+. /usr/share/debconf/confmodule
+db_stop
+
+if [ "$1" = configure ]; then
+    # Make sure the administrative user exists
+    if ! getent passwd titan > /dev/null; then
+        adduser --system --quiet --home /var/lib/titan --no-create-home \
+            --shell /bin/bash --group --gecos "Titan graph DB user" titan
+    fi
+
+    # check validity of titan user and group
+    if [ "`id -u titan`" -eq 0 ]; then
+        echo "The titan user must not have uid 0 (root).
+Please fix this and reinstall this package." >&2
+        exit 1
+    fi
+    if [ "`id -g titan`" -eq 0 ]; then
+        echo "The titan user must not have root as primary group.
+Please fix this and reinstall this package." >&2
+        exit 1
+    fi
+
+    # ensure home directory ownership
+    mkdir -p /var/lib/titan
+    chown titan:titan /var/lib/titan
+
+    # nicer log directory permissions
+    #mkdir -p /var/log/titan
+    #chmod 1775 /var/log/titan
+    #chown root:titan /var/log/titan
+fi

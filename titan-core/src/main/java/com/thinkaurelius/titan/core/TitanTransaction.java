@@ -1,4 +1,3 @@
-
 package com.thinkaurelius.titan.core;
 
 import com.tinkerpop.blueprints.KeyIndexableGraph;
@@ -111,6 +110,8 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
 
     public TitanGraphQuery query();
 
+    public TitanMultiVertexQuery multiQuery(TitanVertex... vertices);
+
     public TitanVertex getVertex(TitanKey key, Object attribute);
 
     public TitanVertex getVertex(String key, Object attribute);
@@ -180,6 +181,14 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @see TitanLabel
      */
     public TitanLabel getEdgeLabel(String name);
+
+    /**
+     * @param clazz
+     * @param <T>
+     * @return
+     * @see TitanGraph#getTypes(Class)
+     */
+    public <T extends TitanType> Iterable<T> getTypes(Class<T> clazz);
 
     /**
      * Returns a new {@link TypeMaker} instance to create types.

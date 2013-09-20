@@ -16,6 +16,7 @@ It also includes software from other open source projects including, but not lim
  * TinkerPop Blueprints [http://blueprints.tinkerpop.com]
  * TinkerPop Gremlin [http://gremlin.tinkerpop.com]
  * TinkerPop Rexster [http://rexster.tinkerpop.com]
+ * TinkerPop Frames [http://frames.tinkerpop.com]
  * Apache Commons [http://commons.apache.org/]
  * Google Guava [http://code.google.com/p/guava-libraries/]
  * Cern Colt [http://acs.lbl.gov/software/colt/]

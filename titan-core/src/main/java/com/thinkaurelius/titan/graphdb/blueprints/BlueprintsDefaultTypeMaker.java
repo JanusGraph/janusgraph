@@ -25,8 +25,7 @@ public class BlueprintsDefaultTypeMaker implements DefaultTypeMaker {
 
     @Override
     public TitanKey makeKey(String name, TypeMaker factory) {
-        return factory.name(name).unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).
-                dataType(Object.class).makePropertyKey();
+        return factory.name(name).dataType(Object.class).makePropertyKey();
     }
 
     @Override

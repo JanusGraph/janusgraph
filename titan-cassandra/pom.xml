@@ -14,7 +14,10 @@
         <jamm.version>0.2.5</jamm.version>
         <jamm.group>com.github.stephenc</jamm.group>
         <dependency.plugin.version>2.8</dependency.plugin.version>
-        <perf.jvm.opts>-javaagent:${basedir}/target/jamm-${jamm.version}.jar</perf.jvm.opts>
+        <test.extra.jvm.opts>-javaagent:${basedir}/target/jamm-${jamm.version}.jar</test.extra.jvm.opts>
+        <test.categories.bop>com.thinkaurelius.titan.testcategory.ByteOrderedPartitionerTests,com.thinkaurelius.titan.testcategory.StandaloneTests</test.categories.bop>
+	<test.categories.rp>com.thinkaurelius.titan.testcategory.RandomPartitionerTests</test.categories.rp>
+	<test.categories.all>${test.categories.bop},${test.categories.rp}</test.categories.all>
     </properties>
     <!-- Libraries -->
     <dependencies>
@@ -33,6 +36,7 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-es</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.codahale.metrics</groupId>
@@ -146,7 +150,6 @@
         </dependency>
     </dependencies>
 
-
     <profiles>
         <profile>
             <id>bop-test</id> <!-- ByteOrderedPartitioner tests + miscellaneous "standalone" tests that don't need Cassandra -->
@@ -165,8 +168,12 @@
                                 </goals>
                                 <phase>test</phase>
                                 <configuration>
-                                    <argLine>-Xms256m -Xmx756m ${perf.jvm.opts}</argLine>
-                                    <groups>com.thinkaurelius.titan.testcategory.ByteOrderedPartitionerTests,com.thinkaurelius.titan.testcategory.StandaloneTests</groups>
+                                    <!--
+                                    <includes>
+                                        <include>**/InternalCassandraEmbeddedGraphTest.java</include>
+                                    </includes>
+                                    -->
+                                    <groups>${test.categories.bop}</groups>
                                     <parallel>classes</parallel>
                                     <threadCount>2</threadCount>
                                     <perCoreThreadCount>true</perCoreThreadCount>
@@ -178,6 +185,7 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
             <id>rp-test</id>
             <activation>
@@ -195,8 +203,7 @@
                                 </goals>
                                 <phase>test</phase>
                                 <configuration>
-                                    <argLine>-Xms256m -Xmx756m ${perf.jvm.opts}</argLine>
-                                    <groups>com.thinkaurelius.titan.testcategory.RandomPartitionerTests</groups>
+                                    <groups>${test.categories.rp}</groups>
                                     <parallel>classes</parallel>
                                     <threadCount>2</threadCount>
                                     <perCoreThreadCount>true</perCoreThreadCount>
@@ -204,37 +211,6 @@
                                 </configuration>
                             </execution>
                         </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>comprehensive</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <argLine>-Xms256m -Xmx1024m</argLine>
-                            <includes>
-                                <include>**/*Test.java</include>
-                            </includes>
-                            <excludes>
-                                <exclude>**/Internal*.java</exclude>
-                                <exclude>**/*Suite.java</exclude>
-                            </excludes>
-                            <!-- Forking per class is required for the
-                        Internal and External Cassandra tests
-                        to run in the same suite.  Otherwise,
-                        when an Internal runs before an External,
-                        the Internal Cassandra daemon will hold
-                        all its ports open and the External
-                        Cassandra daemon will fail to bind them.  -->
-                            <forkMode>always</forkMode>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -260,11 +236,38 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <executions>
                     <execution>
+                        <!-- Run by "mvn test" -->
                         <id>default-test</id>
                         <phase>none</phase>
-                        <configuration>
-                            <skipTests>true</skipTests>
-                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- Run by "mvn org.apache.maven.plugins:maven-surefire-plugin:test"
+			     
+			     Sonar does this when running JaCoCo and
+			     provides no configuration option to
+			     change its behavior.  Define a safe
+			     configuration for JaCoCo to use when run
+			     by Sonar.  This doesn't have to be fast,
+			     since it's only used for dynamic
+			     analysis, but it does have to cover all
+			     the tests.
+			-->
+                        <id>default-cli</id>
+                        <phase>none</phase>
+			<configuration combine.self="override">
+                            <includes>
+                                <include>Nope.java</include>
+                            </includes>
+                            <exclude>
+                                <exclude>**/*</exclude>
+                            </exclude>
+			    <!-- <groups>${test.categories.all}</groups> -->
+			    <parallel></parallel>
+			    <reuseForks>false</reuseForks>
+			    <threadCount>1</threadCount>
+			    <perCoreThreadCount>false</perCoreThreadCount>
+			    <runOrder>random</runOrder>
+			</configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -292,13 +295,13 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Provide Java Memory Meter for Cassandra. Cassandra logs warnings if JAMM 
-              is not available. Also, production Cassandra deployments will probably use JAMM, 
-              so we might as well include it in our test configuration. -->
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <version>${dependency.plugin.version}</version>
                 <executions>
+                    <!-- Provide Java Memory Meter for Cassandra. Cassandra logs warnings if JAMM 
+                      is not available. Also, production Cassandra deployments will probably use JAMM, 
+                      so we might as well include it in our test configuration. -->
                     <execution>
                         <id>copy</id>
                         <phase>process-resources</phase>

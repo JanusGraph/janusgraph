@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database;
 
+import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -19,6 +20,7 @@ import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
@@ -133,6 +135,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         return edgeSerializer;
     }
 
+    public AttributeHandling getAttributeHandling() {
+        return serializer;
+    }
+
     public GraphDatabaseConfiguration getConfiguration() {
         return config;
     }
@@ -169,12 +175,22 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
 
     public List<Object> elementQuery(String indexName, IndexQuery query, BackendTransaction tx) {
-        return indexSerializer.query(indexName,query,tx);
+        return indexSerializer.query(indexName, query, tx);
     }
 
     public List<Entry> edgeQuery(long vid, SliceQuery query, BackendTransaction tx) {
         Preconditions.checkArgument(vid>0);
-        return tx.edgeStoreQuery(new KeySliceQuery(IDHandler.getKey(vid),query));
+        return tx.edgeStoreQuery(new KeySliceQuery(IDHandler.getKey(vid), query));
+    }
+
+    public List<List<Entry>> edgeMultiQuery(LongArrayList vids, SliceQuery query, BackendTransaction tx) {
+        Preconditions.checkArgument(vids!=null && !vids.isEmpty());
+        List<StaticBuffer> vertexIds = new ArrayList<StaticBuffer>(vids.size());
+        for (int i=0;i<vids.size();i++) {
+            Preconditions.checkArgument(vids.get(i)>0);
+            vertexIds.add(IDHandler.getKey(vids.get(i)));
+        }
+        return tx.edgeStoreMultiQuery(vertexIds, query);
     }
 
 

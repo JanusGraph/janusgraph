@@ -38,8 +38,6 @@ import org.cliffc.high_scale_lib.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.Backend;
@@ -59,7 +57,6 @@ import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.Hex;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
  * This class creates {@see CassandraThriftKeyColumnValueStore}s and
@@ -74,7 +71,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     private final Map<String, CassandraThriftKeyColumnValueStore> openStores;
     private final CTConnectionPool pool;
     private final CTConnectionFactory factory;
-    private final Timer mutateManyTimer;
 
     public CassandraThriftStoreManager(Configuration config) throws StorageException {
         super(config);
@@ -112,10 +108,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             this.backgroundThread = new Thread(new HostUpdater());
             this.backgroundThread.start();
         }
-        
-        MetricRegistry metrics = MetricManager.INSTANCE.getRegistry();
-        Class<?> myClass = CassandraThriftStoreManager.class;
-        this.mutateManyTimer = metrics.timer(MetricRegistry.name(myClass, "mutateMany", "time"));
     }
 
     @Override
@@ -214,7 +206,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
 
         CTConnection conn = null;
-        Timer.Context timerContext = mutateManyTimer.time();
         try {
             conn = pool.borrowObject(keySpaceName);
             Cassandra.Client client = conn.getClient();
@@ -223,7 +214,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             throw CassandraThriftKeyColumnValueStore.convertException(ex);
         } finally {
             pool.returnObjectUnsafe(keySpaceName, conn);
-            timerContext.stop();
         }
     }
 
@@ -270,7 +260,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 log.error("Keyspace {} does not exist, not attempting to truncate.", keySpaceName);
                 return;
             } catch (InvalidRequestException e) {
-                
+                log.error("InvalidRequestException when attempting to describe keyspace {}, not attempting to truncate.", keySpaceName);
+                return;
             }
             
             

@@ -1,0 +1,8 @@
+# Include titan-cassandra jars ex. Cassandra core
+for j in /usr/share/titan/lib/cassandra/*.jar; do
+    CLASSPATH="$j:$CLASSPATH"
+done
+# Include Cassandra core jars installed by the DataStax RPM
+for j in /usr/share/cassandra/lib/*.jar; do
+    CLASSPATH="$j:$CLASSPATH"
+done

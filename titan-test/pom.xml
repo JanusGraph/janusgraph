@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
@@ -9,14 +10,22 @@
     <artifactId>titan-test</artifactId>
     <name>Titan-Test: Test Suite for Titan</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+
     <repositories>
-<repository>
-  <id>sonatype-oss-snapshots</id>
-  <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-  <releases><enabled>false</enabled></releases>
-  <snapshots><enabled>true</enabled></snapshots>
-</repository>
-</repositories>
+        <!-- Access Sonatype OSS Snapshots for Furnace artifacts. This can 
+            go away when Furnace is released to Central. -->
+        <repository>
+            <id>sonatype-oss-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -34,22 +43,22 @@
             <artifactId>furnace</artifactId>
             <version>0.1.0-SNAPSHOT</version>
             <exclusions>
-            	<exclusion>
-            		<groupId>com.tinkerpop.gremlin</groupId>
-            		<artifactId>gremlin-java</artifactId>
-            	</exclusion>
-            	<exclusion>
-            		<groupId>com.tinkerpop.gremlin</groupId>
-            		<artifactId>gremlin-groovy</artifactId>
-            	</exclusion>
-            	<exclusion>
-            		<groupId>com.tinkerpop.blueprints</groupId>
-            		<artifactId>blueprints-core</artifactId>
-            	</exclusion>
-            	<exclusion>
-            		<groupId>com.tinkerpop</groupId>
-            		<artifactId>pipes</artifactId>
-            	</exclusion>
+                <exclusion>
+                    <groupId>com.tinkerpop.gremlin</groupId>
+                    <artifactId>gremlin-java</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.tinkerpop.gremlin</groupId>
+                    <artifactId>gremlin-groovy</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.tinkerpop.blueprints</groupId>
+                    <artifactId>blueprints-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.tinkerpop</groupId>
+                    <artifactId>pipes</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -86,102 +95,84 @@
             <artifactId>easymock</artifactId>
             <version>3.1</version>
         </dependency>
-        
-        <!-- Groovy -->
-		<dependency>
-		    <groupId>org.codehaus.gmaven.runtime</groupId>
-		    <artifactId>gmaven-runtime-1.5</artifactId>
-		    <version>1.5</version>
-		    <scope>test</scope>
-		    <exclusions>
-		    	<exclusion>
-		    		<groupId>org.apache.ant</groupId>
-		    		<artifactId>ant</artifactId>
-		    	</exclusion>
-		    </exclusions>
-		</dependency>
-		<dependency>
-		    <groupId>com.tinkerpop.gremlin</groupId>
-		    <artifactId>gremlin-groovy</artifactId>
-		    <version>${tinkerpop.version}</version>
-		 </dependency>
+
+        <!-- Groovy & Gremlin -->
+        <dependency>
+            <groupId>org.codehaus.gmaven.runtime</groupId>
+            <artifactId>gmaven-runtime-1.5</artifactId>
+            <version>1.5</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.ant</groupId>
+                    <artifactId>ant</artifactId>
+                </exclusion>
+                <!-- This Slf4j log binding conflicts with Log4j -->
+                <exclusion>
+                    <groupId>org.sonatype.gossip</groupId>
+                    <artifactId>gossip</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.gremlin</groupId>
+            <artifactId>gremlin-groovy</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
     </dependencies>
+
     <build>
-        <directory>${basedir}/target</directory>
-        <finalName>${project.artifactId}-${project.version}</finalName>
         <resources>
             <resource>
                 <directory>${basedir}/src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
         </resources>
-        <testResources>
-            <testResource>
-                <directory>${basedir}/src/test/resources
-                </directory>
-            </testResource>
-        </testResources>
         <plugins>
+            <!-- Groovy -->
             <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
+                <groupId>org.codehaus.gmaven</groupId>
+                <artifactId>gmaven-plugin</artifactId>
+                <version>1.5</version>
                 <configuration>
-                    <argLine>-Xms256m -Xmx756m</argLine>
+                    <providerSelection>1.5</providerSelection>
+                    <debug>true</debug>
+                    <verbose>true</verbose>
+                    <stacktrace>true</stacktrace>
+                    <sources>
+                        <fileset>
+                            <directory>${project.basedir}/src/main/groovy</directory>
+                            <includes>
+                                <include>**/*.groovy</include>
+                            </includes>
+                        </fileset>
+                    </sources>
+                    <testSources>
+                        <fileset>
+                            <directory>${project.basedir}/src/test/groovy</directory>
+                            <includes>
+                                <include>**/*.groovy</include>
+                            </includes>
+                        </fileset>
+                    </testSources>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>groovy-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>groovy-testCompile</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
-	        <!-- Groovy -->
-	        <plugin>
-	    		<groupId>org.codehaus.gmaven</groupId>
-			    <artifactId>gmaven-plugin</artifactId>
-			    <version>1.5</version>
-	    		<configuration>
-	            	<providerSelection>1.5</providerSelection>
-	                <sources>
-	                    <fileset>
-	                        <directory>src/main/groovy</directory>
-	                        <includes>
-	                            <include>**/*.groovy</include>
-	                        </includes>
-	                    </fileset>
-	                    <fileset>
-	                        <directory>src/test/groovy</directory>
-	                        <includes>
-	                            <include>**/*.groovy</include>
-	                        </includes>
-	                    </fileset>
-	                </sources>
-	                <debug>true</debug>
-					<verbose>true</verbose>
-					<stacktrace>true</stacktrace>
-	            </configuration>
-			    <executions>
-			        <execution>
-			            <id>default</id>
-			            <goals>
-			                <goal>compile</goal>
-			            </goals>
-			            <configuration>
-			            	<providerSelection>1.5</providerSelection>
-			                <sources>
-			                    <fileset>
-			                        <directory>${project.basedir}/src/main/groovy</directory>
-			                        <includes>
-			                            <include>**/*.groovy</include>
-			                        </includes>
-			                    </fileset>
-			                    <fileset>
-			                        <directory>${project.basedir}/src/test/groovy</directory>
-			                        <includes>
-			                            <include>**/*.groovy</include>
-			                        </includes>
-			                    </fileset>
-			                </sources>
-			                <debug>true</debug>
-       						<verbose>true</verbose>
-        					<stacktrace>true</stacktrace>
-			            </configuration>
-			        </execution>
-			    </executions>
-			</plugin>
         </plugins>
     </build>
 </project>

@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.query;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
@@ -11,7 +10,7 @@ import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.graphdb.query.condition.And;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.DirectionCondition;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.query.condition.IncidenceCondition;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Predicate;
@@ -19,16 +18,17 @@ import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-
-public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder {
+public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
 
     private static final Logger log = LoggerFactory.getLogger(VertexCentricQueryBuilder.class);
     
     private final InternalVertex vertex;
 
+    //Additional constraints
+    private TitanVertex adjacentVertex =null;
+
     public VertexCentricQueryBuilder(InternalVertex v, EdgeSerializer serializer) {
-        super(serializer);
+        super(v.tx(),serializer);
         Preconditions.checkNotNull(v);
         this.vertex=v;
     }
@@ -38,8 +38,11 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
 	 * ---------------------------------------------------------------
 	 */
 
-    final StandardTitanTx getTx() {
-        return vertex.tx();
+    @Override
+    public TitanVertexQuery adjacentVertex(TitanVertex vertex) {
+        Preconditions.checkNotNull(vertex);
+        this.adjacentVertex =vertex;
+        return this;
     }
 
     @Override
@@ -61,31 +64,31 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
     }
 
     @Override
-    public TitanVertexQuery hasNot(String key, Object value) {
+    public VertexCentricQueryBuilder hasNot(String key, Object value) {
         super.hasNot(key,value);
         return this;
     }
 
     @Override
-    public TitanVertexQuery has(String key, Predicate predicate, Object value) {
+    public VertexCentricQueryBuilder has(String key, Predicate predicate, Object value) {
         super.has(key,predicate,value);
         return this;
     }
 
     @Override
-    public TitanVertexQuery has(TitanKey key, Predicate predicate, Object value) {
+    public VertexCentricQueryBuilder has(TitanKey key, Predicate predicate, Object value) {
         super.has(key,predicate,value);
         return this;
     }
 
     @Override
-    public TitanVertexQuery has(String key) {
+    public VertexCentricQueryBuilder has(String key) {
         super.has(key);
         return this;
     }
 
     @Override
-    public TitanVertexQuery hasNot(String key) {
+    public VertexCentricQueryBuilder hasNot(String key) {
         super.hasNot(key);
         return this;
     }
@@ -161,8 +164,9 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
 
     @Override
     protected EdgeSerializer.VertexConstraint getVertexConstraint() {
-        //TODO: add constraint for other vertex
-        return null;
+        if (adjacentVertex!=null && vertex.hasId() && adjacentVertex.hasId()) {
+            return new EdgeSerializer.VertexConstraint(vertex.getID(),adjacentVertex.getID());
+        } else return null;
     }
 
 
@@ -173,7 +177,7 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
             //Add other-vertex and direction related conditions
             And<TitanRelation> newcond = (condition instanceof And)?(And)condition : new And<TitanRelation>(condition);
             newcond.add(new DirectionCondition<TitanRelation>(vertex,getDirection()));
-            //TODO: add incidence condition for other vertex
+            if (adjacentVertex!=null) newcond.add(new IncidenceCondition<TitanRelation>(vertex,adjacentVertex));
             condition=newcond;
         }
         return new VertexCentricQuery(vertex,condition,vq.getDirection(),vq.getQueries(),vq.getLimit());
@@ -182,14 +186,13 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
     public Iterable<TitanRelation> relations(RelationType returnType) {
         VertexCentricQuery query = constructQuery(returnType);
         QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery> processor =
-                new QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery>(query,vertex.tx().edgeProcessor);
+                new QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery>(query,tx.edgeProcessor);
         return processor;
     }
 
 
     @Override
     public Iterable<TitanEdge> titanEdges() {
-//        return Iterables.filter(relations(RelationType.EDGE),TitanEdge.class);
         return (Iterable)relations(RelationType.EDGE);
     }
 
@@ -221,24 +224,14 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
         return Iterables.size(properties());
     }
 
-
-
     @Override
     public Iterable<Vertex> vertices() {
-        return (Iterable)Iterables.transform(titanEdges(), new Function<TitanEdge, TitanVertex>() {
-            @Nullable
-            @Override
-            public TitanVertex apply(@Nullable TitanEdge titanEdge) {
-                return titanEdge.getOtherVertex(vertex);
-            }
-        });
+        return (Iterable) edges2Vertices(titanEdges(), vertex);
     }
 
     @Override
     public VertexList vertexIds() {
-        VertexArrayList vertices = new VertexArrayList();
-        for (TitanEdge edge : titanEdges()) vertices.add(edge.getOtherVertex(vertex));
-        return vertices;
+        return edges2VertexIds(titanEdges(),vertex);
     }
 
 

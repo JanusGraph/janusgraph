@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.AttributeHandler;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.diskstorage.Backend;
@@ -43,11 +44,11 @@ public class GraphDatabaseConfiguration {
      * is disabled.
      */
     public static final String AUTO_TYPE_KEY = "autotype";
-    public static final String AUTO_TYPE_DEFAULT = "../../titan-core/src/test/java/com/thinkaurelius/titan/blueprints";
+    public static final String AUTO_TYPE_DEFAULT = "blueprints";
 
     private static final Map<String, DefaultTypeMaker> preregisteredAutoType = new HashMap<String, DefaultTypeMaker>() {{
         put("none", DisableDefaultTypeMaker.INSTANCE);
-        put("../../titan-core/src/test/java/com/thinkaurelius/titan/blueprints", BlueprintsDefaultTypeMaker.INSTANCE);
+        put("blueprints", BlueprintsDefaultTypeMaker.INSTANCE);
     }};
 
 
@@ -148,7 +149,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
     public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
-    
+
     /**
      * Locker type to use.  The supported types are in {@link com.thinkaurelius.titan.diskstorage.Backend}.
      */
@@ -166,14 +167,14 @@ public class GraphDatabaseConfiguration {
      */
     public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
     public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
-    
+
     /**
      * Whether to enable basic timing and operation count monitoring on backend
      * methods using the {@code com.codahale.metrics} package.
      */
     public static final String BASIC_METRICS = "enable-basic-metrics";
-    public static final boolean BASIC_METRICS_DEFAULT = true; 
-    
+    public static final boolean BASIC_METRICS_DEFAULT = true;
+
     /**
      * Whether to share a single set of Metrics objects across all stores. If
      * true, then calls to KeyColumnValueStore methods any store instance in the
@@ -182,11 +183,11 @@ public class GraphDatabaseConfiguration {
      * {@link Backend#METRICS_PREFIX} + {@link Backend#MERGED_METRICS}. If
      * false, then each store has its own set of distinct metrics with a unique
      * name prefix.
-     * <p>
+     * <p/>
      * This option has no effect when {@link #BASIC_METRICS} is false.
      */
     public static final String MERGE_BASIC_METRICS = "merge-basic-metrics";
-    public static final boolean MERGE_BASIC_METRICS_DEFAULT = true; 
+    public static final boolean MERGE_BASIC_METRICS_DEFAULT = true;
 
     /**
      * Configuration key for the hostname or list of hostname of remote storage backend servers to connect to.
@@ -221,7 +222,7 @@ public class GraphDatabaseConfiguration {
      * until this timeout is exceeded.
      * <p/>
      * A wait time of 0 disables waiting.
-     *
+     * <p/>
      * Value = {@value}
      */
     public static final int SETUP_WAITTIME_DEFAULT = 60000;
@@ -309,22 +310,22 @@ public class GraphDatabaseConfiguration {
     public static final boolean ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT = true;
     private static final String ATTRIBUTE_PREFIX = "attribute";
     private static final String SERIALIZER_PREFIX = "serializer";
-    
+
     // ################ Metrics #######################
     // ################################################
-    
+
     /**
      * Prefix for Metrics reporter configuration keys.
      */
     public static final String METRICS_NAMESPACE = "metrics";
-    
+
     /**
      * Metrics console reporter interval in milliseconds. Leaving this
      * configuration key absent or null disables the console reporter.
      */
     public static final String METRICS_CONSOLE_INTERVAL = "console.interval";
     public static final Long METRICS_CONSOLE_INTERVAL_DEFAULT = null;
-    
+
     /**
      * Metrics CSV reporter interval in milliseconds. Leaving this configuration
      * key absent or null disables the CSV reporter.
@@ -339,7 +340,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final String METRICS_CSV_DIR = "csv.dir";
     public static final String METRICS_CSV_DIR_DEFAULT = null;
-    
+
     /**
      * Whether to report Metrics through a JMX MBean.
      */
@@ -359,7 +360,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final String METRICS_JMX_AGENTID = "jmx.agentid";
     public static final String METRICS_JMX_AGENTID_DEFAULT = null;
-    
+
     /**
      * Metrics Slf4j reporter interval in milliseconds. Leaving this
      * configuration key absent or null disables the Slf4j reporter.
@@ -374,8 +375,8 @@ public class GraphDatabaseConfiguration {
      */
     public static final String METRICS_SLF4J_LOGGER = "slf4j.logger";
     public static final String METRICS_SLF4J_LOGGER_DEFAULT = null;
-    
-    
+
+
     private final Configuration configuration;
 
     private boolean readOnly;
@@ -405,7 +406,7 @@ public class GraphDatabaseConfiguration {
         try {
             if (dirOrFile.isFile())
                 return new PropertiesConfiguration(dirOrFile);
-            
+
             configuration = new BaseConfiguration();
             configuration.setProperty(keyInNamespace(STORAGE_NAMESPACE, STORAGE_DIRECTORY_KEY), dirOrFile.getAbsolutePath());
         } catch (ConfigurationException e) {
@@ -434,12 +435,12 @@ public class GraphDatabaseConfiguration {
         Preconditions.checkNotNull(defaultTypeMaker, "Invalid " + AUTO_TYPE_KEY + " option: " + configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
         configureMetrics();
     }
-    
+
     private void configureMetrics() {
         Preconditions.checkNotNull(configuration);
-        
+
         Configuration metricsConf = configuration.subset(METRICS_NAMESPACE);
-        
+
         if (null != metricsConf && !metricsConf.isEmpty()) {
             configureMetricsConsoleReporter(metricsConf);
             configureMetricsCsvReporter(metricsConf);
@@ -447,14 +448,14 @@ public class GraphDatabaseConfiguration {
             configureMetricsSlf4jReporter(metricsConf);
         }
     }
-    
+
     private void configureMetricsConsoleReporter(Configuration conf) {
         Long ms = conf.getLong(METRICS_CONSOLE_INTERVAL, METRICS_CONSOLE_INTERVAL_DEFAULT);
         if (null != ms) {
             MetricManager.INSTANCE.addConsoleReporter(ms);
         }
     }
-    
+
     private void configureMetricsCsvReporter(Configuration conf) {
         Long ms = conf.getLong(METRICS_CSV_INTERVAL, METRICS_CONSOLE_INTERVAL_DEFAULT);
         String out = conf.getString(METRICS_CSV_DIR, METRICS_CSV_DIR_DEFAULT);
@@ -462,7 +463,7 @@ public class GraphDatabaseConfiguration {
             MetricManager.INSTANCE.addCsvReporter(ms, out);
         }
     }
-    
+
     private void configureMetricsJmxReporter(Configuration conf) {
         boolean enabled = conf.getBoolean(METRICS_JMX_ENABLED, METRICS_JMX_ENABLED_DEFAULT);
         String domain = conf.getString(METRICS_JMX_DOMAIN, METRICS_JMX_DOMAIN_DEFAULT);
@@ -472,7 +473,7 @@ public class GraphDatabaseConfiguration {
             MetricManager.INSTANCE.addJmxReporter(domain, agentId);
         }
     }
-    
+
     private void configureMetricsSlf4jReporter(Configuration conf) {
         Long ms = conf.getLong(METRICS_SLF4J_INTERVAL, METRICS_SLF4J_INTERVAL_DEFAULT);
         // null loggerName is allowed -- that means Metrics will use its internal default
@@ -526,7 +527,7 @@ public class GraphDatabaseConfiguration {
             try {
                 int position = Integer.parseInt(key.substring(ATTRIBUTE_PREFIX.length()));
                 Class<?> clazz = null;
-                AttributeSerializer<?> serializer = null;
+                AttributeHandler<?> serializer = null;
                 String classname = config.getString(key);
                 try {
                     clazz = Class.forName(classname);
@@ -539,7 +540,7 @@ public class GraphDatabaseConfiguration {
                     String serializername = config.getString(SERIALIZER_PREFIX + position);
                     try {
                         Class sclass = Class.forName(serializername);
-                        serializer = (AttributeSerializer) sclass.newInstance();
+                        serializer = (AttributeHandler) sclass.newInstance();
                     } catch (ClassNotFoundException e) {
                         throw new IllegalArgumentException("Could not find serializer class" + serializername);
                     } catch (InstantiationException e) {
@@ -678,7 +679,7 @@ public class GraphDatabaseConfiguration {
         while (keyiter.hasNext()) {
             String key = keyiter.next();
             int pos = key.indexOf(CONFIGURATION_SEPARATOR);
-            if (pos>0) names.add(key.substring(0,pos));
+            if (pos > 0) names.add(key.substring(0, pos));
         }
         return names;
     }

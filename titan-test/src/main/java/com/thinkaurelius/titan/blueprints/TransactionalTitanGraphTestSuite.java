@@ -23,9 +23,9 @@ public class TransactionalTitanGraphTestSuite extends TransactionalGraphTestSuit
         //Need to define types before hand to avoid deadlock in transactions
 
         graph.makeType().name("friend").makeEdgeLabel();
-        graph.makeType().name("test").unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).dataType(Long.class).makePropertyKey();
-        graph.makeType().name("blah").unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).dataType(Float.class).makePropertyKey();
-        graph.makeType().name("bloop").unique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).dataType(Integer.class).makePropertyKey();
+        graph.makeType().name("test").dataType(Long.class).makePropertyKey();
+        graph.makeType().name("blah").dataType(Float.class).makePropertyKey();
+        graph.makeType().name("bloop").dataType(Integer.class).makePropertyKey();
 
 
         graph.commit();

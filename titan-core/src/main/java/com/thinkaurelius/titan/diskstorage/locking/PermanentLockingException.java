@@ -3,9 +3,12 @@ package com.thinkaurelius.titan.diskstorage.locking;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 
 /**
- * This exception signifies a permanent exception while attempting to acquire a lock
- * in the titan storage backend, such as another lock taking presedence.
+ * This exception signifies a failure to lock based on durable state. For
+ * example, another machine holds the lock we attempted to claim. These
+ * exceptions typically will not go away on retries unless a machine modifies
+ * the underlying lock state in some way.
  * <p/>
+ * 
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 

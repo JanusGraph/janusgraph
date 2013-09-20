@@ -18,4 +18,25 @@ public class LongSerializer implements AttributeSerializer<Long> {
         out.putLong(object.longValue() - Long.MIN_VALUE);
     }
 
+    /*
+    ====== These methods apply to all whole numbers with minor modifications ========
+    ====== byte, short, int, long ======
+     */
+
+    @Override
+    public void verifyAttribute(Long value) {
+        //All values are valid
+    }
+
+    @Override
+    public Long convert(Object value) {
+        if (value instanceof Number) {
+            double d = ((Number)value).doubleValue();
+            if (Double.isNaN(d) || Math.round(d)!=d) throw new IllegalArgumentException("Not a valid long: " + value);
+            long l = ((Number)value).longValue();
+            return Long.valueOf(l);
+        } else if (value instanceof String) {
+            return Long.parseLong((String)value);
+        } else return null;
+    }
 }

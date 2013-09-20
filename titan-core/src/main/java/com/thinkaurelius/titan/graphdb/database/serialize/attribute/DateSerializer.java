@@ -23,4 +23,15 @@ public class DateSerializer implements AttributeSerializer<Date> {
         ls.writeObjectData(out,-utc);
     }
 
+    @Override
+    public void verifyAttribute(Date value) {
+        //All values are valid
+    }
+
+    @Override
+    public Date convert(Object value) {
+        if (value instanceof Number && !(value instanceof Float) && !(value instanceof Double)) {
+            return new Date(((Number)value).longValue());
+        } else return null;
+    }
 }

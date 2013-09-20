@@ -49,16 +49,16 @@ public class GraphOfTheGodsFactory {
 
     public static void load(final TitanGraph graph) {
 
-        graph.makeType().name("name").dataType(String.class).indexed(Vertex.class).unique(Direction.BOTH).makePropertyKey();
-        graph.makeType().name("age").dataType(Integer.class).indexed(INDEX_NAME, Vertex.class).unique(Direction.OUT).makePropertyKey();
-        graph.makeType().name("type").dataType(String.class).unique(Direction.OUT).makePropertyKey();
+        graph.makeType().name("name").dataType(String.class).indexed(Vertex.class).graphUnique().makePropertyKey();
+        graph.makeType().name("age").dataType(Integer.class).indexed(INDEX_NAME, Vertex.class).makePropertyKey();
+        graph.makeType().name("type").dataType(String.class).makePropertyKey();
 
-        final TitanKey time = graph.makeType().name("time").dataType(Integer.class).unique(Direction.OUT).makePropertyKey();
-        final TitanKey reason = graph.makeType().name("reason").dataType(String.class).indexed(INDEX_NAME, Edge.class).unique(Direction.OUT).makePropertyKey();
-        graph.makeType().name("place").dataType(Geoshape.class).indexed(INDEX_NAME, Edge.class).unique(Direction.OUT).makePropertyKey();
+        final TitanKey time = graph.makeType().name("time").dataType(Integer.class).makePropertyKey();
+        final TitanKey reason = graph.makeType().name("reason").dataType(String.class).indexed(INDEX_NAME, Edge.class).makePropertyKey();
+        graph.makeType().name("place").dataType(Geoshape.class).indexed(INDEX_NAME, Edge.class).makePropertyKey();
 
-        graph.makeType().name("father").unique(Direction.OUT).makeEdgeLabel();
-        graph.makeType().name("mother").unique(Direction.OUT).makeEdgeLabel();
+        graph.makeType().name("father").vertexUnique(Direction.OUT).makeEdgeLabel();
+        graph.makeType().name("mother").vertexUnique(Direction.OUT).makeEdgeLabel();
         graph.makeType().name("battled").primaryKey(time).makeEdgeLabel();
         graph.makeType().name("lives").signature(reason).makeEdgeLabel();
         graph.makeType().name("pet").makeEdgeLabel();

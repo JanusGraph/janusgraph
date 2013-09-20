@@ -18,4 +18,26 @@ public class IntegerSerializer implements AttributeSerializer<Integer> {
         out.putInt(object.intValue() - Integer.MIN_VALUE);
     }
 
+    /*
+    ====== These methods apply to all whole numbers with minor modifications ========
+    ====== byte, short, int, long ======
+     */
+
+    @Override
+    public void verifyAttribute(Integer value) {
+        //All values are valid
+    }
+
+    @Override
+    public Integer convert(Object value) {
+        if (value instanceof Number) {
+            double d = ((Number)value).doubleValue();
+            if (Double.isNaN(d) || Math.round(d)!=d) throw new IllegalArgumentException("Not a valid integer: " + value);
+            long l = ((Number)value).longValue();
+            if (l>=Integer.MIN_VALUE && l<=Integer.MAX_VALUE) return Integer.valueOf((int)l);
+            else throw new IllegalArgumentException("Value too large for integer: " + value);
+        } else if (value instanceof String) {
+            return Integer.parseInt((String)value);
+        } else return null;
+    }
 }

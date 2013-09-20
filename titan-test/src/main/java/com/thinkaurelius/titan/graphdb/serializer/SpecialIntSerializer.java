@@ -19,4 +19,14 @@ public class SpecialIntSerializer implements AttributeSerializer<SpecialInt> {
     public void writeObjectData(WriteBuffer out, SpecialInt attribute) {
         out.putInt(attribute.getValue());
     }
+
+    @Override
+    public void verifyAttribute(SpecialInt value) {
+        //All value are valid;
+    }
+
+    @Override
+    public SpecialInt convert(Object value) {
+        return null;
+    }
 }

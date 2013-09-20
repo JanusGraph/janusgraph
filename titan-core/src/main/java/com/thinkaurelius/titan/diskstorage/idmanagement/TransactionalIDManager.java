@@ -82,24 +82,4 @@ public class TransactionalIDManager extends AbstractIDManager {
             return current;
         }
     }
-
-    @Override
-    public long peekNextID(int partition) throws StorageException {
-        for (int retry = 0; retry < idApplicationRetryCount; retry++) {
-            StoreTransaction txh = null;
-            try {
-                txh = manager.beginTransaction(ConsistencyLevel.DEFAULT);
-                long current = getCurrentID(getPartitionKey(partition), txh);
-                txh.commit();
-                return current;
-            } catch (StorageException e) {
-                log.warn("Storage exception while reading id block - retrying in {} ms: {}", idApplicationWaitMS, e);
-                if (txh != null) txh.rollback();
-                if (idApplicationWaitMS > 0)
-                    TimeUtility.INSTANCE.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
-            }
-        }
-        throw new TemporaryLockingException("Exceeded timeout count [" + idApplicationRetryCount + "] when attempting to read id block");
-
-    }
 }

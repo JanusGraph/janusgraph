@@ -1,0 +1,9 @@
+Codename: aurelius
+Origin: Aurelius LLC
+Label: Aurelius LLC
+Components: main
+Architectures: source noarch amd64 i386
+DebOverride: override.aurelius
+DscOverride: override.aurelius
+SignWith: 25AC7920
+Suite: unstable

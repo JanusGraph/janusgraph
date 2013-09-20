@@ -239,10 +239,10 @@ public class Schema {
         
         TitanTransaction tx = g.newTransaction();
         for (int i = 0; i < vertexPropKeys; i++) {
-            tx.makeType().name(getVertexPropertyName(i)).dataType(Integer.class).indexed(Vertex.class).unique(Direction.OUT).makePropertyKey();
+            tx.makeType().name(getVertexPropertyName(i)).dataType(Integer.class).indexed(Vertex.class).vertexUnique(Direction.OUT).makePropertyKey();
         }
         for (int i = 0; i < edgePropKeys; i++) {
-            tx.makeType().name(getEdgePropertyName(i)).dataType(Integer.class).indexed(Edge.class).unique(Direction.OUT).makePropertyKey();
+            tx.makeType().name(getEdgePropertyName(i)).dataType(Integer.class).indexed(Edge.class).vertexUnique(Direction.OUT).makePropertyKey();
         }
         for (int i = 0; i < edgeLabels; i++) {
             String labelName = getEdgeLabelName(i);
@@ -251,7 +251,7 @@ public class Schema {
             tx.makeType().name(getEdgeLabelName(i)).primaryKey(pk).makeEdgeLabel();
         }
 
-        tx.makeType().name(UID_PROP).dataType(Long.class).indexed(Vertex.class).unique(Direction.BOTH).makePropertyKey();
+        tx.makeType().name(UID_PROP).dataType(Long.class).indexed(Vertex.class).vertexUnique(Direction.BOTH).makePropertyKey();
         tx.commit();
     }
 

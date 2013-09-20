@@ -24,7 +24,7 @@ import com.thinkaurelius.titan.diskstorage.WriteBuffer;
  * @see TypeMaker
  * @see <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
  */
-public interface AttributeSerializer<V> {
+public interface AttributeSerializer<V> extends AttributeHandler<V> {
 
     /**
      * Reads an attribute from the given ReadBuffer.

@@ -42,7 +42,7 @@ public class BufferedKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        return store.getSlice(keys, query, txh);
+        return store.getSlice(keys, query, getTx(txh));
     }
 
     @Override

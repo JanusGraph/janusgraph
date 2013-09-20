@@ -1,0 +1,47 @@
+Source: titan
+Section: misc
+Priority: extra
+Maintainer: Dan LaRocque <dalaro@hopcount.org>
+Build-Depends: debhelper (>= 7), openjdk-6-jdk (>= 6b11) | java6-sdk, maven
+Homepage: http://titan.thinkaurelius.com
+Vcs-Git: https://github.com/thinkaurelius/titan.git
+Vcs-Browser: https://github.com/thinkaurelius/titan
+Standards-Version: 3.9.4
+
+Package: titan
+Architecture: all
+Depends: openjdk-6-jre-headless (>= 6b11) | java6-runtime, adduser, ${misc:Depends}
+Recommends: ntp
+Description: Titan is a scalable, distributed, concurrent graph database 
+
+Package: titan-berkeleyje
+Architecture: all
+Depends: titan
+Description: BerkeleyDB Java Edition storage backend for the Titan graph database
+
+Package: titan-cassandra
+Architecture: all
+Depends: titan
+Recommends: cassandra
+Description: Cassandra storage backend for the Titan graph database
+
+Package: titan-hbase
+Architecture: all
+Depends: titan
+Description: HBase storage backend for the Titan graph database
+
+Package: titan-persistit
+Architecture: all
+Depends: titan
+Description: Persistit storage backend for the Titan graph database
+
+Package: titan-es
+Architecture: all
+Depends: titan, titan-lucene
+Description: Elasticsearch indexing support for the Titan graph database
+
+Package: titan-lucene
+Architecture: all
+Depends: titan
+Description: Lucene indexing for the Titan graph database
+

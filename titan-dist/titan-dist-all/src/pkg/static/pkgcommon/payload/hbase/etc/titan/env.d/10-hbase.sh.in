@@ -1,0 +1,4 @@
+# Include HBase jars
+for j in /usr/share/titan/lib/hbase/*.jar; do
+    CLASSPATH="$j:$CLASSPATH"
+done

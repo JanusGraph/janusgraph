@@ -38,9 +38,9 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
@@ -605,47 +605,53 @@ public abstract class LockKeyColumnValueStoreTest {
 
         private void runInterruptible() throws InterruptedException {
             int iterations = 0;
-            
+            long lastStart[] = new long[numPartitions];
+            for (int i = 0; i < numPartitions; i++)
+                lastStart[i] = Long.MIN_VALUE;
             for (int j = 0; j < numRounds; j++) {
                 for (int p = 0; p < numPartitions; p++) {
-                    for (boolean ok = false; !ok; ) {
-                        if (maxIterations < ++iterations) {
-                            throwIterationsExceededException();
-                        }
-                        if (!(ok = allocate(p))) {
-                            Thread.sleep(sleepMS);
-                        }
+                    if (maxIterations < ++iterations) {
+                        throwIterationsExceededException();
+                    }
+                    
+                    Long start = allocate(p);
+                    
+                    if (null == start) {
+                        Thread.sleep(sleepMS);
+                        p--;
+                    } else {
+                        Assert.assertTrue("Previous block start "
+                                + lastStart[p] + " exceeds next block start "
+                                + start, lastStart[p] <= start);
+                        Assert.assertFalse(allocatedBlocks.get(p).contains(start));
+                        allocatedBlocks.get(p).add(start);
+                        lastStart[p] = start;
                     }
                 }
             }
         }
 
-        private boolean allocate(int partitionIndex) {
-
-            final long nextId;
-            try {
-                nextId = authority.peekNextID(partitionIndex);
-            } catch (StorageException e) {
-                log.error("Unexpected exception while peeking at next ID", e);
-                return false;
-            }
+        private Long allocate(int partitionIndex) {
 
             final long[] block;
             try {
                 block = authority.getIDBlock(partitionIndex);
             } catch (StorageException e) {
                 log.error("Unexpected exception while getting ID block", e);
-                return false;
+                return null;
             }
 
-            Assert.assertTrue(nextId <= block[0]);
+            /*
+             * This is not guaranteed in the consistentkey implementation.
+             * Writers of ID block claims in that implementation delete their
+             * writes if they take too long. A peek can see this short-lived
+             * block claim even though a subsequent getblock does not.
+             */
+//            Assert.assertTrue(nextId <= block[0]);
             Assert.assertEquals(block[0] + blockSize, block[1]);
-            Assert.assertFalse(allocatedBlocks.get(partitionIndex).contains(
-                    block[0]));
-            allocatedBlocks.get(partitionIndex).add(block[0]);
             log.trace("Obtained ID block {},{}", block[0], block[1]);
 
-            return true;
+            return block[0];
         }
 
         private boolean throwIterationsExceededException() {
