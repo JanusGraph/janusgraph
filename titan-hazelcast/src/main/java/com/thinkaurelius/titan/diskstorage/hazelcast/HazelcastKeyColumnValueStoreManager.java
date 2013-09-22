@@ -3,16 +3,9 @@ package com.thinkaurelius.titan.diskstorage.hazelcast;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.transaction.TransactionContext;
-import com.hazelcast.transaction.TransactionOptions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
-import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
 
 import org.apache.commons.configuration.Configuration;
 
@@ -46,8 +39,6 @@ public class HazelcastKeyColumnValueStoreManager extends AbstractHazelcastStoreM
         for (String storeName : stores.keySet()) {
             clear(storeName);
         }
-
-        close();
     }
 
     public void clear(String storeName) {

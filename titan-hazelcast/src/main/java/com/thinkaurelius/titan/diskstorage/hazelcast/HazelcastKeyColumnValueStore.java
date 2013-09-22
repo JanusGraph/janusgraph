@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.hazelcast;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.*;
 
 import javax.annotation.Nullable;
@@ -10,7 +9,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.SignedBytes;
-import com.google.common.primitives.UnsignedBytes;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.nio.ObjectDataInput;
@@ -19,7 +17,6 @@ import com.hazelcast.nio.serialization.DataSerializable;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 

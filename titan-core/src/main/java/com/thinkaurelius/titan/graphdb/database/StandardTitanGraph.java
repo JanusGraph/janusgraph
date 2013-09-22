@@ -80,6 +80,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         isOpen = true;
     }
 
+    public void clear() throws StorageException {
+        backend.clearStorage();
+    }
+
     @Override
     public boolean isOpen() {
         return isOpen;

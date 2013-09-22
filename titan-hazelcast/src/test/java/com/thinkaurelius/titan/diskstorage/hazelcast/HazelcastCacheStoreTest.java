@@ -13,6 +13,8 @@ import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NAMESPACE;
+
 public class HazelcastCacheStoreTest {
     private static final Logger logger = LoggerFactory.getLogger(KeyValueStoreTest.class);
 
@@ -24,7 +26,7 @@ public class HazelcastCacheStoreTest {
     protected HazelcastCacheStore store;
 
     public HazelcastCacheStoreTest() throws StorageException {
-        manager = new HazelcastCacheStoreManager(HazelcastStorageSetup.getHazelcastGraphConfig());
+        manager = new HazelcastCacheStoreManager(HazelcastStorageSetup.getHazelcastGraphConfig().subset(STORAGE_NAMESPACE));
         store = (HazelcastCacheStore) manager.openDatabase(STORE_NAME);
     }
 

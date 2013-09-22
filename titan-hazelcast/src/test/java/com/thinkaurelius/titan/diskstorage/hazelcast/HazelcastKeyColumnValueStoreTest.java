@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NAMESPACE;
 
 public class HazelcastKeyColumnValueStoreTest extends KeyColumnValueStoreTest {
     public HazelcastKeyColumnValueStoreTest() throws StorageException {
@@ -15,7 +16,7 @@ public class HazelcastKeyColumnValueStoreTest extends KeyColumnValueStoreTest {
 
     @Override
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        return new HazelcastKeyColumnValueStoreManager(HazelcastStorageSetup.getHazelcastGraphConfig());
+        return new HazelcastKeyColumnValueStoreManager(HazelcastStorageSetup.getHazelcastGraphConfig().subset(STORAGE_NAMESPACE));
     }
 
     @Override
