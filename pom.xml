@@ -82,7 +82,8 @@
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.1.2</jackson2.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
-        <asm.version>4.0</asm.version>
+        <asm3.version>3.1</asm3.version>
+        <asm4.version>4.0</asm4.version>
         <jersey.version>1.17</jersey.version>
         <jna.version>3.2.7</jna.version>
         <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
@@ -407,42 +408,77 @@
                 <artifactId>jetty</artifactId>
                 <version>6.1.26</version>
             </dependency>
-            <!-- asm up to 3.3, when it changed groupId to org.ow2.asm -->
+            <!-- asm 3.x -->
             <dependency>
                 <groupId>asm</groupId>
                 <artifactId>asm</artifactId>
-                <version>3.1</version>
+                <version>${asm3.version}</version>
             </dependency>
-            <!--
             <dependency>
-                <groupId>org.codehaus.groovy</groupId>
-                <artifactId>groovy</artifactId>
-                <version>2.1.6</version>
+                <groupId>asm</groupId>
+                <artifactId>asm-all</artifactId>
+                <version>${asm3.version}</version>
             </dependency>
+            <dependency>
+                <groupId>asm</groupId>
+                <artifactId>asm-analysis</artifactId>
+                <version>${asm3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>asm</groupId>
+                <artifactId>asm-commons</artifactId>
+                <version>${asm3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>asm</groupId>
+                <artifactId>asm-debug-all</artifactId>
+                <version>${asm3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>asm</groupId>
+                <artifactId>asm-parent</artifactId>
+                <version>${asm3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>asm</groupId>
+                <artifactId>asm-tree</artifactId>
+                <version>${asm3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>asm</groupId>
+                <artifactId>asm-util</artifactId>
+                <version>${asm3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>asm</groupId>
+                <artifactId>asm-xml</artifactId>
+                <version>${asm3.version}</version>
+            </dependency>
+            <!-- asm 4.x; only used by kryo-shaded right now
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm</artifactId>
-                <version>${asm.version}</version>
+                <version>${asm4.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm-analysis</artifactId>
-                <version>${asm.version}</version>
+                <version>${asm4.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm-commons</artifactId>
-                <version>${asm.version}</version>
+                <version>${asm4.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm-tree</artifactId>
-                <version>${asm.version}</version>
+                <version>${asm4.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm-util</artifactId>
-                <version>${asm.version}</version>
+                <version>${asm4.version}</version>
             </dependency>
             -->
             <dependency>

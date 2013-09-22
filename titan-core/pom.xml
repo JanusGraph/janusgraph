@@ -33,58 +33,7 @@
             <groupId>com.tinkerpop</groupId>
             <artifactId>frames</artifactId>
             <version>${tinkerpop.version}</version>
-            <!--
-            <exclusions>
-                <exclusion>
-                    <groupId>asm</groupId>
-                    <artifactId>asm</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>asm</groupId>
-                    <artifactId>asm-analysis</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>asm</groupId>
-                    <artifactId>asm-commons</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>asm</groupId>
-                    <artifactId>asm-tree</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>asm</groupId>
-                    <artifactId>asm-util</artifactId>
-                </exclusion>
-            </exclusions>
-            -->
         </dependency>
-        <!--
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm</artifactId>
-            <version>${asm.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-analysis</artifactId>
-            <version>${asm.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-commons</artifactId>
-            <version>${asm.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-tree</artifactId>
-            <version>${asm.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-util</artifactId>
-            <version>${asm.version}</version>
-        </dependency>
-        -->
         <dependency>
             <groupId>com.tinkerpop.rexster</groupId>
             <artifactId>rexster-core</artifactId>
@@ -143,6 +92,36 @@
             <groupId>com.esotericsoftware.kryo</groupId>
             <artifactId>kryo</artifactId>
             <version>2.21</version>
+            <classifier>shaded</classifier>
+            
+            <!--
+            http://code.google.com/p/kryo/wiki/MavenShadedJAR
+            
+            Kryo normally depends on classes in these artifacts. The Kryo artifact 
+            with the shaded classifier includes all the classes on which Kryo depends. 
+            The shaded dependency classes also undergo bytecode rewriting to prefix their 
+            normal packagenames with com.esotericsoftware. This appears to be recursive. 
+            For example, kryo depends on reflectasm depends on asm (4.0). The normal 
+            asm packagename is rewritten from
+            org.ow2.asm to com.esotericsoftware.reflectasm.shaded.org.objectweb.asm.
+            
+            Bottom line: these exclusions are harmless, because shaded kyro comes with
+            its own copy of these deps and wouldn't use them anyway.
+            -->
+            <exclusions>
+                <exclusion>
+                    <groupId>com.esotericsoftware.reflectasm</groupId>
+                    <artifactId>reflectasm</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.esotericsoftware.minlog</groupId>
+                    <artifactId>minlog</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.objenesis</groupId>
+                    <artifactId>objenesis</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- Logging -->
         <dependency>
