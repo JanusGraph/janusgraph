@@ -17,7 +17,7 @@ public class StorageSetup {
     public static final String getHomeDir(String subdir) {
         String homedir = System.getProperty("titan.testdir");
         if (null == homedir) {
-            homedir = System.getProperty("java.io.tmpdir") + File.separator + "titan-test";
+            homedir = "target" + File.separator + "db";
         }
         if (subdir!=null && !StringUtils.isEmpty(subdir)) homedir += File.separator + subdir;
         File homefile = new File(homedir);
