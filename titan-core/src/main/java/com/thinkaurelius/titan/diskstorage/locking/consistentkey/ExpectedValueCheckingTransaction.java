@@ -167,8 +167,8 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
 
     @Override
     public void commit() throws StorageException {
-        deleteAllLocks();
         baseTx.commit();
+        deleteAllLocks();
     }
 
     @Override
