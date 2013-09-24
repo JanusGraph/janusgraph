@@ -3,6 +3,7 @@ notifications:
   email:
     - marko@thinkaurelius.com
     - matthias@thinkaurelius.com
+    - dalaro@hopcount.org
 
 jdk:
   - oraclejdk7
