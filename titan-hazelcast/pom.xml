@@ -46,14 +46,14 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>-Xms256m -Xmx756m</argLine>
+                    <argLine>-Xms256m -Xmx756m -Dhazelcast.logging.type=slf4j</argLine>
                     <excludes>
                         <exclude>**/External*.java</exclude>
                         <!-- Excluded because these take too long to run and require a lot of memory - see comprehensive profile -->
                         <exclude>**/*PerformanceTest.java</exclude>
                         <exclude>**/*ConcurrentTest.java</exclude>
                     </excludes>
-                    <forkMode>never</forkMode>
+                    <forkMode>once</forkMode>
                 </configuration>
             </plugin>
             <!-- Plugin declarations for code coverage -->

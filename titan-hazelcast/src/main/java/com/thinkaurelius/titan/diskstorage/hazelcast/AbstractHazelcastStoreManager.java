@@ -11,7 +11,12 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
 import org.apache.commons.configuration.Configuration;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class AbstractHazelcastStoreManager extends LocalStoreManager implements StoreManager {
+    private static final Logger logger = LoggerFactory.getLogger(AbstractHazelcastStoreManager.class);
+
     protected final HazelcastInstance manager;
     protected final FileStorageConfiguration storageConfig;
     protected final StoreFeatures features = getDefaultFeatures();
@@ -20,12 +25,29 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
         super(config);
         manager = Hazelcast.newHazelcastInstance();
         storageConfig = new FileStorageConfiguration(directory);
+
+        if (transactional)
+            logger.warn("Hazelcast doesn't support per-Thread nested transactions.");
     }
 
     @Override
     public StoreTransaction beginTransaction(ConsistencyLevel consistencyLevel) throws StorageException {
-        TransactionOptions options = TransactionOptions.getDefault().setTransactionType(TransactionOptions.TransactionType.LOCAL);
-        return new HazelCastTransaction(manager.newTransactionContext(options), consistencyLevel);
+        if (transactional) {
+            TransactionOptions options = TransactionOptions.getDefault().setTransactionType(TransactionOptions.TransactionType.LOCAL);
+            return new HazelCastTransaction(manager.newTransactionContext(options), consistencyLevel);
+        }
+
+        // No-op transaction
+        return new AbstractStoreTransaction(consistencyLevel) {
+            @Override
+            public void commit() throws StorageException {
+                // no op
+            }
+
+            public void rollback() throws StorageException {
+                // no op
+            }
+        };
     }
 
     @Override

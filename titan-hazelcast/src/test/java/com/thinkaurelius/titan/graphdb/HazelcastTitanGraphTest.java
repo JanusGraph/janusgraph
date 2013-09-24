@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 
 public class HazelcastTitanGraphTest extends TitanGraphTest {
     public HazelcastTitanGraphTest() {
-        super(HazelcastStorageSetup.getHazelcastGraphConfig());
+        super(HazelcastStorageSetup.getHazelcastGraphConfig(false));
     }
 
     @Override

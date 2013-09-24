@@ -7,7 +7,7 @@ import org.junit.Ignore;
 @Ignore
 public class HazelcastTitanGraphPerformanceTest extends TitanGraphPerformanceTest {
     public HazelcastTitanGraphPerformanceTest() {
-        super(HazelcastStorageSetup.getHazelcastGraphConfig());
+        super(HazelcastStorageSetup.getHazelcastGraphConfig(false));
     }
 
     @Override
