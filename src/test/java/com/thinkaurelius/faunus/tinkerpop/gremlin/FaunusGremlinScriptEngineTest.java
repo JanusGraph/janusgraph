@@ -12,5 +12,7 @@ public class FaunusGremlinScriptEngineTest extends TestCase {
     public void testEvaluates() throws Exception {
         ScriptEngine engine = new FaunusGremlinScriptEngineFactory().getScriptEngine();
         engine.eval("local.ls()");
+        engine.eval("hdfs.ls()");
     }
+
 }

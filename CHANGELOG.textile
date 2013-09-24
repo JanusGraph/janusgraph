@@ -23,6 +23,11 @@ h3. Version 0.4.0 (NOT OFFICIALLY RELEASED YET)
 * Global GremlinFaunus variables are now available in @ScriptEngine@ use cases
 * Reduced the width of the logger output of Hadoop via a new @log4j.properties@ file
 * Simplified @ResultHookClosure@ with new Gremlin 2.4.0 classes
+* Fixed @has(key,null)@ @NullPointerException@ issue
+* Added support for @has(key)@ and @hasNot(key)@
+* Migrated from @Query.Compare@ to @Compare@ with Blueprints 2.4.0
+* The variables @hdfs@ and @local@ are available to @gremlin.sh -e@
+* Remove @SequenceFile@ migration model via Faunus (unsustainable)
 
 ==<hr/>==
 

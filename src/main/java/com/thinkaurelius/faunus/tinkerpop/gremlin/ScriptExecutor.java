@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.tinkerpop.gremlin;
 
 import javax.script.Bindings;
+import javax.script.ScriptContext;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -23,7 +24,7 @@ public class ScriptExecutor {
     protected static void evaluate(final Reader reader, final List<String> arguments) throws IOException {
         final FaunusGremlinScriptEngine engine = new FaunusGremlinScriptEngine();
 
-        final Bindings bindings = engine.createBindings();
+        final Bindings bindings = engine.getBindings(ScriptContext.GLOBAL_SCOPE);
         if (arguments.size() > 0) {
             for (int i = 0; i < arguments.size(); i++) {
                 bindings.put("a" + (i + 1), arguments.get(i));

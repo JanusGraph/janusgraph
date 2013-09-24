@@ -6,9 +6,8 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputFormat;
@@ -23,15 +22,12 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusV
     public static final String FAUNUS_GRAPH_INPUT_TITAN = "faunus.graph.input.titan";
 
     private static final StaticBuffer DEFAULT_COLUMN = new StaticByteBuffer(new byte[0]);
-    private static final SliceQuery DEFAULT_SLICE_QUERY = new SliceQuery(DEFAULT_COLUMN, DEFAULT_COLUMN, Integer.MAX_VALUE);
+    private static final SliceQuery DEFAULT_SLICE_QUERY = new SliceQuery(DEFAULT_COLUMN, DEFAULT_COLUMN);
 
     public static SliceQuery inputSlice(final VertexQueryFilter inputFilter, final TitanGraph graph) {
         if (inputFilter.limit == 0) {
-            final IDManager idManager = (IDManager) ((StandardTitanGraph) graph).getIDInspector();
-            final StaticBuffer startColumn, endColumn;
-            startColumn = IDHandler.getEdgeTypeGroup(0, 0, idManager);
-            endColumn = IDHandler.getEdgeTypeGroup(idManager.getMaxGroupID() + 1, 0, idManager);
-            return new SliceQuery(startColumn, endColumn, Integer.MAX_VALUE);
+            final StaticBuffer[] endPoints = IDHandler.getBounds(RelationType.PROPERTY);
+            return new SliceQuery(endPoints[0], endPoints[1]).setLimit(Integer.MAX_VALUE);
         } else {
             return DEFAULT_SLICE_QUERY;
         }

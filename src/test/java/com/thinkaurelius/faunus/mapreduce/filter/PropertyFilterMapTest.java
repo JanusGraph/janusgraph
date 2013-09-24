@@ -3,9 +3,9 @@ package com.thinkaurelius.faunus.mapreduce.filter;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -27,8 +27,48 @@ public class PropertyFilterMapTest extends BaseTest {
         mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
+    public void testNullValue1() throws Exception {
+        Configuration config = PropertyFilterMap.createConfiguration(Vertex.class, "age", Compare.EQUAL, new Object[]{null});
+        mapReduceDriver.withConfiguration(config);
+
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 0);
+        assertEquals(graph.get(2l).pathCount(), 0);
+        assertEquals(graph.get(3l).pathCount(), 1);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 1);
+        assertEquals(graph.get(6l).pathCount(), 0);
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyFilterMap.Counters.VERTICES_FILTERED).getValue(), 4);
+        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyFilterMap.Counters.EDGES_FILTERED).getValue(), 0);
+
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
+    }
+
+    public void testNullValue2() throws Exception {
+        Configuration config = PropertyFilterMap.createConfiguration(Vertex.class, "age", Compare.EQUAL, null, 29);
+        mapReduceDriver.withConfiguration(config);
+
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+
+        assertEquals(graph.size(), 6);
+        assertEquals(graph.get(1l).pathCount(), 1);
+        assertEquals(graph.get(2l).pathCount(), 0);
+        assertEquals(graph.get(3l).pathCount(), 1);
+        assertEquals(graph.get(4l).pathCount(), 0);
+        assertEquals(graph.get(5l).pathCount(), 1);
+        assertEquals(graph.get(6l).pathCount(), 0);
+
+        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyFilterMap.Counters.VERTICES_FILTERED).getValue(), 3);
+        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyFilterMap.Counters.EDGES_FILTERED).getValue(), 0);
+
+        identicalStructure(graph, ExampleGraph.TINKERGRAPH);
+    }
+
     public void testVerticesOnName() throws Exception {
-        Configuration config = PropertyFilterMap.createConfiguration(Vertex.class, "name", Query.Compare.EQUAL, "marko", "vadas");
+        Configuration config = PropertyFilterMap.createConfiguration(Vertex.class, "name", Compare.EQUAL, "marko", "vadas");
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
@@ -48,7 +88,7 @@ public class PropertyFilterMapTest extends BaseTest {
     }
 
     public void testEdgesOnWeight() throws Exception {
-        Configuration config = PropertyFilterMap.createConfiguration(Edge.class, "weight", Query.Compare.EQUAL, 0.2f);
+        Configuration config = PropertyFilterMap.createConfiguration(Edge.class, "weight", Compare.EQUAL, 0.2f);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);

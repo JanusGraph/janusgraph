@@ -1,7 +1,7 @@
 package com.thinkaurelius.faunus.mapreduce.util;
 
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.tinkerpop.blueprints.Query;
+import com.tinkerpop.blueprints.Compare;
 import junit.framework.TestCase;
 
 /**
@@ -18,15 +18,10 @@ public class ElementCheckerTest extends TestCase {
 
         FaunusVertex v3 = new FaunusVertex(3l);
 
-        ElementChecker ec = new ElementChecker(false, "age", Query.Compare.EQUAL, 12f, 11f, 15f);
+        ElementChecker ec = new ElementChecker("age", Compare.EQUAL, 12f, 11f, 15f);
         assertFalse(ec.isLegal(v1));
         assertTrue(ec.isLegal(v2));
         assertFalse(ec.isLegal(v3));
-
-        ec = new ElementChecker(true, "age", Query.Compare.EQUAL, 12f, 11f, 15f);
-        assertFalse(ec.isLegal(v1));
-        assertTrue(ec.isLegal(v2));
-        assertTrue(ec.isLegal(v3));
     }
 
     public void testGreaterThan() {
@@ -38,15 +33,10 @@ public class ElementCheckerTest extends TestCase {
 
         FaunusVertex v3 = new FaunusVertex(3l);
 
-        ElementChecker ec = new ElementChecker(false, "age", Query.Compare.GREATER_THAN, 20f, 15f, 55f);
+        ElementChecker ec = new ElementChecker("age", Compare.GREATER_THAN, 20f, 15f, 55f);
         assertTrue(ec.isLegal(v1));
         assertFalse(ec.isLegal(v2));
         assertFalse(ec.isLegal(v3));
-
-        ec = new ElementChecker(true, "age", Query.Compare.GREATER_THAN, 20f, 15f, 55f);
-        assertTrue(ec.isLegal(v1));
-        assertFalse(ec.isLegal(v2));
-        assertTrue(ec.isLegal(v3));
     }
 
     public void testLessThan() {
@@ -58,14 +48,9 @@ public class ElementCheckerTest extends TestCase {
 
         FaunusVertex v3 = new FaunusVertex(3l);
 
-        ElementChecker ec = new ElementChecker(false, "age", Query.Compare.LESS_THAN, 20f, 15f, 34f);
+        ElementChecker ec = new ElementChecker("age", Compare.LESS_THAN, 20f, 15f, 34f);
         assertFalse(ec.isLegal(v1));
         assertTrue(ec.isLegal(v2));
         assertFalse(ec.isLegal(v3));
-
-        ec = new ElementChecker(true, "age", Query.Compare.LESS_THAN, 20f, 15f, 34f);
-        assertFalse(ec.isLegal(v1));
-        assertTrue(ec.isLegal(v2));
-        assertTrue(ec.isLegal(v3));
     }
 }

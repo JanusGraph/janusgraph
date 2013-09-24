@@ -386,11 +386,11 @@ public class FaunusVertexTest extends BaseTest {
 
     public void testLargeProperty() throws Exception {
         String value = "a24$%~bU*!";
-        for (int i = 0; i < 19; i++) {
+        for (int i = 0; i < 18; i++) {
             value = value + value;
         }
-        // a 5 million length string == ~10 books worth of data
-        assertTrue(value.length() > 5000000);
+        // a 2.6 million length string == ~5 books worth of data
+        assertEquals(value.length(), 2621440);
 
         FaunusVertex vertex1 = new FaunusVertex(1l);
         vertex1.setProperty("name", value);

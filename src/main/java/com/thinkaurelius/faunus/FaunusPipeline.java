@@ -29,10 +29,10 @@ import com.thinkaurelius.faunus.mapreduce.transform.VerticesEdgesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.CountMapReduce;
+import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.pipes.transform.TransformPipe;
 import com.tinkerpop.pipes.util.structures.Pair;
@@ -76,19 +76,19 @@ public class FaunusPipeline {
 
     protected final List<String> stringRepresentation = new ArrayList<String>();
 
-    private Query.Compare convert(final com.tinkerpop.gremlin.Tokens.T compare) {
+    private Compare convert(final com.tinkerpop.gremlin.Tokens.T compare) {
         if (compare.equals(com.tinkerpop.gremlin.Tokens.T.eq))
-            return Query.Compare.EQUAL;
+            return Compare.EQUAL;
         else if (compare.equals(com.tinkerpop.gremlin.Tokens.T.neq))
-            return Query.Compare.NOT_EQUAL;
+            return Compare.NOT_EQUAL;
         else if (compare.equals(com.tinkerpop.gremlin.Tokens.T.gt))
-            return Query.Compare.GREATER_THAN;
+            return Compare.GREATER_THAN;
         else if (compare.equals(com.tinkerpop.gremlin.Tokens.T.gte))
-            return Query.Compare.GREATER_THAN_EQUAL;
+            return Compare.GREATER_THAN_EQUAL;
         else if (compare.equals(com.tinkerpop.gremlin.Tokens.T.lt))
-            return Query.Compare.LESS_THAN;
+            return Compare.LESS_THAN;
         else
-            return Query.Compare.LESS_THAN_EQUAL;
+            return Compare.LESS_THAN_EQUAL;
     }
 
     protected class State {
@@ -648,7 +648,7 @@ public class FaunusPipeline {
      * @param values  the values to compare against where only one needs to succeed (or'd)
      * @return the extended FaunusPipeline
      */
-    public FaunusPipeline has(final String key, final Query.Compare compare, final Object... values) {
+    public FaunusPipeline has(final String key, final Compare compare, final Object... values) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
@@ -668,7 +668,7 @@ public class FaunusPipeline {
      * @param values  the values to compare against where only one needs to succeed (or'd)
      * @return the extended FaunusPipeline
      */
-    public FaunusPipeline hasNot(final String key, final Query.Compare compare, final Object... values) {
+    public FaunusPipeline hasNot(final String key, final Compare compare, final Object... values) {
         return this.has(key, compare.opposite(), values);
     }
 
@@ -680,7 +680,7 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline has(final String key, final Object... values) {
-        return this.has(key, Query.Compare.EQUAL, values);
+        return (values.length == 0) ? this.has(key, Compare.NOT_EQUAL, new Object[]{null}) : this.has(key, Compare.EQUAL, values);
     }
 
     /**
@@ -691,7 +691,7 @@ public class FaunusPipeline {
      * @return the extended FaunusPipeline
      */
     public FaunusPipeline hasNot(final String key, final Object... values) {
-        return this.has(key, Query.Compare.NOT_EQUAL, values);
+        return (values.length == 0) ? this.has(key, Compare.EQUAL, new Object[]{null}) : this.has(key, Compare.NOT_EQUAL, values);
     }
 
     /**

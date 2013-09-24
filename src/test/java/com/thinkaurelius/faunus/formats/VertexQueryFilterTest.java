@@ -70,7 +70,7 @@ public class VertexQueryFilterTest extends BaseTest {
 
     public void testDefaultFilterHasTinkerGraph() throws Exception {
         Configuration config = new Configuration();
-        config.set(VertexQueryFilter.FAUNUS_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().has('weight',0.5d,Query.Compare.LESS_THAN).limit(5)");
+        config.set(VertexQueryFilter.FAUNUS_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().has('weight',Compare.LESS_THAN,0.5d).limit(5)");
         VertexQueryFilter query = VertexQueryFilter.create(config);
         Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
 

@@ -5,10 +5,10 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.util.ElementChecker;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
+import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Query;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -26,7 +26,6 @@ public class IntervalFilterMap {
     public static final String START_VALUE = Tokens.makeNamespace(IntervalFilterMap.class) + ".startValue";
     public static final String END_VALUE = Tokens.makeNamespace(IntervalFilterMap.class) + ".endValue";
     public static final String VALUE_CLASS = Tokens.makeNamespace(IntervalFilterMap.class) + ".valueClass";
-    public static final String NULL_WILDCARD = Tokens.makeNamespace(IntervalFilterMap.class) + ".nullWildcard";
 
     public enum Counters {
         VERTICES_FILTERED,
@@ -37,7 +36,6 @@ public class IntervalFilterMap {
         final Configuration configuration = new EmptyConfiguration();
         configuration.setClass(CLASS, klass, Element.class);
         configuration.set(KEY, key);
-        configuration.setBoolean(NULL_WILDCARD, false);  // TODO: Parameterize?
         if (startValue instanceof String) {
             configuration.set(VALUE_CLASS, String.class.getName());
             configuration.set(START_VALUE, (String) startValue);
@@ -79,9 +77,8 @@ public class IntervalFilterMap {
                 throw new IOException("Class " + valueClass + " is an unsupported value class");
             }
 
-            final Boolean nullIsWildcard = context.getConfiguration().getBoolean(NULL_WILDCARD, false);
-            this.startChecker = new ElementChecker(nullIsWildcard, key, Query.Compare.GREATER_THAN_EQUAL, startValue);
-            this.endChecker = new ElementChecker(nullIsWildcard, key, Query.Compare.LESS_THAN, endValue);
+            this.startChecker = new ElementChecker(key, Compare.GREATER_THAN_EQUAL, startValue);
+            this.endChecker = new ElementChecker(key, Compare.LESS_THAN, endValue);
         }
 
         @Override

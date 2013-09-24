@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.util.ElementChecker;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
+import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -26,33 +27,30 @@ public class PropertyFilterMap {
     public static final String VALUES = Tokens.makeNamespace(PropertyFilterMap.class) + ".values";
     public static final String VALUE_CLASS = Tokens.makeNamespace(PropertyFilterMap.class) + ".valueClass";
     public static final String COMPARE = Tokens.makeNamespace(PropertyFilterMap.class) + ".compare";
-    public static final String NULL_WILDCARD = Tokens.makeNamespace(PropertyFilterMap.class) + ".nullWildcard";
 
     public enum Counters {
         VERTICES_FILTERED,
         EDGES_FILTERED
     }
 
-    public static Configuration createConfiguration(final Class<? extends Element> klass, final String key, final Query.Compare compare, final Object... values) {
+    public static Configuration createConfiguration(final Class<? extends Element> klass, final String key, final Compare compare, final Object... values) {
         final String[] valueStrings = new String[values.length];
+        Class valueClass = null;
         for (int i = 0; i < values.length; i++) {
-            valueStrings[i] = values[i].toString();
+            valueStrings[i] = (null == values[i]) ? valueStrings[i] = null : values[i].toString();
+            if (null != values[i])
+                valueClass = values[i].getClass();
         }
+        if (null == valueClass)
+            valueClass = Object.class;
+
+
         final Configuration configuration = new EmptyConfiguration();
         configuration.setClass(CLASS, klass, Element.class);
         configuration.set(KEY, key);
         configuration.set(COMPARE, compare.name());
         configuration.setStrings(VALUES, valueStrings);
-        configuration.setBoolean(NULL_WILDCARD, false); // TODO: parameterize?
-        if (values[0] instanceof String) {
-            configuration.setClass(VALUE_CLASS, String.class, String.class);
-        } else if (values[0] instanceof Boolean) {
-            configuration.setClass(VALUE_CLASS, Boolean.class, Boolean.class);
-        } else if (values[0] instanceof Number) {
-            configuration.setClass(VALUE_CLASS, Number.class, Number.class);
-        } else {
-            throw new RuntimeException("Unknown value class: " + values[0].getClass().getName());
-        }
+        configuration.setClass(VALUE_CLASS, valueClass, valueClass);
         return configuration;
     }
 
@@ -68,26 +66,29 @@ public class PropertyFilterMap {
             final Class valueClass = context.getConfiguration().getClass(VALUE_CLASS, String.class);
             final String[] valueStrings = context.getConfiguration().getStrings(VALUES);
             final Object[] values = new Object[valueStrings.length];
-            if (valueClass.equals(String.class)) {
+
+            if (valueClass.equals(Object.class)) {
                 for (int i = 0; i < valueStrings.length; i++) {
-                    values[i] = valueStrings[i];
+                    values[i] = null;
+                }
+            } else if (valueClass.equals(String.class)) {
+                for (int i = 0; i < valueStrings.length; i++) {
+                    values[i] = (valueStrings[i].equals(Tokens.NULL)) ? null : valueStrings[i];
                 }
             } else if (Number.class.isAssignableFrom((valueClass))) {
                 for (int i = 0; i < valueStrings.length; i++) {
-                    values[i] = Float.valueOf(valueStrings[i]);
+                    values[i] = (valueStrings[i].equals(Tokens.NULL)) ? null : Float.valueOf(valueStrings[i]);
                 }
             } else if (valueClass.equals(Boolean.class)) {
                 for (int i = 0; i < valueStrings.length; i++) {
-                    values[i] = Boolean.valueOf(valueStrings[i]);
+                    values[i] = (valueStrings[i].equals(Tokens.NULL)) ? null : Boolean.valueOf(valueStrings[i]);
                 }
             } else {
                 throw new IOException("Class " + valueClass + " is an unsupported value class");
             }
 
-            final Query.Compare compare = Query.Compare.valueOf(context.getConfiguration().get(COMPARE));
-            final Boolean nullIsWildcard = context.getConfiguration().getBoolean(NULL_WILDCARD, false);
-
-            this.elementChecker = new ElementChecker(nullIsWildcard, key, compare, values);
+            final Compare compare = Compare.valueOf(context.getConfiguration().get(COMPARE));
+            this.elementChecker = new ElementChecker(key, compare, values);
         }
 
         @Override
