@@ -15,6 +15,7 @@ h3. Version 0.4.0 (NOT OFFICIALLY RELEASED YET)
 </dependency>
 ```
 
+* No longer support for Java 1.6
 * Bumped to support Hadoop 1.2.1
 * Bumped to support Titan 0.4.0
 * Bumped to support TinkerPop 2.4.0
