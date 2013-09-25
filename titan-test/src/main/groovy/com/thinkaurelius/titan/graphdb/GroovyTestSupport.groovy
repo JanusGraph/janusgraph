@@ -57,14 +57,9 @@ abstract class GroovyTestSupport {
     protected Schema schema
     protected TitanGraph graph
     protected Configuration conf
-    private static final Map<String, Double> iterationScalars = new HashMap<String, Double>()
 
     static {
         Gremlin.load()
-        
-        // Load iteration scalars from a file
-        iterationScalars.clear()
-        iterationScalars.putAll(JUnitBenchmarkProvider.loadScalarsFromEnvironment())
     }
     
     GroovyTestSupport(Configuration conf) throws StorageException {
@@ -106,8 +101,7 @@ abstract class GroovyTestSupport {
      */
     
     protected void sequentialUidTask(closure) {
-        long scale  = getDoubleScalar()
-        long count  = Math.round(scale * DEFAULT_TX_COUNT * DEFAULT_OPS_PER_TX)
+        long count  = DEFAULT_TX_COUNT * DEFAULT_OPS_PER_TX;
         long offset = Math.abs(random.nextLong()) % schema.getMaxUid()
         def uids    = new SequentialLongIterator(count, schema.getMaxUid(), offset)
         int op      = 0
@@ -133,38 +127,44 @@ abstract class GroovyTestSupport {
         assertNotNull(label)
         String pkey  = schema.getPrimaryKeyForLabel(label)
         assertNotNull(pkey)
-        final int n = getIntScalar()
         
-        for (int i = 0; i < n; i++) {
-            def tx = graph.newTransaction()
-            def v = tx.getVertex(Schema.UID_PROP, uid)
+        def tx = graph.newTransaction()
+        def v = tx.getVertex(Schema.UID_PROP, uid)
 //            def v = graph.V(Schema.UID_PROP, uid).next()
-            assertNotNull(v)
-            closure(v, label, pkey)
-            tx.commit()
-        }
+        assertNotNull(v)
+        closure(v, label, pkey)
+        tx.commit()
     }
     
     protected void standardIndexEdgeTask(closure) {
         final int keyCount = schema.getEdgePropKeys()
-        final int n = keyCount * getIntScalar()
         
-        for (int i = 0; i < n; i++) {
-            def tx = graph.newTransaction()
-            closure(tx, schema.getEdgePropertyName(i % keyCount), 0)
-            tx.commit()
+        def tx = graph.newTransaction()
+        int value = -1
+        for (int p = 0; p < schema.getEdgePropKeys(); p++) {
+            for (int i = 0; i < 5; i++) {
+                if (++value >= schema.getMaxEdgePropVal())
+                    value = 0
+                closure(tx, schema.getEdgePropertyName(p), value)
+            }
         }
+        tx.commit()
     }
     
     protected void standardIndexVertexTask(closure) {
         final int keyCount = schema.getVertexPropKeys()
-        final int n = keyCount * getIntScalar()
         
-        for (int i = 0; i < n; i++) {
-            def tx = graph.newTransaction()
-            closure(tx, schema.getVertexPropertyName(i % keyCount), 0)
-            tx.commit()
+        def tx = graph.newTransaction()
+        int value = -1
+        for (int p = 0; p < schema.getVertexPropKeys(); p++) {
+            for (int i = 0; i < 5; i++) {
+                if (++value >= schema.getMaxVertexPropVal())
+                    value = 0
+                closure(tx, schema.getVertexPropertyName(p), value)
+            }
+            
         }
+        tx.commit()
     }
     
     protected void initializeGraph(TitanGraph g) throws StorageException {
@@ -188,22 +188,4 @@ abstract class GroovyTestSupport {
             log.info("Initialized graph (" + duration + " ms).")
         }
     }
-    
-    private int getIntScalar() {
-        Math.ceil(getDoubleScalar())
-    }
-    
-    private double getDoubleScalar() {
-        Preconditions.checkNotNull(testName)
-        final String n = this.getClass().getCanonicalName() + "." + testName.getMethodName()
-        def s = iterationScalars.get(n)
-        if (null == s) {
-            log.warn("No iteration scalar found for test method {}, defaulting to 1", n)
-            s = 1
-        } else {
-            log.debug("Retrieved iteration scalar {} for method {}", s, n);
-        }
-        s
-    }
-    
 }

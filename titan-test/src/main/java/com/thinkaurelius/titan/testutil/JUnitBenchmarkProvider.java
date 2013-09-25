@@ -7,14 +7,24 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.carrotsearch.junitbenchmarks.AutocloseConsumer;
+import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
 import com.carrotsearch.junitbenchmarks.BenchmarkRule;
 import com.carrotsearch.junitbenchmarks.IResultsConsumer;
 import com.carrotsearch.junitbenchmarks.Result;
@@ -35,11 +45,18 @@ import com.google.common.collect.ImmutableMap;
  */
 public class JUnitBenchmarkProvider {
     
-    public static final String ENV_WRITE_FILE = "JUB_WRITE_SCALARS";
-    public static final String ENV_READ_FILE  = "JUB_READ_SCALARS";
-    public static final long TARGET_RUNTIME_MS = 1000L;
+    public static final String ENV_EFFORT_GENERATE = "JUB_EFFORT_GENERATE";
+    public static final String ENV_EFFORT_FILE  = "JUB_EFFORT_FILE";
+    public static final String DEFAULT_EFFORT_FILE = "../titan-test/data/jub-effort.txt";
+    public static final long TARGET_RUNTIME_MS = 5000L;
+    public static final int WARMUP_ROUNDS = 1;
     
+    private static final Map<String, Integer> efforts;
     private static final Logger log = LoggerFactory.getLogger(JUnitBenchmarkProvider.class);
+    
+    static {
+        efforts = loadScalarsFromEnvironment();
+    }
     
     /**
      * Get a JUnitBenchmarks rule configured for Titan performance testing.
@@ -82,8 +99,8 @@ public class JUnitBenchmarkProvider {
      * 
      * @return a BenchmarkRule ready for use with the JUnit @Rule annotation
      */
-    public static BenchmarkRule get() {
-        return new BenchmarkRule(getConsumers());
+    public static TestRule get() {
+        return new AdjustableRoundsBenchmarkRule(efforts, getConsumers());
     }
     
     /**
@@ -95,30 +112,32 @@ public class JUnitBenchmarkProvider {
      *            object
      * @return a BenchmarkRule ready for use with the JUnit @Rule annotation
      */
-    public static BenchmarkRule get(IResultsConsumer... additionalConsumers) {
-        return new BenchmarkRule(getConsumers(additionalConsumers));
+    public static TestRule get(IResultsConsumer... additionalConsumers) {
+        return new AdjustableRoundsBenchmarkRule(efforts, getConsumers(additionalConsumers));
     }
     
     /**
-     * Get a filename from {@link #ENV_READ_FILE}, then open the file and read
+     * Get a filename from {@link #ENV_EFFORT_FILE}, then open the file and read
      * method execution multipliers from it. Such a file can be produced using
      * {@link TimeScaleConsumer}.
      * 
      * @return map of classname + '.' + methodname to the number of iterations
      *         needed to run for at least {@link #TARGET_RUNTIME_MS}
      */
-    public static Map<String, Double> loadScalarsFromEnvironment() {
+    private static Map<String, Integer> loadScalarsFromEnvironment() {
 
-        String filename = System.getenv(ENV_READ_FILE);
+        String file = getEffortFilePath();
         
-        if (null == filename) {
+        File f = new File(file);
+        if (!f.canRead()) {
+            log.error("Can't read JUnitBenchmarks effort file {}, no effort multipliers loaded.", file);
             return ImmutableMap.of();
         }
         
         BufferedReader reader = null;
         try {
-            reader = new BufferedReader(new FileReader(filename));
-            return loadScalarsUnsafe(filename, reader);
+            reader = new BufferedReader(new FileReader(file));
+            return loadScalarsUnsafe(file, reader);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
@@ -143,24 +162,37 @@ public class JUnitBenchmarkProvider {
     private static IResultsConsumer[] getConsumersUnsafe(IResultsConsumer... additional) throws IOException {
         List<IResultsConsumer> consumers = new ArrayList<IResultsConsumer>();
         consumers.add(new XMLConsumer(new File("jub." + Math.abs(System.nanoTime()) + ".xml")));
-        consumers.add(new WriterConsumer());
-        String file = System.getenv(ENV_WRITE_FILE);
-        if (null != file) {
+        consumers.add(new WriterConsumer()); // defaults to System.out
+        
+        if (null != System.getenv(ENV_EFFORT_GENERATE)) {
+            String file = getEffortFilePath();
             Writer writer = new FileWriter(file, true);
-            consumers.add(new TimeScaleConsumer(writer));
             log.info("Opened " + file + " for appending");
-        } else {
-            log.debug("Env variable " + ENV_WRITE_FILE + " was null");
+            consumers.add(new TimeScaleConsumer(writer));   
+        }
+        
+        for (IResultsConsumer c : additional) {
+            consumers.add(c);
         }
         
         return consumers.toArray(new IResultsConsumer[consumers.size()]);
     }
     
-    private static Map<String, Double> loadScalarsUnsafe(String filename, BufferedReader reader) throws IOException {
+    private static String getEffortFilePath() {
+        String file = System.getenv(ENV_EFFORT_FILE);
+        if (null == file) {
+            log.debug("Env variable " + ENV_EFFORT_FILE + " was null");
+            log.debug("Defaulting to JUB effort scalar file " + DEFAULT_EFFORT_FILE);
+            file = DEFAULT_EFFORT_FILE;
+        }
+        return file;
+    }
+    
+    private static Map<String, Integer> loadScalarsUnsafe(String filename, BufferedReader reader) throws IOException {
         String line;
         int ln = 0;
         final int tokensPerLine = 2;
-        final ImmutableMap.Builder<String, Double> builder = new ImmutableMap.Builder<String, Double>();
+        final ImmutableMap.Builder<String, Integer> builder = new ImmutableMap.Builder<String, Integer>();
         
         while (null != (line = reader.readLine())) {
             ln++;
@@ -203,7 +235,7 @@ public class JUnitBenchmarkProvider {
             
             assert null != scalar;
             
-            builder.put(name, scalar);
+            builder.put(name, Double.valueOf(Math.ceil(scalar)).intValue());
         }
         
         return builder.build();
@@ -238,4 +270,182 @@ public class JUnitBenchmarkProvider {
             writer.close();
         }
     }
+    
+    /**
+     * This class uses particularly awkward and inelegant encapsulation. I don't
+     * have much flexibility to improve it because both JUnit and
+     * JUnitBenchmarks aggressively prohibit inheritance through final and
+     * restrictive method/constructor visibility.
+     */
+    private static class AdjustableRoundsBenchmarkRule implements TestRule {
+
+        private final BenchmarkRule rule;
+        private final Map<String, Integer> efforts;
+        
+        public AdjustableRoundsBenchmarkRule(Map<String, Integer> efforts, IResultsConsumer... consumers) {
+            rule = new BenchmarkRule(consumers);
+            this.efforts = efforts;
+        }
+        
+        @Override
+        public Statement apply(Statement base, Description description) {
+            Class<?> clazz = description.getTestClass();
+            String mname = description.getMethodName();
+            Collection<Annotation> annotations = description.getAnnotations();
+            final int rounds = getRoundsForFullMethodName(clazz.getCanonicalName() + "." + mname);
+            
+            List<Annotation> modifiedAnnotations = new ArrayList<Annotation>(annotations.size());
+            
+            boolean hit = false;
+            
+            for (Annotation a : annotations) {
+                if (a.annotationType().equals(BenchmarkOptions.class)) {
+                    final BenchmarkOptions old = (BenchmarkOptions)a;
+                    BenchmarkOptions replacement = getWrappedBenchmarkOptions(old, rounds);
+                    modifiedAnnotations.add(replacement);
+                    log.debug("Modified BenchmarkOptions annotation on {}", mname);
+                    hit = true;
+                } else {
+                    modifiedAnnotations.add(a);
+                    log.debug("Kept annotation {} with annotation type {} on {}", 
+                            new Object[] { a, a.annotationType(), mname });
+                }
+            }
+            
+            if (!hit) {
+                BenchmarkOptions opts = getDefaultBenchmarkOptions(rounds);
+                modifiedAnnotations.add(opts);
+                log.debug("Added BenchmarkOptions {} with annotation type {} to {}",
+                        new Object[] { opts, opts.annotationType(), mname });
+            }
+            
+            Description roundsAdjustedDesc =
+                    Description.createTestDescription(
+                            clazz, mname,
+                            modifiedAnnotations.toArray(new Annotation[modifiedAnnotations.size()]));
+            return rule.apply(base, roundsAdjustedDesc);
+        }
+        
+        private int getRoundsForFullMethodName(String fullname) {
+            Integer r = efforts.get(fullname);
+            if (null == r) {
+                r = 1;
+                log.warn("Applying default iteration count ({}) to method {}", r, fullname);
+            } else {
+                log.debug("Loaded iteration count {} on method {}", r, fullname);
+            }
+            return r;
+        }
+    }
+    
+    private static BenchmarkOptions getDefaultBenchmarkOptions(int rounds) {
+        return (BenchmarkOptions)Proxy.newProxyInstance(
+                JUnitBenchmarkProvider.class.getClassLoader(), // which classloader is correct?
+                new Class[] { BenchmarkOptions.class },
+                new DefaultBenchmarkOptionsHandler(rounds));
+    }
+    
+    private static BenchmarkOptions getWrappedBenchmarkOptions(BenchmarkOptions base, int rounds) {
+        return (BenchmarkOptions)Proxy.newProxyInstance(
+                JUnitBenchmarkProvider.class.getClassLoader(), // which classloader is correct?
+                new Class[] { BenchmarkOptions.class },
+                new WrappedBenchmarkOptionsHandler(base, rounds));
+    }
+    
+    private static class DefaultBenchmarkOptionsHandler implements InvocationHandler {
+        
+        private final int rounds;
+        
+        public DefaultBenchmarkOptionsHandler(int rounds) {
+            this.rounds = rounds;
+        }
+        
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args)
+                throws IllegalAccessException, IllegalArgumentException,
+                InvocationTargetException {
+            if (method.getName().equals("benchmarkRounds")) {
+                log.trace("Intercepted benchmarkRounds() invocation: returning {}", rounds);
+                return rounds;
+            }
+            if (method.getName().equals("warmupRounds")) {
+                log.trace("Intercepted warmupRounds() invocation: returning {}", WARMUP_ROUNDS);
+                return WARMUP_ROUNDS;
+            }
+            if (method.getName().equals("annotationType")) {
+                return BenchmarkOptions.class;
+            }
+            log.trace("Returning default value for method intercepted invocation of method {}", method.getName());
+            return method.getDefaultValue();
+        }
+    }
+    
+    private static class WrappedBenchmarkOptionsHandler implements InvocationHandler {
+
+        private final Object base;
+        private final int rounds;
+        
+        public WrappedBenchmarkOptionsHandler(Object base, int rounds) {
+            this.base = base;
+            this.rounds = rounds;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args)
+                throws IllegalAccessException, IllegalArgumentException,
+                InvocationTargetException {
+            if (method.getName().equals("benchmarkRounds")) {
+                log.trace("Intercepted benchmarkRounds() invocation: returning {}", rounds);                
+                return rounds;
+            }
+            if (method.getName().equals("warmupRounds")) {
+                log.trace("Intercepted warmupRounds() invocation: returning {}", WARMUP_ROUNDS);
+                return WARMUP_ROUNDS;
+            }
+            log.trace("Delegating intercepted invocation of method {} to wrapped base instance {}", method.getName(), base);
+            return method.invoke(base, args);
+        }
+        
+    }
+//    private static class BenchmarkOptionsWrapper implements BenchmarkOptions {
+//        
+//        private final int rounds;
+//        private final BenchmarkOptions base;
+//        
+//        public BenchmarkOptionsWrapper(BenchmarkOptions base, int rounds) {
+//            this.rounds = rounds;
+//            this.base = base;
+//        }
+//
+//        @Override
+//        public Class<? extends Annotation> annotationType() {
+//            return BenchmarkOptions.class;
+//        }
+//
+//        @Override
+//        public boolean callgc() {
+//            return base.callgc();
+//        }
+//
+//        @Override
+//        public int warmupRounds() {
+//            return base.warmupRounds();
+//        }
+//
+//        @Override
+//        public int benchmarkRounds() {
+//            System.err.println("Returned round count " + rounds);
+//            return rounds;
+//        }
+//
+//        @Override
+//        public int concurrency() {
+//            return base.concurrency();
+//        }
+//
+//        @Override
+//        public Clock clock() {
+//            return base.clock();
+//        }
+//    }
 }
