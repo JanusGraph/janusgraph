@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
@@ -9,6 +10,22 @@
     <artifactId>titan-test</artifactId>
     <name>Titan-Test: Test Suite for Titan</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+
+    <repositories>
+        <!-- Access Sonatype OSS Snapshots for Furnace artifacts. This can 
+            go away when Furnace is released to Central. -->
+        <repository>
+            <id>sonatype-oss-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -20,6 +37,29 @@
             <groupId>com.tinkerpop.blueprints</groupId>
             <artifactId>blueprints-test</artifactId>
             <version>${tinkerpop.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.furnace</groupId>
+            <artifactId>furnace</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.tinkerpop.gremlin</groupId>
+                    <artifactId>gremlin-java</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.tinkerpop.gremlin</groupId>
+                    <artifactId>gremlin-groovy</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.tinkerpop.blueprints</groupId>
+                    <artifactId>blueprints-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.tinkerpop</groupId>
+                    <artifactId>pipes</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -55,41 +95,84 @@
             <artifactId>easymock</artifactId>
             <version>3.1</version>
         </dependency>
+
+        <!-- Groovy & Gremlin -->
+        <dependency>
+            <groupId>org.codehaus.gmaven.runtime</groupId>
+            <artifactId>gmaven-runtime-1.5</artifactId>
+            <version>1.5</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.ant</groupId>
+                    <artifactId>ant</artifactId>
+                </exclusion>
+                <!-- This Slf4j log binding conflicts with Log4j -->
+                <exclusion>
+                    <groupId>org.sonatype.gossip</groupId>
+                    <artifactId>gossip</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.gremlin</groupId>
+            <artifactId>gremlin-groovy</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
     </dependencies>
+
     <build>
-        <directory>${basedir}/target</directory>
-        <finalName>${project.artifactId}-${project.version}</finalName>
         <resources>
             <resource>
                 <directory>${basedir}/src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
         </resources>
-        <testResources>
-            <testResource>
-                <directory>${basedir}/src/test/resources
-                </directory>
-            </testResource>
-        </testResources>
         <plugins>
+            <!-- Groovy -->
             <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
+                <groupId>org.codehaus.gmaven</groupId>
+                <artifactId>gmaven-plugin</artifactId>
+                <version>1.5</version>
+                <configuration>
+                    <providerSelection>1.5</providerSelection>
+                    <debug>true</debug>
+                    <verbose>true</verbose>
+                    <stacktrace>true</stacktrace>
+                    <sources>
+                        <fileset>
+                            <directory>${project.basedir}/src/main/groovy</directory>
+                            <includes>
+                                <include>**/*.groovy</include>
+                            </includes>
+                        </fileset>
+                    </sources>
+                    <testSources>
+                        <fileset>
+                            <directory>${project.basedir}/src/test/groovy</directory>
+                            <includes>
+                                <include>**/*.groovy</include>
+                            </includes>
+                        </fileset>
+                    </testSources>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>groovy-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>groovy-testCompile</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
-            <!-- Plugin declarations for code coverage -->
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
-            </plugin>
-            <!-- End plugin declarations for code coverage -->
         </plugins>
     </build>
 </project>

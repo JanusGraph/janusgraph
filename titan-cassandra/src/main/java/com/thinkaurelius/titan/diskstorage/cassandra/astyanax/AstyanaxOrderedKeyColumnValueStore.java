@@ -85,7 +85,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         ByteBuffer key = query.getKey().asByteBuffer();
-        List<Entry> slice = getNamesSlice(Arrays.asList(query.getKey()), query, txh).get(key.duplicate());
+        List<Entry> slice = getNamesSlice(Arrays.asList(query.getKey()), query, txh).get(key);
         return (slice == null) ? Collections.<Entry>emptyList() : slice;
     }
 
@@ -146,7 +146,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
 
         for (Row<ByteBuffer, ByteBuffer> row : rows) {
             assert result.get(row.getKey()) == null;
-            result.put(row.getKey().duplicate(), excludeLastColumn(row, lastColumn, limit));
+            result.put(row.getKey(), excludeLastColumn(row, lastColumn, limit));
         }
 
         return result;

@@ -1,0 +1,12 @@
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testEdgeTraversalUsingVertexCentricIndex 9.191
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testFramedUidAndPropertyLookup 6.812
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testGlobalEdgePropertyQuery 1.000
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testGlobalVertexPropertyQuery 31.056
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testLabeledEdgeTraversal 8.865
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testLimitedGlobalEdgePropertyQuery 20.161
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testLimitedGlobalVertexPropertyQuery 20.921
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testNoop 1.000
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testVertexCentricIndexQuery 166.667
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testVertexUidLookup 27.933
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testZEdgeAddition 59.524
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testZVertexPropertyModification 12.225
