@@ -242,9 +242,9 @@ public class JUnitBenchmarkProvider {
     }
     
     /**
-     * Write methodnames followed by 1000 / roundAverage to a file.
+     * Write methodnames followed by {@link JUnitBenchmarkProvider#TARGET_RUNTIME_MS} / roundAverage to a file.
      */
-    public static class TimeScaleConsumer extends AutocloseConsumer implements Closeable {
+    private static class TimeScaleConsumer extends AutocloseConsumer implements Closeable {
         
         Writer writer;
         
@@ -270,6 +270,21 @@ public class JUnitBenchmarkProvider {
             writer.close();
         }
     }
+
+    private static BenchmarkOptions getDefaultBenchmarkOptions(int rounds) {
+        return (BenchmarkOptions)Proxy.newProxyInstance(
+                JUnitBenchmarkProvider.class.getClassLoader(), // which classloader is correct?
+                new Class[] { BenchmarkOptions.class },
+                new DefaultBenchmarkOptionsHandler(rounds));
+    }
+    
+    private static BenchmarkOptions getWrappedBenchmarkOptions(BenchmarkOptions base, int rounds) {
+        return (BenchmarkOptions)Proxy.newProxyInstance(
+                JUnitBenchmarkProvider.class.getClassLoader(), // which classloader is correct?
+                new Class[] { BenchmarkOptions.class },
+                new WrappedBenchmarkOptionsHandler(base, rounds));
+    }
+    
     
     /**
      * This class uses particularly awkward and inelegant encapsulation. I don't
@@ -338,20 +353,6 @@ public class JUnitBenchmarkProvider {
         }
     }
     
-    private static BenchmarkOptions getDefaultBenchmarkOptions(int rounds) {
-        return (BenchmarkOptions)Proxy.newProxyInstance(
-                JUnitBenchmarkProvider.class.getClassLoader(), // which classloader is correct?
-                new Class[] { BenchmarkOptions.class },
-                new DefaultBenchmarkOptionsHandler(rounds));
-    }
-    
-    private static BenchmarkOptions getWrappedBenchmarkOptions(BenchmarkOptions base, int rounds) {
-        return (BenchmarkOptions)Proxy.newProxyInstance(
-                JUnitBenchmarkProvider.class.getClassLoader(), // which classloader is correct?
-                new Class[] { BenchmarkOptions.class },
-                new WrappedBenchmarkOptionsHandler(base, rounds));
-    }
-    
     private static class DefaultBenchmarkOptionsHandler implements InvocationHandler {
         
         private final int rounds;
@@ -407,45 +408,4 @@ public class JUnitBenchmarkProvider {
         }
         
     }
-//    private static class BenchmarkOptionsWrapper implements BenchmarkOptions {
-//        
-//        private final int rounds;
-//        private final BenchmarkOptions base;
-//        
-//        public BenchmarkOptionsWrapper(BenchmarkOptions base, int rounds) {
-//            this.rounds = rounds;
-//            this.base = base;
-//        }
-//
-//        @Override
-//        public Class<? extends Annotation> annotationType() {
-//            return BenchmarkOptions.class;
-//        }
-//
-//        @Override
-//        public boolean callgc() {
-//            return base.callgc();
-//        }
-//
-//        @Override
-//        public int warmupRounds() {
-//            return base.warmupRounds();
-//        }
-//
-//        @Override
-//        public int benchmarkRounds() {
-//            System.err.println("Returned round count " + rounds);
-//            return rounds;
-//        }
-//
-//        @Override
-//        public int concurrency() {
-//            return base.concurrency();
-//        }
-//
-//        @Override
-//        public Clock clock() {
-//            return base.clock();
-//        }
-//    }
 }
