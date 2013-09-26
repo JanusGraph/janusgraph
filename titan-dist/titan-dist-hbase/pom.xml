@@ -12,7 +12,8 @@
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
-        <distribution.assembly.descriptor>assembly-hbase.xml</distribution.assembly.descriptor>
+        <distribution.assembly.name>hbase</distribution.assembly.name>
+        <distribution.assembly.descriptor>${project.parent.basedir}/src/assembly/descriptor/backend.xml</distribution.assembly.descriptor>
     </properties>
 
     <profiles>

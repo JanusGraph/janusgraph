@@ -7,12 +7,12 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
-    <artifactId>titan-dist-all</artifactId>
-    <name>Titan-Dist-All: Archives with Every Backend</name>
+    <artifactId>titan-dist-quickstart</artifactId>
+    <name>Titan-Dist-Quickstart: Archives with Rexster</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
-        <distribution.assembly.descriptor>all.xml</distribution.assembly.descriptor>
+        <distribution.assembly.descriptor>quickstart.xml</distribution.assembly.descriptor>
     </properties>
 
     <dependencies>
@@ -30,6 +30,16 @@
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
             <version>${jna.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.rexster</groupId>
+            <artifactId>rexster-console</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.rexster</groupId>
+            <artifactId>rexster-server</artifactId>
+            <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -73,38 +83,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>assemble-standalone-dir</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>assemble-standalone-dir</id>
-                                <phase>install</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration> 
-                                    <attach>false</attach>
-                                    <finalName>/</finalName>
-                                    <outputDirectory>${project.build.directory}/titan-all-standalone/</outputDirectory>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                    <descriptors>
-                                        <descriptor>standalonedir.xml</descriptor>
-                                    </descriptors>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
         <profile>
             <id>aurelius-release</id>
             <dependencies>
