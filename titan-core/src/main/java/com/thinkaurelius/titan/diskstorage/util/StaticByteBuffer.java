@@ -85,7 +85,7 @@ public class StaticByteBuffer implements StaticBuffer {
     public StaticBuffer subrange(int position, int length) {
         Preconditions.checkArgument(position >= 0);
         Preconditions.checkArgument(length >= 0);
-        Preconditions.checkArgument(b.position() + position + length <= b.limit());
+        Preconditions.checkArgument(b.position() + position + length <= b.limit(), "%s + %s + %s <= %s", b.position(), position, length, b.limit());
         ByteBuffer newb = b.duplicate();
         newb.position(b.position() + position);
         newb.limit(b.position() + position + length);

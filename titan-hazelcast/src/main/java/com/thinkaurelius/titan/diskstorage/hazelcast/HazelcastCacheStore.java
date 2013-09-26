@@ -21,6 +21,7 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 
 public class HazelcastCacheStore implements CacheStore {
+
     private static final String UPDATE_EXCEPTION_FORMAT = "Key: %s, has current value different from %s, can't replace with %s.";
 
     private final IMap<byte[], byte[]> cache;

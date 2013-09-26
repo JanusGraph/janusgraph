@@ -89,7 +89,7 @@ public class Backend {
     private KeyColumnValueStore edgeIndexStore;
     private IDAuthority idAuthority;
 
-    private final Map<String,IndexProvider> indexes;
+    private final Map<String, IndexProvider> indexes;
 
     private final int bufferSize;
     private final boolean hashPrefixIndex;
@@ -107,14 +107,14 @@ public class Backend {
 
     public Backend(Configuration storageConfig) {
         this.storageConfig = storageConfig;
-        
+
         storeManager = getStorageManager(storageConfig);
         indexes = getIndexes(storageConfig);
         storeFeatures = storeManager.getFeatures();
-        
+
         basicMetrics = storageConfig.getBoolean(BASIC_METRICS, BASIC_METRICS_DEFAULT);
         mergeBasicMetrics = storageConfig.getBoolean(MERGE_BASIC_METRICS, MERGE_BASIC_METRICS_DEFAULT);
-        
+
         int bufferSizeTmp = storageConfig.getInt(BUFFER_SIZE_KEY, BUFFER_SIZE_DEFAULT);
         Preconditions.checkArgument(bufferSizeTmp >= 0, "Buffer size must be non-negative (use 0 to disable)");
         if (!storeFeatures.supportsBatchMutation()) {
@@ -128,18 +128,18 @@ public class Backend {
         Preconditions.checkArgument(readAttempts > 0, "Read attempts must be positive");
         persistAttemptWaittime = storageConfig.getInt(STORAGE_ATTEMPT_WAITTIME_KEY, STORAGE_ATTEMPT_WAITTIME_DEFAULT);
         Preconditions.checkArgument(persistAttemptWaittime > 0, "Persistence attempt retry wait time must be non-negative");
-        
+
         // If lock prefix is unspecified, specify it now
         storageConfig.setProperty(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
                 storageConfig.getString(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, storeManager.getName()));
-        
+
         final String lockBackendName =
                 storageConfig.getString(GraphDatabaseConfiguration.LOCK_BACKEND,
-                                        GraphDatabaseConfiguration.LOCK_BACKEND_DEFAULT);
+                        GraphDatabaseConfiguration.LOCK_BACKEND_DEFAULT);
         if (REGISTERED_LOCKERS.containsKey(lockBackendName)) {
             lockerCreator = REGISTERED_LOCKERS.get(lockBackendName);
         } else {
-            throw new TitanConfigurationException("Unknown lock backend \"" + 
+            throw new TitanConfigurationException("Unknown lock backend \"" +
                     lockBackendName + "\".  Known lock backends: " +
                     Joiner.on(", ").join(REGISTERED_LOCKERS.keySet()) + ".");
         }
@@ -158,7 +158,7 @@ public class Backend {
 
 
     private KeyColumnValueStore getLockStore(KeyColumnValueStore store) throws StorageException {
-        return getLockStore(store,true);
+        return getLockStore(store, true);
     }
 
     private KeyColumnValueStore getLockStore(KeyColumnValueStore store, boolean lockEnabled) throws StorageException {
@@ -176,13 +176,13 @@ public class Backend {
         }
         return store;
     }
-    
+
     private Locker getLocker(String lockerName) {
-        
+
         Preconditions.checkNotNull(lockerName);
-        
+
         Locker l = lockers.get(lockerName);
-        
+
         if (null == l) {
             l = lockerCreator.apply(lockerName);
             final Locker x = lockers.putIfAbsent(lockerName, l);
@@ -190,7 +190,7 @@ public class Backend {
                 l = x;
             }
         }
-        
+
         return l;
     }
 
@@ -231,17 +231,17 @@ public class Backend {
             } else {
                 throw new IllegalStateException("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
             }
-            
+
             edgeStore = getLockStore(getBufferStore(EDGESTORE_NAME));
             vertexIndexStore = getLockStore(getBufferStore(VERTEXINDEX_STORE_NAME));
-            edgeIndexStore = getLockStore(getBufferStore(EDGEINDEX_STORE_NAME),false);
+            edgeIndexStore = getLockStore(getBufferStore(EDGEINDEX_STORE_NAME), false);
 
 
             if (hashPrefixIndex) {
                 vertexIndexStore = new HashPrefixKeyColumnValueStore(vertexIndexStore, 4);
                 edgeIndexStore = new HashPrefixKeyColumnValueStore(edgeIndexStore, 4);
             }
-            
+
             if (basicMetrics) {
                 edgeStore = new MetricInstrumentedStore(edgeStore, getMetricsPrefix("edgeStore"));
                 vertexIndexStore = new MetricInstrumentedStore(vertexIndexStore, getMetricsPrefix("vertexIndexStore"));
@@ -259,8 +259,11 @@ public class Backend {
                     }
                     return version;
                 }
+
                 @Override
-                public String toString() { return "ConfigurationRead"; }
+                public String toString() {
+                    return "ConfigurationRead";
+                }
             }, config.getLong(SETUP_WAITTIME_KEY, SETUP_WAITTIME_DEFAULT));
             if (!TitanConstants.VERSION.equals(version)) {
                 throw new TitanException("StorageBackend is incompatible with Titan version: " + TitanConstants.VERSION + " vs. " + version);
@@ -275,51 +278,53 @@ public class Backend {
      *
      * @return
      */
-    public Map<String,IndexInformation> getIndexInformation() {
-        ImmutableMap.Builder<String,IndexInformation> copy = ImmutableMap.builder();
+    public Map<String, IndexInformation> getIndexInformation() {
+        ImmutableMap.Builder<String, IndexInformation> copy = ImmutableMap.builder();
         copy.putAll(indexes);
-        copy.put(Titan.Token.STANDARD_INDEX,StandardIndexInformation.INSTANCE);
+        copy.put(Titan.Token.STANDARD_INDEX, StandardIndexInformation.INSTANCE);
         return copy.build();
     }
-    
+
     private String getMetricsPrefix(String storeName) {
         return METRICS_PREFIX + (mergeBasicMetrics ? MERGED_METRICS : storeName);
     }
 
     private final static KeyColumnValueStoreManager getStorageManager(Configuration storageConfig) {
-        StoreManager manager = getImplementationClass(storageConfig,GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,
-                                    GraphDatabaseConfiguration.STORAGE_BACKEND_DEFAULT,
-                                    REGISTERED_STORAGE_MANAGERS);
+        StoreManager manager = getImplementationClass(storageConfig, GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,
+                GraphDatabaseConfiguration.STORAGE_BACKEND_DEFAULT,
+                REGISTERED_STORAGE_MANAGERS);
         if (manager instanceof OrderedKeyValueStoreManager) {
-            manager = new OrderedKeyValueStoreManagerAdapter((OrderedKeyValueStoreManager) manager,STATIC_KEY_LENGTHS);
+            manager = new OrderedKeyValueStoreManagerAdapter((OrderedKeyValueStoreManager) manager, STATIC_KEY_LENGTHS);
+        } else if (manager instanceof CacheStoreManager) {
+            manager = new CacheStoreManagerAdapter((CacheStoreManager) manager);
         }
         Preconditions.checkArgument(manager instanceof KeyColumnValueStoreManager);
-        return (KeyColumnValueStoreManager)manager;
+        return (KeyColumnValueStoreManager) manager;
     }
 
-    private final static Map<String,IndexProvider> getIndexes(Configuration storageConfig) {
+    private final static Map<String, IndexProvider> getIndexes(Configuration storageConfig) {
         Configuration indexConfig = storageConfig.subset(GraphDatabaseConfiguration.INDEX_NAMESPACE);
         Set<String> indexes = GraphDatabaseConfiguration.getUnqiuePrefixes(indexConfig);
-        ImmutableMap.Builder<String,IndexProvider> builder = ImmutableMap.builder();
+        ImmutableMap.Builder<String, IndexProvider> builder = ImmutableMap.builder();
         for (String index : indexes) {
-            Preconditions.checkArgument(StringUtils.isNotBlank(index),"Invalid index name [%s]",index);
+            Preconditions.checkArgument(StringUtils.isNotBlank(index), "Invalid index name [%s]", index);
             Configuration config = indexConfig.subset(index);
-            log.info("Configuring index [{}] based on: \n {}",index,GraphDatabaseConfiguration.toString(config));
+            log.info("Configuring index [{}] based on: \n {}", index, GraphDatabaseConfiguration.toString(config));
             IndexProvider provider = getImplementationClass(config,
-                    GraphDatabaseConfiguration.INDEX_BACKEND_KEY,GraphDatabaseConfiguration.INDEX_BACKEND_DEFAULT,
+                    GraphDatabaseConfiguration.INDEX_BACKEND_KEY, GraphDatabaseConfiguration.INDEX_BACKEND_DEFAULT,
                     REGISTERED_INDEX_PROVIDERS);
             Preconditions.checkNotNull(provider);
-            builder.put(index,provider);
+            builder.put(index, provider);
         }
         return builder.build();
     }
 
-    public final static<T> T instantiate(String clazzname, Object... constructorArgs) {
+    public final static <T> T instantiate(String clazzname, Object... constructorArgs) {
 
         try {
             Class clazz = Class.forName(clazzname);
             Constructor constructor = clazz.getConstructor(Configuration.class);
-            T instance = (T)constructor.newInstance(constructorArgs);
+            T instance = (T) constructor.newInstance(constructorArgs);
             return instance;
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Could not find implementation class: " + clazzname);
@@ -335,9 +340,9 @@ public class Backend {
             throw new IllegalArgumentException("Could not instantiate implementation: " + clazzname, e);
         }
     }
-    
-    public final static<T> T getImplementationClass(Configuration config, String key, String defaultValue, Map<String,String> registeredImpls) {
-        String clazzname = config.getString(key,defaultValue);
+
+    public final static <T> T getImplementationClass(Configuration config, String key, String defaultValue, Map<String, String> registeredImpls) {
+        String clazzname = config.getString(key, defaultValue);
         if (registeredImpls.containsKey(clazzname.toLowerCase())) {
             clazzname = registeredImpls.get(clazzname.toLowerCase());
         }
@@ -359,6 +364,7 @@ public class Backend {
 
     /**
      * Returns the configured {@link IDAuthority}.
+     *
      * @return
      */
     public IDAuthority getIDAuthority() {
@@ -398,9 +404,9 @@ public class Backend {
         }
 
         //Index transactions
-        Map<String,IndexTransaction> indexTx = new HashMap<String,IndexTransaction>(indexes.size());
-        for (Map.Entry<String,IndexProvider> entry : indexes.entrySet()) {
-            indexTx.put(entry.getKey(),new IndexTransaction(entry.getValue()));
+        Map<String, IndexTransaction> indexTx = new HashMap<String, IndexTransaction>(indexes.size());
+        for (Map.Entry<String, IndexProvider> entry : indexes.entrySet()) {
+            indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue()));
         }
 
         return new BackendTransaction(tx, storeManager.getFeatures(),
@@ -420,7 +426,7 @@ public class Backend {
 
     /**
      * Clears the storage of all registered backend data providers. This includes backend storage engines and index providers.
-     *
+     * <p/>
      * IMPORTANT: Clearing storage means that ALL data will be lost and cannot be recovered.
      *
      * @throws StorageException
@@ -434,28 +440,29 @@ public class Backend {
         //Indexes
         for (IndexProvider index : indexes.values()) index.clearStorage();
     }
-    
+
     //############ Registered Storage Managers ##############
 
     private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>() {{
         put("local", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
         put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
         put("persistit", "com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager");
-        put("hazelcast", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastKeyColumnValueStoreManager");
+        put("hazelcastkcvs", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastKeyColumnValueStoreManager");
+        put("hazelcastcache", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
         put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("hbase", "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager");
         put("embeddedcassandra", "com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager");
-        put("inmemory","com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager");
+        put("inmemory", "com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager");
     }};
 
     private static final Map<String, String> REGISTERED_INDEX_PROVIDERS = new HashMap<String, String>() {{
-        put("lucene","com.thinkaurelius.titan.diskstorage.lucene.LuceneIndex");
-        put("elasticsearch","com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
-        put("es","com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
+        put("lucene", "com.thinkaurelius.titan.diskstorage.lucene.LuceneIndex");
+        put("elasticsearch", "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
+        put("es", "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
     }};
-    
+
     private final Function<String, Locker> CONSISTENT_KEY_LOCKER_CREATOR = new Function<String, Locker>() {
         @Override
         public Locker apply(String lockerName) {
@@ -485,9 +492,9 @@ public class Backend {
                 Class<?> c = storeManager.getClass();
                 Method method = c.getMethod("openLocker", String.class);
                 Object o = method.invoke(storeManager, lockerName);
-                return (Locker)o;
+                return (Locker) o;
             } catch (NoSuchMethodException e) {
-                throw new IllegalArgumentException("Could not find method when configuring locking with Astyanax Recipes" );
+                throw new IllegalArgumentException("Could not find method when configuring locking with Astyanax Recipes");
             } catch (IllegalAccessException e) {
                 throw new IllegalArgumentException("Could not access method when configuring locking with Astyanax Recipes", e);
             } catch (InvocationTargetException e) {
@@ -495,39 +502,39 @@ public class Backend {
             }
         }
     };
-    
+
     private final Map<String, Function<String, Locker>> REGISTERED_LOCKERS = ImmutableMap.of(
-        "consistentkey",  CONSISTENT_KEY_LOCKER_CREATOR,
-        "astyanaxrecipe", ASTYANAX_RECIPE_LOCKER_CREATOR
+            "consistentkey", CONSISTENT_KEY_LOCKER_CREATOR,
+            "astyanaxrecipe", ASTYANAX_RECIPE_LOCKER_CREATOR
     );
-    
+
     static {
         Properties props;
 
         try {
             props = new Properties();
             InputStream in = TitanFactory.class.getClassLoader().getResourceAsStream(TitanConstants.TITAN_PROPERTIES_FILE);
-            if (in!=null && in.available()>0) {
+            if (in != null && in.available() > 0) {
                 props.load(in);
             }
         } catch (IOException e) {
             throw new AssertionError(e);
         }
-        registerShorthands(props,"storage.",REGISTERED_STORAGE_MANAGERS);
-        registerShorthands(props,"index.",REGISTERED_INDEX_PROVIDERS);
+        registerShorthands(props, "storage.", REGISTERED_STORAGE_MANAGERS);
+        registerShorthands(props, "index.", REGISTERED_INDEX_PROVIDERS);
     }
 
-    public static final void registerShorthands(Properties props, String prefix, Map<String,String> shorthands) {
+    public static final void registerShorthands(Properties props, String prefix, Map<String, String> shorthands) {
         for (String key : props.stringPropertyNames()) {
             if (key.toLowerCase().startsWith(prefix)) {
                 String shorthand = key.substring(prefix.length()).toLowerCase();
                 String clazz = props.getProperty(key);
-                shorthands.put(shorthand,clazz);
-                log.debug("Registering shorthand [{}] for [{}]",shorthand,clazz);
+                shorthands.put(shorthand, clazz);
+                log.debug("Registering shorthand [{}] for [{}]", shorthand, clazz);
             }
         }
     }
-    
+
 //
 //    public synchronized static final void registerStorageManager(String name, Class<? extends StoreManager> clazz) {
 //        Preconditions.checkNotNull(name);
@@ -541,5 +548,5 @@ public class Backend {
 //        Preconditions.checkNotNull(name);
 //        REGISTERED_STORAGE_MANAGERS.remove(name);
 //    }
-    
+
 }

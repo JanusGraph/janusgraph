@@ -27,7 +27,7 @@ public class HazelcastCacheStoreTest {
     protected HazelcastCacheStore store;
 
     public HazelcastCacheStoreTest() throws StorageException {
-        manager = new HazelcastCacheStoreManager(HazelcastStorageSetup.getHazelcastGraphConfig().subset(STORAGE_NAMESPACE));
+        manager = new HazelcastCacheStoreManager(HazelcastStorageSetup.getHazelcastBaseConfig());
         store = (HazelcastCacheStore) manager.openDatabase(STORE_NAME);
     }
 

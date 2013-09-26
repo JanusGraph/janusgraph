@@ -32,11 +32,11 @@ public class KVUtil {
     };
 
     public static List<KeyValueEntry> getSlice(OrderedKeyValueStore store, StaticBuffer keyStart, StaticBuffer keyEnd, StoreTransaction txh) throws StorageException {
-        return convert(store.getSlice(keyStart,keyEnd,KeySelector.SelectAll,txh));
+        return convert(store.getSlice(keyStart, keyEnd, KeySelector.SelectAll, txh));
     }
 
     public static List<KeyValueEntry> getSlice(OrderedKeyValueStore store, StaticBuffer keyStart, StaticBuffer keyEnd, int limit, StoreTransaction txh) throws StorageException {
-        return convert(store.getSlice(keyStart,keyEnd,new LimitedSelector(limit),txh));
+        return convert(store.getSlice(keyStart, keyEnd, new LimitedSelector(limit), txh));
     }
 
     public static List<KeyValueEntry> convert(RecordIterator<KeyValueEntry> iter) throws StorageException {
@@ -46,5 +46,26 @@ public class KVUtil {
         }
         iter.close();
         return entries;
+    }
+
+    public static class RangeKeySelector implements KeySelector {
+
+        private final StaticBuffer lower; //inclusive
+        private final StaticBuffer upper; //exclusive
+
+        public RangeKeySelector(StaticBuffer lower, StaticBuffer upper) {
+            this.lower = lower;
+            this.upper = upper;
+        }
+
+        @Override
+        public boolean include(StaticBuffer key) {
+            return lower.compareTo(key) <= 0 && upper.compareTo(key) > 0;
+        }
+
+        @Override
+        public boolean reachedLimit() {
+            return false;
+        }
     }
 }

@@ -7,20 +7,35 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 
 public class HazelcastStorageSetup extends StorageSetup {
 
-    public static Configuration getHazelcastGraphConfig(boolean transactional) {
+    public static Configuration getHazelcastKCVSGraphConfig(boolean transactional) {
         BaseConfiguration config = new BaseConfiguration();
 
         Configuration storage = config.subset(STORAGE_NAMESPACE);
-        {
-            storage.addProperty(STORAGE_DIRECTORY_KEY, getHomeDir());
-            storage.addProperty(STORAGE_BACKEND_KEY, "hazelcast");
-            storage.addProperty(STORAGE_TRANSACTIONAL_KEY, transactional);
-        }
-
+        storage.addProperty(STORAGE_DIRECTORY_KEY, getHomeDir());
+        storage.addProperty(STORAGE_BACKEND_KEY, "hazelcastkcvs");
+        storage.addProperty(STORAGE_TRANSACTIONAL_KEY, transactional);
         return config;
     }
 
-    public static Configuration getHazelcastGraphConfig() {
-        return getHazelcastGraphConfig(true);
+    public static Configuration getHazelcastCacheGraphConfig(boolean transactional) {
+        BaseConfiguration config = new BaseConfiguration();
+
+        Configuration storage = config.subset(STORAGE_NAMESPACE);
+        storage.addProperty(STORAGE_DIRECTORY_KEY, getHomeDir());
+        storage.addProperty(STORAGE_BACKEND_KEY, "hazelcastcache");
+        storage.addProperty(STORAGE_TRANSACTIONAL_KEY, transactional);
+        return config;
+    }
+
+
+    public static Configuration getHazelcastBaseConfig() {
+        return getHazelcastBaseConfig(true);
+    }
+
+    public static Configuration getHazelcastBaseConfig(boolean transactional) {
+        BaseConfiguration config = new BaseConfiguration();
+        config.addProperty(STORAGE_DIRECTORY_KEY, getHomeDir());
+        config.addProperty(STORAGE_TRANSACTIONAL_KEY, transactional);
+        return config;
     }
 }

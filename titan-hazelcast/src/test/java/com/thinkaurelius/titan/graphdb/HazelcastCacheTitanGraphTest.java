@@ -3,9 +3,10 @@ package com.thinkaurelius.titan.graphdb;
 import com.thinkaurelius.titan.HazelcastStorageSetup;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 
-public class HazelcastTitanGraphTest extends TitanGraphTest {
-    public HazelcastTitanGraphTest() {
-        super(HazelcastStorageSetup.getHazelcastGraphConfig(false));
+public class HazelcastCacheTitanGraphTest extends TitanGraphTest {
+
+    public HazelcastCacheTitanGraphTest() {
+        super(HazelcastStorageSetup.getHazelcastCacheGraphConfig(false));
     }
 
     @Override
@@ -36,5 +37,6 @@ public class HazelcastTitanGraphTest extends TitanGraphTest {
     }
 
     @Override
-    public void close() {}
+    public void close() {
+    }
 }
