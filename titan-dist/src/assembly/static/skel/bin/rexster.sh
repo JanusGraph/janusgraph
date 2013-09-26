@@ -1,9 +1,9 @@
 #!/bin/bash
 
 BIN="`dirname $0`"
-CP="$( echo $BIN/../lib/*.jar . | sed 's/ /:/g')"
+CP="$BIN/../conf"
+CP="$CP:$( echo $BIN/../lib/*.jar . | sed 's/ /:/g')"
 CP="$CP:$(find -L $BIN/../ext/ -name "*.jar" | tr '\n' ':')"
-CP="$CP:$BIN/../conf"
 export CLASSPATH="$CP"
 
 PUBLIC="$BIN"/../public/
