@@ -43,6 +43,7 @@
         <!-- Submodules set this property.  Its value should be the
              path to an XML assembly descriptor file. -->
         <distribution.assembly.descriptor>UNSET</distribution.assembly.descriptor>
+        <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
     </properties>
 
     <dependencies>
@@ -308,6 +309,75 @@
                         </plugin>
                     </plugins>
                 </pluginManagement>
+            </build>
+        </profile>
+        
+        <profile>
+            <id>pkg-tools</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <id>set-version-properties</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>parse-version</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>assemble-package-tools</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration> 
+                                    <attach>false</attach>
+                                    <outputDirectory>${pkgtools.dir}/</outputDirectory>
+                                    <finalName>/</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <descriptors>
+                                        <descriptor>assembly-pkg.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>clean-package-tools</id>
+                                <phase>clean</phase>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <configuration> 
+                                    <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                                    <filesets>
+                                        <fileset>
+                                            <directory>${pkgtools.dir}/debian/</directory>
+                                        </fileset>
+                                        <fileset>
+                                            <directory>${pkgtools.dir}/pkgcommon/</directory>
+                                        </fileset>
+                                        <fileset>
+                                            <directory>${pkgtools.dir}/redhat/</directory>
+                                        </fileset>
+                                    </filesets>
+                                </configuration> 
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
             </build>
         </profile>
     </profiles>
