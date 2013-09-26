@@ -45,6 +45,14 @@
         <distribution.assembly.descriptor>UNSET</distribution.assembly.descriptor>
     </properties>
 
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
     <build>
         <!-- Used during release:perform to upload to S3 -->
         <extensions>
@@ -126,6 +134,20 @@
                             <workingDirectory>${project.parent.basedir}/doc</workingDirectory>
                         </configuration>
                     </execution>
+                    
+                    <execution>
+                        <id>generate-titan-gremlin-imports</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>com.thinkaurelius.titan.tinkerpop.gremlin.ConsoleSetup</mainClass>
+                            <arguments>
+                                <argument>${project.build.directory}/imports.properties</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -203,7 +225,7 @@
             <!-- Done disabling unnecessary default plugin goals -->
         </plugins>
     </build>
-
+    
     <profiles>
         <profile>
             <id>aurelius-release</id>
