@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.hazelcast;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import javax.annotation.Nullable;
@@ -19,6 +20,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
     private final MultiMap<byte[], Column> cache;
@@ -37,6 +39,9 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
         int count = 0;
         List<Entry> results = new ArrayList<Entry>();
         List<Column> columns = Lists.newArrayList(cache.get(query.getKey().as(StaticArrayBuffer.ARRAY_FACTORY)));
+
+        if (columns == null || columns.isEmpty())
+            return Collections.emptyList();
 
         Collections.sort(columns, new Comparator<Column>() {
             private final Comparator<byte[]> byteComparator = SignedBytes.lexicographicalComparator();
@@ -59,7 +64,7 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
             if (name.compareTo(query.getSliceEnd()) >= 0)
                 break;
 
-            results.add(new StaticBufferEntry(new StaticArrayBuffer(column.name), new StaticArrayBuffer(column.value)));
+            results.add(new ByteBufferEntry(ByteBuffer.wrap(column.name), ByteBuffer.wrap(column.value)));
             count++;
         }
 
@@ -78,17 +83,31 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
-        for (StaticBuffer columnToDelete : deletions) {
-            for (Column column : cache.get(key.as(StaticArrayBuffer.ARRAY_FACTORY))) {
-                if (new StaticArrayBuffer(column.name).equals(columnToDelete)) {
-                    cache.remove(key.as(StaticArrayBuffer.ARRAY_FACTORY), column);
-                }
-            }
+    public void mutate(StaticBuffer key,
+                       final List<Entry> additions,
+                       final List<StaticBuffer> deletions,
+                       StoreTransaction txh) throws StorageException {
+        byte[] rawKey = key.as(StaticArrayBuffer.ARRAY_FACTORY);
+
+        // hash table lookup is O(1) which useful for replacing and removing existing columns from Hazelcast
+        // because it doesn't support replace for sub-map so we have to do manual remove/add for pre-existing column
+
+        Set<StaticBuffer> columnsToAdd = new HashSet<StaticBuffer>(additions.size()) {{
+            for (Entry addition : additions)
+                add(addition.getColumn());
+        }};
+
+        Set<StaticBuffer> columnsToDelete = new HashSet<StaticBuffer>(deletions);
+
+        for (Column column : cache.get(rawKey)) {
+            StaticBuffer currentColumnName = new StaticArrayBuffer(column.name);
+
+            if (columnsToAdd.contains(currentColumnName) || columnsToDelete.contains(currentColumnName))
+                cache.remove(rawKey, column);
         }
 
         for (Entry addition : additions) {
-            cache.put(key.as(StaticArrayBuffer.ARRAY_FACTORY), new Column(addition.getColumn(), addition.getValue()));
+            cache.put(rawKey, new Column(addition.getColumn(), addition.getValue()));
         }
     }
 
@@ -155,6 +174,23 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
             in.readFully(name);
             value = new byte[in.readInt()];
             in.readFully(value);
+        }
+
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder().append(name).append(value).toHashCode();
+        }
+
+        public boolean equals(Object o) {
+            if (!(o instanceof Column))
+                return false;
+
+            Column other = (Column) o;
+            return Arrays.equals(name, other.name) && Arrays.equals(value, other.value);
+        }
+
+        public String toString() {
+            return new ByteBufferEntry(ByteBuffer.wrap(name), ByteBuffer.wrap(value)).toString();
         }
     }
 

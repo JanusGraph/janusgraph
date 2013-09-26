@@ -2,9 +2,7 @@ package com.thinkaurelius.titan.graphdb;
 
 import com.thinkaurelius.titan.HazelcastStorageSetup;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import org.junit.Ignore;
 
-@Ignore
 public class HazelcastTitanGraphPerformanceTest extends TitanGraphPerformanceTest {
     public HazelcastTitanGraphPerformanceTest() {
         super(HazelcastStorageSetup.getHazelcastGraphConfig(false));

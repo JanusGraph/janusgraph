@@ -81,4 +81,14 @@ public class KeyRangeQuery extends SliceQuery {
     public boolean subsumes(KeyRangeQuery oth) {
         return super.subsumes(oth) && keyStart.compareTo(oth.keyStart)<=0 && keyEnd.compareTo(oth.keyEnd)>=0;
     }
+
+    @Override
+    public String toString() {
+        return String.format("KeyRangeQuery(start: %s, end: %s, columns:[start: %s, end: %s], limit=%d)",
+                             keyStart,
+                             keyEnd,
+                             getSliceStart(),
+                             getSliceEnd(),
+                             getLimit());
+    }
 }

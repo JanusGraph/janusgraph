@@ -70,5 +70,8 @@ public class KeySliceQuery extends SliceQuery {
         return key.equals(oth.key) && super.subsumes(oth);
     }
 
-
+    @Override
+    public String toString() {
+        return String.format("KeySliceQuery(key: %s, start: %s, end: %s, limit:%d)", key, getSliceStart(), getSliceEnd(), getLimit());
+    }
 }
