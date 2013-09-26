@@ -248,6 +248,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         clopen();
 
+
         v = tx.addVertex();
         v.setProperty("uid", "unique1");
         assertEquals(1, Iterables.size(tx.getVertices("uid", "unique1")));
