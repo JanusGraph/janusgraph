@@ -10,11 +10,12 @@
 
     <fileSets>
         <fileSet>
-            <directory>../src/assembly/skel</directory>
+            <directory>../src/assembly/static/skel</directory>
             <outputDirectory>/</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>../../config</directory>
+            <outputDirectory>/conf</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>../../bin</directory>
@@ -41,6 +42,11 @@
         <file>
             <source>../../UPGRADE.textile</source>
             <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>../src/assembly/resources/rexster.xml</source>
+            <outputDirectory>/conf</outputDirectory>
+            <filtered>true</filtered>
         </file>
     </files>
 

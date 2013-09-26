@@ -35,7 +35,7 @@ public class Console {
         groovy.setResultHook(new NullResultHookClosure(groovy));
 
         // Gremlin + Titan imports
-        for (String i : ConsoleSetup.getAllImports()) {
+        for (String i : ConsoleSetup.getAllImportStatements()) {
             groovy.execute(i);
         }
 

@@ -5,7 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.List;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 
 /**
@@ -14,24 +16,64 @@ import com.google.common.collect.ImmutableList;
  */
 public class ConsoleSetup {
     
-    private static final ImmutableList<String> setupScript;
+    private static final ImmutableList<String> imports;
+    private static final ImmutableList<String> staticImports;
+    private static final ImmutableList<String> allImportsGremlin;
     
     static {
-        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        ImmutableList.Builder<String> si = ImmutableList.builder();
+        ImmutableList.Builder<String>  i = ImmutableList.builder();
         
         // Tinkerpop imports (Gremlin, Blueprints, Pipes, ...)
-        for (String s : com.tinkerpop.gremlin.Imports.getImports())
-            builder.add("import " + s + ";");
+        for (String s : com.tinkerpop.gremlin.Imports.getImports()) {
+            ImmutableList.Builder<String> b;
+            
+            if (s.startsWith("static ")) {
+                s = s.substring(7);
+                b = si;
+            } else {
+                b = i;
+            }
+            
+            b.add(s);
+        }
         
         // Titan imports
-        for (String s : Imports.getImports())
-            builder.add("import " + s + ";");
+        for (String s : Imports.getImports()) {
+            ImmutableList.Builder<String> b;
+            
+            if (s.startsWith("static ")) {
+                s = s.substring(7);
+                b = si;
+            } else {
+                b = i;
+            }
+            
+            b.add(s);
+        }
         
         // "necessary due to Gremlin Groovy" (I don't know what that means)
-        builder.add("import com.tinkerpop.gremlin.Tokens.T;");
-        builder.add("import com.tinkerpop.gremlin.groovy.*;");
+        i.add("com.tinkerpop.gremlin.Tokens.T");
+        i.add("com.tinkerpop.gremlin.groovy.*");
         
-        setupScript = builder.build();
+        imports = i.build();
+        staticImports = si.build();
+        
+        ImmutableList.Builder<String> allBuilder = ImmutableList.builder();
+        for (String s : imports)
+            allBuilder.add("import " + s + ";");
+        for (String s : staticImports)
+            allBuilder.add("import static " + s + ";");
+        
+        allImportsGremlin = allBuilder.build();
+    }
+
+    public static List<String> getNonStaticImports() {
+        return imports;
+    }
+    
+    public static List<String> getStaticImports() {
+        return staticImports;
     }
     
     /**
@@ -48,19 +90,20 @@ public class ConsoleSetup {
      * 
      * @return A sequence of import statements
      */
-    public static List<String> getAllImports() {
-        return setupScript;
+    public static List<String> getAllImportStatements() {
+        return allImportsGremlin;
     }
     
     /**
-     * Call {@link #getAllImports()} and print the result to stdout or a file
+     * Write a properties file with two properties: imports and staticimports.
+     * These are set to comma-separated lists of {@link #getNonStaticImports()}
+     * and {@link #getStaticImports()}, respectively.
      * 
      * @param args
-     *            if present, the first element is is the output file path; if
-     *            empty, then use stdout instead
+     *            the file to write (stdout if unspecified)
      * @throws FileNotFoundException
-     *             this should never happen because we open the target file for
-     *             overwriting and not for appending
+     *             shouldn't happen since we only open the target file for
+     *             overwriting and never for appending
      */
     public static void main(String args[]) throws FileNotFoundException {
         
@@ -77,8 +120,13 @@ public class ConsoleSetup {
             s = new PrintStream(f);
         }
         
-        for (String i : getAllImports())
-            s.println(i);
+        Joiner commas = Joiner.on(',');
+        
+        s.print("imports = ");
+        s.println(commas.join(getNonStaticImports()));
+        
+        s.print("staticimports = ");
+        s.println(commas.join(getStaticImports()));
         
         s.close();
     }
