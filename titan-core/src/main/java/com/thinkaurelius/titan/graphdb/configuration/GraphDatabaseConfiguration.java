@@ -433,6 +433,10 @@ public class GraphDatabaseConfiguration {
         batchLoading = storageConfig.getBoolean(STORAGE_BATCH_KEY, STORAGE_BATCH_DEFAULT);
         defaultTypeMaker = preregisteredAutoType.get(configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
         Preconditions.checkNotNull(defaultTypeMaker, "Invalid " + AUTO_TYPE_KEY + " option: " + configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
+
+        //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
+        if (batchLoading) defaultTypeMaker = DisableDefaultTypeMaker.INSTANCE;
+
         configureMetrics();
     }
 
