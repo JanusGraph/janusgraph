@@ -3,9 +3,8 @@
 BIN="`dirname $0`"
 CP="$( echo $BIN/../lib/*.jar . | sed 's/ /:/g')"
 CP="$CP:$(find -L $BIN/../ext/ -name "*.jar" | tr '\n' ':')"
+CP="$CP:$BIN/../conf"
 export CLASSPATH="$CP"
-
-REXSTER_EXT=../ext
 
 PUBLIC="$BIN"/../public/
 FOREGROUND=1
@@ -28,7 +27,7 @@ fi
 
 # Set Java options
 if [ "$JAVA_OPTIONS" = "" ] ; then
-    JAVA_OPTIONS="-Xms128m -Xmx512m"
+    JAVA_OPTIONS="-Xms128m -Xmx512m -Dlog4j.configuration=log4j-rexstitan.properties -Dtitan.logdir=$BIN/../log"
 fi
 
 # Let Cassandra have 7199
@@ -40,10 +39,9 @@ JAVA_OPTIONS="$JAVA_OPTIONS \
 # Launch the application
 if [ 1 -eq $FOREGROUND ]; then
     $JAVA $JAVA_OPTIONS com.tinkerpop.rexster.Application $ARGS
+    # Return the program's exit code
+    exit $?
 else
-    $JAVA $JAVA_OPTIONS com.tinkerpop.rexster.Application $ARGS >"$BIN"/../log/rexster.log 2>&1 &
+    $JAVA $JAVA_OPTIONS com.tinkerpop.rexster.Application $ARGS &
     disown
 fi
-
-# Return the program's exit code
-exit $?
