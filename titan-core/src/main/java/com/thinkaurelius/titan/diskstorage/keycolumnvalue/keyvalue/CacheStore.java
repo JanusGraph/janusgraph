@@ -30,4 +30,8 @@ public interface CacheStore extends KeyValueStore {
      */
     public RecordIterator<KeyValueEntry> getKeys(KeySelector selector, StoreTransaction txh) throws StorageException;
 
+    /**
+     * Remove all of the items from this store.
+     */
+    public void clearStore();
 }

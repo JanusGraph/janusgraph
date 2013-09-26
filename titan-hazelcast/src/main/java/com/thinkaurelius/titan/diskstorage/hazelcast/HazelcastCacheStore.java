@@ -111,9 +111,7 @@ public class HazelcastCacheStore implements CacheStore {
         return cache.getName();
     }
 
-    /**
-     * Removes all entries from this cache
-     */
+    @Override
     public void clearStore() {
         cache.clear();
     }
