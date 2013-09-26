@@ -65,13 +65,14 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
     private StoreFeatures getDefaultFeatures() {
         StoreFeatures features = new StoreFeatures();
 
-        features.supportsTransactions = true;
-        features.isDistributed = false;
-
         features.supportsScan = true;
         features.supportsBatchMutation = false;
+
+        features.supportsTransactions = true;
         features.supportsConsistentKeyOperations = false;
         features.supportsLocking = false;
+
+        features.isDistributed = false;
         features.isKeyOrdered = false;
         features.hasLocalKeyPartition = false;
 
