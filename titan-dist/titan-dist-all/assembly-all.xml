@@ -10,7 +10,7 @@
 
     <fileSets>
         <fileSet>
-            <directory>../src/assembly/static/skel</directory>
+            <directory>../src/assembly/static</directory>
             <outputDirectory>/</outputDirectory>
         </fileSet>
         <fileSet>
@@ -37,7 +37,7 @@
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>../src/assembly/resources/rexster.xml</source>
+            <source>../src/assembly/resources/conf/rexster.xml</source>
             <outputDirectory>/conf</outputDirectory>
             <filtered>true</filtered>
         </file>
