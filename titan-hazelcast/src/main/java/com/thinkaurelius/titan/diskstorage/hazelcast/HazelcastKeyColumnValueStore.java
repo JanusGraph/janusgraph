@@ -149,14 +149,19 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
         cache.destroy();
     }
 
+    public void clearStore() throws StorageException {
+        cache.clear();
+    }
+
     public static class Column implements DataSerializable {
         public byte[] name, value;
 
         @SuppressWarnings("unused") // required by Hazelcast
-        public Column() {}
+        public Column() {
+        }
 
         public Column(StaticBuffer name, StaticBuffer value) {
-            this.name  = name.as(StaticArrayBuffer.ARRAY_FACTORY);
+            this.name = name.as(StaticArrayBuffer.ARRAY_FACTORY);
             this.value = value.as(StaticArrayBuffer.ARRAY_FACTORY);
         }
 
@@ -202,7 +207,7 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
         private boolean isClosed;
 
         public HazelcatKeyIterator(Iterator<byte[]> keys, SliceQuery query) {
-            this.keys  = keys;
+            this.keys = keys;
             this.query = query;
         }
 

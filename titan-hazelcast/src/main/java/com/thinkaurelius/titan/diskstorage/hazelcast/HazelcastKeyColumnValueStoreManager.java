@@ -18,7 +18,7 @@ public class HazelcastKeyColumnValueStoreManager extends AbstractHazelcastStoreM
     }
 
     @Override
-    public KeyColumnValueStore openDatabase(String name) throws StorageException {
+    public synchronized KeyColumnValueStore openDatabase(String name) throws StorageException {
         if (stores.containsKey(name))
             return stores.get(name);
 
@@ -31,18 +31,15 @@ public class HazelcastKeyColumnValueStoreManager extends AbstractHazelcastStoreM
 
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
-        // not supported
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void clearStorage() throws StorageException {
-        for (String storeName : stores.keySet()) {
-            clear(storeName);
+        for (HazelcastKeyColumnValueStore store : stores.values()) {
+            store.clearStore();
         }
-    }
-
-    public void clear(String storeName) {
-        manager.getMultiMap(storeName).clear();
+        close();
     }
 
     @Override

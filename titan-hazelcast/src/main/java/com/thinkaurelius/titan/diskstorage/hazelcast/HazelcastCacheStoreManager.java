@@ -16,7 +16,7 @@ public class HazelcastCacheStoreManager extends AbstractHazelcastStoreManager im
     }
 
     @Override
-    public CacheStore openDatabase(String name) throws StorageException {
+    public synchronized CacheStore openDatabase(String name) throws StorageException {
         if (stores.containsKey(name))
             return stores.get(name);
 
@@ -30,9 +30,8 @@ public class HazelcastCacheStoreManager extends AbstractHazelcastStoreManager im
     @Override
     public void clearStorage() throws StorageException {
         for (HazelcastCacheStore store : stores.values()) {
-            store.clear();
+            store.clearStore();
         }
-
         close();
     }
 

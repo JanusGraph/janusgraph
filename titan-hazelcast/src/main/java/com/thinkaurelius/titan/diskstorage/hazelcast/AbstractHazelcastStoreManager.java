@@ -7,6 +7,7 @@ import com.hazelcast.transaction.TransactionOptions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
+import com.thinkaurelius.titan.diskstorage.common.NoOpStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
 import org.apache.commons.configuration.Configuration;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class AbstractHazelcastStoreManager extends LocalStoreManager implements StoreManager {
+
     private static final Logger logger = LoggerFactory.getLogger(AbstractHazelcastStoreManager.class);
 
     protected final HazelcastInstance manager;
@@ -27,7 +29,7 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
         storageConfig = new FileStorageConfiguration(directory);
 
         if (transactional)
-            logger.warn("Hazelcast doesn't support per-Thread nested transactions.");
+            logger.warn("Hazelcast does not support multiple transactions per thread");
     }
 
     @Override
@@ -35,19 +37,9 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
         if (transactional) {
             TransactionOptions options = TransactionOptions.getDefault().setTransactionType(TransactionOptions.TransactionType.LOCAL);
             return new HazelCastTransaction(manager.newTransactionContext(options), consistencyLevel);
+        } else {
+            return new NoOpStoreTransaction(consistencyLevel);
         }
-
-        // No-op transaction
-        return new AbstractStoreTransaction(consistencyLevel) {
-            @Override
-            public void commit() throws StorageException {
-                // no op
-            }
-
-            public void rollback() throws StorageException {
-                // no op
-            }
-        };
     }
 
     @Override
@@ -86,7 +78,7 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
         return features;
     }
 
-    public static class HazelCastTransaction extends AbstractStoreTransaction {
+    private static class HazelCastTransaction extends AbstractStoreTransaction {
         private final TransactionContext context;
 
         public HazelCastTransaction(TransactionContext context, ConsistencyLevel consistencyLevel) {

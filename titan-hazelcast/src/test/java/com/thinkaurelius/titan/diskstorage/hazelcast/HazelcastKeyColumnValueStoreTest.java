@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreMan
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NAMESPACE;
 
 public class HazelcastKeyColumnValueStoreTest extends KeyColumnValueStoreTest {
+
     public HazelcastKeyColumnValueStoreTest() throws StorageException {
         manager = openStorageManager();
         store = manager.openDatabase(STORE_NAME);
@@ -28,13 +29,14 @@ public class HazelcastKeyColumnValueStoreTest extends KeyColumnValueStoreTest {
     public void tearDown() throws Exception {
         if (tx != null)
             tx.commit();
-
-        ((HazelcastKeyColumnValueStoreManager) manager).clear(store.getName());
+        manager.clearStorage();
     }
 
     @Override
-    public void clopen() {}
+    public void clopen() {
+    }
 
     @Override
-    public void close() {}
+    public void close() {
+    }
 }

@@ -111,7 +111,7 @@ public class HazelcastCacheStore implements CacheStore {
     }
 
     @Override
-    public void clear() {
+    public void clearStore() {
         cache.clear();
     }
 

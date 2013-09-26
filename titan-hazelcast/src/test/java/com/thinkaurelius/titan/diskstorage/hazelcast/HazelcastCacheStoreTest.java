@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NAMESPACE;
 
 public class HazelcastCacheStoreTest {
+
     private static final Logger logger = LoggerFactory.getLogger(KeyValueStoreTest.class);
 
     private static final int NUM_KEYS = 2000;
@@ -40,7 +41,7 @@ public class HazelcastCacheStoreTest {
         if (tx != null)
             tx.commit();
 
-        store.clear();
+        store.clearStore();
     }
 
     @Test
@@ -117,7 +118,7 @@ public class HazelcastCacheStoreTest {
         // following tries to determine if we are able to slice portion of the dataset with condition and/or limit
 
         StaticBuffer startKey = KeyValueStoreUtil.getBuffer(1423);
-        StaticBuffer endKey   = KeyValueStoreUtil.getBuffer(1433);
+        StaticBuffer endKey = KeyValueStoreUtil.getBuffer(1433);
 
         List<StaticBuffer> slicedKeys = new ArrayList<StaticBuffer>(10);
         RecordIterator<KeyValueEntry> keys = store.getKeys(new ComplexSelector(startKey, endKey, Integer.MAX_VALUE), tx);

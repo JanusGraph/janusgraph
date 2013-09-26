@@ -6,6 +6,7 @@ import org.apache.commons.configuration.Configuration;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 public class HazelcastStorageSetup extends StorageSetup {
+
     public static Configuration getHazelcastGraphConfig(boolean transactional) {
         BaseConfiguration config = new BaseConfiguration();
 
