@@ -93,7 +93,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         ByteBuffer key = query.getKey().asByteBuffer();
-        List<Entry> slice = getNamesSlice(Arrays.asList(query.getKey()), query, txh).get(key.duplicate());
+        List<Entry> slice = getNamesSlice(Arrays.asList(query.getKey()), query, txh).get(key);
         return (slice == null) ? Collections.<Entry>emptyList() : slice;
     }
 
@@ -164,7 +164,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             ByteBuffer sliceEndBB = query.getSliceEnd().asByteBuffer();
 
             for (ByteBuffer key : rows.keySet()) {
-                results.put(key.duplicate(), excludeLastColumn(rows.get(key), sliceEndBB));
+                results.put(key, excludeLastColumn(rows.get(key), sliceEndBB));
             }
 
             return results;
@@ -399,7 +399,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                                      ? new BigIntegerToken(RandomPartitioner.MAXIMUM)
                                      : new LongToken(Murmur3Partitioner.MAXIMUM);
             } else {
-                this.maximumToken = partitioner.getToken(endKey.duplicate());
+                this.maximumToken = partitioner.getToken(endKey);
             }
         }
 
