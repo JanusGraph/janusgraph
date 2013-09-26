@@ -9,14 +9,13 @@ public interface CacheStore extends KeyValueStore {
     /**
      * Sets the value associated with key "key" to "value" if the current value associated with this key is "oldValue", otherwise
      * it throws an {@link CacheUpdateException}.
-     *
+     * <p/>
      * *Warning*: When "null" value is used as "oldValue" this method acts as putIfAbsent
      *
-     * @param key The key to update.
+     * @param key      The key to update.
      * @param newValue The value to replace current with.
      * @param oldValue The current value for the given key.
-     * @param txh The transaction context for the operation.
-     *
+     * @param txh      The transaction context for the operation.
      * @throws CacheUpdateException If "oldValue" doesn't match currently find in the cache.
      */
     public void replace(StaticBuffer key, StaticBuffer newValue, StaticBuffer oldValue, StoreTransaction txh) throws CacheUpdateException;
@@ -26,14 +25,9 @@ public interface CacheStore extends KeyValueStore {
      * ordered but not necessarily.
      *
      * @param selector The selector to use for key filtering.
-     * @param txh The transaction context for the operation.
-     *
+     * @param txh      The transaction context for the operation.
      * @return An iterator over all keys in this store.
      */
     public RecordIterator<KeyValueEntry> getKeys(KeySelector selector, StoreTransaction txh) throws StorageException;
 
-    /**
-     * Used to remove all items from the cache.
-     */
-    public void clear();
 }
