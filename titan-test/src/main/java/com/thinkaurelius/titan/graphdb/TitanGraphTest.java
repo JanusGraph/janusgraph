@@ -213,6 +213,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(1, Iterables.size(v12.query().direction(OUT).labels("parent").has("weight", Compare.GREATER_THAN, 3).edges()));
         assertEquals(1, Iterables.size(v13.query().direction(OUT).labels("parent").has("weight").edges()));
 
+        v1.addEdge("connect", v12);
+        Edge edge = Iterables.getOnlyElement(v1.getEdges(OUT, "connect"));
+        assertEquals(0, edge.getPropertyKeys().size());
+
         clopen();
 
         id = tx.getPropertyKey("uid");
@@ -228,6 +232,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(1, Iterables.size(v12.query().direction(OUT).labels("parent").has("weight").edges()));
         assertEquals(1, Iterables.size(v12.query().direction(OUT).labels("parent").has("weight", Compare.GREATER_THAN, 3).edges()));
         assertEquals(1, Iterables.size(v13.query().direction(OUT).labels("parent").has("weight").edges()));
+
+        edge = Iterables.getOnlyElement(v1.getEdges(OUT, "connect"));
+        assertEquals(0, edge.getPropertyKeys().size());
 
 
         // Verify vertex in current transaction
