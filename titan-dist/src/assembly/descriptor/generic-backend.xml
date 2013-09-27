@@ -8,12 +8,12 @@
     </formats>
 
     <componentDescriptors>
-        <componentDescriptor>common.component.xml</componentDescriptor>
+        <componentDescriptor>component/common.xml</componentDescriptor>
     </componentDescriptors>
     
     <fileSets>
         <fileSet>
-            <directory>../../config</directory>
+            <directory>../config</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
                 <include>titan-*${distribution.assembly.name}*</include>

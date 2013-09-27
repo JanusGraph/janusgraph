@@ -92,7 +92,6 @@
         <cassandra.dir>${project.build.directory}/cassandra-tmp/workdir</cassandra.dir>
         <cassandra.ordered.dir>${project.build.directory}/cassandra-ordered-tmp/workdir</cassandra.ordered.dir>
         <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
-        <gpg.skip>false</gpg.skip>
         <!-- Required for PMD plugin. Used for compiler plugin -->
         <targetJdk>1.7</targetJdk>
         <perf.jvm.opts></perf.jvm.opts>
@@ -148,25 +147,9 @@
                     -->
                     <tagNameFormat>@{project.version}</tagNameFormat>
 
-                    <!--
-                      The release:perform goal activates these
-                      profiles when it invokes maven with the <goals>
-                      listed above.  Release engineering specific to
-                      release:perform and disabled during non-release
-                      operation should be encapsulated with the
-                      profile id listed below.
-                    -->
-                    <releaseProfiles>aurelius-release</releaseProfiles>
-
-                    <!--
-                      I am a criminal.
-
-                      (applies to both release:prepare and :perform)
-                    -->
-                    <arguments>-DskipTests=true</arguments>
+                    <arguments>-DskipTests=true -Daurelius.release</arguments>
                 </configuration>
             </plugin>
-
         </plugins>
         <pluginManagement>
             <plugins>
@@ -656,6 +639,13 @@
 
         <profile>
             <id>aurelius-release</id>
+
+            <activation>
+                <property>
+                    <name>aurelius.release</name>
+                </property>
+            </activation>
+
             <!--
               Sign artifacts artifacts only during release:perform
               when this profile is automatically activated or whenever
@@ -695,15 +685,15 @@
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
-                                <phase>package</phase>
+                                <phase>verify</phase>
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
-                                <configuration>
-                                    <skip>${gpg.skip}</skip>
-                                </configuration>
                             </execution>
                         </executions>
+                        <configuration>
+                            <skip>${GPG_SKIP}</skip>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

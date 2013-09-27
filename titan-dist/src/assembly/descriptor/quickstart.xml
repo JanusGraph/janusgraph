@@ -11,11 +11,11 @@
 
     <fileSets>
         <fileSet>
-            <directory>../src/assembly/static</directory>
+            <directory>src/assembly/static</directory>
             <outputDirectory>/</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>../../config</directory>
+            <directory>../config</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
                 <include>titan*</include>
@@ -25,23 +25,23 @@
 
     <files>
         <file>
-            <source>../../CHANGELOG.textile</source>
+            <source>../CHANGELOG.textile</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>../../LICENSE.txt</source>
+            <source>../LICENSE.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>../../NOTICE.txt</source>
+            <source>../NOTICE.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>../../UPGRADE.textile</source>
+            <source>../UPGRADE.textile</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>../src/assembly/resources/conf/rexster.xml</source>
+            <source>src/assembly/resources/conf/rexster.xml</source>
             <outputDirectory>/conf</outputDirectory>
             <filtered>true</filtered>
         </file>

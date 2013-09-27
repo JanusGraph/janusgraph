@@ -10,7 +10,7 @@
     </formats>
 
     <componentDescriptors>
-        <componentDescriptor>../src/assembly/descriptor/common.component.xml</componentDescriptor>
-        <componentDescriptor>allconfigs.component.xml</componentDescriptor>
+        <componentDescriptor>component/common.xml</componentDescriptor>
+        <componentDescriptor>component/all-configs.xml</componentDescriptor>
     </componentDescriptors>
 </assembly>

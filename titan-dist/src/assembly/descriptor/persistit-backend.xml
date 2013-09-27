@@ -1,0 +1,23 @@
+<assembly>
+    <id>persistit-${project.version}</id>
+    <baseDirectory>titan-persistit-${project.version}</baseDirectory>
+
+    <formats>
+        <format>zip</format>
+        <format>tar.bz2</format>
+    </formats>
+
+    <componentDescriptors>
+        <componentDescriptor>component/common.xml</componentDescriptor>
+    </componentDescriptors>
+    
+    <fileSets>
+        <fileSet>
+            <directory>../config</directory>
+            <outputDirectory>/conf</outputDirectory>
+            <includes>
+                <include>titan-*persistit*</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+</assembly>
