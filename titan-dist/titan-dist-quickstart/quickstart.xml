@@ -21,6 +21,14 @@
                 <include>titan*</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <directory>../src/assembly/resources/conf</directory>
+            <outputDirectory>/conf</outputDirectory>
+            <filtered>true</filtered>
+            <includes>
+                <include>rexster*xml</include>
+            </includes>
+        </fileSet>
     </fileSets>
 
     <files>
@@ -39,11 +47,6 @@
         <file>
             <source>../../UPGRADE.textile</source>
             <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>../src/assembly/resources/conf/rexster.xml</source>
-            <outputDirectory>/conf</outputDirectory>
-            <filtered>true</filtered>
         </file>
     </files>
 

@@ -92,7 +92,7 @@
             <!-- <graph-location>/tmp/titan</graph-location> -->
             <graph-read-only>false</graph-read-only>
             <properties>
-                  <storage.backend>cassandra</storage.backend>
+                <storage.backend>cassandra</storage.backend>
             </properties>
             <extensions>
               <allows>

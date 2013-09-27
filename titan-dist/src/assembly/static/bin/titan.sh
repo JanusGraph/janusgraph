@@ -1,11 +1,13 @@
 #!/bin/bash
 BIN="`dirname $0`"
 
+REXSTER_CONFIG=conf/rexster-cassandra.xml
+
 start() {
     echo "Starting Cassandra..." >&2
     "$BIN"/cassandra || exit 1
     echo "Starting Titan + Rexster..." >&2
-    "$BIN"/rexster.sh -d -s || exit 2
+    "$BIN"/rexster.sh -d -s $REXSTER_CONFIG || exit 2
     echo "Processes forked.  Setup may take some time." >&2
     echo "Run $BIN/rexster-console.sh to connect."      >&2
 }
@@ -43,7 +45,7 @@ status() {
 
 clean() {
     cd "$BIN"/../db 2>/dev/null || return
-    rm -rf cassandra
+    rm -rf cassandra es
 }
 
 usage() {
@@ -52,6 +54,14 @@ usage() {
     echo " stop:  kill running Cassandra and Rexster+Titan processes" >&2
     echo " clean: permanently delete all graph data (run when stopped)" >&2
 }
+
+while getopts 'c:' option; do
+    case $option in
+    c) REXSTER_CONFIG="conf/rexster-${OPTARG}.xml"; shift;;
+    *) usage; exit 1;;
+    esac
+    shift
+done
 
 case $1 in
     start)  start;;

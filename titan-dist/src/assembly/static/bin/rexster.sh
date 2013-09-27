@@ -8,12 +8,12 @@ export CLASSPATH="$CP"
 
 PUBLIC="$BIN"/../public/
 FOREGROUND=1
-ARGS="-configuration $BIN/../conf/rexster.xml"
+ARGS=
 
-while getopts 'ds' option; do
+while getopts 'ds:' option; do
     case $option in
         'd') FOREGROUND=0;;
-        's') ARGS="-wr $PUBLIC $ARGS"; ARGS="-$option $ARGS";;
+        's') ARGS="-wr $PUBLIC -c $OPTARG $ARGS"; ARGS="-$option $ARGS";;
          * ) ARGS="-$option $ARGS";;
     esac
 done
@@ -35,6 +35,8 @@ JAVA_OPTIONS="$JAVA_OPTIONS \
               -Dcom.sun.management.jmxremote.port=7299 \
               -Dcom.sun.management.jmxremote.ssl=false \
               -Dcom.sun.management.jmxremote.authenticate=false"
+
+cd "$BIN"/..
 
 # Launch the application
 if [ 1 -eq $FOREGROUND ]; then
