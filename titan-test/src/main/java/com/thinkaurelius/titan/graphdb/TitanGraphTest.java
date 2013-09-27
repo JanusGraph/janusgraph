@@ -713,6 +713,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testThreadBoundTx() {
+        TitanKey t = graph.makeType().name("type").dataType(Integer.class).vertexUnique(OUT).indexed(Edge.class).makePropertyKey();
+        graph.makeType().name("friend").primaryKey(t).makeEdgeLabel();
+        graph.commit();
+
         Vertex v1 = graph.addVertex(null);
         Vertex v2 = graph.addVertex(null);
         Vertex v3 = graph.addVertex(null);
@@ -736,6 +740,11 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         e3.setProperty("time", 35);
         assertEquals(35, e3.getProperty("time"));
 
+        v1.addEdge("friend", v2).setProperty("type", 0);
+        graph.commit();
+        Edge ef = Iterables.getOnlyElement(v1.getEdges(OUT, "friend"));
+        assertEquals(ef, Iterables.getOnlyElement(graph.getEdges("type", 0)));
+        ef.setProperty("type", 1);
         graph.commit();
 
         assertEquals(35, e3.getProperty("time"));

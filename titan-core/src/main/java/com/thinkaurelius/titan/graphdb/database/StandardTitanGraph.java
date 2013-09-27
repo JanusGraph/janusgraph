@@ -74,8 +74,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.idManager = idAssigner.getIDManager();
 
         this.serializer = config.getSerializer();
-        this.indexSerializer = new IndexSerializer(this.serializer,this.backend.getIndexInformation());
-        this.edgeSerializer = new EdgeSerializer(this.serializer,this.idManager);
+        this.indexSerializer = new IndexSerializer(this.serializer, this.backend.getIndexInformation());
+        this.edgeSerializer = new EdgeSerializer(this.serializer, this.idManager);
         isOpen = true;
     }
 
@@ -179,20 +179,19 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     public List<Entry> edgeQuery(long vid, SliceQuery query, BackendTransaction tx) {
-        Preconditions.checkArgument(vid>0);
+        Preconditions.checkArgument(vid > 0);
         return tx.edgeStoreQuery(new KeySliceQuery(IDHandler.getKey(vid), query));
     }
 
     public List<List<Entry>> edgeMultiQuery(LongArrayList vids, SliceQuery query, BackendTransaction tx) {
-        Preconditions.checkArgument(vids!=null && !vids.isEmpty());
+        Preconditions.checkArgument(vids != null && !vids.isEmpty());
         List<StaticBuffer> vertexIds = new ArrayList<StaticBuffer>(vids.size());
-        for (int i=0;i<vids.size();i++) {
-            Preconditions.checkArgument(vids.get(i)>0);
+        for (int i = 0; i < vids.size(); i++) {
+            Preconditions.checkArgument(vids.get(i) > 0);
             vertexIds.add(IDHandler.getKey(vids.get(i)));
         }
         return tx.edgeStoreMultiQuery(vertexIds, query);
     }
-
 
 
     // ################### WRITE #########################
@@ -213,7 +212,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (!tx.getConfiguration().hasAssignIDsImmediately())
             idAssigner.assignIDs(addedRelations);
 
-        Callable<Boolean> persist = new Callable<Boolean>(){
+        Callable<Boolean> persist = new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
                 //2. Collect deleted edges
@@ -227,13 +226,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                             Direction dir = EdgeDirection.fromPosition(pos);
                             if (acquireLocks && del.getType().isUnique(dir) &&
                                     ((InternalType) del.getType()).uniqueLock(dir)) {
-                                Entry entry = edgeSerializer.writeRelation(del,pos,tx);
+                                Entry entry = edgeSerializer.writeRelation(del, pos, tx);
                                 mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry.getColumn(), entry.getValue());
                             }
                         }
                         //Update Indexes
                         if (del.isProperty()) {
-                            if (acquireLocks) indexSerializer.lockKeyedProperty((TitanProperty) del,mutator);
+                            if (acquireLocks) indexSerializer.lockKeyedProperty((TitanProperty) del, mutator);
                         }
 
                     }
@@ -254,7 +253,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     } else { //STANDARD TitanRelation
                         for (int pos = 0; pos < relation.getLen(); pos++) {
                             InternalVertex vertex = relation.getVertex(pos);
-                            if (pos==0 || !relation.isLoop()) mutations.put(vertex, relation);
+                            if (pos == 0 || !relation.isLoop()) mutations.put(vertex, relation);
                             Direction dir = EdgeDirection.fromPosition(pos);
                             if (acquireLocks && relation.getType().isUnique(dir) && !vertex.isNew()
                                     && ((InternalType) relation.getType()).uniqueLock(dir)) {
@@ -265,7 +264,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     }
                     //Update Indexes
                     if (relation.isProperty()) {
-                        if (acquireLocks) indexSerializer.lockKeyedProperty((TitanProperty) relation,mutator);
+                        if (acquireLocks) indexSerializer.lockKeyedProperty((TitanProperty) relation, mutator);
                     }
 
                 }
@@ -276,7 +275,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     mutator.flush();
                     //Register new keys with indexprovider
                     for (InternalType itype : otherEdgeTypes.keySet()) {
-                        if (itype.isPropertyKey() && itype.isNew()) indexSerializer.newPropertyKey((TitanKey)itype,mutator);
+                        if (itype.isPropertyKey() && itype.isNew())
+                            indexSerializer.newPropertyKey((TitanKey) itype, mutator);
                     }
                 }
 
@@ -285,7 +285,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             }
 
             @Override
-            public String toString() { return "PersistingTransaction"; }
+            public String toString() {
+                return "PersistingTransaction";
+            }
         };
         BackendOperation.execute(persist, maxWriteRetryAttempts, retryStorageWaitTime);
     }
@@ -299,33 +301,43 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         BackendTransaction mutator = tx.getTxHandle();
         for (V vertex : vertices) {
-            Preconditions.checkArgument(vertex.getID()>0,"Vertex has no id: %s",vertex.getID());
+            Preconditions.checkArgument(vertex.getID() > 0, "Vertex has no id: %s", vertex.getID());
             List<InternalRelation> edges = mutatedEdges.get(vertex);
             List<Entry> additions = new ArrayList<Entry>(edges.size());
             List<StaticBuffer> deletions = new ArrayList<StaticBuffer>(Math.max(10, edges.size() / 10));
             for (InternalRelation edge : edges) {
-                for (int pos=0;pos<edge.getLen();pos++) {
+                for (int pos = 0; pos < edge.getLen(); pos++) {
                     if (edge.getVertex(pos).equals(vertex)) {
                         if (edge.isRemoved()) {
-                            if (edge.isProperty()) {
-                                indexSerializer.removeProperty((TitanProperty) edge,mutator);
-                            } else if (edge.isEdge()) {
-                                indexSerializer.removeEdge(edge,mutator);
-                            }
                             deletions.add(edgeSerializer.writeRelation(edge, pos, false, tx).getColumn());
                         } else {
-                            assert edge.isNew();
-                            if (edge.isProperty()) {
-                                indexSerializer.addProperty((TitanProperty) edge,mutator);
-                            } else {
-                                indexSerializer.addEdge(edge, mutator);
-                            }
+                            Preconditions.checkArgument(edge.isNew());
                             additions.add(edgeSerializer.writeRelation(edge, pos, tx));
                         }
                     }
                 }
             }
+
             mutator.mutateEdges(IDHandler.getKey(vertex.getID()), additions, deletions);
+            //Index Updates
+            for (InternalRelation relation : edges) {
+                if (relation.getVertex(0).equals(vertex)) {
+                    if (relation.isRemoved()) {
+                        if (relation.isProperty()) {
+                            indexSerializer.removeProperty((TitanProperty) relation, mutator);
+                        } else if (relation.isEdge()) {
+                            indexSerializer.removeEdge(relation, mutator);
+                        }
+                    } else {
+                        Preconditions.checkArgument(relation.isNew());
+                        if (relation.isProperty()) {
+                            indexSerializer.addProperty((TitanProperty) relation, mutator);
+                        } else {
+                            indexSerializer.addEdge(relation, mutator);
+                        }
+                    }
+                }
+            }
         }
 
     }
