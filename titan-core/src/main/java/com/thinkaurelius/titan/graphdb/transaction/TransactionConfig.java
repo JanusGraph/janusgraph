@@ -23,11 +23,13 @@ public class TransactionConfig {
 
     private final boolean acquireLocks;
 
-//    private final boolean maintainNewVertices = true;
-
     private final boolean singleThreaded;
 
     private final boolean threadBound;
+
+    private final long vertexCacheSize;
+
+    private final long indexCacheWeight;
 
     /**
      * Constructs a new TitanTransaction configuration with default configuration parameters.
@@ -36,6 +38,8 @@ public class TransactionConfig {
         this.isReadOnly = graphConfig.isReadOnly();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
+        this.vertexCacheSize = graphConfig.getTxCacheSize();
+        this.indexCacheWeight = graphConfig.getTxCacheSize() / 2;
         if (graphConfig.isBatchLoading()) {
             verifyUniqueness = false;
             verifyVertexExistence = false;
@@ -45,17 +49,6 @@ public class TransactionConfig {
             verifyVertexExistence = true;
             acquireLocks = true;
         }
-        this.threadBound = threadBound;
-        singleThreaded = threadBound;
-    }
-
-    public TransactionConfig(DefaultTypeMaker defaultTypeMaker, boolean assignIDsImmediately, boolean threadBound) {
-        this.defaultTypeMaker = defaultTypeMaker;
-        this.assignIDsImmediately = assignIDsImmediately;
-        this.isReadOnly = false;
-        verifyUniqueness = true;
-        verifyVertexExistence = true;
-        acquireLocks = true;
         this.threadBound = threadBound;
         singleThreaded = threadBound;
     }
@@ -114,6 +107,7 @@ public class TransactionConfig {
     /**
      * Whether this transaction is only accessed by a single thread.
      * If so, then certain data structures may be optimized for single threaded access since locking can be avoided.
+     *
      * @return
      */
     public final boolean isSingleThreaded() {
@@ -123,9 +117,29 @@ public class TransactionConfig {
     /**
      * Whether this transaction is bound to a running thread.
      * If so, then elements in this transaction can expand their life cycle to the next transaction in the thread.
+     *
      * @return
      */
     public final boolean isThreadBound() {
         return threadBound;
+    }
+
+    /**
+     * The size of the vertex cache for this particular transaction, i.e. the maximum number
+     * of non-modified vertices that are kept in cache
+     *
+     * @return
+     */
+    public final long getVertexCacheSize() {
+        return vertexCacheSize;
+    }
+
+    /**
+     * The maximum weight for the index cache store used in this particular transaction
+     *
+     * @return
+     */
+    public final long getIndexCacheWeight() {
+        return indexCacheWeight;
     }
 }

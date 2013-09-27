@@ -42,25 +42,25 @@ public class CacheProperty extends AbstractProperty {
                 }
             }), null);
         }
-        if (it!=null) return it;
+        if (it != null) return it;
         else return super.it();
     }
 
     private final void copyProperties(InternalRelation to) {
         ImmutableLongObjectMap map = getMap();
-        for (int i=0;i<map.size();i++) {
-            if (map.getKey(i)<0) continue;
+        for (int i = 0; i < map.size(); i++) {
+            if (map.getKey(i) < 0) continue;
             TitanType type = tx().getExistingType(map.getKey(i));
-            to.setPropertyDirect(type,map.getValue(i));
+            to.setPropertyDirect(type, map.getValue(i));
         }
     }
 
     private synchronized InternalRelation update() {
-        StandardProperty copy = new StandardProperty(super.getID(),getPropertyKey(),getVertex(0),getValue(), ElementLifeCycle.Loaded);
+        StandardProperty copy = new StandardProperty(super.getID(), getPropertyKey(), getVertex(0), getValue(), ElementLifeCycle.Loaded);
         copyProperties(copy);
         copy.remove();
 
-        StandardProperty u = (StandardProperty)tx().addProperty(getVertex(0),getPropertyKey(),getValue());
+        StandardProperty u = (StandardProperty) tx().addProperty(getVertex(0), getPropertyKey(), getValue());
         u.setPreviousID(super.getID());
         copyProperties(u);
         return u;
@@ -69,14 +69,14 @@ public class CacheProperty extends AbstractProperty {
     @Override
     public long getID() {
         InternalRelation it = it();
-        if (it==this) return super.getID();
+        if (it == this) return super.getID();
         else return it.getID();
     }
 
     private ImmutableLongObjectMap getMap() {
         ImmutableLongObjectMap map = data.getCache();
-        if (map==null) {
-            map = tx().getGraph().getEdgeSerializer().readProperties(getVertex(0),data,tx());
+        if (map == null) {
+            map = tx().getGraph().getEdgeSerializer().readProperties(getVertex(0), data, tx());
         }
         return map;
     }
@@ -90,16 +90,17 @@ public class CacheProperty extends AbstractProperty {
     public Iterable<TitanType> getPropertyKeysDirect() {
         ImmutableLongObjectMap map = getMap();
         List<TitanType> types = new ArrayList<TitanType>(map.size());
-        for (int i=0;i<map.size();i++) {
-            if (map.getKey(i)<0) continue;
-            types.add(tx().getExistingType(map.getKey(i)));
+        for (int i = 0; i < map.size(); i++) {
+            if (map.getKey(i) < 0) continue;
+            if (map.getValue(i) != null)
+                types.add(tx().getExistingType(map.getKey(i)));
         }
         return types;
     }
 
     @Override
     public void setPropertyDirect(TitanType type, Object value) {
-        update().setPropertyDirect(type,value);
+        update().setPropertyDirect(type, value);
     }
 
     @Override
@@ -109,7 +110,8 @@ public class CacheProperty extends AbstractProperty {
 
     @Override
     public byte getLifeCycle() {
-        if ( (getVertex(0).hasRemovedRelations() || getVertex(0).isRemoved()) && tx().isRemovedRelation(super.getID())) return ElementLifeCycle.Removed;
+        if ((getVertex(0).hasRemovedRelations() || getVertex(0).isRemoved()) && tx().isRemovedRelation(super.getID()))
+            return ElementLifeCycle.Removed;
         else return ElementLifeCycle.Loaded;
     }
 

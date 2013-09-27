@@ -39,6 +39,9 @@ public class GraphDatabaseConfiguration {
     private static final Logger log =
             LoggerFactory.getLogger(GraphDatabaseConfiguration.class);
 
+    // ################ GENERAL #######################
+    // ################################################
+
     /**
      * Configures the {@link DefaultTypeMaker} to be used by this graph. If left empty, automatic creation of types
      * is disabled.
@@ -50,6 +53,16 @@ public class GraphDatabaseConfiguration {
         put("none", DisableDefaultTypeMaker.INSTANCE);
         put("blueprints", BlueprintsDefaultTypeMaker.INSTANCE);
     }};
+
+    /**
+     * Configures the cache size used by individual transactions opened against this graph. The smaller the cache size, the
+     * less memory a transaction can consume at maximum. For many concurrent, long running transactions in memory constraint
+     * environments, reducing the cache size can avoid OutOfMemory and GC limit exceeded exceptions.
+     * Note, however, that all modifications in a transaction must always be kept in memory and hence this setting does not
+     * have much impact on write intense transactions. Those must be split into smaller transactions in the case of memory errors.
+     */
+    public static final String TX_CACHE_SIZE_KEY = "tx-cache-size";
+    public static final long TX_CACHE_SIZE_DEFAULT = 20000;
 
 
     // ################ STORAGE #######################
@@ -169,27 +182,6 @@ public class GraphDatabaseConfiguration {
     public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
 
     /**
-     * Whether to enable basic timing and operation count monitoring on backend
-     * methods using the {@code com.codahale.metrics} package.
-     */
-    public static final String BASIC_METRICS = "enable-basic-metrics";
-    public static final boolean BASIC_METRICS_DEFAULT = true;
-
-    /**
-     * Whether to share a single set of Metrics objects across all stores. If
-     * true, then calls to KeyColumnValueStore methods any store instance in the
-     * database will share a common set of Metrics Counters, Timers, Histograms,
-     * etc. The prefix for these common metrics will be
-     * {@link Backend#METRICS_PREFIX} + {@link Backend#MERGED_METRICS}. If
-     * false, then each store has its own set of distinct metrics with a unique
-     * name prefix.
-     * <p/>
-     * This option has no effect when {@link #BASIC_METRICS} is false.
-     */
-    public static final String MERGE_BASIC_METRICS = "merge-basic-metrics";
-    public static final boolean MERGE_BASIC_METRICS_DEFAULT = true;
-
-    /**
      * Configuration key for the hostname or list of hostname of remote storage backend servers to connect to.
      * <p/>
      * Value = {@value}
@@ -288,7 +280,7 @@ public class GraphDatabaseConfiguration {
     public static final String IDS_RENEW_BUFFER_PERCENTAGE_KEY = "renew-percentage";
     public static final double IDS_RENEW_BUFFER_PERCENTAGE_DEFAULT = 0.3; // 30 %
 
-    // ############## Attributes ######################
+    // ############## External Index ######################
     // ################################################
 
     public static final String INDEX_NAMESPACE = "index";
@@ -318,6 +310,27 @@ public class GraphDatabaseConfiguration {
      * Prefix for Metrics reporter configuration keys.
      */
     public static final String METRICS_NAMESPACE = "metrics";
+
+    /**
+     * Whether to enable basic timing and operation count monitoring on backend
+     * methods using the {@code com.codahale.metrics} package.
+     */
+    public static final String BASIC_METRICS = "enable-basic-metrics";
+    public static final boolean BASIC_METRICS_DEFAULT = true;
+
+    /**
+     * Whether to share a single set of Metrics objects across all stores. If
+     * true, then calls to KeyColumnValueStore methods any store instance in the
+     * database will share a common set of Metrics Counters, Timers, Histograms,
+     * etc. The prefix for these common metrics will be
+     * {@link Backend#METRICS_PREFIX} + {@link Backend#MERGED_METRICS}. If
+     * false, then each store has its own set of distinct metrics with a unique
+     * name prefix.
+     * <p/>
+     * This option has no effect when {@link #BASIC_METRICS} is false.
+     */
+    public static final String MERGE_BASIC_METRICS = "merge-basic-metrics";
+    public static final boolean MERGE_BASIC_METRICS_DEFAULT = true;
 
     /**
      * Metrics console reporter interval in milliseconds. Leaving this
@@ -382,6 +395,7 @@ public class GraphDatabaseConfiguration {
     private boolean readOnly;
     private boolean flushIDs;
     private boolean batchLoading;
+    private long txCacheSize;
     private DefaultTypeMaker defaultTypeMaker;
 
     public GraphDatabaseConfiguration(String dirOrFile) {
@@ -431,8 +445,13 @@ public class GraphDatabaseConfiguration {
         readOnly = storageConfig.getBoolean(STORAGE_READONLY_KEY, STORAGE_READONLY_DEFAULT);
         flushIDs = configuration.subset(IDS_NAMESPACE).getBoolean(IDS_FLUSH_KEY, IDS_FLUSH_DEFAULT);
         batchLoading = storageConfig.getBoolean(STORAGE_BATCH_KEY, STORAGE_BATCH_DEFAULT);
+        txCacheSize = configuration.getLong(TX_CACHE_SIZE_KEY, TX_CACHE_SIZE_DEFAULT);
         defaultTypeMaker = preregisteredAutoType.get(configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
         Preconditions.checkNotNull(defaultTypeMaker, "Invalid " + AUTO_TYPE_KEY + " option: " + configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
+
+        //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
+        if (batchLoading) defaultTypeMaker = DisableDefaultTypeMaker.INSTANCE;
+
         configureMetrics();
     }
 
@@ -489,6 +508,10 @@ public class GraphDatabaseConfiguration {
 
     public boolean hasFlushIDs() {
         return flushIDs;
+    }
+
+    public long getTxCacheSize() {
+        return txCacheSize;
     }
 
     public boolean isBatchLoading() {

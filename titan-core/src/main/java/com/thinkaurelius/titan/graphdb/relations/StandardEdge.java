@@ -24,11 +24,11 @@ public class StandardEdge extends AbstractEdge implements StandardRelation {
 
     //############## SAME CODE AS StandardProperty #############################
 
-    private static final Map<TitanType,Object> EMPTY_PROPERTIES = ImmutableMap.of();
+    private static final Map<TitanType, Object> EMPTY_PROPERTIES = ImmutableMap.of();
 
     private byte lifecycle;
-    private long previousID=0;
-    private Map<TitanType,Object> properties = EMPTY_PROPERTIES;
+    private long previousID = 0;
+    private volatile Map<TitanType, Object> properties = EMPTY_PROPERTIES;
 
     @Override
     public long getPreviousID() {
@@ -38,29 +38,29 @@ public class StandardEdge extends AbstractEdge implements StandardRelation {
     @Override
     public void setPreviousID(long previousID) {
         Preconditions.checkArgument(previousID > 0);
-        Preconditions.checkArgument(this.previousID==0);
-        this.previousID=previousID;
+        Preconditions.checkArgument(this.previousID == 0);
+        this.previousID = previousID;
     }
 
     @Override
     public <O> O getPropertyDirect(TitanType type) {
-        return (O)properties.get(type);
+        return (O) properties.get(type);
     }
 
     @Override
     public void setPropertyDirect(TitanType type, Object value) {
-        if (properties==EMPTY_PROPERTIES) {
+        if (properties == EMPTY_PROPERTIES) {
             if (tx().getConfiguration().isSingleThreaded()) {
                 properties = new HashMap<TitanType, Object>(5);
             } else {
                 synchronized (this) {
-                    if (properties==EMPTY_PROPERTIES) {
+                    if (properties == EMPTY_PROPERTIES) {
                         properties = Collections.synchronizedMap(new HashMap<TitanType, Object>(5));
                     }
                 }
             }
         }
-        properties.put(type,value);
+        properties.put(type, value);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class StandardEdge extends AbstractEdge implements StandardRelation {
     @Override
     public <O> O removePropertyDirect(TitanType type) {
         if (!properties.isEmpty())
-            return (O)properties.remove(type);
+            return (O) properties.remove(type);
         else return null;
     }
 

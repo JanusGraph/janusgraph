@@ -38,8 +38,7 @@ import com.thinkaurelius.titan.graphdb.transaction.addedrelations.SimpleBufferAd
 import com.thinkaurelius.titan.graphdb.transaction.indexcache.ConcurrentIndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.indexcache.IndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.indexcache.SimpleIndexCache;
-import com.thinkaurelius.titan.graphdb.transaction.vertexcache.ConcurrentVertexCache;
-import com.thinkaurelius.titan.graphdb.transaction.vertexcache.SimpleVertexCache;
+import com.thinkaurelius.titan.graphdb.transaction.vertexcache.LRUVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.VertexCache;
 import com.thinkaurelius.titan.graphdb.types.StandardTypeMaker;
 import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
@@ -82,25 +81,70 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     private static final Map<Long, InternalRelation> EMPTY_DELETED_RELATIONS = ImmutableMap.of();
     private static final ConcurrentMap<UniqueLockApplication, Lock> UNINITIALIZED_LOCKS = null;
 
-    private static final long DEFAULT_CACHE_SIZE = 10000;
-
     private final StandardTitanGraph graph;
     private final TransactionConfig config;
     private final IDInspector idInspector;
     private final AttributeHandling attributeHandler;
     private final BackendTransaction txHandle;
 
-    //Internal data structures
+    /* ###############################################
+            Internal Data Structures
+     ############################################### */
+
+    //####### Vertex Cache
+    /**
+     * Keeps track of vertices already loaded in memory. Cannot release vertices with added relations.
+     */
     private final VertexCache vertexCache;
-    private final AtomicLong temporaryID;
+
+    //######## Data structures that keep track of new and deleted elements
+    //These data structures cannot release elements, since we would loose track of what was added or deleted
+    /**
+     * Keeps track of all added relations in this transaction
+     */
     private final AddedRelationsContainer addedRelations;
+    /**
+     * Keeps track of all deleted relations in this transaction
+     */
     private Map<Long, InternalRelation> deletedRelations;
+
+    //######## Index Caches
+    /**
+     * Caches the result of index calls so that repeated index queries don't need
+     * to be passed to the IndexProvider. This cache will drop entries when it overflows
+     * since the result set can always be retrieved from the IndexProvider
+     */
     private final Cache<IndexQuery, List<Object>> indexCache;
+    /**
+     * Builds an inverted index for newly added properties so they can be considered in index queries.
+     * This cache my not release elements since that would entail an expensive linear scan over addedRelations
+     */
     private final IndexCache newVertexIndexEntries;
+
+    //######## Lock applications
+    /**
+     * Transaction-local data structure for unique lock applications so that conflicting applications can be discovered
+     * at the transactional level.
+     */
     private ConcurrentMap<UniqueLockApplication, Lock> uniqueLocks;
 
+    //####### Other Data structures
+    /**
+     * Caches Titan types by name so that they can be quickly retrieved once they are loaded in the transaction.
+     * Since type retrieval by name is common and there are only a few types, since cache is a simple map (i.e. no release)
+     */
     private final Map<String, TitanType> typeCache;
 
+    /**
+     * Used to assign temporary ids to new vertices and relations added in this transaction.
+     * If ids are assigned immediately, this is not used.
+     */
+    private final AtomicLong temporaryID;
+
+
+    /**
+     * Whether or not this transaction is open
+     */
     private boolean isOpen;
 
 
@@ -116,35 +160,27 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         this.txHandle = txHandle;
 
         temporaryID = new AtomicLong(-1);
-        Cache<GraphCentricQuery, List<Object>> indexCacheBuilder = CacheBuilder.newBuilder().weigher(new Weigher<GraphCentricQuery, List<Object>>() {
-            @Override
-            public int weigh(GraphCentricQuery q, List<Object> r) {
-                return 2 + r.size();
-            }
-        }).
-                maximumWeight(DEFAULT_CACHE_SIZE).build();
+
         int concurrencyLevel;
         if (config.isSingleThreaded()) {
-            vertexCache = new SimpleVertexCache();
             addedRelations = new SimpleBufferAddedRelations();
             concurrencyLevel = 1;
             typeCache = new HashMap<String, TitanType>();
             newVertexIndexEntries = new SimpleIndexCache();
         } else {
-            vertexCache = new ConcurrentVertexCache();
             addedRelations = new ConcurrentBufferAddedRelations();
             concurrencyLevel = 4;
             typeCache = new ConcurrentHashMap<String, TitanType>();
             newVertexIndexEntries = new ConcurrentIndexCache();
         }
         for (SystemType st : SystemKey.values()) typeCache.put(st.getName(), st);
-
+        vertexCache = new LRUVertexCache(config.getVertexCacheSize(), concurrencyLevel);
         indexCache = CacheBuilder.newBuilder().weigher(new Weigher<IndexQuery, List<Object>>() {
             @Override
             public int weigh(IndexQuery q, List<Object> r) {
                 return 2 + r.size();
             }
-        }).concurrencyLevel(concurrencyLevel).maximumWeight(DEFAULT_CACHE_SIZE).build();
+        }).concurrencyLevel(concurrencyLevel).maximumWeight(config.getIndexCacheWeight()).build();
 
         uniqueLocks = UNINITIALIZED_LOCKS;
         deletedRelations = EMPTY_DELETED_RELATIONS;
@@ -256,8 +292,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     public TitanVertex addVertex() {
         verifyWriteAccess();
         StandardVertex vertex = new StandardVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
-        vertex.addProperty(SystemKey.VertexState, (byte) 0);
         if (config.hasAssignIDsImmediately()) graph.assignID(vertex);
+        vertex.addProperty(SystemKey.VertexState, (byte) 0);
         vertexCache.add(vertex, vertex.getID());
         return vertex;
     }
@@ -267,11 +303,12 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     public Iterable<Vertex> getVertices() {
         if (!addedRelations.isEmpty()) {
             //There are possible new vertices
-            List<Vertex> newVs = new ArrayList<Vertex>();
-            for (InternalVertex v : vertexCache.getAll()) {
-                if (v.isNew() && !(v instanceof TitanType)) newVs.add(v);
+            List<InternalVertex> newVs = vertexCache.getAllNew();
+            Iterator<InternalVertex> viter = newVs.iterator();
+            while (viter.hasNext()) {
+                if (viter.next() instanceof TitanType) viter.remove();
             }
-            return Iterables.concat(newVs, new VertexIterable(graph, this));
+            return Iterables.concat((List) newVs, new VertexIterable(graph, this));
         } else {
             return (Iterable) new VertexIterable(graph, this);
         }
@@ -394,6 +431,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             if (!success) throw new AssertionError("Could not connect relation: " + r);
         }
         addedRelations.add(r);
+        for (int pos = 0; pos < r.getLen(); pos++) vertexCache.add(r.getVertex(pos), r.getVertex(pos).getID());
         if (isVertexIndexProperty(r)) newVertexIndexEntries.add((TitanProperty) r);
     }
 
@@ -485,12 +523,12 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             TypeAttribute.isValidLabelDefinition(definition);
             type = new TitanLabelVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
         }
+        graph.assignID(type);
         addProperty(type, SystemKey.TypeName, name);
         addProperty(type, SystemKey.TypeClass, typeClass);
         for (TypeAttribute attribute : definition.getAttributes()) {
             addProperty(type, SystemKey.TypeDefinition, attribute);
         }
-        graph.assignID(type);
         Preconditions.checkArgument(type.getID() > 0);
         vertexCache.add(type, type.getID());
         typeCache.put(name, type);

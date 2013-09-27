@@ -32,7 +32,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     private Direction dir;
     private Set<String> types;
-    private List<PredicateCondition<String,TitanRelation>> constraints;
+    private List<PredicateCondition<String, TitanRelation>> constraints;
 
     private boolean includeHidden;
     private int limit = Query.NO_LIMIT;
@@ -41,8 +41,8 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
     public AbstractVertexCentricQueryBuilder(final StandardTitanTx tx, final EdgeSerializer serializer) {
         Preconditions.checkNotNull(serializer);
         Preconditions.checkNotNull(tx);
-        this.tx=tx;
-        this.serializer=serializer;
+        this.tx = tx;
+        this.serializer = serializer;
         //Initial query configuration
         dir = Direction.BOTH;
         types = new HashSet<String>(4);
@@ -64,19 +64,19 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
         if (t == null && !tx.getConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
             throw new IllegalArgumentException("Undefined type used in query: " + typeName);
         }
-        return (InternalType)t;
+        return (InternalType) t;
     }
 
     private AbstractVertexCentricQueryBuilder addConstraint(String type, TitanPredicate rel, Object value) {
         Preconditions.checkNotNull(type);
         Preconditions.checkNotNull(rel);
-        constraints.add(new PredicateCondition<String,TitanRelation>(type, rel, value));
+        constraints.add(new PredicateCondition<String, TitanRelation>(type, rel, value));
         return this;
     }
 
     @Override
     public AbstractVertexCentricQueryBuilder has(TitanKey key, Object value) {
-        return has(key.getName(),value);
+        return has(key.getName(), value);
     }
 
     @Override
@@ -106,12 +106,12 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     @Override
     public AbstractVertexCentricQueryBuilder has(String key) {
-        return has(key,Cmp.NOT_EQUAL,(Object)null);
+        return has(key, Cmp.NOT_EQUAL, (Object) null);
     }
 
     @Override
     public AbstractVertexCentricQueryBuilder hasNot(String key) {
-        return has(key,Cmp.EQUAL,(Object)null);
+        return has(key, Cmp.EQUAL, (Object) null);
     }
 
     @Override
@@ -121,13 +121,13 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     @Override
     public <T extends Comparable<?>> AbstractVertexCentricQueryBuilder interval(String key, T start, T end) {
-        addConstraint(key,Cmp.GREATER_THAN_EQUAL,start);
+        addConstraint(key, Cmp.GREATER_THAN_EQUAL, start);
         return addConstraint(key, Cmp.LESS_THAN, end);
     }
 
     @Deprecated
     public <T extends Comparable<T>> AbstractVertexCentricQueryBuilder has(String key, T value, com.tinkerpop.blueprints.Query.Compare compare) {
-        return addConstraint(key,TitanPredicate.Converter.convert(compare),value);
+        return addConstraint(key, TitanPredicate.Converter.convert(compare), value);
     }
 
     @Override
@@ -171,7 +171,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     @Override
     public AbstractVertexCentricQueryBuilder limit(int limit) {
-        Preconditions.checkArgument(limit>=0,"Limit must be non-negative [%s]",limit);
+        Preconditions.checkArgument(limit >= 0, "Limit must be non-negative [%s]", limit);
         this.limit = limit;
         return this;
     }
@@ -212,30 +212,30 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     protected BaseVertexCentricQuery constructQuery(RelationType returnType) {
         Preconditions.checkNotNull(returnType);
-        if (limit==0) return BaseVertexCentricQuery.emptyQuery();
+        if (limit == 0) return BaseVertexCentricQuery.emptyQuery();
 
         //Prepare direction
-        if (returnType== RelationType.PROPERTY) {
-            if (dir==Direction.IN) return BaseVertexCentricQuery.emptyQuery();
-            else dir=Direction.OUT;
+        if (returnType == RelationType.PROPERTY) {
+            if (dir == Direction.IN) return BaseVertexCentricQuery.emptyQuery();
+            else dir = Direction.OUT;
         }
-        Preconditions.checkArgument(getVertexConstraint()==null || returnType==RelationType.EDGE);
+        Preconditions.checkArgument(getVertexConstraint() == null || returnType == RelationType.EDGE);
 
         //Prepare constraints
-        And<TitanRelation> conditions = QueryUtil.constraints2QNF(tx,constraints);
-        if (conditions==null) return BaseVertexCentricQuery.emptyQuery();
+        And<TitanRelation> conditions = QueryUtil.constraints2QNF(tx, constraints);
+        if (conditions == null) return BaseVertexCentricQuery.emptyQuery();
 
-        Preconditions.checkArgument(limit>0);
+        Preconditions.checkArgument(limit > 0);
         int sliceLimit = limit;
-        if (sliceLimit==Query.NO_LIMIT) sliceLimit=DEFAULT_NO_LIMIT;
-        else sliceLimit=Math.min(sliceLimit,MAX_BASE_LIMIT);
+        if (sliceLimit == Query.NO_LIMIT) sliceLimit = DEFAULT_NO_LIMIT;
+        else sliceLimit = Math.min(sliceLimit, MAX_BASE_LIMIT);
 
         //Construct (optimal) SliceQueries
-        List<BackendQueryHolder<SliceQuery>> queries=null;
+        List<BackendQueryHolder<SliceQuery>> queries = null;
         if (types.isEmpty()) {
             BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType),
-                            ((dir==Direction.BOTH || returnType==RelationType.PROPERTY && dir==Direction.OUT)
-                                          && !conditions.hasChildren() && includeHidden),Boolean.valueOf(dir!=Direction.BOTH));
+                    ((dir == Direction.BOTH || returnType == RelationType.PROPERTY && dir == Direction.OUT)
+                            && !conditions.hasChildren() && includeHidden), Boolean.valueOf(dir != Direction.BOTH));
             query.getBackendQuery().setLimit(computeLimit(conditions,
                     ((dir != Direction.BOTH && (returnType == RelationType.EDGE || returnType == RelationType.RELATION)) ? sliceLimit * 2 : sliceLimit) +
                             //If only one direction is queried, ask for twice the limit from backend since approximately half will be filtered
@@ -248,81 +248,82 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
             conditions.add(returnType);
         } else {
             Set<TitanType> ts = new HashSet<TitanType>(types.size());
-            queries = new ArrayList<BackendQueryHolder<SliceQuery>>(types.size()+4);
+            queries = new ArrayList<BackendQueryHolder<SliceQuery>>(types.size() + 4);
 
             for (String typeName : types) {
                 InternalType type = getType(typeName);
-                if (type!=null && (includeHidden || !type.isHidden())) {
+                if (type != null && (includeHidden || !type.isHidden())) {
                     ts.add(type);
                     if (type.isPropertyKey()) {
-                        if (returnType==RelationType.EDGE)
+                        if (returnType == RelationType.EDGE)
                             throw new IllegalArgumentException("Querying for edges but including a property key: " + type.getName());
-                        returnType=RelationType.PROPERTY;
+                        returnType = RelationType.PROPERTY;
                     }
                     if (type.isEdgeLabel()) {
-                        if (returnType== RelationType.PROPERTY)
+                        if (returnType == RelationType.PROPERTY)
                             throw new IllegalArgumentException("Querying for properties but including an edge label: " + type.getName());
                         returnType = RelationType.EDGE;
                     }
                     //Construct primary key constraints (if any, and if not direction==Both)
-                    EdgeSerializer.TypedInterval[] primaryKeyConstraints=new EdgeSerializer.TypedInterval[type.getPrimaryKey().length];
-                    And<TitanRelation> remainingConditions=conditions;
-                    boolean vertexConstraintApplies = type.getPrimaryKey().length==0 || conditions.hasChildren();
-                    if (type.getPrimaryKey().length>0 && conditions.hasChildren()) {
-                        remainingConditions=conditions.clone();
+                    EdgeSerializer.TypedInterval[] primaryKeyConstraints = new EdgeSerializer.TypedInterval[type.getPrimaryKey().length];
+                    And<TitanRelation> remainingConditions = conditions;
+                    boolean vertexConstraintApplies = type.getPrimaryKey().length == 0 || conditions.hasChildren();
+                    if (type.getPrimaryKey().length > 0 && conditions.hasChildren()) {
+                        remainingConditions = conditions.clone();
                         long[] primaryKeys = type.getPrimaryKey();
 
-                        for (int i=0;i<primaryKeys.length;i++) {
-                            InternalType pktype = (InternalType)tx.getExistingType(primaryKeys[i]);
-                            Interval interval=null;
+                        for (int i = 0; i < primaryKeys.length; i++) {
+                            InternalType pktype = (InternalType) tx.getExistingType(primaryKeys[i]);
+                            Interval interval = null;
                             //First check for equality constraints, since those are the most constraining
-                            for (Iterator<Condition<TitanRelation>> iter=remainingConditions.iterator();iter.hasNext();) {
-                                PredicateCondition<TitanType,TitanRelation> atom = (PredicateCondition)iter.next();
-                                if (atom.getKey().equals(pktype) && atom.getPredicate()==Cmp.EQUAL && interval==null) {
-                                    interval=new PointInterval(atom.getValue());
+                            for (Iterator<Condition<TitanRelation>> iter = remainingConditions.iterator(); iter.hasNext(); ) {
+                                PredicateCondition<TitanType, TitanRelation> atom = (PredicateCondition) iter.next();
+                                if (atom.getKey().equals(pktype) && atom.getPredicate() == Cmp.EQUAL && interval == null) {
+                                    interval = new PointInterval(atom.getValue());
                                     iter.remove();
                                 }
                             }
 
                             //If there are no equality constraints, check if the primary key's datatype allows comparison
                             //and if so, find a bounding interval from the remaining constraints
-                            if (interval==null && pktype.isPropertyKey()
+                            if (interval == null && pktype.isPropertyKey()
                                     && Comparable.class.isAssignableFrom(((TitanKey) pktype).getDataType())) {
                                 ProperInterval pint = new ProperInterval();
-                                for (Iterator<Condition<TitanRelation>> iter=remainingConditions.iterator();iter.hasNext();) {
+                                for (Iterator<Condition<TitanRelation>> iter = remainingConditions.iterator(); iter.hasNext(); ) {
                                     Condition<TitanRelation> cond = iter.next();
                                     if (cond instanceof PredicateCondition) {
-                                        PredicateCondition<TitanType,TitanRelation> atom = (PredicateCondition)cond;
+                                        PredicateCondition<TitanType, TitanRelation> atom = (PredicateCondition) cond;
                                         if (atom.getKey().equals(pktype)) {
                                             TitanPredicate predicate = atom.getPredicate();
                                             Object value = atom.getValue();
                                             if (predicate instanceof Cmp) {
-                                                switch ((Cmp)predicate) {
-                                                    case NOT_EQUAL: break;
+                                                switch ((Cmp) predicate) {
+                                                    case NOT_EQUAL:
+                                                        break;
                                                     case LESS_THAN:
-                                                        if (pint.getEnd()==null || pint.getEnd().compareTo(value)>=0) {
-                                                            pint.setEnd((Comparable)value);
+                                                        if (pint.getEnd() == null || pint.getEnd().compareTo(value) >= 0) {
+                                                            pint.setEnd((Comparable) value);
                                                             pint.setEndInclusive(false);
                                                         }
                                                         iter.remove();
                                                         break;
                                                     case LESS_THAN_EQUAL:
-                                                        if (pint.getEnd()==null || pint.getEnd().compareTo(value)>0) {
-                                                            pint.setEnd((Comparable)value);
+                                                        if (pint.getEnd() == null || pint.getEnd().compareTo(value) > 0) {
+                                                            pint.setEnd((Comparable) value);
                                                             pint.setEndInclusive(true);
                                                         }
                                                         iter.remove();
                                                         break;
                                                     case GREATER_THAN:
-                                                        if (pint.getStart()==null || pint.getStart().compareTo(value)<=0) {
-                                                            pint.setStart((Comparable)value);
+                                                        if (pint.getStart() == null || pint.getStart().compareTo(value) <= 0) {
+                                                            pint.setStart((Comparable) value);
                                                             pint.setStartInclusive(false);
                                                         }
                                                         iter.remove();
                                                         break;
                                                     case GREATER_THAN_EQUAL:
-                                                        if (pint.getStart()==null || pint.getStart().compareTo(value)<0) {
-                                                            pint.setStart((Comparable)value);
+                                                        if (pint.getStart() == null || pint.getStart().compareTo(value) < 0) {
+                                                            pint.setStart((Comparable) value);
                                                             pint.setStartInclusive(true);
                                                         }
                                                         iter.remove();
@@ -332,9 +333,9 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                                         }
                                     } else if (cond instanceof Or) {
                                         //Grab a probe so we can investigate what type of or-condition this is and whether it allows us to constrain this primary key
-                                        Condition probe = ((Or)cond).get(0);
-                                        if (probe instanceof PredicateCondition && ((PredicateCondition)probe).getKey().equals(pktype) &&
-                                                ((PredicateCondition)probe).getPredicate()==Cmp.EQUAL) {
+                                        Condition probe = ((Or) cond).get(0);
+                                        if (probe instanceof PredicateCondition && ((PredicateCondition) probe).getKey().equals(pktype) &&
+                                                ((PredicateCondition) probe).getPredicate() == Cmp.EQUAL) {
                                             //We make the assumption that this or-condition is a group of equality constraints for the same type (i.e. an unrolled Contain.IN)
                                             //This assumption is enforced by precondition statements below
                                             //TODO: Consider splitting query on primary key with a limited number (<=3) of possible values in or-clause
@@ -343,28 +344,29 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                                             Comparable smallest = null, largest = null;
                                             for (Condition child : cond.getChildren()) {
                                                 Preconditions.checkArgument(child instanceof PredicateCondition);
-                                                PredicateCondition pc = (PredicateCondition)child;
+                                                PredicateCondition pc = (PredicateCondition) child;
                                                 Preconditions.checkArgument(pc.getKey().equals(pktype));
-                                                Preconditions.checkArgument(pc.getPredicate()==Cmp.EQUAL);
+                                                Preconditions.checkArgument(pc.getPredicate() == Cmp.EQUAL);
 
                                                 Object v = pc.getValue();
-                                                if (smallest==null) {
-                                                    smallest= (Comparable) v; largest= (Comparable) v;
+                                                if (smallest == null) {
+                                                    smallest = (Comparable) v;
+                                                    largest = (Comparable) v;
                                                 } else {
-                                                    if (smallest.compareTo(v)>0) {
-                                                        smallest= (Comparable) v;
-                                                    } else if (largest.compareTo(v)<0) {
-                                                        largest = (Comparable)v;
+                                                    if (smallest.compareTo(v) > 0) {
+                                                        smallest = (Comparable) v;
+                                                    } else if (largest.compareTo(v) < 0) {
+                                                        largest = (Comparable) v;
                                                     }
                                                 }
                                             }
                                             //After finding the smallest and largest value respectively, we constrain the interval
-                                            Preconditions.checkArgument(smallest!=null && largest!=null); //due to probing, there must be at least one
-                                            if (pint.getEnd()==null || pint.getEnd().compareTo(largest)>0) {
+                                            Preconditions.checkArgument(smallest != null && largest != null); //due to probing, there must be at least one
+                                            if (pint.getEnd() == null || pint.getEnd().compareTo(largest) > 0) {
                                                 pint.setEnd(largest);
                                                 pint.setEndInclusive(true);
                                             }
-                                            if (pint.getStart()==null || pint.getStart().compareTo(smallest)<0) {
+                                            if (pint.getStart() == null || pint.getStart().compareTo(smallest) < 0) {
                                                 pint.setStart(smallest);
                                                 pint.setStartInclusive(true);
                                             }
@@ -373,12 +375,12 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                                     }
                                 }
                                 if (pint.isEmpty()) return BaseVertexCentricQuery.emptyQuery();
-                                if (pint.getStart()!=null || pint.getEnd()!=null) interval=pint;
+                                if (pint.getStart() != null || pint.getEnd() != null) interval = pint;
                             }
 
-                            primaryKeyConstraints[i]=new EdgeSerializer.TypedInterval(pktype,interval);
-                            if (interval==null || !interval.isPoint()) {
-                                vertexConstraintApplies=false;
+                            primaryKeyConstraints[i] = new EdgeSerializer.TypedInterval(pktype, interval);
+                            if (interval == null || !interval.isPoint()) {
+                                vertexConstraintApplies = false;
                                 break;
                             }
                         }
@@ -386,17 +388,24 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
                     Direction[] dirs = {dir};
                     EdgeSerializer.VertexConstraint vertexConstraint = getVertexConstraint();
-                    if (dir==Direction.BOTH &&
-                            ((primaryKeyConstraints.length>0 && primaryKeyConstraints[0]!=null) || (vertexConstraintApplies && vertexConstraint!=null)) ) {
+                    if (dir == Direction.BOTH &&
+                            (hasPrimaryKeyConstraints(primaryKeyConstraints) || (vertexConstraintApplies && vertexConstraint != null))) {
                         //Split on direction in the presence of effective primary key constraints
-                        dirs = new Direction[]{Direction.OUT,Direction.IN};
+                        dirs = new Direction[]{Direction.OUT, Direction.IN};
                     }
                     for (Direction dir : dirs) {
                         EdgeSerializer.VertexConstraint vertexCon = vertexConstraint;
-                        if (vertexCon==null || !vertexConstraintApplies || type.isUnique(dir)) vertexCon=null;
-                        SliceQuery q=serializer.getQuery(type,dir,primaryKeyConstraints,vertexCon);
+                        if (vertexCon == null || !vertexConstraintApplies || type.isUnique(dir)) vertexCon = null;
+                        EdgeSerializer.TypedInterval[] sortConstraints = primaryKeyConstraints;
+                        if (hasPrimaryKeyConstraints(primaryKeyConstraints) && type.isUnique(dir)) {
+                            sortConstraints = new EdgeSerializer.TypedInterval[type.getPrimaryKey().length];
+                        }
+
+                        boolean isFitted = !remainingConditions.hasChildren()
+                                && vertexConstraint == vertexCon && sortConstraints == primaryKeyConstraints;
+                        SliceQuery q = serializer.getQuery(type, dir, sortConstraints, vertexCon);
                         q.setLimit(computeLimit(remainingConditions, sliceLimit));
-                        queries.add(new BackendQueryHolder<SliceQuery>(q,(!remainingConditions.hasChildren() && vertexConstraint==vertexCon)));
+                        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted));
                     }
                 }
             }
@@ -404,12 +413,16 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
             else conditions.add(getTypeCondition(ts));
         }
 
-        return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions),dir,queries,limit);
+        return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions), dir, queries, limit);
+    }
+
+    private static final boolean hasPrimaryKeyConstraints(EdgeSerializer.TypedInterval[] cons) {
+        return cons.length > 0 && cons[0] != null;
     }
 
     private final static Condition<TitanRelation> getTypeCondition(Set<TitanType> types) {
         Preconditions.checkArgument(!types.isEmpty());
-        if (types.size()==1) return new LabelCondition<TitanRelation>(types.iterator().next());
+        if (types.size() == 1) return new LabelCondition<TitanRelation>(types.iterator().next());
         else {
             Or<TitanRelation> typeCond = new Or<TitanRelation>(types.size());
             for (TitanType type : types) typeCond.add(new LabelCondition<TitanRelation>(type));
@@ -418,8 +431,8 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
     }
 
     private final int computeLimit(And<TitanRelation> conditions, int baseLimit) {
-        return getVertexConstraint()!=null?HARD_MAX_LIMIT:   //a vertex constraint is so selective, that we likely have to retrieve all edges
-                Math.min(HARD_MAX_LIMIT,QueryUtil.adjustLimitForTxModifications(tx,conditions,baseLimit));
+        return getVertexConstraint() != null ? HARD_MAX_LIMIT :   //a vertex constraint is so selective, that we likely have to retrieve all edges
+                Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, conditions, baseLimit));
     }
 
 

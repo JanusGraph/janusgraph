@@ -12,7 +12,7 @@ import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Query;
+import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
@@ -86,7 +86,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         TitanLabel connect = tx.makeType().name("connect").signature(id, weight).vertexUnique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).makeEdgeLabel();
 
-        TitanLabel parent = tx.makeType().name("parent").vertexUnique(Direction.OUT).makeEdgeLabel();
+        TitanLabel parent = tx.makeType().name("parent").vertexUnique(Direction.OUT).primaryKey(weight).makeEdgeLabel();
 
         try {
             tx.makeType().name("pint").dataType(int.class).makePropertyKey();
@@ -200,16 +200,22 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         TitanVertex v12 = tx.addVertex(), v13 = tx.addVertex();
         v12.setProperty("uid", "v12");
         v13.setProperty("uid", "v13");
-        v12.addEdge("parent", v1);
-        v13.addEdge("parent", v1);
+        v12.addEdge("parent", v1).setProperty("weight", 3.5);
+        v13.addEdge("parent", v1).setProperty("weight", 10.5);
         try {
             v12.addEdge("parent", v13);
             fail();
         } catch (IllegalArgumentException e) {
         }
-        assertEquals(2, Iterables.size(v1.getEdges(IN, "parent")));
-        assertEquals(1, Iterables.size(v12.getEdges(OUT, "parent")));
-        assertEquals(1, Iterables.size(v13.getEdges(OUT, "parent")));
+        assertEquals(2, Iterables.size(v1.query().direction(IN).labels("parent").edges()));
+        assertEquals(1, Iterables.size(v1.query().direction(IN).labels("parent").has("weight", Compare.GREATER_THAN, 10.0).edges()));
+        assertEquals(1, Iterables.size(v12.query().direction(OUT).labels("parent").has("weight").edges()));
+        assertEquals(1, Iterables.size(v12.query().direction(OUT).labels("parent").has("weight", Compare.GREATER_THAN, 3).edges()));
+        assertEquals(1, Iterables.size(v13.query().direction(OUT).labels("parent").has("weight").edges()));
+
+        v1.addEdge("connect", v12);
+        Edge edge = Iterables.getOnlyElement(v1.getEdges(OUT, "connect"));
+        assertEquals(0, edge.getPropertyKeys().size());
 
         clopen();
 
@@ -220,8 +226,15 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(v1, Iterables.getOnlyElement(tx.getVertices(id, "v1")));
 
         v12 = (TitanVertex) tx.getVertex(v12);
-        assertEquals(2, Iterables.size(v1.getEdges(IN, "parent")));
-        assertEquals(1, Iterables.size(v12.getEdges(OUT, "parent")));
+        v13 = (TitanVertex) tx.getVertex(v13);
+        assertEquals(2, Iterables.size(v1.query().direction(IN).labels("parent").edges()));
+        assertEquals(1, Iterables.size(v1.query().direction(IN).labels("parent").has("weight", Compare.GREATER_THAN, 10.0).edges()));
+        assertEquals(1, Iterables.size(v12.query().direction(OUT).labels("parent").has("weight").edges()));
+        assertEquals(1, Iterables.size(v12.query().direction(OUT).labels("parent").has("weight", Compare.GREATER_THAN, 3).edges()));
+        assertEquals(1, Iterables.size(v13.query().direction(OUT).labels("parent").has("weight").edges()));
+
+        edge = Iterables.getOnlyElement(v1.getEdges(OUT, "connect"));
+        assertEquals(0, edge.getPropertyKeys().size());
 
 
         // Verify vertex in current transaction
@@ -241,6 +254,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(v2, Iterables.getOnlyElement(tx.getVertices(id, "v2")));
 
         clopen();
+
 
         v = tx.addVertex();
         v.setProperty("uid", "unique1");
@@ -699,6 +713,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testThreadBoundTx() {
+        TitanKey t = graph.makeType().name("type").dataType(Integer.class).vertexUnique(OUT).indexed(Edge.class).makePropertyKey();
+        graph.makeType().name("friend").primaryKey(t).makeEdgeLabel();
+        graph.commit();
+
         Vertex v1 = graph.addVertex(null);
         Vertex v2 = graph.addVertex(null);
         Vertex v3 = graph.addVertex(null);
@@ -722,6 +740,11 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         e3.setProperty("time", 35);
         assertEquals(35, e3.getProperty("time"));
 
+        v1.addEdge("friend", v2).setProperty("type", 0);
+        graph.commit();
+        Edge ef = Iterables.getOnlyElement(v1.getEdges(OUT, "friend"));
+        assertEquals(ef, Iterables.getOnlyElement(graph.getEdges("type", 0)));
+        ef.setProperty("type", 1);
         graph.commit();
 
         assertEquals(35, e3.getProperty("time"));
@@ -948,17 +971,19 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(33, v.query().labels("connect").has("undefined", null).direction(OUT).count());
         assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).count());
         assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertexIds().size());
+        assertEquals(23, v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 31).count());
         assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
         assertEquals(1, v.query().has("time", 1).count());
         assertEquals(10, v.query().interval("time", 4, 14).count());
-        assertEquals(9, v.query().interval("time", 4, 14).has("time", 10, Query.Compare.NOT_EQUAL).count());
+        assertEquals(9, v.query().interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
         assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
         assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
 //        for (TitanRelation r : v.query().labels("friend", "connect", "knows").direction(OUT).has("time", 10, Query.Compare.NOT_EQUAL).relations()) System.out.println(r);
-        assertEquals(98, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", 10, Query.Compare.NOT_EQUAL).count());
+        assertEquals(98, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Compare.NOT_EQUAL, 10).count());
         assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
         assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
-        assertEquals(4, v.query().labels("friend").direction(OUT).has("time", 10, Query.Compare.LESS_THAN_EQUAL).count());
+        assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Compare.LESS_THAN_EQUAL, 10).count());
+        assertEquals(29, v.query().labels("friend").direction(OUT).has("time", Compare.GREATER_THAN, 10).count());
         vl = v.query().labels().direction(OUT).interval("time", 3, 31).vertexIds();
         vl.sort();
         long[] vidsubset = new long[31 - 3];
@@ -994,7 +1019,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         v = vs[0];
 
         //Same queries as above but without memory loading        
-        assertEquals(0, v.query().labels("follows").has("time", 10, Query.Compare.LESS_THAN).count());
+        assertEquals(0, v.query().labels("follows").has("time", Compare.LESS_THAN, 10).count());
 
         //Adjacent queries
         assertEquals(1, v.query().labels("connect").direction(OUT).adjacentVertex(vs[6]).has("time", 6).count());
@@ -1005,6 +1030,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).count());
         assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).count());
+        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).count());
+        assertEquals(23, v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 31).count());
+
+
         assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertexIds().size());
         assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
         assertEquals(1, v.query().has("time", 1).count());
@@ -1012,7 +1041,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
         assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
         assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
-        assertEquals(4, v.query().labels("friend").direction(OUT).has("time", 10, Query.Compare.LESS_THAN_EQUAL).count());
+        assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Compare.LESS_THAN_EQUAL, 10).count());
+        assertEquals(29, v.query().labels("friend").direction(OUT).has("time", Compare.GREATER_THAN, 10).count());
         vl = v.query().labels().direction(OUT).interval("time", 3, 31).vertexIds();
         vl.sort();
         for (int i = 0; i < vl.size(); i++) assertEquals(vidsubset[i], vl.getID(i));
@@ -1025,7 +1055,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(25, Iterables.size(v.query().labels("connect", "friend", "knows").has("weight", 1.5).vertexIds()));
         assertEquals(33, v.query().labels("connect").direction(OUT).count());
         assertEquals(33, v.query().labels("connect").has("undefined", null).direction(OUT).count());
-        assertEquals(98, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", 10, Query.Compare.NOT_EQUAL).count());
+        assertEquals(98, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Compare.NOT_EQUAL, 10).count());
         assertEquals(99, Iterables.size(v.query().direction(OUT).vertices()));
 
         clopen();

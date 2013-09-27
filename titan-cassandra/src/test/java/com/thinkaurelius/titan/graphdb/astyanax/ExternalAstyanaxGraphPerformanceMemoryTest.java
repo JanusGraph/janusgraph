@@ -2,14 +2,14 @@ package com.thinkaurelius.titan.graphdb.astyanax;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
-import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceTest;
+import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceMemoryTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class ExternalAstyanaxGraphPerformanceTest extends TitanGraphPerformanceTest {
+public class ExternalAstyanaxGraphPerformanceMemoryTest extends TitanGraphPerformanceMemoryTest {
 
-    public ExternalAstyanaxGraphPerformanceTest() {
-        super(CassandraStorageSetup.getAstyanaxGraphConfiguration(ExternalAstyanaxGraphPerformanceTest.class.getSimpleName()), 0, 1, false);
+    public ExternalAstyanaxGraphPerformanceMemoryTest() {
+        super(CassandraStorageSetup.getAstyanaxGraphConfiguration(ExternalAstyanaxGraphPerformanceMemoryTest.class.getSimpleName()));
     }
 
     public static CassandraProcessStarter ch = new CassandraProcessStarter();
