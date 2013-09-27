@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.graphdb.transaction.vertexcache;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 
+import java.util.List;
+
 public interface VertexCache {
 
     /**
@@ -19,10 +21,11 @@ public interface VertexCache {
      * @param id
      * @return
      */
-    public InternalVertex get(long id, Retriever<Long,InternalVertex> vertexConstructor);
+    public InternalVertex get(long id, Retriever<Long, InternalVertex> vertexConstructor);
 
     /**
-     * Adds the given vertex with the given id to the cache
+     * Adds the given vertex with the given id to the cache. The given vertex may already be in the cache.
+     * In other words, this method may be called to ensure that a vertex is still in the cache.
      *
      * @param vertex
      * @param id
@@ -31,11 +34,11 @@ public interface VertexCache {
     public void add(InternalVertex vertex, long id);
 
     /**
-     * Returns an iterable over all vertices in the cache
+     * Returns an iterable over all new vertices in the cache
      *
      * @return
      */
-    public Iterable<InternalVertex> getAll();
+    public List<InternalVertex> getAllNew();
 
     /**
      * Closes the cache which allows the cache to release allocated memory.

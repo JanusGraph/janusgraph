@@ -20,11 +20,9 @@ public class MemoryAssess {
 
     public static long getMemoryUse() {
         putOutTheGarbage();
-        long totalMemory = Runtime.getRuntime().totalMemory();
-
         putOutTheGarbage();
+        long totalMemory = Runtime.getRuntime().totalMemory();
         long freeMemory = Runtime.getRuntime().freeMemory();
-
         return (totalMemory - freeMemory);
     }
 
