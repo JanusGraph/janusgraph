@@ -31,6 +31,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
+import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.blueprints.Direction;
@@ -62,6 +63,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     protected final EdgeSerializer edgeSerializer;
     protected final Serializer serializer;
 
+    private final SliceQuery vertexExistenceQuery;
+
 
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
         this.config = configuration;
@@ -77,6 +80,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.indexSerializer = new IndexSerializer(this.serializer, this.backend.getIndexInformation());
         this.edgeSerializer = new EdgeSerializer(this.serializer, this.idManager);
         isOpen = true;
+
+        this.vertexExistenceQuery = edgeSerializer.getQuery(SystemKey.VertexState, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
     }
 
     @Override
@@ -147,7 +152,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     public boolean containsVertexID(long id, BackendTransaction tx) {
         log.trace("Checking vertex existence for {}", id);
-        return tx.edgeStoreContainsKey(IDHandler.getKey(id));
+        return !tx.edgeStoreQuery(new KeySliceQuery(IDHandler.getKey(id), vertexExistenceQuery)).isEmpty();
     }
 
     public RecordIterator<Long> getVertexIDs(final BackendTransaction tx) {

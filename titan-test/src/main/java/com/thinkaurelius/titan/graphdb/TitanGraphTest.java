@@ -46,6 +46,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         clopen();
         long nid = n1.getID();
         assertTrue(tx.containsVertex(nid));
+        assertTrue(tx.containsVertex(weight.getID()));
+        assertFalse(tx.containsVertex(nid + 64));
+        assertFalse(tx.containsVertex(weight.getID() + 64));
         assertTrue(tx.containsType("weight"));
         weight = tx.getPropertyKey("weight");
         assertEquals(weight.getDataType(), Double.class);
