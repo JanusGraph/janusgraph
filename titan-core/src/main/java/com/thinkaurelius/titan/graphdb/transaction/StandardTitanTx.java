@@ -82,7 +82,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     private static final ConcurrentMap<UniqueLockApplication, Lock> UNINITIALIZED_LOCKS = null;
 
     private final StandardTitanGraph graph;
-    private final TransactionConfig config;
+    private final TransactionConfiguration config;
     private final IDInspector idInspector;
     private final AttributeHandling attributeHandler;
     private final BackendTransaction txHandle;
@@ -148,7 +148,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     private boolean isOpen;
 
 
-    public StandardTitanTx(StandardTitanGraph graph, TransactionConfig config, BackendTransaction txHandle) {
+    public StandardTitanTx(StandardTitanGraph graph, TransactionConfiguration config, BackendTransaction txHandle) {
         Preconditions.checkNotNull(graph);
         Preconditions.checkArgument(graph.isOpen());
         Preconditions.checkNotNull(config);
@@ -224,7 +224,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         else return (StandardTitanTx) graph.getCurrentThreadTx();
     }
 
-    public TransactionConfig getConfiguration() {
+    public TransactionConfiguration getConfiguration() {
         return config;
     }
 
@@ -250,14 +250,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         verifyOpen();
         if (vertexid <= 0 || !(idInspector.isTypeID(vertexid) || idInspector.isVertexID(vertexid))) return null;
         InternalVertex v = vertexCache.get(vertexid,
-                config.hasVerifyVertexExistence() ? uncertainVertexConstructor : existingVertexConstructor);
+                config.hasVerifyExternalVertexExistence() ? uncertainVertexConstructor : existingVertexConstructor);
         if (v.isRemoved()) return null;
         else return v;
     }
 
     public InternalVertex getExistingVertex(final long vertexid) {
         //return vertex no matter what, even if deleted, and assume the id has the correct format
-        return vertexCache.get(vertexid, existingVertexConstructor);
+        return vertexCache.get(vertexid, config.hasVerifyInternalVertexExistence() ? uncertainVertexConstructor : existingVertexConstructor);
     }
 
     private final Retriever<Long, InternalVertex> existingVertexConstructor = new VertexConstructor(false);

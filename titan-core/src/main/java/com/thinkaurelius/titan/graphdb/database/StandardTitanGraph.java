@@ -30,7 +30,8 @@ import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
@@ -111,15 +112,20 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     @Override
     public TitanTransaction newTransaction() {
-        return newTransaction(new TransactionConfig(config, false));
+        return buildTransaction().start();
+    }
+
+    @Override
+    public StandardTransactionBuilder buildTransaction() {
+        return new StandardTransactionBuilder(getConfiguration(), this);
     }
 
     @Override
     public TitanTransaction newThreadBoundTransaction() {
-        return newTransaction(new TransactionConfig(config, true));
+        return buildTransaction().threadBound().start();
     }
 
-    public StandardTitanTx newTransaction(TransactionConfig configuration) {
+    public StandardTitanTx newTransaction(TransactionConfiguration configuration) {
         if (!isOpen) ExceptionFactory.graphShutdown();
         try {
             return new StandardTitanTx(this, configuration, backend.beginTransaction());

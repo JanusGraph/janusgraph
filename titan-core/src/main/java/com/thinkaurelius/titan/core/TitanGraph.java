@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
@@ -25,6 +26,14 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
      * @return Transaction object representing a transactional context.
      */
     public TitanTransaction newTransaction();
+
+    /**
+     * Returns a {@link TransactionBuilder} to construct a new thread-independent {@link TitanTransaction}.
+     *
+     * @return a new TransactionBuilder
+     * @see TransactionBuilder
+     */
+    public TransactionBuilder buildTransaction();
 
 
     /**
