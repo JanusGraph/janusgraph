@@ -222,7 +222,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         Preconditions.checkArgument(del.isRemoved());
                         for (int pos = 0; pos < del.getLen(); pos++) {
                             InternalVertex vertex = del.getVertex(pos);
-                            mutations.put(vertex, del);
+                            if (pos == 0 || !del.isLoop()) mutations.put(vertex, del);
                             Direction dir = EdgeDirection.fromPosition(pos);
                             if (acquireLocks && del.getType().isUnique(dir) &&
                                     ((InternalType) del.getType()).uniqueLock(dir)) {

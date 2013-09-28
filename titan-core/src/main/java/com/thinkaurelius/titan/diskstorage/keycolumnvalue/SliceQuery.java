@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 /**
  * Queries for a slice of data identified by a start point (inclusive) and end point (exclusive).
  * Returns all {@link StaticBuffer}s that lie in this range up to the given limit.
- *
+ * <p/>
  * If a SliceQuery is marked <i>static</i> it is expected that the result set does not change.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -36,11 +36,11 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
     }
 
     public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd) {
-        this(sliceStart,sliceEnd ,DEFAULT_STATIC);
+        this(sliceStart, sliceEnd, DEFAULT_STATIC);
     }
 
     public SliceQuery(final SliceQuery query) {
-        this(query.getSliceStart(),query.getSliceEnd(),query.isStatic());
+        this(query.getSliceStart(), query.getSliceEnd(), query.isStatic());
         setLimit(query.getLimit());
     }
 
@@ -75,27 +75,31 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     @Override
     public int hashCode() {
-        if (hashcode==0) {
-            hashcode = sliceStart.hashCode()*2342357 + sliceEnd.hashCode() + 742342357;
-            if (hashcode==0) hashcode=1;
+        if (hashcode == 0) {
+            hashcode = sliceStart.hashCode() * 2342357 + sliceEnd.hashCode() + 742342357;
+            if (hashcode == 0) hashcode = 1;
         }
         return hashcode;
     }
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null) return false;
+        if (this == other) return true;
+        else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        SliceQuery oth = (SliceQuery)other;
+        SliceQuery oth = (SliceQuery) other;
         return sliceStart.equals(oth.sliceStart) && sliceEnd.equals(oth.sliceEnd);
     }
 
+    //TODO: Need to update when introducing DESC
     public boolean subsumes(SliceQuery oth) {
         Preconditions.checkNotNull(oth);
-        if (this==oth) return true;
-        else return getLimit()>=oth.getLimit() && sliceStart.compareTo(oth.sliceStart)<=0
-                && sliceEnd.compareTo(oth.sliceEnd)>=0;
+        if (this == oth) return true;
+        if (oth.getLimit() > getLimit()) return false;
+        else if (!hasLimit()) //the interval must be subsumed
+            return sliceStart.compareTo(oth.sliceStart) <= 0 && sliceEnd.compareTo(oth.sliceEnd) >= 0;
+        else //this the result might be cutoff due to limit, the start must be the same
+            return sliceStart.compareTo(oth.sliceStart) == 0 && sliceEnd.compareTo(oth.sliceEnd) >= 0;
     }
 
     public static final StaticBuffer pointRange(StaticBuffer point) {
@@ -111,7 +115,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     @Override
     public SliceQuery updateLimit(int newLimit) {
-        return new SliceQuery(sliceStart,sliceEnd,isStatic).setLimit(newLimit);
+        return new SliceQuery(sliceStart, sliceEnd, isStatic).setLimit(newLimit);
     }
 
 }

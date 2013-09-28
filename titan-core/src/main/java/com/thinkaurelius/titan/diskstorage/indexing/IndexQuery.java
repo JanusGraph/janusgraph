@@ -9,7 +9,7 @@ import org.apache.commons.lang.StringUtils;
 
 /**
  * An external index query executed on an {@link IndexProvider}.
- *
+ * <p/>
  * A query is comprised of the store identifier against which the query ought to be executed and a query condition
  * which defines which entries match the query.
  *
@@ -24,7 +24,7 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
     public IndexQuery(String store, Condition condition) {
         Preconditions.checkNotNull(condition);
         Preconditions.checkArgument(QueryUtil.isQueryNormalForm(condition));
-        this.condition=condition;
+        this.condition = condition;
         this.store = store;
     }
 
@@ -49,22 +49,22 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
 
     @Override
     public IndexQuery updateLimit(int newLimit) {
-        return new IndexQuery(store,condition).setLimit(newLimit);
+        return new IndexQuery(store, condition).setLimit(newLimit);
     }
 
     @Override
     public int hashCode() {
-        return condition.hashCode()*9876469 + store.hashCode()*4711 + getLimit();
+        return condition.hashCode() * 9876469 + store.hashCode() * 4711 + getLimit();
     }
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null) return false;
+        if (this == other) return true;
+        else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        IndexQuery oth = (IndexQuery)other;
-        return ((store ==oth.store) || (store !=null && store.equals(oth.store)))
-                && condition.equals(oth.condition) && getLimit()==oth.getLimit();
+        IndexQuery oth = (IndexQuery) other;
+        return ((store == oth.store) || (store != null && store.equals(oth.store)))
+                && condition.equals(oth.condition) && getLimit() == oth.getLimit();
     }
 
     @Override
