@@ -95,7 +95,8 @@ public class IDManager {
     /**
      * Total number of bits available to a Titan assigned id
      * We use only 63 bits to make sure that all ids are positive
-     * @see com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.getKey(long)
+     *
+     * @see com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler#getKey(long)
      */
     private static final long TOTAL_BITS = 63;
 
@@ -127,7 +128,7 @@ public class IDManager {
     public IDManager(long partitionBits) {
         Preconditions.checkArgument(partitionBits >= 0);
         Preconditions.checkArgument(partitionBits <= MAX_PARTITION_BITS,
-            "Partition bits can be at most %s bits", MAX_PARTITION_BITS);
+                "Partition bits can be at most %s bits", MAX_PARTITION_BITS);
         this.partitionBits = partitionBits;
 
         maxPartitionID = (1l << (partitionBits)) - 1;
@@ -184,14 +185,14 @@ public class IDManager {
      */
 
     public final static long getEdgeLabelID(long count) {
-        Preconditions.checkArgument(count>0 && count< MAX_TITAN_TYPE_ID,
-                "Invalid count [%s] for bound: %s",count, MAX_TITAN_TYPE_ID);
+        Preconditions.checkArgument(count > 0 && count < MAX_TITAN_TYPE_ID,
+                "Invalid count [%s] for bound: %s", count, MAX_TITAN_TYPE_ID);
         return IDType.EdgeLabel.addPadding(count);
     }
 
     public final static long getPropertyKeyID(long count) {
-        Preconditions.checkArgument(count>0 && count< MAX_TITAN_TYPE_ID,
-                "Invalid count [%s] for bound: %s",count, MAX_TITAN_TYPE_ID);
+        Preconditions.checkArgument(count > 0 && count < MAX_TITAN_TYPE_ID,
+                "Invalid count [%s] for bound: %s", count, MAX_TITAN_TYPE_ID);
         if (count < 0 || count > MAX_TITAN_TYPE_ID)
             throw new IllegalArgumentException("Invalid count for bound:" + MAX_TITAN_TYPE_ID);
         return IDType.PropertyKey.addPadding(count);
@@ -221,7 +222,7 @@ public class IDManager {
 
 
     public long getPartitionID(long id) {
-        Preconditions.checkArgument(!IDType.TitanType.is(id),"Types don't have a partition: %s",id);
+        Preconditions.checkArgument(!IDType.TitanType.is(id), "Types don't have a partition: %s", id);
         return (id >>> partitionOffset);
     }
 
@@ -229,55 +230,55 @@ public class IDManager {
         return getPartitionID(id) << partitionOffset;
     }
 
-    public static boolean isVertexID(long id) {
+    public static final boolean isVertexID(long id) {
         return IDType.Vertex.is(id);
     }
 
-    public static boolean isTypeID(long id) {
+    public static final boolean isTypeID(long id) {
         return IDType.TitanType.is(id);
     }
 
-    public static boolean isPropertyKeyID(long id) {
+    public static final boolean isPropertyKeyID(long id) {
         return IDType.PropertyKey.is(id);
     }
 
-    public static boolean isEdgeLabelID(long id) {
+    public static final boolean isEdgeLabelID(long id) {
         return IDType.EdgeLabel.is(id);
     }
 
-    public static boolean isRelationID(long id) {
+    public static final boolean isRelationID(long id) {
         return IDType.Relation.is(id);
     }
 
     private final IDInspector inspector = new IDInspector() {
 
         @Override
-        public boolean isRelationID(long id) {
+        public final boolean isRelationID(long id) {
             return IDManager.isRelationID(id);
         }
 
         @Override
-        public boolean isTypeID(long id) {
+        public final boolean isTypeID(long id) {
             return IDManager.isTypeID(id);
         }
 
         @Override
-        public boolean isEdgeLabelID(long id) {
+        public final boolean isEdgeLabelID(long id) {
             return IDManager.isEdgeLabelID(id);
         }
 
         @Override
-        public boolean isPropertyKeyID(long id) {
+        public final boolean isPropertyKeyID(long id) {
             return IDManager.isPropertyKeyID(id);
         }
 
         @Override
-        public boolean isVertexID(long id) {
+        public final boolean isVertexID(long id) {
             return IDManager.isVertexID(id);
         }
 
         @Override
-        public long getPartitionID(long id) {
+        public final long getPartitionID(long id) {
             return IDManager.this.getPartitionID(id);
         }
     };
