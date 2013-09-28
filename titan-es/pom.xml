@@ -1,3 +1,4 @@
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -9,6 +10,16 @@
     <artifactId>titan-es</artifactId>
     <name>Titan-ElasticSearch: Distributed Indexing Support</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+    <properties>
+        <!--
+          ES depends on Lucene.  This ES dependency can affect the
+          version used by the titan-lucene module.  When updating
+          the ES version, also consider the version of Lucene upon
+          which it depends and modify ../titan-lucene/pom.xml
+          as necessary to keep the versions matched.
+        -->
+        <elasticsearch.version>0.90.5</elasticsearch.version>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -24,14 +35,15 @@
         <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
-            <!--
-              ES depends on Lucene.  This ES dependency can affect the
-              version used by the titan-lucene module.  When updating
-              the ES version, also consider the version of Lucene upon
-              which it depends and modify ../titan-lucene/pom.xml
-              as necessary to keep the versions matched.
-            -->
-            <version>0.90.5</version>
+            <version>${elasticsearch.version}</version>
         </dependency>
     </dependencies>
+    <build>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
 </project>

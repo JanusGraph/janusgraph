@@ -15,9 +15,11 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.ElasticSearchInterruptedException;
+import org.elasticsearch.Version;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
@@ -80,15 +82,14 @@ public class ElasticSearchIndex implements IndexProvider {
     public static final String ES_YML_KEY = "config-file";
 
 
-
-
-
     private final Node node;
     private final Client client;
     private final String indexName;
 
     public ElasticSearchIndex(Configuration config) {
         indexName = config.getString(INDEX_NAME_KEY, INDEX_NAME_DEFAULT);
+        
+        checkExpectedClientVersion();
 
         if (!config.containsKey(GraphDatabaseConfiguration.HOSTNAME_KEY)) {
             boolean clientOnly = config.getBoolean(CLIENT_ONLY_KEY, CLIENT_ONLY_DEFAULT);
@@ -438,6 +439,13 @@ public class ElasticSearchIndex implements IndexProvider {
             close();
         }
     }
-
-
+    
+    private void checkExpectedClientVersion() {
+        if (!Version.CURRENT.equals(ElasticSearchConstants.ES_VERSION_EXPECTED)) {
+            log.warn("ES client version {} does not match the version with which Titan was compiled {}.  This might cause problems.",
+                    Version.CURRENT, ElasticSearchConstants.ES_VERSION_EXPECTED);
+        } else {
+            log.debug("Found expected ES client version: {} (OK)", Version.CURRENT);
+        }
+    }
 }
