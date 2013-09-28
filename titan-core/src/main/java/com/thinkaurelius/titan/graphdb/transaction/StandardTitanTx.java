@@ -351,7 +351,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         relation = relation.it();
         //Delete from Vertex
         for (int i = 0; i < relation.getLen(); i++) {
-            if (i > 0 && relation.isLoop()) continue; //No need to remove loop twice
             relation.getVertex(i).removeRelation(relation);
         }
         //Update transaction data structures
@@ -428,7 +427,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     private void connectRelation(InternalRelation r) {
         for (int i = 0; i < r.getLen(); i++) {
-            if (i > 0 && r.isLoop()) continue; //Do not need to connect a loop twice
             boolean success = r.getVertex(i).addRelation(r);
             if (!success) throw new AssertionError("Could not connect relation: " + r);
         }
