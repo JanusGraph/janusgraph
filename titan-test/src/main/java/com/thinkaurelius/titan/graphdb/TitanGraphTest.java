@@ -952,9 +952,13 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         clopen();
         for (int i = 0; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
         v = vs[0];
-        assertEquals(noVertices - 1, Iterables.size(v.getEdges()));
 
-        //Queries
+
+        //Queries from cache
+        assertEquals(noVertices - 1, Iterables.size(v.getEdges()));
+        assertEquals(10, Iterables.size(v.query().labels("connect").limit(10).vertices()));
+        assertEquals(10, Iterables.size(v.query().labels("connect").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
+
         int lastTime = 0;
         for (Edge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
             int nowTime = e.getProperty("time");
@@ -962,6 +966,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
             lastTime = nowTime;
         }
+        assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
+
         Iterator<Edge> outer = v.query().labels("connect").direction(OUT).limit(20).edges().iterator();
         for (Edge e : v.query().labels("connect").direction(OUT).limit(10).edges()) {
             assertEquals(e, outer.next());
@@ -1018,7 +1024,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         for (int i = 0; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
         v = vs[0];
 
-        //Same queries as above but without memory loading        
+        //Same queries as above but without memory loading
+        assertEquals(10, Iterables.size(v.query().labels("connect").limit(10).vertices()));
+        assertEquals(10, Iterables.size(v.query().labels("connect").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
+
         assertEquals(0, v.query().labels("follows").has("time", Compare.LESS_THAN, 10).count());
 
         //Adjacent queries
@@ -1084,7 +1093,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertNotNull(v);
         assertEquals(2, v.query().has("weight", 1.5).interval("time", 10, 30).limit(2).count());
         assertEquals(5, v.query().has("weight", 1.5).interval("time", 10, 30).count());
-
     }
 
     //Merge above
