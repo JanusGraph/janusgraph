@@ -294,7 +294,7 @@ public class ElasticSearchIndex implements IndexProvider {
                             boolean needUpsert = !mutation.hasDeletions();
                             XContentBuilder builder = getContent(mutation.getAdditions());
                             UpdateRequestBuilder update = client.prepareUpdate(indexName,storename,docid).setDoc(builder);
-                            if (needUpsert) update.setUpsertRequest(builder);
+                            if (needUpsert) update.setUpsert(builder);
                             log.trace("Updating document {} with upsert {}",docid,needUpsert);
                             update.execute().actionGet();
                         }

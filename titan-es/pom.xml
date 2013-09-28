@@ -31,7 +31,7 @@
               which it depends and modify ../titan-lucene/pom.xml
               as necessary to keep the versions matched.
             -->
-            <version>0.90.0</version>
+            <version>0.90.5</version>
         </dependency>
     </dependencies>
 </project>
