@@ -572,7 +572,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             }
             assertEquals(numV - deleteV, Iterables.size(tx.getVertices()));
             clopen();
-            assertEquals(numV - deleteV, Iterables.size(tx.getVertices()));
+            assertEquals(numV - deleteV, Iterables.size(graph.getVertices()));
         }
     }
 
@@ -732,6 +732,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         e2.setProperty("time", 15);
         Edge e3 = v3.addEdge("knows", v1);
         e3.setProperty("time", 25);
+        Edge e4 = v2.addEdge("friend", v2);
+        e4.setProperty("type", 1);
         for (Vertex v : new Vertex[]{v1, v2, v3}) {
             assertEquals(2, v.query().direction(Direction.BOTH).labels("knows").count());
             assertEquals(1, v.query().direction(Direction.OUT).labels("knows").count());
@@ -742,6 +744,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         v1.addEdge("friend", v2).setProperty("type", 0);
         graph.commit();
+        e4.setProperty("type", 2);
         Edge ef = Iterables.getOnlyElement(v1.getEdges(OUT, "friend"));
         assertEquals(ef, Iterables.getOnlyElement(graph.getEdges("type", 0)));
         ef.setProperty("type", 1);
