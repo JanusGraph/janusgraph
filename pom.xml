@@ -96,8 +96,8 @@
         <!-- Required for PMD plugin. Used for compiler plugin -->
         <targetJdk>1.7</targetJdk>
         <perf.jvm.opts></perf.jvm.opts>
-        <test.jvm.opts>-Xms256m -Xmx756m ${test.extra.jvm.opts} ${jacoco.opts}</test.jvm.opts>
-        <mem.jvm.opts>-Xms512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
+        <test.jvm.opts>-Xms512m -Xmx512m ${test.extra.jvm.opts} ${jacoco.opts}</test.jvm.opts>
+        <mem.jvm.opts>-Xms256m -Xmx256m -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
         <test.extra.jvm.opts></test.extra.jvm.opts>
     </properties>
     <build>
@@ -928,7 +928,7 @@
                                 <phase>test</phase>
                                 <configuration>
                                     <argLine>${mem.jvm.opts}</argLine>
-                                    <reuseForks>true</reuseForks>
+                                    <reuseForks>false</reuseForks>
                                     <forkCount>1</forkCount>
                                     <parallel/>
                                     <threadCount>0</threadCount>
