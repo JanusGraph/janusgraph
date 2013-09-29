@@ -15,7 +15,7 @@ public class PersistitGraphPerformanceMemoryTest extends TitanGraphPerformanceMe
     
     private static Configuration getGraphConfig() {
         Configuration base = PersistitStorageSetup.getPersistitGraphConfig();
-        base.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).setProperty("buffercount", 1024);
+        base.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).setProperty("buffercount", 128);
         return base;
     }
 }
