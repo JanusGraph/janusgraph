@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb
 
+import static com.tinkerpop.blueprints.Direction.IN;
 import static org.junit.Assert.*
 
 import org.apache.commons.configuration.Configuration
@@ -18,6 +19,8 @@ import com.google.common.collect.Iterables
 import com.thinkaurelius.titan.core.TitanEdge
 import com.thinkaurelius.titan.core.TitanGraph
 import com.thinkaurelius.titan.core.TitanKey
+import com.thinkaurelius.titan.core.TitanMultiVertexQuery
+import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex
 import com.thinkaurelius.titan.graphdb.FakeVertex
 import com.thinkaurelius.titan.testutil.gen.GraphGenerator
@@ -200,7 +203,47 @@ abstract class GroovySerialTest extends GroovyTestSupport {
             assertTrue(0 < n)
         }
     }
-
+    
+    @Test
+    void testMultiQuery() {
+       chunkedSequentialUidTask { TitanTransaction tx, TitanVertex[] vbuf, vcount ->
+           if (vcount != vbuf.length) {
+               def newbuf = new TitanVertex[vcount]
+               for (int i = 0; i < vcount; i++)  {
+                   newbuf[i] = vbuf[i]
+                   Preconditions.checkArgument(null != newbuf[i])
+               }
+               vbuf = newbuf
+           }
+           
+           // I tried labels(schema.edgeLabelNames), but it causes a
+           // Preconditions failure because Query.isQueryNormalForm returns false
+           for (int i = 0; i < schema.edgeLabels; i++) {
+               tx.multiQuery(vbuf).labels(schema.edgeLabelNames[i]).titanEdges();
+           }
+       }
+    }
+    
+    @Test
+    void testNaiveMultiQuery() {
+       chunkedSequentialUidTask(1) { TitanTransaction tx, TitanVertex[] vbuf, vcount ->
+           if (vcount != vbuf.length) {
+               def newbuf = new TitanVertex[vcount]
+               for (int i = 0; i < vcount; i++)  {
+                   newbuf[i] = vbuf[i]
+                   Preconditions.checkArgument(null != newbuf[i])
+               }
+               vbuf = newbuf
+           }
+           
+           // I tried labels(schema.edgeLabelNames), but it causes a
+           // Preconditions failure because Query.isQueryNormalForm returns false
+           for (int i = 0; i < schema.edgeLabels; i++) {
+               tx.multiQuery(vbuf).labels(schema.edgeLabelNames[i]).titanEdges();
+           }
+       }
+    }
+    
     
     /**
      * Retrieve vertices by uid, then retrieve their associated properties. All
