@@ -151,6 +151,40 @@
     </dependencies>
 
     <profiles>
+
+        <!--
+	This empty profile has a purpose.
+
+        When it is absent, specifying mvn -Pmemory-test won't disable
+        bop-test and rp-test.
+
+        The Maven documentation on profiles is misleading.  It states
+        that "When the [-P CLI option] is specified, no profiles other
+        than those specified in the option argument will be activated"
+        (http://maven.apache.org/guides/introduction/introduction-to-profiles.html).
+        This isn't true in a multi-module project.  Only profiles in
+        the same pom/module in which the -P argument(s) were defined
+        will be deactivated.  If a pom contains no profiles mentioned
+        in a -P invocation, then all profiles in that pom will be
+        activated or deactivated according to Maven's normal behavior
+        when -P isn't specified.
+
+        Maven testing tip: `mvn -P... help:active-profiles` is useful
+        when debugging profiles.
+
+	What does all this mean?  When running memory-tests, we want
+	disable all the other normal test classes.  This stub profile
+	is necessary to disable the bop-test and rp-test profiles and
+	all the ordinary Cassandra tests they contain.
+	-->
+        <profile>
+            <id>memory-test</id>
+        </profile>
+
+        <profile>
+            <id>performance-test</id>
+        </profile>
+
         <profile>
             <id>bop-test</id> <!-- ByteOrderedPartitioner tests + miscellaneous "standalone" tests that don't need Cassandra -->
             <activation>
