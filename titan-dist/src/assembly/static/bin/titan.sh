@@ -1,6 +1,6 @@
 #!/bin/bash
-BIN="`dirname $0`"
 
+BIN="`dirname $0`"
 REXSTER_CONFIG=conf/rexster-cassandra.xml
 
 start() {
@@ -44,6 +44,12 @@ status() {
 }
 
 clean() {
+    echo -n "Are you sure you want to delete all stored data? [y/N] " >&2
+    read response
+    if [ "$response" != "y" -a "$response" != "Y" ]; then
+        echo "Response $response did not equal \"y\" or \"Y\".  Canceling clean operation." >&2
+        return 0
+    fi
     cd "$BIN"/../db 2>/dev/null || return
     rm -rf cassandra es
 }
