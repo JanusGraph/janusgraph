@@ -16,6 +16,11 @@ import com.thinkaurelius.titan.diskstorage.TransactionHandle;
  */
 public interface StoreTransaction extends TransactionHandle {
 
-    public ConsistencyLevel getConsistencyLevel();
+    /**
+     * Get the configuration for this transaction
+     *
+     * @return
+     */
+    public StoreTxConfig getConfiguration();
 
 }

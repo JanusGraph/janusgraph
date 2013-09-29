@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.*;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -47,7 +48,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
     public void open() throws StorageException {
         manager = openStorageManager();
         Assert.assertTrue(manager.getFeatures().supportsBatchMutation());
-        tx = new BufferTransaction(manager.beginTransaction(ConsistencyLevel.DEFAULT), manager, bufferSize, 1, 0);
+        tx = new BufferTransaction(manager.beginTransaction(new StoreTxConfig()), manager, bufferSize, 1, 0);
         store1 = new BufferedKeyColumnValueStore(manager.openDatabase(storeName1), true);
         store2 = new BufferedKeyColumnValueStore(manager.openDatabase(storeName2), true);
 
@@ -75,7 +76,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
         StaticBuffer b1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
 
-        Assert.assertNull(KCVSUtil.get(store1,b1, b1, tx));
+        Assert.assertNull(KCVSUtil.get(store1, b1, b1, tx));
 
         List<Entry> additions = Arrays.<Entry>asList(new StaticBufferEntry(b1, b1));
 
@@ -92,7 +93,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         store1.mutate(b1, additions, deletions, tx);
         tx.flush();
 
-        StaticBuffer result = KCVSUtil.get(store1,b1, b1, tx);
+        StaticBuffer result = KCVSUtil.get(store1, b1, b1, tx);
 
         Assert.assertEquals(b1, result);
 
@@ -100,13 +101,13 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         tx.flush();
 
         for (int i = 0; i < 100; i++) {
-            StaticBuffer n = KCVSUtil.get(store1,b1, b1, tx);
+            StaticBuffer n = KCVSUtil.get(store1, b1, b1, tx);
             Assert.assertNull(n);
             store1.mutate(b1, additions, NO_DELETIONS, tx);
             tx.flush();
             store1.mutate(b1, NO_ADDITIONS, deletions, tx);
             tx.flush();
-            n = KCVSUtil.get(store1,b1, b1, tx);
+            n = KCVSUtil.get(store1, b1, b1, tx);
             Assert.assertNull(n);
         }
 
@@ -115,40 +116,40 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
             tx.flush();
             store1.mutate(b1, additions, NO_DELETIONS, tx);
             tx.flush();
-            Assert.assertEquals(b1, KCVSUtil.get(store1,b1, b1, tx));
+            Assert.assertEquals(b1, KCVSUtil.get(store1, b1, b1, tx));
         }
 
         for (int i = 0; i < 100; i++) {
             store1.mutate(b1, additions, deletions, tx);
             tx.flush();
-            Assert.assertEquals(b1, KCVSUtil.get(store1,b1, b1, tx));
+            Assert.assertEquals(b1, KCVSUtil.get(store1, b1, b1, tx));
         }
     }
-    
+
     @Test
     public void mutateManyWritesSameKeyOnMultipleCFs() throws StorageException {
-        
+
         final long arbitraryLong = 42;
         assert 0 < arbitraryLong;
-        
+
         final StaticBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(arbitraryLong * arbitraryLong);
         final StaticBuffer val = KeyColumnValueStoreUtil.longToByteBuffer(arbitraryLong * arbitraryLong * arbitraryLong);
         final StaticBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(arbitraryLong);
         final StaticBuffer nextCol = KeyColumnValueStoreUtil.longToByteBuffer(arbitraryLong + 1);
-        
-        final StoreTransaction directTx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
-        
+
+        final StoreTransaction directTx = manager.beginTransaction(new StoreTxConfig());
+
         KCVMutation km = new KCVMutation(
                 ImmutableList.<Entry>of(new StaticBufferEntry(col, val)),
                 ImmutableList.<StaticBuffer>of());
-        
+
         Map<StaticBuffer, KCVMutation> keyColumnAndValue = ImmutableMap.of(key, km);
 
         Map<String, Map<StaticBuffer, KCVMutation>> mutations =
                 ImmutableMap.of(
                         storeName1, keyColumnAndValue,
                         storeName2, keyColumnAndValue);
-        
+
         manager.mutateMany(mutations, directTx);
 
         directTx.commit();
@@ -156,10 +157,10 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         KeySliceQuery query = new KeySliceQuery(key, col, nextCol);
         List<Entry> expected =
                 ImmutableList.<Entry>of(new StaticBufferEntry(col, val));
-        
+
         Assert.assertEquals(expected, store1.getSlice(query, tx));
         Assert.assertEquals(expected, store2.getSlice(query, tx));
-        
+
     }
 
     @Test
@@ -203,7 +204,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
             for (StaticBuffer col : state.get(key).keySet()) {
                 StaticBuffer val = state.get(key).get(col);
 
-                Assert.assertEquals(val, KCVSUtil.get(store,key, col, tx));
+                Assert.assertEquals(val, KCVSUtil.get(store, key, col, tx));
 
                 checked++;
             }
@@ -235,7 +236,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
                     continue;
                 }
 
-                Assert.assertNull(KCVSUtil.get(store,key, col, tx));
+                Assert.assertNull(KCVSUtil.get(store, key, col, tx));
 
                 checked++;
             }

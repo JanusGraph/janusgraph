@@ -242,8 +242,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public StoreTransaction beginTransaction(ConsistencyLevel level) throws StorageException {
-        return new HBaseTransaction(level);
+    public StoreTransaction beginTransaction(final StoreTxConfig config) throws StorageException {
+        return new HBaseTransaction(config);
     }
 
 

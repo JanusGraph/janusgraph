@@ -27,6 +27,7 @@ import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -388,8 +389,8 @@ public class Backend {
      * @return
      * @throws StorageException
      */
-    public BackendTransaction beginTransaction() throws StorageException {
-        StoreTransaction tx = storeManager.beginTransaction(ConsistencyLevel.DEFAULT);
+    public BackendTransaction beginTransaction(TransactionConfiguration configuration) throws StorageException {
+        StoreTransaction tx = storeManager.beginTransaction(new StoreTxConfig());
         if (bufferSize > 1) {
             assert storeManager.getFeatures().supportsBatchMutation();
             tx = new BufferTransaction(tx, storeManager, bufferSize, writeAttempts, persistAttemptWaittime);
@@ -398,7 +399,9 @@ public class Backend {
             if (storeFeatures.supportsTransactions()) {
                 //No transaction wrapping needed
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
-                tx = new ExpectedValueCheckingTransaction(tx, storeManager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT), readAttempts);
+                tx = new ExpectedValueCheckingTransaction(tx,
+                        storeManager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT)),
+                        readAttempts);
             }
         }
 

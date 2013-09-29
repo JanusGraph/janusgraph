@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
@@ -85,13 +86,13 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     }
 
     @Override
-    public BerkeleyJETx beginTransaction(ConsistencyLevel level) throws StorageException {
+    public BerkeleyJETx beginTransaction(final StoreTxConfig config) throws StorageException {
         try {
             Transaction tx = null;
             if (transactional) {
                 tx = environment.beginTransaction(null, null);
             }
-            return new BerkeleyJETx(tx, level);
+            return new BerkeleyJETx(tx, config);
         } catch (DatabaseException e) {
             throw new PermanentStorageException("Could not start BerkeleyJE transaction", e);
         }

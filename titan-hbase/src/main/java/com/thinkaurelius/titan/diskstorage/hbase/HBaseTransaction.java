@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.hbase;
 
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 
 /**
  * This class overrides and adds nothing compared with
@@ -13,7 +14,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
  */
 public class HBaseTransaction extends AbstractStoreTransaction {
 
-    public HBaseTransaction(ConsistencyLevel level) {
-        super(ConsistencyLevel.KEY_CONSISTENT);
+    public HBaseTransaction(final StoreTxConfig config) {
+        super(config);
     }
 }

@@ -19,11 +19,11 @@ import java.util.List;
 /**
  * {@link com.thinkaurelius.titan.diskstorage.IDAuthority} implementation assuming that the backing store
  * supports consistent key operations.
- *
+ * <p/>
  * ID blocks are allocated by first applying for an id block, waiting for a specified period of time and then
  * checking that the application was the first received for that particular id block. If so, the application is
  * considered successful. If not, some other process won the application and a new application is tried.
- *
+ * <p/>
  * The partition id is used as the key and since key operations are considered consistent, this protocol guarantees
  * unique id block assignments.
  *
@@ -83,7 +83,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
         for (int retry = 0; retry < idApplicationRetryCount; retry++) {
             StoreTransaction txh = null;
             try {
-                txh = manager.beginTransaction(ConsistencyLevel.KEY_CONSISTENT);
+                txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
                 // Read the latest counter values from the idStore
                 StaticBuffer partitionKey = getPartitionKey(partition);
                 // calculate the start (inclusive) and end (exclusive) of the allocation we're about to attempt
@@ -187,7 +187,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                         + rid.length);
 
         bb.putLong(-blockValue).putLong(System.currentTimeMillis());
-        WriteBufferUtil.put(bb,rid);
+        WriteBufferUtil.put(bb, rid);
         return bb.getStaticBuffer();
     }
 

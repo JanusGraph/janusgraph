@@ -10,13 +10,13 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * @todo: read this and make sure multiple threads aren't sharing transactions http://akiban.github.com/persistit/javadoc/com/persistit/Transaction.html#_threadManagement
- *
  * @todo: add finalize method
  */
 public class PersistitTransaction extends AbstractStoreTransaction {
@@ -26,6 +26,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     private boolean isOpen = false;
 
     private static Queue<SessionId> sessionPool = new ConcurrentLinkedQueue<SessionId>();
+
     private static SessionId getSessionId() {
         SessionId s = sessionPool.poll();
         if (s == null) {
@@ -33,12 +34,13 @@ public class PersistitTransaction extends AbstractStoreTransaction {
         }
         return s;
     }
+
     private static void returnSessionId(SessionId s) {
         sessionPool.offer(s);
     }
 
-    public PersistitTransaction(Persistit p, ConsistencyLevel level) throws StorageException {
-        super(level);
+    public PersistitTransaction(Persistit p, StoreTxConfig config) throws StorageException {
+        super(config);
         db = p;
         sessionId = getSessionId();
         assign();
@@ -88,7 +90,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
             Transaction tx = db.getTransaction();
             int retries = 3;
             try {
-                if (tx.isActive() && !tx.isRollbackPending()){
+                if (tx.isActive() && !tx.isRollbackPending()) {
                     int i = 0;
                     while (true) {
                         try {

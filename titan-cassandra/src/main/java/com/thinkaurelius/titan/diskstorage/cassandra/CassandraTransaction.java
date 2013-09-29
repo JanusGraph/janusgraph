@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 
 /**
  * This class overrides and adds nothing compared with
@@ -57,7 +58,7 @@ public class CassandraTransaction extends AbstractStoreTransaction {
 
         public org.apache.cassandra.db.ConsistencyLevel getDBConsistency() {
             org.apache.cassandra.db.ConsistencyLevel level = org.apache.cassandra.db.ConsistencyLevel.valueOf(this.toString());
-            Preconditions.checkArgument(level!=null);
+            Preconditions.checkArgument(level != null);
             return level;
         }
 
@@ -71,16 +72,18 @@ public class CassandraTransaction extends AbstractStoreTransaction {
     private final Consistency readConsistency;
     private final Consistency writeConsistency;
 
-    public CassandraTransaction(ConsistencyLevel level, Consistency readConsistency, Consistency writeConsistency) {
-        super(level);
-        if (level == ConsistencyLevel.KEY_CONSISTENT) {
-            this.readConsistency = Consistency.QUORUM;
-            this.writeConsistency = Consistency.QUORUM;
-        } else {
+    public CassandraTransaction(StoreTxConfig config, Consistency readConsistency, Consistency writeConsistency) {
+        super(config);
+        if (config.getConsistency() == ConsistencyLevel.DEFAULT) {
             Preconditions.checkNotNull(readConsistency);
             Preconditions.checkNotNull(writeConsistency);
             this.readConsistency = readConsistency;
             this.writeConsistency = writeConsistency;
+        } else if (config.getConsistency() == ConsistencyLevel.KEY_CONSISTENT) {
+            this.readConsistency = Consistency.QUORUM;
+            this.writeConsistency = Consistency.QUORUM;
+        } else {
+            throw new IllegalArgumentException("Unsupported consistency level: " + config.getConsistency());
         }
     }
 

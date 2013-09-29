@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -41,7 +42,7 @@ public abstract class KeyValueStoreTest {
     public void open() throws StorageException {
         manager = openStorageManager();
         store = manager.openDatabase(storeName);
-        tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        tx = manager.beginTransaction(new StoreTxConfig());
     }
 
     public abstract OrderedKeyValueStoreManager openStorageManager() throws StorageException;
@@ -186,9 +187,9 @@ public abstract class KeyValueStoreTest {
     public void checkSlice(String[] values, Set<Integer> removed, int start, int end, int limit) throws StorageException {
         List<KeyValueEntry> entries;
         if (limit <= 0)
-            entries = KVUtil.getSlice(store,KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), tx);
+            entries = KVUtil.getSlice(store, KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), tx);
         else
-            entries = KVUtil.getSlice(store,KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), limit, tx);
+            entries = KVUtil.getSlice(store, KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), limit, tx);
 
         int pos = 0;
         for (int i = start; i < end; i++) {

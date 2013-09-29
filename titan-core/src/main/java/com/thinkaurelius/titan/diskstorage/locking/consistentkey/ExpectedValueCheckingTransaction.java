@@ -8,10 +8,7 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
@@ -27,11 +24,10 @@ import java.util.Map;
  * A {@link StoreTransaction} that supports locking via
  * {@link LocalLockMediator} and writing and reading lock records in a
  * {@link ExpectedValueCheckingStore}.
- * 
- * <p>
+ * <p/>
+ * <p/>
  * <b>This class is not safe for concurrent use by multiple threads.
  * Multithreaded access must be prevented or externally synchronized.</b>
- * 
  */
 public class ExpectedValueCheckingTransaction implements StoreTransaction {
 
@@ -48,12 +44,12 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     private final StoreTransaction baseTx;
     private final StoreTransaction consistentTx;
     private final int retryCount;
-    
+
     private final Map<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>> expectedValuesByStore =
             new HashMap<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>>();
 
     public ExpectedValueCheckingTransaction(StoreTransaction baseTx, StoreTransaction consistentTx, int retryCount) {
-        Preconditions.checkArgument(consistentTx.getConsistencyLevel() == ConsistencyLevel.KEY_CONSISTENT);
+        Preconditions.checkArgument(consistentTx.getConfiguration().getConsistency() == ConsistencyLevel.KEY_CONSISTENT);
         this.baseTx = baseTx;
         this.consistentTx = consistentTx;
         this.retryCount = retryCount;
@@ -62,20 +58,20 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     StoreTransaction getBaseTransaction() {
         return baseTx;
     }
-    
+
     StoreTransaction getConsistentTransaction() {
         return consistentTx;
     }
-    
+
     private void lockedOn(ExpectedValueCheckingStore store) {
         Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.get(store);
-        
+
         if (null == m) {
             m = new HashMap<KeyColumn, StaticBuffer>();
             expectedValuesByStore.put(store, m);
         }
     }
-    
+
     void storeExpectedValue(ExpectedValueCheckingStore store, KeyColumn lockID, StaticBuffer value) {
         Preconditions.checkNotNull(store);
         Preconditions.checkNotNull(lockID);
@@ -85,13 +81,13 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         assert null != m;
         if (m.containsKey(lockID)) {
             log.debug("Multiple expected values for {}: keeping initial value {} and discarding later value {}",
-                    new Object[] { lockID, m.get(lockID), value });
+                    new Object[]{lockID, m.get(lockID), value});
         } else {
             m.put(lockID, value);
             log.debug("Store expected value for {}: {}", lockID, value);
         }
     }
-    
+
     void checkExpectedValues() throws StorageException {
         for (final ExpectedValueCheckingStore store : expectedValuesByStore.keySet()) {
             final Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.get(store);
@@ -100,9 +96,9 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
             }
         }
     }
-    
+
     private void checkSingleExpectedValue(final KeyColumn kc,
-            final StaticBuffer ev, final ExpectedValueCheckingStore store)
+                                          final StaticBuffer ev, final ExpectedValueCheckingStore store)
             throws StorageException {
 
         for (int i = 0; i < retryCount; i++) {
@@ -120,15 +116,15 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
 
         throw new TemporaryStorageException("Lock write retry count exceeded");
     }
-    
+
     private void checkSingleExpectedValueUnsafe(final KeyColumn kc,
-            final StaticBuffer ev, final ExpectedValueCheckingStore store) throws StorageException {
+                                                final StaticBuffer ev, final ExpectedValueCheckingStore store) throws StorageException {
         KeySliceQuery ksq = new KeySliceQuery(kc.getKey(), kc.getColumn(), ByteBufferUtil.nextBiggerBuffer(kc.getColumn()));
         List<Entry> actualEntries = store.getSlice(ksq, this); // TODO make this consistent/QUORUM?
-        
+
         if (null == actualEntries)
             actualEntries = ImmutableList.<Entry>of();
-        
+
         Iterable<StaticBuffer> avList = Iterables.transform(actualEntries, new Function<Entry, StaticBuffer>() {
             @Override
             public StaticBuffer apply(Entry e) {
@@ -137,22 +133,22 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
                 return e.getValue();
             }
         });
-        
+
         final Iterable<StaticBuffer> evList;
-        
+
         if (null == ev) {
             evList = ImmutableList.<StaticBuffer>of();
         } else {
             evList = ImmutableList.<StaticBuffer>of(ev);
         }
-        
+
         if (!Iterables.elementsEqual(evList, avList)) {
             throw new PermanentLockingException(
-                "Expected value mismatch for " + kc + ": expected="
-                        +  evList + " vs actual=" + avList + " (store=" + store.getName() + ")");
+                    "Expected value mismatch for " + kc + ": expected="
+                            + evList + " vs actual=" + avList + " (store=" + store.getName() + ")");
         }
     }
-    
+
     private void deleteAllLocks() throws StorageException {
         for (ExpectedValueCheckingStore s : expectedValuesByStore.keySet()) {
             s.deleteLocks(this);
@@ -176,10 +172,6 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         baseTx.flush();
     }
 
-    @Override
-    public ConsistencyLevel getConsistencyLevel() {
-        return baseTx.getConsistencyLevel();
-    }
 
     /**
      * Tells whether this transaction has been used in a
@@ -187,7 +179,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * call. When this returns true, the transaction is no longer allowed in
      * calls to
      * {@link ExpectedValueCheckingStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}.
-     *  
+     *
      * @return False until
      *         {@link ExpectedValueCheckingStore#mutate(StaticBuffer, List, List, StoreTransaction)}
      *         is called on this transaction instance. Returns true forever
@@ -203,12 +195,17 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * . This transaction can't be used in subsequent calls to
      * {@link ExpectedValueCheckingStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      * .
-     * <p>
+     * <p/>
      * Calling this method at the appropriate time is handled automatically by
      * {@link ExpectedValueCheckingStore}. Titan users don't need to call this
      * method by hand.
      */
     public void mutationStarted() {
         isMutationStarted = true;
+    }
+
+    @Override
+    public StoreTxConfig getConfiguration() {
+        return baseTx.getConfiguration();
     }
 }

@@ -78,13 +78,13 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws StorageException {
-        Preconditions.checkArgument(txh.getConsistencyLevel() == ConsistencyLevel.DEFAULT);
+        Preconditions.checkArgument(txh.getConfiguration().getConsistency() == ConsistencyLevel.DEFAULT);
         return new RowIterator(kcv.subMap(query.getKeyStart(), query.getKeyEnd()).entrySet().iterator(), query, txh);
     }
 
     @Override
     public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
-        Preconditions.checkArgument(txh.getConsistencyLevel() == ConsistencyLevel.DEFAULT);
+        Preconditions.checkArgument(txh.getConfiguration().getConsistency() == ConsistencyLevel.DEFAULT);
         return new RowIterator(kcv.entrySet().iterator(), query, txh);
     }
 

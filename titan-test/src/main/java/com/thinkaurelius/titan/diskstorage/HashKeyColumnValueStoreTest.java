@@ -13,7 +13,7 @@ public abstract class HashKeyColumnValueStoreTest extends KeyColumnValueStoreTes
     public void open() throws StorageException {
         manager = openStorageManager();
         store = new HashPrefixKeyColumnValueStore(manager.openDatabase(storeName), 4);
-        tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        tx = startTx();
     }
 
 }

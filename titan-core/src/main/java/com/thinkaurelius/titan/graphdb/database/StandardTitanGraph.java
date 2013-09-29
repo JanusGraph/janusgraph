@@ -126,7 +126,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     public StandardTitanTx newTransaction(TransactionConfiguration configuration) {
         if (!isOpen) ExceptionFactory.graphShutdown();
         try {
-            return new StandardTitanTx(this, configuration, backend.beginTransaction());
+            return new StandardTitanTx(this, configuration, backend.beginTransaction(configuration));
         } catch (StorageException e) {
             throw new TitanException("Could not start new transaction", e);
         }

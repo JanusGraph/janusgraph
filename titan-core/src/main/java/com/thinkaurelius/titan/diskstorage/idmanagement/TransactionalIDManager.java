@@ -13,11 +13,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-
 /**
  * {@link com.thinkaurelius.titan.diskstorage.IDAuthority} implementation assuming that the backing store
  * supports consistent transactions.
- *
+ * <p/>
  * With transactional isolation guarantees, unique id block assignments are just a matter of reading the current
  * counter, incrementing it and committing the transaction. If the transaction fails, another process applied for the same
  * id and the process is retried.
@@ -47,7 +46,7 @@ public class TransactionalIDManager extends AbstractIDManager {
         for (int retry = 0; retry < idApplicationRetryCount; retry++) {
             StoreTransaction txh = null;
             try {
-                txh = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+                txh = manager.beginTransaction(new StoreTxConfig());
                 long current = getCurrentID(partitionKey, txh);
                 Preconditions.checkArgument(Long.MAX_VALUE - blockSize > current, "ID overflow detected");
                 long next = current + blockSize;
@@ -75,10 +74,10 @@ public class TransactionalIDManager extends AbstractIDManager {
     }
 
     private long getCurrentID(StaticBuffer partitionKey, StoreTransaction txh) throws StorageException {
-        if (!KCVSUtil.containsKeyColumn(idStore,partitionKey, DEFAULT_COLUMN, txh)) {
+        if (!KCVSUtil.containsKeyColumn(idStore, partitionKey, DEFAULT_COLUMN, txh)) {
             return BASE_ID;
         } else {
-            long current = KCVSUtil.get(idStore,partitionKey, DEFAULT_COLUMN, txh).getLong(0);
+            long current = KCVSUtil.get(idStore, partitionKey, DEFAULT_COLUMN, txh).getLong(0);
             return current;
         }
     }

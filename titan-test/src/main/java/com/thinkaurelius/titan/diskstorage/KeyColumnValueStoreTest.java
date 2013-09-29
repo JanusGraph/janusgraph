@@ -42,7 +42,11 @@ public abstract class KeyColumnValueStoreTest {
     public void open() throws StorageException {
         manager = openStorageManager();
         store = manager.openDatabase(storeName);
-        tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        tx = startTx();
+    }
+
+    public StoreTransaction startTx() throws StorageException {
+        return manager.beginTransaction(new StoreTxConfig());
     }
 
     public StoreFeatures storeFeatures() {
@@ -326,7 +330,7 @@ public abstract class KeyColumnValueStoreTest {
 
     @Test
     public void getNonExistentKeyReturnsNull() throws Exception {
-        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        StoreTransaction txn = startTx();
         Assert.assertEquals(null, KeyColumnValueStoreUtil.get(store, txn, 0, "col0"));
         Assert.assertEquals(null, KeyColumnValueStoreUtil.get(store, txn, 0, "col1"));
         txn.commit();
@@ -334,19 +338,19 @@ public abstract class KeyColumnValueStoreTest {
 
     @Test
     public void insertingGettingAndDeletingSimpleDataWorks() throws Exception {
-        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        StoreTransaction txn = startTx();
         KeyColumnValueStoreUtil.insert(store, txn, 0, "col0", "val0");
         KeyColumnValueStoreUtil.insert(store, txn, 0, "col1", "val1");
         txn.commit();
 
-        txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        txn = startTx();
         Assert.assertEquals("val0", KeyColumnValueStoreUtil.get(store, txn, 0, "col0"));
         Assert.assertEquals("val1", KeyColumnValueStoreUtil.get(store, txn, 0, "col1"));
         KeyColumnValueStoreUtil.delete(store, txn, 0, "col0");
         KeyColumnValueStoreUtil.delete(store, txn, 0, "col1");
         txn.commit();
 
-        txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        txn = startTx();
         Assert.assertEquals(null, KeyColumnValueStoreUtil.get(store, txn, 0, "col0"));
         Assert.assertEquals(null, KeyColumnValueStoreUtil.get(store, txn, 0, "col1"));
         txn.commit();
@@ -383,7 +387,7 @@ public abstract class KeyColumnValueStoreTest {
 
     @Test
     public void getSliceRespectsColumnLimit() throws Exception {
-        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        StoreTransaction txn = startTx();
         StaticBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(0);
 
         final int cols = 1024;
@@ -396,7 +400,7 @@ public abstract class KeyColumnValueStoreTest {
         store.mutate(key, entries, KeyColumnValueStore.NO_DELETIONS, txn);
         txn.commit();
 
-        txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        txn = startTx();
         StaticBuffer columnStart = KeyColumnValueStoreUtil.longToByteBuffer(0);
         StaticBuffer columnEnd = KeyColumnValueStoreUtil.longToByteBuffer(cols);        /*
          * When limit is greater than or equal to the matching column count,
@@ -447,7 +451,7 @@ public abstract class KeyColumnValueStoreTest {
         StaticBuffer columnAfterEnd = KeyColumnValueStoreUtil.longToByteBuffer(779);
 
         // First insert four test Entries
-        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        StoreTransaction txn = startTx();
         List<Entry> entries = Arrays.asList(
                 (Entry) new StaticBufferEntry(columnBeforeStart, columnBeforeStart),
                 new StaticBufferEntry(columnStart, columnStart),
@@ -457,7 +461,7 @@ public abstract class KeyColumnValueStoreTest {
         txn.commit();
 
         // getSlice() with only start inclusive
-        txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        txn = startTx();
         List<Entry> result = store.getSlice(new KeySliceQuery(key, columnStart, columnEnd), txn);
         Assert.assertEquals(1, result.size());
         Assert.assertEquals(777, KeyColumnValueStoreUtil.bufferToLong(result.get(0).getColumn()));
@@ -469,12 +473,12 @@ public abstract class KeyColumnValueStoreTest {
     @Test
     public void containsKeyReturnsTrueOnExtantKey() throws Exception {
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
-        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        StoreTransaction txn = startTx();
         Assert.assertFalse(store.containsKey(key1, txn));
         KeyColumnValueStoreUtil.insert(store, txn, 1, "c", "v");
         txn.commit();
 
-        txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        txn = startTx();
         Assert.assertTrue(store.containsKey(key1, txn));
         txn.commit();
     }
@@ -482,7 +486,7 @@ public abstract class KeyColumnValueStoreTest {
 
     @Test
     public void containsKeyReturnsFalseOnNonexistentKey() throws Exception {
-        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        StoreTransaction txn = startTx();
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
         Assert.assertFalse(store.containsKey(key1, txn));
         txn.commit();
@@ -491,7 +495,7 @@ public abstract class KeyColumnValueStoreTest {
 
     @Test
     public void containsKeyColumnReturnsFalseOnNonexistentInput() throws Exception {
-        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        StoreTransaction txn = startTx();
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
         StaticBuffer c = KeyColumnValueStoreUtil.stringToByteBuffer("c");
         Assert.assertFalse(KCVSUtil.containsKeyColumn(store, key1, c, txn));
@@ -500,11 +504,11 @@ public abstract class KeyColumnValueStoreTest {
 
     @Test
     public void containsKeyColumnReturnsTrueOnExtantInput() throws Exception {
-        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        StoreTransaction txn = startTx();
         KeyColumnValueStoreUtil.insert(store, txn, 1, "c", "v");
         txn.commit();
 
-        txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        txn = startTx();
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
         StaticBuffer c = KeyColumnValueStoreUtil.stringToByteBuffer("c");
         Assert.assertTrue(KCVSUtil.containsKeyColumn(store, key1, c, txn));
@@ -515,7 +519,7 @@ public abstract class KeyColumnValueStoreTest {
     public void testGetSlices() throws Exception {
         populateDBWith100Keys();
 
-        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        StoreTransaction txn = startTx();
         try {
             List<StaticBuffer> keys = new ArrayList<StaticBuffer>(100);
 
@@ -542,7 +546,7 @@ public abstract class KeyColumnValueStoreTest {
     public void testGetKeysWithSliceQuery() throws Exception {
         populateDBWith100Keys();
 
-        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        StoreTransaction txn = startTx();
 
         KeyIterator keyIterator = store.getKeys(new SliceQuery(new ReadArrayBuffer("b".getBytes()),
                 new ReadArrayBuffer("c".getBytes())),
@@ -561,7 +565,7 @@ public abstract class KeyColumnValueStoreTest {
     protected void testGetKeysWithKeyRange() throws Exception {
         populateDBWith100Keys();
 
-        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        StoreTransaction txn = startTx();
 
         KeyIterator keyIterator = store.getKeys(new KeyRangeQuery(KeyColumnValueStoreUtil.longToByteBuffer(10), // key start
                 KeyColumnValueStoreUtil.longToByteBuffer(40), // key end
@@ -579,7 +583,7 @@ public abstract class KeyColumnValueStoreTest {
     protected void populateDBWith100Keys() throws Exception {
         Random random = new Random();
 
-        StoreTransaction txn = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+        StoreTransaction txn = startTx();
         for (int i = 1; i <= 100; i++) {
             KeyColumnValueStoreUtil.insert(store, txn, i, "a", "v" + random.nextLong());
             KeyColumnValueStoreUtil.insert(store, txn, i, "b", "v" + random.nextLong());

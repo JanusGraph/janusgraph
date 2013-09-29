@@ -82,11 +82,11 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public StoreTransaction beginTransaction(ConsistencyLevel consistencyLevel) throws StorageException {
+    public StoreTransaction beginTransaction(final StoreTxConfig config) throws StorageException {
         return new StoreTransaction() {
             @Override
-            public ConsistencyLevel getConsistencyLevel() {
-                return ConsistencyLevel.DEFAULT;
+            public StoreTxConfig getConfiguration() {
+                return config;
             }
 
             @Override

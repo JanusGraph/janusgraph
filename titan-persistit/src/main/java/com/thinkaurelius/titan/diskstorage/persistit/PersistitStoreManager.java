@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
@@ -96,7 +97,7 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
             return stores.get(name);
         }
 
-        PersistitTransaction tx = new PersistitTransaction(db, ConsistencyLevel.DEFAULT);
+        PersistitTransaction tx = new PersistitTransaction(db, new StoreTxConfig());
         PersistitKeyValueStore store = new PersistitKeyValueStore(name, this, db);
         tx.commit();
         stores.put(name, store);
@@ -135,9 +136,9 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
      * @return New Transaction Handle
      */
     @Override
-    public PersistitTransaction beginTransaction(ConsistencyLevel level) throws StorageException {
+    public PersistitTransaction beginTransaction(final StoreTxConfig config) throws StorageException {
         //all Exchanges created by a thread share the same transaction context
-        return new PersistitTransaction(db, level);
+        return new PersistitTransaction(db, config);
     }
 
     @Override

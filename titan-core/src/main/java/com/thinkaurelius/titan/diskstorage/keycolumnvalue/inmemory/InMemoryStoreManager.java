@@ -47,8 +47,8 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public StoreTransaction beginTransaction(ConsistencyLevel consistencyLevel) throws StorageException {
-        return new TransactionHandle(consistencyLevel);
+    public StoreTransaction beginTransaction(final StoreTxConfig config) throws StorageException {
+        return new TransactionHandle(config);
     }
 
     @Override
@@ -109,8 +109,8 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
 
     private class TransactionHandle extends AbstractStoreTransaction {
 
-        public TransactionHandle(ConsistencyLevel level) {
-            super(level);
+        public TransactionHandle(final StoreTxConfig config) {
+            super(config);
         }
     }
 }

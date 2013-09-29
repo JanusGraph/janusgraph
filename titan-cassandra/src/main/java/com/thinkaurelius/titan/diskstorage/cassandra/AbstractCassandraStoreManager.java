@@ -5,10 +5,7 @@ import java.util.Map;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.commons.configuration.Configuration;
 
@@ -116,8 +113,8 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     public abstract Partitioner getPartitioner() throws StorageException;
 
     @Override
-    public StoreTransaction beginTransaction(ConsistencyLevel level) {
-        return new CassandraTransaction(level, readConsistencyLevel, writeConsistencyLevel);
+    public StoreTransaction beginTransaction(final StoreTxConfig config) {
+        return new CassandraTransaction(config, readConsistencyLevel, writeConsistencyLevel);
     }
 
     @Override

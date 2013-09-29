@@ -28,7 +28,7 @@ class ColumnValueStore {
     private Data data;
 
     public ColumnValueStore() {
-        data = new Data(new Entry[0],0);
+        data = new Data(new Entry[0], 0);
     }
 
     boolean isEmpty(StoreTransaction txh) {
@@ -47,13 +47,13 @@ class ColumnValueStore {
         try {
             Data datacp = data;
             int start = datacp.getIndex(query.getSliceStart());
-            if (start<0) start = (-start-1);
+            if (start < 0) start = (-start - 1);
             int end = datacp.getIndex(query.getSliceEnd());
-            if (end<0) end = (-end-1);
-            if (start<end) {
-                List<Entry> result = new ArrayList<Entry>(end-start);
-                for (int i=start;i<end;i++) {
-                    if (query.hasLimit() && result.size()>=query.getLimit()) break;
+            if (end < 0) end = (-end - 1);
+            if (start < end) {
+                List<Entry> result = new ArrayList<Entry>(end - start);
+                for (int i = start; i < end; i++) {
+                    if (query.hasLimit() && result.size() >= query.getLimit()) break;
                     result.add(datacp.get(i));
                 }
                 return result;
@@ -73,18 +73,18 @@ class ColumnValueStore {
             add = new Entry[additions.size()];
             int pos = 0;
             for (Entry e : additions) {
-                add[pos]=e;
+                add[pos] = e;
                 pos++;
             }
             Arrays.sort(add);
-        } else add=new Entry[0];
+        } else add = new Entry[0];
 
         //Filter out deletions that are also added
         StaticBuffer[] del;
         if (!deletions.isEmpty()) {
             Iterator<StaticBuffer> iter = deletions.iterator();
             while (iter.hasNext()) {
-                if (Arrays.binarySearch(add,new StaticBufferEntry(iter.next(),null))>=0) {
+                if (Arrays.binarySearch(add, new StaticBufferEntry(iter.next(), null)) >= 0) {
                     iter.remove();
                 }
             }
@@ -97,59 +97,61 @@ class ColumnValueStore {
         try {
             Entry[] olddata = data.array;
             int oldsize = data.size;
-            Entry[] newdata = new Entry[oldsize+add.length];
+            Entry[] newdata = new Entry[oldsize + add.length];
 
             //Merge sort
-            int i=0,iold=0, iadd=0, idel=0;
-            while (iold<oldsize) {
+            int i = 0, iold = 0, iadd = 0, idel = 0;
+            while (iold < oldsize) {
                 Entry e = olddata[iold];
                 iold++;
                 //Compare with additions
-                if (iadd<add.length) {
+                if (iadd < add.length) {
                     int compare = e.compareTo(add[iadd]);
-                    if (compare>=0) {
-                        e=add[iadd];
+                    if (compare >= 0) {
+                        e = add[iadd];
                         iadd++;
                         //Skip duplicates
-                        while (iadd<add.length && e.equals(add[iadd])) iadd++;
+                        while (iadd < add.length && e.equals(add[iadd])) iadd++;
                     }
-                    if (compare>0) iold--;
+                    if (compare > 0) iold--;
                 }
                 //Compare with deletions
-                if (idel<del.length) {
-                    int compare = ByteBufferUtil.compare(e.getColumn(),del[idel]);
-                    if (compare==0) e=null;
-                    if (compare>=0) idel++;
+                if (idel < del.length) {
+                    int compare = ByteBufferUtil.compare(e.getColumn(), del[idel]);
+                    if (compare == 0) e = null;
+                    if (compare >= 0) idel++;
                 }
-                if (e!=null) {
-                    newdata[i]=e;
+                if (e != null) {
+                    newdata[i] = e;
                     i++;
                 }
             }
-            while (iadd<add.length) {
-                newdata[i]=add[iadd];
-                i++; iadd++;
+            while (iadd < add.length) {
+                newdata[i] = add[iadd];
+                i++;
+                iadd++;
             }
 
-            if (i*1.0/newdata.length<SIZE_THRESHOLD) {
+            if (i * 1.0 / newdata.length < SIZE_THRESHOLD) {
                 //shrink array to free space
                 Entry[] tmpdata = newdata;
                 newdata = new Entry[i];
-                System.arraycopy(tmpdata,0,newdata,0,i);
+                System.arraycopy(tmpdata, 0, newdata, 0, i);
             }
-            data = new Data(newdata,i);
+            data = new Data(newdata, i);
         } finally {
             lock.unlock();
         }
     }
 
-    private ReentrantLock lock=null;
+    private ReentrantLock lock = null;
+
     private Lock getLock(StoreTransaction txh) {
-        if (txh.getConsistencyLevel()== ConsistencyLevel.KEY_CONSISTENT) {
-            if (lock==null) {
+        if (txh.getConfiguration().getConsistency() == ConsistencyLevel.KEY_CONSISTENT) {
+            if (lock == null) {
                 synchronized (this) {
-                    if (lock==null) {
-                        lock=new ReentrantLock();
+                    if (lock == null) {
+                        lock = new ReentrantLock();
                     }
                 }
             }
@@ -163,18 +165,18 @@ class ColumnValueStore {
         final int size;
 
         Data(final Entry[] array, final int size) {
-            Preconditions.checkArgument(size>=0 && size<=array.length);
+            Preconditions.checkArgument(size >= 0 && size <= array.length);
             assert isSorted();
-            this.array =array;
-            this.size=size;
+            this.array = array;
+            this.size = size;
         }
 
         boolean isEmpty() {
-            return size==0;
+            return size == 0;
         }
 
         int getIndex(StaticBuffer column) {
-            return Arrays.binarySearch(array,0,size,new StaticBufferEntry(column,null));
+            return Arrays.binarySearch(array, 0, size, new StaticBufferEntry(column, null));
         }
 
         Entry get(int index) {
@@ -182,8 +184,8 @@ class ColumnValueStore {
         }
 
         boolean isSorted() {
-            for (int i=1;i<size;i++) {
-                if (!(array[i].compareTo(array[i-1])>0)) return false;
+            for (int i = 1; i < size; i++) {
+                if (!(array[i].compareTo(array[i - 1]) > 0)) return false;
             }
             return true;
         }
