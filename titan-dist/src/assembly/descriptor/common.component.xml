@@ -1,42 +1,26 @@
-<assembly>
-    <id>hbase-${project.version}</id>
-    <baseDirectory>titan-hbase-${project.version}</baseDirectory>
-
-    <formats>
-        <format>zip</format>
-        <format>tar.bz2</format>
-    </formats>
+<component xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
 
     <fileSets>
-        <!-- HBase control/management scripts -->
         <fileSet>
-            <fileMode>775</fileMode>
-            <directoryMode>775</directoryMode>
-            <directory>../../titan-hbase/bin</directory>
-            <outputDirectory>bin</outputDirectory>
-        </fileSet>
-        <fileSet>
-            <directory>../../titan-hbase/config</directory>
-            <outputDirectory>config</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>../src/assembly/skel</directory>
-            <outputDirectory>/</outputDirectory>
-        </fileSet>
-        <fileSet>
-            <directory>../../config</directory>
-        </fileSet>
-        <fileSet>
-            <directory>../../bin</directory>
-            <outputDirectory>bin</outputDirectory>
+            <directory>../src/assembly/static/bin</directory>
+            <outputDirectory>/bin</outputDirectory>
             <includes>
-                <include>hbase*</include>
+                <include>gremlin.sh</include>
+                <include>gremlin.bat</include>
             </includes>
+        </fileSet>
+        <fileSet>
+            <directory>../src/assembly/static/ext</directory>
+            <outputDirectory>/ext</outputDirectory>
         </fileSet>
     </fileSets>
 
     <files>
+        <file>
+            <source>../src/assembly/static/README.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
         <file>
             <source>../../CHANGELOG.textile</source>
             <outputDirectory>/</outputDirectory>
@@ -72,9 +56,15 @@
             <unpack>true</unpack>
             <outputDirectory>/doc</outputDirectory>
             <useProjectArtifact>false</useProjectArtifact>
+            <!-- titan-site requires Gollum and its attendant Ruby libraries. This 
+                is a burdensome tooling requirement for a mostly-Java project. Hence, th titan-site 
+                artifact is only built when the aurelius-release profile is activated.  It's 
+                deactivated by default.  This means titan-site won't exist by default, and thus
+                why <useStrictFiltering> is disabled. -->
+            <useStrictFiltering>false</useStrictFiltering>
             <includes>
                 <include>${project.groupId}:titan-site:zip:htdocs:${project.version}</include>
             </includes>
         </dependencySet>
     </dependencySets>
-</assembly>
+</component>

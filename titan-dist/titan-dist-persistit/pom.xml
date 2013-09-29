@@ -7,13 +7,13 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
-    <artifactId>titan-dist-cassandra</artifactId>
-    <name>Titan-Dist-Cassandra: Archives with Cassandra</name>
+    <artifactId>titan-dist-persistit</artifactId>
+    <name>Titan-Dist-Persistit: Archives with Persistit</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
-        <distribution.assembly.name>cassandra</distribution.assembly.name>
-        <distribution.assembly.descriptor>cassandra.xml</distribution.assembly.descriptor>
+        <distribution.assembly.name>persistit</distribution.assembly.name>
+        <distribution.assembly.descriptor>${project.parent.basedir}/src/assembly/descriptor/backend.xml</distribution.assembly.descriptor>
     </properties>
 
     <profiles>
@@ -22,13 +22,8 @@
             <dependencies>
                 <dependency>
                     <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-cassandra</artifactId>
+                    <artifactId>titan-persistit</artifactId>
                     <version>${project.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>net.java.dev.jna</groupId>
-                    <artifactId>jna</artifactId>
-                    <version>${jna.version}</version>
                 </dependency>
                 <dependency>
                     <groupId>com.thinkaurelius.titan</groupId>
